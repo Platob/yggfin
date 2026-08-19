@@ -1,0 +1,3 @@
+# Normalise line endings: source stays LF everywhere, including Windows
+* text=auto eol=lf
+*.png binary

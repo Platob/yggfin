@@ -1,0 +1,4 @@
+name: default
+catalog: iceberg
+properties:
+  write.format.default: parquet

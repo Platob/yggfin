@@ -1,0 +1,77 @@
+name: deploy
+
+# Converge the declared stacks against their deployments. The dependency
+# order lives in the tools themselves (catalog -> namespace -> table,
+# parallel within a level); this workflow chooses which stacks run and
+# captures the full log as an artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: which stack to deploy
+        type: choice
+        options: [iceberg, doris, both]
+        default: both
+      dry_run:
+        description: log what would happen without touching anything
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - "data/**"
+      - "python/src/rekep/models/**"
+
+defaults:
+  run:
+    working-directory: python
+
+jobs:
+  iceberg:
+    if: ${{ github.event_name == 'push' || inputs.stack == 'iceberg' || inputs.stack == 'both' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Sync
+        run: uv sync --extra local
+      - name: Verify side files against the records
+        run: |
+          uv run rekep service iceberg tables sync --config ../stacks/iceberg
+          git -C .. diff --exit-code stacks/iceberg/tables
+      - name: Deploy
+        working-directory: .
+        env:
+          # The registry's Jinja reads env, so a real REST catalog comes from
+          # secrets; without them the local default runs self-contained.
+          ICEBERG_REST_URI: ${{ secrets.ICEBERG_REST_URI }}
+          ICEBERG_WAREHOUSE: ${{ secrets.ICEBERG_WAREHOUSE }}
+        run: |
+          python/.venv/bin/rekep service iceberg deploy --config stacks/iceberg 2>&1 \
+            | tee iceberg-deploy.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iceberg-deploy-log
+          path: iceberg-deploy.log
+
+  doris:
+    if: ${{ github.event_name == 'push' || inputs.stack == 'doris' || inputs.stack == 'both' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Sync
+        run: uv sync
+      - name: Verify side files against the records
+        run: |
+          uv run rekep service doris tables sync --config ../stacks/doris
+          git -C .. diff --exit-code stacks/doris/tables
+      - name: Plan
+        working-directory: .
+        run: |
+          python/.venv/bin/rekep service doris deploy --config stacks/doris 2>&1 \
+            | tee doris-plan.sql
+      - uses: actions/upload-artifact@v4
+        with:
+          name: doris-plan
+          path: doris-plan.sql

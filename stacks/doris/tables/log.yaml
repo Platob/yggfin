@@ -1,0 +1,37 @@
+record: rekep.models.Log
+name: log
+namespace: default
+properties: {}
+fields:
+- name: url
+  type: STRING
+  not_null: true
+  comment: Path of the log the line came from, as its filesystem addresses it.
+- name: unix
+  type: BIGINT
+  not_null: true
+  comment: Timestamp as whole nanoseconds since the epoch, naive UTC.
+- name: date
+  type: DATE
+  not_null: true
+  comment: Calendar day of the timestamp, naive UTC.
+- name: time
+  type: STRING
+  not_null: true
+  comment: Time of day of the timestamp, naive UTC.
+- name: thread_name
+  type: STRING
+  not_null: true
+  comment: Contents of the first bracketed field.
+- name: driver
+  type: STRING
+  not_null: true
+  comment: Contents of the second bracketed field -- the emitting module.
+- name: message
+  type: STRING
+  not_null: true
+  comment: Payload with the header and level stripped, continuation lines folded in.
+- name: hash64
+  type: BIGINT
+  not_null: true
+  comment: Signed 64-bit hash of the raw line, for matching lines across captures.

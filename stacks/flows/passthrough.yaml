@@ -1,0 +1,12 @@
+# One DAG: parse the log at REKEP_SOURCE_URL and count what comes out.
+# Rendered with Jinja before parsing, so deploy-time values come from the
+# environment; see rekep.flows.load.
+flow: rekep.flows.Passthrough
+name: passthrough
+description: Copy log batches through unchanged; the wiring reference.
+schedule: "@daily"
+source: "{{ env.get('REKEP_SOURCE_URL', '') }}"
+consumes:
+  - rekep.models.Log
+produces:
+  - rekep.models.Log

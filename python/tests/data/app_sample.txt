@@ -1,0 +1,28 @@
+2026-08-14 00:05:01.147_250 [250-e7256476:9effef3e6a:72505] [OMSSales_Enrichment] (DEBUG) -> [5] {trade || cancel || tradeconfirm || replace || new - ExecType=replaced, cxlQty=10, CompositeCxl=null}
+2026-08-14 00:05:01.147_251 [250-e7256476:9effef3e6a:72505] [OMSSales_Enrichment] (DEBUG) CLIENTID set to MCFP2
+2026-08-14 00:05:01.147_265 [250-e7256476:9effef3e6a:72505] [OMSSales_Enrichment] (DEBUG) After Enrichment -> ACCOUNT=ACCT-000117 CLIENTID=MCFP2 VENUE=XPAR
+2026-08-14 00:05:01.147_302 [250-e7256476:9effef3e6a:72505] [MCFID_BuySide_Timestamps_And_Fields] (DEBUG) Amount of message post-enrichment: 4
+2026-08-14 00:05:01.147_514 [250-e7256476:9effef3e6a:72505] [ULBridge] (INFO) Message received: Message type {execution_report}
+2026-08-14 00:05:01.147_812 [250-e7256476:9effef3e6a:72505] [ULBridge] (WARNING) Message rejected because : ignoring OMSSales expiry message from daily filter orders
+2026-08-14 00:05:01.147_904 [250-e7256476:9effef3e6a:72505] [OMSSales] (DEBUG) Setting last event id for order 1 to 20260813-220500-306-00-1
+2026-08-14 00:05:01.147_912 [77-e7256476:9effef3e6a:72503] [al-iris-AbstractOrderManager] (INFO) Processing execution report: ACCOUNT=ACCT-000117 SIDE=BUY QTY=1200 PX=41.2500
+2026-08-14 00:05:01.147_960 [77-e7256476:9effef3e6a:72503] [ModuleMarketDataManager] (DEBUG) Found code SIC-0847331 from instrument-cache
+2026-08-14 00:05:01.147_988 [77-e7256476:9effef3e6a:72503] [ModuleMarketDataManager] (INFO) Referential SIC-0847331 -> ISIN-XX0000084733 from instrument-cache
+2026-08-14 00:05:01.148_015 [77-e7256476:9effef3e6a:72503] [al-iris-AbstractOrderManager] (WARNING) Execution report already processed on original order was not cross checked; cannot find the matching original order
+2026-08-14 00:05:01.148_044 [77-e7256476:9effef3e6a:72503] [al-iris-AbstractOrderManager] (DEBUG) Execution report processing on finished
+2026-08-14 00:05:01.148_212 [250-e7256476:9effef3e6a:72504] [ObjkeyTagWrapper] (DEBUG) Expression from CODE-0000007 given no result, no mapping is done
+2026-08-14 00:05:01.148_273 [250-e7256476:9effef3e6a:72504] [ObjkeyTagWrapper] (DEBUG) Expression from CODE-0000031 given no result, no mapping is done
+2026-08-14 00:05:01.148_291 [250-e7256476:9effef3e6a:72504] [ObjkeyTagWrapper] (DEBUG) Expression from CODE-0000042 given no result, no mapping is done
+2026-08-14 00:05:01.148_339 [250-e7256476:9effef3e6a:72504] [ObjkeyTagWrapper] (ERROR) Expression from CODE-0000058 raised while evaluating
+java.lang.IllegalStateException: no binding for token 'venue.mic'
+	at com.example.objkey.TagWrapper.evaluate(TagWrapper.java:214)
+	at com.example.objkey.TagWrapper.apply(TagWrapper.java:98)
+	at com.example.pipeline.Stage.run(Stage.java:171)
+2026-08-14 00:05:01.148_501 [250-e7256476:9effef3e6a:72504] [OMSSales] (DEBUG) ScoreMessage : ACCOUNT=ACCT-000204 ORDER=ORD-0000038106 STATE=PARTIAL
+2026-08-14 00:05:01.148_527 [250-e7256476:9effef3e6a:72504] [ULTrader_BuySide_MCFID] (DEBUG) After Enrichment -> ORD-0000038106 routed XPAR
+2026-08-14 00:05:01.148_573 [250-e7256476:9effef3e6a:72504] [Fixcat_CheckAutomation] (DEBUG) -> ExecutionReport for First Trade -> No statistics on order
+2026-08-14 00:05:01.148_616 [250-e7256476:9effef3e6a:72504] [Fixcat_CheckAutomation] (DEBUG) heartbeat emitted seq=38110
+2026-08-14 00:05:01.148_904 [250-e7256476:9effef3e6a:72505] [OMSSales_Enrichment] (DEBUG) -> [5] {trade || cancel || tradeconfirm || replace || new - ExecType=filled, cxlQty=0}
+2026-08-14 00:05:01.148_945 [250-e7256476:9effef3e6a:72505] [MCFID_BuySide_Timestamps_And_Fields] no level printed by this driver
+2026-08-14 00:05:02.001_007 [250-e7256476:9effef3e6a:72505] [ULBridge] (INFO) Message received: Message type {order_cancel_request}
+2026-08-14 00:05:02.001_812 [250-e7256476:9effef3e6a:72505] [OMSSales] (DEBUG) Setting last event id for order 2 to 20260813-220502-306-00-2

@@ -1,0 +1,58 @@
+site_name: yggfin / rekep
+site_description: Trading log parser and Arrow-centric data products
+site_url: https://platob.github.io/yggfin/
+repo_url: https://github.com/Platob/yggfin
+repo_name: Platob/yggfin
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Use cases:
+      - Tutorial: use-cases/tutorial.md
+  - Guide:
+      - Records: guide/records.md
+      - Logs: guide/logs.md
+      - Flows: guide/flows.md
+      - CLI: guide/cli.md
+  - Data models: models.md
+  - Reference: reference.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [python/src]
+          options:
+            docstring_style: google
+            show_source: true
+            members_order: source
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true

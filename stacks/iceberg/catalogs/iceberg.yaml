@@ -1,0 +1,5 @@
+name: iceberg
+type: sql
+uri: sqlite:///stacks/iceberg/catalog.db
+warehouse: file://stacks/iceberg/warehouse
+properties: {}
