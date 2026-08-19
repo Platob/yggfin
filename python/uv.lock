@@ -1603,6 +1603,22 @@ wheels = [
 ]
 
 [[package]]
+name = "openlineage-python"
+version = "1.52.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "httpx" },
+    { name = "packaging" },
+    { name = "python-dateutil" },
+    { name = "pyyaml" },
+    { name = "requests" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a9/77/2f5b471c93c8c89f8777a18e0a05abd8dd14abf76f71bcd57f5e3c90d8e5/openlineage_python-1.52.0-py3-none-any.whl", hash = "sha256:e1bd73b3066021eecf69cc5c3571f6fd7e253768ea941f2c76f18969ea0ecb20", size = 116447, upload-time = "2026-07-23T14:40:32.073Z" },
+]
+
+[[package]]
 name = "opentelemetry-api"
 version = "1.44.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2356,6 +2372,7 @@ airflow = [
 all = [
     { name = "apache-airflow" },
     { name = "jinja2" },
+    { name = "openlineage-python" },
     { name = "pyiceberg", extra = ["sql-sqlite"] },
     { name = "pyyaml" },
     { name = "tomli-w" },
@@ -2370,6 +2387,9 @@ jinja = [
 local = [
     { name = "pyiceberg", extra = ["sql-sqlite"] },
 ]
+openlineage = [
+    { name = "openlineage-python" },
+]
 toml = [
     { name = "tomli-w" },
 ]
@@ -2380,7 +2400,7 @@ yaml = [
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
-    { name = "rekep", extra = ["fast", "jinja", "local", "toml", "yaml"] },
+    { name = "rekep", extra = ["fast", "jinja", "local", "openlineage", "toml", "yaml"] },
     { name = "ruff" },
 ]
 docs = [
@@ -2392,20 +2412,21 @@ docs = [
 requires-dist = [
     { name = "apache-airflow", marker = "extra == 'airflow'", specifier = ">=2.9" },
     { name = "jinja2", marker = "extra == 'jinja'", specifier = ">=3.1" },
+    { name = "openlineage-python", marker = "extra == 'openlineage'", specifier = ">=1.0" },
     { name = "pyarrow", specifier = ">=17.0" },
     { name = "pyiceberg", specifier = ">=0.7" },
     { name = "pyiceberg", extras = ["sql-sqlite"], marker = "extra == 'local'", specifier = ">=0.7" },
     { name = "pyyaml", marker = "extra == 'yaml'", specifier = ">=6.0" },
-    { name = "rekep", extras = ["airflow", "fast", "jinja", "local", "toml", "yaml"], marker = "extra == 'all'" },
+    { name = "rekep", extras = ["airflow", "fast", "jinja", "local", "openlineage", "toml", "yaml"], marker = "extra == 'all'" },
     { name = "tomli-w", marker = "extra == 'toml'", specifier = ">=1.0" },
     { name = "xxhash", marker = "extra == 'fast'", specifier = ">=3.4" },
 ]
-provides-extras = ["yaml", "toml", "airflow", "fast", "local", "jinja", "all"]
+provides-extras = ["yaml", "toml", "airflow", "fast", "local", "jinja", "openlineage", "all"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest", specifier = ">=8.0" },
-    { name = "rekep", extras = ["fast", "jinja", "local", "toml", "yaml"] },
+    { name = "rekep", extras = ["fast", "jinja", "local", "openlineage", "toml", "yaml"] },
     { name = "ruff", specifier = ">=0.6" },
 ]
 docs = [

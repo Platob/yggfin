@@ -92,6 +92,44 @@ def test_dag_round_trips_as_a_record() -> None:
     assert Dag.from_yaml(pipeline.into_yaml()) == pipeline
 
 
+def test_dag_run_emits_openlineage_start_and_complete(tmp_path: pathlib.Path) -> None:
+    pytest.importorskip("openlineage.client")
+    import json
+
+    from rekep.openlineage import OpenLineage
+
+    path = tmp_path / "events.log"
+    pipeline.run(lineage=OpenLineage.from_path(path))
+
+    start, complete = (json.loads(line) for line in path.read_text().splitlines())
+    assert (start["eventType"], complete["eventType"]) == ("START", "COMPLETE")
+    assert start["job"]["name"] == "pipeline"
+    assert {d["name"] for d in start["inputs"] + start["outputs"]} == {"Log"}
+
+
+def test_dag_run_emits_fail_and_reraises(tmp_path: pathlib.Path) -> None:
+    pytest.importorskip("openlineage.client")
+    import json
+
+    from rekep.openlineage import OpenLineage
+
+    @task
+    def boom(**context: object) -> None:
+        raise RuntimeError("nope")
+
+    @dag
+    def broken() -> list[Task]:
+        return [boom]
+
+    path = tmp_path / "events.log"
+    with pytest.raises(RuntimeError, match="nope"):
+        broken.run(lineage=OpenLineage.from_path(path))
+
+    _, failed = (json.loads(line) for line in path.read_text().splitlines())
+    assert failed["eventType"] == "FAIL"
+    assert "nope" in failed["run"]["facets"]["errorMessage"]["message"]
+
+
 # -- flow interop -----------------------------------------------------------
 
 

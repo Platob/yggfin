@@ -5,10 +5,13 @@ from __future__ import annotations
 import dataclasses
 import logging
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from rekep.flows.task import Task, _record_class
 from rekep.records import Record, record
+
+if TYPE_CHECKING:  # pragma: no cover - openlineage is imported at the point of use
+    from rekep.openlineage import OpenLineage
 
 logger = logging.getLogger("rekep.flows")
 
@@ -50,16 +53,36 @@ class Dag(Record):
 
     # -- executors ----------------------------------------------------------
 
-    def run(self, **context: Any) -> dict[str, Any]:
+    def run(self, *, lineage: OpenLineage | None = None, **context: Any) -> dict[str, Any]:
         """The reference executor: tasks in order, each result kept by name.
 
         Each task receives the accumulated results as keyword context, so a
         later task can use an earlier one's output without an orchestrator.
+
+        `lineage`, when given, wraps the whole run in one OpenLineage job:
+        a START event before the first task, COMPLETE after the last, FAIL
+        (carrying the error) if a task raises -- consumed/produced datasets
+        are `consumed_records`/`produced_records`, the same lineage the dag
+        already declares everywhere else.
         """
+        run = (
+            lineage.start_run(
+                self.name, consumes=self.consumed_records(), produces=self.produced_records()
+            )
+            if lineage is not None
+            else None
+        )
         results: dict[str, Any] = {}
-        for task in self.tasks:
-            logger.info("dag %s: task %s: run", self.name, task.name)
-            results[task.name] = task.run(**{**context, **results})
+        try:
+            for task in self.tasks:
+                logger.info("dag %s: task %s: run", self.name, task.name)
+                results[task.name] = task.run(**{**context, **results})
+        except Exception as error:
+            if run is not None:
+                run.fail(error)
+            raise
+        if run is not None:
+            run.complete()
         logger.info("dag %s: %d task(s) done", self.name, len(self.tasks))
         return results
 

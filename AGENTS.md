@@ -55,8 +55,8 @@ tables, lineage. Rules:
   record class, identity included (schema metadata carries `name` and
   `namespace`).
 - A format nobody needs is an extra (`yaml`, `toml`, `jinja`, `fast`,
-  `local`, `airflow`); import optional deps at the point of use via
-  `require`, never at module top.
+  `local`, `airflow`, `openlineage`); import optional deps at the point of
+  use via `require`, never at module top.
 
 ## 5. Dataclasses hold state, `__post_init__` normalises it
 
@@ -134,9 +134,13 @@ rekep/
 │                  arrow_transform; Flow -> Dag -> Airflow via into_*
 ├── iceberg/       Iceberg stack: Catalogs/Namespaces/Tables CRUD (pyiceberg)
 ├── doris/         Doris stack: same resources, SQL plan + pluggable executor
-└── airflow/       DAG authoring with record lineage (POSIX-only);
-                   service.py: Dags resource deploying generated DAG
-                   modules (renders strings, never imports Airflow)
+├── airflow/       DAG authoring with record lineage (POSIX-only);
+│                  service.py: Dags resource deploying generated DAG
+│                  modules (renders strings, never imports Airflow)
+└── openlineage/   OpenLineage run events over the file transport (no
+                   Marquez/HTTP backend); datasets/facets derived from a
+                   record's Arrow schema and docstring, same as lineage.py's
+                   Airflow assets; `Dag.run(lineage=...)` is the one caller
 ```
 
 Dependencies point one way: services → models → records → convert. A new
@@ -145,7 +149,8 @@ folder.
 
 **Deploy artifacts** live under repo `stacks/`, all tracked — only runtime
 state is ignored (`stacks/iceberg/catalog.db`, `stacks/iceberg/warehouse/`,
-generated `stacks/ddl/`), and the tutorial builds in gitignored `tutorial/`.
+`stacks/openlineage/`, generated `stacks/ddl/`), and the tutorial builds in
+gitignored `tutorial/`.
 The layout: `flows/` (one movement per
 file), `iceberg/` and `doris/` (folder registries: `catalogs/`,
 `namespaces/`, `tables/`, file stem defaults `name`; table files embed the

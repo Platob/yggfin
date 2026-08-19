@@ -221,3 +221,4 @@ stacks/ddl/
 tutorial/
 stacks/iceberg/catalog.db
 stacks/iceberg/warehouse/
+stacks/openlineage/

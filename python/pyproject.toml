@@ -24,7 +24,9 @@ fast = ["xxhash>=3.4"]
 # The fully local Iceberg catalog: SQLite-backed, no services.
 local = ["pyiceberg[sql-sqlite]>=0.7"]
 jinja = ["jinja2>=3.1"]
-all = ["rekep[airflow,fast,jinja,local,toml,yaml]"]
+# OpenLineage run events over the file transport: no Marquez/HTTP backend needed.
+openlineage = ["openlineage-python>=1.0"]
+all = ["rekep[airflow,fast,jinja,local,openlineage,toml,yaml]"]
 
 [project.urls]
 Homepage = "https://platob.github.io/yggfin/"
@@ -41,7 +43,7 @@ rekep = "rekep.cli:main"
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
-    "rekep[fast,jinja,local,toml,yaml]",
+    "rekep[fast,jinja,local,openlineage,toml,yaml]",
 ]
 docs = [
     "mkdocs-material>=9.5",
