@@ -118,8 +118,14 @@ identical results:
 | scenario | planned merge | `Table.upsert` |
 | --- | --- | --- |
 | every key new | 0.09 s | 2.47 s (28×) |
-| every key already stored | 0.20 s | 9.83 s (48×) |
-| half and half | 0.20 s | 8.12 s (42×) |
+| every key stored, values unchanged | 0.20 s | 9.83 s (48×) |
+| half new, half unchanged | 0.20 s | 8.12 s (42×) |
+
+Those are the streaming shapes: new data, and replays of data that has not
+changed. A merge where most rows genuinely *change* is a different story —
+about 2× — because the delete half still carries pyiceberg's exact per-row
+filter, which it must: a range there would delete rows the chunk never touched.
+Finding the rows is what got fast; rewriting them costs what it costs.
 
 [How the merge is planned](iceberg.md#how-a-merge-is-planned) explains why. The
 two paths are compared row by row in `tests/iceberg/test_coherence.py`; set

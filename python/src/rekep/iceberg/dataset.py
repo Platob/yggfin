@@ -378,8 +378,16 @@ class IcebergDataset(Dataset):
         The algorithm is pyiceberg's own -- find the stored rows a chunk
         matches, overwrite the ones whose non-key columns changed, append the
         rest -- and its own helpers do the row-level work, so the result is the
-        one `Table.upsert` would produce. What changes is **how the matching
-        rows are found**.
+        one `Table.upsert` would produce, down to the schema check it makes
+        first. What changes is **how the matching rows are found**.
+
+        Two refusals are deliberately stricter than the library's, because both
+        of the alternatives are a corrupted table: a stored table with
+        duplicate merge keys is refused wherever the copies are (pyiceberg
+        checks one record batch at a time, so copies in two files slip past it
+        and it writes a third), and a null merge key is refused outright (no
+        predicate can find the row it would match, so it would be inserted
+        again).
 
         `Table.upsert` builds its scan filter as one equality term per incoming
         row (`Or(And(k1 = .., k2 = ..), ...)` for a composite key), then binds
@@ -387,6 +395,14 @@ class IcebergDataset(Dataset):
         insert. Both are quadratic in the chunk: measured on a two-column key,
         500 rows upsert at ~700 rows/s and 4,000 rows at ~440, and it gets
         worse from there (`benchmarks/bench_iceberg.py`).
+
+        **Where the win is**: on the insert-dominated stream this exists for --
+        new keys, or a replay of rows that have not changed -- the difference
+        is orders of magnitude, because the scan prunes to nothing and no
+        overwrite happens. When most rows genuinely *change*, the delete half
+        still carries pyiceberg's exact per-row filter (it has to: a range
+        would delete rows the chunk never touched), and the win is closer to
+        2x.
 
         Here the scan is filtered by the chunk's **key ranges** -- two terms per
         key column, whatever the chunk's size -- which every matching row
@@ -399,17 +415,29 @@ class IcebergDataset(Dataset):
         Only the full upsert (update matched, insert unmatched) is implemented;
         for the other three combinations call `iceberg_table.upsert` directly.
         """
+        from pyiceberg.io.pyarrow import _check_pyarrow_schema_compatible
         from pyiceberg.table import upsert_util
 
         join = self.merge_columns(merge_by)
         if not join:
             raise ValueError("merge_arrow_table needs columns to merge on")
+        if chunk.num_rows == 0:
+            # Nothing to match: planning a scan for it would read the table to
+            # discover that, and `_key_ranges` has no bounds to build from.
+            return 0, 0
         if upsert_util.has_duplicate_rows(chunk, join):
             raise ValueError(
                 "Duplicate rows found in source dataset based on the key columns. "
                 "No upsert executed"
             )
         table = self.get_or_create_table()
+        # The same check `Table.upsert` makes, and for the same reason: a chunk
+        # that is missing a column, or carries one at another precision, would
+        # otherwise be written as nulls or silently downcast. Making it here
+        # keeps the two paths interchangeable.
+        _check_pyarrow_schema_compatible(
+            table.schema(), provided_schema=chunk.schema, format_version=table.format_version
+        )
         # The chunk's own shape is the one everything is brought onto: an Arrow
         # join refuses to match a `string` key against the `large_string` a scan
         # hands back, and converting what was *read* costs less than converting
@@ -431,7 +459,7 @@ class IcebergDataset(Dataset):
         # the ones the chunk actually references before anything looks at them.
         # Without this, a duplicate key stored anywhere inside the chunk's key
         # range aborts a merge that has nothing to do with it.
-        matched = matched.join(chunk.select(list(join)), keys=list(join), join_type="left semi")
+        matched = _semi_join(matched, chunk, join)
 
         # An Arrow join hands back nullable columns whatever it was given, and
         # pyiceberg checks a write against the table's own requiredness -- so
@@ -843,6 +871,14 @@ def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
     terms = []
     for column in join:
         values = chunk.column(column)
+        if values.null_count:
+            # A null never equals anything in Iceberg, so no predicate can find
+            # the stored row a null key would match -- the merge would insert a
+            # second one. pyiceberg refuses a null literal too, one row later.
+            raise ValueError(
+                f"column {column!r} is a merge key and cannot be null; "
+                "a null key matches nothing, so merging on it would duplicate rows"
+            )
         distinct = pyarrow.compute.unique(values.combine_chunks())
         if len(distinct) == 0:
             continue
@@ -859,10 +895,50 @@ def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
     return And(*terms) if len(terms) > 1 else terms[0]
 
 
-#: Marker columns the join below carries; named like pyiceberg's so a table
-#: that already has one is refused there rather than corrupted here.
+#: Marker columns the joins below carry; named like pyiceberg's so a table that
+#: already has one is refused there rather than corrupted here.
 SOURCE_INDEX = "__source_index"
 TARGET_INDEX = "__target_index"
+
+
+def _keys_of(table: pyarrow.Table, join: Sequence[str], marker: str) -> pyarrow.Table:
+    """Just the key columns, numbered, and normalised for Arrow's equality.
+
+    Two reasons the joins never see the whole table. **Arrow refuses nested
+    columns as join payload**, so a struct, list or map anywhere in the row
+    would make a merge crash rather than fall back; carrying only the keys and
+    an index, then taking the rows back by that index, keeps every column type
+    out of Acero's way.
+
+    And Arrow's equality is not Iceberg's on one point: `-0.0` and `0.0` are
+    the same number to IEEE 754 and to Python, and pyiceberg compares them as
+    equal -- but they hash apart in a join, which would insert a duplicate key.
+    Normalising the sign of zero on float key columns keeps the two agreeing.
+    The *values written* are never touched: this table is only the join.
+    """
+    columns = []
+    for name in join:
+        column = table.column(name).combine_chunks()
+        if pyarrow.types.is_floating(column.type):
+            zero = pyarrow.scalar(0.0, column.type)
+            column = pyarrow.compute.if_else(pyarrow.compute.equal(column, zero), zero, column)
+        columns.append(column)
+    keys = pyarrow.Table.from_arrays(columns, names=list(join))
+    from rekep.fields import arrays
+
+    return keys.append_column(marker, arrays.sequence(table.num_rows))
+
+
+def _semi_join(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """The rows of `matched` whose key the chunk references."""
+    if matched.num_rows == 0:
+        return matched
+    kept = _keys_of(matched, join, TARGET_INDEX).join(
+        _keys_of(chunk, join, SOURCE_INDEX).select(list(join)),
+        keys=list(join),
+        join_type="left semi",
+    )
+    return matched.take(kept.column(TARGET_INDEX))
 
 
 def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
@@ -891,8 +967,8 @@ def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) 
         raise ValueError("Target table has duplicate rows, aborting upsert")
 
     keys = list(join)
-    source = chunk.select(keys).append_column(SOURCE_INDEX, _positions(len(chunk)))
-    target = matched.select(keys).append_column(TARGET_INDEX, _positions(len(matched)))
+    source = _keys_of(chunk, keys, SOURCE_INDEX)
+    target = _keys_of(matched, keys, TARGET_INDEX)
     pairs = source.join(target, keys=keys, join_type="inner")
     if pairs.num_rows == 0:
         return chunk.schema.empty_table()
@@ -909,13 +985,6 @@ def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) 
         only_one_null = compute.xor(compute.is_null(one), compute.is_null(other))
         differs = compute.or_(differs, compute.or_(unequal, only_one_null))
     return chunk.take(compute.filter(pairs.column(SOURCE_INDEX), differs))
-
-
-def _positions(length: int) -> pyarrow.Array:
-    """`0 .. length - 1`, for marking which row came from where."""
-    from rekep.fields import arrays
-
-    return arrays.sequence(length)
 
 
 def _uncomparable(arrow_type: pyarrow.DataType) -> bool:
@@ -935,14 +1004,18 @@ def _uncomparable(arrow_type: pyarrow.DataType) -> bool:
 def _unmatched(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
     """The rows of `chunk` no row of `matched` shares a key with.
 
-    One Arrow anti-join, rather than binding a per-row equality expression and
-    filtering with it once per batch, which is what makes the insert half of an
-    upsert linear instead of quadratic.
+    One Arrow anti-join over the keys alone, rather than binding a per-row
+    equality expression and filtering with it once per batch, which is what
+    makes the insert half of a merge linear instead of quadratic.
     """
     if matched.num_rows == 0:
         return chunk
-    keys = matched.select(list(join))
-    return chunk.join(keys, keys=list(join), join_type="left anti").select(chunk.column_names)
+    fresh = _keys_of(chunk, join, SOURCE_INDEX).join(
+        _keys_of(matched, join, TARGET_INDEX).select(list(join)),
+        keys=list(join),
+        join_type="left anti",
+    )
+    return chunk.take(fresh.column(SOURCE_INDEX))
 
 
 def _always_true() -> Any:

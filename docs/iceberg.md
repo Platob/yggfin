@@ -216,22 +216,38 @@ goes.
     | scenario (4,000-row chunk, 20k-row table) | planned | pyiceberg |
     | --- | --- | --- |
     | every key new | 0.09 s | 2.47 s (28×) |
-    | every key already stored | 0.20 s | 9.83 s (48×) |
-    | half and half | 0.20 s | 8.12 s (42×) |
+    | every key stored, values unchanged | 0.20 s | 9.83 s (48×) |
+    | half new, half unchanged | 0.20 s | 8.12 s (42×) |
 
     A chunk of entirely new keys prunes to **zero files** and becomes a plain
     append, which is what a log ingest hits every time.
+
+    When most rows genuinely *change*, the win is closer to 2×: the delete half
+    still carries pyiceberg's exact per-row filter, because a range there would
+    delete rows the chunk never touched. Finding the rows is what got fast;
+    rewriting them costs what it costs.
 
 === "Coherence"
 
     Same rows, same values, same snapshots: `tests/iceberg/test_coherence.py`
     runs every scenario twice on identical tables — once through this package,
-    once through `Table.upsert` — and compares the contents. Set
-    `plan_merges=False` to use the library's own path.
+    once through `Table.upsert` — and compares the contents, including the
+    edges Arrow and Iceberg disagree about (a `-0.0` key against a stored
+    `0.0`, nulls on one side of a comparison, a map column no join may carry).
+    Set `plan_merges=False` to use the library's own path.
 
     ```python
     quotes.plan_merges = False      # hand the whole chunk to Table.upsert
     ```
+
+    Two refusals are deliberately **stricter** than the library's, because both
+    alternatives corrupt the table:
+
+    - a stored table with duplicate merge keys is refused wherever the copies
+      are (pyiceberg checks one record batch at a time, so copies in two files
+      slip past it and it writes a third);
+    - a null merge key is refused outright — no predicate can find the row it
+      would match, so merging it would insert a second one.
 
 !!! tip "One key column merges faster than two"
 

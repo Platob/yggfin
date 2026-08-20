@@ -451,3 +451,110 @@ def test_an_update_past_the_in_limit_still_prunes(tmp_path: Path) -> None:
     assert dataset.scan_plan(exact)["skipped"] == 0, "the exact filter alone cannot prune"
     narrowed = And(exact, _key_ranges(updates, ["seq"]))
     assert dataset.scan_plan(narrowed)["skipped"] > 0, "the ranges are what prune it"
+
+
+# -- what Arrow and Iceberg disagree about ----------------------------------
+
+
+@field
+class Nested(Convertible):
+    """A row with a column Arrow cannot compare."""
+
+    key: Annotated[str, Field.primary_key()]
+    """Identity."""
+
+    size: int
+    """Quantity."""
+
+    book: dict[str, int] | None = None
+    """A map: no equality kernel, and no join may carry it."""
+
+
+def nested_rows(keys: range, size: int) -> pyarrow.Table:
+    return pyarrow.Table.from_pydict(
+        {
+            "key": [f"K{i}" for i in keys],
+            "size": [size] * len(keys),
+            "book": [[("bid", 1)] for _ in keys],
+        },
+        schema=Nested.FIELD.into_arrow_schema(),
+    )
+
+
+def nested_pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
+    built = []
+    for name in ("nested-ours", "nested-theirs"):
+        catalog = IcebergCatalog(name=name, properties=properties(tmp_path, name))
+        dataset = catalog.dataset("trading.nested", struct=Nested.FIELD)
+        dataset.create_with()
+        built.append(dataset)
+    built[1].plan_merges = False
+    return built[0], built[1]
+
+
+def test_a_nested_column_does_not_stop_a_merge(tmp_path: Path) -> None:
+    """Arrow refuses a map as join payload, so no join may carry one."""
+    ours, theirs = nested_pair(tmp_path)
+    for dataset in (ours, theirs):
+        dataset.write_arrow(nested_rows(range(4), 1), commit_row_size=0)
+        dataset.write_arrow(nested_rows(range(2, 6), 9), merge_by=True, commit_row_size=0)
+    assert ours.read_arrow_table().num_rows == 6
+    assert sorted(ours.read_arrow_table().column("size").to_pylist()) == sorted(
+        theirs.read_arrow_table().column("size").to_pylist()
+    )
+
+
+def test_a_signed_zero_key_matches_the_zero_it_equals(tmp_path: Path) -> None:
+    """`-0.0 == 0.0` in Python and in Iceberg; they hash apart in Arrow."""
+
+    @field
+    class Level(Convertible):
+        """A price level."""
+
+        price: float
+        """The key, deliberately a float."""
+
+        size: int
+        """Quantity."""
+
+    stored = pyarrow.Table.from_pydict(
+        {"price": [0.0], "size": [1]}, schema=Level.FIELD.into_arrow_schema()
+    )
+    incoming = pyarrow.Table.from_pydict(
+        {"price": [-0.0], "size": [2]}, schema=Level.FIELD.into_arrow_schema()
+    )
+    catalog = IcebergCatalog(name="zero", properties=properties(tmp_path, "zero"))
+    dataset = catalog.dataset("trading.levels", struct=Level.FIELD)
+    dataset.write_arrow(stored, commit_row_size=0)
+    dataset.write_arrow(incoming, merge_by=["price"], commit_row_size=0)
+    assert dataset.refresh().read_arrow_table().num_rows == 1, "one price, not two"
+
+
+def test_a_null_merge_key_is_refused(stored) -> None:
+    """No predicate finds the row it would match, so merging it duplicates it."""
+    rows = pyarrow.Table.from_pydict(
+        {
+            "symbol": pyarrow.array([None], pyarrow.string()),
+            "day": [DAY],
+            "seq": [1],
+            "size": [1],
+            "venue": ["XPAR"],
+        },
+        schema=Quote.FIELD.into_arrow_schema(),
+    )
+    with pytest.raises(ValueError, match="cannot be null"):
+        stored.merge_arrow_table(rows, True)
+
+
+def test_an_empty_chunk_reads_nothing(stored) -> None:
+    empty = Quote.FIELD.into_arrow_schema().empty_table()
+    assert stored.merge_arrow_table(empty, True) == (0, 0)
+
+
+def test_a_chunk_the_table_would_refuse_is_refused_the_same_way(stored) -> None:
+    """Whatever `Table.upsert`'s schema check rejects, this rejects too."""
+    wrong = pyarrow.Table.from_pydict(
+        {"symbol": ["A"], "day": [DAY], "seq": [1], "size": ["not a number"], "venue": ["X"]}
+    )
+    with pytest.raises(ValueError, match="[Mm]ismatch|not compatible|type"):
+        stored.merge_arrow_table(wrong, True)
