@@ -558,3 +558,52 @@ def test_a_chunk_the_table_would_refuse_is_refused_the_same_way(stored) -> None:
     )
     with pytest.raises(ValueError, match="[Mm]ismatch|not compatible|type"):
         stored.merge_arrow_table(wrong, True)
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["uuid", "int32-key", "naive-vs-zoned", "struct", "dictionary"],
+)
+def test_the_comparison_agrees_or_hands_back(case: str) -> None:
+    """Every type Arrow cannot compare is pyiceberg's problem, not a crash."""
+    import datetime as dt
+    import uuid as uuidlib
+
+    from pyiceberg.table import upsert_util
+
+    from rekep.iceberg.dataset import _changed
+
+    if case == "uuid":
+        ids = pyarrow.array(
+            [uuidlib.uuid4().bytes, uuidlib.uuid4().bytes], pyarrow.binary(16)
+        ).cast(pyarrow.uuid())
+        source = pyarrow.table({"k": [1, 2], "id": ids})
+        target = pyarrow.table({"k": [1, 2], "id": ids})
+    elif case == "int32-key":
+        source = pyarrow.table({"k": pyarrow.array([1, 2], pyarrow.int32()), "v": [1, 2]})
+        target = pyarrow.table({"k": pyarrow.array([1, 2], pyarrow.int64()), "v": [1, 9]})
+    elif case == "naive-vs-zoned":
+        source = pyarrow.table(
+            {"k": [1], "t": pyarrow.array([dt.datetime(2026, 8, 14)], pyarrow.timestamp("us"))}  # noqa: DTZ001
+        )
+        target = pyarrow.table(
+            {
+                "k": [1],
+                "t": pyarrow.array(
+                    [dt.datetime(2026, 8, 14, tzinfo=dt.UTC)], pyarrow.timestamp("us", tz="UTC")
+                ),
+            }
+        )
+    elif case == "struct":
+        book = pyarrow.array([{"bid": 1.0}], pyarrow.struct([("bid", pyarrow.float64())]))
+        source = pyarrow.table({"k": [1], "book": book})
+        target = pyarrow.table({"k": [1], "book": book})
+    else:
+        words = pyarrow.array(["a", "b"]).dictionary_encode()
+        source = pyarrow.table({"k": [1, 2], "w": words})
+        target = pyarrow.table({"k": [1, 2], "w": words})
+
+    ours = _changed(source, target, ["k"])
+    theirs = upsert_util.get_rows_to_update(source, target, ["k"])
+    assert ours.num_rows == theirs.num_rows
+    assert ours.sort_by("k").to_pylist() == theirs.sort_by("k").to_pylist()

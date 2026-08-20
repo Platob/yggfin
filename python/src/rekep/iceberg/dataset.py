@@ -929,6 +929,19 @@ def _keys_of(table: pyarrow.Table, join: Sequence[str], marker: str) -> pyarrow.
     return keys.append_column(marker, arrays.sequence(table.num_rows))
 
 
+def _align_keys(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """`matched` with its key columns at the chunk's types, so a join can run."""
+    for name in join:
+        wanted = chunk.schema.field(name).type
+        if matched.schema.field(name).type == wanted:
+            continue
+        index = matched.schema.get_field_index(name)
+        matched = matched.set_column(
+            index, matched.schema.field(index).with_type(wanted), matched.column(name).cast(wanted)
+        )
+    return matched
+
+
 def _semi_join(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
     """The rows of `matched` whose key the chunk references."""
     if matched.num_rows == 0:
@@ -952,24 +965,44 @@ def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) 
     column, so a million matched rows cost a handful of vectorised passes.
 
     Null semantics are theirs: two nulls are equal, a null and a value are not.
-    A column Arrow cannot compare (a struct, a list, a map) has no kernel to do
-    this with, so the whole comparison falls back to pyiceberg's own function
-    rather than guessing.
+
+    Whatever Arrow cannot do here, pyiceberg's own function does instead. That
+    is not only the obvious cases -- a struct, a list, a map have no equality
+    kernel -- but every one that cannot be enumerated in advance: an extension
+    type such as Iceberg's uuid, two tables carrying the same column at
+    different types, a naive timestamp against a zoned one. Rather than guess
+    which kernels exist, the fast path is *attempted*, and any Arrow refusal
+    hands the whole comparison back to the library.
     """
     from pyiceberg.table import upsert_util
 
     compare = [name for name in chunk.column_names if name not in set(join)]
     if not compare or len(matched) == 0 or len(chunk) == 0:
         return upsert_util.get_rows_to_update(chunk, matched, join)
-    if any(_uncomparable(chunk.schema.field(name).type) for name in compare):
+    try:
+        # Only the *keys* are aligned, because only the join needs them to be.
+        # Leaving the compared columns as they came is what makes a pair Arrow
+        # refuses -- a naive timestamp against a zoned one -- fall back to the
+        # library instead of being quietly cast into agreement.
+        matched = _align_keys(matched, chunk, join)
+    except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, pyarrow.ArrowTypeError):
         return upsert_util.get_rows_to_update(chunk, matched, join)
     if upsert_util.has_duplicate_rows(matched, join):
         raise ValueError("Target table has duplicate rows, aborting upsert")
+    try:
+        return _changed_by_kernel(chunk, matched, join, compare)
+    except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, pyarrow.ArrowTypeError):
+        return upsert_util.get_rows_to_update(chunk, matched, join)
 
+
+def _changed_by_kernel(
+    chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str], compare: Sequence[str]
+) -> pyarrow.Table:
+    """`_changed`'s fast path: one pass per column instead of one pass per row."""
     keys = list(join)
-    source = _keys_of(chunk, keys, SOURCE_INDEX)
-    target = _keys_of(matched, keys, TARGET_INDEX)
-    pairs = source.join(target, keys=keys, join_type="inner")
+    pairs = _keys_of(chunk, keys, SOURCE_INDEX).join(
+        _keys_of(matched, keys, TARGET_INDEX), keys=keys, join_type="inner"
+    )
     if pairs.num_rows == 0:
         return chunk.schema.empty_table()
 
@@ -985,20 +1018,6 @@ def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) 
         only_one_null = compute.xor(compute.is_null(one), compute.is_null(other))
         differs = compute.or_(differs, compute.or_(unequal, only_one_null))
     return chunk.take(compute.filter(pairs.column(SOURCE_INDEX), differs))
-
-
-def _uncomparable(arrow_type: pyarrow.DataType) -> bool:
-    """Whether Arrow has no equality kernel for this type."""
-    kinds = pyarrow.types
-    return bool(
-        kinds.is_struct(arrow_type)
-        or kinds.is_map(arrow_type)
-        or kinds.is_list(arrow_type)
-        or kinds.is_large_list(arrow_type)
-        or kinds.is_fixed_size_list(arrow_type)
-        or kinds.is_list_view(arrow_type)
-        or kinds.is_large_list_view(arrow_type)
-    )
 
 
 def _unmatched(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
