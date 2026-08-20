@@ -1,4 +1,8 @@
-"""Whole-definition dumps: the class-level serialisers, nesting included."""
+"""Whole-definition dumps: the class-level serialisers, nesting included.
+
+This is the view a dataset side file carries verbatim (`Dataset.fields`), so
+what nests correctly here is what a reviewer reads there.
+"""
 
 import datetime
 import json
@@ -125,12 +129,19 @@ def test_descriptions_reach_every_level(dumped: dict) -> None:
     assert fields["venues"]["description"] == "Where the book trades."
 
 
-# -- the shipped product files ----------------------------------------------
+# -- the shipped dataset files ----------------------------------------------
 
 
-def test_the_shipped_product_file_matches_the_class() -> None:
-    """stacks/product must be regenerated when the model changes."""
+def test_the_shipped_dataset_file_carries_the_records_schema() -> None:
+    """A data product is described in one place: its dataset side file.
+
+    `stacks/datasets/log.yaml` must be regenerated (`rekep dataset sync`)
+    when the model changes -- which is what this fails for.
+    """
     import pathlib
 
-    shipped = pathlib.Path(__file__).parents[3] / "stacks" / "product" / "log.yaml"
-    assert yaml.safe_load(shipped.read_bytes()) == yaml.safe_load(Log.into_yaml())
+    shipped = pathlib.Path(__file__).parents[3] / "stacks" / "datasets" / "log.yaml"
+    declared = yaml.safe_load(shipped.read_bytes())
+    described = yaml.safe_load(Log.into_yaml())
+    assert declared["description"] == described["description"]
+    assert declared["fields"] == described["fields"]

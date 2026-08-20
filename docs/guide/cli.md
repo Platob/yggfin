@@ -7,9 +7,8 @@ capability is a new service class, not a flag on an old command.
 ```console
 $ rekep --help
     ddl                 DDL from record declarations
-    product             record declarations as files
     docs                generated documentation pages
-    records             deploy a record class to the stacks
+    records             record classes: dump and deploy
     dataset             datasets deployed into iceberg or doris
     dag                 declared dags: list, show, run
     iceberg             iceberg deployment stack
@@ -67,6 +66,26 @@ DATA_BUCKET=s3://lake rekep ddl dump \
 Undefined variables fail loudly — a half-rendered config is worse than a loud
 one. Templating needs the `jinja` extra; untemplated values never touch it.
 
+## Dump a record's declaration
+
+```console
+$ rekep records dump --pyclass rekep.models.Log
+name: Log
+description: One parsed line of a trading log.
+fields:
+- name: url
+  type: string
+  description: Path of the log the line came from, as its filesystem addresses it.
+  iceberg:
+    field_id: 1
+...
+```
+
+Stdout by default, `--format yaml|json|toml`, `--out <dir>` to write a file.
+There is no shipped folder for these: a data product's declaration belongs in
+its **dataset side file**, which `rekep dataset sync` writes (below). This is
+the same view for a class nobody has declared a dataset for yet.
+
 ## Deploy one record
 
 The stacks converge whole folders (`catalogs/`, `namespaces/`); `records
@@ -99,6 +118,27 @@ namespace must resolve against (default `stacks/<target>`); `into_iceberg_table(
 `into_doris_table()` build the ad hoc table, `--dry-run` plans without
 converging.
 
+## Sync datasets
+
+A dataset side file is the *whole* description of a data product: the
+declaration (`schema`, `uri`, `protocols`) and the schema that declaration
+resolves to. `sync` writes the second half from the record:
+
+```console
+$ rekep dataset sync
+stacks/datasets/log.yaml
+skipped stacks/datasets/parsed_messages.yaml (templated)
+
+$ rekep dataset sync --dry-run     # exits 1 when a file lags its record
+would rewrite stacks/datasets/log.yaml
+```
+
+Same contract as `rekep iceberg sync`: rewrite in full, skip a file
+containing Jinja (rewriting it would resolve the template against *this*
+machine and bake the answer in), and `--dry-run` exits 1 on drift so CI
+catches a model change that never reached its side file. A file that drifted
+is also refused the moment the dataset is projected onto a protocol.
+
 ## Optimize datasets
 
 Compaction and snapshot retention, idempotent like every other verb — a
@@ -116,8 +156,8 @@ policy, so a scheduler runs the bare command. See
 
 ```console
 $ rekep dataset optimize --dry-run
-ds:/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
-ds:/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
+rekep:/datasets/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
+rekep:/datasets/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
 ```
 
 ## Dags: list, show, run
@@ -127,15 +167,15 @@ need no orchestrator installed:
 
 ```console
 $ rekep dag list
-dag:/passthrough  schedule=@daily  passthrough
-dag:/pipeline/trading_logs  schedule=@daily  files_to_logs -> logs_to_records
+rekep:/dags/passthrough  schedule=@daily  passthrough
+rekep:/dags/pipeline/trading_logs  schedule=@daily  files_to_logs -> logs_to_records
 
-$ rekep dag show --uri dag:/pipeline/trading_logs
-dag:/pipeline/trading_logs  schedule=@daily
-  trading_logs.files_to_logs  uri=job:/pipeline/files_to_logs  after=-
-  trading_logs.logs_to_records  uri=job:/pipeline/logs_to_records  after=files_to_logs
+$ rekep dag show --uri rekep:/dags/pipeline/trading_logs
+rekep:/dags/pipeline/trading_logs  schedule=@daily
+  trading_logs.files_to_logs  uri=rekep:/jobs/pipeline/files_to_logs  after=-
+  trading_logs.logs_to_records  uri=rekep:/jobs/pipeline/logs_to_records  after=files_to_logs
 
-$ rekep dag run --uri dag:/pipeline/trading_logs
+$ rekep dag run --uri rekep:/dags/pipeline/trading_logs
 trading_logs.files_to_logs: 24
 trading_logs.logs_to_records: 24
 ```
@@ -152,8 +192,8 @@ $ rekep airflow deploy --config stacks/dags --dags-folder /opt/airflow/dags
 converged dags: passthrough.py, trading_logs.py
 
 $ rekep airflow dags list
-passthrough.py  dag:/passthrough  1 task(s)
-trading_logs.py  dag:/pipeline/trading_logs  2 task(s)
+passthrough.py  rekep:/dags/passthrough  1 task(s)
+trading_logs.py  rekep:/dags/pipeline/trading_logs  2 task(s)
 ```
 
 One generated module per side file, idempotent like every other verb: the

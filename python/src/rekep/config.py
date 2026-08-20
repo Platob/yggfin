@@ -10,8 +10,8 @@ prefers an explicit argument, then the repository's, then the user's -- so a
 checkout keeps working unchanged and a bare `pip install rekep` still has
 somewhere to put things.
 
-**A registry.** Resolving a `ds:/...` reference should not mean re-reading a
-directory, and two modules asking for the same dataset should get the same
+**A registry.** Resolving a `rekep:/datasets/...` reference should not mean
+re-reading a directory, and two modules asking for the same dataset should get the same
 object. `REGISTRY` is that: process-wide, keyed by URI, filled as resources
 load. It is deliberately a plain dict behind three functions rather than a
 class with state -- there is exactly one of these per process, and a class
@@ -23,6 +23,8 @@ from __future__ import annotations
 import os
 import pathlib
 from typing import Any
+
+from rekep.namespace import SCHEME
 
 #: Root of the user's own configuration: `$REKEP_CONFIG_HOME`, else
 #: XDG's `$XDG_CONFIG_HOME/rekep`, else `~/.config/rekep`.
@@ -72,9 +74,9 @@ def register(resource: Any) -> Any:
 def lookup(uri: str, service: str | None = None) -> Any | None:
     """The registered resource `uri` names, or None.
 
-    Any spelling of the URI finds it -- `ds:/a/b`, `rekep:/datasets/a/b` and
-    a bare `a/b` with `service="datasets"` are one identity, so they resolve
-    to one entry rather than three misses.
+    Every way of writing the identity finds it -- `rekep:/datasets/a/b`,
+    `/datasets/a/b`, and a bare `a/b` with `service="datasets"` are one
+    resource, so they resolve to one entry rather than three misses.
     """
     from rekep.namespace import ResourceUri
 
@@ -82,16 +84,16 @@ def lookup(uri: str, service: str | None = None) -> Any | None:
 
 
 def registered(service: str | None = None) -> list[Any]:
-    """Everything loaded so far, optionally just one service's."""
-    from rekep.namespace import SERVICES
+    """Everything loaded so far, optionally just one service's.
 
+    The key is the whole URI, so the service is simply its first path part --
+    no second index to keep in step with the first, and nothing to normalise:
+    every key was written by one formatter.
+    """
     if service is None:
         return list(REGISTRY.values())
-    return [
-        resource
-        for uri, resource in REGISTRY.items()
-        if SERVICES.get(uri.split(":", 1)[0]) == service
-    ]
+    prefix = f"{SCHEME}:/{service}/"
+    return [resource for uri, resource in REGISTRY.items() if uri.startswith(prefix)]
 
 
 def clear() -> None:

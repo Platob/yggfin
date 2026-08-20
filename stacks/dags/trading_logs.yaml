@@ -14,15 +14,15 @@
 #
 # The identity follows the branch, like the tasks it runs: a branch iterating
 # on the parser gets its own dag rather than fighting trunk's for the name.
-uri: "dag:/pipeline{{ git_branch_suffix }}/trading_logs{{ git_branch_suffix }}"
+uri: "rekep:/dags/pipeline{{ git_branch_suffix }}/trading_logs{{ git_branch_suffix }}"
 description: Parse raw trading logs, then structure their messages.
 schedule: "@daily"
 tags:
   domain: pipeline
   owner: data-eng
 tasks:
-  - job:/pipeline/files_to_logs
-  - "job:/pipeline{{ git_branch_suffix }}/logs_to_records{{ git_branch_suffix }}"
+  - rekep:/jobs/pipeline/files_to_logs
+  - "rekep:/jobs/pipeline{{ git_branch_suffix }}/logs_to_records{{ git_branch_suffix }}"
 dependencies:
   "logs_to_records{{ git_branch_suffix }}":
     - files_to_logs

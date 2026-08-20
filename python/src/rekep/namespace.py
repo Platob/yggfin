@@ -10,18 +10,19 @@ that walks the chain -- so `Job` and `Dataset` build their identifiers from it
 instead of hand-joining strings.
 
 `ResourceUri` is the identity those levels add up to: a service, a path and
-an optional branch, spelled `ds:/catalog/namespace/name#branch`,
-`job:/namespace/name`, `dag:/namespace/name`, or generically
-`rekep:/datasets/catalog/namespace/name`. It is the one parser and the one
-formatter, so a resource written one way reads back the same however it was
-spelled.
+an optional branch, spelled `rekep:/<service>/<path>#branch` --
+`rekep:/datasets/catalog/namespace/name#dev`, `rekep:/jobs/namespace/name`.
+**One spelling, not a family of them**: it is the one parser and the one
+formatter, so a URI in a log line, a side file and the registry key is the
+same string rather than three that have to be normalised before they can be
+compared.
 
 **A resource that names itself names itself with a URI, and `uri:` never
 means anything else.** A dataset, a task and a dag each spell one
-(`uri: job:/pipeline/files_to_logs`); a stack's catalogs and namespaces are
-named by the registry folder and file stem they live in instead. Either way
-nothing else may take the word: an Iceberg catalog's connection string is
-`endpoint:`, not a second thing called `uri`.
+(`uri: rekep:/jobs/pipeline/files_to_logs`); a stack's catalogs and
+namespaces are named by the registry folder and file stem they live in
+instead. Either way nothing else may take the word: an Iceberg catalog's
+connection string is `endpoint:`, not a second thing called `uri`.
 """
 
 from __future__ import annotations
@@ -94,19 +95,16 @@ class Namespace(Record):
         return self.path()
 
 
-#: Short scheme -> the service it names. The service is also the first path
-#: part of the generic `rekep:` form, so one table describes both spellings.
-#: One entry per resource that names *itself*: a dataset, a task, a dag. A
-#: stack's catalogs and namespaces are not here -- their identity is the
-#: registry folder they sit in and the stem of their file, which is why they
-#: are addressed by name and not by URI.
-SERVICES = {"ds": "datasets", "job": "jobs", "dag": "dags"}
+#: Every service a URI may name: one entry per resource that names *itself*,
+#: a dataset, a task, a dag. A stack's catalogs and namespaces are not here --
+#: their identity is the registry folder they sit in and the stem of their
+#: file, which is why they are addressed by name and not by URI.
+SERVICES = ("datasets", "jobs", "dags")
 
-#: The reverse, for building.
-SCHEMES = {service: scheme for scheme, service in SERVICES.items()}
-
-#: The scheme that spells the service out instead of encoding it.
-GENERIC_SCHEME = "rekep"
+#: The one scheme. There is no short form: a `ds:`/`job:`/`dag:` shorthand
+#: would be a second spelling of the same identity, and every parser, every
+#: log line and every side file would then have to know both.
+SCHEME = "rekep"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -114,12 +112,11 @@ class ResourceUri:
     """One resource's identity: a service, a path, and optionally a branch.
 
     Every resource this package addresses -- a dataset, a task, a dag -- is
-    named the same way, and the spelling is a **path**, not a dotted string::
+    named the same way, in one spelling, and that spelling is a **path**::
 
-        ds:/warehouse/trading/orders#dev
-        job:/pipeline/logs_to_records
-        dag:/pipeline/trading_logs
         rekep:/datasets/warehouse/trading/orders#dev
+        rekep:/jobs/pipeline/logs_to_records
+        rekep:/dags/pipeline/trading_logs
 
     A path because that is what the thing is: a catalog contains namespaces,
     a namespace contains tables, and `/` is how every filesystem, URL and
@@ -127,10 +124,11 @@ class ResourceUri:
     ambiguity -- `a.b.c` might be three levels or a name with dots in it,
     and Iceberg namespaces are legitimately multi-level.
 
-    The two spellings are the same identity. `ds:`/`job:` are shorthands
-    that encode the service in the scheme; `rekep:` spells it as the first
-    path part, which is what makes the scheme *generic* -- a new service is
-    a new first path part, not a new scheme to teach every parser.
+    **The service is the first path part, never a scheme of its own.** That
+    is what makes `rekep:` generic: a new kind of resource is a new first
+    part, not a new scheme to teach every parser -- and one identity has one
+    spelling, so a URI in a log, a side file and a registry key are the same
+    string rather than three that have to be normalised before comparison.
 
     The fragment is a branch, because a branch is not a different resource:
     `orders#dev` and `orders` are one table read at two refs, exactly the
@@ -142,8 +140,7 @@ class ResourceUri:
     """
 
     service: str
-    """Which kind of resource: `datasets`, `jobs`, `dags` -- `SERVICES`'
-    values."""
+    """Which kind of resource: one of `SERVICES`."""
 
     levels: tuple[str, ...]
     """The path, root first: catalog, namespace, name -- as many as given."""
@@ -163,27 +160,26 @@ class ResourceUri:
 
     @classmethod
     def parse(cls, text: str, *, service: str | None = None) -> ResourceUri:
-        """Read any of the spellings above back into one identity.
+        """Read `rekep:/<service>/<path>#branch` back into one identity.
 
-        `service` is the fallback for a bare path (`trading/orders`), which
-        is what a side file naturally writes when its folder already says
-        what kind of resource it holds.
+        A schemeless path is accepted as well, because a reference made from
+        inside a service already knows which one it is in: `service=` names
+        it, and the path may still lead with the service itself. That is a
+        *fallback for an incomplete reference*, not a second spelling -- what
+        comes back out of `__str__` is always the full form.
         """
         split = urllib.parse.urlsplit(str(text).strip())
         levels = [part for part in (split.netloc, *split.path.split("/")) if part]
         scheme = split.scheme.lower()
-        if scheme in SERVICES:
-            found = SERVICES[scheme]
-        elif scheme in (GENERIC_SCHEME, ""):
-            found = levels.pop(0) if levels and levels[0] in SCHEMES else service
-        else:
+        if scheme not in (SCHEME, ""):
             raise ValueError(
-                f"{text!r}: unknown scheme {scheme!r}; use "
-                f"{', '.join(f'{s}:' for s in SERVICES)} or {GENERIC_SCHEME}:/<service>/<path>"
+                f"{text!r}: unknown scheme {scheme!r}; every resource is named "
+                f"{SCHEME}:/<service>/<path>, with the service one of {', '.join(SERVICES)}"
             )
+        found = levels.pop(0) if levels and levels[0] in SERVICES else service
         if not found:
             raise ValueError(
-                f"{text!r}: no service; name one with a scheme, a leading path part, or service="
+                f"{text!r}: no service; name one as the first path part or pass service="
             )
         return cls.of(found, *levels, branch=split.fragment or None)
 
@@ -202,7 +198,7 @@ class ResourceUri:
         return self.levels[-3] if len(self.levels) > 2 else None
 
     def path(self) -> str:
-        """The levels alone, `/`-joined, no scheme and no fragment."""
+        """The levels alone, `/`-joined, no scheme, service or fragment."""
         return "/".join(self.levels)
 
     def at(self, branch: str | None) -> ResourceUri:
@@ -216,12 +212,8 @@ class ResourceUri:
     # -- writing ----------------------------------------------------------
 
     def __str__(self) -> str:
-        """The short form: `ds:/catalog/namespace/name#branch`."""
-        return f"{SCHEMES[self.service]}:/{self.path()}{self._fragment()}"
-
-    def generic(self) -> str:
-        """The long form: `rekep:/datasets/catalog/namespace/name#branch`."""
-        return f"{GENERIC_SCHEME}:/{self.service}/{self.path()}{self._fragment()}"
+        """The whole identity: `rekep:/<service>/<path>#branch`."""
+        return f"{SCHEME}:/{self.service}/{self.path()}{self._fragment()}"
 
     def _fragment(self) -> str:
         return f"#{self.branch}" if self.branch else ""

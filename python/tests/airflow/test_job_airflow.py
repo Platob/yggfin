@@ -19,11 +19,11 @@ from rekep.job import Job  # noqa: E402
 
 
 def test_dag_and_task_kwargs_reach_the_built_dag() -> None:
-    config.register(Job(uri="job:/demo", airflow={"task": {"retries": 3}}))
+    config.register(Job(uri="rekep:/jobs/demo", airflow={"task": {"retries": 3}}))
     dag = Dag(
-        uri="dag:/demo",
+        uri="rekep:/dags/demo",
         schedule="@daily",
-        tasks=["job:/demo"],
+        tasks=["rekep:/jobs/demo"],
         tags={"stage": "reference"},
         airflow={"dag": {"max_active_runs": 1}},
     )

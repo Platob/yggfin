@@ -79,7 +79,7 @@ Trade.into_yaml()             # the declaration itself, reviewable YAML
 Or from the shell, for any record on the import path:
 
 ```bash
-rekep product dump --namespace models.Trade --out -
+rekep records dump --pyclass models.Trade
 rekep ddl dump --namespace models.Trade --dialect doris --out -
 ```
 

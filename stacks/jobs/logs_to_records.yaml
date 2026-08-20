@@ -3,7 +3,7 @@
 # each branch gets its own working copy of the structured output while it
 # iterates on the parser, unlike files_to_logs.yaml's stable one.
 job: rekep.jobs.LogsToRecords
-uri: "job:/pipeline{{ git_branch_suffix }}/logs_to_records{{ git_branch_suffix }}"
+uri: "rekep:/jobs/pipeline{{ git_branch_suffix }}/logs_to_records{{ git_branch_suffix }}"
 description: Structure Log.message into ParsedMessage (pipe key=value, FIX-shaped).
 schedule: "@daily"
 repo_url: https://github.com/Platob/yggfin

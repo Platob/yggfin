@@ -57,10 +57,11 @@ def test_round_trips_through_json() -> None:
 # -- ResourceUri ---------------------------------------------------------
 
 
-def test_a_dataset_uri_is_a_path_with_a_scheme() -> None:
+def test_a_uri_is_the_service_then_the_path() -> None:
+    """One spelling: the service is a path part, never a scheme of its own."""
     uri = ResourceUri.of("datasets", "warehouse", "trading", "orders")
-    assert str(uri) == "ds:/warehouse/trading/orders"
-    assert uri.generic() == "rekep:/datasets/warehouse/trading/orders"
+    assert str(uri) == "rekep:/datasets/warehouse/trading/orders"
+    assert uri.path() == "warehouse/trading/orders", "the path alone carries no service"
 
 
 def test_levels_are_read_right_to_left() -> None:
@@ -77,25 +78,33 @@ def test_levels_are_read_right_to_left() -> None:
 
 def test_a_branch_is_a_fragment_not_another_resource() -> None:
     uri = ResourceUri.of("datasets", "trading", "orders", branch="dev")
-    assert str(uri) == "ds:/trading/orders#dev"
+    assert str(uri) == "rekep:/datasets/trading/orders#dev"
     assert uri.at(None).path() == uri.path(), "same resource, different ref"
 
 
 def test_every_spelling_parses_to_the_same_identity() -> None:
     spellings = [
-        "ds:/warehouse/trading/orders#dev",
-        "ds://warehouse/trading/orders#dev",
+        "rekep:/datasets/warehouse/trading/orders#dev",
+        "rekep:/datasets//warehouse/trading/orders#dev",
         "rekep:/datasets/warehouse/trading/orders#dev",
         "/datasets/warehouse/trading/orders#dev",
     ]
     parsed = {ResourceUri.parse(text) for text in spellings}
     assert len(parsed) == 1
-    assert str(parsed.pop()) == "ds:/warehouse/trading/orders#dev"
+    assert str(parsed.pop()) == "rekep:/datasets/warehouse/trading/orders#dev"
 
 
-def test_the_generic_scheme_names_the_service_as_a_path_part() -> None:
+def test_the_scheme_names_the_service_as_a_path_part() -> None:
     assert ResourceUri.parse("rekep:/jobs/pipeline/l2r").service == "jobs"
-    assert str(ResourceUri.parse("rekep:/jobs/pipeline/l2r")) == "job:/pipeline/l2r"
+    assert str(ResourceUri.parse("rekep:/jobs/pipeline/l2r")) == "rekep:/jobs/pipeline/l2r"
+
+
+def test_a_short_scheme_is_gone_not_merely_discouraged() -> None:
+    """`ds:`/`job:`/`dag:` were a second spelling of one identity; a parser
+    that still accepted them would keep two forms alive in every log line."""
+    for old in ("ds:/trading/orders", "job:/pipeline/l2r", "dag:/pipeline/trading"):
+        with pytest.raises(ValueError, match="unknown scheme"):
+            ResourceUri.parse(old)
 
 
 def test_a_bare_path_needs_to_be_told_its_service() -> None:
@@ -118,7 +127,7 @@ def test_a_job_and_a_dataset_sharing_a_name_do_not_collide() -> None:
     job = ResourceUri.of("jobs", "trading", "orders")
     dataset = ResourceUri.of("datasets", "trading", "orders")
     assert str(job) != str(dataset)
-    assert job.generic() != dataset.generic()
+    assert (job.service, dataset.service) == ("jobs", "datasets")
 
 
 def test_child_goes_one_level_deeper() -> None:

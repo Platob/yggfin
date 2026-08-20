@@ -39,6 +39,7 @@ jobs:
         run: |
           uv run rekep iceberg sync --config ../stacks/iceberg
           git -C .. diff --exit-code stacks/iceberg
+          uv run rekep dataset sync --config ../stacks/datasets --dry-run
       - name: Deploy
         working-directory: .
         env:

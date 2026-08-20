@@ -83,7 +83,7 @@ def bench_one(rows: int, commit_row_size: int) -> dict[str, float]:
                 ]
             )
         )
-        dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
+        dataset = Dataset(schema="rekep.models.ParsedMessage", uri="rekep:/datasets/messages")
         dataset.deploy_iceberg(stack)
         table = stack.tables.get(dataset.into_iceberg_table())
 

@@ -8,8 +8,8 @@ import pytest
 from rekep import config
 from rekep.airflow.service import Airflow, Dags
 
-JOB = "job: rekep.job.Passthrough\nschedule: '@daily'\nuri: job:/demo\n"
-DAG = "uri: dag:/demo\nschedule: '@daily'\ntasks: [job:/demo]\n"
+JOB = "job: rekep.job.Passthrough\nschedule: '@daily'\nuri: rekep:/jobs/demo\n"
+DAG = "uri: rekep:/dags/demo\nschedule: '@daily'\ntasks: [rekep:/jobs/demo]\n"
 
 
 @pytest.fixture
@@ -56,7 +56,9 @@ def test_a_branch_named_dag_still_finds_its_file(
     its identity from the branch; the path is carried, never guessed back."""
     _, dags_root = roots
     (dags_root / "demo.yaml").write_text(
-        "uri: dag:/demo_{{ suffix }}\ntasks: [job:/demo]\n".replace("{{ suffix }}", "dev"),
+        "uri: rekep:/dags/demo_{{ suffix }}\ntasks: [rekep:/jobs/demo]\n".replace(
+            "{{ suffix }}", "dev"
+        ),
         encoding="utf-8",
     )
     dags = Dags(dags_root)

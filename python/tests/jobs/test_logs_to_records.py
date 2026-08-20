@@ -46,16 +46,16 @@ def test_empty_message_parses_to_nothing() -> None:
 
 
 def test_consumes_and_produces_default_correctly() -> None:
-    job = LogsToRecords(uri="job:/l2r")
+    job = LogsToRecords(uri="rekep:/jobs/l2r")
     assert job.consumed_records() == [Log]
     assert job.produced_records() == [ParsedMessage]
 
 
 def test_arrow_transform_structures_fix_messages() -> None:
-    f2l = FilesToLogs(uri="job:/f2l", source=FIX_SAMPLE.as_uri())
+    f2l = FilesToLogs(uri="rekep:/jobs/f2l", source=FIX_SAMPLE.as_uri())
     log_batches = list(f2l.arrow_transform(f2l.extract()))
 
-    l2r = LogsToRecords(uri="job:/l2r")
+    l2r = LogsToRecords(uri="rekep:/jobs/l2r")
     record_batches = list(l2r.arrow_transform(iter(log_batches)))
     rows = pyarrow.Table.from_batches(record_batches).to_pylist()
 
@@ -77,10 +77,10 @@ def test_arrow_transform_structures_fix_messages() -> None:
 
 
 def test_row_count_and_identity_survive_the_transform() -> None:
-    f2l = FilesToLogs(uri="job:/f2l", source=FIX_SAMPLE.as_uri())
+    f2l = FilesToLogs(uri="rekep:/jobs/f2l", source=FIX_SAMPLE.as_uri())
     log_rows = pyarrow.Table.from_batches(list(f2l.arrow_transform(f2l.extract()))).to_pylist()
 
-    l2r = LogsToRecords(uri="job:/l2r")
+    l2r = LogsToRecords(uri="rekep:/jobs/l2r")
     record_rows = pyarrow.Table.from_batches(
         list(l2r.arrow_transform(f2l.arrow_transform(f2l.extract())))
     ).to_pylist()

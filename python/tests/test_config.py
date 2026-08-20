@@ -51,7 +51,7 @@ def test_loading_a_missing_folder_is_not_an_error(tmp_path: pathlib.Path) -> Non
 
 def test_dumping_makes_the_folder(tmp_path: pathlib.Path) -> None:
     target = tmp_path / "fresh"
-    written = Dataset(schema="rekep.models.Log", uri="ds:/trading/logs").dump(target)
+    written = Dataset(schema="rekep.models.Log", uri="rekep:/datasets/trading/logs").dump(target)
     assert written == target / "logs.yaml"
     assert written.read_text()
 
@@ -60,31 +60,37 @@ def test_dumping_makes_the_folder(tmp_path: pathlib.Path) -> None:
 
 
 def test_loading_registers_what_it_read(tmp_path: pathlib.Path) -> None:
-    Dataset(schema="rekep.models.Log", uri="ds:/trading/logs").dump(tmp_path)
+    Dataset(schema="rekep.models.Log", uri="rekep:/datasets/trading/logs").dump(tmp_path)
     config.clear()
     Dataset.load_all(tmp_path)
-    assert config.lookup("ds:/trading/logs") is not None
+    assert config.lookup("rekep:/datasets/trading/logs") is not None
 
 
 def test_any_spelling_of_the_uri_finds_it(tmp_path: pathlib.Path) -> None:
     """One identity, so one entry rather than three misses."""
-    Dataset(schema="rekep.models.Log", uri="ds:/trading/logs").dump(tmp_path)
-    for spelling in ("ds:/trading/logs", "rekep:/datasets/trading/logs", "/datasets/trading/logs"):
+    Dataset(schema="rekep.models.Log", uri="rekep:/datasets/trading/logs").dump(tmp_path)
+    for spelling in (
+        "rekep:/datasets/trading/logs",
+        "rekep:/datasets/trading/logs",
+        "/datasets/trading/logs",
+    ):
         assert config.lookup(spelling) is not None, spelling
     assert config.lookup("trading/logs", service="datasets") is not None
 
 
 def test_a_dataset_and_a_job_sharing_a_name_are_two_entries(tmp_path: pathlib.Path) -> None:
-    config.register(Dataset(schema="rekep.models.Log", uri="ds:/trading/orders"))
-    config.register(Passthrough(uri="job:/trading/orders"))
+    config.register(Dataset(schema="rekep.models.Log", uri="rekep:/datasets/trading/orders"))
+    config.register(Passthrough(uri="rekep:/jobs/trading/orders"))
     assert len(config.REGISTRY) == 2
-    assert config.lookup("ds:/trading/orders") is not config.lookup("job:/trading/orders")
+    assert config.lookup("rekep:/datasets/trading/orders") is not config.lookup(
+        "rekep:/jobs/trading/orders"
+    )
 
 
 def test_registered_filters_by_service(tmp_path: pathlib.Path) -> None:
-    config.register(Dataset(schema="rekep.models.Log", uri="ds:/a/b"))
-    config.register(Passthrough(uri="job:/a/b"))
-    config.register(Dag(uri="dag:/a/b"))
+    config.register(Dataset(schema="rekep.models.Log", uri="rekep:/datasets/a/b"))
+    config.register(Passthrough(uri="rekep:/jobs/a/b"))
+    config.register(Dag(uri="rekep:/dags/a/b"))
     assert len(config.registered()) == 3
     assert len(config.registered("datasets")) == 1
     assert len(config.registered("jobs")) == 1
@@ -92,25 +98,28 @@ def test_registered_filters_by_service(tmp_path: pathlib.Path) -> None:
 
 
 def test_load_finds_it_without_reading_the_folder_twice(tmp_path: pathlib.Path) -> None:
-    Dataset(schema="rekep.models.Log", uri="ds:/trading/logs").dump(tmp_path)
-    first = Dataset.load("ds:/trading/logs", tmp_path)
-    assert Dataset.load("ds:/trading/logs", tmp_path) is first, "same object, from the registry"
+    Dataset(schema="rekep.models.Log", uri="rekep:/datasets/trading/logs").dump(tmp_path)
+    first = Dataset.load("rekep:/datasets/trading/logs", tmp_path)
+    assert Dataset.load("rekep:/datasets/trading/logs", tmp_path) is first, (
+        "same object, from the registry"
+    )
 
 
 def test_load_says_where_it_looked(tmp_path: pathlib.Path) -> None:
     with pytest.raises(KeyError, match="no dataset"):
-        Dataset.load("ds:/nowhere/at/all", tmp_path)
+        Dataset.load("rekep:/datasets/nowhere/at/all", tmp_path)
 
 
 def test_a_dumped_dataset_round_trips(tmp_path: pathlib.Path) -> None:
     dataset = Dataset(
         schema="rekep.models.ParsedMessage",
-        uri="ds:/warehouse/trading/messages",
+        uri="rekep:/datasets/warehouse/trading/messages",
         properties={"team": "platform"},
         protocols={"iceberg": {"branch": "dev"}},
     )
     dataset.dump(tmp_path)
     config.clear()
     (loaded,) = Dataset.load_all(tmp_path)
-    assert loaded == dataset
-    assert str(loaded.resource_uri()) == "ds:/warehouse/trading/messages#dev"
+    assert loaded == dataset.materialized(), "written with its record's schema written out"
+    assert str(loaded.resource_uri()) == "rekep:/datasets/warehouse/trading/messages#dev"
+    assert loaded.verify() == loaded, "and what comes back matches the record"

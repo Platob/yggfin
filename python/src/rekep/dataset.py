@@ -161,6 +161,11 @@ DATASETS_ROOT = os.environ.get("REKEP_DATASETS_ROOT")
 class Dataset(Record):
     """A namespace-qualified data product: schema, location, identity.
 
+    One file per product and nothing beside it: `schema` points at the
+    `Record` class, `uri` is the identity, `protocols` says where and how it
+    is written, and `description`/`fields` are that record's own contract
+    written out for review -- generated, never hand-maintained.
+
     `properties` are shared by every protocol that writes this dataset;
     `direct` is a single physical location shared the same way; `protocols`
     carries per-protocol overrides (its own `location`, its own properties),
@@ -178,13 +183,16 @@ class Dataset(Record):
     everything downstream actually uses."""
 
     uri: str | None = None
-    """This dataset's identity, as a path: `ds:/catalog/namespace/name#branch`.
+    """This dataset's identity, as a path: `rekep:/datasets/catalog/namespace/name#branch`.
 
     One string instead of separate name/namespace/catalog fields, because
     they are one identity -- and a path, because a catalog contains
     namespaces and a namespace contains tables, which a dot cannot say
     without ambiguity. Undeclared, it is built from the record's own
     snake_case name in `default`."""
+
+    description: str | None = None
+    """One line on what this data product is; generated from the record."""
 
     direct: str | None = None
     """A single physical location (a path or URI), shared by every protocol."""
@@ -194,6 +202,17 @@ class Dataset(Record):
 
     protocols: dict[str, dict[str, str]] = dataclasses.field(default_factory=dict)
     """Per-protocol overrides (`iceberg`, `doris`, ...), merged over `properties`."""
+
+    fields: list[dict] = dataclasses.field(default_factory=list)
+    """The record's whole schema, written out; generated, verified on use.
+
+    A data product is described in **one** place, and this is it: the side
+    file carries the declaration (`schema`, `uri`, `protocols`) *and* the
+    schema that declaration resolves to, so a reviewer sees the columns, the
+    types, the nullability, the descriptions and the field ids without
+    opening Python. It is strictly derived -- `rekep dataset sync` writes it
+    and `verify()` refuses a file that drifted from its record -- so the two
+    can never quietly disagree."""
 
     # -- identity / schema ----------------------------------------------
 
@@ -211,7 +230,7 @@ class Dataset(Record):
         `stacks/datasets` when it has one, the user's config home when it
         does not -- so a repository's own declarations win, and a bare
         install still has somewhere to keep them. Everything loaded lands in
-        the process-wide registry, so a `ds:/...` reference resolves without
+        the process-wide registry, so a `rekep:/datasets/...` reference resolves without
         reading the directory again.
         """
         folder = config.folder("datasets", root if root is not None else DATASETS_ROOT)
@@ -229,12 +248,48 @@ class Dataset(Record):
         return found
 
     def dump(self, root: str | os.PathLike[str] | None = None) -> pathlib.Path:
-        """Write this dataset's declaration where `load_all` will find it."""
+        """Write this dataset's declaration where `load_all` will find it.
+
+        Written `materialized`, because a declaration on disk that omitted
+        the schema it resolves to would need a second file to be reviewable
+        -- which is the file this one replaced.
+        """
         folder = config.folder("datasets", root if root is not None else DATASETS_ROOT, create=True)
         path = folder / f"{self.dataset_name()}.yaml"
-        self.into_yaml(path)
+        self.materialized().into_yaml(path)
         config.register(self)
         return path
+
+    def materialized(self) -> Dataset:
+        """This dataset with `description` and `fields` freshly derived.
+
+        The same shape `IcebergTable.materialized` has, one layer up: the
+        record is the authority, and everything protocol-shaped below it is a
+        projection of what this returns.
+        """
+        described = self.record_class().into_dict()
+        return dataclasses.replace(
+            self,
+            description=described.get("description") or None,
+            fields=list(described.get("fields") or []),
+        )
+
+    def verify(self) -> Dataset:
+        """Refuse a side file whose written-out schema drifted from its record.
+
+        Only what the file actually states is checked -- a dataset that
+        declares no `fields` block is declaring nothing that can be wrong,
+        exactly as an `IcebergTable` without one is.
+        """
+        fresh = self.materialized()
+        for name in ("description", "fields"):
+            declared, derived = getattr(self, name), getattr(fresh, name)
+            if declared and declared != derived:
+                raise ValueError(
+                    f"dataset {self.dataset_name()!r}: `{name}` drifted from {self.schema}; "
+                    "regenerate with: rekep dataset sync"
+                )
+        return fresh
 
     def record_class(self) -> type[Record]:
         """The `Record` class `schema` names."""
@@ -258,7 +313,7 @@ class Dataset(Record):
         return self.resource_uri().namespace() if self.uri else "default"
 
     def resource_uri(self) -> ResourceUri:
-        """This dataset's identity: `ds:/catalog/namespace/name#branch`.
+        """This dataset's identity: `rekep:/datasets/catalog/namespace/name#branch`.
 
         A `ResourceUri`, the one place a job's and a dataset's identifiers
         are built and parsed -- so the two can never collide even when they
@@ -473,9 +528,15 @@ class Dataset(Record):
     # -- deploy: autonomous, no side file needed -------------------------
 
     def into_iceberg_table(self) -> Any:
-        """This dataset as an ad hoc `IcebergTable`, ready for `Iceberg.deploy_one`."""
+        """This dataset as an ad hoc `IcebergTable`, ready for `Iceberg.deploy_one`.
+
+        Verified first: the moment a dataset is projected onto a protocol is
+        the moment a side file lagging its record starts writing the wrong
+        thing, so that is where it is refused.
+        """
         from rekep.records.iceberg import IcebergTable
 
+        self.verify()
         return IcebergTable(
             record=self.schema,
             name=self.dataset_name(),
@@ -488,6 +549,7 @@ class Dataset(Record):
         """This dataset as an ad hoc `DorisTable`, ready for `Doris.deploy_one`."""
         from rekep.records.doris import DorisTable
 
+        self.verify()
         return DorisTable(
             record=self.schema,
             name=self.dataset_name(),

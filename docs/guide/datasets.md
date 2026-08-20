@@ -13,10 +13,10 @@ namespace, name, and the branch — as one path:
 ```python
 from rekep.dataset import Dataset
 
-dataset = Dataset(schema="rekep.models.Log", uri="ds:/warehouse/trading/logs")
+dataset = Dataset(schema="rekep.models.Log", uri="rekep:/datasets/warehouse/trading/logs")
 dataset.arrow_schema()          # pyarrow.Schema -- what everything downstream uses
 dataset.schema_facet()          # OpenLineage SchemaDatasetFacet: the same fields
-dataset.resource_uri()          # ds:/warehouse/trading/logs
+dataset.resource_uri()          # rekep:/datasets/warehouse/trading/logs
 dataset.dataset_name()          # "logs"
 dataset.dataset_namespace()     # "trading"
 ```
@@ -25,14 +25,15 @@ A **path** rather than dots, because a catalog contains namespaces and a
 namespace contains tables — `a.b.c` cannot say whether that is three levels or
 one name with dots in it, and Iceberg namespaces are legitimately multi-level.
 Levels read right to left, so a shorter URI is a *less qualified* name rather
-than a different shape: `ds:/logs` is `logs` in `default`.
+than a different shape: `rekep:/datasets/logs` is `logs` in `default`.
 
-Every spelling is one identity — `ds:/a/b`, `ds://a/b` and
-`rekep:/datasets/a/b` all parse to the same `ResourceUri`, and the generic
-`rekep:` form puts the service in the path so a new kind of resource is a new
-path part rather than a new scheme. The branch rides along as the fragment,
-because a branch is not a different dataset: a dataset declaring
-`protocols.iceberg.branch: dev` has the URI `ds:/trading/logs#dev`.
+**One spelling, not a family of them.** `rekep:` is the only scheme and the
+service is the first path part, so a new kind of resource is a new path part
+rather than a new scheme to teach every parser — and a URI in a log line, a
+side file and the registry key is the same string rather than three that have
+to be normalised before they can be compared. The branch rides along as the
+fragment, because a branch is not a different dataset: a dataset declaring
+`protocols.iceberg.branch: dev` has the URI `rekep:/datasets/trading/logs#dev`.
 
 `schema` is a dotted path rather than an inline field list on purpose. A
 declaration has to survive a round trip through a file, and only a name can:
@@ -43,7 +44,7 @@ Undeclared, the URI is built from the record's own snake_case name in
 `default` — so the smallest useful dataset is one line:
 
 ```python
-Dataset(schema="rekep.models.Log")   # ds:/log
+Dataset(schema="rekep.models.Log")   # rekep:/datasets/log
 ```
 
 ## Where declarations live
@@ -57,8 +58,8 @@ pipelines is never quietly overridden by a home directory, and a bare
 ```python
 Dataset.load_all()                       # stacks/datasets, else ~/.config/rekep/datasets
 Dataset.load_all("/etc/rekep/datasets")  # or wherever you say
-Dataset(schema="rekep.models.Log", uri="ds:/trading/logs").dump()   # writes logs.yaml there
-Dataset.load("ds:/trading/logs")         # from the registry, or by loading the folder
+Dataset(schema="rekep.models.Log", uri="rekep:/datasets/trading/logs").dump()  # writes logs.yaml, schema included
+Dataset.load("rekep:/datasets/trading/logs")         # from the registry, or by loading the folder
 ```
 
 Everything loaded lands in a process-wide registry keyed by URI
@@ -84,17 +85,43 @@ dataset.location("doris")                 # "s3://lake/log" -- falls back to dir
 dataset.protocol_properties("iceberg")    # properties merged with iceberg's own
 ```
 
-## The whole side file, in one place
+## The whole data product, in one file
 
-Everything below is configuration, not code: a `stacks/datasets/*.yaml` file
-declares it once and every verb — deploy, write, read, maintain — reads it
-from there. This is `stacks/datasets/parsed_messages.yaml`, the shipped
-example — the working, iterating dataset, as opposed to `log.yaml`'s stable
-one, which declares nothing but its schema and its URI:
+**One file per product and nothing beside it.** A `stacks/datasets/*.yaml`
+file carries the declaration — `schema`, `uri`, `protocols` — *and* the
+schema that declaration resolves to, written out as `description`/`fields`.
+Every verb (deploy, write, read, maintain) reads the first half; a reviewer
+reads the second without opening Python:
+
+```yaml
+# stacks/datasets/log.yaml, after `rekep dataset sync`
+schema: rekep.models.Log
+uri: rekep:/datasets/default/log
+description: One parsed line of a trading log.
+fields:
+- name: url
+  type: string
+  description: Path of the log the line came from, as its filesystem addresses it.
+  iceberg:
+    field_id: 1
+- name: unix
+  ...
+```
+
+That block is **generated, never hand-maintained**: `rekep dataset sync`
+writes it from the record, `verify()` refuses a file that drifted the moment
+the dataset is projected onto a protocol, and CI fails when the two disagree
+— the same contract `IcebergTable`'s own `fields` block has, one layer up.
+There is no second folder of schema dumps to keep in step, because there is
+no second file.
+
+The other half is configuration, not code. This is
+`stacks/datasets/parsed_messages.yaml`, the shipped example — the working,
+iterating dataset, as opposed to `log.yaml`'s stable one:
 
 ```yaml
 schema: rekep.models.ParsedMessage
-uri: ds:/default/parsed_messages
+uri: rekep:/datasets/default/parsed_messages
 protocols:
   iceberg:
     branch: "{{ 'main' if git_branch_slug in ('main', 'master') else git_branch_slug }}"
@@ -129,7 +156,11 @@ means nothing; use `direct:`.
 Side files render through Jinja before they are parsed, with `git_context()`
 always in scope, so `branch` above resolves per git branch with nothing extra
 to wire in. See [Jobs](jobs.md#branch-conditional-naming) for why that is a
-per-file choice rather than a mode.
+per-file choice rather than a mode. It is also why this file carries no
+generated `fields` block: `sync` leaves a templated file alone rather than
+resolving its template against whichever machine ran the command, so a file
+that chooses the template chooses to describe its schema by pointing at the
+record alone.
 
 ## Deploying: autonomous, no `tables/` side file
 
@@ -486,8 +517,8 @@ arguments at all:
 
 ```console
 $ rekep dataset optimize --dry-run
-ds:/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
-ds:/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
+rekep:/datasets/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
+rekep:/datasets/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
 ```
 
 A dataset declaring no `retain` keeps all its history, which is the safe
@@ -498,7 +529,7 @@ default for something nobody has thought about yet.
 A dataset describes what it *is* to a run, and stops there:
 
 ```python
-dataset.facets()      # {"schema": {...}, "dataSource": {"uri": "ds:/trading/logs"}}
+dataset.facets()      # {"schema": {...}, "dataSource": {"uri": "rekep:/datasets/trading/logs"}}
 dataset.as_input()    # InputDataset(namespace="trading", name="logs", facets=...)
 dataset.as_output(outputStatistics={"rowCount": 2})
 ```

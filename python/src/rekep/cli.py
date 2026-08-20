@@ -18,6 +18,7 @@ import sys
 from collections.abc import Sequence
 from typing import Any
 
+from rekep import config
 from rekep.imports import locate
 from rekep.records import Record
 from rekep.render import render
@@ -33,9 +34,6 @@ LOGO = r"""
 
 #: Where generated DDL lands, relative to the deployment root.
 DDL_ROOT = pathlib.Path("stacks/ddl/iceberg")
-
-#: Where dumped product definitions land, relative to the deployment root.
-PRODUCT_ROOT = pathlib.Path("stacks/product")
 
 
 class DdlService:
@@ -137,44 +135,6 @@ class DdlService:
         table = table or _default_table(cls)
         path = out / f"{table.rpartition('.')[2]}.sql"
         path.write_text(ddl, encoding="utf-8", newline="\n")
-        print(path)
-        return 0
-
-
-class ProductService:
-    """`rekep product`: record declarations as reviewable files."""
-
-    name = "product"
-
-    def register(self, commands: Any) -> None:
-        parser = commands.add_parser(self.name, help="record declarations as files")
-        commands = parser.add_subparsers(dest="command", required=True)
-
-        dump = commands.add_parser("dump", help="write a record's whole definition")
-        dump.add_argument(
-            "--namespace", required=True, help="dotted record class, e.g. rekep.models.Log"
-        )
-        dump.add_argument(
-            "--format",
-            choices=("yaml", "json", "toml"),
-            default="yaml",
-            help="output format (default: yaml)",
-        )
-        dump.add_argument(
-            "--out", default=str(PRODUCT_ROOT), help="output directory, or - for stdout"
-        )
-        dump.set_defaults(run=self.dump)
-
-    def dump(self, arguments: argparse.Namespace) -> int:
-        cls = _record_class(arguments.namespace)
-        payload: bytes = getattr(cls, f"into_{arguments.format}")()
-        if arguments.out == "-":
-            sys.stdout.write(payload.decode())
-            return 0
-        out = pathlib.Path(arguments.out)
-        out.mkdir(parents=True, exist_ok=True)
-        path = out / f"{_default_table(cls)}.{arguments.format}"
-        path.write_bytes(payload)
         print(path)
         return 0
 
@@ -311,35 +271,18 @@ class StackService:
         A file containing Jinja is left alone: rewriting it would resolve the
         template against *this* machine's environment and bake the answer in.
         """
-        import rekep.records.registry as registry
-
         root = pathlib.Path(arguments.config or self.root)
         context = self._context(arguments)
         wanted = arguments.folders or tuple(self.registries())
         drifted = False
         for folder in wanted:
-            cls = self.registries()[folder]
-            for path in sorted((root / folder).glob("*")):
-                if path.suffix not in registry.EXTENSIONS:
-                    continue
-                source = path.read_text(encoding="utf-8")
-                if "{{" in source or "{%" in source:
-                    print(f"skipped {path} (templated)")
-                    continue
-                mapping = registry.parse(path, context)
-                mapping.setdefault("name", path.stem)
-                entry = cls.from_dict(mapping)
-                if hasattr(entry, "materialized"):
-                    entry = entry.materialized()
-                stem = cls.redirect_of(path.name)
-                fresh: bytes = getattr(entry, f"into_{stem}")()
-                if arguments.dry_run:
-                    if path.read_bytes().replace(b"\r\n", b"\n") != fresh:
-                        print(f"would rewrite {path}")
-                        drifted = True
-                    continue
-                path.write_bytes(fresh)
-                print(path)
+            drifted |= _sync_folder(
+                root / folder,
+                self.registries()[folder],
+                context,
+                dry_run=arguments.dry_run,
+                stem_names=True,
+            )
         return 1 if arguments.dry_run and drifted else 0
 
 
@@ -412,8 +355,21 @@ class RecordsService:
     name = "records"
 
     def register(self, commands: Any) -> None:
-        parser = commands.add_parser(self.name, help="deploy a record class to the stacks")
+        parser = commands.add_parser(self.name, help="record classes: dump and deploy")
         commands = parser.add_subparsers(dest="command", required=True)
+
+        dump = commands.add_parser("dump", help="write a record's whole declaration")
+        dump.add_argument(
+            "--pyclass", required=True, help="dotted record class, e.g. rekep.models.Log"
+        )
+        dump.add_argument(
+            "--format",
+            choices=("yaml", "json", "toml"),
+            default="yaml",
+            help="output format (default: yaml)",
+        )
+        dump.add_argument("--out", default="-", help="output directory, or - for stdout")
+        dump.set_defaults(run=self.dump)
 
         deploy = commands.add_parser("deploy", help="converge one record into its targets")
         deploy.add_argument(
@@ -444,6 +400,26 @@ class RecordsService:
             help="extra Jinja variable; repeatable",
         )
         deploy.set_defaults(run=self.deploy)
+
+    def dump(self, arguments: argparse.Namespace) -> int:
+        """One record class's whole declaration -- the contract, without rows.
+
+        Goes to stdout by default and has no shipped folder of its own: a
+        data product's declaration belongs *in its dataset side file*, which
+        `rekep dataset sync` writes and CI drift-tests. This is the same view
+        for a class nobody has declared a dataset for yet.
+        """
+        cls = _record_class(arguments.pyclass)
+        payload: bytes = getattr(cls, f"into_{arguments.format}")()
+        if arguments.out == "-":
+            sys.stdout.write(payload.decode())
+            return 0
+        out = pathlib.Path(arguments.out)
+        out.mkdir(parents=True, exist_ok=True)
+        path = out / f"{_default_table(cls)}.{arguments.format}"
+        path.write_bytes(payload)
+        print(path)
+        return 0
 
     def deploy(self, arguments: argparse.Namespace) -> int:
         """The record's table, per target: live for Iceberg, planned for Doris.
@@ -557,6 +533,23 @@ class DatasetService:
         listing.add_argument("--config", default=None, help="datasets directory")
         listing.set_defaults(run=self.list_datasets)
 
+        whole = commands.add_parser("sync", help="rewrite every dataset file in full")
+        whole.add_argument("--config", default=None, help="datasets directory")
+        whole.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="report files that would change; exit 1 when any would",
+        )
+        whole.add_argument(
+            "--var",
+            dest="variables",
+            action="append",
+            default=[],
+            metavar="KEY=VALUE",
+            help="extra Jinja variable; repeatable",
+        )
+        whole.set_defaults(run=self.sync)
+
     def deploy(self, arguments: argparse.Namespace) -> int:
         """Every declared dataset, autonomous: no per-table side file needed."""
         from rekep.dataset import Dataset
@@ -604,6 +597,23 @@ class DatasetService:
             )
         return 0
 
+    def sync(self, arguments: argparse.Namespace) -> int:
+        """Rewrite each dataset file with its record's schema written out.
+
+        The same verb the stacks have, over the folder that now describes a
+        data product on its own: `description` and `fields` come from the
+        record, so the file a reviewer reads is the schema the code actually
+        declares. `--dry-run` exits 1 when any file has drifted, which is how
+        CI catches a model change that never reached its side file.
+        """
+        from rekep.dataset import Dataset
+
+        folder = config.folder("datasets", arguments.config)
+        drifted = _sync_folder(
+            folder, Dataset, _pairs(arguments.variables), dry_run=arguments.dry_run
+        )
+        return 1 if arguments.dry_run and drifted else 0
+
     def list_datasets(self, arguments: argparse.Namespace) -> int:
         from rekep.dataset import Dataset
 
@@ -644,13 +654,17 @@ class DagService:
         listing.set_defaults(run=self.list_dags)
 
         show = commands.add_parser("show", help="one dag's tasks, in the order they run")
-        show.add_argument("--uri", required=True, help="dag uri, e.g. dag:/pipeline/trading_logs")
+        show.add_argument(
+            "--uri", required=True, help="dag uri, e.g. rekep:/dags/pipeline/trading_logs"
+        )
         show.add_argument("--config", default=None, help="dags directory")
         show.add_argument("--jobs-config", default=None, help="jobs directory")
         show.set_defaults(run=self.show)
 
         runner = commands.add_parser("run", help="run every task, in dependency order")
-        runner.add_argument("--uri", required=True, help="dag uri, e.g. dag:/pipeline/trading_logs")
+        runner.add_argument(
+            "--uri", required=True, help="dag uri, e.g. rekep:/dags/pipeline/trading_logs"
+        )
         runner.add_argument("--config", default=None, help="dags directory")
         runner.add_argument("--jobs-config", default=None, help="jobs directory")
         runner.add_argument(
@@ -740,7 +754,6 @@ class AirflowService:
 
 SERVICES = (
     DdlService(),
-    ProductService(),
     DocsService(),
     RecordsService(),
     DatasetService(),
@@ -795,6 +808,57 @@ def _tutorial(arguments: argparse.Namespace) -> int:
     from rekep.tutorial import Tutorial
 
     return Tutorial(auto=arguments.auto, workspace=arguments.workspace).run()
+
+
+def _sync_folder(
+    folder: pathlib.Path,
+    cls: type,
+    context: dict[str, str],
+    *,
+    dry_run: bool = False,
+    stem_names: bool = False,
+) -> bool:
+    """Rewrite every side file in `folder` in full; True when any drifted.
+
+    One implementation for every folder of declarations, because they all
+    want the same thing: load it, materialise what the record knows how to
+    derive, write it back complete -- so a side file states its whole
+    contract instead of only its overrides, and `--dry-run` says which ones
+    no longer do.
+
+    A file containing Jinja is left alone. Rewriting it would resolve the
+    template against *this* machine's environment and bake the answer in,
+    which is a worse outcome than a file this pass cannot keep current.
+
+    `stem_names` is the registry-folder rule (`catalogs/`, `namespaces/`):
+    the file stem supplies `name`. A dataset names itself in its own `uri`,
+    so it does not want it.
+    """
+    import rekep.records.registry as registry
+
+    drifted = False
+    for path in sorted(folder.glob("*")) if folder.is_dir() else []:
+        if path.suffix not in registry.EXTENSIONS:
+            continue
+        source = path.read_text(encoding="utf-8")
+        if "{{" in source or "{%" in source:
+            print(f"skipped {path} (templated)")
+            continue
+        mapping = registry.parse(path, context)
+        if stem_names:
+            mapping.setdefault("name", path.stem)
+        entry = cls.from_dict(mapping)
+        if hasattr(entry, "materialized"):
+            entry = entry.materialized()
+        fresh: bytes = getattr(entry, f"into_{cls.redirect_of(path.name)}")()
+        if dry_run:
+            if path.read_bytes().replace(b"\r\n", b"\n") != fresh:
+                print(f"would rewrite {path}")
+                drifted = True
+            continue
+        path.write_bytes(fresh)
+        print(path)
+    return drifted
 
 
 def _record_class(dotted: str) -> type[Record]:

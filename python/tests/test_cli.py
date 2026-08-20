@@ -1,8 +1,10 @@
 import pathlib
 
 import pytest
+import yaml
 
 from rekep.cli import main
+from rekep.models import Log
 
 NAMESPACE = "rekep.models.Log"
 
@@ -66,37 +68,84 @@ def test_a_malformed_property_is_refused() -> None:
         dump("--property", "oops", "--out", "-")
 
 
-# -- product ----------------------------------------------------------------
+# -- records dump -----------------------------------------------------------
 
 
-def test_product_dump_defaults_to_yaml(tmp_path: pathlib.Path) -> None:
-    assert main(["product", "dump", "--namespace", NAMESPACE, "--out", str(tmp_path)]) == 0
-    written = tmp_path / "log.yaml"
-    assert written.exists()
-    payload = written.read_bytes()
-    assert payload.startswith(b"name: Log")
-    assert b"namespace:" not in payload
+def test_records_dump_goes_to_stdout_by_default(capsys: pytest.CaptureFixture) -> None:
+    """No shipped folder of its own: a product's declaration lives in its
+    dataset side file, and this is the same view for a bare class."""
+    assert main(["records", "dump", "--pyclass", NAMESPACE]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("name: Log")
+    assert "fields:" in out
+    assert "namespace:" not in out
 
 
-def test_product_dump_other_formats(tmp_path: pathlib.Path) -> None:
-    main(
-        [
-            "product",
-            "dump",
-            "--namespace",
-            NAMESPACE,
-            "--format",
-            "json",
-            "--out",
-            str(tmp_path),
-        ]
-    )
+def test_records_dump_writes_a_file_when_asked(tmp_path: pathlib.Path) -> None:
+    assert main(["records", "dump", "--pyclass", NAMESPACE, "--out", str(tmp_path)]) == 0
+    assert (tmp_path / "log.yaml").read_bytes().startswith(b"name: Log")
+
+
+def test_records_dump_other_formats(tmp_path: pathlib.Path) -> None:
+    main(["records", "dump", "--pyclass", NAMESPACE, "--format", "json", "--out", str(tmp_path)])
     assert (tmp_path / "log.json").read_bytes().startswith(b"{")
 
 
-def test_product_dump_to_stdout(capsys: pytest.CaptureFixture) -> None:
-    assert main(["product", "dump", "--namespace", NAMESPACE, "--out", "-"]) == 0
-    assert "fields:" in capsys.readouterr().out
+# -- dataset sync -------------------------------------------------------------
+
+
+def test_dataset_sync_writes_the_records_schema_into_the_side_file(
+    tmp_path: pathlib.Path,
+) -> None:
+    """One file per data product: the declaration and the schema it resolves
+    to, so a reviewer never opens Python to see the columns."""
+    datasets = tmp_path / "datasets"
+    datasets.mkdir()
+    path = datasets / "logs.yaml"
+    path.write_text("schema: rekep.models.Log\nuri: rekep:/datasets/logs\n")
+
+    assert main(["dataset", "sync", "--config", str(datasets)]) == 0
+    written = yaml.safe_load(path.read_bytes())
+    assert written["description"] == "One parsed line of a trading log."
+    assert [entry["name"] for entry in written["fields"]] == [
+        field.name for field in Log.into_arrow_schema()
+    ]
+
+
+def test_dataset_sync_dry_run_reports_drift_and_exits_one(tmp_path: pathlib.Path) -> None:
+    datasets = tmp_path / "datasets"
+    datasets.mkdir()
+    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: rekep:/datasets/logs\n")
+    assert main(["dataset", "sync", "--config", str(datasets), "--dry-run"]) == 1
+
+    main(["dataset", "sync", "--config", str(datasets)])
+    assert main(["dataset", "sync", "--config", str(datasets), "--dry-run"]) == 0, "idempotent"
+
+
+def test_dataset_sync_leaves_a_templated_file_alone(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    """Rewriting it would resolve the template against this machine."""
+    datasets = tmp_path / "datasets"
+    datasets.mkdir()
+    declared = 'schema: rekep.models.Log\nuri: "rekep:/datasets/{{ git_branch_slug }}/logs"\n'
+    (datasets / "logs.yaml").write_text(declared)
+    assert main(["dataset", "sync", "--config", str(datasets)]) == 0
+    assert "skipped" in capsys.readouterr().out
+    assert (datasets / "logs.yaml").read_text() == declared
+
+
+def test_a_dataset_whose_side_file_drifted_is_refused(tmp_path: pathlib.Path) -> None:
+    """The moment it is projected onto a protocol is the moment it matters."""
+    from rekep.dataset import Dataset
+
+    stale = Dataset(
+        schema="rekep.models.Log",
+        uri="rekep:/datasets/logs",
+        fields=[{"name": "gone", "type": "string"}],
+    )
+    with pytest.raises(ValueError, match="drifted"):
+        stale.into_iceberg_table()
 
 
 # -- git context in jinja ---------------------------------------------------
@@ -293,7 +342,7 @@ def dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     )
     datasets = tmp_path / "datasets"
     datasets.mkdir()
-    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: ds:/logs\n")
+    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: rekep:/datasets/logs\n")
     return tmp_path
 
 
@@ -316,7 +365,7 @@ def test_dataset_deploy_converges_the_declared_dataset(
         )
         == 0
     )
-    assert "ds:/logs" in capsys.readouterr().out
+    assert "rekep:/datasets/logs" in capsys.readouterr().out
 
     from rekep.iceberg import Iceberg
 
@@ -349,7 +398,7 @@ def test_dataset_list_prints_declared_datasets(
     root = dataset_workspace(tmp_path)
     assert main(["dataset", "list", "--config", str(root / "datasets")]) == 0
     out = capsys.readouterr().out
-    assert "ds:/logs" in out
+    assert "rekep:/datasets/logs" in out
     assert "schema=rekep.models.Log" in out
 
 
@@ -370,7 +419,7 @@ def crowded_dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     (root / "datasets" / "logs.yaml").unlink()
     (root / "datasets" / "messages.yaml").write_text(
         "schema: rekep.models.ParsedMessage\n"
-        "uri: ds:/messages\n"
+        "uri: rekep:/datasets/messages\n"
         "protocols:\n"
         "  iceberg:\n"
         '    compact_min_files: "3"\n'
@@ -479,15 +528,15 @@ def dag_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     jobs.mkdir()
     dags.mkdir()
     (jobs / "parse.yaml").write_text(
-        f"job: rekep.job.Passthrough\nuri: job:/pipeline/parse\nsource: {sample.as_uri()}\n"
+        f"job: rekep.job.Passthrough\nuri: rekep:/jobs/pipeline/parse\nsource: {sample.as_uri()}\n"
     )
     (jobs / "count.yaml").write_text(
-        f"job: rekep.job.Passthrough\nuri: job:/pipeline/count\nsource: {sample.as_uri()}\n"
+        f"job: rekep.job.Passthrough\nuri: rekep:/jobs/pipeline/count\nsource: {sample.as_uri()}\n"
     )
     (dags / "demo.yaml").write_text(
-        "uri: dag:/pipeline/demo\n"
+        "uri: rekep:/dags/pipeline/demo\n"
         "schedule: '@daily'\n"
-        "tasks: [job:/pipeline/parse, job:/pipeline/count]\n"
+        "tasks: [rekep:/jobs/pipeline/parse, rekep:/jobs/pipeline/count]\n"
         "dependencies: {count: [parse]}\n"
     )
     return tmp_path
@@ -500,7 +549,7 @@ def test_dag_list_shows_the_order(tmp_path: pathlib.Path, capsys: pytest.Capture
         == 0
     )
     out = capsys.readouterr().out
-    assert "dag:/pipeline/demo" in out
+    assert "rekep:/dags/pipeline/demo" in out
     assert "parse -> count" in out
 
 
@@ -514,7 +563,7 @@ def test_dag_show_names_each_task_and_what_it_waited_for(
                 "dag",
                 "show",
                 "--uri",
-                "dag:/pipeline/demo",
+                "rekep:/dags/pipeline/demo",
                 "--config",
                 str(root / "dags"),
                 "--jobs-config",
@@ -538,7 +587,7 @@ def test_dag_run_runs_every_task_in_order(
                 "dag",
                 "run",
                 "--uri",
-                "dag:/pipeline/demo",
+                "rekep:/dags/pipeline/demo",
                 "--config",
                 str(root / "dags"),
                 "--jobs-config",

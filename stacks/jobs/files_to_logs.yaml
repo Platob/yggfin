@@ -4,7 +4,7 @@
 # for a stage that *does* pick up the branch, and stacks/datasets for the
 # same choice made at the storage layer (Iceberg branch vs. a plain table).
 job: rekep.jobs.FilesToLogs
-uri: job:/pipeline/files_to_logs
+uri: rekep:/jobs/pipeline/files_to_logs
 description: Parse raw trading-log files into Log records.
 schedule: "@daily"
 source: "{{ env.get('REKEP_SOURCE_URL', '') }}"
