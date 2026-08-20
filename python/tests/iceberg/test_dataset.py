@@ -660,6 +660,46 @@ def test_the_compaction_snapshots_are_marked(dataset: IcebergDataset) -> None:
     assert dataset.compacted_snapshots(), "how a compacted part is recognised later"
 
 
+# -- the scan filter a merge builds -----------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("values", "named"),
+    [
+        ([index % 8 for index in range(1000)], True),
+        (list(range(200)), True),
+        (list(range(201)), False),
+        # The trap the slice probe could fall into: the head of the column has
+        # few distinct values and the tail has thousands. Answering from the
+        # probe alone would name 200 keys and miss every stored row past them.
+        ([0] * 500 + list(range(5000)), False),
+    ],
+)
+def test_a_key_column_is_named_only_when_it_can_be(values: list[int], named: bool) -> None:
+    """`In` under the limit, a range past it -- however the values are ordered."""
+    from rekep.iceberg.dataset import MERGE_IN_LIMIT, _distinct_under
+
+    column = pyarrow.chunked_array([pyarrow.array(values, pyarrow.int64())])
+    distinct = _distinct_under(column, MERGE_IN_LIMIT)
+    assert (distinct is not None) is named
+    if named:
+        assert sorted(distinct.to_pylist()) == sorted(set(values))
+
+
+def test_a_merge_past_the_limit_still_finds_every_stored_row(dataset: IcebergDataset) -> None:
+    """A range is a superset, so what it plans must still hold every match."""
+    rows = quotes(400)
+    dataset.write_arrow(rows, commit_row_size=0)
+    updated = rows.set_column(
+        rows.schema.get_field_index("venue"),
+        rows.schema.field("venue"),
+        pyarrow.array(["XETR"] * rows.num_rows),
+    )
+    assert dataset.merge_arrow_table(updated, True) == (400, 0), "all updated, none inserted"
+    assert dataset.read_arrow_table().num_rows == 400
+    assert set(dataset.read_arrow_table().column("venue").to_pylist()) == {"XETR"}
+
+
 # -- sweeping ---------------------------------------------------------------
 
 

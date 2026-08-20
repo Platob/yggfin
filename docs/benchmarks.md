@@ -131,6 +131,21 @@ Finding the rows is what got fast; rewriting them costs what it costs.
 two paths are compared row by row in `tests/iceberg/test_coherence.py`; set
 `plan_merges=False` to use the library's own.
 
+Building that scan filter is itself measured, because it runs once per commit
+and it used to hash the whole key column to decide it could not name the values
+in it. Probing a 201-row slice first answers the same question, on a 400k-row
+chunk:
+
+| merge key | before | after |
+| --- | --- | --- |
+| one high-cardinality integer | 27.0 ms | 0.4 ms |
+| an integer and a string | 69.9 ms | 6.3 ms |
+| one eight-value partition column | 1.3 ms | 1.5 ms |
+
+The last row is the tax: where there really are few distinct values, the probe
+is paid on top of the full pass — and that is the case where naming them one by
+one prunes to exactly the right partitions, so it is worth paying.
+
 ### Partitioning and properties
 
 | case | commit rows | rows/s | files |
