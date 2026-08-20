@@ -7,7 +7,7 @@ from typing import ClassVar
 
 import pyarrow
 
-from rekep.records.arrow import PARTITION_KEY, PRIMARY_KEY, ArrowFieldBuilder
+from rekep.records.arrow import ArrowFieldBuilder, partition_keys, primary_keys
 
 #: Metadata written by the Arrow projection that the DDL reads back.
 DESCRIPTION = b"description"
@@ -87,12 +87,10 @@ class IcebergDdlBuilder:
 
     def partitions(self, schema: pyarrow.Schema) -> list[str]:
         """Partition clauses from field metadata, transforms spelled for SQL."""
-        clauses = []
-        for field in schema:
-            transform = (field.metadata or {}).get(PARTITION_KEY, b"").decode()
-            if transform:
-                clauses.append(self.partition_sql(field.name, transform))
-        return clauses
+        return [
+            self.partition_sql(name, transform)
+            for name, transform in partition_keys(schema).items()
+        ]
 
     def partition_sql(self, name: str, transform: str) -> str:
         """`("ts", "day")` -> `days(ts)`; identity stays the bare column."""
@@ -105,7 +103,7 @@ class IcebergDdlBuilder:
 
     def keys(self, schema: pyarrow.Schema) -> list[str]:
         """Fields declared part of the primary key, in schema order."""
-        return [field.name for field in schema if (field.metadata or {}).get(PRIMARY_KEY)]
+        return primary_keys(schema)
 
     def sql_type(self, data_type: pyarrow.DataType) -> str:
         """Iceberg SQL spelling of one Arrow type, recursing into containers."""

@@ -11,12 +11,15 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from rekep.iceberg.catalogs import Catalogs
 from rekep.iceberg.namespaces import Namespaces
 from rekep.iceberg.tables import Tables
-from rekep.records.iceberg import ICEBERG_ROOT, IcebergDeployment
+from rekep.records.iceberg import ICEBERG_ROOT, IcebergDeployment, IcebergTable
+
+if TYPE_CHECKING:  # pragma: no cover - pyiceberg is imported at the point of use
+    from pyiceberg.table import Table
 
 __all__ = ["Catalogs", "Iceberg", "Namespaces", "Tables"]
 
@@ -35,6 +38,20 @@ class Iceberg:
     @classmethod
     def load(cls, root: Any = ICEBERG_ROOT, **context: Any) -> Iceberg:
         return cls(IcebergDeployment.load(root, **context))
+
+    def deploy_one(self, table: IcebergTable, dry_run: bool = False) -> Table | None:
+        """Converge one table, autonomous: catalog -> namespace -> table.
+
+        `table` need not be declared in this deployment's own registry --
+        `rekep.dataset.Dataset.into_iceberg_table()` builds one ad hoc and
+        hands it here. Its `namespace` must still name an entry this
+        deployment's `catalogs`/`namespaces` declare; a dangling one raises
+        the same `KeyError` `deployment.namespace()` always would.
+        """
+        namespace = self.namespaces.get(table.namespace)
+        self.catalogs.check(namespace.catalog)
+        self.namespaces.get_or_create(namespace, dry_run=dry_run)
+        return self.tables.create_or_update(table, dry_run=dry_run)
 
     @classmethod
     def deploy_folder(

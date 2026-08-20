@@ -8,7 +8,7 @@ NAMESPACE = "rekep.models.Log"
 
 
 def dump(*extra: str) -> int:
-    return main(["service", "ddl", "dump", "--namespace", NAMESPACE, *extra])
+    return main(["ddl", "dump", "--namespace", NAMESPACE, *extra])
 
 
 def test_ddl_dump_writes_the_file(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
@@ -58,7 +58,7 @@ def test_partition_by_flows_through(tmp_path: pathlib.Path) -> None:
 
 def test_a_non_record_namespace_is_refused() -> None:
     with pytest.raises(SystemExit, match="not a Record"):
-        main(["service", "ddl", "dump", "--namespace", "pathlib.Path", "--out", "-"])
+        main(["ddl", "dump", "--namespace", "pathlib.Path", "--out", "-"])
 
 
 def test_a_malformed_property_is_refused() -> None:
@@ -70,9 +70,7 @@ def test_a_malformed_property_is_refused() -> None:
 
 
 def test_product_dump_defaults_to_yaml(tmp_path: pathlib.Path) -> None:
-    assert (
-        main(["service", "product", "dump", "--namespace", NAMESPACE, "--out", str(tmp_path)]) == 0
-    )
+    assert main(["product", "dump", "--namespace", NAMESPACE, "--out", str(tmp_path)]) == 0
     written = tmp_path / "log.yaml"
     assert written.exists()
     payload = written.read_bytes()
@@ -83,7 +81,6 @@ def test_product_dump_defaults_to_yaml(tmp_path: pathlib.Path) -> None:
 def test_product_dump_other_formats(tmp_path: pathlib.Path) -> None:
     main(
         [
-            "service",
             "product",
             "dump",
             "--namespace",
@@ -98,7 +95,7 @@ def test_product_dump_other_formats(tmp_path: pathlib.Path) -> None:
 
 
 def test_product_dump_to_stdout(capsys: pytest.CaptureFixture) -> None:
-    assert main(["service", "product", "dump", "--namespace", NAMESPACE, "--out", "-"]) == 0
+    assert main(["product", "dump", "--namespace", NAMESPACE, "--out", "-"]) == 0
     assert "fields:" in capsys.readouterr().out
 
 
@@ -135,24 +132,6 @@ def test_git_suffix_is_empty_on_trunk(monkeypatch: pytest.MonkeyPatch) -> None:
 # -- dry run ----------------------------------------------------------------
 
 
-def test_sync_dry_run_flags_drift_and_writes_nothing(tmp_path: pathlib.Path) -> None:
-    tables = tmp_path / "tables"
-    tables.mkdir()
-    bare = tables / "logs.yaml"
-    bare.write_text("record: rekep.models.Log\n")
-    before = bare.read_bytes()
-
-    assert (
-        main(["service", "iceberg", "tables", "sync", "--config", str(tmp_path), "--dry-run"]) == 1
-    )
-    assert bare.read_bytes() == before, "dry run must not rewrite"
-
-    assert main(["service", "iceberg", "tables", "sync", "--config", str(tmp_path)]) == 0
-    assert (
-        main(["service", "iceberg", "tables", "sync", "--config", str(tmp_path), "--dry-run"]) == 0
-    )
-
-
 def test_iceberg_deploy_dry_run_touches_nothing(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
 ) -> None:
@@ -162,7 +141,7 @@ def test_iceberg_deploy_dry_run_touches_nothing(
     (catalogs / "iceberg.yaml").write_text(
         f'type: sql\nuri: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
     )
-    assert main(["service", "iceberg", "deploy", "--config", str(tmp_path), "--dry-run"]) == 0
+    assert main(["iceberg", "deploy", "--config", str(tmp_path), "--dry-run"]) == 0
     out = capsys.readouterr().out
     assert "would converge" in out
     assert not (tmp_path / "wh").exists(), "nothing materialised"
@@ -189,7 +168,6 @@ def test_records_deploy_converges_one_record(
     assert (
         main(
             [
-                "service",
                 "records",
                 "deploy",
                 "--pyclass",
@@ -215,7 +193,6 @@ def test_records_deploy_dry_run_touches_nothing(tmp_path: pathlib.Path) -> None:
     assert (
         main(
             [
-                "service",
                 "records",
                 "deploy",
                 "--pyclass",
@@ -234,7 +211,6 @@ def test_records_deploy_doris_emits_the_plan(capsys: pytest.CaptureFixture) -> N
     assert (
         main(
             [
-                "service",
                 "records",
                 "deploy",
                 "--pyclass",
@@ -251,7 +227,7 @@ def test_records_deploy_doris_emits_the_plan(capsys: pytest.CaptureFixture) -> N
 
 def test_records_deploy_refuses_a_non_record() -> None:
     with pytest.raises(SystemExit, match="not a Record"):
-        main(["service", "records", "deploy", "--pyclass", "pathlib.Path", "--dry-run"])
+        main(["records", "deploy", "--pyclass", "pathlib.Path", "--dry-run"])
 
 
 # -- registry sync ----------------------------------------------------------
@@ -262,7 +238,6 @@ def registry(tmp_path: pathlib.Path) -> pathlib.Path:
     for folder, name, body in (
         ("catalogs", "iceberg", "type: sql\n"),
         ("namespaces", "default", "catalog: iceberg\n"),
-        ("tables", "log", "record: rekep.models.Log\n"),
     ):
         (tmp_path / folder).mkdir(exist_ok=True)
         (tmp_path / folder / f"{name}.yaml").write_text(body)
@@ -273,7 +248,7 @@ def test_sync_writes_every_registry_in_full(tmp_path: pathlib.Path) -> None:
     import yaml
 
     root = registry(tmp_path)
-    assert main(["service", "iceberg", "sync", "--config", str(root)]) == 0
+    assert main(["iceberg", "sync", "--config", str(root)]) == 0
 
     catalog = yaml.safe_load((root / "catalogs" / "iceberg.yaml").read_bytes())
     assert catalog["name"] == "iceberg", "the stem-defaulted name is written out"
@@ -282,16 +257,13 @@ def test_sync_writes_every_registry_in_full(tmp_path: pathlib.Path) -> None:
     namespace = yaml.safe_load((root / "namespaces" / "default.yaml").read_bytes())
     assert namespace["name"] == "default"
     assert namespace["catalog"] == "iceberg"
-
-    table = yaml.safe_load((root / "tables" / "log.yaml").read_bytes())
-    assert table["name"] == "log"
-    assert table["fields"], "tables also carry their protocol view"
+    assert not (root / "tables").exists(), "no tables/ folder any more"
 
 
 def test_sync_is_idempotent(tmp_path: pathlib.Path) -> None:
     root = registry(tmp_path)
-    main(["service", "iceberg", "sync", "--config", str(root)])
-    assert main(["service", "iceberg", "sync", "--config", str(root), "--dry-run"]) == 0
+    main(["iceberg", "sync", "--config", str(root)])
+    assert main(["iceberg", "sync", "--config", str(root), "--dry-run"]) == 0
 
 
 def test_sync_leaves_templated_files_alone(
@@ -303,15 +275,195 @@ def test_sync_leaves_templated_files_alone(
     templated.write_text("catalog: iceberg\nlocation: \"{{ env.get('X', '/tmp') }}\"\n")
     before = templated.read_bytes()
 
-    assert main(["service", "iceberg", "sync", "--config", str(root)]) == 0
+    assert main(["iceberg", "sync", "--config", str(root)]) == 0
     assert templated.read_bytes() == before
     assert "templated" in capsys.readouterr().out
 
 
-def test_tables_sync_still_targets_only_tables(tmp_path: pathlib.Path) -> None:
-    root = registry(tmp_path)
-    catalog = root / "catalogs" / "iceberg.yaml"
-    before = catalog.read_bytes()
-    assert main(["service", "iceberg", "tables", "sync", "--config", str(root)]) == 0
-    assert catalog.read_bytes() == before, "the narrow verb stays narrow"
-    assert b"fields:" in (root / "tables" / "log.yaml").read_bytes()
+# -- dataset deploy -----------------------------------------------------------
+
+
+def dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A fully local Iceberg registry plus one declared dataset, in one folder."""
+    root = tmp_path.as_posix()
+    catalogs = tmp_path / "iceberg" / "catalogs"
+    catalogs.mkdir(parents=True)
+    (catalogs / "iceberg.yaml").write_text(
+        f'type: sql\nuri: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
+    )
+    datasets = tmp_path / "datasets"
+    datasets.mkdir()
+    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: ds:/logs\n")
+    return tmp_path
+
+
+def test_dataset_deploy_converges_the_declared_dataset(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    root = dataset_workspace(tmp_path)
+    assert (
+        main(
+            [
+                "dataset",
+                "deploy",
+                "--config",
+                str(root / "datasets"),
+                "--stack-config",
+                str(root / "iceberg"),
+                "--target",
+                "iceberg",
+            ]
+        )
+        == 0
+    )
+    assert "ds:/logs" in capsys.readouterr().out
+
+    from rekep.iceberg import Iceberg
+
+    stack = Iceberg.load(root / "iceberg")
+    assert stack.catalogs.connect("iceberg").table_exists("default.logs")
+
+
+def test_dataset_deploy_dry_run_touches_nothing(tmp_path: pathlib.Path) -> None:
+    root = dataset_workspace(tmp_path)
+    assert (
+        main(
+            [
+                "dataset",
+                "deploy",
+                "--config",
+                str(root / "datasets"),
+                "--stack-config",
+                str(root / "iceberg"),
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+    assert not (root / "iceberg" / "wh").exists()
+
+
+def test_dataset_list_prints_declared_datasets(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    root = dataset_workspace(tmp_path)
+    assert main(["dataset", "list", "--config", str(root / "datasets")]) == 0
+    out = capsys.readouterr().out
+    assert "ds:/logs" in out
+    assert "schema=rekep.models.Log" in out
+
+
+# -- dataset optimize --------------------------------------------------------
+
+
+def crowded_dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A deployed dataset whose table already holds too many small files."""
+    import datetime
+
+    import pyarrow
+
+    from rekep.dataset import Dataset
+    from rekep.iceberg import Iceberg
+    from rekep.models import ParsedMessage
+
+    root = dataset_workspace(tmp_path)
+    (root / "datasets" / "logs.yaml").unlink()
+    (root / "datasets" / "messages.yaml").write_text(
+        "schema: rekep.models.ParsedMessage\n"
+        "uri: ds:/messages\n"
+        "protocols:\n"
+        "  iceberg:\n"
+        '    compact_min_files: "3"\n'
+        "    retain: 0s\n"
+    )
+    main(
+        [
+            "dataset",
+            "deploy",
+            "--config",
+            str(root / "datasets"),
+            "--stack-config",
+            str(root / "iceberg"),
+        ]
+    )
+    stack = Iceberg.load(root / "iceberg")
+    (dataset,) = Dataset.load_all(root / "datasets")
+    table = stack.tables.get(dataset.into_iceberg_table())
+    schema = ParsedMessage.into_arrow_schema()
+    for index in range(4):
+        table.append(
+            pyarrow.Table.from_pylist(
+                [
+                    {
+                        "url": "u",
+                        "unix": index,
+                        "date": datetime.date(2026, 8, 14),
+                        "hash64": index,
+                        "protocol": None,
+                        "fields": {},
+                    }
+                ],
+                schema=schema,
+            )
+        )
+    return root
+
+
+def test_dataset_optimize_dry_run_reports_without_rewriting(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    root = crowded_dataset_workspace(tmp_path)
+    assert (
+        main(
+            [
+                "dataset",
+                "optimize",
+                "--config",
+                str(root / "datasets"),
+                "--stack-config",
+                str(root / "iceberg"),
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+    assert "would rewrite 4 files in 1 partitions" in capsys.readouterr().out
+
+    from rekep.dataset import Dataset
+    from rekep.iceberg import Iceberg
+
+    stack = Iceberg.load(root / "iceberg")
+    (dataset,) = Dataset.load_all(root / "datasets")
+    table = stack.tables.get(dataset.into_iceberg_table())
+    assert table.inspect.data_files().num_rows == 4, "dry run rewrote nothing"
+
+
+def test_dataset_optimize_compacts_and_reclaims_from_the_side_file(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    """`compact_min_files` and `retain` are the whole policy -- no arguments."""
+    root = crowded_dataset_workspace(tmp_path)
+    assert (
+        main(
+            [
+                "dataset",
+                "optimize",
+                "--config",
+                str(root / "datasets"),
+                "--stack-config",
+                str(root / "iceberg"),
+            ]
+        )
+        == 0
+    )
+    assert "rewrote 4 files in 1 partitions" in capsys.readouterr().out
+
+    from rekep.dataset import Dataset
+    from rekep.iceberg import Iceberg
+
+    stack = Iceberg.load(root / "iceberg")
+    (dataset,) = Dataset.load_all(root / "datasets")
+    table = stack.tables.get(dataset.into_iceberg_table())
+    assert table.inspect.data_files().num_rows == 1, "one file per partition now"
+    assert table.scan().to_arrow().num_rows == 4, "same rows"
+    assert len(table.snapshots()) == 1, "retain: 0s dropped the history behind it"

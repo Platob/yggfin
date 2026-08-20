@@ -87,6 +87,11 @@ class LogFile(Convertible, io.BufferedIOBase):
     filesystem: pyarrow.fs.FileSystem | None = None
     header_pattern: re.Pattern[bytes] = HEADER_PATTERN
 
+    #: IANA zone the wall clock in the header belongs to (`Europe/Paris`).
+    #: None keeps the historical reading: the clock *is* UTC. Naming the real
+    #: zone is what makes `unix` a true instant -- see `_unix_nanos`.
+    timezone: str | None = None
+
     def __post_init__(self) -> None:
         """Resolve the filesystem, and rewrite `url` as a path on it."""
         if self.filesystem is None:
@@ -95,9 +100,15 @@ class LogFile(Convertible, io.BufferedIOBase):
     # -- building -----------------------------------------------------------
 
     @classmethod
-    def from_url(cls, url: str, filesystem: pyarrow.fs.FileSystem | None = None) -> LogFile:
+    def from_url(
+        cls,
+        url: str,
+        filesystem: pyarrow.fs.FileSystem | None = None,
+        *,
+        timezone: str | None = None,
+    ) -> LogFile:
         """Build from a URI, or from a path when `filesystem` is given."""
-        return cls(url=url, filesystem=filesystem)
+        return cls(url=url, filesystem=filesystem, timezone=timezone)
 
     @classmethod
     def from_path(
@@ -182,8 +193,9 @@ class LogFile(Convertible, io.BufferedIOBase):
 
     def _batch(self, rows: list[tuple], hashes: list[int]) -> pyarrow.RecordBatch:
         timestamps, threads, drivers, messages = zip(*rows, strict=True)
-        unix = _unix_nanos(timestamps)
-        date, time = _date_and_time(unix)
+        local = _local_micros(timestamps)
+        unix = _unix_nanos(local, self.timezone)
+        date, time = _date_and_time(local)
         batch = pyarrow.RecordBatch.from_arrays(
             [
                 pyarrow.repeat(self.url, len(rows)),
@@ -309,8 +321,12 @@ def _utf8(values: Sequence[bytes | None]) -> pyarrow.Array:
         )
 
 
-def _unix_nanos(timestamps: Sequence[bytes]) -> pyarrow.Array:
-    """One batch of raw header timestamps to int64 nanoseconds, in Arrow.
+def _local_micros(timestamps: Sequence[bytes]) -> pyarrow.Array:
+    """One batch of raw header timestamps to a naive `timestamp("us")` column.
+
+    The wall clock exactly as the line wrote it, no zone applied yet -- which
+    is the only honest intermediate, since the line itself does not say what
+    zone it is in.
 
     The header regex has pinned every component to a fixed offset, so the
     separators -- `T` or space, `.` or `,`, and the `_` between millis and
@@ -331,28 +347,54 @@ def _unix_nanos(timestamps: Sequence[bytes]) -> pyarrow.Array:
             compute.utf8_slice_codeunits(raw, 24, 27),
             "",
         )
-        micros = joined.cast(pyarrow.timestamp("us")).cast(pyarrow.int64())
-        return compute.multiply(micros, 1000)
+        return joined.cast(pyarrow.timestamp("us"))
     except pyarrow.ArrowInvalid:
-        return pyarrow.array([_epoch_nanos(t) for t in timestamps], type=pyarrow.int64())
+        micros = [_epoch_nanos(stamp) // 1000 for stamp in timestamps]
+        return pyarrow.array(micros, type=pyarrow.int64()).cast(pyarrow.timestamp("us"))
 
 
-#: Microseconds in a day, for splitting a timestamp into date and time of day.
-_DAY_MICROS = 86_400_000_000
+def _unix_nanos(local: pyarrow.Array, timezone: str | None) -> pyarrow.Array:
+    """The wall clock as an instant: int64 nanoseconds since the epoch.
 
+    `timezone` is the whole point. A log writes local time and says nothing
+    about which local, so reading it as UTC is a guess that is wrong by the
+    offset -- an hour or nine, silently, and differently either side of a DST
+    change. Naming the zone turns the same characters into a real instant,
+    for one `assume_timezone` kernel per batch (about 1% end to end); leaving
+    it None keeps the older reading rather than inventing a zone.
 
-def _date_and_time(unix: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """Split int64 nanoseconds into a date32 day and a time64 time of day.
+    `ambiguous`/`nonexistent` default to `earliest`/`latest` rather than
+    pyarrow's `raise`: a DST transition is a property of the calendar, not a
+    defect in the log, and a parser that dies once a year on an hour that
+    repeats is worse than one that picks the first of the two. The cost is
+    that `unix` is not monotonic across a fall-back hour, which is true of
+    the underlying reality too.
 
-    Denormalised at parse time -- one division per batch in Arrow -- so the
-    partition column exists in the data instead of every reader re-deriving it.
+    The `int64` cast after it is a reinterpret, not a conversion: an Arrow
+    timestamp is already microseconds since the epoch in its storage.
     """
-    compute = pyarrow.compute
-    micros = compute.divide(unix, 1000)
-    days = compute.divide(micros, _DAY_MICROS)
-    date = days.cast(pyarrow.int32()).cast(pyarrow.date32())
-    time = compute.subtract(micros, compute.multiply(days, _DAY_MICROS))
-    return date, time.cast(pyarrow.time64("us"))
+    if timezone:
+        local = pyarrow.compute.assume_timezone(
+            local, timezone, ambiguous="earliest", nonexistent="latest"
+        )
+    return pyarrow.compute.multiply(local.cast(pyarrow.int64()), 1000)
+
+
+def _date_and_time(local: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
+    """Split the wall clock into a date32 day and a time64 time of day.
+
+    Denormalised at parse time -- two casts per batch in Arrow -- so the
+    partition column exists in the data instead of every reader re-deriving
+    it.
+
+    Taken from the **local** clock, not from `unix`: these two columns are
+    what the line says, and a line stamped `2026-08-14 00:05` belongs to the
+    14th for whoever wrote it, whatever instant that was in UTC. `unix` is
+    the column that answers "when", `date` and `time` answer "what did the
+    log say" -- and a partition on the local day is the one an operator can
+    reason about.
+    """
+    return local.cast(pyarrow.date32()), local.cast(pyarrow.time64("us"))
 
 
 _EPOCH = datetime.date(1970, 1, 1)

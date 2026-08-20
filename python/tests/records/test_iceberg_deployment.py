@@ -33,11 +33,17 @@ def test_an_empty_folder_is_a_working_deployment(tmp_path: pathlib.Path) -> None
 def test_registry_folders_load(tmp_path: pathlib.Path) -> None:
     declare(tmp_path, "catalogs", "lake", "type: rest\nuri: http://rest:8181\nwarehouse: s3://wh\n")
     declare(tmp_path, "namespaces", "prod", "catalog: lake\n")
-    declare(tmp_path, "tables", "logs", "record: rekep.models.Log\nnamespace: prod\n")
     deployment = IcebergDeployment.load(tmp_path)
-    ddl = deployment.ddl_for(Log)
-    assert "CREATE TABLE IF NOT EXISTS lake.prod.logs (" in ddl
-    assert "LOCATION 's3://wh/prod/logs'" in ddl
+    assert deployment.catalog("lake").uri == "http://rest:8181"
+    assert deployment.namespace("prod").catalog == "lake"
+
+
+def test_a_tables_folder_is_no_longer_loaded(tmp_path: pathlib.Path) -> None:
+    """Tables deploy autonomously now (`rekep.dataset.Dataset`) -- a stray
+    `tables/` folder from an older-style deployment is simply never read."""
+    declare(tmp_path, "namespaces", "prod")
+    declare(tmp_path, "tables", "logs", "record: rekep.models.Log\nnamespace: prod\n")
+    assert IcebergDeployment.load(tmp_path).tables == []
 
 
 def test_namespace_location_overrides_the_warehouse(tmp_path: pathlib.Path) -> None:
@@ -63,8 +69,7 @@ def test_unknown_names_are_refused() -> None:
 def test_the_shipped_deployment_loads() -> None:
     deployment = IcebergDeployment.load(REPO_ICEBERG)
     assert deployment.namespace("default").catalog == "iceberg"
-    (table,) = deployment.tables
-    assert table.record_class() is Log
-    ddl = deployment.ddl(table)
+    assert deployment.tables == [], "no tables/ folder any more; see stacks/datasets"
+    ddl = deployment.ddl_for(Log)
     assert "iceberg.default.log (" in ddl
     assert "'write.format.default' = 'parquet'" in ddl

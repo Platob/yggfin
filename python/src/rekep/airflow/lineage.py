@@ -76,3 +76,36 @@ def _section(label: str, records: Records) -> str:
         f"| `{asset_name(r)}` | {docstring_summary(r) or ''} | `{asset_uri(r)}` |" for r in records
     )
     return f"### {label}\n\n| Record | Description | Asset |\n| --- | --- | --- |\n{rows}"
+
+
+def dag_arguments(consumes: Records, produces: Records, **kwargs: Any) -> dict[str, Any]:
+    """`kwargs` for Airflow's `DAG`, with tags and docs derived from records.
+
+    The caller's own tags and docs are appended to, never replaced: lineage
+    is added information, and silently dropping an argument someone wrote is
+    a debugging session waiting to happen.
+    """
+    if not consumes and not produces:
+        return kwargs
+    merged = dict(kwargs)
+    merged["tags"] = sorted({*merged.get("tags", ()), *tags_of(consumes, produces)})
+    written = documentation_of(consumes, produces)
+    existing = merged.get("doc_md")
+    merged["doc_md"] = f"{existing}\n\n{written}" if existing else written
+    return merged
+
+
+def task_arguments(consumes: Records, produces: Records, **kwargs: Any) -> dict[str, Any]:
+    """`kwargs` for Airflow's `@task`: `dag_arguments` plus inlets and outlets.
+
+    The assets are what let Airflow draw the graph -- an outlet for every
+    record produced, an inlet for every one consumed, each carrying the
+    record's schema as asset extras.
+    """
+    if not consumes and not produces:
+        return kwargs
+    merged = dag_arguments(consumes, produces, **kwargs)
+    for key, records in (("inlets", consumes), ("outlets", produces)):
+        if records:
+            merged[key] = [*merged.get(key, ()), *(asset_of(record) for record in records)]
+    return merged

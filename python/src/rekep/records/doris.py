@@ -12,16 +12,17 @@ import pyarrow
 
 from rekep.imports import locate
 from rekep.records import registry
-from rekep.records.arrow import PARTITION_KEY, PRIMARY_KEY, ArrowFieldBuilder
+from rekep.records.arrow import ArrowFieldBuilder, partition_keys, primary_keys
 from rekep.records.record import Record, record
 
 #: Where the Doris deployment lives, relative to the deployment root.
 DORIS_ROOT = pathlib.Path(os.environ.get("REKEP_DORIS_ROOT", "stacks/doris"))
 
 #: The registry folders: one entry per file, the file stem defaulting `name`.
+#: Tables are deliberately not one of these -- `rekep.dataset.Dataset` deploys
+#: autonomously against these two, no `tables/` side file needed.
 CATALOGS_DIR = "catalogs"
 NAMESPACES_DIR = "namespaces"
-TABLES_DIR = "tables"
 
 #: Metadata written by the Arrow projection that the DDL reads back.
 DESCRIPTION = b"description"
@@ -102,7 +103,7 @@ class DorisTable(Record):
         cls = self.record_class()
         builder = DorisDdlBuilder()
         schema = builder.ARROW_BUILDER().schema(cls)
-        keys = [f.name for f in schema if (f.metadata or {}).get(PRIMARY_KEY)]
+        keys = primary_keys(schema)
         fields = []
         for field in builder.ordered_fields(schema, keys):
             entry: dict[str, Any] = {"name": field.name, "type": builder.sql_type(field.type)}
@@ -122,7 +123,7 @@ class DorisTable(Record):
         if self.fields and self.fields != fresh.fields:
             raise ValueError(
                 f"table {self.name or self.record}: `fields` drifted from the record; "
-                "regenerate with: rekep service doris tables sync"
+                "regenerate with: rekep doris sync"
             )
         return fresh
 
@@ -133,11 +134,15 @@ class DorisDeployment(Record):
 
     The folder is a registry of folders, one entry per file:
     `catalogs/internal.yaml` (one catalog each), `namespaces/yggfin.yaml`
-    (one database each, bound to a catalog), `tables/log_records.yaml` (one
-    table each, binding a record). The file stem defaults the entry's `name`,
-    so most files only say what differs. Each level defaults entirely, so an
-    empty folder still renders working DDL; Jinja is rendered before parsing
-    throughout, so replication and names can come from the environment.
+    (one database each, bound to a catalog). The file stem defaults the
+    entry's `name`, so most files only say what differs. No `tables/`
+    folder: `rekep.dataset.Dataset` builds a table autonomously from its own
+    config (`into_doris_table()`) and converges it straight into the catalog
+    and namespace this deployment declares; `tables` stays a plain field so
+    a caller can still populate it directly in Python. Each level defaults
+    entirely, so an empty folder still renders working DDL; Jinja is
+    rendered before parsing throughout, so replication and names can come
+    from the environment.
     """
 
     catalogs: list[DorisCatalog] = dataclasses.field(default_factory=lambda: [DorisCatalog()])
@@ -155,7 +160,6 @@ class DorisDeployment(Record):
             or [DorisCatalog()],
             namespaces=registry.entries(directory / NAMESPACES_DIR, DorisNamespace, context)
             or [DorisNamespace()],
-            tables=registry.entries(directory / TABLES_DIR, DorisTable, context),
         )
 
     # -- lookups ------------------------------------------------------------
@@ -257,7 +261,7 @@ class DorisDdlBuilder:
         space = deployment.namespace(namespace or deployment.namespaces[0].name)
         catalog = deployment.catalog(space.catalog)
         schema = self.ARROW_BUILDER().schema(cls)
-        keys = [f.name for f in schema if (f.metadata or {}).get(PRIMARY_KEY)]
+        keys = primary_keys(schema)
         ordered = self.ordered_fields(schema, keys)
 
         columns = ",\n".join(f"    {self.column(field)}" for field in ordered)
@@ -313,11 +317,10 @@ class DorisDdlBuilder:
 
     def partition_sql(self, schema: pyarrow.Schema) -> str | None:
         """AUTO RANGE partition on the first date-shaped partition field."""
-        for field in schema:
-            transform = (field.metadata or {}).get(PARTITION_KEY, b"").decode()
+        for name, transform in partition_keys(schema).items():
             granularity = TRUNC_SQL.get(transform)
             if granularity:
-                return f"AUTO PARTITION BY RANGE (date_trunc(`{field.name}`, '{granularity}')) ()"
+                return f"AUTO PARTITION BY RANGE (date_trunc(`{name}`, '{granularity}')) ()"
         return None
 
     def distribution_sql(
@@ -326,10 +329,9 @@ class DorisDdlBuilder:
         """HASH distribution: a bucket[] partition wins, then keys, then first."""
         buckets = namespace.buckets
         columns = keys
-        for field in schema:
-            transform = (field.metadata or {}).get(PARTITION_KEY, b"").decode()
+        for name, transform in partition_keys(schema).items():
             if transform.startswith("bucket["):
-                columns = [field.name]
+                columns = [name]
                 buckets = transform.removeprefix("bucket[").rstrip("]")
                 break
         if not columns:

@@ -34,9 +34,11 @@ nav:
   - Guide:
       - Records: guide/records.md
       - Logs: guide/logs.md
-      - Flows: guide/flows.md
+      - Jobs: guide/jobs.md
+      - Datasets: guide/datasets.md
       - CLI: guide/cli.md
   - Data models: models.md
+  - Benchmarks: benchmarks.md
   - Reference: reference.md
 
 plugins:

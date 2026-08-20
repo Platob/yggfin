@@ -449,3 +449,73 @@ def test_a_crlf_log_parses_identically(plain: Path, tmp_path: Path) -> None:
     with LogFile(url=plain.as_uri()) as a, LogFile(url=crlf.as_uri()) as b:
         left, right = a.into_arrow_table(), b.into_arrow_table()
     assert left.drop_columns("url").equals(right.drop_columns("url"))
+
+
+# -- timezone: the wall clock is local, the instant is not ----------------
+
+
+#: The first record line's wall clock, read out of the fixture rather than
+#: assumed -- then pinned, so a regex regression cannot move both sides.
+FIRST_CLOCK = datetime.datetime.fromisoformat(
+    RECORDS[0][:26].decode().replace("_", "").replace(",", ".")
+)
+
+
+def test_the_fixture_starts_where_the_assertions_below_say() -> None:
+    assert FIRST_CLOCK == datetime.datetime(2026, 8, 14, 0, 5, 1, 147250)  # noqa: DTZ001
+
+
+def test_without_a_timezone_the_clock_is_read_as_utc() -> None:
+    with LogFile.from_url(SAMPLE.resolve().as_uri()) as log:
+        batch = next(iter(log.into_arrow_batches()))
+    instant = FIRST_CLOCK.replace(tzinfo=datetime.UTC)
+    assert batch.column("unix")[0].as_py() == int(instant.timestamp() * 1_000_000) * 1_000
+
+
+def test_a_timezone_shifts_the_instant_by_its_offset() -> None:
+    """Same characters in the file, different moment in time."""
+    naive, paris, york = (
+        next(iter(LogFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone).into_arrow_batches()))
+        .column("unix")[0]
+        .as_py()
+        for zone in (None, "Europe/Paris", "America/New_York")
+    )
+    assert paris == naive - 2 * 3_600 * 1_000_000_000, "CEST is UTC+2 in August"
+    assert york == naive + 4 * 3_600 * 1_000_000_000, "EDT is UTC-4 in August"
+
+
+def test_the_date_and_time_columns_stay_on_the_local_clock() -> None:
+    """They are what the line said; `unix` is the column that answers when."""
+    columns = {}
+    for zone in (None, "Europe/Paris", "Pacific/Auckland"):
+        with LogFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone) as log:
+            batch = next(iter(log.into_arrow_batches()))
+        columns[zone] = (batch.column("date")[0].as_py(), batch.column("time")[0].as_py())
+    assert len(set(columns.values())) == 1, "the wall clock does not move"
+    assert columns[None] == (FIRST_CLOCK.date(), FIRST_CLOCK.time())
+
+
+def test_a_repeated_hour_resolves_rather_than_raising() -> None:
+    """A DST fall-back hour is the calendar's doing, not a broken log --
+    pyarrow would raise by default, which would kill the parse once a year."""
+    import pyarrow
+
+    from rekep.logs.log_file import _unix_nanos
+
+    ambiguous = pyarrow.array(
+        [datetime.datetime(2026, 10, 25, 2, 30)], type=pyarrow.timestamp("us")
+    )
+    assert _unix_nanos(ambiguous, "Europe/Paris")[0].as_py() is not None
+
+
+def test_a_pre_epoch_timestamp_lands_on_the_right_day() -> None:
+    import pyarrow
+
+    from rekep.logs.log_file import _date_and_time
+
+    before = pyarrow.array(
+        [datetime.datetime(1969, 12, 31, 23, 59, 59)], type=pyarrow.timestamp("us")
+    )
+    date, time = _date_and_time(before)
+    assert date[0].as_py() == datetime.date(1969, 12, 31)
+    assert time[0].as_py() == datetime.time(23, 59, 59)

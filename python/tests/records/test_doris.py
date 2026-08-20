@@ -58,25 +58,11 @@ def test_catalogs_and_namespaces_come_from_their_folders(tmp_path: pathlib.Path)
     assert '"replication_num" = "3"' in ddl
 
 
-def test_each_tables_file_is_a_table(tmp_path: pathlib.Path) -> None:
+def test_a_tables_folder_is_no_longer_loaded(tmp_path: pathlib.Path) -> None:
+    """Tables deploy autonomously now (`rekep.dataset.Dataset`) -- a stray
+    `tables/` folder from an older-style deployment is simply never read."""
     declare(tmp_path, "tables", "fills", "record: rekep.models.Log\n")
-    deployment = DorisDeployment.load(tmp_path)
-    (table,) = deployment.tables
-    assert table.record_class() is Log
-    assert table.name == "fills", "the file stem defaults the table name"
-    assert "iceberg.default.fills (" in deployment.ddl(table)
-
-
-def test_a_table_entry_configures_its_record(tmp_path: pathlib.Path) -> None:
-    declare(
-        tmp_path,
-        "tables",
-        "fills",
-        "record: rekep.models.Log\nproperties:\n  ttl: '7d'\n",
-    )
-    ddl = DorisDeployment.load(tmp_path).ddl_for(Log)
-    assert "fills (" in ddl
-    assert '"ttl" = "7d"' in ddl
+    assert DorisDeployment.load(tmp_path).tables == []
 
 
 def test_the_file_stem_defaults_the_name(tmp_path: pathlib.Path) -> None:
@@ -177,6 +163,4 @@ def test_the_shipped_deployment_loads(monkeypatch: pytest.MonkeyPatch) -> None:
     deployment = DorisDeployment.load(REPO_DORIS)
     assert deployment.namespace("default").catalog == "iceberg"
     assert deployment.catalog("iceberg").type == "iceberg"
-    (table,) = deployment.tables
-    assert table.record_class() is Log
-    assert table.name == "log"
+    assert deployment.tables == [], "no tables/ folder any more; see stacks/datasets"

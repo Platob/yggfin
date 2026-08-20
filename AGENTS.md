@@ -83,8 +83,15 @@ remote file. This rules out `frozen=True`/`slots=True` on such classes.
 - Hot paths hand columns to `pyarrow.compute`, never loop in Python; per-row
   work is a regex match, an append, a hash. Benchmark (`python/benchmarks/`)
   before and after touching a hot path.
-- Transforms are batch streams: `Flow.arrow_transform` takes and yields
+- Transforms are batch streams: `Job.arrow_transform` takes and yields
   `RecordBatch` iterators.
+- A record is also a **target** shape: `cast_arrow_batch`/`cast_arrow_reader`
+  (unsafe by default) cast columns, fill missing *nullable* ones, drop extras
+  and reorder, so a nearly-right batch writes. A missing NOT NULL column is
+  refused by name -- filling it would only fail later, at the write.
+- **A batch is not a unit of work downstream.** Iceberg commits a snapshot
+  and lands a file per call, so writes accumulate `chunk_rows` first;
+  `iceberg_compact` repairs what accumulates across runs instead.
 
 ## 8. Let the library own what it already knows
 
@@ -121,53 +128,146 @@ rekep/
 ├── imports.py     dotted-path resolution
 ├── render.py      Jinja + env + git context
 ├── filesystems.py FileSystem.from_uri, cached per URL
-├── cli.py         one service class per capability
+├── namespace.py   Namespace (recursive parent levels building a path) and
+│                  ResourceUri: the one parser and formatter for every
+│                  identity here -- a service, a `/`-separated path and an
+│                  optional branch fragment: `ds:/catalog/namespace/name#dev`,
+│                  `job:/namespace/name`, generically
+│                  `rekep:/<service>/<path>` with the service as the first
+│                  path part. Paths, not dots: a dot cannot say whether
+│                  `a.b.c` is three levels or one name
+├── job.py         Job: the OpenLineage resource for a process -- config
+│                  record + arrow_transform (not enforced abstract, bindable
+│                  via @arrow_task); repo_url/script_path -> the
+│                  sourceCodeLocation facet, airflow{dag,task}/env/properties
+│                  dicts; side files under stacks/jobs, run_tracked()
+│                  lineage-wraps extract -> transform -> load, Job -> Airflow
+│                  via into_airflow
+├── config.py      folder(service, root): the checkout's stacks/<service> if
+│                  it has one, else ~/.config/rekep/<service>; REGISTRY, one
+│                  process-wide dict of loaded resources keyed by URI
+├── dataset.py     Dataset: the OpenLineage resource for a data product --
+│                  `schema:` (a dotted Record path; arrow_schema() is the
+│                  Arrow view) + `uri:` (identity as one path) +
+│                  cross-platform location (shared
+│                  `properties`/`direct`, per-protocol `protocols`);
+│                  read_arrow_reader/write_arrow_reader dispatch to
+│                  `_{format}_..._arrow_reader`, which lineage-tracks a call
+│                  to the public `{format}_..._arrow_reader` hook -- pyiceberg's
+│                  own API, not reimplemented: iceberg_read (row_filter/columns
+│                  pushed to the scan planner, use_ref/snapshot_id),
+│                  iceberg_write (one `merge_by`: True=primary key, list=those
+│                  columns, falsy=append; `merge_schema` adds the columns the
+│                  stream has and the table lacks via union_by_name -- ids
+│                  always taken back from the table, and a stale ref moved
+│                  forward first, since a scan projects its snapshot's schema
+│                  rather than the table's; `overwrite`; branch-aware;
+│                  chunk_rows per commit),
+│                  compact/cleanup/optimize dispatch by protocol like I/O
+│                  does: iceberg_compact rewrites fragmented partitions
+│                  (write.target-file-size-bytes decides the output size,
+│                  not us), iceberg_cleanup sets the metadata-retention
+│                  properties, expires snapshots and then **deletes the
+│                  files that expiry stranded** -- pyiceberg's expire is
+│                  metadata-only, so it produces garbage rather than
+│                  removing it -- and iceberg_optimize turns manifest
+│                  merging on, compacts, then cleans, in that order;
+│                  iceberg_publish fast-forwards main onto a branch;
+│                  a merge prunes each chunk against the min/max Iceberg
+│                  already records, appending instead when nothing can match;
+│                  file_read/write via rekep.filesystems, hive-partitioned from
+│                  the record's own Arrow(partition=...)
+├── run.py         Run/RunEvent: OpenLineage's own event shape -- the shapes
+│                  only; who is told is lineage.py's business
+├── lineage.py     LineageClient (anything with emit), Collector (a client
+│                  that keeps them), Lineage (one run's START ->
+│                  COMPLETE/FAIL boundary). **Opt in**: `with_lineage(client)`
+│                  binds a runtime handle, never a field; with none bound no
+│                  run is built at all -- reads are handed back the
+│                  protocol's own reader rather than a counting wrapper
+├── cli.py         one service class per capability, each registering its own
+│                  top-level subparser (`rekep <svc> <cmd>`)
 ├── tutorial.py    the guided rich tour (`rekep tutorial`)
 ├── install/       installers: check, plan, converge
 ├── records/       machinery: record.py, annotations.py, arrow.py,
 │                  iceberg.py (+deployment), doris.py (+deployment),
 │                  ddl.py, registry.py (folder registries)
-├── models/        the concrete records (one module per model)
+├── models/        the concrete records (one module per model): log.py,
+│                  parsed_message.py (pipe key=value + FIX protocol tag)
+├── jobs/          the concrete jobs (one module per job), mirroring
+│                  models/: files_to_logs.py, logs_to_records.py (regex
+│                  key=value parser, rekep.jobs.parse_fields)
 ├── logs/          LogFile: streaming Arrow-native log access
-├── flows/         Task/@task, Dag/@dag (engine-agnostic, with a
-│                  reference executor), Flow: config record + abstract
-│                  arrow_transform; Flow -> Dag -> Airflow via into_*
 ├── iceberg/       Iceberg stack: Catalogs/Namespaces/Tables CRUD (pyiceberg)
 ├── doris/         Doris stack: same resources, SQL plan + pluggable executor
-└── airflow/       DAG authoring with record lineage (POSIX-only);
-                   service.py: Dags resource deploying generated DAG
-                   modules (renders strings, never imports Airflow)
+└── airflow/       one DAG per Job, record lineage derived (POSIX-only).
+                   **Wraps none of Airflow's authoring API** -- no @dag, no
+                   @task, no DAG subclass: a Job already declares what a task
+                   needs, Job.into_airflow() hands it to Airflow's own
+                   decorators via sdk.py, and airflow{dag,task} passes
+                   anything else through. lineage.py derives what Airflow
+                   cannot (tags, docs, inlets/outlets); service.py: Dags
+                   resource deploying generated DAG modules (renders
+                   strings, never imports Airflow)
 ```
 
-Dependencies point one way: services → models → records → convert. A new
-model is a new module in `models/`. `tests/` mirrors `src/` folder for
-folder.
+Dependencies point one way: services → models → records → convert; among the
+root OpenLineage resources, `namespace.py` -> `job.py` -> `run.py` ->
+`dataset.py`, never back. A new model is a new module in `models/`. `tests/`
+mirrors `src/` folder for folder.
+
+**Records are the schema helper.** `Record` (`records/record.py`) carries no
+resource identity of its own -- it is the dataclass-is-its-own-schema
+machinery every data-carrying model and every OpenLineage resource's `record:`
+field project through (`Dataset.schema_facet()`, `IcebergTable`/`DorisTable`'s
+own `record:`). The resources are `Namespace`, `Job`, `Dataset`, `Run`/`RunEvent`.
 
 **Deploy artifacts** live under repo `stacks/`, all tracked — only runtime
 state is ignored (`stacks/iceberg/catalog.db`, `stacks/iceberg/warehouse/`,
 generated `stacks/ddl/`), and the tutorial builds in gitignored `tutorial/`.
-The layout: `flows/` (one movement per
-file), `iceberg/` and `doris/` (folder registries: `catalogs/`,
-`namespaces/`, `tables/`, file stem defaults `name`; table files embed the
-protocol-adapted fields, `verify`-refused on drift), `product/` (whole
-definitions as YAML, `name` only — no namespace). Generated DDL is never
-committed (`stacks/ddl/` gitignored). Defaults are **fully local**: SQLite
-Iceberg catalog, file warehouse — a laptop runs without services. No READMEs
-in `stacks/`.
+The layout: `jobs/` (one job per file), `iceberg/` and `doris/` (folder
+registries: `catalogs/`, `namespaces/` only, file stem defaults `name`),
+`datasets/` (one `Dataset` per file -- `schema:`/`uri:`, deployed
+autonomously into whichever `--target` names, no `tables/` folder anywhere
+and no protocol-adapted fields committed to disk), `product/`
+(whole definitions as YAML, `name` only — no namespace). Generated DDL is
+never committed (`stacks/ddl/` gitignored). Defaults are **fully local**:
+SQLite Iceberg catalog, file warehouse — a laptop runs without services. No
+READMEs in `stacks/`.
+
+**Branch-conditional naming is a per-file choice, not a mode.** Every side
+file already renders through `rekep.render.render` -- `git_context()`'s
+`git_branch_suffix`/`git_branch_slug` are always in scope, Jinja or not --
+so a file picks whether it uses them at all: `stacks/jobs/logs_to_records.yaml`
+and `stacks/datasets/parsed_messages.yaml` (an Iceberg `branch`) pick up the
+branch because they are working/iterating assets, `files_to_logs.yaml` and
+`log.yaml` stay stable because they are the shared, canonical ones. Nothing
+new to wire in for a file to make either choice.
 
 **Stacks are resource services with idempotent verbs**: `get_or_create`,
-`create_or_update`, `deploy` / `deploy_folder` — dependency order
-catalog → namespace → table, parallel within a level, every action logged
-("created", "exists, nothing to do", "would add columns [x]"). Every
+`create_or_update`, `deploy` / `deploy_folder` / `deploy_one` — dependency
+order catalog → namespace → table, parallel within a level, every action
+logged ("created", "exists, nothing to do", "would add columns [x]"). Every
 mutating verb takes `dry_run`. Installers (`rekep install`) follow
 the same contract: honest `installed()` check, exact `plan()`, converge.
 Never call pyiceberg raw at a call site — extend the resource service.
 
-`rekep service records deploy --pyclass <dotted> --target iceberg|doris`
-converges one record instead of a whole folder, honouring its declared table
-entry when there is one.
+`rekep records deploy --pyclass <dotted> --target iceberg|doris`
+converges one bare record, stack defaults filling in namespace and
+properties. `rekep dataset deploy --target iceberg|doris` converges
+every `Dataset` under `stacks/datasets/` instead -- each carries its own
+namespace and per-protocol properties, autonomous of any table side file.
+`rekep dataset optimize` compacts and reclaims on those same tables,
+taking no policy arguments: `protocols.iceberg.compact_min_files`/`retain`
+in the side file are the policy. The `protocols.<protocol>` keys that *route*
+a write rather than describe the table (`location`, `branch`, `merge_by`,
+`merge_schema`, `compact_min_files`, `retain`) are filtered out of
+`table_properties()`, so they never land on disk pretending to describe the
+data.
 
-**The CLI is services** (`rekep service <svc> <cmd>`), plus the top-level
+**The CLI is services** (`rekep <svc> <cmd>` -- the service *is* the command
+word, with no grouping noun in front of it: each service class registers its
+own subparser straight on the top level), plus `rekep install` and
 `rekep tutorial`. **Human-facing CLI output is modern and animated**: rich
 panels, spinners and progress (rich is a core dependency; construct
 `Console(legacy_windows=False)` and reconfigure stdout to UTF-8) — while
@@ -177,8 +277,10 @@ String options may be Jinja, rendered with args + `env` + git context
 trunk). Undefined template variables raise.
 
 **Documentation is generated where it can be**: `docs/models.md` comes from
-`rekep service docs models`; new code-describing docs should be a
-`DocsService` projection, not prose that drifts. mkdocs-material at the repo
+`rekep docs models`; new code-describing docs should be a
+`DocsService` projection, not prose that drifts. Benchmark tables live in
+`docs/benchmarks.md` and are measured twice before being published -- say
+what reproduced and what is noise, never a single run as if it were a spec. mkdocs-material at the repo
 root, built `--strict`; the tutorial lives at `docs/use-cases/tutorial.md`
 and as the CLI tour.
 

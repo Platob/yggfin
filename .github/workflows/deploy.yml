@@ -37,8 +37,8 @@ jobs:
         run: uv sync --extra local
       - name: Verify side files against the records
         run: |
-          uv run rekep service iceberg tables sync --config ../stacks/iceberg
-          git -C .. diff --exit-code stacks/iceberg/tables
+          uv run rekep iceberg sync --config ../stacks/iceberg
+          git -C .. diff --exit-code stacks/iceberg
       - name: Deploy
         working-directory: .
         env:
@@ -47,7 +47,7 @@ jobs:
           ICEBERG_REST_URI: ${{ secrets.ICEBERG_REST_URI }}
           ICEBERG_WAREHOUSE: ${{ secrets.ICEBERG_WAREHOUSE }}
         run: |
-          python/.venv/bin/rekep service iceberg deploy --config stacks/iceberg 2>&1 \
+          python/.venv/bin/rekep iceberg deploy --config stacks/iceberg 2>&1 \
             | tee iceberg-deploy.log
       - uses: actions/upload-artifact@v4
         with:
@@ -64,12 +64,12 @@ jobs:
         run: uv sync
       - name: Verify side files against the records
         run: |
-          uv run rekep service doris tables sync --config ../stacks/doris
-          git -C .. diff --exit-code stacks/doris/tables
+          uv run rekep doris sync --config ../stacks/doris
+          git -C .. diff --exit-code stacks/doris
       - name: Plan
         working-directory: .
         run: |
-          python/.venv/bin/rekep service doris deploy --config stacks/doris 2>&1 \
+          python/.venv/bin/rekep doris deploy --config stacks/doris 2>&1 \
             | tee doris-plan.sql
       - uses: actions/upload-artifact@v4
         with:

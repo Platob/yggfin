@@ -52,6 +52,72 @@ Fill.into_yaml("fill.schema.yaml")            # the contract
 Fill(day="2026-08-14", qty=5).into_json()     # one row
 ```
 
+## Keys and partitions
+
+`Arrow(key=True)` and `Arrow(partition=...)` are declared once on the field
+and read back from the Arrow schema, which is the one authority every other
+projection derives from:
+
+```python
+Fill.primary_keys()      # ["day", "order_id"] -- Iceberg identifier fields, Doris key columns
+Fill.partition_keys()    # {"day": "day", "account": "bucket[16]", "venue": "identity"}
+```
+
+The same two lists are what a DDL `PRIMARY KEY` clause, an Iceberg
+`PartitionSpec`, a Doris `DISTRIBUTED BY`, a `merge_by=True` upsert and a
+hive-partitioned file write all resolve to — none of them re-walks the
+declaration.
+
+## Casting onto a record's schema
+
+A record is also a *target* shape, for data that arrives nearly right:
+
+```python
+Fill.cast_arrow_batch(batch)              # cast, fill, drop, reorder
+Fill.cast_arrow_reader(batches)           # the same, one batch at a time
+Fill.cast_arrow_batch(batch, safe=True)   # Arrow's checking back on
+```
+
+Columns are cast to the declared types, missing **nullable** ones are filled
+with nulls, extras are dropped and the order is fixed. It takes a plain
+iterator of batches too, so `Job.arrow_transform`'s output becomes a reader
+of the record's shape in one step — which is what
+[`Dataset.write_arrow_reader`](datasets.md#reshaping-onto-the-records-schema)
+does on every write.
+
+Unsafe by default, deliberately: this is `pyarrow.compute.cast`'s unsafe
+mode, the one that lets a value narrow or a timestamp lose precision instead
+of raising. A cast *to a target schema* is a declaration that the target's
+types are the authority, so the truncation is the intent.
+
+`merge_schema=True` keeps the columns the source has and the record does
+not, rather than dropping them:
+
+```python
+Fill.merge_arrow_schema(incoming)                  # this record's fields, then the new ones
+Fill.cast_arrow_reader(batches, merge_schema=True)  # cast the shared, keep the rest
+```
+
+Shared columns stay the record's — its types, its nullability — so the data
+is cast onto the declaration, never the declaration onto the data. New ones
+are appended, forced nullable (existing rows predate them), and renumbered
+after the record's highest field id so column identity stays unique.
+
+The widened shape is decided once, from the reader's schema or the first
+batch, because a `RecordBatchReader` cannot change schema under its
+consumer. A hand-rolled iterator whose batches disagree is resolved in the
+target's favour: a column a later batch drops comes back as nulls, a column
+only a later batch has is dropped.
+`records.merge_schemas` is the same against any two schemas. This is what
+[`Dataset`'s `merge_schema`](datasets.md#merge_schema-when-the-source-grows-a-column)
+writes are built on.
+
+A missing **non-nullable** column is refused by name instead of filled —
+filling a NOT NULL column with nulls builds a batch that only fails later,
+at the write, where the cause is much harder to see. `records.cast_batch`/
+`records.cast_reader` are the same thing against any schema, for targets that
+are not records.
+
 ## Files
 
 Instances round-trip through YAML, TOML and JSON, symmetric with the dumps:

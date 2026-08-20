@@ -212,6 +212,19 @@ def test_unknown_keys_are_ignored() -> None:
     assert Venue.from_json(json.dumps({"mic": "XPAR", "retired": True}).encode()) == Venue("XPAR")
 
 
+def test_a_dict_of_any_round_trips_untyped_values() -> None:
+    """`Any` means "trust the container a text format already gave back" --
+    not "look up `isinstance(value, Any)`", which raises."""
+    from typing import Any
+
+    @record
+    class Config(Record):
+        properties: dict[str, Any] = dataclasses.field(default_factory=dict)
+
+    config = Config(properties={"retries": 2, "pool": "default", "enabled": True})
+    assert Config.from_json(config.into_json()) == config
+
+
 def test_enum_is_written_as_its_value(book: Book) -> None:
     assert book.into_dict()["side"] == "BUY"
 
