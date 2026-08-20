@@ -148,8 +148,8 @@ with LogFile.from_url("s3://bucket/app-2026-08-14.txt.gz") as log:
   only the new table is created.
 - **Schema evolution**: add an optional field to `Trade`, run
   `tables sync`, redeploy — `create_or_update` unions the new column in.
-- **A flow**: subclass `rekep.flows.Flow`, implement `arrow_transform`
-  (batches in, batches out), declare it in `stacks/flows/`, and let
-  `rekep.airflow.flows.dags()` turn it into a lineage-tagged DAG.
+- **A job**: subclass `rekep.job.Job`, implement `arrow_transform`
+  (batches in, batches out), declare it in `stacks/jobs/`, and let
+  `rekep.airflow.jobs.dags()` turn it into a lineage-tagged DAG.
 - **A branch environment**: `export GITHUB_REF_NAME=feature/x` and redeploy —
   every table name picks up `_feature_x`.

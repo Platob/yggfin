@@ -197,17 +197,17 @@ class Tutorial:
 
         self.panel(
             "7 \u00b7 Orchestrate with Airflow",
-            "A `Flow` is a record plus one `arrow_transform`; a side file in\n"
-            "`stacks/flows/` becomes a DAG whose lineage draws itself:",
+            "A `Job` is an OpenLineage resource plus one `arrow_transform`; a\n"
+            "side file in `stacks/jobs/` becomes a DAG whose lineage draws itself:",
         )
-        flow = (
-            "flow: rekep.flows.Passthrough\n"
+        declared = (
+            "job: rekep.job.Passthrough\n"
             "name: passthrough\n"
             'schedule: "@daily"\n'
             "consumes: [rekep.models.Log]\n"
             "produces: [rekep.models.Log]\n"
         )
-        self.console.print(Syntax(flow, "yaml", background_color="default"))
+        self.console.print(Syntax(declared, "yaml", background_color="default"))
         with self.spin("deriving lineage"):
             lineage = documentation_of([Log], [Log])
         self.console.print(Markdown(lineage))

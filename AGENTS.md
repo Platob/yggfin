@@ -83,7 +83,7 @@ remote file. This rules out `frozen=True`/`slots=True` on such classes.
 - Hot paths hand columns to `pyarrow.compute`, never loop in Python; per-row
   work is a regex match, an append, a hash. Benchmark (`python/benchmarks/`)
   before and after touching a hot path.
-- Transforms are batch streams: `Flow.arrow_transform` takes and yields
+- Transforms are batch streams: `Job.arrow_transform` takes and yields
   `RecordBatch` iterators.
 
 ## 8. Let the library own what it already knows
@@ -121,6 +121,25 @@ rekep/
 ├── imports.py     dotted-path resolution
 ├── render.py      Jinja + env + git context
 ├── filesystems.py FileSystem.from_uri, cached per URL
+├── namespace.py   Namespace: the OpenLineage resource for a hierarchical
+│                  identifier -- recursive parent levels building a path;
+│                  unique_uri(scheme, namespace, name) is the one place a
+│                  Job's and a Dataset's `scheme://namespace/name` id comes from
+├── job.py         Job: the OpenLineage resource for a process -- config
+│                  record + arrow_transform (not enforced abstract, bindable
+│                  via @arrow_task); side files under stacks/jobs,
+│                  run_tracked() lineage-wraps extract -> transform -> load,
+│                  Job -> Airflow via into_airflow
+├── dataset.py     Dataset: the OpenLineage resource for a data product --
+│                  schema (via Record) + cross-platform location (shared
+│                  `properties`/`direct`, per-protocol `protocols`);
+│                  write_arrow_reader dispatches to `_{format}_write_arrow_reader`,
+│                  which lineage-tracks a call to the public `{format}_write_arrow_reader`
+│                  (iceberg_write_arrow_reader, file_write_arrow_reader via
+│                  rekep.filesystems)
+├── run.py         Run/RunEvent: OpenLineage's own event shape, kept as
+│                  Job's and Dataset's internal lineage bookkeeping
+│                  (`.events()`), never emitted anywhere
 ├── cli.py         one service class per capability
 ├── tutorial.py    the guided rich tour (`rekep tutorial`)
 ├── install/       installers: check, plan, converge
@@ -129,9 +148,6 @@ rekep/
 │                  ddl.py, registry.py (folder registries)
 ├── models/        the concrete records (one module per model)
 ├── logs/          LogFile: streaming Arrow-native log access
-├── flows/         Task/@task, Dag/@dag (engine-agnostic, with a
-│                  reference executor), Flow: config record + abstract
-│                  arrow_transform; Flow -> Dag -> Airflow via into_*
 ├── iceberg/       Iceberg stack: Catalogs/Namespaces/Tables CRUD (pyiceberg)
 ├── doris/         Doris stack: same resources, SQL plan + pluggable executor
 └── airflow/       DAG authoring with record lineage (POSIX-only);
@@ -139,14 +155,21 @@ rekep/
                    modules (renders strings, never imports Airflow)
 ```
 
-Dependencies point one way: services → models → records → convert. A new
-model is a new module in `models/`. `tests/` mirrors `src/` folder for
-folder.
+Dependencies point one way: services → models → records → convert; among the
+root OpenLineage resources, `namespace.py` -> `job.py` -> `run.py` ->
+`dataset.py`, never back. A new model is a new module in `models/`. `tests/`
+mirrors `src/` folder for folder.
+
+**Records are the schema helper.** `Record` (`records/record.py`) carries no
+resource identity of its own -- it is the dataclass-is-its-own-schema
+machinery every data-carrying model and every OpenLineage resource's `record:`
+field project through (`Dataset.schema_facet()`, `IcebergTable`/`DorisTable`'s
+own `record:`). The resources are `Namespace`, `Job`, `Dataset`, `Run`/`RunEvent`.
 
 **Deploy artifacts** live under repo `stacks/`, all tracked — only runtime
 state is ignored (`stacks/iceberg/catalog.db`, `stacks/iceberg/warehouse/`,
 generated `stacks/ddl/`), and the tutorial builds in gitignored `tutorial/`.
-The layout: `flows/` (one movement per
+The layout: `jobs/` (one job per
 file), `iceberg/` and `doris/` (folder registries: `catalogs/`,
 `namespaces/`, `tables/`, file stem defaults `name`; table files embed the
 protocol-adapted fields, `verify`-refused on drift), `product/` (whole

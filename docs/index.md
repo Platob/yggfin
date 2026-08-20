@@ -47,7 +47,7 @@ Everything else is derived, never hand-written beside it:
 - **`rekep.models`** — the concrete records this package reads and writes.
 - **`rekep.logs`** — `LogFile`: lazy, streaming, compression-transparent log
   access over any `pyarrow.fs` filesystem.
-- **`rekep.flows`** — `Flow`: a data movement declared as a record, with one
-  abstract `arrow_transform`.
+- **`rekep.namespace`**, **`rekep.job`**, **`rekep.dataset`**, **`rekep.run`** —
+  the OpenLineage resources: `Namespace`, `Job`, `Dataset`, `Run`/`RunEvent`.
 - **`rekep.airflow`** — DAG authoring with lineage derived from records, and
   DAGs built from side files.

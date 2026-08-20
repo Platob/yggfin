@@ -527,7 +527,7 @@ class AirflowService:
         commands = parser.add_subparsers(dest="command", required=True)
 
         deploy = commands.add_parser("deploy", help="converge DAG modules into a dags folder")
-        deploy.add_argument("--config", default=None, help="flows directory")
+        deploy.add_argument("--config", default=None, help="jobs directory")
         deploy.add_argument("--dags-folder", required=True, help="Airflow dags folder to write")
         deploy.add_argument(
             "--dry-run", action="store_true", help="log what would happen without writing"
@@ -540,17 +540,17 @@ class AirflowService:
         dags = commands.add_parser("dags", help="the dag resource")
         verbs = dags.add_subparsers(dest="verb", required=True)
         listing = verbs.add_parser("list", help="list declared dags")
-        listing.add_argument("--config", default=None, help="flows directory")
+        listing.add_argument("--config", default=None, help="jobs directory")
         listing.set_defaults(run=self.list_dags)
 
     def deploy(self, arguments: argparse.Namespace) -> int:
         from rekep.airflow.service import Airflow
-        from rekep.flows import FLOWS_ROOT
+        from rekep.job import JOBS_ROOT
 
         level = logging.DEBUG if arguments.verbose else logging.INFO
         logging.basicConfig(level=level, format="%(asctime)s %(name)s %(message)s")
         deployed = Airflow.deploy_folder(
-            arguments.config or FLOWS_ROOT,
+            arguments.config or JOBS_ROOT,
             dags_folder=arguments.dags_folder,
             dry_run=arguments.dry_run,
         )
@@ -560,11 +560,10 @@ class AirflowService:
 
     def list_dags(self, arguments: argparse.Namespace) -> int:
         from rekep.airflow.service import Dags
-        from rekep.flows import FLOWS_ROOT
+        from rekep.job import JOBS_ROOT
 
-        for dag in Dags(arguments.config or FLOWS_ROOT).list():
-            tasks = ", ".join(task.name for task in dag.tasks)
-            print(f"{dag.name}  schedule={dag.schedule or '-'}  tasks=[{tasks}]")
+        for job in Dags(arguments.config or JOBS_ROOT).list():
+            print(f"{job.name}  namespace={job.namespace or '-'}  schedule={job.schedule or '-'}")
         return 0
 
 
