@@ -64,8 +64,9 @@ MERGE_IN_LIMIT = 200
 DEFAULT_COMMIT_ROW_SIZE = 1_000_000
 
 #: Table property holding what compaction has already settled: a JSON object
-#: mapping "<branch>/<partition>" to the snapshot that part was rewritten at. A
-#: part whose partition has had nothing land in it since is not planned again,
+#: mapping "<branch>/<partition>" -- or "<branch>/" for a table planned whole
+#: -- to what that part held when it was last rewritten. A part that has had
+#: nothing land in it since is not planned again,
 #: which is the only reliable way to know that rewriting it would change
 #: nothing: a size rule cannot tell, because pyiceberg sizes its output files
 #: from *in-memory* bytes and a part that legitimately needs several files
@@ -826,10 +827,6 @@ class IcebergDataset(Dataset):
         if not rows:
             return []
         marks = self.compaction_marks()
-        fresh = [row for row in rows if marks.get(_mark_key(reference, row)) != _counts(row)]
-        if not fresh:
-            return []
-
         spec = table.spec()
         identities = [
             (field.name, table.schema().find_column_name(field.source_id))
@@ -841,9 +838,17 @@ class IcebergDataset(Dataset):
             # holds: the table is only addressable as a whole -- which means
             # reading it whole, so `row_filter` is the escape hatch for a table
             # that does not fit.
-            total = int(sum(row["file_count"] for row in fresh))
-            return [(f"{reference}/", None, total)] if total >= min_files else []
+            #
+            # Its mark is the whole table's, under a key of its own, and so is
+            # what it compares against: testing per-partition keys here asked
+            # about marks this branch never writes, so every run found them
+            # missing and rewrote the table again, forever.
+            whole = _totals(rows)
+            if marks.get(f"{reference}/") == whole:
+                return []
+            return [(f"{reference}/", None, whole[0])] if whole[0] >= min_files else []
 
+        fresh = [row for row in rows if marks.get(_mark_key(reference, row)) != _counts(row)]
         plan: list[tuple[str, Any, int]] = []
         for row in fresh:
             count = int(row["file_count"])
@@ -935,16 +940,15 @@ class IcebergDataset(Dataset):
         """
         settled = dict(self.compaction_marks())
         wanted = set(keys)
-        for row in self._partition_rows(reference):
+        rows = self._partition_rows(reference)
+        for row in rows:
             key = _mark_key(reference, row)
             if key in wanted:
                 settled[key] = _counts(row)
-        if "" in wanted:  # the whole-table plan, which has no partition of its own
-            rows = self._partition_rows(reference)
-            settled[f"{reference}/"] = [
-                int(sum(row["file_count"] for row in rows)),
-                int(sum(row["record_count"] for row in rows)),
-            ]
+        if f"{reference}/" in wanted:
+            # The whole-table plan, which has no partition of its own: what it
+            # settled is the whole branch, so that is what it records.
+            settled[f"{reference}/"] = _totals(rows)
         self.set_properties({COMPACTION_MARK: json.dumps(settled)})
 
     def cleanup(
@@ -1636,6 +1640,14 @@ def _counts(row: Any) -> list[int]:
     changes files without changing rows.
     """
     return [int(row["file_count"]), int(row["record_count"])]
+
+
+def _totals(rows: Sequence[dict]) -> list[int]:
+    """What a whole branch holds: `[file count, record count]` over its parts."""
+    return [
+        int(sum(row["file_count"] for row in rows)),
+        int(sum(row["record_count"] for row in rows)),
+    ]
 
 
 def _partition_filter(partition: Any, identities: Sequence[tuple[str, str]]) -> Any:

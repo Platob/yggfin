@@ -1002,6 +1002,51 @@ def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
     assert quotes_.read_arrow_table().num_rows == stored, "and the table still reads"
 
 
+def test_a_table_planned_whole_settles_too(tmp_path: Path) -> None:
+    """A transform partition is planned as one table, and marked as one table.
+
+    Its mark is written under the branch alone, so it has to be *read* under
+    the branch alone: testing the per-partition keys asked about marks this
+    branch never writes, found them missing every run, and rewrote the whole
+    table forever.
+    """
+
+    @field
+    class Event(Convertible):
+        """One event."""
+
+        at: Annotated[datetime.datetime, Field.partition_key("day")]
+        """When it happened -- by day, which is a transform, not an identity."""
+
+        size: int
+        """Quantity."""
+
+    catalog = IcebergCatalog(name="whole", properties=catalog_properties(tmp_path))
+    events = catalog.dataset("trading.events", struct=Event.FIELD)
+    start = datetime.datetime(2026, 1, 1)
+
+    def rows(index: int, size: int = 1) -> pyarrow.Table:
+        return pyarrow.Table.from_pydict(
+            {
+                "at": [start + datetime.timedelta(hours=index * 5 + step) for step in range(3)],
+                "size": [size] * 3,
+            },
+            schema=Event.FIELD.into_arrow_schema(),
+        )
+
+    for index in range(8):
+        events.write_arrow(rows(index), commit_row_size=0)
+    stored = events.refresh().read_arrow_table().num_rows
+
+    assert events.compact(min_files=2) > 0, "there was something to do"
+    assert events.compact(min_files=2) == 0, "and the second run has nothing"
+    assert events.compaction_plan(min_files=2) == []
+    assert events.refresh().read_arrow_table().num_rows == stored
+
+    events.write_arrow(rows(9, size=99), commit_row_size=0)
+    assert events.compaction_plan(min_files=2) != [], "new data is worth planning again"
+
+
 def test_a_commit_that_adds_no_manifest_keeps_its_manifest_list(dataset: IcebergDataset) -> None:
     """The live set takes manifest lists from the snapshots, not from the walk.
 

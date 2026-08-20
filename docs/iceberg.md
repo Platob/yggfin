@@ -391,9 +391,12 @@ calls are the whole routine.
     A part is not planned again until something lands in it, which
     `compaction_marks()` records — in a table property, because expiring a
     snapshot erases what a snapshot summary would have said, and `optimize()`
-    expires immediately after it compacts. `compact(branch=...)` plans that
-    branch, and a filtered run marks nothing: what it rewrote is whatever the
-    filter covered, which may be a fraction of a partition.
+    expires immediately after it compacts. A table planned whole — no
+    partitioning, or a transform that hides which rows are where — is marked
+    the same way, under the branch alone, and settles on the same rule.
+    `compact(branch=...)` plans that branch, and a filtered run marks nothing:
+    what it rewrote is whatever the filter covered, which may be a fraction of
+    a partition.
 
 === "Clean up"
 
