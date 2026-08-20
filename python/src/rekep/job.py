@@ -290,30 +290,37 @@ class Job(Record):
     def into_airflow(self) -> Any:
         """This job as a single-task Airflow DAG, lineage tagged and documented.
 
-        `airflow["dag"]`/`airflow["task"]` merge straight into `DAG(...)`/
-        `@task(...)`, on top of what lineage already derives -- the caller's
-        own choices win over nothing here, since there is nothing to conflict
-        with yet.
+        **A job is the task.** There is no decorator to wrap a function in
+        and no DAG subclass to inherit from: a `Job` already declares what a
+        task needs -- what it reads, what it writes, when it runs, how to run
+        it -- so this hands those to Airflow's own `DAG` and `@task` and gets
+        out of the way. Anything Airflow accepts, `airflow["dag"]` and
+        `airflow["task"]` pass straight through, because rekep keeps no list
+        of which kwarg belongs to which; Airflow has one already.
+
+        What is derived rather than passed is the lineage
+        (`rekep.airflow.lineage`): tags and a Consumes/Produces table for the
+        DAG, inlets and outlets for the task, from `consumes`/`produces`.
         """
-        from rekep.airflow.decorators import DAG
-        from rekep.airflow.decorators import task as airflow_task
+        from rekep.airflow import lineage, sdk
 
         consumes, produces = self.consumed_records(), self.produced_records()
-        with DAG(
+        with sdk.DAG(
             self.name,
-            description=self.description,
-            schedule=self.schedule,
-            tags=list(self.tags),
-            consumes=consumes,
-            produces=produces,
-            catchup=False,
-            **self.airflow.get("dag", {}),
+            **lineage.dag_arguments(
+                consumes,
+                produces,
+                description=self.description,
+                schedule=self.schedule,
+                tags=list(self.tags),
+                catchup=False,
+                **self.airflow.get("dag", {}),
+            ),
         ) as built:
-            airflow_task(
-                task_id=self.name,
-                consumes=consumes,
-                produces=produces,
-                **self.airflow.get("task", {}),
+            sdk.task(
+                **lineage.task_arguments(
+                    consumes, produces, task_id=self.name, **self.airflow.get("task", {})
+                )
             )(self.run_tracked)()
         return built
 

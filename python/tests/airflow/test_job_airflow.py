@@ -1,8 +1,9 @@
 """`Job.into_airflow`: airflow[] config reaches the real DAG/task.
 
-Same POSIX/import-skip guard as test_decorators.py -- Airflow itself needs
-POSIX, and only resolving `DAG` off `airflow.sdk` hits the fork-dependent
-modules Windows lacks, so the skip has to attempt exactly what it will.
+Airflow itself needs POSIX, and only resolving `DAG` off `airflow.sdk` hits
+the fork-dependent modules Windows lacks, so the skip has to attempt exactly
+what the code will. The wiring itself is covered without Airflow in
+`test_into_airflow.py`; this file is the "and it is really Airflow" half.
 """
 
 import pytest

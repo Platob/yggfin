@@ -200,9 +200,15 @@ rekep/
 ├── logs/          LogFile: streaming Arrow-native log access
 ├── iceberg/       Iceberg stack: Catalogs/Namespaces/Tables CRUD (pyiceberg)
 ├── doris/         Doris stack: same resources, SQL plan + pluggable executor
-└── airflow/       DAG authoring with record lineage (POSIX-only);
-                   service.py: Dags resource deploying generated DAG
-                   modules (renders strings, never imports Airflow)
+└── airflow/       one DAG per Job, record lineage derived (POSIX-only).
+                   **Wraps none of Airflow's authoring API** -- no @dag, no
+                   @task, no DAG subclass: a Job already declares what a task
+                   needs, Job.into_airflow() hands it to Airflow's own
+                   decorators via sdk.py, and airflow{dag,task} passes
+                   anything else through. lineage.py derives what Airflow
+                   cannot (tags, docs, inlets/outlets); service.py: Dags
+                   resource deploying generated DAG modules (renders
+                   strings, never imports Airflow)
 ```
 
 Dependencies point one way: services → models → records → convert; among the

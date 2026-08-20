@@ -54,5 +54,5 @@ Everything else is derived, never hand-written beside it:
   keep the table readable afterwards.
 - **`rekep.jobs`** — the concrete jobs this package ships (`FilesToLogs`,
   `LogsToRecords`), mirroring `rekep.models`.
-- **`rekep.airflow`** — DAG authoring with lineage derived from records, and
-  DAGs built from side files.
+- **`rekep.airflow`** — one DAG per job, lineage derived from records. It
+  wraps none of Airflow's authoring API: a `Job` is the task.

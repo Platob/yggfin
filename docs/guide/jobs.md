@@ -98,7 +98,7 @@ airflow:
   and whatever else a deployment needs to carry that is neither lineage nor
   Airflow config.
 - **`airflow["dag"]`/`airflow["task"]`** merge straight into `into_airflow`'s
-  `DAG(...)`/`@task(...)` calls -- any real Airflow kwarg (`pool`,
+  Airflow's own `DAG(...)`/`@task(...)` calls -- any real Airflow kwarg (`pool`,
   `retries`, `trigger_rule`, `max_active_runs`, ...), since rekep does not
   maintain its own list of which belongs where; Airflow does.
 
@@ -136,7 +136,7 @@ same boundary around a dataset's own I/O.
 `config=` takes an already-built `Job` (typically loaded from a side file)
 and binds the function onto it instead of building a fresh one.
 
-## Airflow
+## Airflow: a job *is* the task
 
 An Airflow DAG folder needs one line:
 
@@ -146,11 +146,22 @@ from rekep.airflow.jobs import dags
 globals().update(dags())
 ```
 
-Each side file becomes one DAG with one task, whose tags, docs, inlets and
-outlets derive from the `consumes`/`produces` record lists — the lineage
-graph writes itself, and `airflow["dag"]`/`airflow["task"]` (above) carry
-whatever else the DAG or task needs. The `rekep.airflow.dag` / `task`
-decorators accept the same `consumes=` / `produces=` for hand-written DAGs.
+Each side file becomes one DAG with one task. There is no rekep decorator to
+wrap a function in and no DAG subclass to inherit from — a `Job` already
+declares everything a task needs (what it reads, what it writes, when it
+runs, how to run it), so `Job.into_airflow()` hands that to Airflow's own
+`DAG` and `@task` and gets out of the way:
+
+```python
+job.into_airflow()          # a real Airflow DAG, with one real Airflow task
+```
+
+Anything Airflow accepts reaches it untouched through `airflow["dag"]` and
+`airflow["task"]` (above) — rekep keeps no list of which kwarg belongs to
+which, because Airflow has one already. The only thing added is what Airflow
+cannot derive: tags and a Consumes/Produces table for the DAG, inlets and
+outlets for the task, all from the `consumes`/`produces` record lists. The
+lineage graph writes itself.
 
 ## The shipped pipeline: `files_to_logs` → `logs_to_records`
 
