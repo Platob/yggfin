@@ -291,6 +291,37 @@ def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
     assert wider.column("market").to_pylist() == ["XPAR"] * 3
 
 
+@pytest.mark.parametrize("pin", ["snapshot", "branch"])
+def test_a_reused_column_name_does_not_take_the_old_column_s_values(
+    tmp_path: Path, pin: str
+) -> None:
+    """Rename a column, then give a new one its old name: two ids, one name.
+
+    The id match has to be the only one that binds a name the table still has.
+    A fallback that fires on any id the snapshot lacks put the old column's
+    values under the new column's name and nulls under its own -- both wrong,
+    and inverted, with nothing raised.
+    """
+    from pyiceberg.types import StringType
+
+    catalog = IcebergCatalog(name="reused", properties=properties(tmp_path, "reused"))
+    dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
+    dataset.write_arrow(quotes(0, 3), commit_row_size=0)
+    table = dataset.get_or_create_table()
+    snapshot = table.current_snapshot().snapshot_id
+    table.manage_snapshots().create_branch(snapshot, "old").commit()
+    with table.update_schema() as update:
+        update.rename_column("venue", "market")
+    with table.update_schema() as update:
+        update.add_column("venue", StringType())
+    dataset.refresh()
+    pinned = {"snapshot_id": snapshot} if pin == "snapshot" else {"branch": "old"}
+
+    rows = dataset.read_arrow_table(dataset.table_field, **pinned)
+    assert rows.column("market").to_pylist() == ["XPAR"] * 3, "the column that holds them"
+    assert rows.column("venue").to_pylist() == [None] * 3, "and not the one that reused its name"
+
+
 def test_a_shape_the_table_does_not_have_still_reads(stored) -> None:
     """A column the target declares and the store lacks is filled, not refused."""
     wider = Quote.FIELD.merge_with(pyarrow.schema([("desk", pyarrow.string())]))

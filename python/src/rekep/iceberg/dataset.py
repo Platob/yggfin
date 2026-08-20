@@ -392,28 +392,45 @@ class IcebergDataset(Dataset):
         be asked for by a name that snapshot never had. Ids are what a rename
         does not change.
 
-        A name the current schema does not carry at all -- a column dropped
-        since -- is looked up in that snapshot's own names instead, which is
-        what pyiceberg does with the same `selected_fields`: the column is
-        still on disk and still readable, and reading it is what was asked for.
+        Only a name the current schema does not carry **at all** -- a column
+        dropped since -- falls back to that snapshot's own names, which is what
+        pyiceberg does with the same `selected_fields`: the column is still on
+        disk and still readable, and reading it is what was asked for. The
+        fallback is a second pass for exactly that reason. Letting it fire on
+        any id the snapshot lacks binds a target column to a stranger's values:
+        rename `venue` to `market`, add a new `venue`, and asking for both by
+        their current names returned the old column's values under the new
+        column's name and nulls under its own.
 
         Whichever way it was found, the column comes back under the name the
         *target* used to ask for it. A column the target declares and that
         snapshot really does not have is left out -- the cast fills it with
         nulls, or refuses it if it may not be null, which is the same answer
         either way.
+
+        Matching by id where pyiceberg's `selected_fields` matches by name is a
+        deliberate divergence: a name is what a rename changes and an id is
+        what it does not, so this returns the column that *is* the one asked
+        for rather than the one that happens to share its name today.
         """
         current = {field.name: field.field_id for field in self.iceberg_table.schema().fields}
         pinned = {field.field_id: field.name for field in scan.projection().fields}
-        by_name = set(pinned.values())
         wanted = {}
         for name in target.names:
-            stored = pinned.get(current.get(name, -1)) or (name if name in by_name else None)
+            stored = pinned.get(current.get(name, -1))
             if stored is not None:
                 wanted[stored] = name
-        # Nothing in common: one column is named because a scan must project
-        # something, and what comes back is a table of no columns and no rows
-        # -- which is pyiceberg's own answer to an empty projection too.
+        for name in target.names:
+            # Only for a name the table no longer has, and only onto a column
+            # no id already claimed.
+            if name not in current and name in set(pinned.values()) and name not in wanted:
+                wanted[name] = name
+        # Nothing in common -- either the target names columns this snapshot
+        # never had, or it declares none at all. One column is projected
+        # because a scan must project something, and the cast then drops it:
+        # what comes back is the target's columns filled with nulls, or no
+        # columns and no rows, which is pyiceberg's own answer to an empty
+        # projection too.
         return wanted or {next(iter(pinned.values())): next(iter(pinned.values()))}
 
     # -- writing ------------------------------------------------------------
