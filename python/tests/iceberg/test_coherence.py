@@ -292,6 +292,36 @@ def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
 
 
 @pytest.mark.parametrize("pin", ["snapshot", "branch"])
+def test_columns_on_a_pinned_read_are_named_as_the_table_names_them_now(
+    tmp_path: Path, pin: str
+) -> None:
+    """One read must not want the same column under two different names.
+
+    `row_filter` is pyiceberg's own and binds against the current schema, so
+    `columns` has to as well -- otherwise a pinned read across a rename wants
+    the old name in one argument and the new name in the other.
+    """
+    catalog = IcebergCatalog(name="named", properties=properties(tmp_path, "named"))
+    dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
+    dataset.write_arrow(quotes(0, 3), commit_row_size=0)
+    table = dataset.get_or_create_table()
+    snapshot = table.current_snapshot().snapshot_id
+    table.manage_snapshots().create_branch(snapshot, "old").commit()
+    with table.update_schema() as update:
+        update.rename_column("venue", "market")
+    dataset.refresh()
+    pinned = {"snapshot_id": snapshot} if pin == "snapshot" else {"branch": "old"}
+
+    rows = dataset.read_arrow_table(columns=["seq", "market"], **pinned)
+    assert rows.column_names == ["seq", "market"], "under the name it has now"
+    assert rows.column("market").to_pylist() == ["XPAR"] * 3
+    both = dataset.read_arrow_table(
+        columns=["seq", "market"], row_filter="market = 'XPAR'", **pinned
+    )
+    assert both.num_rows == 3, "and the filter agrees with the projection"
+
+
+@pytest.mark.parametrize("pin", ["snapshot", "branch"])
 def test_a_reused_column_name_does_not_take_the_old_column_s_values(
     tmp_path: Path, pin: str
 ) -> None:

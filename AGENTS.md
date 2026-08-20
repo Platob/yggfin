@@ -148,8 +148,30 @@ what is missing and commits nothing when there is nothing to add, and
 `optimize` is the three in the order that makes them cheap. Every one of them
 reports what it did.
 
-Ten things that were learned the expensive way, all of them measured:
+Fourteen things that were learned the expensive way, all of them measured:
 
+- **A guard has to count the way the operation counts.** Both duplicate checks
+  in the merge grouped raw float columns while the joins that follow fold
+  `-0.0` into `0.0`, so a table holding both signs passed a check that saw two
+  keys and was then matched twice by one chunk row: written twice, and
+  unmergeable from then on. Wherever a value is normalised for one purpose,
+  every check that groups or compares it has to see the same normalisation --
+  and the check belongs *before* the branches, because every one of them
+  writes.
+- **Widening a filter widens what its guards have to catch.** That same bug was
+  reachable only because a fix two commits earlier taught the scan to find the
+  other sign of zero. The fix was right; it brought rows into reach of a check
+  that could not see them as one key. A fix's blast radius is the surface it
+  widened, so re-attack what it now reaches.
+- **A comparison that failed is not a result.** The sweep's path reducer fell
+  back to the whole path when no base matched, so a file that failed to reduce
+  compared unequal to itself and was deleted. Anything that decides a deletion
+  returns "I do not know" as its own value, and the caller refuses.
+- **Delete only what you can prove is yours.** `write.data.path` may be shared
+  by several tables -- the file names are UUIDs precisely so it can be -- and
+  nothing in the metadata says whose a file is. Sweeping one took out both
+  tables under it. Outside the table's own location the default is to strand
+  files rather than lose them, and the caller opts in per dataset.
 - **A maintenance verb must settle.** `compact` marks its own snapshots and
   skips a part nothing has landed in since; without that it replans forever,
   because pyiceberg sizes output files from *in-memory* bytes and a part that

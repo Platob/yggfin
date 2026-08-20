@@ -339,9 +339,11 @@ class IcebergDataset(Dataset):
 
         A read pinned to a `snapshot_id` or a `branch` reads under the schema
         *that snapshot* was written with, which a rename or a drop since makes
-        a different one. The shape's columns are matched to it by field id, so
-        a renamed column is found and comes back under the name the shape asked
-        for it by -- matching by name would have filled it with nulls.
+        a different one. `schema` and `columns` are matched to it by field id,
+        so a renamed column is found and comes back under the name it was asked
+        for by -- matching by name would have filled it with nulls, or refused
+        it. **Name columns as the table names them now**, whichever of the two
+        you use; `row_filter` is pyiceberg's own and already works that way.
         """
         reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
@@ -358,13 +360,19 @@ class IcebergDataset(Dataset):
             scan = scan.use_ref(reference)
         found: dict[str, str] = {}
         if columns:
-            scan = scan.select(*columns)
+            # Through the same id map as a shape, so one pinned read does not
+            # want a renamed column under two different names -- the old one in
+            # `columns` and the new one in `row_filter`.
+            found = self._selected(
+                field_of(pyarrow.schema([(name, pyarrow.null()) for name in columns])), scan
+            )
+            scan = scan.select(*found)
         elif target is not None:
             found = self._selected(target, scan)
             scan = scan.select(*found)
         reader = scan.to_arrow_batch_reader()
         if target is None:
-            return reader
+            return _reader(reader, found) if columns else reader
         return target.cast_arrow_reader(_renamed(reader, found))
 
     def _reference(self, branch: str | None, snapshot_id: int | None) -> str | None:
@@ -1526,6 +1534,18 @@ def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) 
     from pyiceberg.table import upsert_util
 
     compare = [name for name in chunk.column_names if name not in set(join)]
+    # Before the branches, not inside the fast one: every path below can write,
+    # and a stored duplicate is a corrupted table whichever of them ran. The
+    # keys are folded first because that is how the join counts them -- `-0.0`
+    # and `0.0` hash apart to Arrow's grouping and are one key here, so a table
+    # holding both passed a check made on the raw column and was then matched
+    # twice by a single chunk row. Folding cannot merge two keys that a cast
+    # would keep apart, so checking here is the same answer as checking after
+    # the alignment below, one pass of work sooner.
+    if len(matched) and upsert_util.has_duplicate_rows(
+        _keys_of(matched, list(join), TARGET_INDEX), join
+    ):
+        raise ValueError("Target table has duplicate rows, aborting upsert")
     if not compare or len(matched) == 0 or len(chunk) == 0:
         return upsert_util.get_rows_to_update(chunk, matched, join)
     try:
@@ -1536,14 +1556,7 @@ def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) 
         matched = _align_keys(matched, chunk, join)
     except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, pyarrow.ArrowTypeError):
         return upsert_util.get_rows_to_update(chunk, matched, join)
-    # The stored keys as the join will see them, which is not as Arrow groups
-    # them: `-0.0` and `0.0` hash apart there and are one key here, so a table
-    # holding both would pass a duplicate check made on the raw column and then
-    # be folded into one key by the join -- matching a single chunk row twice
-    # and writing it twice. Built once and handed to the join below.
     stored = _keys_of(matched, list(join), TARGET_INDEX)
-    if upsert_util.has_duplicate_rows(stored, join):
-        raise ValueError("Target table has duplicate rows, aborting upsert")
     try:
         return _changed_by_kernel(chunk, matched, stored, join, compare)
     except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, pyarrow.ArrowTypeError):
@@ -1610,6 +1623,18 @@ def _renamed(reader: Any, names: dict[str, str]) -> Any:
         batch.rename_columns([names.get(name, name) for name in batch.schema.names])
         for batch in reader
     )
+
+
+def _reader(reader: Any, names: dict[str, str]) -> pyarrow.RecordBatchReader:
+    """`_renamed`, still a reader -- for the path with no shape to cast onto."""
+    renamed = _renamed(reader, names)
+    if renamed is reader:
+        return reader
+    schema = pyarrow.schema(
+        [field.with_name(names.get(field.name, field.name)) for field in reader.schema],
+        metadata=reader.schema.metadata,
+    )
+    return pyarrow.RecordBatchReader.from_batches(schema, renamed)
 
 
 def _manifests(table: Any) -> Iterator[tuple[Any, Any]]:
