@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+import functools
+import json
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 from typing import Any
@@ -61,12 +63,25 @@ MERGE_IN_LIMIT = 200
 #: throughput stops improving and file count starts mattering.
 DEFAULT_COMMIT_ROW_SIZE = 1_000_000
 
-#: Snapshot property this package stamps on the commits `compact` makes. A
-#: partition whose last commit carries it has had nothing land in it since it
-#: was rewritten, which is the only reliable way to know that rewriting it
-#: again would change nothing: a size rule cannot tell, because pyiceberg sizes
-#: its output files from *in-memory* bytes and a part that legitimately needs
-#: several files would otherwise be replanned forever.
+#: Table property holding what compaction has already settled: a JSON object
+#: mapping "<branch>/<partition>" to the snapshot that part was rewritten at. A
+#: part whose partition has had nothing land in it since is not planned again,
+#: which is the only reliable way to know that rewriting it would change
+#: nothing: a size rule cannot tell, because pyiceberg sizes its output files
+#: from *in-memory* bytes and a part that legitimately needs several files
+#: would otherwise be replanned forever.
+#:
+#: A **table property** and not a snapshot summary, which is where this lived
+#: first: expiry deletes snapshots, and `optimize` expires immediately after it
+#: compacts, so the mark was gone before the next run could read it. Measured
+#: on two partitions that each need several files, that run alternated between
+#: them forever -- 50 files rewritten, then 40, then 41, then 40 -- while the
+#: rows never changed.
+#:
+#: What is recorded is `[file count, record count]` and not a snapshot id, for
+#: the same reason: expiring the snapshot that last touched a partition makes
+#: Iceberg report its `last_updated_snapshot_id` as null, so an id compares
+#: unequal to itself one sweep later. Counts are a property of the data.
 COMPACTION_MARK = "rekep.compaction"
 
 #: The file a Hadoop-style catalog keeps its current version number in. Nothing
@@ -256,11 +271,16 @@ class IcebergDataset(Dataset):
         schema that carries none is numbered on the way in.
 
         Returns the columns it added, so "nothing to do" is an empty list and
-        never a commit; `dry_run=True` reports without touching the table.
+        never a commit; `dry_run=True` reports without touching the table. The
+        names are **dotted paths**, because that is what evolution can add: a
+        member gained by a struct, a list's item or a map's value is a new
+        column to `union_by_name`, and comparing top-level names alone reported
+        nothing to do and then let the next write drop the value.
         """
         target = self.target_field(source)
         current = self.table_field
-        added = [name for name in target.names if name not in current.names]
+        held = set(current.leaf_names())
+        added = [name for name in target.leaf_names() if name not in held]
         if not added or dry_run:
             return added
         table = self.iceberg_table
@@ -708,13 +728,24 @@ class IcebergDataset(Dataset):
             "bytes": sum(task.file.file_size_in_bytes for task in tasks),
         }
 
-    def compaction_plan(self, min_files: int = 2) -> list[tuple[Any, int]]:
+    def compaction_plan(
+        self, min_files: int = 2, *, branch: str | None = None
+    ) -> list[tuple[Any, int]]:
         """`(row filter, file count)` for every part of the table worth rewriting.
 
         Partition by partition when every partition field is an identity of a
         column -- then a partition *is* a predicate, and rewriting one touches
-        nothing else. Otherwise the transform hides which rows are where, so
-        the only honest plan is the whole table at once.
+        nothing else. Otherwise (a transform that hides which rows are where,
+        or no partitioning at all) the only honest plan is the whole table at
+        once, which means reading it: `row_filter` on `compact` is how a table
+        too big for that is compacted a piece at a time.
+
+        Predicates are built as expressions rather than as filter strings. A
+        string has to be parsed back, and an apostrophe in a partition value or
+        a timestamp partition made that parse fail -- on ordinary values, in
+        the very case this says it handles. A null partition value is
+        `IsNull`, not a skipped term: dropping it planned the whole table under
+        one partition's name and rewrote every other partition's files with it.
 
         **A part already compacted is not planned again.** Whether a rewrite
         can improve anything is not something file counts can answer: pyiceberg
@@ -722,19 +753,24 @@ class IcebergDataset(Dataset):
         what it is given, so a part that legitimately needs ten files still
         reports ten afterwards -- and a plan that only counts files rewrites it
         forever, doubling the table on every run. What settles it is whether
-        anything has landed since, which the partition's last commit says.
+        anything has landed since, which `COMPACTION_MARK` records.
+
+        `branch` plans that branch's snapshot. Without it the plan came from
+        main whatever branch the rewrite then went to, so a branch never
+        settled and, once main was compacted, was never planned at all.
         """
+        return [(part, count) for _, part, count in self._plan_rows(min_files, branch)]
+
+    def _plan_rows(self, min_files: int, branch: str | None) -> list[tuple[str, Any, int]]:
+        """`compaction_plan`, with the mark key each part is recorded under."""
         table = self.iceberg_table
-        partitions = table.inspect.partitions()
-        if partitions.num_rows == 0:
-            return []
-        compacted = self.compacted_snapshots()
-        rows = [
-            row
-            for row in partitions.to_pylist()
-            if row.get("last_updated_snapshot_id") not in compacted
-        ]
+        reference = branch or self.branch or MAIN
+        rows = self._partition_rows(reference)
         if not rows:
+            return []
+        marks = self.compaction_marks()
+        fresh = [row for row in rows if marks.get(_mark_key(reference, row)) != _counts(row)]
+        if not fresh:
             return []
 
         spec = table.spec()
@@ -743,34 +779,43 @@ class IcebergDataset(Dataset):
             for field in spec.fields
             if str(field.transform) == "identity"
         ]
-        if len(identities) != len(spec.fields):
+        if not identities or len(identities) != len(spec.fields):
             # No partition field, or one whose transform hides which rows it
-            # holds: the table is only addressable as a whole.
-            total = int(sum(row["file_count"] for row in rows))
-            return [(None, total)] if total >= min_files else []
+            # holds: the table is only addressable as a whole -- which means
+            # reading it whole, so `row_filter` is the escape hatch for a table
+            # that does not fit.
+            total = int(sum(row["file_count"] for row in fresh))
+            return [(f"{reference}/", None, total)] if total >= min_files else []
 
-        plan: list[tuple[Any, int]] = []
-        for row in rows:
+        plan: list[tuple[str, Any, int]] = []
+        for row in fresh:
             count = int(row["file_count"])
             if count < min_files:
                 continue
-            values = row["partition"]
-            terms = [
-                f"{column} = {_literal(values[name])}"
-                for name, column in identities
-                if values.get(name) is not None
-            ]
-            plan.append((" and ".join(terms) if terms else None, count))
+            key = _mark_key(reference, row)
+            plan.append((key, _partition_filter(row["partition"], identities), count))
         return plan
 
-    def compacted_snapshots(self) -> set[int]:
-        """Snapshots this package's compaction wrote, by id."""
-        return {
-            snapshot.snapshot_id
-            for snapshot in self.iceberg_table.snapshots()
-            if snapshot.summary is not None
-            and snapshot.summary.additional_properties.get(COMPACTION_MARK)
-        }
+    def _partition_rows(self, reference: str) -> list[dict]:
+        """One row per partition of that branch's head, as Iceberg reports them."""
+        table = self.iceberg_table
+        head = table.refs().get(reference)
+        rows = table.inspect.partitions(snapshot_id=head.snapshot_id if head is not None else None)
+        return rows.to_pylist() if rows.num_rows else []
+
+    def compaction_marks(self) -> dict[str, list[int]]:
+        """What compaction settled: `{"<branch>/<partition>": [files, rows]}`."""
+        stored = self.iceberg_table.properties.get(COMPACTION_MARK)
+        if not stored:
+            return {}
+        try:
+            return {
+                key: [int(value) for value in counts] for key, counts in json.loads(stored).items()
+            }
+        except (TypeError, ValueError):
+            # Someone else's value under our key: plan everything rather than
+            # refuse to run, and let the next compaction overwrite it.
+            return {}
 
     def compact(
         self,
@@ -790,31 +835,60 @@ class IcebergDataset(Dataset):
 
         Returns how many files were rewritten. `row_filter` compacts one part
         of the table and nothing else, which is also how a table too big to
-        read at once is compacted: a partition at a time.
+        read at once is compacted: a partition at a time. A filtered run
+        records nothing in `COMPACTION_MARK` -- what it rewrote is whatever the
+        caller's filter covered, which may be a fraction of a partition, and
+        marking the whole partition settled would leave the rest of it
+        unplanned for good.
         """
         if target_file_size:
             self.set_properties({TARGET_FILE_SIZE: str(target_file_size)})
+        reference = branch or self.branch or MAIN
         plan = (
             # What that filter's own scan plans, not the whole table's files:
             # counting every manifest to report a number about one partition is
             # both slower and wrong.
-            [(row_filter, self.scan_plan(row_filter)["files"])]
+            [("", row_filter, self.scan_plan(row_filter, branch=branch)["files"])]
             if row_filter is not None
-            else self.compaction_plan(min_files)
+            else self._plan_rows(min_files, branch)
         )
         rewritten = 0
-        for part, count in plan:
+        touched = []
+        for key, part, count in plan:
             data = self.read_arrow_table(row_filter=part, branch=branch)
             if data.num_rows == 0:
                 continue
             self.iceberg_table.overwrite(
                 data,
                 overwrite_filter=part if part is not None else _always_true(),
-                branch=branch or self.branch or MAIN,
-                snapshot_properties={COMPACTION_MARK: "true"},
+                branch=reference,
             )
             rewritten += count
+            touched.append(key)
+        if touched and row_filter is None:
+            self._mark_settled(reference, touched)
         return rewritten
+
+    def _mark_settled(self, reference: str, keys: Sequence[str]) -> None:
+        """Record what the parts just rewritten hold, so they are not replanned.
+
+        Read back after the commits rather than predicted from them: the counts
+        that matter are the ones the next plan will compare against, and they
+        are whatever Iceberg now reports.
+        """
+        settled = dict(self.compaction_marks())
+        wanted = set(keys)
+        for row in self._partition_rows(reference):
+            key = _mark_key(reference, row)
+            if key in wanted:
+                settled[key] = _counts(row)
+        if "" in wanted:  # the whole-table plan, which has no partition of its own
+            rows = self._partition_rows(reference)
+            settled[f"{reference}/"] = [
+                int(sum(row["file_count"] for row in rows)),
+                int(sum(row["record_count"] for row in rows)),
+            ]
+        self.set_properties({COMPACTION_MARK: json.dumps(settled)})
 
     def cleanup(
         self,
@@ -1262,6 +1336,45 @@ def _renamed(reader: Any, names: dict[str, str]) -> Any:
         batch.rename_columns([names.get(name, name) for name in batch.schema.names])
         for batch in reader
     )
+
+
+def _mark_key(branch: str, row: Any) -> str:
+    """A stable name for one partition of one branch, for `COMPACTION_MARK`."""
+    partition = row.get("partition") or {}
+    if not partition:
+        return f"{branch}/"
+    values = ",".join(f"{name}={partition[name]!r}" for name in sorted(partition))
+    return f"{branch}/{values}"
+
+
+def _counts(row: Any) -> list[int]:
+    """What a partition holds: `[file count, record count]`.
+
+    The pair `COMPACTION_MARK` compares. Both, because either alone misses a
+    change: rows can land without the file count moving once, and a rewrite
+    changes files without changing rows.
+    """
+    return [int(row["file_count"]), int(row["record_count"])]
+
+
+def _partition_filter(partition: Any, identities: Sequence[tuple[str, str]]) -> Any:
+    """The predicate one partition *is*, as an expression rather than a string.
+
+    A string would have to be parsed back, and an apostrophe in a value or a
+    timestamp partition makes that parse fail -- on ordinary values, in the
+    case `compaction_plan` says it handles. A null value is `IsNull` and not a
+    dropped term: dropping it left a predicate that matched every other
+    partition too.
+    """
+    from pyiceberg.expressions import And, EqualTo, IsNull
+
+    terms = [
+        IsNull(column) if partition.get(name) is None else EqualTo(column, partition[name])
+        for name, column in identities
+    ]
+    if not terms:
+        return None
+    return functools.reduce(And, terms)
 
 
 def _always_true() -> Any:

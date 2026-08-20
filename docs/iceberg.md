@@ -281,15 +281,19 @@ goes.
     quotes.add_fields(wider)              # ['desk'] -- and the declared shape follows
     quotes.add_fields(wider)              # [] -- nothing new, so no commit
     quotes.add_fields(wider, dry_run=True)
+
+    quotes.add_fields(deeper)             # ['venue.country'] -- inside a struct, too
     ```
 
 === "What it does"
 
     Schema evolution as a merge, in Iceberg's own terms: matched by name, new
     columns added **optional** (rows already written have nothing to put in
-    them), everything else left alone, at every level. Nothing is ever dropped
-    or retyped here — that is a migration, not an evolution, and it should be
-    deliberate.
+    them), everything else left alone, at every level. What comes back is a
+    **dotted path**, because that is what evolution can add: a member gained by
+    a struct, a list's item or a map's value is a new column too. Nothing is
+    ever dropped or retyped here — that is a migration, not an evolution, and
+    it should be deliberate.
 
 ## Snapshots and branches
 
@@ -366,13 +370,29 @@ calls are the whole routine.
 
     ```python
     quotes.compaction_plan(min_files=2)
-    # [("day = '2026-08-14'", 12), ("day = '2026-08-15'", 4)]
+    # [(EqualTo(day, 2026-08-14), 12), (EqualTo(day, 2026-08-15), 4)]
+
+    quotes.compaction_marks()   # what has settled: {"main/day=…": [files, rows]}
     ```
 
     Partition by partition when every partition field is an identity of a
     column: then a partition *is* a predicate, and rewriting one touches nothing
     else. A derived transform (`day`, `bucket[16]`) hides which rows are where,
-    so the honest plan is the whole table at once.
+    and so does no partitioning at all, so the honest plan is the whole table at
+    once — which means reading it whole, and `row_filter` is the way to compact
+    a table that does not fit.
+
+    Predicates are Iceberg **expressions**, not filter strings: a string has to
+    be parsed back, and an apostrophe in a partition value or a timestamp
+    partition made that parse fail. A null partition value is `IsNull` rather
+    than a dropped term.
+
+    A part is not planned again until something lands in it, which
+    `compaction_marks()` records — in a table property, because expiring a
+    snapshot erases what a snapshot summary would have said, and `optimize()`
+    expires immediately after it compacts. `compact(branch=...)` plans that
+    branch, and a filtered run marks nothing: what it rewrote is whatever the
+    filter covered, which may be a fraction of a partition.
 
 === "Clean up"
 

@@ -8,9 +8,10 @@ from typing import Annotated
 
 import pyarrow
 import pytest
+from pyiceberg.expressions import EqualTo
 
 from rekep import Convertible, Field, Log, StructField, field
-from rekep.iceberg import IcebergDataset
+from rekep.iceberg import IcebergCatalog, IcebergDataset
 
 
 @field
@@ -423,7 +424,171 @@ def test_compaction_plans_one_partition_at_a_time(dataset: IcebergDataset) -> No
     dataset.write_arrow_table(quotes(2))
     plan = dataset.compaction_plan(min_files=2)
     assert len(plan) == 1
-    assert "day = '2026-08-14'" in plan[0][0]
+    assert plan[0][0] == EqualTo("day", datetime.date(2026, 8, 14)), (
+        "an expression, not a string to parse back"
+    )
+
+
+def test_an_unpartitioned_table_compacts(tmp_path: Path) -> None:
+    """The most ordinary table shape there is, and every verb raised on it."""
+
+    @field
+    class Flat(Convertible):
+        """A row with nothing to partition on."""
+
+        symbol: str
+        """Instrument."""
+
+        size: int
+        """Quantity."""
+
+    catalog = IcebergCatalog(name="flat", properties=catalog_properties(tmp_path))
+    flat = catalog.dataset("trading.flat", struct=Flat.FIELD)
+    schema = Flat.FIELD.into_arrow_schema()
+    for index in range(4):
+        flat.write_arrow(
+            pyarrow.Table.from_pydict({"symbol": [f"S{index}"], "size": [index]}, schema=schema),
+            commit_row_size=0,
+        )
+    before = flat.read_arrow_table().num_rows
+    assert flat.compaction_plan(min_files=2) == [(None, 4)], "the whole table, as one part"
+    assert flat.compact(min_files=2) == 4
+    assert flat.refresh().data_files().num_rows == 1
+    assert flat.read_arrow_table().num_rows == before
+    assert flat.compact(min_files=2) == 0, "and it settles"
+
+
+@pytest.mark.parametrize("value", ["o'brien", "a b", None])
+def test_a_partition_value_a_filter_string_cannot_hold(tmp_path: Path, value: str | None) -> None:
+    """The predicate is an expression: an apostrophe has nothing to escape into.
+
+    A null value is `IsNull` and not a dropped term -- dropping it left a
+    predicate matching every other partition, so one stale partition rewrote
+    the whole table and reported the count of one.
+    """
+
+    @field
+    class Part(Convertible):
+        """A row partitioned by a string that may be awkward."""
+
+        part: Annotated[str | None, Field.partition_key()]
+        """The partition."""
+
+        size: int
+        """Quantity."""
+
+    catalog = IcebergCatalog(name="lit", properties=catalog_properties(tmp_path))
+    parted = catalog.dataset("trading.parts", struct=Part.FIELD)
+    schema = Part.FIELD.into_arrow_schema()
+
+    def rows(part: str | None, size: int) -> pyarrow.Table:
+        return pyarrow.Table.from_pydict({"part": [part], "size": [size]}, schema=schema)
+
+    for index in range(3):
+        parted.write_arrow(rows(value, index), commit_row_size=0)
+    parted.write_arrow(rows("untouched", 99), commit_row_size=0)
+    before = sorted(parted.read_arrow_table().to_pylist(), key=lambda row: row["size"])
+    others = {file["file_path"] for file in parted.refresh().data_files().to_pylist()}
+
+    assert parted.compact(min_files=2) == 3, "the three files of that partition, and no more"
+    after = parted.refresh()
+    assert sorted(after.read_arrow_table().to_pylist(), key=lambda row: row["size"]) == before
+    kept = others & {file["file_path"] for file in after.data_files().to_pylist()}
+    assert len(kept) == 1, "the other partition's file was not rewritten"
+    assert after.compact(min_files=2) == 0, "and it settles"
+
+
+def test_compaction_settles_on_a_branch(dataset: IcebergDataset) -> None:
+    """The plan came from main whatever branch the rewrite went to."""
+    for _ in range(3):
+        dataset.write_arrow(quotes(2), commit_row_size=0)
+    table = dataset.get_or_create_table()
+    table.manage_snapshots().create_branch(table.current_snapshot().snapshot_id, "work").commit()
+    dataset.refresh()
+    for index in range(3):
+        dataset.write_arrow(quotes(2, f"v{index}"), branch="work", commit_row_size=0)
+    assert dataset.compact(min_files=2, branch="work") > 0
+    assert dataset.compact(min_files=2, branch="work") == 0, "it settles on the branch"
+    assert dataset.compaction_plan(min_files=2, branch="work") == []
+    assert dataset.compaction_plan(min_files=2) != [], "and main is still its own plan"
+
+
+def test_a_filtered_compaction_marks_nothing(dataset: IcebergDataset) -> None:
+    """A caller's filter may cover a fraction of a partition; the rest still needs it."""
+    for _ in range(3):
+        dataset.write_arrow(quotes(2), commit_row_size=0)
+    assert dataset.compact(row_filter="symbol = 'S0'") > 0
+    assert dataset.compaction_marks() == {}
+    assert dataset.compaction_plan(min_files=2) != [], "the partition is still planned"
+
+
+def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
+    """`union_by_name` adds it; comparing top-level names never asked for it."""
+
+    @field
+    class Venue(Convertible):
+        """Where it traded."""
+
+        mic: str | None = None
+        """Market identifier."""
+
+    @field
+    class Narrow(Convertible):
+        """A quote whose venue knows only its mic."""
+
+        symbol: str
+        """Instrument."""
+
+        venue: Venue | None = None
+        """Where."""
+
+    @field
+    class Wide(Convertible):
+        """The same quote, whose venue has grown a country."""
+
+        symbol: str
+        """Instrument."""
+
+        venue: Venue | None = None
+        """Where."""
+
+    wide = Wide.FIELD.merge_with(
+        pyarrow.struct(
+            [
+                pyarrow.field("symbol", pyarrow.string()),
+                pyarrow.field(
+                    "venue",
+                    pyarrow.struct(
+                        [
+                            pyarrow.field("mic", pyarrow.string()),
+                            pyarrow.field("country", pyarrow.string()),
+                        ]
+                    ),
+                ),
+            ]
+        )
+    )
+    catalog = IcebergCatalog(name="nested", properties=catalog_properties(tmp_path))
+    quotes_ = catalog.dataset("trading.nested", struct=Narrow.FIELD)
+    narrow_schema = Narrow.FIELD.into_arrow_schema()
+    quotes_.write_arrow(
+        pyarrow.Table.from_pydict(
+            {"symbol": ["A"], "venue": [{"mic": "XPAR"}]}, schema=narrow_schema
+        ),
+        commit_row_size=0,
+    )
+    assert quotes_.add_fields(wide) == ["venue.country"]
+    assert quotes_.add_fields(wide) == [], "nothing new, so no commit"
+    quotes_.refresh()
+    quotes_.write_arrow(
+        pyarrow.Table.from_pydict(
+            {"symbol": ["B"], "venue": [{"mic": "XLON", "country": "GB"}]},
+            schema=wide.into_arrow_schema(),
+        ),
+        commit_row_size=0,
+    )
+    stored = sorted(quotes_.refresh().read_arrow_table().to_pylist(), key=lambda row: row["symbol"])
+    assert stored[1]["venue"] == {"mic": "XLON", "country": "GB"}, "the value survived the write"
 
 
 def test_a_filter_compacts_only_that_part(dataset: IcebergDataset) -> None:
@@ -653,11 +818,15 @@ def test_new_data_makes_a_compacted_partition_worth_planning_again(
     assert dataset.compaction_plan(min_files=2) != []
 
 
-def test_the_compaction_snapshots_are_marked(dataset: IcebergDataset) -> None:
+def test_the_compacted_parts_are_marked(dataset: IcebergDataset) -> None:
+    """In a table property, which expiry cannot delete -- `optimize` expires."""
     for _ in range(2):
         dataset.write_arrow(quotes(2), commit_row_size=0)
     dataset.compact(min_files=2)
-    assert dataset.compacted_snapshots(), "how a compacted part is recognised later"
+    marks = dataset.compaction_marks()
+    assert marks, "how a compacted part is recognised later"
+    dataset.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0))
+    assert dataset.refresh().compaction_marks() == marks, "and a sweep does not lose it"
 
 
 # -- the scan filter a merge builds -----------------------------------------

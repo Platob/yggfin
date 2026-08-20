@@ -441,6 +441,24 @@ class Field(Convertible):
         """What `into_dict` says about what is inside this field; nothing here."""
         return {}
 
+    def leaf_names(self) -> list[str]:
+        """Every leaf reachable from this field, as a dotted path.
+
+        A scalar is its own leaf, so this is `[""]` -- the paths are relative
+        to the field, and the field itself is the whole of it. `StructField`
+        and the containers extend them by what they hold, which is what lets a
+        column added *inside* a struct be compared like a top-level one.
+        """
+        return [""]
+
+    def _extend(self, inside: dict[str, Field]) -> list[str]:
+        """`leaf_names` for a container: each member's paths under its own name."""
+        return [
+            f"{name}.{leaf}" if leaf else name
+            for name, member in inside.items()
+            for leaf in member.leaf_names()
+        ]
+
     # -- casting ------------------------------------------------------------
 
     def cast_arrow(self, source: Any, **kwargs: Any) -> Any:
@@ -504,6 +522,9 @@ class ListField(Field):
 
     def nested(self) -> dict[str, Any]:
         return {"item": _anonymous(self.item)}
+
+    def leaf_names(self) -> list[str]:
+        return self._extend({"item": self.item})
 
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
         """Cast the values, then cut them back into rows of this flavour.
@@ -662,6 +683,9 @@ class MapField(Field):
 
     def nested(self) -> dict[str, Any]:
         return {"key": _anonymous(self.key), "value": _anonymous(self.value)}
+
+    def leaf_names(self) -> list[str]:
+        return self._extend({"key": self.key, "value": self.value})
 
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
         """Cast both halves, then cut the entries back into rows.
@@ -842,6 +866,16 @@ class StructField(Field):
 
     def nested(self) -> dict[str, Any]:
         return {"fields": [member.into_dict() for member in self.fields]}
+
+    def leaf_names(self) -> list[str]:
+        """Every leaf below this struct, dotted: `["symbol", "venue.mic", ...]`.
+
+        What schema evolution has to compare. Top-level names alone miss a
+        member added *inside* a struct, a list or a map -- and `union_by_name`
+        adds those perfectly well, so missing them meant the next write dropped
+        the value with nothing raised.
+        """
+        return self._extend({member.name: member for member in self.fields})
 
     # -- casting ------------------------------------------------------------
 
