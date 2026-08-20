@@ -1064,8 +1064,10 @@ def _distinct_under(values: Any, limit: int) -> Any:
     return distinct if len(distinct) <= limit else None
 
 
-#: Marker columns the joins below carry; named like pyiceberg's so a table that
-#: already has one is refused there rather than corrupted here.
+#: Marker columns the joins below carry, named like pyiceberg's reserved pair.
+#: A merge key of either name is refused before a join ever runs, with the
+#: library's own message -- the joins reach these names first, and would fail
+#: on the duplicate column rather than on what is actually wrong.
 SOURCE_INDEX = "__source_index"
 TARGET_INDEX = "__target_index"
 
