@@ -108,6 +108,53 @@ def test_tables_are_listed_per_namespace_and_across_them(catalog: IcebergCatalog
     assert sorted(catalog.tables()) == ["risk.limits", "trading.quotes"]
 
 
+def test_tables_reach_nested_namespaces(catalog: IcebergCatalog) -> None:
+    """`list_namespaces` is one level deep, so a sweep silently skipped the rest.
+
+    `for dataset in catalog.datasets(): dataset.optimize()` never touched
+    `trading.eu.paris.quotes`, and reported no skip.
+    """
+    for name in ("ops.quotes", "trading.quotes", "trading.eu.quotes", "trading.eu.paris.quotes"):
+        catalog.dataset(name, struct=Quote.FIELD).create_with()
+    assert sorted(catalog.tables()) == [
+        "ops.quotes",
+        "trading.eu.paris.quotes",
+        "trading.eu.quotes",
+        "trading.quotes",
+    ]
+    assert catalog.tables("trading") == ["trading.quotes"], "one namespace is still one"
+    assert "trading.eu" in catalog.namespaces("trading")
+    assert sorted(catalog.namespaces(recursive=True)) == [
+        "ops",
+        "trading",
+        "trading.eu",
+        "trading.eu.paris",
+    ]
+
+
+def test_a_sweep_loads_one_catalog(catalog: IcebergCatalog) -> None:
+    """Loading a pyiceberg catalog builds an engine, or asks a REST server."""
+    import pyiceberg.catalog
+
+    for index in range(6):
+        catalog.dataset(f"trading.q{index}", struct=Quote.FIELD).create_with()
+    loaded = 0
+    original = pyiceberg.catalog.load_catalog
+
+    def counted(*args, **kwargs):
+        nonlocal loaded
+        loaded += 1
+        return original(*args, **kwargs)
+
+    pyiceberg.catalog.load_catalog = counted
+    try:
+        names = [dataset.name for dataset in catalog.datasets()]
+    finally:
+        pyiceberg.catalog.load_catalog = original
+    assert len(names) == 6
+    assert loaded == 0, "the catalog it came from is the catalog it uses"
+
+
 def test_a_table_is_dropped_and_purged(catalog: IcebergCatalog) -> None:
     dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
     dataset.create_with()

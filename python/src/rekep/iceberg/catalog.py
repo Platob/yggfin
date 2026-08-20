@@ -57,10 +57,20 @@ class IcebergCatalog(Convertible):
 
     # -- namespaces ---------------------------------------------------------
 
-    def namespaces(self, under: str | None = None) -> list[str]:
-        """Namespace names, dotted, under `under` or at the top."""
+    def namespaces(self, under: str | None = None, *, recursive: bool = False) -> list[str]:
+        """Namespace names, dotted, under `under` or at the top.
+
+        `list_namespaces` is one level deep -- `trading` does not bring back
+        `trading.eu` -- so `recursive=True` walks down. It costs one call per
+        namespace found, which is free on SQLite and a round trip each on REST
+        or Glue; the default stays the single call.
+        """
         found = self.catalog.list_namespaces(*((under,) if under else ()))
-        return [".".join(levels) for levels in found]
+        names = [".".join(levels) for levels in found]
+        if not recursive:
+            return names
+        below = [name for parent in names for name in self.namespaces(parent, recursive=True)]
+        return list(dict.fromkeys(names + below))
 
     def namespace(self, name: str) -> IcebergNamespace:
         """A handle on one namespace, whether or not it exists yet."""
@@ -96,8 +106,14 @@ class IcebergCatalog(Convertible):
     # -- tables -------------------------------------------------------------
 
     def tables(self, namespace: str | None = None) -> list[str]:
-        """Table identifiers, dotted: one namespace's, or every namespace's."""
-        spaces = [namespace] if namespace else self.namespaces()
+        """Table identifiers, dotted: one namespace's, or every namespace's.
+
+        *Every* namespace means nested ones too. A `list_namespaces` with no
+        argument returns only the top level, so `trading.eu.paris` was silently
+        missing -- and a sweep written as `for dataset in catalog.datasets()`
+        never touched those tables, without reporting a skip.
+        """
+        spaces = [namespace] if namespace else self.namespaces(recursive=True)
         return [
             ".".join(identifier)
             for space in spaces
@@ -124,10 +140,18 @@ class IcebergCatalog(Convertible):
         return self.catalog.rename_table(name, to)
 
     def dataset(self, name: str, **kwargs: Any) -> Any:
-        """A dataset on this catalog: the way to read and write a table here."""
+        """A dataset on this catalog: the way to read and write a table here.
+
+        Handed *this* catalog rather than left to build its own, the way
+        `create_with_field` hands over the table it just made: loading a
+        pyiceberg catalog builds a SQLAlchemy engine or asks a REST server for
+        its config, and `datasets()` was paying that per table.
+        """
         from rekep.iceberg.dataset import IcebergDataset
 
-        return IcebergDataset(name=name, catalog=self.name, properties=self.properties, **kwargs)
+        built = IcebergDataset(name=name, catalog=self.name, properties=self.properties, **kwargs)
+        built.__dict__["store"] = self
+        return built
 
     def datasets(self, namespace: str | None = None) -> Iterator[Any]:
         """One dataset per table, for a sweep over a whole namespace."""

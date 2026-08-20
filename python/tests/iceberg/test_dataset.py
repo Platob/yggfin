@@ -908,6 +908,72 @@ def test_a_sweep_can_leave_metadata_alone(dataset: IcebergDataset) -> None:
     assert before <= {path for path in (location / "metadata").rglob("*")}
 
 
+def test_a_sweep_finds_the_files_however_the_warehouse_is_spelled(tmp_path: Path) -> None:
+    """`file:/x` is a valid URI that `pyarrow.fs` resolves to `/x`.
+
+    Stripping the scheme by hand leaves `file:/x`, which matches nothing the
+    listing returns -- so every live file looked orphaned and the sweep deleted
+    the table. The same shape as `abfss://container@account.../x` and a Windows
+    drive letter, neither of which can be exercised here.
+    """
+    warehouse = tmp_path / "warehouse"
+    warehouse.mkdir()
+    catalog = IcebergCatalog(
+        name="single",
+        properties={
+            "type": "sql",
+            "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
+            "warehouse": f"file:{warehouse.as_posix()}",  # one slash, not three
+        },
+    )
+    quotes_ = catalog.dataset("trading.quotes", struct=Quote.FIELD)
+    for _ in range(3):
+        quotes_.write_arrow(quotes(2), commit_row_size=0)
+    stored = quotes_.read_arrow_table().num_rows
+    assert quotes_.get_or_create_table().location().startswith("file:/"), "one slash"
+    quotes_.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0))
+    assert quotes_.refresh().read_arrow_table().num_rows == stored, "the table still reads"
+
+
+def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
+    """`write.data.path` moves the data; assuming `<location>/data` swept nothing."""
+    warehouse = tmp_path / "warehouse"
+    elsewhere = tmp_path / "elsewhere"
+    warehouse.mkdir()
+    elsewhere.mkdir()
+    catalog = IcebergCatalog(
+        name="relocated",
+        properties={
+            "type": "sql",
+            "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
+            "warehouse": warehouse.as_uri(),
+        },
+    )
+    quotes_ = catalog.dataset(
+        "trading.quotes",
+        struct=Quote.FIELD,
+        table_properties={"write.data.path": elsewhere.as_uri()},
+    )
+    for index in range(4):
+        quotes_.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+    quotes_.compact(min_files=2)
+    stored = quotes_.refresh().read_arrow_table().num_rows
+    written = len(list(elsewhere.rglob("*.parquet")))
+    assert written > 0, "the data really did go elsewhere"
+
+    quotes_.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0))
+    live = {
+        Path(path).name
+        for path in quotes_.refresh()
+        .iceberg_table.inspect.all_files()
+        .column("file_path")
+        .to_pylist()
+    }
+    remaining = {path.name for path in elsewhere.rglob("*.parquet")}
+    assert remaining == live, "what the sweep left is exactly what is still referenced"
+    assert quotes_.read_arrow_table().num_rows == stored, "and the table still reads"
+
+
 def test_a_sweep_keeps_the_files_only_the_metadata_names(dataset: IcebergDataset) -> None:
     """A Puffin statistics file and a Hadoop pointer are reachable no other way.
 

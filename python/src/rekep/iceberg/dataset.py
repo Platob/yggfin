@@ -924,12 +924,11 @@ class IcebergDataset(Dataset):
             self.refresh()
         if not remove_orphans:
             return report
-        orphans = self.orphan_files(orphan_age, metadata=metadata)
+        orphans = self._orphans(orphan_age, metadata=metadata)
         report["deleted"] = len(orphans)
-        report["bytes"] = int(sum(size for _, size in orphans))
+        report["bytes"] = int(sum(size for _, _, size in orphans))
         if not dry_run:
-            filesystem, _ = resolve(self.iceberg_table.location())
-            for path, _ in orphans:
+            for filesystem, path, _ in orphans:
                 filesystem.delete_file(path)
         return report
 
@@ -944,29 +943,56 @@ class IcebergDataset(Dataset):
         so a table with a single live data file can easily carry a hundred
         metadata files.
 
+        **Where** those two directories are is Iceberg's answer, not a guess:
+        `write.data.path` and `write.metadata.path` move either of them, often
+        to another store entirely, and a table Spark created carries them
+        whether or not this code knows. Assuming `<location>/data` made the
+        sweep a silent no-op on such a table -- the listing found nothing and
+        `allow_not_found` swallowed it.
+
         The live set is deliberately over-broad: every retained snapshot's
         manifest list and every manifest reachable from it, every entry in the
-        metadata log, and the current metadata pointer. Anything younger than
-        `older_than` is spared whether or not it is referenced, because a writer
-        committing right now has files on disk that no snapshot mentions yet.
+        metadata log, the statistics the metadata registers, and the current
+        metadata pointer. Anything younger than `older_than` is spared whether
+        or not it is referenced, because a writer committing right now has files
+        on disk that no snapshot mentions yet.
 
         Listed through `pyarrow.fs`, like every other file this package touches,
-        so an object store is walked by the same handle the reads use.
+        so an object store is walked by the same handle the reads use -- and
+        compared **relative to the directory**, resolved once through that same
+        `pyarrow.fs`. Stripping the scheme by hand instead is what made this
+        dangerous: `file:/tmp/x`, `abfss://container@account.../x` and a
+        Windows drive letter all resolve to something a string split does not
+        produce, so every live file fell out of the live set and `cleanup`
+        deleted the whole table.
+        """
+        return [(path, size) for _, path, size in self._orphans(older_than, metadata=metadata)]
+
+    def _orphans(
+        self, older_than: datetime.timedelta, *, metadata: bool
+    ) -> list[tuple[Any, str, int]]:
+        """`orphan_files`, each path beside the filesystem that lists it.
+
+        Which is the one that can delete it: `write.data.path` often points at
+        another store entirely, and one handle built from the table's location
+        would delete against the wrong one.
         """
         table = self.iceberg_table
-        filesystem, root = resolve(table.location())
         cutoff = datetime.datetime.now(datetime.UTC) - older_than
-        directories = {"data": self._live_data(table)}
+        directories = [(self._data_path(table), self._live_data(table))]
         if metadata:
-            directories["metadata"] = self._live_metadata(table)
+            directories.append((self._metadata_path(table), self._live_metadata(table)))
 
         found = []
-        for directory, live in directories.items():
-            selector = pyarrow.fs.FileSelector(
-                f"{root.rstrip('/')}/{directory}", recursive=True, allow_not_found=True
-            )
+        for directory, live in directories:
+            filesystem, base = resolve(directory)
+            bases = (directory.rstrip("/"), base.rstrip("/"), _path_of(directory).rstrip("/"))
+            relative = {_relative(path, bases) for path in live}
+            selector = pyarrow.fs.FileSelector(base, recursive=True, allow_not_found=True)
             for info in filesystem.get_file_info(selector):
-                if info.type != pyarrow.fs.FileType.File or _path_of(info.path) in live:
+                if info.type != pyarrow.fs.FileType.File:
+                    continue
+                if _relative(info.path, bases) in relative:
                     continue
                 # A Hadoop-style catalog keeps its pointer beside the metadata
                 # and nothing inside the metadata names it: reading the table
@@ -975,14 +1001,39 @@ class IcebergDataset(Dataset):
                     continue
                 if info.mtime and info.mtime > cutoff:
                     continue
-                found.append((info.path, info.size))
+                found.append((filesystem, info.path, info.size))
         return found
 
+    def _data_path(self, table: Any) -> str:
+        """Where this table's data files live, as Iceberg decides it."""
+        return self._locations(table).data_path
+
+    def _metadata_path(self, table: Any) -> str:
+        """Where this table's metadata files live, as Iceberg decides it."""
+        return self._locations(table).metadata_path
+
+    def _locations(self, table: Any) -> Any:
+        """pyiceberg's own location provider for this table."""
+        from pyiceberg.table.locations import load_location_provider
+
+        return load_location_provider(table.location(), table.properties)
+
     def _live_data(self, table: Any) -> set[str]:
-        """Every data and delete file any retained snapshot still holds."""
-        return {
-            _path_of(path) for path in table.inspect.all_files().column("file_path").to_pylist()
-        }
+        """Every data and delete file any retained snapshot still holds.
+
+        Walked from the manifests rather than read off `inspect.all_files()`,
+        which builds -- per data file -- the column sizes, value counts, null
+        counts and a decoded lower *and* upper bound for every field in the
+        schema, so that one column of paths can be kept. Measured on 40 columns
+        and 80 snapshots: 550 ms against 143, and the gap grows with the column
+        count. `_live_metadata` walks the same manifests, so this is the
+        module's existing idiom rather than a second way of doing it.
+        """
+        live = set()
+        for _, manifest in _manifests(table):
+            for entry in manifest.fetch_manifest_entry(table.io):
+                live.add(entry.data_file.file_path)
+        return live
 
     def _live_metadata(self, table: Any) -> set[str]:
         """Every metadata file a retained snapshot, the log, or the pointer names.
@@ -998,16 +1049,15 @@ class IcebergDataset(Dataset):
         by `metadata.statistics`, and is exactly as old as the snapshot it
         describes -- so an age rule does not save it either.
         """
-        live = {_path_of(table.metadata_location)}
+        live = {table.metadata_location}
         for entry in table.metadata.metadata_log:
-            live.add(_path_of(entry.metadata_file))
-        for snapshot in table.snapshots():
+            live.add(entry.metadata_file)
+        for snapshot, manifest in _manifests(table):
             if snapshot.manifest_list:
-                live.add(_path_of(snapshot.manifest_list))
-            for manifest in snapshot.manifests(table.io):
-                live.add(_path_of(manifest.manifest_path))
+                live.add(snapshot.manifest_list)
+            live.add(manifest.manifest_path)
         for statistics in (*table.metadata.statistics, *table.metadata.partition_statistics):
-            live.add(_path_of(statistics.statistics_path))
+            live.add(statistics.statistics_path)
         return live
 
     def optimize(self, *, min_files: int = 2, retain: int = 1, **kwargs: Any) -> dict[str, int]:
@@ -1338,6 +1388,21 @@ def _renamed(reader: Any, names: dict[str, str]) -> Any:
     )
 
 
+def _manifests(table: Any) -> Iterator[tuple[Any, Any]]:
+    """`(snapshot, manifest)` for every manifest any retained snapshot reaches.
+
+    Deduped on the manifest path: a manifest that two snapshots share is read
+    once, which is most of them on a table written by a stream.
+    """
+    seen = set()
+    for snapshot in table.snapshots():
+        for manifest in snapshot.manifests(table.io):
+            if manifest.manifest_path in seen:
+                continue
+            seen.add(manifest.manifest_path)
+            yield snapshot, manifest
+
+
 def _mark_key(branch: str, row: Any) -> str:
     """A stable name for one partition of one branch, for `COMPACTION_MARK`."""
     partition = row.get("partition") or {}
@@ -1391,8 +1456,28 @@ def _literal(value: Any) -> str:
 
 
 def _path_of(location: str) -> str:
-    """A file location without its scheme, which is how `pyarrow.fs` names it."""
+    """A file location without its scheme, as one of the spellings to try.
+
+    Never on its own as "the path `pyarrow.fs` would use": it is not.
+    `file:/tmp/x` keeps its scheme, `abfss://container@account.dfs.../x`
+    resolves to `container/x`, and a Windows drive letter loses a leading
+    slash. `_relative` tries this beside the ones `resolve` produces.
+    """
     return location.split("://", 1)[-1]
+
+
+def _relative(path: str, bases: Sequence[str]) -> str:
+    """`path` under whichever of `bases` it is spelled against, tail only.
+
+    The one comparison that survives a store naming its files differently from
+    the URI the metadata records: both sides are reduced to what follows the
+    directory they are in, so how the directory itself is spelled stops
+    mattering.
+    """
+    for base in sorted(bases, key=len, reverse=True):
+        if base and path.startswith(base):
+            return path[len(base) :].lstrip("/")
+    return path.lstrip("/")
 
 
 def _cutoff_ms(older_than: datetime.datetime | datetime.timedelta | None) -> int | None:

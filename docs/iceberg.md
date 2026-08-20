@@ -45,7 +45,8 @@ value when a write lands on a table partitioned by a transform.
 === "Namespaces"
 
     ```python
-    catalog.namespaces()                          # ['trading']
+    catalog.namespaces()                          # ['trading'] -- one level
+    catalog.namespaces(recursive=True)            # ['trading', 'trading.eu']
     space = catalog.create_namespace("trading", {"owner": "desk"})
     space.properties                              # {'owner': 'desk'}
     space.update_properties({"owner": "risk"})
@@ -56,7 +57,7 @@ value when a write lands on a table partitioned by a transform.
 === "Tables"
 
     ```python
-    catalog.tables()                              # every namespace
+    catalog.tables()                              # every namespace, nested ones too
     catalog.tables("trading")                     # one of them
     catalog.table_exists("trading.quotes")
     catalog.rename_table("trading.quotes", "trading.ticks")
