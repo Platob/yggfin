@@ -146,7 +146,7 @@ what is missing and commits nothing when there is nothing to add, and
 `optimize` is the three in the order that makes them cheap. Every one of them
 reports what it did.
 
-Five things that were learned the expensive way, all of them measured:
+Six things that were learned the expensive way, all of them measured:
 
 - **A maintenance verb must settle.** `compact` marks its own snapshots and
   skips a part nothing has landed in since; without that it replans forever,
@@ -166,6 +166,12 @@ Five things that were learned the expensive way, all of them measured:
   narrowed to the keys the chunk actually references before anything looks at
   them. The filter that decides what is *deleted* stays exact; ranges may only
   narrow it.
+- **A feature is advertised only once something wrote through it.** Every
+  partition transform but `identity` is computed by Iceberg's Rust core, so a
+  `day` or `bucket[16]` partition our docstrings had shown since day one raised
+  `NotInstalledError` on the first write. Building the spec was tested;
+  *writing* one was not. The extra now pulls the core in, and a merge through a
+  transformed partition is compared with pyiceberg's own upsert.
 - **Our own commits update the table object in place.** `refresh()` is for
   seeing *other* writers, and calling it per chunk is a catalog round trip per
   commit -- free on SQLite, a network hop on REST or Glue.

@@ -10,6 +10,10 @@ enjoys writing: the maintenance.
 pip install "rekep[iceberg]"
 ```
 
+That pulls in pyiceberg, a SQLite catalog so everything below runs locally, and
+Iceberg's Rust core -- which is what computes a `day` or `bucket[16]` partition
+value when a write lands on a table partitioned by a transform.
+
 ## A catalog
 
 === "Local (no services)"

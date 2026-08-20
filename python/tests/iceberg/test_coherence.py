@@ -607,3 +607,92 @@ def test_the_comparison_agrees_or_hands_back(case: str) -> None:
     theirs = upsert_util.get_rows_to_update(source, target, ["k"])
     assert ours.num_rows == theirs.num_rows
     assert ours.sort_by("k").to_pylist() == theirs.sort_by("k").to_pylist()
+
+
+# -- partition transforms ---------------------------------------------------
+
+
+@field
+class Event(Convertible):
+    """One event, partitioned by a *transform* of its timestamp."""
+
+    at: Annotated[datetime.datetime, Field.primary_key(), Field.partition_key("day")]
+    """When it happened, and the partition it lands in -- by day, not by value."""
+
+    size: int
+    """Quantity."""
+
+
+def events(indexes: range, version: int) -> pyarrow.Table:
+    """Rows five hours apart, so every partition holds several."""
+    start = datetime.datetime(2026, 1, 1)
+    return pyarrow.Table.from_pydict(
+        {
+            "at": [start + datetime.timedelta(hours=index * 5) for index in indexes],
+            "size": [version * 1000 + index for index in indexes],
+        },
+        schema=Event.FIELD.into_arrow_schema(),
+    )
+
+
+@pytest.fixture
+def event_pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
+    built = []
+    for name in ("ours", "theirs"):
+        catalog = IcebergCatalog(name=name, properties=properties(tmp_path, name))
+        built.append(catalog.dataset("trading.events", struct=Event.FIELD).create_with())
+    return built[0], built[1]
+
+
+def test_a_merge_through_a_partition_transform_agrees(event_pair) -> None:
+    """`_key_ranges` names the raw column; Iceberg prunes on `day(at)`.
+
+    A projection that went the wrong way would plan no file, match nothing and
+    insert a second copy of every row -- so this compares row for row.
+    """
+    ours, theirs = event_pair
+    for dataset in event_pair:
+        dataset.write_arrow(events(range(60), 0), commit_row_size=0)
+        dataset.write_arrow(events(range(30, 90), 1), merge_by=True, commit_row_size=0)
+    order = [("at", "ascending")]
+    assert ours.read_arrow_table().num_rows == 90, "merged, not duplicated"
+    assert (
+        ours.read_arrow_table().sort_by(order).to_pylist()
+        == theirs.read_arrow_table().sort_by(order).to_pylist()
+    )
+
+
+def test_a_transformed_partition_prunes_a_read(event_pair) -> None:
+    """The point of `day(at)`: a day's filter opens a day's files."""
+    ours, _ = event_pair
+    for start in range(0, 90, 30):
+        ours.write_arrow(events(range(start, start + 30), 0), commit_row_size=0)
+    plan = ours.scan_plan("at >= '2026-01-02T00:00:00' and at < '2026-01-03T00:00:00'")
+    assert plan["skipped"] > 0, "a day is one partition, not the whole table"
+    assert plan["files"] < plan["total_files"]
+
+
+def test_a_nan_merge_key_is_refused_by_both(tmp_path: Path) -> None:
+    """No literal can name a NaN, so neither library will build a filter with one."""
+
+    @field
+    class Level(Convertible):
+        """A price level."""
+
+        price: float
+        """The key, deliberately a float."""
+
+        size: int
+        """Quantity."""
+
+    schema = Level.FIELD.into_arrow_schema()
+    catalog = IcebergCatalog(name="nan", properties=properties(tmp_path, "nan"))
+    dataset = catalog.dataset("trading.levels", struct=Level.FIELD)
+    dataset.write_arrow(
+        pyarrow.Table.from_pydict({"price": [1.0], "size": [1]}, schema=schema), commit_row_size=0
+    )
+    chunk = pyarrow.Table.from_pydict({"price": [float("nan")], "size": [2]}, schema=schema)
+    with pytest.raises(ValueError, match="NaN"):
+        dataset.merge_arrow_table(chunk, ["price"])
+    with pytest.raises(ValueError, match="NaN"):
+        dataset.get_or_create_table().upsert(chunk, join_cols=["price"])

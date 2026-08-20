@@ -101,6 +101,11 @@ Inference gets the common cases right. `Annotated` is for what it cannot know.
     A nullable primary key is refused, at the declaration and at the setter:
     an identifier that may be missing identifies nothing.
 
+    Every transform but `identity` is computed by Iceberg's Rust core when a
+    write partitions on it. The `iceberg` extra pulls it in, so a `day` or a
+    `bucket[16]` partition works out of the box; a bare `pyiceberg` install
+    raises `NotInstalledError` at the first such write.
+
 ## Kinds: the type picks the class
 
 `Field(...)` returns the subclass its Arrow type calls for, so what is *inside*

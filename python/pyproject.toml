@@ -18,8 +18,9 @@ yaml = ["pyyaml>=6.0"]
 toml = ["tomli-w>=1.0"]
 # ~2x parse throughput: swaps the line hash from blake2b to xxhash.
 fast = ["xxhash>=3.4"]
-# The Iceberg dataset, with the SQLite catalog that makes it fully local.
-iceberg = ["pyiceberg[sql-sqlite]>=0.9"]
+# The Iceberg dataset, with the SQLite catalog that makes it fully local and
+# the Rust core every partition transform but `identity` is written through.
+iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.9"]
 all = ["rekep[fast,iceberg,toml,yaml]"]
 
 [project.urls]
