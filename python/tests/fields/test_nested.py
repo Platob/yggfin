@@ -11,6 +11,7 @@ import pytest
 
 from rekep import Field
 from rekep.fields import arrays
+from rekep.fields import field_of as struct_of
 
 ENTRY = pyarrow.struct([("key", pyarrow.string()), ("value", pyarrow.int64())])
 
@@ -143,8 +144,49 @@ def test_a_not_null_member_may_not_come_back_holding_nulls() -> None:
         name="row",
         arrow_type=pyarrow.struct([pyarrow.field("message", pyarrow.string(), nullable=False)]),
     )
-    with pytest.raises(ValueError, match="not nullable and 1 of 3"):
+    with pytest.raises(ValueError, match="not nullable and 1 of the 3"):
         shape.cast_arrow_batch(batch)
+
+
+def test_leaves_are_paths_before_they_are_names() -> None:
+    """A dot in a column name is not a separator, and evolution has to know.
+
+    `venue.country` as a column, beside a `country` inside a `venue`, renders
+    to the same dotted string -- so anything comparing the strings sees one
+    leaf where there are two, finds nothing to add, and lets the next write
+    drop whichever it did not look at.
+    """
+    shape = struct_of(
+        pyarrow.struct(
+            [
+                pyarrow.field("venue.country", pyarrow.string()),
+                pyarrow.field(
+                    "venue", pyarrow.struct([pyarrow.field("country", pyarrow.string())])
+                ),
+            ]
+        )
+    )
+    assert shape.leaf_names() == ["venue.country", "venue.country"], "ambiguous as strings"
+    assert shape.leaf_paths() == [("venue.country",), ("venue", "country")], "and not as paths"
+
+
+def test_leaves_reach_through_every_container() -> None:
+    shape = struct_of(
+        pyarrow.struct(
+            [
+                pyarrow.field("book", pyarrow.list_(pyarrow.struct([("mic", pyarrow.string())]))),
+                pyarrow.field("tags", pyarrow.map_(pyarrow.string(), pyarrow.int64())),
+            ]
+        )
+    )
+    assert shape.leaf_paths() == [("book", "item", "mic"), ("tags", "key"), ("tags", "value")]
+
+
+def test_a_batch_of_no_columns_keeps_its_rows() -> None:
+    """A row count is the one thing a column-less batch still carries."""
+    batch = pyarrow.record_batch({"v": pyarrow.array([1, 2, 3])}).select([])
+    cast = struct_of(pyarrow.struct([])).cast_arrow_batch(batch)
+    assert cast.num_rows == 3, "three rows in, three rows out"
 
 
 def test_an_empty_map_is_not_a_map_without_the_member() -> None:

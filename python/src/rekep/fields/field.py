@@ -448,16 +448,21 @@ class Field(Convertible):
         to the field, and the field itself is the whole of it. `StructField`
         and the containers extend them by what they hold, which is what lets a
         column added *inside* a struct be compared like a top-level one.
-        """
-        return [""]
 
-    def _extend(self, inside: dict[str, Field]) -> list[str]:
-        """`leaf_names` for a container: each member's paths under its own name."""
-        return [
-            f"{name}.{leaf}" if leaf else name
-            for name, member in inside.items()
-            for leaf in member.leaf_names()
-        ]
+        Dotted for reading. Anything that has to *compare* leaves uses
+        `leaf_paths`, whose tuples say which dot is a separator: a column
+        literally named `venue.country` and a `country` inside a `venue`
+        produce the same string here and are not the same leaf.
+        """
+        return [".".join(path) for path in self.leaf_paths()]
+
+    def leaf_paths(self) -> list[tuple[str, ...]]:
+        """`leaf_names`, split -- one tuple of names per leaf, ambiguity and all."""
+        return [()]
+
+    def _extend(self, inside: dict[str, Field]) -> list[tuple[str, ...]]:
+        """`leaf_paths` for a container: each member's paths under its own name."""
+        return [(name, *rest) for name, member in inside.items() for rest in member.leaf_paths()]
 
     # -- casting ------------------------------------------------------------
 
@@ -523,7 +528,7 @@ class ListField(Field):
     def nested(self) -> dict[str, Any]:
         return {"item": _anonymous(self.item)}
 
-    def leaf_names(self) -> list[str]:
+    def leaf_paths(self) -> list[tuple[str, ...]]:
         return self._extend({"item": self.item})
 
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
@@ -684,7 +689,7 @@ class MapField(Field):
     def nested(self) -> dict[str, Any]:
         return {"key": _anonymous(self.key), "value": _anonymous(self.value)}
 
-    def leaf_names(self) -> list[str]:
+    def leaf_paths(self) -> list[tuple[str, ...]]:
         return self._extend({"key": self.key, "value": self.value})
 
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
@@ -867,8 +872,8 @@ class StructField(Field):
     def nested(self) -> dict[str, Any]:
         return {"fields": [member.into_dict() for member in self.fields]}
 
-    def leaf_names(self) -> list[str]:
-        """Every leaf below this struct, dotted: `["symbol", "venue.mic", ...]`.
+    def leaf_paths(self) -> list[tuple[str, ...]]:
+        """Every leaf below this struct: `[("symbol",), ("venue", "mic"), ...]`.
 
         What schema evolution has to compare. Top-level names alone miss a
         member added *inside* a struct, a list or a map -- and `union_by_name`
@@ -961,8 +966,10 @@ class StructField(Field):
                     # `pyarrow.Table.cast` refuses this too.
                     raise ValueError(
                         f"column {self._path(member.name)!r} is not nullable and "
-                        f"{cast.null_count} of {len(cast)} values are null; fill them upstream "
-                        "or make the field optional"
+                        f"{cast.null_count} of the {len(cast)} values under it are null; fill "
+                        "them upstream or make the field optional. (Inside a list those are the "
+                        "values the rows are cut from, which can be more than the rows address "
+                        "-- Arrow's own cast reads them the same way and refuses the same.)"
                     )
                 columns.append(cast)
             elif member.nullable:
@@ -992,7 +999,10 @@ class StructField(Field):
         """
         target = self.merged(batch.schema) if merge_schema else self
         schema = target.arrow_schema
-        if batch.schema.equals(schema, check_metadata=True):
+        if batch.schema.equals(schema, check_metadata=True) or not schema.names:
+            # No columns to swap and none to cast: rebuilding a batch from an
+            # empty column list would hand back a batch of no *rows* either,
+            # and a row count is the one thing a column-less batch still says.
             return batch
         if batch.schema.equals(schema):
             # The types already line up and only the metadata does not: the

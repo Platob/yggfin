@@ -287,8 +287,12 @@ class IcebergDataset(Dataset):
         """
         target = self.target_field(source)
         current = self.table_field
-        held = set(current.leaf_names())
-        added = [name for name in target.leaf_names() if name not in held]
+        # Compared as paths, not as the dotted strings: a column literally
+        # named `venue.country` and a `country` inside a `venue` render the
+        # same, and a schema carrying both reported nothing to add and then
+        # dropped the struct on every row.
+        held = set(current.leaf_paths())
+        added = [".".join(path) for path in target.leaf_paths() if path not in held]
         if not added or dry_run:
             return added
         table = self.iceberg_table
