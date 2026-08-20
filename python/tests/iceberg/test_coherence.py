@@ -236,12 +236,59 @@ def test_a_projection_returns_what_selecting_afterwards_would(stored) -> None:
 
 
 def test_a_projection_does_not_read_the_columns_it_drops(stored) -> None:
+    """The scan is told the shape, rather than the cast dropping columns after."""
     narrow = Field.from_arrow_schema(
         pyarrow.schema([Quote.FIELD.into_arrow_schema().field("seq")]), "Narrow"
     )
-    assert stored._selected(None, narrow) == ("seq",), "the scan is told, not the cast"
-    assert stored._selected(["size"], narrow) == ("size",), "an explicit list wins"
-    assert stored._selected(None, None) == ("*",)
+    scan = stored.iceberg_table.scan()
+    assert stored._selected(narrow, scan) == {"seq": "seq"}, "the scan is told, not the cast"
+    assert stored.read_arrow_table(narrow).column_names == ["seq"]
+    assert stored.read_arrow_table(columns=["size"]).column_names == ["size"], "an explicit list"
+    assert stored.read_arrow_table().column_names == Quote.FIELD.names, "no shape, every column"
+
+
+@pytest.mark.parametrize("pin", ["snapshot", "branch"])
+def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
+    tmp_path: Path, pin: str
+) -> None:
+    """A rename is metadata-only, so an older snapshot answers to the old names.
+
+    Matching the target's columns by name against the *current* schema leaves
+    the renamed one out of the projection and then fills it with nulls -- the
+    data is on disk and readable, and nothing raises. Compared against
+    pyiceberg's own scan of the same snapshot, which is where the values are.
+    """
+    catalog = IcebergCatalog(name="evolved", properties=properties(tmp_path, "evolved"))
+    dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
+    dataset.write_arrow(quotes(0, 3), commit_row_size=0)
+    table = dataset.get_or_create_table()
+    snapshot = table.current_snapshot().snapshot_id
+    table.manage_snapshots().create_branch(snapshot, "old").commit()
+    with table.update_schema() as update:
+        update.rename_column("venue", "market")
+    dataset.refresh()
+    pinned = {"snapshot_id": snapshot} if pin == "snapshot" else {"branch": "old"}
+
+    official = table.scan(snapshot_id=snapshot).to_arrow()
+    assert official.column("venue").to_pylist() == ["XPAR"] * 3, "the data is there"
+
+    # The shape as the table declares it *now* -- which is what a caller has.
+    rows = dataset.read_arrow_table(dataset.table_field, **pinned)
+    assert rows.column("market").to_pylist() == ["XPAR"] * 3, "under the name it has now"
+    # And the shape as it was then, which is what a caller who kept one has:
+    # the column comes back under the name it was asked for either way.
+    then = dataset.read_arrow_table(Quote.FIELD, **pinned)
+    assert then.column("venue").to_pylist() == ["XPAR"] * 3, "under the name it had then"
+
+    # And a column that snapshot never had is still filled, not refused.
+    from pyiceberg.types import StringType
+
+    with dataset.get_or_create_table().update_schema() as update:
+        update.add_column("desk", StringType())
+    dataset.refresh()
+    wider = dataset.read_arrow_table(dataset.table_field, **pinned)
+    assert wider.column("desk").to_pylist() == [None] * 3
+    assert wider.column("market").to_pylist() == ["XPAR"] * 3
 
 
 def test_a_shape_the_table_does_not_have_still_reads(stored) -> None:

@@ -304,10 +304,19 @@ class IcebergDataset(Dataset):
         it**: asking for a narrow shape reads narrow columns, rather than
         reading all of them and dropping the rest after the fact. Name
         `columns` to override that.
+
+        A read pinned to a `snapshot_id` or a `branch` reads under the schema
+        *that snapshot* was written with, which a rename or a drop since makes
+        a different one. The shape's columns are matched to it by field id, so
+        a renamed column is found and comes back under the name the shape asked
+        for it by -- matching by name would have filled it with nulls.
         """
         target = None if schema is None else self.target_field(schema)
-        scan = self.iceberg_table.scan(
-            selected_fields=self._selected(columns, target),
+        table = self.iceberg_table
+        # Pinned *before* the projection is chosen: a scan on a ref or a
+        # snapshot id projects under that snapshot's schema, so which names it
+        # will answer to is not known until it is pinned.
+        scan = table.scan(
             snapshot_id=snapshot_id,
             limit=limit,
             **({"row_filter": row_filter} if row_filter is not None else {}),
@@ -315,27 +324,49 @@ class IcebergDataset(Dataset):
         reference = branch or self.branch
         if reference and snapshot_id is None:
             scan = scan.use_ref(reference)
+        found: dict[str, str] = {}
+        if columns:
+            scan = scan.select(*columns)
+        elif target is not None:
+            found = self._selected(target, scan)
+            scan = scan.select(*found)
         reader = scan.to_arrow_batch_reader()
         if target is None:
             return reader
-        return target.cast_arrow_reader(reader)
+        return target.cast_arrow_reader(_renamed(reader, found))
 
-    def _selected(self, columns: Sequence[str] | None, target: StructField | None) -> tuple:
-        """Which columns the scan reads: what was asked for, or what the shape needs.
+    def _selected(self, target: StructField, scan: Any) -> dict[str, str]:
+        """`{the scan's name: the target's name}` for every column it can fill.
 
-        A column the target declares and the table does not have is left out of
-        the projection -- pyiceberg would refuse the name, and the cast fills it
-        with nulls anyway (or refuses it, if it may not be null).
+        Matched by **field id** first, never by name alone. A rename is
+        metadata-only, so a scan pinned to a snapshot older than one answers to
+        the *old* names: a column renamed since would be left out of the
+        projection and then filled with nulls, and a column added since would
+        be asked for by a name that snapshot never had. Ids are what a rename
+        does not change.
+
+        A name the current schema does not carry at all -- a column dropped
+        since -- is looked up in that snapshot's own names instead, which is
+        what pyiceberg does with the same `selected_fields`: the column is
+        still on disk and still readable, and reading it is what was asked for.
+
+        Whichever way it was found, the column comes back under the name the
+        *target* used to ask for it. A column the target declares and that
+        snapshot really does not have is left out -- the cast fills it with
+        nulls, or refuses it if it may not be null, which is the same answer
+        either way.
         """
-        if columns:
-            return tuple(columns)
-        if target is None:
-            return ("*",)
-        stored = self.table_field.names
-        wanted = tuple(name for name in target.names if name in set(stored))
+        current = {field.name: field.field_id for field in self.iceberg_table.schema().fields}
+        pinned = {field.field_id: field.name for field in scan.projection().fields}
+        by_name = set(pinned.values())
+        wanted = {}
+        for name in target.names:
+            stored = pinned.get(current.get(name, -1)) or (name if name in by_name else None)
+            if stored is not None:
+                wanted[stored] = name
         # Nothing in common: the rows still have to be counted, but reading
         # every column of them to hand back a table of nulls would be absurd.
-        return wanted or (stored[0],)
+        return wanted or {next(iter(pinned.values())): next(iter(pinned.values()))}
 
     # -- writing ------------------------------------------------------------
 
@@ -1021,8 +1052,11 @@ def _downcasts_ns() -> bool:
     return Config().get_bool(DOWNCAST_NS_TIMESTAMP_TO_US_ON_WRITE) or False
 
 
-def _under_current_names(table: Any, matched: pyarrow.Table) -> pyarrow.Table:
-    """`matched` with its columns named the way the table names them *now*.
+def _under_current_names(table: Any, source: Any) -> Any:
+    """`source` with its columns named the way the table names them *now*.
+
+    Takes a table or a reader; a reader is renamed batch by batch, so nothing
+    is materialised to do it.
 
     A scan pinned to a ref reads under that snapshot's schema, not the current
     one -- and a rename is metadata-only, so until something else commits, the
@@ -1035,11 +1069,15 @@ def _under_current_names(table: Any, matched: pyarrow.Table) -> pyarrow.Table:
     """
     current = {field.field_id: field.name for field in table.schema().fields}
     names = []
-    for field in matched.schema:
+    for field in source.schema:
         identifier = (field.metadata or {}).get(b"PARQUET:field_id")
         renamed = current.get(int(identifier)) if identifier is not None else None
         names.append(renamed or field.name)
-    return matched.rename_columns(names) if names != matched.column_names else matched
+    if names == source.schema.names:
+        return source
+    if isinstance(source, pyarrow.Table):
+        return source.rename_columns(names)
+    return (batch.rename_columns(names) for batch in source)
 
 
 def _distinct_under(values: Any, limit: int) -> Any:
@@ -1209,6 +1247,21 @@ def _unmatched(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]
         join_type="left anti",
     )
     return chunk.take(fresh.column(SOURCE_INDEX))
+
+
+def _renamed(reader: Any, names: dict[str, str]) -> Any:
+    """`reader`'s batches under the names the caller asked for them by.
+
+    Batch by batch, so nothing is materialised: a stream stays a stream. The
+    mapping is `{what the scan called it: what the caller called it}`, which
+    for anything but a pinned read across a rename is the identity.
+    """
+    if not names or all(stored == asked for stored, asked in names.items()):
+        return reader
+    return (
+        batch.rename_columns([names.get(name, name) for name in batch.schema.names])
+        for batch in reader
+    )
 
 
 def _always_true() -> Any:
