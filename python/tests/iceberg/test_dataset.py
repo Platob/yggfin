@@ -699,6 +699,42 @@ def test_a_sweep_can_leave_metadata_alone(dataset: IcebergDataset) -> None:
     assert before <= {path for path in (location / "metadata").rglob("*")}
 
 
+def test_a_sweep_keeps_the_files_only_the_metadata_names(dataset: IcebergDataset) -> None:
+    """A Puffin statistics file and a Hadoop pointer are reachable no other way.
+
+    Neither is named by a snapshot, a manifest or the metadata log, and a
+    statistics file is exactly as old as the snapshot it describes -- so an age
+    rule does not save it either. Sweeping one loses the table's statistics;
+    sweeping the other loses the table.
+    """
+    from pyiceberg.table.statistics import StatisticsFile
+
+    dataset.write_arrow(quotes(2), commit_row_size=0)
+    table = dataset.get_or_create_table()
+    metadata = Path(table.location().replace("file://", "")) / "metadata"
+    puffin = metadata / "stats.puffin"
+    puffin.write_bytes(b"PFA1" + bytes(64))
+    pointer = metadata / "version-hint.text"
+    pointer.write_text("1")
+    stray = metadata / "left-behind.avro"
+    stray.write_bytes(b"nothing references this")
+    with table.update_statistics() as update:
+        update.set_statistics(
+            StatisticsFile(
+                snapshot_id=table.current_snapshot().snapshot_id,
+                statistics_path=puffin.as_uri(),
+                file_size_in_bytes=puffin.stat().st_size,
+                file_footer_size_in_bytes=8,
+                blob_metadata=[],
+            )
+        )
+    dataset.refresh()
+    swept = {Path(path).name for path, _ in dataset.orphan_files(datetime.timedelta(seconds=0))}
+    assert "stats.puffin" not in swept, "the statistics the metadata registers"
+    assert "version-hint.text" not in swept, "the pointer a Hadoop catalog reads"
+    assert "left-behind.avro" in swept, "and a real orphan is still found"
+
+
 def test_optimize_does_not_rewrite_properties_it_already_set(dataset: IcebergDataset) -> None:
     dataset.write_arrow(quotes(2), commit_row_size=0)
     dataset.optimize()

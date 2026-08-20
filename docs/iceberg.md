@@ -383,8 +383,9 @@ calls are the whole routine.
     snapshot mentions yet. The live set for metadata is built from every
     direction at once — the current pointer, every entry in the metadata log,
     every retained snapshot's manifest list and every manifest reachable from
-    it — because deleting one of those does not lose a row, it loses the table.
-    Pass `metadata=False` to sweep data only.
+    it, the statistics the metadata registers, and a Hadoop catalog's
+    `version-hint.text` — because deleting one of those does not lose a row, it
+    loses the table. Pass `metadata=False` to sweep data only.
 
     `dry_run=True` reports what it would expire and what is *already* orphaned
     — not what expiring would strand, which is strictly more and cannot be

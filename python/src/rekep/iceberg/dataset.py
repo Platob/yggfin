@@ -69,6 +69,10 @@ DEFAULT_COMMIT_ROW_SIZE = 1_000_000
 #: several files would otherwise be replanned forever.
 COMPACTION_MARK = "rekep.compaction"
 
+#: The file a Hadoop-style catalog keeps its current version number in. Nothing
+#: in the metadata references it, so a sweep has to know the name.
+HADOOP_POINTER = "version-hint.text"
+
 #: Rows per parquet row group. Iceberg's default is a million, which makes
 #: nearly every file this package writes a single row group -- and a filter can
 #: only skip a *row group*, so one row group per file means a filter that got
@@ -809,6 +813,11 @@ class IcebergDataset(Dataset):
             for info in filesystem.get_file_info(selector):
                 if info.type != pyarrow.fs.FileType.File or _path_of(info.path) in live:
                     continue
+                # A Hadoop-style catalog keeps its pointer beside the metadata
+                # and nothing inside the metadata names it: reading the table
+                # is how you would find out it had been swept.
+                if info.base_name == HADOOP_POINTER:
+                    continue
                 if info.mtime and info.mtime > cutoff:
                     continue
                 found.append((info.path, info.size))
@@ -824,8 +833,15 @@ class IcebergDataset(Dataset):
         """Every metadata file a retained snapshot, the log, or the pointer names.
 
         Deleting one of these does not lose a row; it loses the *table*. So the
-        set is built from every direction at once and a file is only swept when
-        none of them mention it.
+        set is built from every direction at once -- the current pointer, the
+        metadata log, every snapshot's manifest list and its manifests, and the
+        statistics the metadata registers -- and a file is only swept when none
+        of them mention it.
+
+        The statistics are the ones nothing else reaches: a Puffin file another
+        engine wrote sits in `metadata/` beside everything else, is named only
+        by `metadata.statistics`, and is exactly as old as the snapshot it
+        describes -- so an age rule does not save it either.
         """
         live = {_path_of(table.metadata_location)}
         for entry in table.metadata.metadata_log:
@@ -835,6 +851,8 @@ class IcebergDataset(Dataset):
                 live.add(_path_of(snapshot.manifest_list))
             for manifest in snapshot.manifests(table.io):
                 live.add(_path_of(manifest.manifest_path))
+        for statistics in (*table.metadata.statistics, *table.metadata.partition_statistics):
+            live.add(_path_of(statistics.statistics_path))
         return live
 
     def optimize(self, *, min_files: int = 2, retain: int = 1, **kwargs: Any) -> dict[str, int]:
