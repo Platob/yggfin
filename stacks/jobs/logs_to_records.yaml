@@ -1,15 +1,16 @@
 # Stage 2: structure Log.message into ParsedMessage (pipe-delimited
-# key=value, FIX-shaped). Namespace picks up the branch suffix here -- each
-# branch gets its own working copy of the structured output while it
-# iterates on the parser, unlike files_to_logs.yaml's stable namespace.
+# key=value, FIX-shaped). The identity picks up the branch suffix here --
+# each branch gets its own working copy of the structured output while it
+# iterates on the parser, unlike files_to_logs.yaml's stable one.
 job: rekep.jobs.LogsToRecords
-name: "logs_to_records{{ git_branch_suffix }}"
-namespace: "pipeline{{ git_branch_suffix }}"
+uri: "job:/pipeline{{ git_branch_suffix }}/logs_to_records{{ git_branch_suffix }}"
 description: Structure Log.message into ParsedMessage (pipe key=value, FIX-shaped).
 schedule: "@daily"
 repo_url: https://github.com/Platob/yggfin
 script_path: python/src/rekep/jobs/logs_to_records.py
-tags: [pipeline, structuring]
+tags:
+  domain: pipeline
+  stage: structuring
 consumes:
   - rekep.models.Log
 produces:
@@ -20,8 +21,6 @@ properties:
   team: trading-platform
   owner: data-eng
 airflow:
-  dag:
-    max_active_runs: 1
   task:
     pool: default_pool
     retries: 1

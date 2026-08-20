@@ -42,9 +42,17 @@
 
 ::: rekep.job.Job
 
+::: rekep.job.arrow_task
+
 ::: rekep.jobs.files_to_logs.FilesToLogs
 
 ::: rekep.jobs.logs_to_records.LogsToRecords
+
+## Dags
+
+::: rekep.dag.Dag
+
+::: rekep.airflow.service.Dags
 
 ## Datasets
 
@@ -57,14 +65,6 @@
 ::: rekep.config.register
 
 ::: rekep.config.lookup
-
-## Lineage
-
-::: rekep.lineage.LineageClient
-
-::: rekep.lineage.Collector
-
-::: rekep.lineage.Lineage
 
 ## Runs
 

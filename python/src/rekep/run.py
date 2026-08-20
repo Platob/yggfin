@@ -8,9 +8,12 @@ by `event_type`: `START` before work begins, `COMPLETE`/`FAIL`/`ABORT` after.
 lighter than the full `Dataset` resource -- an event references what it
 moved, it does not restate the whole schema.
 
-Nothing here calls out anywhere: these are the shapes, and `rekep.lineage`
-is what decides who is told. A `Dataset` or `Job` with no client bound never
-builds one of these at all.
+**Nothing here calls out anywhere, and nothing else does either.** These are
+the shapes -- the representation of a run, not a report of one. rekep ships no
+lineage client: no `emit`, no transport, and nothing wrapped around a read or
+a write to count rows for an event that may never be collected. `Job` builds
+one of these on request (`into_run_event`), `into_json()` is how it leaves the
+process, and where it goes from there is the collector's business.
 """
 
 from __future__ import annotations

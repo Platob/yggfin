@@ -6,7 +6,7 @@ can be built, tested and inspected without an Airflow install.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from rekep.records.annotations import docstring_summary
@@ -16,6 +16,11 @@ from rekep.records.record import Record
 #: so the only requirement is that it is stable: rename a record and you have
 #: renamed the asset, which is exactly the lineage break it represents.
 ASSET_SCHEME = "rekep"
+
+#: Tag key marking a dag as generated from rekep declarations, whatever else
+#: it carries. A mapping needs the key to say what the value means, so the
+#: bare `rekep` tag a list would have carried becomes `generator=rekep`.
+GENERATOR_KEY = "generator"
 
 Records = Sequence[type[Record]]
 
@@ -54,13 +59,37 @@ def metadata_of(record: type[Record]) -> dict[str, str]:
     }
 
 
-def tags_of(consumes: Records, produces: Records) -> list[str]:
-    """Tags that make a DAG findable by the records it touches."""
-    return sorted({ASSET_SCHEME, *(asset_name(r) for r in (*consumes, *produces))})
+def tags_of(consumes: Records, produces: Records) -> dict[str, str]:
+    """Tags that make a dag findable by the records it touches.
+
+    Keyed by record, valued by what the dag does with it. A mapping says
+    *why* a record tags this dag, which a bare list of names never could --
+    and a record both read and written gets one tag saying both, rather than
+    appearing twice or, worse, once.
+    """
+    tags = {GENERATOR_KEY: ASSET_SCHEME}
+    for records, direction in ((consumes, "consumes"), (produces, "produces")):
+        for entry in records:
+            name = asset_name(entry)
+            declared = tags.get(name)
+            tags[name] = f"{declared}, {direction}" if declared else direction
+    return dict(sorted(tags.items()))
+
+
+def airflow_tags(tags: Mapping[str, str]) -> list[str]:
+    """A tag mapping as Airflow wants it: one flat string per entry.
+
+    Airflow's own tags are a list of opaque strings, so the mapping is
+    flattened at that boundary and nowhere else -- `key=value`, or the bare
+    key when there is no value to state. Everything upstream of this line
+    keeps the mapping, which is what makes two declarations of the same tag
+    one decision instead of two entries.
+    """
+    return [f"{key}={value}" if value else key for key, value in sorted(tags.items())]
 
 
 def documentation_of(consumes: Records, produces: Records) -> str:
-    """Markdown lineage table, rendered into the DAG or task docs."""
+    """Markdown lineage table, rendered into the dag or task docs."""
     sections = [
         section
         for label, records in (("Consumes", consumes), ("Produces", produces))
@@ -81,30 +110,43 @@ def _section(label: str, records: Records) -> str:
 def dag_arguments(consumes: Records, produces: Records, **kwargs: Any) -> dict[str, Any]:
     """`kwargs` for Airflow's `DAG`, with tags and docs derived from records.
 
-    The caller's own tags and docs are appended to, never replaced: lineage
-    is added information, and silently dropping an argument someone wrote is
-    a debugging session waiting to happen.
+    The caller's own tags and docs are added to, never replaced: lineage is
+    added information, and silently dropping an argument someone wrote is a
+    debugging session waiting to happen. A key the caller declares itself
+    wins over the derived one -- an explicit declaration is a decision, and
+    a derivation is a default.
+
+    `tags` arrives as a mapping (a rekep `Dag`'s or `Job`'s own) and leaves
+    as Airflow's list of strings: this is the boundary, so nothing above it
+    has to think in flattened tags.
     """
-    if not consumes and not produces:
-        return kwargs
     merged = dict(kwargs)
-    merged["tags"] = sorted({*merged.get("tags", ()), *tags_of(consumes, produces)})
-    written = documentation_of(consumes, produces)
-    existing = merged.get("doc_md")
-    merged["doc_md"] = f"{existing}\n\n{written}" if existing else written
+    tags = dict(merged.pop("tags", None) or {})
+    if consumes or produces:
+        tags = {**tags_of(consumes, produces), **tags}
+        written = documentation_of(consumes, produces)
+        existing = merged.get("doc_md")
+        merged["doc_md"] = f"{existing}\n\n{written}" if existing else written
+    if tags:
+        merged["tags"] = airflow_tags(tags)
     return merged
 
 
 def task_arguments(consumes: Records, produces: Records, **kwargs: Any) -> dict[str, Any]:
-    """`kwargs` for Airflow's `@task`: `dag_arguments` plus inlets and outlets.
+    """`kwargs` for Airflow's `@task`: the docs, plus inlets and outlets.
 
     The assets are what let Airflow draw the graph -- an outlet for every
     record produced, an inlet for every one consumed, each carrying the
     record's schema as asset extras.
+
+    Tags are dropped rather than passed on: Airflow tags a *dag*, and an
+    operator handed an argument it does not know refuses to parse, so a
+    task's kwargs are the dag's minus the one that only a dag can take.
     """
-    if not consumes and not produces:
-        return kwargs
     merged = dag_arguments(consumes, produces, **kwargs)
+    merged.pop("tags", None)
+    if not consumes and not produces:
+        return merged
     for key, records in (("inlets", consumes), ("outlets", produces)):
         if records:
             merged[key] = [*merged.get(key, ()), *(asset_of(record) for record in records)]

@@ -4,16 +4,30 @@ from rekep.airflow import lineage
 from rekep.models import Log
 
 
-def test_no_records_changes_nothing() -> None:
-    """A job that declares no lineage gets Airflow's arguments untouched."""
-    given = {"tags": ["mine"], "doc_md": "docs"}
+def test_no_records_derives_nothing() -> None:
+    """A task that declares no lineage gets Airflow's arguments as they came,
+    bar the tags, which are flattened for Airflow whatever else happens."""
+    given = {"doc_md": "docs", "retries": 2}
     assert lineage.dag_arguments((), (), **given) == given
     assert lineage.task_arguments((), (), **given) == given
+    assert lineage.dag_arguments((), (), tags={"mine": "yes"}, **given)["tags"] == ["mine=yes"]
 
 
-def test_lineage_appends_to_the_callers_tags() -> None:
-    merged = lineage.dag_arguments([Log], (), tags=["mine"])
-    assert set(merged["tags"]) >= {"mine", "Log", "rekep"}
+def test_lineage_adds_to_the_callers_tags() -> None:
+    merged = lineage.dag_arguments([Log], (), tags={"mine": "yes"})
+    assert set(merged["tags"]) >= {"mine=yes", "Log=consumes", "generator=rekep"}
+
+
+def test_a_declared_tag_wins_over_the_derived_one() -> None:
+    """An explicit declaration is a decision; a derivation is a default."""
+    merged = lineage.dag_arguments([Log], (), tags={"generator": "mine"})
+    assert "generator=mine" in merged["tags"]
+    assert "generator=rekep" not in merged["tags"]
+
+
+def test_a_task_gets_no_tags_at_all() -> None:
+    """Airflow tags a dag; an operator handed one refuses to parse."""
+    assert "tags" not in lineage.task_arguments((), (), tags={"mine": "yes"})
 
 
 def test_lineage_appends_to_the_callers_docs() -> None:

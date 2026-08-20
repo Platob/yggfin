@@ -13,12 +13,12 @@ reader that is half overlapping keys (updates) and half new ones (inserts),
 the mixed workload `merge_by` is actually for rather than a pure-insert best
 case.
 
-`chunk_rows` is what the sweep is really about, and it costs twice over.
+`commit_row_size` is what the sweep is really about, and it costs twice over.
 The **throughput** column is the obvious half: too small and every call pays
 its planning cost again, too large and the write stops streaming. The
 **files** column is the half that keeps costing after the write returns:
 every call commits a snapshot and lands at least one data file per
-partition, so a small `chunk_rows` leaves a table that every later scan pays
+partition, so a small `commit_row_size` leaves a table that every later scan pays
 to open. `iceberg_compact` can repair that afterwards -- not paying for it
 in the first place is cheaper.
 """
@@ -71,23 +71,25 @@ def generate_reader(rows: int, offset: int) -> pyarrow.RecordBatchReader:
     return pyarrow.RecordBatchReader.from_batches(schema, batches())
 
 
-def bench_one(rows: int, chunk_rows: int) -> dict[str, float]:
+def bench_one(rows: int, commit_row_size: int) -> dict[str, float]:
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp).as_posix()
         stack = Iceberg(
             IcebergDeployment(
                 catalogs=[
-                    IcebergCatalog(uri=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh")
+                    IcebergCatalog(
+                        endpoint=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh"
+                    )
                 ]
             )
         )
-        dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+        dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
         dataset.deploy_iceberg(stack)
         table = stack.tables.get(dataset.into_iceberg_table())
 
         started = time.perf_counter()
         dataset.write_arrow_reader(
-            generate_reader(rows, 0), format="iceberg", table=table, chunk_rows=chunk_rows
+            generate_reader(rows, 0), format="iceberg", table=table, commit_row_size=commit_row_size
         )
         append_seconds = time.perf_counter() - started
         table.refresh()
@@ -100,7 +102,7 @@ def bench_one(rows: int, chunk_rows: int) -> dict[str, float]:
             format="iceberg",
             table=table,
             merge_by=True,
-            chunk_rows=chunk_rows,
+            commit_row_size=commit_row_size,
         )
         upsert_seconds = time.perf_counter() - started
 
@@ -113,15 +115,15 @@ def bench_one(rows: int, chunk_rows: int) -> dict[str, float]:
 
 def sweep(rows: int, quick: bool) -> None:
     print(f"{rows:,} rows per round in {BATCH_ROWS}-row batches, merge is 50% update / 50% insert")
-    columns = ("chunk_rows", "append rows/s", "merge rows/s", "files left")
-    widths = (12, 15, 15, 12)
+    columns = ("commit_row_size", "append rows/s", "merge rows/s", "files left")
+    widths = (16, 15, 15, 12)
     print(" ".join(f"{c:>{w}}" for c, w in zip(columns, widths, strict=True)))
 
-    chunk_sizes = [rows] if quick else [BATCH_ROWS, max(1, rows // 4), rows]
-    for chunk_rows in chunk_sizes:
-        result = bench_one(rows, chunk_rows)
+    commit_sizes = [rows] if quick else [BATCH_ROWS, max(1, rows // 4), rows]
+    for commit_row_size in commit_sizes:
+        result = bench_one(rows, commit_row_size)
         print(
-            f"{chunk_rows:>12,} {result['append_rows_s']:>15,.0f} "
+            f"{commit_row_size:>16,} {result['append_rows_s']:>15,.0f} "
             f"{result['upsert_rows_s']:>15,.0f} {result['append_files']:>12,.0f}"
         )
 

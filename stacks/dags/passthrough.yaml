@@ -1,0 +1,10 @@
+# The wiring reference as a dag: one task, no edges. A pipeline that is
+# genuinely one step still needs a dag to be scheduled -- `Dag.from_job`
+# builds this same shape in Python when writing the file is not worth it.
+uri: dag:/passthrough
+description: Copy log batches through unchanged; the wiring reference.
+schedule: "@daily"
+tags:
+  domain: reference
+tasks:
+  - job:/passthrough

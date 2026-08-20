@@ -1,0 +1,31 @@
+# The shipped pipeline as one graph: ingest, then structure.
+#
+# The dag owns what belongs to the whole run -- when it runs, what it is
+# called, what the orchestrator should know about it -- and the tasks stay
+# where they are declared, in stacks/jobs/. They are referenced by URI, never
+# restated: a copy here would be a second place for a task's config to
+# disagree with itself.
+#
+# `dependencies` reads downstream-first, which is the question being asked:
+# logs_to_records needs files_to_logs to have landed the Log rows it parses.
+# Everything a dag does not say is a task's own business, and everything it
+# does say is derived from there -- tags, docs and asset lineage all come
+# from the records those tasks consume and produce.
+#
+# The identity follows the branch, like the tasks it runs: a branch iterating
+# on the parser gets its own dag rather than fighting trunk's for the name.
+uri: "dag:/pipeline{{ git_branch_suffix }}/trading_logs{{ git_branch_suffix }}"
+description: Parse raw trading logs, then structure their messages.
+schedule: "@daily"
+tags:
+  domain: pipeline
+  owner: data-eng
+tasks:
+  - job:/pipeline/files_to_logs
+  - "job:/pipeline{{ git_branch_suffix }}/logs_to_records{{ git_branch_suffix }}"
+dependencies:
+  "logs_to_records{{ git_branch_suffix }}":
+    - files_to_logs
+airflow:
+  dag:
+    max_active_runs: 1

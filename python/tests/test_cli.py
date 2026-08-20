@@ -139,7 +139,7 @@ def test_iceberg_deploy_dry_run_touches_nothing(
     catalogs = tmp_path / "catalogs"
     catalogs.mkdir()
     (catalogs / "iceberg.yaml").write_text(
-        f'type: sql\nuri: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
+        f'type: sql\nendpoint: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
     )
     assert main(["iceberg", "deploy", "--config", str(tmp_path), "--dry-run"]) == 0
     out = capsys.readouterr().out
@@ -156,7 +156,7 @@ def workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     catalogs = tmp_path / "catalogs"
     catalogs.mkdir()
     (catalogs / "iceberg.yaml").write_text(
-        f'type: sql\nuri: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
+        f'type: sql\nendpoint: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
     )
     return tmp_path
 
@@ -252,7 +252,7 @@ def test_sync_writes_every_registry_in_full(tmp_path: pathlib.Path) -> None:
 
     catalog = yaml.safe_load((root / "catalogs" / "iceberg.yaml").read_bytes())
     assert catalog["name"] == "iceberg", "the stem-defaulted name is written out"
-    assert catalog["uri"].startswith("sqlite:///"), "defaults are materialised too"
+    assert catalog["endpoint"].startswith("sqlite:///"), "defaults are materialised too"
 
     namespace = yaml.safe_load((root / "namespaces" / "default.yaml").read_bytes())
     assert namespace["name"] == "default"
@@ -289,7 +289,7 @@ def dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     catalogs = tmp_path / "iceberg" / "catalogs"
     catalogs.mkdir(parents=True)
     (catalogs / "iceberg.yaml").write_text(
-        f'type: sql\nuri: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
+        f'type: sql\nendpoint: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
     )
     datasets = tmp_path / "datasets"
     datasets.mkdir()
@@ -467,3 +467,108 @@ def test_dataset_optimize_compacts_and_reclaims_from_the_side_file(
     assert table.inspect.data_files().num_rows == 1, "one file per partition now"
     assert table.scan().to_arrow().num_rows == 4, "same rows"
     assert len(table.snapshots()) == 1, "retain: 0s dropped the history behind it"
+
+
+# -- dags ---------------------------------------------------------------------
+
+
+def dag_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A jobs folder and a dags folder: the two halves of a pipeline."""
+    sample = pathlib.Path(__file__).parent / "data" / "app_sample.txt"
+    jobs, dags = tmp_path / "jobs", tmp_path / "dags"
+    jobs.mkdir()
+    dags.mkdir()
+    (jobs / "parse.yaml").write_text(
+        f"job: rekep.job.Passthrough\nuri: job:/pipeline/parse\nsource: {sample.as_uri()}\n"
+    )
+    (jobs / "count.yaml").write_text(
+        f"job: rekep.job.Passthrough\nuri: job:/pipeline/count\nsource: {sample.as_uri()}\n"
+    )
+    (dags / "demo.yaml").write_text(
+        "uri: dag:/pipeline/demo\n"
+        "schedule: '@daily'\n"
+        "tasks: [job:/pipeline/parse, job:/pipeline/count]\n"
+        "dependencies: {count: [parse]}\n"
+    )
+    return tmp_path
+
+
+def test_dag_list_shows_the_order(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
+    root = dag_workspace(tmp_path)
+    assert (
+        main(["dag", "list", "--config", str(root / "dags"), "--jobs-config", str(root / "jobs")])
+        == 0
+    )
+    out = capsys.readouterr().out
+    assert "dag:/pipeline/demo" in out
+    assert "parse -> count" in out
+
+
+def test_dag_show_names_each_task_and_what_it_waited_for(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    root = dag_workspace(tmp_path)
+    assert (
+        main(
+            [
+                "dag",
+                "show",
+                "--uri",
+                "dag:/pipeline/demo",
+                "--config",
+                str(root / "dags"),
+                "--jobs-config",
+                str(root / "jobs"),
+            ]
+        )
+        == 0
+    )
+    out = capsys.readouterr().out
+    assert "demo.parse" in out and "after=-" in out
+    assert "demo.count" in out and "after=parse" in out
+
+
+def test_dag_run_runs_every_task_in_order(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    root = dag_workspace(tmp_path)
+    assert (
+        main(
+            [
+                "dag",
+                "run",
+                "--uri",
+                "dag:/pipeline/demo",
+                "--config",
+                str(root / "dags"),
+                "--jobs-config",
+                str(root / "jobs"),
+            ]
+        )
+        == 0
+    )
+    assert capsys.readouterr().out.splitlines() == ["demo.parse: 24", "demo.count: 24"]
+
+
+def test_airflow_deploy_writes_one_module_per_dag(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    root = dag_workspace(tmp_path)
+    from rekep.job import load_all
+
+    load_all(root / "jobs")
+    assert (
+        main(
+            [
+                "airflow",
+                "deploy",
+                "--config",
+                str(root / "dags"),
+                "--dags-folder",
+                str(tmp_path / "airflow"),
+            ]
+        )
+        == 0
+    )
+    assert "converged dags: demo.py" in capsys.readouterr().out
+    assert (tmp_path / "airflow" / "demo.py").is_file()

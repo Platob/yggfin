@@ -11,9 +11,17 @@ instead of hand-joining strings.
 
 `ResourceUri` is the identity those levels add up to: a service, a path and
 an optional branch, spelled `ds:/catalog/namespace/name#branch`,
-`job:/namespace/name`, or generically `rekep:/datasets/catalog/namespace/name`.
-It is the one parser and the one formatter, so a resource written one way
-reads back the same however it was spelled.
+`job:/namespace/name`, `dag:/namespace/name`, or generically
+`rekep:/datasets/catalog/namespace/name`. It is the one parser and the one
+formatter, so a resource written one way reads back the same however it was
+spelled.
+
+**A resource that names itself names itself with a URI, and `uri:` never
+means anything else.** A dataset, a task and a dag each spell one
+(`uri: job:/pipeline/files_to_logs`); a stack's catalogs and namespaces are
+named by the registry folder and file stem they live in instead. Either way
+nothing else may take the word: an Iceberg catalog's connection string is
+`endpoint:`, not a second thing called `uri`.
 """
 
 from __future__ import annotations
@@ -88,7 +96,11 @@ class Namespace(Record):
 
 #: Short scheme -> the service it names. The service is also the first path
 #: part of the generic `rekep:` form, so one table describes both spellings.
-SERVICES = {"ds": "datasets", "job": "jobs"}
+#: One entry per resource that names *itself*: a dataset, a task, a dag. A
+#: stack's catalogs and namespaces are not here -- their identity is the
+#: registry folder they sit in and the stem of their file, which is why they
+#: are addressed by name and not by URI.
+SERVICES = {"ds": "datasets", "job": "jobs", "dag": "dags"}
 
 #: The reverse, for building.
 SCHEMES = {service: scheme for scheme, service in SERVICES.items()}
@@ -101,11 +113,12 @@ GENERIC_SCHEME = "rekep"
 class ResourceUri:
     """One resource's identity: a service, a path, and optionally a branch.
 
-    Every resource this package addresses -- a dataset, a job -- is named the
-    same way, and the spelling is a **path**, not a dotted string::
+    Every resource this package addresses -- a dataset, a task, a dag -- is
+    named the same way, and the spelling is a **path**, not a dotted string::
 
         ds:/warehouse/trading/orders#dev
         job:/pipeline/logs_to_records
+        dag:/pipeline/trading_logs
         rekep:/datasets/warehouse/trading/orders#dev
 
     A path because that is what the thing is: a catalog contains namespaces,
@@ -129,7 +142,8 @@ class ResourceUri:
     """
 
     service: str
-    """Which kind of resource: `datasets`, `jobs`."""
+    """Which kind of resource: `datasets`, `jobs`, `dags` -- `SERVICES`'
+    values."""
 
     levels: tuple[str, ...]
     """The path, root first: catalog, namespace, name -- as many as given."""

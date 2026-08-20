@@ -197,8 +197,14 @@ class IcebergCatalog(Record):
     type: str = "sql"
     """pyiceberg catalog implementation: sql, rest, hive or glue."""
 
-    uri: str = "sqlite:///stacks/iceberg/catalog.db"
-    """Catalog endpoint; a local SQLite file by default."""
+    endpoint: str = "sqlite:///stacks/iceberg/catalog.db"
+    """Where the catalog itself lives; a local SQLite file by default.
+
+    Not `uri`: `uri:` names a *resource's identity* everywhere else here
+    (`cat:/iceberg` is this catalog's), and one word cannot mean both an
+    identity and a connection string without a reader eventually mixing the
+    two up. pyiceberg calls it `uri`, and `pyiceberg_properties()` is where
+    that translation belongs."""
 
     warehouse: str = "file://stacks/iceberg/warehouse"
     """Where table data lands; a local folder by default."""
@@ -208,7 +214,12 @@ class IcebergCatalog(Record):
 
     def pyiceberg_properties(self) -> dict[str, str]:
         """This catalog as `pyiceberg.catalog.load_catalog` wants it."""
-        return {"type": self.type, "uri": self.uri, "warehouse": self.warehouse, **self.properties}
+        return {
+            "type": self.type,
+            "uri": self.endpoint,
+            "warehouse": self.warehouse,
+            **self.properties,
+        }
 
 
 @record

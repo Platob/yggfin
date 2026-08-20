@@ -21,11 +21,11 @@ table itself needs no side file of its own.
 
 Reading and writing are both generic at the top and protocol-specific
 underneath: `read_arrow_reader`/`write_arrow_reader` dispatch by `format` to
-`_{format}_read_arrow_reader`/`_{format}_write_arrow_reader` -- private
-methods that open a `Run`, call the *public* `{format}_..._arrow_reader`
-hook, and close the run on the way out. The public hooks are the
-customisation points a deployment overrides to say how the I/O actually
-happens; the private ones exist only to be the lineage boundary around them.
+the `{format}_read_arrow_reader`/`{format}_write_arrow_reader` hook, which is
+the customisation point a deployment overrides to say how the I/O actually
+happens. Nothing wraps those calls: a dataset moves data, and what a run of
+it *was* is `rekep.run`'s shape to describe, built by whoever wants the
+record rather than emitted from inside every write.
 
 Both directions leverage pyiceberg's own table API rather than
 reimplementing any of it:
@@ -77,8 +77,6 @@ import pyarrow.fs
 from rekep import config
 from rekep.filesystems import resolve as resolve_filesystem
 from rekep.imports import locate
-from rekep.job import Job
-from rekep.lineage import Lineage
 from rekep.namespace import ResourceUri
 from rekep.records import registry
 from rekep.records.arrow import FIELD_ID_KEY, cast_reader
@@ -91,11 +89,12 @@ logger = logging.getLogger("rekep.dataset")
 #: parameter default, since `iceberg_branch()` may resolve to None.
 ICEBERG_MAIN_BRANCH = "main"
 
-#: Rows accumulated per `upsert` call. A merge needs to compare against
-#: existing data, so some materialising is unavoidable; chunking bounds
-#: memory and turns many small merges into few large ones, which is what
-#: lets Iceberg's partition pruning actually pay off.
-ICEBERG_UPSERT_CHUNK_ROWS = 100_000
+#: Rows accumulated before a write commits. A merge needs to compare against
+#: existing data, so some materialising is unavoidable; committing in chunks
+#: bounds memory and turns many small commits into few large ones, which is
+#: what lets Iceberg's partition pruning actually pay off. Named for its unit
+#: and dimension, like every other size parameter here.
+COMMIT_ROW_SIZE = 100_000
 
 #: A partition with fewer data files than this is left alone by
 #: `iceberg_compact`: rewriting two files into one costs a whole scan and a
@@ -128,7 +127,15 @@ ICEBERG_TARGET_FILE_BYTES_DEFAULT = 512 * 1024 * 1024
 #: `protocols[<protocol>]` keys that route a write, a read or a maintenance
 #: pass rather than describe the table -- excluded from `table_properties()`.
 _PROTOCOL_ROUTING_KEYS = frozenset(
-    {"location", "branch", "merge_by", "merge_schema", "retain", "compact_min_files"}
+    {
+        "location",
+        "branch",
+        "merge_by",
+        "merge_schema",
+        "retain",
+        "compact_min_files",
+        "commit_row_size",
+    }
 )
 
 #: Suffixes `iceberg_retention()` accepts on a retention window.
@@ -152,7 +159,7 @@ DATASETS_ROOT = os.environ.get("REKEP_DATASETS_ROOT")
 
 @record
 class Dataset(Record):
-    """A namespace-qualified data product: schema, location, lineage.
+    """A namespace-qualified data product: schema, location, identity.
 
     `properties` are shared by every protocol that writes this dataset;
     `direct` is a single physical location shared the same way; `protocols`
@@ -437,6 +444,23 @@ class Dataset(Record):
             return datetime.timedelta(seconds=float(text))
         return datetime.timedelta(**{unit: float(text[:-1])})
 
+    def commit_row_size(self, protocol: str = "iceberg") -> int | None:
+        """How many rows a write accumulates before it commits, when declared.
+
+        `protocols.<protocol>.commit_row_size`. Declared per dataset because
+        the right answer is a property of the *data*, not of the call site: a
+        table written once a minute in tiny batches wants a large one, a wide
+        table whose chunk has to fit in memory wants a small one, and neither
+        should have to be remembered at every write.
+
+        None means the dataset declares nothing and the protocol's own answer
+        stands -- `COMMIT_ROW_SIZE` for Iceberg, where every write commits a
+        snapshot whether or not anyone chose a size, and Arrow's own file
+        sizing for a plain file write, where there is no commit to bound.
+        """
+        declared = self.protocol_properties(protocol).get("commit_row_size")
+        return None if declared in (None, "") else int(declared)
+
     def iceberg_compact_min_files(self) -> int:
         """File count that makes a partition worth rewriting.
 
@@ -511,52 +535,20 @@ class Dataset(Record):
             output_facets=output_facets,
         )
 
-    def with_lineage(self, client: Any) -> Dataset:
-        """Bind a lineage client, and return this dataset so the call chains.
-
-        A call rather than a field: a client is a runtime handle, and a side
-        file that declares a dataset has no business carrying one. Until one
-        is bound, every read and write skips tracking entirely -- see
-        `rekep.lineage`.
-        """
-        self.__dict__["_Dataset__client"] = client
-        return self
-
-    def lineage_client(self) -> Any | None:
-        """The bound client, or None when nothing is listening."""
-        return self.__dict__.get("_Dataset__client")
-
-    def lineage(self, operation: str, **references: Any) -> Lineage | None:
-        """The boundary for one operation, or None when lineage is off.
-
-        The synthetic job name (`<dataset>.write.iceberg`) says what the run
-        was, since a dataset's own I/O has no `Job` behind it -- unlike
-        `Job.run_tracked`, which is the job.
-        """
-        client = self.lineage_client()
-        if client is None:
-            return None
-        return Lineage(
-            client=client,
-            job=Job(name=f"{self.dataset_name()}.{operation}", namespace=self.dataset_namespace()),
-            **references,
-        )
-
     # -- reading ----------------------------------------------------------
 
     def read_arrow_reader(self, format: str, **options: Any) -> pyarrow.RecordBatchReader:
         """Read this dataset through the protocol named `format`.
 
         The mirror of `write_arrow_reader`: dispatches to
-        `_{format}_read_arrow_reader`, which is where the lineage tracking
-        lives, and returns a **lazy** `pyarrow.RecordBatchReader` -- nothing
-        is read until the reader is iterated, and nothing is ever
-        materialised whole.
+        `{format}_read_arrow_reader` and returns a **lazy**
+        `pyarrow.RecordBatchReader` -- nothing is read until the reader is
+        iterated, and nothing is ever materialised whole.
         """
-        private = getattr(self, f"_{format}_read_arrow_reader", None)
-        if not callable(private):
+        reader = getattr(self, f"{format}_read_arrow_reader", None)
+        if not callable(reader):
             raise ValueError(f"dataset {self.dataset_name()!r}: no {format!r} reader")
-        return private(**options)
+        return reader(**options)
 
     def iceberg_read_arrow_reader(
         self,
@@ -611,10 +603,6 @@ class Dataset(Record):
                 scan = scan.use_ref(reference)
         return scan.to_arrow_batch_reader()
 
-    def _iceberg_read_arrow_reader(self, **options: Any) -> pyarrow.RecordBatchReader:
-        """Lineage-wrapped call to the public `iceberg_read_arrow_reader`."""
-        return self._tracked_read("iceberg", self.iceberg_read_arrow_reader, options)
-
     def file_read_arrow_reader(
         self,
         *,
@@ -657,10 +645,6 @@ class Dataset(Record):
             scan["batch_size"] = batch_size
         return source.scanner(**scan).to_reader()
 
-    def _file_read_arrow_reader(self, **options: Any) -> pyarrow.RecordBatchReader:
-        """Lineage-wrapped call to the public `file_read_arrow_reader`."""
-        return self._tracked_read("file", self.file_read_arrow_reader, options)
-
     # -- writing ----------------------------------------------------------
 
     def _aligned(
@@ -671,9 +655,9 @@ class Dataset(Record):
     ) -> pyarrow.RecordBatchReader:
         """`reader` reshaped onto this dataset's record schema, batch by batch.
 
-        Every public write hook starts here rather than the dispatcher
-        doing it once, so each hook is self-sufficient when called
-        directly: the reshape belongs to the write, not to the dispatch.
+        Every write hook starts here rather than the dispatcher doing it
+        once, so each hook is self-sufficient when called directly: the
+        reshape belongs to the write, not to the dispatch.
         It is `records.arrow.cast_reader`, so it also accepts a plain
         iterator of batches and casts unsafely -- the record is the
         authority on what this dataset's data is, and a narrower target
@@ -702,21 +686,19 @@ class Dataset(Record):
     ) -> int:
         """Write `reader`'s batches through the protocol named `format`.
 
-        Dispatches to `_{format}_write_arrow_reader` -- e.g. `format="iceberg"`
-        calls `_iceberg_write_arrow_reader`. Every protocol's private method
-        wraps its own public write in the same lineage tracking, so the
-        dispatch itself carries none.
+        Dispatches to `{format}_write_arrow_reader` -- e.g. `format="iceberg"`
+        calls `iceberg_write_arrow_reader`, the hook a deployment overrides.
 
-        Every public hook reshapes what it is handed onto the record's Arrow
+        Every hook reshapes what it is handed onto the record's Arrow
         schema first (`_aligned`), so a plain iterator of batches -- what
         `Job.arrow_transform` yields -- pipes straight in with no ceremony
         and no exact-shape requirement at the call site:
         `dataset.write_arrow_reader(job.arrow_transform(job.extract()), "iceberg", table=t)`.
         """
-        private = getattr(self, f"_{format}_write_arrow_reader", None)
-        if not callable(private):
+        writer = getattr(self, f"{format}_write_arrow_reader", None)
+        if not callable(writer):
             raise ValueError(f"dataset {self.dataset_name()!r}: no {format!r} writer")
-        return private(reader, **options)
+        return writer(reader, **options)
 
     def iceberg_write_arrow_reader(
         self,
@@ -727,12 +709,12 @@ class Dataset(Record):
         merge_schema: bool | None = None,
         overwrite: bool | str | Any = False,
         branch: str | None = None,
-        chunk_rows: int = ICEBERG_UPSERT_CHUNK_ROWS,
+        commit_row_size: int | None = None,
         **options: Any,
     ) -> int:
         """Write `reader`'s batches to an Iceberg table: merge, append or overwrite.
 
-        The public write itself: abstract in spirit, not by enforcement --
+        The write itself: abstract in spirit, not by enforcement --
         override it to change how the table is resolved (a catalog lookup
         against `protocol_properties("iceberg")`, a cached connection) or how
         the write happens. The default here expects `table=`, a live
@@ -768,16 +750,18 @@ class Dataset(Record):
         long strings, so the comparison can say "cannot match" but never
         wrongly say "does not match".
 
-        Both shapes accumulate `chunk_rows` rows per call rather than
+        Both shapes accumulate `commit_row_size` rows per commit rather than
         writing batch by batch, because in Iceberg **a batch is not a unit
         of work**: every call commits a snapshot and lands at least one data
         file per partition it touches, so appending a reader of ten thousand
         small batches leaves ten thousand snapshots and as many tiny files
         for every later scan to open. Accumulating first keeps memory
-        bounded by `chunk_rows` -- the parameter, not the input -- and turns
-        that into a handful of full-sized files. (`iceberg_compact` exists
-        because the same thing happens across *runs*, which no single write
-        can batch away.)
+        bounded by `commit_row_size` -- the parameter, not the input -- and
+        turns that into a handful of full-sized files. It defaults to
+        `protocols.iceberg.commit_row_size`, so how much a dataset commits at
+        once is declared with the dataset rather than at every call site.
+        (`iceberg_compact` exists because the same thing happens across
+        *runs*, which no single write can batch away.)
 
         **`merge_schema`** is the other half of the same idea, for columns
         rather than rows: on, a column the stream has and the table does
@@ -851,8 +835,10 @@ class Dataset(Record):
             return whole.num_rows
 
         bounds = _key_bounds(table, branch, join_cols) if join_cols else None
+        if commit_row_size is None:
+            commit_row_size = self.commit_row_size("iceberg") or COMMIT_ROW_SIZE
         written = 0
-        for chunk in _chunked(reader, chunk_rows):
+        for chunk in _chunked(reader, commit_row_size):
             if join_cols is None or _outside(chunk, join_cols, bounds):
                 table.append(chunk, branch=branch, **options)
                 written += chunk.num_rows
@@ -860,16 +846,6 @@ class Dataset(Record):
                 result = table.upsert(chunk, join_cols=join_cols, branch=branch, **options)
                 written += result.rows_updated + result.rows_inserted
         return written
-
-    def _iceberg_write_arrow_reader(self, reader: pyarrow.RecordBatchReader, **options: Any) -> int:
-        """Lineage-wrapped call to the public `iceberg_write_arrow_reader`.
-
-        The write itself is the public method's job, kept overridable on its
-        own; this private method is only the boundary around it -- a `Run`
-        opens before the call and closes after, whatever the public hook
-        actually does to move the data.
-        """
-        return self._tracked_write("iceberg", self.iceberg_write_arrow_reader, reader, options)
 
     def file_write_arrow_reader(
         self,
@@ -879,11 +855,12 @@ class Dataset(Record):
         filesystem: pyarrow.fs.FileSystem | None = None,
         partitioning: Any = None,
         merge_schema: bool | None = None,
+        commit_row_size: int | None = None,
         **options: Any,
     ) -> int:
         """Write `reader`'s batches to a file location, any `pyarrow.fs` filesystem.
 
-        The public write itself: generic across filesystems the way
+        The write itself: generic across filesystems the way
         `iceberg_write_arrow_reader` is generic across catalogs. `uri`
         defaults to `location("file")` (falling back to `direct`) and maps
         to a `(filesystem, path)` pair through `rekep.filesystems.resolve`,
@@ -903,6 +880,13 @@ class Dataset(Record):
         daily needs, and what `write_dataset`'s own defaults refuse. Both
         are plain `options`, so a caller who wants replace-the-directory
         semantics passes `existing_data_behavior="delete_matching"`.
+
+        `commit_row_size` means here what it means on the Iceberg side, one
+        layer down: a file layout has no commit, so what a write lands per
+        unit is a **file**, and the parameter caps its rows (a row group
+        cannot exceed a file, so it is capped with it). The default is
+        `protocols.file.commit_row_size` -- undeclared, Arrow decides, which
+        is the right answer for a write that is not streaming.
 
         `merge_schema` means the same thing here as on the Iceberg side --
         keep the columns the stream has and the record does not -- and needs
@@ -925,6 +909,11 @@ class Dataset(Record):
             merge_schema = self.merge_schema("file")
         counted, count = _counting(self._aligned(reader, merge_schema=merge_schema))
         write_format = options.pop("format", "parquet")
+        if commit_row_size is None:
+            commit_row_size = self.commit_row_size("file")
+        if commit_row_size:
+            options.setdefault("max_rows_per_file", commit_row_size)
+            options.setdefault("max_rows_per_group", commit_row_size)
         options.setdefault("existing_data_behavior", "overwrite_or_ignore")
         options.setdefault(
             "basename_template", f"part-{uuid.uuid4().hex[:12]}-{{i}}.{write_format}"
@@ -938,10 +927,6 @@ class Dataset(Record):
             **options,
         )
         return count[0]
-
-    def _file_write_arrow_reader(self, reader: pyarrow.RecordBatchReader, **options: Any) -> int:
-        """Lineage-wrapped call to the public `file_write_arrow_reader`."""
-        return self._tracked_write("file", self.file_write_arrow_reader, reader, options)
 
     # -- maintenance: compact, cleanup, optimize ---------------------------
 
@@ -1279,87 +1264,6 @@ class Dataset(Record):
         _ensure_iceberg_branch(table, reference)
         return reference
 
-    # -- internal lineage tracking ---------------------------------------
-
-    def _tracked_write(
-        self,
-        protocol: str,
-        writer: Any,
-        reader: pyarrow.RecordBatchReader,
-        options: dict[str, Any],
-    ) -> int:
-        """Call `writer`, wrapped in a run -- when anyone is listening.
-
-        With no client bound this is one attribute lookup and a call: no
-        run, no timestamps, no schema facet composed for an event nobody
-        receives.
-        """
-        run = self.lineage(f"write.{protocol}", outputs=[self.as_output()])
-        if run is None:
-            return writer(reader, **options)
-
-        run.start()
-        try:
-            written = writer(reader, **options)
-        except Exception as error:
-            run.fail(error)
-            raise
-        run.complete(
-            outputs=[
-                dataclasses.replace(
-                    run.outputs[0], output_facets={"outputStatistics": {"rowCount": written}}
-                )
-            ]
-        )
-        return written
-
-    def _tracked_read(
-        self, protocol: str, opener: Any, options: dict[str, Any]
-    ) -> pyarrow.RecordBatchReader:
-        """Open the reader, wrapped in a run -- when anyone is listening.
-
-        A read is lazy, so its run cannot close where the call returns: the
-        reader has not read anything yet. `START` is emitted when the scan
-        is planned -- the moment the read commits to a snapshot and a filter
-        -- and `COMPLETE` when the last batch comes out, carrying the row
-        count nothing could have known before then. A reader abandoned
-        half-way therefore leaves its run open, which is the honest record
-        of what happened: the read did not finish.
-
-        Counting means a Python hop per batch, which is exactly why it does
-        not happen at all without a client: the untracked path hands back
-        the protocol's own reader, untouched.
-        """
-        run = self.lineage(f"read.{protocol}", inputs=[self.as_input()])
-        if run is None:
-            return opener(**options)
-
-        run.start()
-        try:
-            reader = opener(**options)
-        except Exception as error:
-            run.fail(error)
-            raise
-
-        def generate() -> Iterator[pyarrow.RecordBatch]:
-            rows = 0
-            try:
-                for batch in reader:
-                    rows += batch.num_rows
-                    yield batch
-            except Exception as error:
-                run.fail(error)
-                raise
-            run.complete(
-                inputs=[
-                    dataclasses.replace(
-                        run.inputs[0], input_facets={"inputStatistics": {"rowCount": rows}}
-                    )
-                ]
-            )
-
-        return pyarrow.RecordBatchReader.from_batches(reader.schema, generate())
-
 
 def _counting(reader: pyarrow.RecordBatchReader) -> tuple[pyarrow.RecordBatchReader, list[int]]:
     """A `RecordBatchReader` that counts the rows passing through it.
@@ -1378,10 +1282,10 @@ def _counting(reader: pyarrow.RecordBatchReader) -> tuple[pyarrow.RecordBatchRea
     return pyarrow.RecordBatchReader.from_batches(reader.schema, generate()), count
 
 
-def _chunked(reader: pyarrow.RecordBatchReader, chunk_rows: int) -> Iterator[pyarrow.Table]:
-    """Group `reader`'s batches into `pyarrow.Table`s of about `chunk_rows` each.
+def _chunked(reader: pyarrow.RecordBatchReader, commit_row_size: int) -> Iterator[pyarrow.Table]:
+    """Group `reader`'s batches into `pyarrow.Table`s of about `commit_row_size` each.
 
-    The last chunk may be smaller; a `chunk_rows` larger than the reader
+    The last chunk may be smaller; a `commit_row_size` larger than the reader
     yields exactly one chunk, the whole thing -- the same shape a caller
     doing one big `upsert` would reach for by hand.
     """
@@ -1390,7 +1294,7 @@ def _chunked(reader: pyarrow.RecordBatchReader, chunk_rows: int) -> Iterator[pya
     for batch in reader:
         pending.append(batch)
         pending_rows += batch.num_rows
-        if pending_rows >= chunk_rows:
+        if pending_rows >= commit_row_size:
             yield pyarrow.Table.from_batches(pending, schema=reader.schema)
             pending, pending_rows = [], 0
     if pending:

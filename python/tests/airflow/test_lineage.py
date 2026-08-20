@@ -2,7 +2,14 @@
 
 from rekep import record
 from rekep.airflow import lineage
-from rekep.airflow.lineage import asset_name, asset_uri, documentation_of, metadata_of, tags_of
+from rekep.airflow.lineage import (
+    airflow_tags,
+    asset_name,
+    asset_uri,
+    documentation_of,
+    metadata_of,
+    tags_of,
+)
 from rekep.models import Log
 from rekep.records import Record
 
@@ -37,12 +44,29 @@ def test_metadata_is_flat_strings() -> None:
     assert all(isinstance(v, str) for v in metadata_of(Log).values())
 
 
-def test_tags_cover_both_directions_and_the_scheme() -> None:
-    assert tags_of([Log], [Report]) == ["Log", "Report", "rekep"]
+def test_tags_are_a_mapping_of_record_to_direction() -> None:
+    """A list of names cannot say why a record tags a dag; a mapping can."""
+    assert tags_of([Log], [Report]) == {
+        "Log": "consumes",
+        "Report": "produces",
+        "generator": "rekep",
+    }
 
 
-def test_tags_deduplicate() -> None:
-    assert tags_of([Log], [Log]) == ["Log", "rekep"]
+def test_a_record_read_and_written_gets_one_tag_saying_both() -> None:
+    assert tags_of([Log], [Log])["Log"] == "consumes, produces"
+
+
+def test_airflow_tags_flatten_the_mapping_at_the_boundary() -> None:
+    """Airflow's own tags are opaque strings, so the mapping stops here."""
+    assert airflow_tags({"stage": "ingestion", "domain": "trading"}) == [
+        "domain=trading",
+        "stage=ingestion",
+    ]
+
+
+def test_a_valueless_tag_flattens_to_the_bare_key() -> None:
+    assert airflow_tags({"internal": ""}) == ["internal"]
 
 
 def test_documentation_tables() -> None:

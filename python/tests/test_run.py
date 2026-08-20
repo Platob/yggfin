@@ -16,7 +16,7 @@ def test_run_event_round_trips_through_json() -> None:
         event_type=RunState.START,
         event_time=datetime.datetime(2026, 8, 19, tzinfo=datetime.UTC),
         run=Run(run_id="00000000-0000-0000-0000-000000000000"),
-        job=Job(name="demo", namespace="trading"),
+        job=Job(uri="job:/trading/demo"),
         outputs=[OutputDataset(namespace="trading", name="orders")],
     )
     assert RunEvent.from_json(event.into_json()) == event
@@ -29,7 +29,7 @@ def test_run_event_defaults_carry_producer_and_schema_url() -> None:
         event_type=RunState.COMPLETE,
         event_time=datetime.datetime.now(datetime.UTC),
         run=Run(),
-        job=Job(name="demo"),
+        job=Job(uri="job:/demo"),
     )
     assert event.producer == PRODUCER
     assert event.schema_url == SCHEMA_URL

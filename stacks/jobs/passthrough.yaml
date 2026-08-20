@@ -1,8 +1,8 @@
-# One DAG: parse the log at REKEP_SOURCE_URL and count what comes out.
+# One task: parse the log at REKEP_SOURCE_URL and count what comes out.
 # Rendered with Jinja before parsing, so deploy-time values come from the
 # environment; see rekep.job.load.
 job: rekep.job.Passthrough
-name: passthrough
+uri: job:/passthrough
 description: Copy log batches through unchanged; the wiring reference.
 schedule: "@daily"
 source: "{{ env.get('REKEP_SOURCE_URL', '') }}"

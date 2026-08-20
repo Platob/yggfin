@@ -35,6 +35,7 @@ nav:
       - Records: guide/records.md
       - Logs: guide/logs.md
       - Jobs: guide/jobs.md
+      - Dags: guide/dags.md
       - Datasets: guide/datasets.md
       - CLI: guide/cli.md
   - Data models: models.md

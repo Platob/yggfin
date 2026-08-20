@@ -2,7 +2,7 @@
 
 A `Dataset` is OpenLineage's resource for one namespace-qualified data
 product: schema, physical location across platforms, and the readers and
-writers that move data in and out of it — each internally lineage-tracked.
+writers that move data in and out of it.
 
 ## Declaring: a schema and a URI
 
@@ -99,6 +99,7 @@ protocols:
   iceberg:
     branch: "{{ 'main' if git_branch_slug in ('main', 'master') else git_branch_slug }}"
     merge_by: "true"
+    commit_row_size: "50000"
     compact_min_files: "4"
     retain: 7d
 ```
@@ -111,9 +112,10 @@ protocols:
 | `merge_schema` | `true` to add columns the stream has and the table does not | `merge_schema()` |
 | `retain` | Snapshot retention window: `7d`, `12h`, `90m`, `2w` | `iceberg_retention()` |
 | `compact_min_files` | Files in a partition before it is worth rewriting | `iceberg_compact_min_files()` |
+| `commit_row_size` | Rows a write accumulates before it commits | `commit_row_size()` |
 
 Every other key under `protocols.iceberg` (and every key in `properties`) is
-a **table property**, persisted on the table itself — the six above route a
+a **table property**, persisted on the table itself — the seven above route a
 write or a maintenance pass instead, so `table_properties()` filters them out
 rather than writing them to disk as if they described the data.
 
@@ -155,20 +157,19 @@ defaults. The CLI shape is `rekep dataset deploy --target iceberg`
 
 ## Writing
 
-`write_arrow_reader` dispatches by `format` to a private
-`_{format}_write_arrow_reader`, which opens a `Run`, calls the matching
-*public* `{format}_write_arrow_reader` hook, and closes the run on the way
-out — `START` before, `COMPLETE`/`FAIL` after:
+`write_arrow_reader` dispatches by `format` to the matching
+`{format}_write_arrow_reader` hook:
 
 ```python
 dataset.write_arrow_reader(reader, format="iceberg", table=live_table)
 dataset.write_arrow_reader(reader, format="file")   # uses direct/protocols["file"]["location"]
 ```
 
-The public hooks are the customisation points a deployment overrides
-(resolve a table from a catalog, build a filesystem from credentials); the
-private ones exist only to be the lineage boundary. A new protocol
-implements the public hook and gets the tracking for free.
+Those hooks are the customisation points a deployment overrides (resolve a
+table from a catalog, build a filesystem from credentials), and nothing wraps
+them: a dataset moves data, and what a run of it *was* is
+[`rekep.run`](jobs.md#lineage-represented-never-emitted)'s shape to describe.
+A new protocol implements one hook and is done.
 
 ### `merge_by`: one argument picks append or upsert
 
@@ -242,17 +243,17 @@ The file writer takes the same argument and means the same thing, with no
 evolution step — a file layout has no schema to migrate, so the widened
 columns simply land in the parquet.
 
-### `chunk_rows`: why a batch is not a unit of work
+### `commit_row_size`: why a batch is not a unit of work
 
-Both shapes accumulate `chunk_rows` rows (default 100,000) per call rather
-than writing batch by batch. In Iceberg every call commits a snapshot and
-lands at least one data file per partition it touches, so appending a reader
-of ten thousand small batches leaves ten thousand snapshots and as many tiny
-files for every later scan to open. Accumulating first keeps memory bounded
-by the *parameter* rather than the input, and it is worth roughly an order of
-magnitude — 20,000 rows arriving in 500-row batches:
+Both shapes accumulate `commit_row_size` rows (default 100,000) per commit
+rather than writing batch by batch. In Iceberg every call commits a snapshot
+and lands at least one data file per partition it touches, so appending a
+reader of ten thousand small batches leaves ten thousand snapshots and as
+many tiny files for every later scan to open. Accumulating first keeps memory
+bounded by the *parameter* rather than the input, and it is worth roughly an
+order of magnitude — 20,000 rows arriving in 500-row batches:
 
-| `chunk_rows` | append rows/s | merge rows/s | files left |
+| `commit_row_size` | append rows/s | merge rows/s | files left |
 | ---: | ---: | ---: | ---: |
 | 500 | 10,259 | 879 | 40 |
 | 5,000 | 95,565 | 7,418 | 4 |
@@ -262,9 +263,31 @@ See [Benchmarks](../benchmarks.md#writing-iceberg-bench_iceberg_upsertpy) for
 how much of that is solid (the file count and the merge column) and how much
 is measurement noise (the append column above 5,000).
 
+How much a dataset commits at once is a property of the *data*, not of the
+call site, so it is declared once in the side file
+(`protocols.iceberg.commit_row_size`) and every write reads it from there; a
+call-site argument still wins where one run genuinely differs. Undeclared, the
+protocol answers for itself: Iceberg commits `COMMIT_ROW_SIZE` rows at a time
+because every write commits *something* whether or not anyone chose a size,
+and a file write leaves Arrow to size its own files.
+
+```yaml
+protocols:
+  iceberg:
+    commit_row_size: "50000"
+```
+
+The parameter means the same thing one layer down on the file side, where a
+"commit" is a **file**: `commit_row_size` caps the rows per output file (and
+the row group with it, since a group cannot exceed its file).
+
+```python
+dataset.write_arrow_reader(reader, "file", commit_row_size=50_000)
+```
+
 ### Reshaping onto the record's schema
 
-Every public write hook starts by casting what it was handed onto the
+Every write hook starts by casting what it was handed onto the
 record's Arrow schema (`Record.cast_arrow_reader`, unsafe): a plain iterator
 of batches becomes a reader, columns are cast, missing *nullable* ones are
 filled with nulls, extras are dropped and the order is fixed. So a job's
@@ -470,42 +493,20 @@ ds:/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots 
 A dataset declaring no `retain` keeps all its history, which is the safe
 default for something nobody has thought about yet.
 
-## Lineage: opt in, or pay nothing
+## Lineage: represented, never emitted
 
-Lineage happens when a client is listening, and not otherwise:
+A dataset describes what it *is* to a run, and stops there:
 
 ```python
-from rekep.lineage import Collector
-
-collector = Collector()
-dataset.with_lineage(collector).write_arrow_reader(reader, "iceberg", table=live_table)
-collector.events   # [RunEvent(START, ...), RunEvent(COMPLETE, outputStatistics={"rowCount": ...})]
+dataset.facets()      # {"schema": {...}, "dataSource": {"uri": "ds:/trading/logs"}}
+dataset.as_input()    # InputDataset(namespace="trading", name="logs", facets=...)
+dataset.as_output(outputStatistics={"rowCount": 2})
 ```
 
-A client is anything with `emit(event)` — `Collector` keeps them in a list,
-which is what tests and notebooks want. Binding returns the dataset, so it
-chains, and it changes nothing about the *declaration*: a client is a runtime
-handle, and `dataset.into_json()` is identical either way.
-
-**With no client bound, none of it happens.** Not tracked-and-discarded: no
-run is created, no timestamp taken, no schema facet composed — and a read is
-handed back the protocol's own reader instead of one wrapped in a
-row-counting generator, which is a per-batch cost on the hot path.
-
-A `FAIL` carries the exception as an `errorMessage` run facet, because a
-failure that does not say what went wrong is worth less than the traceback
-the caller is about to see anyway.
-
-A read is lazy, so its run cannot close where the call returns: `START` is
-emitted when the scan is planned — the moment it commits to a snapshot and a
-filter — and `COMPLETE` when the last batch comes out, carrying the row count
-nothing could have known before then. A reader abandoned half-way leaves its
-run open, which is the honest record of what happened.
-
-The events are OpenLineage's own `RunEvent` shape. A real
-`openlineage-python` client type-checks its own classes, so handing one these
-unconverted will not work — the protocol here is deliberately a duck, so a
-test double is three lines and an adapter is the only thing a real backend
-needs. `Job.run_tracked()` (and `@arrow_task`) wrap a whole
-`extract -> transform -> load` the same way, and are plain `run()` until a
-client is bound.
+These are OpenLineage's own shapes (`rekep.run`), ready to hang off a
+`RunEvent` a task builds with
+[`into_run_event`](jobs.md#lineage-represented-never-emitted). There is no
+client, no `emit`, and no wrapper around a read or a write — so a read is
+handed back the protocol's own reader rather than one wrapped in a
+row-counting generator, which was a per-batch cost on the hot path for
+tracking nobody may ever have read.

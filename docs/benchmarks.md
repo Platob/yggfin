@@ -82,13 +82,13 @@ which no columnar kernel changes.
 transform actually produces — then a second reader that is half overlapping
 keys (updates) and half new ones (inserts).
 
-| chunk_rows | append rows/s | merge rows/s | files left |
+| commit_row_size | append rows/s | merge rows/s | files left |
 | ---: | ---: | ---: | ---: |
 | 500 | 10,259 | 879 | 40 |
 | 5,000 | 95,565 | 7,418 | 4 |
 | 20,000 | 90,114 | 13,286 | 1 |
 
-This is the table behind `chunk_rows`' existence, and it says three things,
+This is the table behind `commit_row_size`' existence, and it says three things,
 in descending order of confidence:
 
 1. **`files left` is deterministic** — 40 / 4 / 1 in both runs. It is the
@@ -98,7 +98,7 @@ in descending order of confidence:
 2. **Merging genuinely rewards larger chunks**, monotonically and within 5%
    across runs: 879 → 7,418 → 13,286 rows/s. A merge compares against
    existing data, so a small chunk pays that planning cost again and again.
-3. **`chunk_rows=500` is catastrophic for both**, by roughly 9× on append
+3. **`commit_row_size=500` is catastrophic for both**, by roughly 9× on append
    and 15× on merge, stably.
 
 What the table does *not* support: any ranking between 5,000 and 20,000 on

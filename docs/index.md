@@ -48,11 +48,15 @@ Everything else is derived, never hand-written beside it:
 - **`rekep.logs`** — `LogFile`: lazy, streaming, compression-transparent log
   access over any `pyarrow.fs` filesystem.
 - **`rekep.namespace`**, **`rekep.job`**, **`rekep.dataset`**, **`rekep.run`** —
-  the OpenLineage resources: `Namespace`, `Job`, `Dataset`, `Run`/`RunEvent`.
-  `Dataset` is both ends of the pipe: reads with filter pushdown, writes that
-  append or merge on the primary key, and the compaction and retention that
-  keep the table readable afterwards.
-- **`rekep.jobs`** — the concrete jobs this package ships (`FilesToLogs`,
+  the OpenLineage resources: `Namespace`/`ResourceUri`, `Job`, `Dataset`,
+  `Run`/`RunEvent`. Each is identified by one URI (`ds:/warehouse/orders`,
+  `job:/pipeline/parse`), and lineage is *represented* here, never emitted:
+  there is no client and no transport. `Dataset` is both ends of the pipe:
+  reads with filter pushdown, writes that append or merge on the primary key,
+  and the compaction and retention that keep the table readable afterwards.
+- **`rekep.dag`** — `Dag`: rekep's own graph of tasks, resolved, validated,
+  ordered and run here.
+- **`rekep.jobs`** — the concrete tasks this package ships (`FilesToLogs`,
   `LogsToRecords`), mirroring `rekep.models`.
-- **`rekep.airflow`** — one DAG per job, lineage derived from records. It
-  wraps none of Airflow's authoring API: a `Job` is the task.
+- **`rekep.airflow`** — one Airflow DAG per `Dag`, lineage derived from
+  records. It wraps none of Airflow's authoring API: Airflow is a projection.

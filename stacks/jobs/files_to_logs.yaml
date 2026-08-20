@@ -1,11 +1,10 @@
 # Stage 1: parse raw log files at REKEP_SOURCE_URL into Log records.
-# Namespace stays stable across branches -- there is only one canonical
-# ingestion job, whichever branch is developing it; see logs_to_records.yaml
+# The identity stays stable across branches -- there is only one canonical
+# ingestion task, whichever branch is developing it; see logs_to_records.yaml
 # for a stage that *does* pick up the branch, and stacks/datasets for the
 # same choice made at the storage layer (Iceberg branch vs. a plain table).
 job: rekep.jobs.FilesToLogs
-name: files_to_logs
-namespace: pipeline
+uri: job:/pipeline/files_to_logs
 description: Parse raw trading-log files into Log records.
 schedule: "@daily"
 source: "{{ env.get('REKEP_SOURCE_URL', '') }}"
@@ -15,7 +14,12 @@ source: "{{ env.get('REKEP_SOURCE_URL', '') }}"
 timezone: "{{ env.get('REKEP_LOG_TIMEZONE', 'Europe/Paris') }}"
 repo_url: https://github.com/Platob/yggfin
 script_path: python/src/rekep/jobs/files_to_logs.py
-tags: [pipeline, ingestion]
+# Tags are a mapping: the key names the dimension, the value answers it, so
+# two files declaring `stage:` are one decision to compare rather than two
+# opaque words to guess at.
+tags:
+  domain: pipeline
+  stage: ingestion
 produces:
   - rekep.models.Log
 env:
@@ -25,9 +29,6 @@ properties:
   team: trading-platform
   owner: data-eng
 airflow:
-  dag:
-    max_active_runs: 1
-    tags: [ingestion]
   task:
     pool: default_pool
     retries: 2

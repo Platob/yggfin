@@ -18,7 +18,7 @@ def declare(root: pathlib.Path, folder: str, name: str, content: str = "") -> No
 def test_the_default_catalog_is_fully_local() -> None:
     catalog = IcebergCatalog()
     assert catalog.type == "sql"
-    assert catalog.uri.startswith("sqlite:///")
+    assert catalog.endpoint.startswith("sqlite:///")
     assert catalog.warehouse.startswith("file://")
     assert catalog.pyiceberg_properties()["type"] == "sql"
 
@@ -31,10 +31,12 @@ def test_an_empty_folder_is_a_working_deployment(tmp_path: pathlib.Path) -> None
 
 
 def test_registry_folders_load(tmp_path: pathlib.Path) -> None:
-    declare(tmp_path, "catalogs", "lake", "type: rest\nuri: http://rest:8181\nwarehouse: s3://wh\n")
+    declare(
+        tmp_path, "catalogs", "lake", "type: rest\nendpoint: http://rest:8181\nwarehouse: s3://wh\n"
+    )
     declare(tmp_path, "namespaces", "prod", "catalog: lake\n")
     deployment = IcebergDeployment.load(tmp_path)
-    assert deployment.catalog("lake").uri == "http://rest:8181"
+    assert deployment.catalog("lake").endpoint == "http://rest:8181"
     assert deployment.namespace("prod").catalog == "lake"
 
 

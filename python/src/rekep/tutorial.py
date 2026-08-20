@@ -145,7 +145,7 @@ class Tutorial:
             IcebergDeployment(
                 catalogs=[
                     IcebergCatalog(
-                        uri=f"sqlite:///{root}/catalog.db", warehouse=f"file://{root}/wh"
+                        endpoint=f"sqlite:///{root}/catalog.db", warehouse=f"file://{root}/wh"
                     )
                 ],
                 tables=[IcebergTable(record="rekep.models.Log", name="logs")],
@@ -197,15 +197,21 @@ class Tutorial:
 
         self.panel(
             "7 \u00b7 Orchestrate with Airflow",
-            "A `Job` is an OpenLineage resource plus one `arrow_transform`; a\n"
-            "side file in `stacks/jobs/` becomes a DAG whose lineage draws itself:",
+            "A `Job` is one task; a `Dag` in `stacks/dags/` is the graph they\n"
+            "form -- ordered and run by rekep itself, projected onto Airflow --\n"
+            "and its lineage draws itself from what the tasks declare:",
         )
         declared = (
+            "# stacks/jobs/passthrough.yaml\n"
             "job: rekep.job.Passthrough\n"
-            "name: passthrough\n"
-            'schedule: "@daily"\n'
+            "uri: job:/passthrough\n"
             "consumes: [rekep.models.Log]\n"
             "produces: [rekep.models.Log]\n"
+            "\n"
+            "# stacks/dags/passthrough.yaml\n"
+            "uri: dag:/passthrough\n"
+            'schedule: "@daily"\n'
+            "tasks: [job:/passthrough]\n"
         )
         self.console.print(Syntax(declared, "yaml", background_color="default"))
         with self.spin("deriving lineage"):
@@ -217,6 +223,7 @@ class Tutorial:
         self.panel(
             "Where next",
             "- `stacks/iceberg/`, `stacks/doris/` -- declare your deployment\n"
+            "- `stacks/jobs/`, `stacks/dags/` -- declare the pipeline\n"
             "- `rekep iceberg deploy --dry-run` -- see a real plan\n"
             "- `rekep install doris` / `rekep install airflow` -- go live\n"
             "- docs: Use cases → Tutorial for the full written version",

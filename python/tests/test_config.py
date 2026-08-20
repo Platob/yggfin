@@ -5,6 +5,7 @@ import pathlib
 import pytest
 
 from rekep import config
+from rekep.dag import Dag
 from rekep.dataset import Dataset
 from rekep.job import Passthrough
 
@@ -75,17 +76,19 @@ def test_any_spelling_of_the_uri_finds_it(tmp_path: pathlib.Path) -> None:
 
 def test_a_dataset_and_a_job_sharing_a_name_are_two_entries(tmp_path: pathlib.Path) -> None:
     config.register(Dataset(schema="rekep.models.Log", uri="ds:/trading/orders"))
-    config.register(Passthrough(name="orders", namespace="trading"))
+    config.register(Passthrough(uri="job:/trading/orders"))
     assert len(config.REGISTRY) == 2
     assert config.lookup("ds:/trading/orders") is not config.lookup("job:/trading/orders")
 
 
 def test_registered_filters_by_service(tmp_path: pathlib.Path) -> None:
     config.register(Dataset(schema="rekep.models.Log", uri="ds:/a/b"))
-    config.register(Passthrough(name="b", namespace="a"))
-    assert len(config.registered()) == 2
+    config.register(Passthrough(uri="job:/a/b"))
+    config.register(Dag(uri="dag:/a/b"))
+    assert len(config.registered()) == 3
     assert len(config.registered("datasets")) == 1
     assert len(config.registered("jobs")) == 1
+    assert len(config.registered("dags")) == 1
 
 
 def test_load_finds_it_without_reading_the_folder_twice(tmp_path: pathlib.Path) -> None:

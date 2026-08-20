@@ -9,6 +9,10 @@
 #   key (`ParsedMessage.hash64`), so re-parsing the same log file corrects
 #   rows in place instead of duplicating them -- which is exactly what a
 #   parser under development does all day.
+# - `commit_row_size` is how many rows a write accumulates before it commits
+#   a snapshot: a parser re-run streams small batches, and one commit per
+#   batch would leave a snapshot and a data file per batch for every later
+#   scan to open.
 # - `compact_min_files`/`retain` are the maintenance policy
 #   `rekep dataset maintain` reads: rewrite a partition once it has
 #   grown four files, keep a week of snapshot history for time travel.
@@ -23,5 +27,6 @@ protocols:
   iceberg:
     branch: "{{ 'main' if git_branch_slug in ('main', 'master') else git_branch_slug }}"
     merge_by: "true"
+    commit_row_size: "50000"
     compact_min_files: "4"
     retain: 7d

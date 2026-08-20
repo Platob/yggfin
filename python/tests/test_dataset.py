@@ -12,11 +12,9 @@ import pytest
 
 from rekep import Arrow, Record, record
 from rekep.dataset import Dataset
-from rekep.lineage import Collector
 from rekep.models import Log, ParsedMessage
 from rekep.records.arrow import FIELD_ID_KEY
 from rekep.records.arrow import _max_field_id as max_field_id
-from rekep.run import RunState
 
 
 @dataclasses.dataclass
@@ -312,7 +310,7 @@ def test_iceberg_write_arrow_reader_needs_a_table() -> None:
 
 def test_an_append_batches_the_whole_reader_into_one_commit() -> None:
     """A batch is not a unit of work in Iceberg: every call is a snapshot
-    and at least one file, so batches accumulate up to `chunk_rows`."""
+    and at least one file, so batches accumulate up to `commit_row_size`."""
     dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     reader = reader_of([1, 2, 3], [4, 5])
     table = FakeTable()
@@ -321,13 +319,54 @@ def test_an_append_batches_the_whole_reader_into_one_commit() -> None:
     assert [chunk.num_rows for chunk in table.appended] == [5]
 
 
-def test_an_append_is_still_bounded_by_chunk_rows() -> None:
+def test_an_append_is_still_bounded_by_commit_row_size() -> None:
     dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     reader = reader_of([1, 2, 3], [4, 5], [6])
     table = FakeTable()
-    written = dataset.write_arrow_reader(reader, format="iceberg", table=table, chunk_rows=3)
+    written = dataset.write_arrow_reader(reader, format="iceberg", table=table, commit_row_size=3)
     assert written == 6
     assert [chunk.num_rows for chunk in table.appended] == [3, 3]
+
+
+def test_the_side_file_can_declare_the_commit_row_size() -> None:
+    """How much a write commits at once is a property of the data, so the
+    dataset declares it once instead of every call site remembering it."""
+    dataset = Dataset(
+        schema="rekep.models.Log",
+        uri="ds:/logs",
+        protocols={"iceberg": {"commit_row_size": "2"}},
+    )
+    assert dataset.commit_row_size("iceberg") == 2
+    table = FakeTable()
+    dataset.write_arrow_reader(reader_of([1], [2], [3], [4], [5]), format="iceberg", table=table)
+    assert [chunk.num_rows for chunk in table.appended] == [2, 2, 1]
+
+
+def test_an_undeclared_commit_row_size_is_the_protocols_own_answer() -> None:
+    """None, not a number: Iceberg commits whatever `COMMIT_ROW_SIZE` says,
+    and a file write lets Arrow size its own files."""
+    assert Dataset(schema="rekep.models.Log").commit_row_size("iceberg") is None
+
+
+def test_a_call_site_still_wins_over_the_declaration() -> None:
+    dataset = Dataset(
+        schema="rekep.models.Log",
+        uri="ds:/logs",
+        protocols={"iceberg": {"commit_row_size": "2"}},
+    )
+    table = FakeTable()
+    dataset.write_arrow_reader(
+        reader_of([1], [2], [3]), format="iceberg", table=table, commit_row_size=3
+    )
+    assert [chunk.num_rows for chunk in table.appended] == [3]
+
+
+def test_commit_row_size_never_lands_on_the_table_as_a_property() -> None:
+    """It routes a write; it does not describe the data."""
+    dataset = Dataset(
+        schema="rekep.models.Log", protocols={"iceberg": {"commit_row_size": "2", "owner": "eng"}}
+    )
+    assert dataset.table_properties("iceberg") == {"owner": "eng"}
 
 
 # -- reshaping onto the record schema on the way in -----------------------
@@ -467,12 +506,12 @@ def test_merge_by_is_skipped_when_the_table_has_no_snapshot_to_merge_into() -> N
     assert table.appended and not table.upserted
 
 
-def test_merge_chunks_are_bounded_by_chunk_rows() -> None:
+def test_merge_chunks_are_bounded_by_commit_row_size() -> None:
     dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     reader = parsed_reader(*({"hash64": i} for i in range(5)), batch_size=1)
     written = dataset.write_arrow_reader(
-        reader, format="iceberg", table=table, merge_by=True, chunk_rows=2
+        reader, format="iceberg", table=table, merge_by=True, commit_row_size=2
     )
     assert written == 5
     assert [chunk.num_rows for chunk in table.upserted] == [2, 2, 1]
@@ -546,72 +585,6 @@ def test_a_brand_new_table_bootstraps_on_main_regardless_of_the_declared_branch(
     assert table.branches == ["main"]
 
 
-# -- lineage: only when a client is listening -----------------------------
-
-
-def test_no_client_means_no_run_at_all() -> None:
-    """Not tracked-and-discarded: nothing is built, timed or counted."""
-    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
-    assert dataset.lineage_client() is None
-    assert dataset.lineage("write.iceberg") is None
-    assert dataset.write_arrow_reader(reader_of([1, 2]), format="iceberg", table=FakeTable()) == 2
-
-
-def test_a_successful_write_emits_start_then_complete() -> None:
-    collector = Collector()
-    dataset = Dataset(schema="rekep.models.Log", uri="ds:/trading/logs")
-    dataset.with_lineage(collector).write_arrow_reader(
-        reader_of([1, 2]), format="iceberg", table=FakeTable()
-    )
-
-    events = collector.events
-    assert [e.event_type for e in events] == [RunState.START, RunState.COMPLETE]
-    assert events[0].run.run_id == events[1].run.run_id, "same run, two moments"
-    assert events[0].job.namespace == "trading"
-    assert events[0].job.name == "logs.write.iceberg", "the operation names the run"
-    assert events[1].outputs[0].output_facets == {"outputStatistics": {"rowCount": 2}}
-
-
-def test_a_failed_write_emits_start_then_fail_and_reraises() -> None:
-    collector = Collector()
-    dataset = Dataset(schema="rekep.models.Log").with_lineage(collector)
-
-    def boom(reader: Any, **_: Any) -> int:
-        raise RuntimeError("catalog unreachable")
-
-    dataset.iceberg_write_arrow_reader = boom  # type: ignore[method-assign]
-    with pytest.raises(RuntimeError, match="catalog unreachable"):
-        dataset.write_arrow_reader(reader_of([1]), format="iceberg")
-
-    assert [e.event_type for e in collector.events] == [RunState.START, RunState.FAIL]
-    (failed,) = collector.of(RunState.FAIL)
-    assert failed.run.facets["errorMessage"]["message"] == "RuntimeError: catalog unreachable"
-
-
-def test_runs_are_not_shared_between_clients() -> None:
-    mine, theirs = Collector(), Collector()
-    Dataset(schema="rekep.models.Log", uri="ds:/a").with_lineage(mine).write_arrow_reader(
-        reader_of([1]), format="iceberg", table=FakeTable()
-    )
-    Dataset(schema="rekep.models.Log", uri="ds:/b").with_lineage(theirs)
-    assert mine.events
-    assert theirs.events == []
-
-
-def test_binding_a_client_returns_the_same_dataset() -> None:
-    dataset = Dataset(schema="rekep.models.Log")
-    assert dataset.with_lineage(Collector()) is dataset
-
-
-def test_a_client_is_not_part_of_the_declaration() -> None:
-    """It is a runtime handle -- a side file cannot carry one, and binding
-    one must not change what the dataset serialises to."""
-    plain = Dataset(schema="rekep.models.Log", uri="ds:/logs")
-    bound = Dataset(schema="rekep.models.Log", uri="ds:/logs").with_lineage(Collector())
-    assert bound.into_json() == plain.into_json()
-    assert bound == plain
-
-
 # -- file_write_arrow_reader: generic uri + filesystem mapping -----------
 
 
@@ -668,12 +641,26 @@ def test_two_file_writes_append_instead_of_colliding(tmp_path: pathlib.Path) -> 
     assert len(list((tmp_path / "out").rglob("*.parquet"))) == 2
 
 
-def test_file_write_tracks_lineage_like_iceberg_does(tmp_path: pathlib.Path) -> None:
-    collector = Collector()
-    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs", direct=(tmp_path / "out").as_uri())
-    dataset.with_lineage(collector).write_arrow_reader(reader_of([1, 2]), format="file")
-    assert [e.event_type for e in collector.events] == [RunState.START, RunState.COMPLETE]
-    assert collector.events[-1].outputs[0].output_facets == {"outputStatistics": {"rowCount": 2}}
+def test_a_file_write_caps_its_files_at_the_commit_row_size(tmp_path: pathlib.Path) -> None:
+    """A file layout has no commit, so what a write lands per unit is a file."""
+    dataset = Dataset(schema="rekep.models.Log", direct=(tmp_path / "out").as_uri())
+    written = dataset.write_arrow_reader(
+        reader_of([1, 2], [3, 4], [5]), format="file", commit_row_size=2
+    )
+    assert written == 5
+    assert len(list((tmp_path / "out").rglob("*.parquet"))) == 3
+
+
+def test_a_file_write_reads_the_commit_row_size_off_the_side_file(
+    tmp_path: pathlib.Path,
+) -> None:
+    dataset = Dataset(
+        schema="rekep.models.Log",
+        direct=(tmp_path / "out").as_uri(),
+        protocols={"file": {"commit_row_size": "2"}},
+    )
+    dataset.write_arrow_reader(reader_of([1, 2], [3, 4]), format="file")
+    assert len(list((tmp_path / "out").rglob("*.parquet"))) == 2
 
 
 # -- deploy: autonomous, no side file needed ------------------------------
@@ -748,7 +735,7 @@ def test_deploy_iceberg_converges_a_real_local_catalog(tmp_path: pathlib.Path) -
     stack = Iceberg(
         IcebergDeployment(
             catalogs=[
-                IcebergCatalog(uri=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh")
+                IcebergCatalog(endpoint=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh")
             ],
         )
     )
@@ -764,7 +751,9 @@ def _local_iceberg_stack(tmp_path: pathlib.Path) -> Any:
     root = tmp_path.as_posix()
     return Iceberg(
         IcebergDeployment(
-            catalogs=[IcebergCatalog(uri=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh")]
+            catalogs=[
+                IcebergCatalog(endpoint=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh")
+            ]
         )
     )
 
@@ -832,7 +821,7 @@ def test_branch_write_and_read_isolate_from_main(tmp_path: pathlib.Path) -> None
     assert len(table.scan(snapshot_id=dev_snapshot).to_arrow()) == 2
 
 
-# -- reading: dispatch, pushdown, lineage ---------------------------------
+# -- reading: dispatch and pushdown ---------------------------------------
 
 
 def test_read_arrow_reader_refuses_an_unknown_format() -> None:
@@ -875,32 +864,8 @@ def test_a_file_read_pushes_a_filter_down(tmp_path: pathlib.Path) -> None:
     assert sorted(matched.column("hash64").to_pylist()) == [2, 3]
 
 
-def test_a_read_tracks_lineage_when_the_stream_ends(tmp_path: pathlib.Path) -> None:
-    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs", direct=(tmp_path / "o").as_uri())
-    dataset.write_arrow_reader(reader_of([1, 2]), format="file")
-
-    collector = Collector()
-    reader = dataset.with_lineage(collector).read_arrow_reader("file")
-    assert [e.event_type for e in collector.events] == [RunState.START], "planned only"
-
-    reader.read_all()
-    events = collector.events
-    assert [e.event_type for e in events] == [RunState.START, RunState.COMPLETE]
-    assert events[0].run.run_id == events[1].run.run_id, "same run, two moments"
-    assert events[-1].inputs[0].input_facets == {"inputStatistics": {"rowCount": 2}}
-
-
-def test_a_read_that_is_never_consumed_leaves_its_run_open(tmp_path: pathlib.Path) -> None:
-    """A lazy read cannot claim to have finished; an abandoned one did not."""
-    dataset = Dataset(schema="rekep.models.Log", direct=(tmp_path / "o").as_uri())
-    dataset.write_arrow_reader(reader_of([1]), format="file")
-    collector = Collector()
-    dataset.with_lineage(collector).read_arrow_reader("file")
-    assert [e.event_type for e in collector.events] == [RunState.START]
-
-
-def test_an_untracked_read_is_the_protocols_own_reader(tmp_path: pathlib.Path) -> None:
-    """No client means no per-batch counting hop between caller and data."""
+def test_a_read_is_the_protocols_own_reader(tmp_path: pathlib.Path) -> None:
+    """Nothing wraps it: no counting hop between the caller and the data."""
     dataset = Dataset(schema="rekep.models.Log", direct=(tmp_path / "o").as_uri())
     dataset.write_arrow_reader(reader_of([1, 2]), format="file")
     assert dataset.read_arrow_reader("file").read_all().num_rows == 2

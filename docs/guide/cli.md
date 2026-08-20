@@ -11,6 +11,7 @@ $ rekep --help
     docs                generated documentation pages
     records             deploy a record class to the stacks
     dataset             datasets deployed into iceberg or doris
+    dag                 declared dags: list, show, run
     iceberg             iceberg deployment stack
     doris               doris deployment stack
     airflow             deployable Airflow DAG modules
@@ -118,3 +119,44 @@ $ rekep dataset optimize --dry-run
 ds:/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
 ds:/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
 ```
+
+## Dags: list, show, run
+
+A `Dag` is rekep's own graph, so listing it, reading its order and running it
+need no orchestrator installed:
+
+```console
+$ rekep dag list
+dag:/passthrough  schedule=@daily  passthrough
+dag:/pipeline/trading_logs  schedule=@daily  files_to_logs -> logs_to_records
+
+$ rekep dag show --uri dag:/pipeline/trading_logs
+dag:/pipeline/trading_logs  schedule=@daily
+  trading_logs.files_to_logs  uri=job:/pipeline/files_to_logs  after=-
+  trading_logs.logs_to_records  uri=job:/pipeline/logs_to_records  after=files_to_logs
+
+$ rekep dag run --uri dag:/pipeline/trading_logs
+trading_logs.files_to_logs: 24
+trading_logs.logs_to_records: 24
+```
+
+`--config` points at the dags folder and `--jobs-config` at the jobs folder
+the tasks are declared in (defaults: `stacks/dags`, `stacks/jobs`). `run`
+walks the dependency order in this process — the executor a laptop, a test
+and a cron line want, not a replacement for a scheduler.
+
+## Airflow: dag modules as a deployable resource
+
+```console
+$ rekep airflow deploy --config stacks/dags --dags-folder /opt/airflow/dags
+converged dags: passthrough.py, trading_logs.py
+
+$ rekep airflow dags list
+passthrough.py  dag:/passthrough  1 task(s)
+trading_logs.py  dag:/pipeline/trading_logs  2 task(s)
+```
+
+One generated module per side file, idempotent like every other verb: the
+side file stays the single source, loaded and built fresh at parse time, and
+identical content is a logged no-op. `--dry-run` reports without writing. See
+the [Dags guide](dags.md#airflow).

@@ -1,8 +1,12 @@
-# Jobs
+# Jobs (tasks)
 
 A `Job` is OpenLineage's resource for a process that consumes and produces
 datasets — what it reads, what it writes, and how it transforms — declared as
 a record, transformed in Arrow.
+
+**A job is one task.** OpenLineage names a job hierarchically, `dag_id` then
+`task_id`, and that is exactly what a `Job` is here: one node of a graph. The
+graph itself is a [`Dag`](dags.md).
 
 ## Declaring
 
@@ -25,7 +29,7 @@ class ErrorsOnly(Job):
             yield batch.filter(mask)
 ```
 
-`arrow_transform` is the one method a real job overrides: batches in, batches
+`arrow_transform` is the one method a real task overrides: batches in, batches
 out, nothing materialised. It is not enforced abstract — a bare `Job` still
 declares and describes its lineage — but calling `run()` without overriding
 it raises, naming the class. `run()` chains
@@ -35,13 +39,13 @@ independently.
 
 ## Side files
 
-Deployment configuration lives in one file per job under `stacks/jobs`,
+Deployment configuration lives in one file per task under `stacks/jobs`,
 schema'd by the `Job` record itself and rendered with Jinja before parsing:
 
 ```yaml
 # stacks/jobs/passthrough.yaml
 job: rekep.job.Passthrough
-name: passthrough
+uri: job:/passthrough
 schedule: "@daily"
 source: "{{ env.get('REKEP_SOURCE_URL', '') }}"
 consumes: [rekep.models.Log]
@@ -49,28 +53,41 @@ produces: [rekep.models.Log]
 ```
 
 ```python
-from rekep.job import load, load_all
+from rekep.job import find, load, load_all
 
-job = load("stacks/jobs/passthrough.yaml")
-jobs = load_all()          # every side file, name-sorted
+job = load("stacks/jobs/passthrough.yaml")   # one file, whatever it declares
+jobs = load_all()                            # every side file, name-sorted
+job = find("job:/passthrough")               # one identity, from the registry
 ```
 
-## Namespace and identity
+`load` takes a path and builds whatever it declares; `find` takes an identity
+and returns the object that already answers to it, reading the folder only if
+nobody does.
 
-`namespace` and `name` give a job its OpenLineage identity;
-`qualified_name()` joins them through `Namespace`, the same recursive
-path-builder a `Dataset`'s location uses. `uri()` goes one step further —
-`rekep.namespace.ResourceUri` scopes it to the `job:` scheme, so a job and a
+## Identity is one URI
+
+A task is named by a `uri`, the same path spelling a dataset and a dag use —
+one identity rather than a name beside a namespace, because a resource that
+can spell itself two ways eventually spells itself two different ways.
+`rekep.namespace.ResourceUri` scopes it to the `job:` scheme, so a task and a
 `Dataset` sharing a namespace and a name never collide:
 
 ```python
 from rekep.job import Job
 
-Job(name="task", namespace="dag").qualified_name()   # "dag.task"
-Job(name="task", namespace="dag").uri()               # "job:/dag/task"
+job = Job(uri="job:/dag/task")
+job.task_id()          # "task"       -- what Airflow calls a task_id
+job.task_namespace()   # "dag"
+job.task_name()        # "dag.task"   -- every level joined
+str(job.resource_uri())  # "job:/dag/task"
 ```
 
-## Configuration: source, Airflow, environment
+`task_name()` is the whole hierarchy, joined the way OpenLineage names a job.
+A dag qualifies it one step further — `Dag.task_name(job)` is
+`<dag_id>.<task_id>` — because a task named inside a dag is *that dag's* task,
+not a second job that happens to share a name.
+
+## Configuration: source, tags, Airflow, environment
 
 Beyond lineage, a `Job` carries what a real deployment needs, all of it
 Jinja-capable since the whole side file renders before parsing:
@@ -78,13 +95,14 @@ Jinja-capable since the whole side file renders before parsing:
 ```yaml
 repo_url: https://github.com/Platob/yggfin
 script_path: python/src/rekep/jobs/files_to_logs.py
+tags:
+  domain: pipeline
+  stage: ingestion
 env:
   LOG_LEVEL: INFO
 properties:
   team: trading-platform
 airflow:
-  dag:
-    max_active_runs: 1
   task:
     pool: default_pool
     retries: 2
@@ -94,105 +112,106 @@ airflow:
   OpenLineage `SourceCodeLocationJobFacet` with `version`/`branch` read
   fresh from `rekep.render.git_context()` each call, not baked in at deploy
   time. `facets()` includes it automatically once either is set.
+- **`tags`** is a **mapping**, not a list: the key names the dimension and
+  the value answers it, so `stage: ingestion` says what makes it a tag while
+  a bare `ingestion` never could — and two declarations of one key are one
+  decision to resolve rather than two entries to carry. Airflow's own tags
+  are opaque strings, so the mapping is flattened to `key=value` at that
+  boundary (`rekep.airflow.lineage.airflow_tags`) and nowhere else.
 - **`env`/`properties`** are plain `dict[str, str]`: environment variables
   and whatever else a deployment needs to carry that is neither lineage nor
-  Airflow config.
-- **`airflow["dag"]`/`airflow["task"]`** merge straight into `into_airflow`'s
-  Airflow's own `DAG(...)`/`@task(...)` calls -- any real Airflow kwarg (`pool`,
-  `retries`, `trigger_rule`, `max_active_runs`, ...), since rekep does not
-  maintain its own list of which belongs where; Airflow does.
+  orchestrator config.
+- **`airflow["dag"]`/`airflow["task"]`** merge straight into the Airflow
+  `DAG(...)`/`@task(...)` calls `Dag.into_airflow()` makes -- any real
+  Airflow kwarg (`pool`, `retries`, `trigger_rule`, `max_active_runs`, ...),
+  since rekep does not maintain its own list of which belongs where; Airflow
+  does.
 
-## `@arrow_task`: a function as a lineage-tracked job
+## `@arrow_task`: a function as a task
 
 For a one-off transform, `@arrow_task` skips the `@record class ... (Job)`
 declaration — it binds a plain batches-in/batches-out function as a `Job`'s
-`arrow_transform`, and calling the result runs it through `run_tracked()`:
-extract → transform → load, wrapped in a run that opens `START` before and
-closes `COMPLETE`/`FAIL` after — **when a lineage client is bound**, and as
-plain `run()` when none is:
+`arrow_transform`, and calling the result runs `extract → transform → load`:
 
 ```python
 from rekep.job import arrow_task
-from rekep.lineage import Collector
 from rekep.models import Log
 
-@arrow_task(name="errors_only", consumes=[Log], produces=[Log])
+@arrow_task(uri="job:/trading/errors_only", consumes=[Log], produces=[Log])
 def errors_only(batches):
     for batch in batches:
         yield batch.filter(...)
 
-errors_only()                              # just runs; nothing is tracked
-
-collector = Collector()
-errors_only.with_lineage(collector)()      # runs, START/COMPLETE emitted
-collector.events                           # what this call produced
+errors_only()          # runs it
 ```
 
-Inputs and outputs come from `consumes`/`produces`, resolved *before* the run
-starts — a bad dotted path is a configuration error, not a run that began and
-then died. See [Datasets](datasets.md#lineage-opt-in-or-pay-nothing) for the
-same boundary around a dataset's own I/O.
+Undeclared, the identity is `job:/<function name>` — a decorator that made
+you name the thing twice would be a worse decorator. `config=` takes an
+already-built `Job` (typically loaded from a side file) and binds the
+function onto it instead of building a fresh one.
 
-`config=` takes an already-built `Job` (typically loaded from a side file)
-and binds the function onto it instead of building a fresh one.
+## Lineage: represented, never emitted
 
-## Airflow: a job *is* the task
-
-An Airflow DAG folder needs one line:
+rekep says what a run *is* and stops there. `into_run_event(state)` builds
+OpenLineage's own `RunEvent` for a task, inputs and outputs resolved from
+`consumes`/`produces`:
 
 ```python
-from rekep.airflow.jobs import dags
+from rekep.run import RunState
 
-globals().update(dags())
+start = job.into_run_event(RunState.START)
+done = job.into_run_event(RunState.COMPLETE, start.run)   # one run, two moments
+start.into_json()                                         # what leaves the process
 ```
 
-Each side file becomes one DAG with one task. There is no rekep decorator to
-wrap a function in and no DAG subclass to inherit from — a `Job` already
-declares everything a task needs (what it reads, what it writes, when it
-runs, how to run it), so `Job.into_airflow()` hands that to Airflow's own
-`DAG` and `@task` and gets out of the way:
+There is **no client here and no transport**. A collector's job is to
+collect; a client rekep does not ship is a client rekep cannot get wrong, and
+nothing in a read or a write pays for tracking that may never be read. See
+[Datasets](datasets.md) for the same split on a dataset's own I/O.
+
+## Orchestration: a job is the task, a dag is the graph
+
+One task alone is not a pipeline. `stacks/dags/` declares which tasks belong
+together and in what order, and `Dag.into_airflow()` projects that onto
+Airflow — see the [Dags guide](dags.md).
 
 ```python
-job.into_airflow()          # a real Airflow DAG, with one real Airflow task
-```
+from rekep.dag import Dag
 
-Anything Airflow accepts reaches it untouched through `airflow["dag"]` and
-`airflow["task"]` (above) — rekep keeps no list of which kwarg belongs to
-which, because Airflow has one already. The only thing added is what Airflow
-cannot derive: tags and a Consumes/Produces table for the DAG, inlets and
-outlets for the task, all from the `consumes`/`produces` record lists. The
-lineage graph writes itself.
+Dag.from_job(job).into_airflow()   # the one-task pipeline, no side file needed
+```
 
 ## The shipped pipeline: `files_to_logs` → `logs_to_records`
 
-`rekep.jobs` (a package, mirroring `models/`) holds the concrete jobs this
+`rekep.jobs` (a package, mirroring `models/`) holds the concrete tasks this
 package ships, one module each — `job.py` is the machinery, `jobs/` the
-jobs built on it, declared under `stacks/jobs/`:
+tasks built on it, declared under `stacks/jobs/` and wired together by
+`stacks/dags/trading_logs.yaml`:
 
 - **`FilesToLogs`** parses raw log files at `source` into `Log` records --
   `arrow_transform` is the identity, since `extract` already does the
-  parsing. `stacks/jobs/files_to_logs.yaml` keeps a stable namespace across
-  branches: there is one canonical ingestion job.
+  parsing. `stacks/jobs/files_to_logs.yaml` keeps a stable identity across
+  branches: there is one canonical ingestion task.
 - **`LogsToRecords`** structures `Log.message` into `ParsedMessage`:
   `|`-delimited `key=value` pairs, a leading `#` stripped from the key
   (`rekep.jobs.parse_fields`), and the `8=` tag (FIX's BeginString) pulled
   out as `protocol` when the message opens with one. Not FIX-specific --
   any pipe-separated `key=value` run decodes the same way, FIX is just the
   common case. `stacks/jobs/logs_to_records.yaml` picks up
-  `{{ git_branch_suffix }}` in its namespace and name: each branch iterates
-  in its own working copy, unlike `files_to_logs`'s stable one -- the same
-  Jinja + git-context machinery every side file has, just used differently
-  per asset. `stacks/datasets/parsed_messages.yaml` makes the same choice
-  one layer down, at storage: an Iceberg branch instead of a namespace (see
-  the [Datasets guide](datasets.md)).
+  `{{ git_branch_suffix }}` in its `uri`: each branch iterates in its own
+  working copy, unlike `files_to_logs`'s stable one -- the same Jinja + git
+  context machinery every side file has, just used differently per asset.
+  `stacks/datasets/parsed_messages.yaml` makes the same choice one layer
+  down, at storage: an Iceberg branch instead of a namespace (see the
+  [Datasets guide](datasets.md)).
 
 ```python
 from rekep.jobs import FilesToLogs, LogsToRecords
 
-f2l = FilesToLogs(name="f2l", source="app.txt")
+f2l = FilesToLogs(uri="job:/f2l", source="app.txt")
 logs = f2l.arrow_transform(f2l.extract())
 
-l2r = LogsToRecords(name="l2r")
+l2r = LogsToRecords(uri="job:/l2r")
 records = l2r.arrow_transform(logs)   # ParsedMessage-shaped batches
 ```
 
@@ -207,11 +226,12 @@ stay put.
 
 | File | Choice | Why |
 | --- | --- | --- |
-| `stacks/jobs/files_to_logs.yaml` | stable | one canonical ingestion job |
+| `stacks/jobs/files_to_logs.yaml` | stable | one canonical ingestion task |
 | `stacks/datasets/log.yaml` | stable | the shared raw table |
-| `stacks/jobs/logs_to_records.yaml` | `{{ git_branch_suffix }}` in name and namespace | the parser under development |
+| `stacks/jobs/logs_to_records.yaml` | `{{ git_branch_suffix }}` in the `uri` | the parser under development |
+| `stacks/dags/trading_logs.yaml` | `{{ git_branch_suffix }}` in the `uri` | the graph that runs it |
 | `stacks/datasets/parsed_messages.yaml` | an Iceberg `branch` | its output, isolated per branch |
 
-The last two are the working assets, and they make the choice one layer
-apart: the job gets its own namespace, the dataset gets its own Iceberg
-branch of the *same* table (see the [Datasets guide](datasets.md#branches-write-audit-publish)).
+The working assets make the choice one layer apart: the task gets its own
+identity, the dataset gets its own Iceberg branch of the *same* table (see
+the [Datasets guide](datasets.md#branches-write-audit-publish)).

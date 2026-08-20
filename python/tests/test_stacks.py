@@ -36,7 +36,7 @@ def stack(tmp_path: pathlib.Path) -> Iceberg:
     return Iceberg(
         IcebergDeployment(
             catalogs=[
-                IcebergCatalog(uri=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh")
+                IcebergCatalog(endpoint=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh")
             ],
             namespaces=[IcebergNamespace(name="yggfin", catalog="iceberg")],
             tables=[IcebergTable(record="rekep.models.Log", name="logs", namespace="yggfin")],
@@ -192,7 +192,7 @@ def test_iceberg_deploy_folder_one_call(tmp_path: pathlib.Path) -> None:
     catalogs = tmp_path / "catalogs"
     catalogs.mkdir()
     (catalogs / "iceberg.yaml").write_text(
-        f'type: sql\nuri: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
+        f'type: sql\nendpoint: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
     )
 
     done = Iceberg.deploy_folder(tmp_path, parallel=False)
@@ -212,7 +212,7 @@ def test_dataset_deploys_autonomously_one_call(
     catalogs = tmp_path / "catalogs"
     catalogs.mkdir()
     (catalogs / "iceberg.yaml").write_text(
-        f'type: sql\nuri: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
+        f'type: sql\nendpoint: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
     )
 
     stack = Iceberg.load(tmp_path)

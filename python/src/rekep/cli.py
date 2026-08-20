@@ -623,6 +623,73 @@ class DatasetService:
         return Doris.load(config or DORIS_ROOT, **context)
 
 
+class DagService:
+    """`rekep dag`: the dags this deployment declares, listed and run.
+
+    A `rekep.dag.Dag` is rekep's own graph, not a view of an orchestrator's:
+    the tasks it names, the order its `dependencies` imply, and a runner that
+    walks that order in this process. `rekep airflow` projects the same dags
+    onto Airflow; nothing here needs Airflow installed.
+    """
+
+    name = "dag"
+
+    def register(self, commands: Any) -> None:
+        parser = commands.add_parser(self.name, help="declared dags: list, show, run")
+        commands = parser.add_subparsers(dest="command", required=True)
+
+        listing = commands.add_parser("list", help="list declared dags")
+        listing.add_argument("--config", default=None, help="dags directory")
+        listing.add_argument("--jobs-config", default=None, help="jobs directory")
+        listing.set_defaults(run=self.list_dags)
+
+        show = commands.add_parser("show", help="one dag's tasks, in the order they run")
+        show.add_argument("--uri", required=True, help="dag uri, e.g. dag:/pipeline/trading_logs")
+        show.add_argument("--config", default=None, help="dags directory")
+        show.add_argument("--jobs-config", default=None, help="jobs directory")
+        show.set_defaults(run=self.show)
+
+        runner = commands.add_parser("run", help="run every task, in dependency order")
+        runner.add_argument("--uri", required=True, help="dag uri, e.g. dag:/pipeline/trading_logs")
+        runner.add_argument("--config", default=None, help="dags directory")
+        runner.add_argument("--jobs-config", default=None, help="jobs directory")
+        runner.add_argument(
+            "--verbose", action="store_true", help="debug logging: every running detail"
+        )
+        runner.set_defaults(run=self.run_dag)
+
+    def list_dags(self, arguments: argparse.Namespace) -> int:
+        from rekep.dag import load_all
+
+        for dag in load_all(arguments.config):
+            order = " -> ".join(dag.order(arguments.jobs_config)) or "no tasks"
+            print(f"{dag.resource_uri()}  schedule={dag.schedule or '-'}  {order}")
+        return 0
+
+    def show(self, arguments: argparse.Namespace) -> int:
+        """The graph, one task per line: what runs, and what it waited for."""
+        from rekep.dag import find
+
+        dag = find(arguments.uri, arguments.config)
+        upstreams = dag.upstreams(arguments.jobs_config)
+        print(f"{dag.resource_uri()}  schedule={dag.schedule or '-'}")
+        for identifier in dag.order(arguments.jobs_config):
+            task = dag.task(identifier, arguments.jobs_config)
+            after = ", ".join(upstreams[identifier]) or "-"
+            print(f"  {dag.task_name(task)}  uri={task.uri}  after={after}")
+        return 0
+
+    def run_dag(self, arguments: argparse.Namespace) -> int:
+        from rekep.dag import find
+
+        level = logging.DEBUG if arguments.verbose else logging.INFO
+        logging.basicConfig(level=level, format="%(asctime)s %(name)s %(message)s")
+        dag = find(arguments.uri, arguments.config)
+        for identifier, result in dag.run(arguments.jobs_config).items():
+            print(f"{dag.task_name(identifier)}: {result}")
+        return 0
+
+
 class AirflowService:
     """`rekep airflow`: DAG modules as a deployable resource."""
 
@@ -633,7 +700,7 @@ class AirflowService:
         commands = parser.add_subparsers(dest="command", required=True)
 
         deploy = commands.add_parser("deploy", help="converge DAG modules into a dags folder")
-        deploy.add_argument("--config", default=None, help="jobs directory")
+        deploy.add_argument("--config", default=None, help="dags directory")
         deploy.add_argument("--dags-folder", required=True, help="Airflow dags folder to write")
         deploy.add_argument(
             "--dry-run", action="store_true", help="log what would happen without writing"
@@ -643,10 +710,10 @@ class AirflowService:
         )
         deploy.set_defaults(run=self.deploy)
 
-        dags = commands.add_parser("dags", help="the dag resource")
+        dags = commands.add_parser("dags", help="the deployable module resource")
         verbs = dags.add_subparsers(dest="verb", required=True)
-        listing = verbs.add_parser("list", help="list declared dags")
-        listing.add_argument("--config", default=None, help="jobs directory")
+        listing = verbs.add_parser("list", help="list the dags that would be written")
+        listing.add_argument("--config", default=None, help="dags directory")
         listing.set_defaults(run=self.list_dags)
 
     def deploy(self, arguments: argparse.Namespace) -> int:
@@ -666,8 +733,8 @@ class AirflowService:
     def list_dags(self, arguments: argparse.Namespace) -> int:
         from rekep.airflow.service import Dags
 
-        for job in Dags(arguments.config).list():
-            print(f"{job.name}  namespace={job.namespace or '-'}  schedule={job.schedule or '-'}")
+        for dag in Dags(arguments.config).list():
+            print(f"{dag.dag_id()}.py  {dag.resource_uri()}  {len(dag.tasks)} task(s)")
         return 0
 
 
@@ -677,6 +744,7 @@ SERVICES = (
     DocsService(),
     RecordsService(),
     DatasetService(),
+    DagService(),
     IcebergService(),
     DorisService(),
     AirflowService(),

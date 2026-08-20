@@ -1,35 +1,39 @@
 """Job: the OpenLineage resource for a process that consumes and produces
 datasets (https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.md).
 
+**A job is one task.** OpenLineage names a job hierarchically -- `dag_id`,
+then `task_id` -- and that is exactly what this is: the unit a `Dag`
+(`rekep.dag`) schedules, one node of a graph rather than the graph. So the
+naming here is task naming: `task_id()` is this task's own name, and
+`task_name()` is the full one its levels add up to.
+
 A job is both a record and a program. The record half is deployment
-configuration -- namespace, name, schedule, lineage -- loaded from a side
-file under `stacks/jobs` and round-trippable like any other record. The
-program half is `arrow_transform`: batches in, batches out, all processing in
-Arrow. The base implementation raises rather than enforcing an abstract
-method, so a bare `Job` still declares and describes lineage -- namespace,
-name, consumes, produces -- even before anyone gives it something to run;
-override `arrow_transform` to make one that actually moves data.
+configuration -- identity, schedule, lineage -- loaded from a side file under
+`stacks/jobs` and round-trippable like any other record. The program half is
+`arrow_transform`: batches in, batches out, all processing in Arrow. The base
+implementation raises rather than enforcing an abstract method, so a bare
+`Job` still declares and describes lineage -- identity, consumes, produces --
+even before anyone gives it something to run; override `arrow_transform` to
+make one that actually moves data.
 
 `run` chains the three stages -- `extract` yields source batches,
 `arrow_transform` reshapes them, `load` disposes of them -- and each stage
-can be overridden alone. `run_tracked` wraps that whole chain in a `Run`,
-`START` before and `COMPLETE`/`FAIL` after -- the same internal lineage
-bookkeeping `Dataset`'s protocol writers use, kept on the instance
-to whatever lineage client is bound -- and to nothing at all when none is.
+can be overridden alone. What a run *was* is representable without being
+emitted anywhere: `into_run_event(state)` builds the OpenLineage `RunEvent`
+for this task, inputs and outputs included. There is no client here and no
+transport -- rekep says what a run is, whoever collects it says where it goes.
 
 `@arrow_task` is the decorator shortcut: it binds a plain
 batches-in/batches-out function as a `Job`'s `arrow_transform`, so a function
-becomes a fully lineage-tracked job without a `@record class ... (Job)`
-declaration for every one-off transform.
+becomes a fully-declared task without a `@record class ... (Job)` declaration
+for every one-off transform.
 """
 
 from __future__ import annotations
 
 import dataclasses
-import json
 import os
 import pathlib
-import tomllib
 from collections.abc import Callable, Iterator, Sequence
 from typing import Any
 
@@ -38,8 +42,7 @@ import pyarrow
 from rekep.imports import locate
 from rekep.namespace import Namespace, ResourceUri
 from rekep.records import Record, record
-from rekep.render import render
-from rekep.require import require
+from rekep.records import registry as side_files
 
 #: Where job side files live when nothing says otherwise: the checkout's
 #: `stacks/jobs` if it has one, else the user's `~/.config/rekep/jobs` -- see
@@ -47,37 +50,33 @@ from rekep.require import require
 JOBS_ROOT = os.environ.get("REKEP_JOBS_ROOT")
 
 #: Config extensions a jobs directory is scanned for.
-EXTENSIONS = (".yaml", ".yml", ".toml", ".json")
+EXTENSIONS = side_files.EXTENSIONS
 
 
 @record
 class Job(Record):
-    """A process definition that consumes and produces datasets.
+    """One task: a process definition that consumes and produces datasets.
 
-    `namespace` and `name` give it OpenLineage identity; `qualified_name`
-    joins them through `Namespace`, the same recursive path-builder a
-    `Dataset`'s location uses. Everything else is deployment configuration:
+    `uri` is the whole identity -- `job:/namespace/name`, a path like every
+    other resource here -- and `task_id`/`task_namespace`/`task_name` read
+    the levels back out of it. Everything else is deployment configuration:
     when to run, what it reads and writes, and -- via `arrow_transform` --
     how it moves data.
     """
 
-    name: str
-    """Job identifier; becomes the Airflow dag_id."""
+    uri: str
+    """This task's identity as a path: `job:/namespace/name`.
 
-    namespace: str | None = None
-    """OpenLineage namespace this job is identified under, scheduler-assigned."""
+    One string rather than a name beside a namespace, because they are one
+    identity and a resource that can spell itself two ways eventually spells
+    itself two different ways. A bare `job:/passthrough` is a less qualified
+    name, not a different shape."""
 
     schedule: str | None = None
-    """Cron expression or Airflow schedule alias, None for manual runs."""
+    """Cron expression or scheduler alias, None when a `Dag` decides instead."""
 
     description: str | None = None
-    """One line on what this job does."""
-
-    uri: str | None = None
-    """This job's identity as a path: `job:/namespace/name`.
-
-    An override for `namespace`/`name`, in the same spelling a dataset uses,
-    for a declaration that would rather name itself once than twice."""
+    """One line on what this task does."""
 
     source: str | None = None
     """URL of the log the default `extract` reads, None when overridden."""
@@ -90,63 +89,79 @@ class Job(Record):
     reads the clock as UTC, which is right only for logs actually written
     that way."""
 
-    tags: list[str] = dataclasses.field(default_factory=list)
-    """Extra tags for the orchestrator, on top of the derived lineage tags."""
+    tags: dict[str, str] = dataclasses.field(default_factory=dict)
+    """Extra tags for the orchestrator, on top of the derived lineage tags.
+
+    A mapping, not a list: a bare `structuring` says nothing about what makes
+    it a tag, while `stage: structuring` names the dimension *and* the value,
+    which is what makes tags searchable and mergeable. Two declarations of
+    the same key are one decision to resolve, not two tags to carry."""
 
     consumes: list[str] = dataclasses.field(default_factory=list)
-    """Dotted paths of the records this job reads."""
+    """Dotted paths of the records this task reads."""
 
     produces: list[str] = dataclasses.field(default_factory=list)
-    """Dotted paths of the records this job writes."""
+    """Dotted paths of the records this task writes."""
 
     repo_url: str | None = None
-    """Git remote of the repository this job's code lives in."""
+    """Git remote of the repository this task's code lives in."""
 
     script_path: str | None = None
-    """Path to this job's source, relative to the repo root."""
+    """Path to this task's source, relative to the repo root."""
 
     airflow: dict[str, dict[str, Any]] = dataclasses.field(default_factory=dict)
     """Airflow-specific config, under `dag`/`task` -- each merged as kwargs
-    into the matching call in `into_airflow` (`pool`, `retries`, `owner`,
+    into the matching call in `Dag.into_airflow` (`pool`, `retries`, `owner`,
     `trigger_rule`, `max_active_runs`, ...). Generic on purpose: rekep does
     not maintain a list of which kwarg belongs to Airflow's `DAG` versus its
     `@task`, Airflow does."""
 
     env: dict[str, str] = dataclasses.field(default_factory=dict)
-    """Environment variables this job's execution reads. Values may be Jinja
+    """Environment variables this task's execution reads. Values may be Jinja
     (`{{ env.BUCKET }}`, `{{ git_branch_suffix }}`) -- the whole side file is
     rendered before parsing, so this dict arrives already resolved."""
 
     properties: dict[str, str] = dataclasses.field(default_factory=dict)
     """Generic extra properties: whatever a deployment needs to carry that
-    is neither lineage nor Airflow config."""
+    is neither lineage nor orchestrator config."""
 
     __fn: Any = None  # bound arrow_transform, from @arrow_task: state, not schema
 
     # -- identity -------------------------------------------------------
 
-    def qualified_name(self) -> str:
-        """`namespace` and `name` joined through `Namespace`, one identifier."""
-        levels = [level for level in (self.namespace, self.name) if level]
-        return Namespace.of(*levels).path() if levels else self.name
-
     def resource_uri(self) -> ResourceUri:
-        """This job's identity: `job:/namespace/name`.
+        """This task's identity: `job:/namespace/name`.
 
         A `ResourceUri`, the one place a job's and a dataset's identifiers
         are built and parsed -- so the two can never collide even when they
         share a namespace and a name, and every spelling resolves to one
-        identity. A declared `uri` wins; otherwise it is built from
-        `namespace` and `name`, which is what an orchestrator uses anyway.
+        identity.
         """
-        if self.uri:
-            return ResourceUri.parse(self.uri, service="jobs")
-        return ResourceUri.of("jobs", *(self.namespace or "").split("/"), self.name)
+        return ResourceUri.parse(self.uri, service="jobs")
+
+    def task_id(self) -> str:
+        """This task's own name, unqualified -- what Airflow calls a task_id."""
+        return self.resource_uri().name()
+
+    def task_namespace(self) -> str:
+        """The namespace this task is identified under."""
+        return self.resource_uri().namespace()
+
+    def task_name(self) -> str:
+        """Every level of the identity joined, `dag_id.task_id`-style.
+
+        OpenLineage names a job by its whole hierarchy rather than its last
+        level, and `Namespace` is the recursive path-builder that joins one
+        -- the same one a `Dataset`'s location uses. A `Dag` qualifies it
+        further (`Dag.task_name`), because a task named inside a dag is that
+        dag's task, not a second job that happens to share a name.
+        """
+        return Namespace.of(*self.resource_uri().levels).path()
 
     def source_code_location_facet(self) -> dict[str, Any]:
-        """OpenLineage `SourceCodeLocationJobFacet`: where this job's code lives.
+        """OpenLineage `SourceCodeLocationJobFacet`: where this task's code lives.
 
-        `repo_url`/`script_path` are this job's own declaration; `version`
+        `repo_url`/`script_path` are this task's own declaration; `version`
         and `branch` come from `rekep.render.git_context()` -- the same git
         facts side files use for branch-conditional naming -- read fresh
         each call rather than baked in at deploy time.
@@ -164,7 +179,7 @@ class Job(Record):
         return facet
 
     def facets(self) -> dict[str, Any]:
-        """Every static facet this job carries; `sourceCodeLocation` when declared."""
+        """Every static facet this task carries; `sourceCodeLocation` when declared."""
         facets: dict[str, Any] = {}
         if self.repo_url or self.script_path:
             facets["sourceCodeLocation"] = self.source_code_location_facet()
@@ -175,7 +190,7 @@ class Job(Record):
     def bind(
         self, fn: Callable[[Iterator[pyarrow.RecordBatch]], Iterator[pyarrow.RecordBatch]]
     ) -> Job:
-        """This job with `fn` attached as its `arrow_transform`; config stays authoritative."""
+        """This task with `fn` attached as its `arrow_transform`; config stays authoritative."""
         self._Job__fn = fn
         return self
 
@@ -217,114 +232,11 @@ class Job(Record):
         """Extract, transform, load."""
         return self.load(self.arrow_transform(self.extract()))
 
-    def with_lineage(self, client: Any) -> Job:
-        """Bind a lineage client, and return this job so the call chains.
-
-        A call rather than a field: a client is a runtime handle, and a side
-        file that declares a job has no business carrying one. Until one is
-        bound, `run_tracked` is `run` -- see `rekep.lineage`.
-        """
-        self.__dict__["_Job__client"] = client
-        return self
-
-    def lineage_client(self) -> Any | None:
-        """The bound client, or None when nothing is listening."""
-        return self.__dict__.get("_Job__client")
-
-    def lineage(self) -> Any | None:
-        """The boundary for one run of this job, or None when lineage is off.
-
-        Inputs and outputs are the datasets `consumes`/`produces` name,
-        identified the same way a `Dataset` identifies itself, and resolved
-        *before* the run starts: a bad dotted path should fail as a
-        configuration error, not as a run that started and then died.
-        """
-        from rekep.lineage import Lineage
-        from rekep.run import InputDataset, OutputDataset
-
-        client = self.lineage_client()
-        if client is None:
-            return None
-        namespace = self.namespace or "default"
-        return Lineage(
-            client=client,
-            job=self,
-            inputs=[
-                InputDataset(namespace=namespace, name=cls.doris_table_name())
-                for cls in self.consumed_records()
-            ],
-            outputs=[
-                OutputDataset(namespace=namespace, name=cls.doris_table_name())
-                for cls in self.produced_records()
-            ],
-        )
-
-    def run_tracked(self) -> Any:
-        """`run()`, wrapped in a run: `START` before, `COMPLETE`/`FAIL` after.
-
-        The same boundary `Dataset`'s protocol writers wrap their own I/O
-        in, but around this job's whole extract -> transform -> load. With
-        no lineage client bound it *is* `run()` -- no run, no events, no
-        cost -- so a job is tracked by binding one, never by choosing a
-        different method to call.
-        """
-        run = self.lineage()
-        if run is None:
-            return self.run()
-
-        run.start()
-        try:
-            result = self.run()
-        except Exception as error:
-            run.fail(error)
-            raise
-        run.complete()
-        return result
-
     def __call__(self) -> Any:
-        """Run this job, lineage tracked -- what an `@arrow_task` call does."""
-        return self.run_tracked()
+        """Run this task -- what calling an `@arrow_task` does."""
+        return self.run()
 
-    # -- interop ----------------------------------------------------------
-
-    def into_airflow(self) -> Any:
-        """This job as a single-task Airflow DAG, lineage tagged and documented.
-
-        **A job is the task.** There is no decorator to wrap a function in
-        and no DAG subclass to inherit from: a `Job` already declares what a
-        task needs -- what it reads, what it writes, when it runs, how to run
-        it -- so this hands those to Airflow's own `DAG` and `@task` and gets
-        out of the way. Anything Airflow accepts, `airflow["dag"]` and
-        `airflow["task"]` pass straight through, because rekep keeps no list
-        of which kwarg belongs to which; Airflow has one already.
-
-        What is derived rather than passed is the lineage
-        (`rekep.airflow.lineage`): tags and a Consumes/Produces table for the
-        DAG, inlets and outlets for the task, from `consumes`/`produces`.
-        """
-        from rekep.airflow import lineage, sdk
-
-        consumes, produces = self.consumed_records(), self.produced_records()
-        with sdk.DAG(
-            self.name,
-            **lineage.dag_arguments(
-                consumes,
-                produces,
-                description=self.description,
-                schedule=self.schedule,
-                tags=list(self.tags),
-                catchup=False,
-                **self.airflow.get("dag", {}),
-            ),
-        ) as built:
-            sdk.task(
-                **lineage.task_arguments(
-                    consumes, produces, task_id=self.name, **self.airflow.get("task", {})
-                )
-            )(self.run_tracked)()
-        return built
-
-    # -- lineage ------------------------------------------------------------
+    # -- lineage ----------------------------------------------------------
 
     def consumed_records(self) -> list[type[Record]]:
         """The record classes behind `consumes`."""
@@ -334,13 +246,55 @@ class Job(Record):
         """The record classes behind `produces`."""
         return [_record_class(path) for path in self.produces]
 
+    def inputs(self) -> list[Any]:
+        """The datasets `consumes` names, as run references."""
+        from rekep.run import InputDataset
+
+        return [
+            InputDataset(namespace=self.task_namespace(), name=cls.doris_table_name())
+            for cls in self.consumed_records()
+        ]
+
+    def outputs(self) -> list[Any]:
+        """The datasets `produces` names, as run references."""
+        from rekep.run import OutputDataset
+
+        return [
+            OutputDataset(namespace=self.task_namespace(), name=cls.doris_table_name())
+            for cls in self.produced_records()
+        ]
+
+    def into_run_event(self, state: Any, run: Any = None) -> Any:
+        """This task's `RunEvent` in `state`: the representation, not a report.
+
+        rekep describes what a run *is* -- OpenLineage's own shape, built from
+        what this task already declares -- and stops there. Nothing here emits
+        anything, because a transport is the collector's business and a client
+        we do not ship is a client we cannot get wrong; `into_json()` on the
+        result is what leaves the process.
+
+        `run` carries an existing `Run` when several events belong to one
+        execution, since a run id has to be stable across `START` and whatever
+        ends it -- and is where an `errorMessage` facet rides on a `FAIL`.
+        """
+        from rekep.run import Run, RunEvent, now
+
+        return RunEvent(
+            event_type=state,
+            event_time=now(),
+            run=run if run is not None else Run(),
+            job=self,
+            inputs=self.inputs(),
+            outputs=self.outputs(),
+        )
+
 
 @record
 class Passthrough(Job):
     """Copy log batches through unchanged; the wiring reference.
 
     Exists so a deployment can smoke-test its side files, sources and DAG
-    plumbing with a job whose transform provably does nothing.
+    plumbing with a task whose transform provably does nothing.
     """
 
     def arrow_transform(
@@ -353,19 +307,18 @@ def arrow_task(
     fn: Callable[[Iterator[pyarrow.RecordBatch]], Iterator[pyarrow.RecordBatch]] | None = None,
     *,
     config: Job | None = None,
-    name: str | None = None,
-    namespace: str | None = None,
+    uri: str | None = None,
     consumes: Sequence[type[Record] | str] = (),
     produces: Sequence[type[Record] | str] = (),
     **job_kwargs: Any,
 ) -> Any:
     """Bind a batches-in/batches-out function as a `Job`'s `arrow_transform`.
 
-    `@arrow_task` (bare) or `@arrow_task(name=..., consumes=[Log])` (configured)
-    turns a plain function into a fully-declared, lineage-tracked `Job` --
-    calling the result runs `run_tracked()`, so every call opens a `Run`
-    before extract -> transform -> load and closes it `COMPLETE`/`FAIL` after,
-    covering the read and the write both, not only a `Dataset`'s own writes.
+    `@arrow_task` (bare) or `@arrow_task(uri="job:/trading/etl", consumes=[Log])`
+    turns a plain function into a fully-declared task -- calling the result
+    runs `run()`, extract -> transform -> load. Undeclared, the identity is
+    `job:/<function name>`: a decorator that made you name the thing twice
+    would be a worse decorator.
 
     `config=` takes an already-built `Job` (typically one loaded from a side
     file) and binds `fn` onto it, config staying authoritative; everything
@@ -375,8 +328,7 @@ def arrow_task(
 
     def wrap(target: Callable[..., Any]) -> Job:
         job = config or Job(
-            name=name or target.__name__,
-            namespace=namespace,
+            uri=uri or f"job:/{target.__name__}",
             consumes=[_dotted(entry) for entry in consumes],
             produces=[_dotted(entry) for entry in produces],
             **job_kwargs,
@@ -393,7 +345,7 @@ def _dotted(entry: type[Record] | str) -> str:
 
 
 def load(path: str | os.PathLike[str], **context: Any) -> Job:
-    """Build the job a side file declares.
+    """Build the task a side file declares.
 
     The file names its class under the `job` key and configures it with the
     rest; it may use Jinja (`{{ env.BUCKET }}`), rendered with `context` and
@@ -401,7 +353,7 @@ def load(path: str | os.PathLike[str], **context: Any) -> Job:
     business -- the side file only picks one and fills its fields in.
     """
     path = pathlib.Path(path)
-    mapping = _parse(render(path.read_text(encoding="utf-8"), **context), path.suffix)
+    mapping = side_files.parse(path, context)
     dotted = mapping.pop("job", None)
     if not dotted:
         raise ValueError(f"{path} declares no `job:` class")
@@ -410,7 +362,7 @@ def load(path: str | os.PathLike[str], **context: Any) -> Job:
 
 
 def load_all(root: str | os.PathLike[str] | None = None, **context: Any) -> list[Job]:
-    """Every job declared under `root`, in name order, and registered.
+    """Every task declared under `root`, in file order, and registered.
 
     `root` defaults through `rekep.config.folder`: the checkout's
     `stacks/jobs` when it has one, the user's config home when it does not.
@@ -425,14 +377,22 @@ def load_all(root: str | os.PathLike[str] | None = None, **context: Any) -> list
     ]
 
 
-def _parse(text: str, suffix: str) -> dict[str, Any]:
-    if suffix in (".yaml", ".yml"):
-        return require("yaml", "yaml").safe_load(text) or {}
-    if suffix == ".toml":
-        return tomllib.loads(text)
-    if suffix == ".json":
-        return dict(json.loads(text))
-    raise ValueError(f"no parser for {suffix!r} job files")
+def find(uri: str, root: str | os.PathLike[str] | None = None, **context: Any) -> Job:
+    """The task `uri` names: from the registry, or by loading the folder.
+
+    Not called `load`, which is the file loader above: one takes a path and
+    builds whatever it declares, this one takes an identity and finds who
+    already answers to it -- and only reads the folder when nobody does.
+    """
+    from rekep import config
+
+    found = config.lookup(uri, service="jobs")
+    if found is None:
+        load_all(root, **context)
+        found = config.lookup(uri, service="jobs")
+    if found is None:
+        raise KeyError(f"no job {uri!r} declared under {config.folder('jobs', root)}")
+    return found
 
 
 def _job_class(dotted: str) -> type[Job]:
