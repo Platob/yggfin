@@ -53,15 +53,32 @@ one. Templating needs the `jinja` extra; untemplated values never touch it.
 
 ## Deploy one record
 
-The stacks converge whole folders; `records deploy` converges a single record
-class into one or more of them:
+The stacks converge whole folders (`catalogs/`, `namespaces/`); `records
+deploy` converges a single record class into one or more of them, stack
+defaults filling in namespace and properties:
 
 ```bash
 rekep service records deploy --pyclass rekep.models.Log --target iceberg
 rekep service records deploy --pyclass rekep.models.Log     --target iceberg --target doris --dry-run
 ```
 
-The deployment's own `tables/` entry wins when one declares that record;
-otherwise the stack defaults apply. Iceberg converges live (catalog checked,
-namespace and table `get_or_create`/`create_or_update`); Doris emits its
-ordered statements. `--dry-run` and `--verbose` behave as everywhere else.
+Iceberg converges live (catalog checked, namespace and table
+`get_or_create`/`create_or_update`, both via `Iceberg.deploy_one`); Doris
+emits its ordered statements. `--dry-run` and `--verbose` behave as
+everywhere else.
+
+## Deploy datasets
+
+A `Dataset` carries its own namespace and per-protocol properties, so
+`stacks/datasets/*.yaml` needs no matching `tables/` side file — `dataset
+deploy` converges every declared dataset autonomously:
+
+```bash
+rekep service dataset deploy --config stacks/datasets --target iceberg
+rekep service dataset list --config stacks/datasets
+```
+
+`--stack-config` points at the Iceberg/Doris deployment the dataset's
+namespace must resolve against (default `stacks/<target>`); `into_iceberg_table()`/
+`into_doris_table()` build the ad hoc table, `--dry-run` plans without
+converging.

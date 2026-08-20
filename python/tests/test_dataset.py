@@ -186,6 +186,104 @@ def test_file_write_tracks_lineage_like_iceberg_does(tmp_path: pathlib.Path) -> 
     assert events[-1].outputs[0].output_facets == {"outputStatistics": {"rowCount": 2}}
 
 
+# -- deploy: autonomous, no side file needed ------------------------------
+
+
+def test_into_iceberg_table_carries_record_name_namespace_location() -> None:
+    dataset = Dataset(
+        record="rekep.models.Log",
+        name="logs",
+        namespace="trading",
+        protocols={"iceberg": {"location": "s3://lake/iceberg/log"}},
+    )
+    table = dataset.into_iceberg_table()
+    assert table.record == "rekep.models.Log"
+    assert table.name == "logs"
+    assert table.namespace == "trading"
+    assert table.location == "s3://lake/iceberg/log"
+
+
+def test_into_doris_table_carries_record_name_namespace_properties() -> None:
+    dataset = Dataset(
+        record="rekep.models.Log",
+        name="logs",
+        namespace="trading",
+        properties={"a": "shared"},
+        protocols={"doris": {"b": "doris"}},
+    )
+    table = dataset.into_doris_table()
+    assert table.record == "rekep.models.Log"
+    assert table.name == "logs"
+    assert table.namespace == "trading"
+    assert table.properties == {"a": "shared", "b": "doris"}
+
+
+def test_deploy_dispatches_to_iceberg_or_doris() -> None:
+    class FakeStack:
+        def __init__(self) -> None:
+            self.deployed: list[Any] = []
+
+        def deploy_one(self, table: Any, dry_run: bool = False) -> Any:
+            self.deployed.append((table, dry_run))
+            return table
+
+    dataset = Dataset(record="rekep.models.Log", name="logs")
+    stack = FakeStack()
+    dataset.deploy("iceberg", stack, dry_run=True)
+    (table, dry_run) = stack.deployed[0]
+    assert type(table).__name__ == "IcebergTable"
+    assert dry_run is True
+
+
+def test_deploy_refuses_an_unknown_target() -> None:
+    with pytest.raises(ValueError, match="no 'parquet' deploy target"):
+        Dataset(record="rekep.models.Log").deploy("parquet", stack=None)
+
+
+def test_deploy_iceberg_converges_a_real_local_catalog(tmp_path: pathlib.Path) -> None:
+    """No `tables/` side file anywhere: the dataset's own config is enough."""
+    from rekep.iceberg import Iceberg
+    from rekep.records.iceberg import IcebergCatalog, IcebergDeployment
+
+    root = tmp_path.as_posix()
+    stack = Iceberg(
+        IcebergDeployment(
+            catalogs=[
+                IcebergCatalog(uri=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh")
+            ],
+        )
+    )
+    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset.deploy_iceberg(stack)
+    assert stack.catalogs.connect("iceberg").table_exists("default.logs")
+
+
+# -- shipped stacks -----------------------------------------------------
+
+
+def test_the_shipped_dataset_declares_the_shipped_record() -> None:
+    """`stacks/datasets/log.yaml` must actually parse and name a real record."""
+    repo_datasets = pathlib.Path(__file__).parents[2] / "stacks" / "datasets"
+    (dataset,) = Dataset.load_all(repo_datasets)
+    assert dataset.record_class() is Log
+    assert dataset.uri() == "dataset://default/log"
+
+
+def test_the_shipped_dataset_resolves_against_the_shipped_namespaces() -> None:
+    """The shipped dataset must resolve against the shipped catalogs/namespaces."""
+    from rekep.records.doris import DorisDeployment
+    from rekep.records.iceberg import IcebergDeployment
+
+    repo = pathlib.Path(__file__).parents[2] / "stacks"
+    (dataset,) = Dataset.load_all(repo / "datasets")
+
+    iceberg_deployment = IcebergDeployment.load(repo / "iceberg")
+    iceberg_deployment.namespace(dataset.into_iceberg_table().namespace)  # does not raise
+
+    doris_deployment = DorisDeployment.load(repo / "doris")
+    doris_deployment.namespace(dataset.into_doris_table().namespace)  # does not raise
+
+
 # -- round trip -------------------------------------------------------------
 
 

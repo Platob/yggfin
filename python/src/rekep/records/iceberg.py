@@ -177,9 +177,10 @@ class IcebergFieldBuilder:
 ICEBERG_ROOT = pathlib.Path(os.environ.get("REKEP_ICEBERG_ROOT", "stacks/iceberg"))
 
 #: The registry folders: one entry per file, the file stem defaulting `name`.
+#: Tables are deliberately not one of these -- `rekep.dataset.Dataset` deploys
+#: autonomously against these two, no `tables/` side file needed.
 CATALOGS_DIR = "catalogs"
 NAMESPACES_DIR = "namespaces"
-TABLES_DIR = "tables"
 
 
 @record
@@ -315,7 +316,13 @@ class IcebergDeployment(Record):
     """Everything one Iceberg deployment declares, loaded from `stacks/iceberg`.
 
     The same registry-of-folders shape as the Doris deployment: `catalogs/`,
-    `namespaces/`, `tables/`, one entry per file, the stem defaulting `name`.
+    `namespaces/`, one entry per file, the stem defaulting `name`. No
+    `tables/` folder: tables are never loaded from this deployment's own
+    disk registry -- `rekep.dataset.Dataset` builds one autonomously from its
+    own config (`into_iceberg_table()`) and converges it straight into the
+    catalog and namespace this deployment declares. `tables` stays a plain
+    field so a caller can still populate it directly in Python, e.g. for a
+    one-off deploy that skips side files entirely.
     The default catalog is fully local -- SQLite catalog, file warehouse --
     so a laptop renders and runs without any service.
     """
@@ -335,7 +342,6 @@ class IcebergDeployment(Record):
             or [IcebergCatalog()],
             namespaces=registry.entries(directory / NAMESPACES_DIR, IcebergNamespace, context)
             or [IcebergNamespace()],
-            tables=registry.entries(directory / TABLES_DIR, IcebergTable, context),
         )
 
     def catalog(self, name: str) -> IcebergCatalog:

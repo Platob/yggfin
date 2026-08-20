@@ -169,26 +169,29 @@ own `record:`). The resources are `Namespace`, `Job`, `Dataset`, `Run`/`RunEvent
 **Deploy artifacts** live under repo `stacks/`, all tracked — only runtime
 state is ignored (`stacks/iceberg/catalog.db`, `stacks/iceberg/warehouse/`,
 generated `stacks/ddl/`), and the tutorial builds in gitignored `tutorial/`.
-The layout: `jobs/` (one job per
-file), `iceberg/` and `doris/` (folder registries: `catalogs/`,
-`namespaces/`, `tables/`, file stem defaults `name`; table files embed the
-protocol-adapted fields, `verify`-refused on drift), `product/` (whole
-definitions as YAML, `name` only — no namespace). Generated DDL is never
-committed (`stacks/ddl/` gitignored). Defaults are **fully local**: SQLite
-Iceberg catalog, file warehouse — a laptop runs without services. No READMEs
-in `stacks/`.
+The layout: `jobs/` (one job per file), `iceberg/` and `doris/` (folder
+registries: `catalogs/`, `namespaces/` only, file stem defaults `name`),
+`datasets/` (one `Dataset` per file -- `record:`/`name:`/`namespace:`,
+deployed autonomously into whichever `--target` names, no `tables/` folder
+anywhere and no protocol-adapted fields committed to disk), `product/`
+(whole definitions as YAML, `name` only — no namespace). Generated DDL is
+never committed (`stacks/ddl/` gitignored). Defaults are **fully local**:
+SQLite Iceberg catalog, file warehouse — a laptop runs without services. No
+READMEs in `stacks/`.
 
 **Stacks are resource services with idempotent verbs**: `get_or_create`,
-`create_or_update`, `deploy` / `deploy_folder` — dependency order
-catalog → namespace → table, parallel within a level, every action logged
-("created", "exists, nothing to do", "would add columns [x]"). Every
+`create_or_update`, `deploy` / `deploy_folder` / `deploy_one` — dependency
+order catalog → namespace → table, parallel within a level, every action
+logged ("created", "exists, nothing to do", "would add columns [x]"). Every
 mutating verb takes `dry_run`. Installers (`rekep install`) follow
 the same contract: honest `installed()` check, exact `plan()`, converge.
 Never call pyiceberg raw at a call site — extend the resource service.
 
 `rekep service records deploy --pyclass <dotted> --target iceberg|doris`
-converges one record instead of a whole folder, honouring its declared table
-entry when there is one.
+converges one bare record, stack defaults filling in namespace and
+properties. `rekep service dataset deploy --target iceberg|doris` converges
+every `Dataset` under `stacks/datasets/` instead -- each carries its own
+namespace and per-protocol properties, autonomous of any table side file.
 
 **The CLI is services** (`rekep service <svc> <cmd>`), plus the top-level
 `rekep tutorial`. **Human-facing CLI output is modern and animated**: rich

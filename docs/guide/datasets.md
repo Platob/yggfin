@@ -35,6 +35,30 @@ dataset.location("doris")                 # "s3://lake/log" -- falls back to dir
 dataset.protocol_properties("iceberg")    # properties merged with iceberg's own
 ```
 
+## Deploying: autonomous, no `tables/` side file
+
+`stacks/iceberg/` and `stacks/doris/` declare only `catalogs/` and
+`namespaces/` — a table needs no matching side file of its own. A `Dataset`
+under `stacks/datasets/` carries everything a table declaration used to
+(record, name, namespace, protocol properties) and converges itself:
+
+```python
+from rekep.dataset import Dataset
+from rekep.iceberg import Iceberg
+
+stack = Iceberg.load("stacks/iceberg")      # catalogs + namespaces only
+for dataset in Dataset.load_all("stacks/datasets"):
+    dataset.deploy_iceberg(stack)           # or dataset.deploy("iceberg", stack)
+```
+
+`into_iceberg_table()`/`into_doris_table()` build the ad hoc `IcebergTable`/
+`DorisTable` `deploy_iceberg`/`deploy_doris` hand to `Iceberg.deploy_one`/
+`Doris.deploy_one` — the same catalog-check, namespace-`get_or_create`,
+table-`create_or_update` sequence `rekep service records deploy` uses for a
+bare record, just resolved from the dataset's own fields instead of stack
+defaults. The CLI shape is `rekep service dataset deploy --target iceberg`
+(see the [CLI guide](cli.md)).
+
 ## Writing: generic dispatch, protocol-specific hooks
 
 `write_arrow_reader` dispatches by `format` to a private

@@ -258,7 +258,7 @@ class StackService:
         parser = services.add_parser(self.name, help=f"{self.name} deployment stack")
         commands = parser.add_subparsers(dest="command", required=True)
 
-        deploy = commands.add_parser("deploy", help="converge catalogs, namespaces, tables")
+        deploy = commands.add_parser("deploy", help="converge catalogs and namespaces")
         self._common(deploy)
         deploy.add_argument(
             "--dry-run",
@@ -275,20 +275,6 @@ class StackService:
             help="report files that would change; exit 1 when any would",
         )
         whole.set_defaults(run=self.sync, folders=None)
-
-        tables = commands.add_parser("tables", help="the table resource")
-        verbs = tables.add_subparsers(dest="verb", required=True)
-        sync = verbs.add_parser("sync", help="rewrite table side files in full")
-        self._common(sync)
-        sync.add_argument(
-            "--dry-run",
-            action="store_true",
-            help="report files that would change; exit 1 when any would",
-        )
-        sync.set_defaults(run=self.sync, folders=("tables",))
-        listing = verbs.add_parser("list", help="list declared tables")
-        self._common(listing)
-        listing.set_defaults(run=self.list_tables)
 
     def _common(self, parser: Any) -> None:
         parser.add_argument("--config", default=None, help="deployment directory")
@@ -353,12 +339,6 @@ class StackService:
                 print(path)
         return 1 if arguments.dry_run and drifted else 0
 
-    def list_tables(self, arguments: argparse.Namespace) -> int:
-        stack = self.load(arguments)
-        for table in stack.tables.list():
-            print(stack.tables.identifier(table))
-        return 0
-
 
 class IcebergService(StackService):
     """`rekep service iceberg`: the Iceberg stack, resource by resource."""
@@ -371,20 +351,12 @@ class IcebergService(StackService):
 
         return ICEBERG_ROOT
 
-    def table_type(self) -> Any:
-        return self.registries()["tables"]
-
     def registries(self) -> dict[str, Any]:
-        from rekep.records.iceberg import (
-            IcebergCatalog,
-            IcebergNamespace,
-            IcebergTable,
-        )
+        from rekep.records.iceberg import IcebergCatalog, IcebergNamespace
 
         return {
             "catalogs": IcebergCatalog,
             "namespaces": IcebergNamespace,
-            "tables": IcebergTable,
         }
 
     def load(self, arguments: argparse.Namespace) -> Any:
@@ -411,16 +383,12 @@ class DorisService(StackService):
 
         return DORIS_ROOT
 
-    def table_type(self) -> Any:
-        return self.registries()["tables"]
-
     def registries(self) -> dict[str, Any]:
-        from rekep.records.doris import DorisCatalog, DorisNamespace, DorisTable
+        from rekep.records.doris import DorisCatalog, DorisNamespace
 
         return {
             "catalogs": DorisCatalog,
             "namespaces": DorisNamespace,
-            "tables": DorisTable,
         }
 
     def load(self, arguments: argparse.Namespace) -> Any:
@@ -496,10 +464,7 @@ class RecordsService:
                 table = stack.deployment.table(cls) or IcebergTable(
                     record=dotted, namespace=stack.deployment.namespaces[0].name
                 )
-                namespace = stack.namespaces.get(table.namespace)
-                stack.catalogs.check(namespace.catalog)
-                stack.namespaces.get_or_create(namespace, dry_run=arguments.dry_run)
-                stack.tables.create_or_update(table, dry_run=arguments.dry_run)
+                stack.deploy_one(table, dry_run=arguments.dry_run)
                 print(f"iceberg: {stack.tables.identifier(table)}")
             else:
                 from rekep.doris import Doris
@@ -509,12 +474,96 @@ class RecordsService:
                 table = stack.deployment.table(cls) or DorisTable(
                     record=dotted, namespace=stack.deployment.namespaces[0].name
                 )
-                namespace = stack.namespaces.get(table.namespace)
-                stack.catalogs.get_or_create(namespace.catalog, dry_run=arguments.dry_run)
-                stack.namespaces.get_or_create(table.namespace, dry_run=arguments.dry_run)
-                statement = stack.tables.get_or_create(table, dry_run=arguments.dry_run)
+                statement = stack.deploy_one(table, dry_run=arguments.dry_run)
                 sys.stdout.write(statement or "")
         return 0
+
+
+class DatasetService:
+    """`rekep service dataset`: datasets deployed autonomously, iceberg or doris.
+
+    A `Dataset` needs no matching `IcebergTable`/`DorisTable` side file --
+    its own `record`/`namespace`/`protocols` carry everything a table
+    declaration used to. `deploy` builds one ad hoc per target
+    (`into_iceberg_table`/`into_doris_table`) and converges it straight into
+    that stack's `catalogs`/`namespaces`, the only folders those stacks
+    declare any more.
+    """
+
+    name = "dataset"
+
+    def register(self, services: Any) -> None:
+        parser = services.add_parser(self.name, help="datasets deployed into iceberg or doris")
+        commands = parser.add_subparsers(dest="command", required=True)
+
+        deploy = commands.add_parser("deploy", help="converge every declared dataset")
+        deploy.add_argument("--config", default=None, help="datasets directory")
+        deploy.add_argument(
+            "--target",
+            dest="targets",
+            action="append",
+            choices=("iceberg", "doris"),
+            help="stack to converge into; repeatable (default: iceberg)",
+        )
+        deploy.add_argument(
+            "--stack-config",
+            default=None,
+            help="iceberg/doris deployment directory (default: stacks/<target>)",
+        )
+        deploy.add_argument(
+            "--dry-run", action="store_true", help="log what would happen without touching anything"
+        )
+        deploy.add_argument(
+            "--verbose", action="store_true", help="debug logging: every deployed detail"
+        )
+        deploy.add_argument(
+            "--var",
+            dest="variables",
+            action="append",
+            default=[],
+            metavar="KEY=VALUE",
+            help="extra Jinja variable; repeatable",
+        )
+        deploy.set_defaults(run=self.deploy)
+
+        listing = commands.add_parser("list", help="list declared datasets")
+        listing.add_argument("--config", default=None, help="datasets directory")
+        listing.set_defaults(run=self.list_datasets)
+
+    def deploy(self, arguments: argparse.Namespace) -> int:
+        """Every declared dataset, autonomous: no per-table side file needed."""
+        from rekep.dataset import DATASETS_ROOT, Dataset
+
+        level = logging.DEBUG if arguments.verbose else logging.INFO
+        logging.basicConfig(level=level, format="%(asctime)s %(name)s %(message)s")
+        context = _pairs(arguments.variables)
+        datasets = Dataset.load_all(arguments.config or DATASETS_ROOT, **context)
+
+        for target in arguments.targets or ["iceberg"]:
+            stack = self._stack(target, arguments.stack_config, context)
+            verb = "would converge" if arguments.dry_run else "converged"
+            for dataset in datasets:
+                dataset.deploy(target, stack, dry_run=arguments.dry_run)
+                print(f"{target} {verb}: {dataset.uri()}")
+        return 0
+
+    def list_datasets(self, arguments: argparse.Namespace) -> int:
+        from rekep.dataset import DATASETS_ROOT, Dataset
+
+        for dataset in Dataset.load_all(arguments.config or DATASETS_ROOT):
+            print(f"{dataset.uri()}  record={dataset.record}")
+        return 0
+
+    def _stack(self, target: str, config: str | None, context: dict[str, str]) -> Any:
+        if target == "iceberg":
+            from rekep.iceberg import Iceberg
+            from rekep.records.iceberg import ICEBERG_ROOT
+
+            return Iceberg.load(config or ICEBERG_ROOT, **context)
+        from rekep.doris import Doris
+        from rekep.records.doris import DORIS_ROOT
+
+        return Doris.load(config or DORIS_ROOT, **context)
 
 
 class AirflowService:
@@ -572,6 +621,7 @@ SERVICES = (
     ProductService(),
     DocsService(),
     RecordsService(),
+    DatasetService(),
     IcebergService(),
     DorisService(),
     AirflowService(),

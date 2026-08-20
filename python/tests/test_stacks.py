@@ -139,14 +139,10 @@ def test_doris_external_catalog_leads_the_plan() -> None:
 # -- shipped side files ------------------------------------------------------
 
 
-def test_the_shipped_side_files_are_in_sync() -> None:
-    """The committed protocol fields must match the records they mirror."""
-    for table in IcebergDeployment.load(REPO_DATA / "iceberg").tables:
-        assert table.fields, "iceberg table files must carry materialized fields"
-        table.verify()
-    for table in DorisDeployment.load(REPO_DATA / "doris").tables:
-        assert table.fields, "doris table files must carry materialized fields"
-        table.verify()
+def test_the_shipped_stacks_declare_no_tables() -> None:
+    """Tables deploy autonomously now; see `test_dataset.py`'s shipped-dataset tests."""
+    assert IcebergDeployment.load(REPO_DATA / "iceberg").tables == []
+    assert DorisDeployment.load(REPO_DATA / "doris").tables == []
 
 
 # -- dry run -----------------------------------------------------------------
@@ -190,20 +186,43 @@ def test_doris_dry_run_never_reaches_the_executor() -> None:
 
 
 def test_iceberg_deploy_folder_one_call(tmp_path: pathlib.Path) -> None:
+    """`Iceberg.deploy_folder` still converges tables explicitly given it --
+    it just never reads them from a `tables/` folder any more."""
     root = tmp_path.as_posix()
     catalogs = tmp_path / "catalogs"
     catalogs.mkdir()
     (catalogs / "iceberg.yaml").write_text(
         f'type: sql\nuri: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
     )
-    tables = tmp_path / "tables"
-    tables.mkdir()
-    (tables / "logs.yaml").write_text("record: rekep.models.Log\n")
 
     done = Iceberg.deploy_folder(tmp_path, parallel=False)
-    assert done["tables"] == ["default.logs"]
+    assert done["tables"] == [], "no tables/ folder any more"
     again = Iceberg.deploy_folder(tmp_path, dry_run=True)
-    assert again["tables"] == ["default.logs"], "dry run still plans everything"
+    assert again["catalogs"] == ["iceberg"]
+
+
+def test_dataset_deploys_autonomously_one_call(
+    tmp_path: pathlib.Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A `Dataset` needs no `tables/` side file: `deploy_iceberg` converges
+    the catalog, namespace and table its own config names, in one call."""
+    from rekep.dataset import Dataset
+
+    root = tmp_path.as_posix()
+    catalogs = tmp_path / "catalogs"
+    catalogs.mkdir()
+    (catalogs / "iceberg.yaml").write_text(
+        f'type: sql\nuri: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
+    )
+
+    stack = Iceberg.load(tmp_path)
+    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset.deploy_iceberg(stack)
+    assert stack.catalogs.connect("iceberg").table_exists("default.logs")
+
+    with caplog.at_level(logging.INFO, logger="rekep.iceberg"):
+        dataset.deploy_iceberg(stack)  # idempotent, no-op
+    assert "schema converged" in caplog.text
 
 
 def test_doris_deploy_folder_parallel_keeps_level_order() -> None:

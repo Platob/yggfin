@@ -106,6 +106,19 @@ class Doris:
     def load(cls, root: Any = DORIS_ROOT, execute: Executor | None = None, **context: Any) -> Doris:
         return cls(DorisDeployment.load(root, **context), execute)
 
+    def deploy_one(self, table: DorisTable, dry_run: bool = False) -> str | None:
+        """Converge one table, autonomous: catalog -> namespace -> table.
+
+        `table` need not be declared in this deployment's own registry --
+        `rekep.dataset.Dataset.into_doris_table()` builds one ad hoc and
+        hands it here. Its `namespace` must still name an entry this
+        deployment's `catalogs`/`namespaces` declare.
+        """
+        namespace = self.deployment.namespace(table.namespace)
+        self.catalogs.get_or_create(namespace.catalog, dry_run=dry_run)
+        self.namespaces.get_or_create(table.namespace, dry_run=dry_run)
+        return self.tables.get_or_create(table, dry_run=dry_run)
+
     @classmethod
     def deploy_folder(
         cls,

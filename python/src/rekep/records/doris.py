@@ -19,9 +19,10 @@ from rekep.records.record import Record, record
 DORIS_ROOT = pathlib.Path(os.environ.get("REKEP_DORIS_ROOT", "stacks/doris"))
 
 #: The registry folders: one entry per file, the file stem defaulting `name`.
+#: Tables are deliberately not one of these -- `rekep.dataset.Dataset` deploys
+#: autonomously against these two, no `tables/` side file needed.
 CATALOGS_DIR = "catalogs"
 NAMESPACES_DIR = "namespaces"
-TABLES_DIR = "tables"
 
 #: Metadata written by the Arrow projection that the DDL reads back.
 DESCRIPTION = b"description"
@@ -133,11 +134,15 @@ class DorisDeployment(Record):
 
     The folder is a registry of folders, one entry per file:
     `catalogs/internal.yaml` (one catalog each), `namespaces/yggfin.yaml`
-    (one database each, bound to a catalog), `tables/log_records.yaml` (one
-    table each, binding a record). The file stem defaults the entry's `name`,
-    so most files only say what differs. Each level defaults entirely, so an
-    empty folder still renders working DDL; Jinja is rendered before parsing
-    throughout, so replication and names can come from the environment.
+    (one database each, bound to a catalog). The file stem defaults the
+    entry's `name`, so most files only say what differs. No `tables/`
+    folder: `rekep.dataset.Dataset` builds a table autonomously from its own
+    config (`into_doris_table()`) and converges it straight into the catalog
+    and namespace this deployment declares; `tables` stays a plain field so
+    a caller can still populate it directly in Python. Each level defaults
+    entirely, so an empty folder still renders working DDL; Jinja is
+    rendered before parsing throughout, so replication and names can come
+    from the environment.
     """
 
     catalogs: list[DorisCatalog] = dataclasses.field(default_factory=lambda: [DorisCatalog()])
@@ -155,7 +160,6 @@ class DorisDeployment(Record):
             or [DorisCatalog()],
             namespaces=registry.entries(directory / NAMESPACES_DIR, DorisNamespace, context)
             or [DorisNamespace()],
-            tables=registry.entries(directory / TABLES_DIR, DorisTable, context),
         )
 
     # -- lookups ------------------------------------------------------------

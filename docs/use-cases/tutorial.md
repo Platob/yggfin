@@ -86,21 +86,23 @@ rekep service ddl dump --namespace models.Trade --dialect doris --out -
 ## 4 · Declare the deployment
 
 A deployment is a folder registry — one entry per file, the file stem
-defaulting the name:
+defaulting the name. Iceberg and Doris declare only their infrastructure:
 
 ```text
 stacks/iceberg/
 ├── catalogs/iceberg.yaml       # omit entirely for the built-in local default
-├── namespaces/trading.yaml   # catalog: local
-└── tables/trades.yaml        # record: models.Trade  +  namespace: trading
+└── namespaces/trading.yaml     # catalog: local
 ```
 
-`tables/trades.yaml` needs two lines; `tables sync` then embeds the full
-protocol view (types, field ids, docs) so the file is reviewable on its own
-and refuses to deploy if it drifts from the record:
+Tables need no side file of their own: a `Dataset` under `stacks/datasets/`
+carries its record, name and namespace, and deploys autonomously against
+whichever catalog/namespace registry it is pointed at:
 
-```bash
-rekep service iceberg tables sync
+```yaml
+# stacks/datasets/trades.yaml
+record: models.Trade
+name: trades
+namespace: trading
 ```
 
 Values may be Jinja: `{{ env.BUCKET }}`, and the git context is always there
@@ -110,19 +112,25 @@ stays clean on `main`.
 ## 5 · Deploy
 
 ```bash
-rekep service iceberg deploy --dry-run   # the plan: would create ...
-rekep service iceberg deploy             # catalog -> namespace -> table
-rekep service iceberg deploy             # second run: every line a no-op
+rekep service iceberg deploy --dry-run          # catalogs, namespaces: the plan
+rekep service iceberg deploy                    # catalog -> namespace
+rekep service dataset deploy --target iceberg   # tables, from stacks/datasets/
+rekep service dataset deploy --target iceberg   # second run: every line a no-op
 ```
 
-Priority is built in — catalogs are checked, then namespaces converge in
-parallel, then tables — and every action logs what it did. In Python it is
-one call:
+Priority is built in — catalogs are checked, then namespaces converge, then
+`dataset deploy` builds each table ad hoc (`Dataset.into_iceberg_table()`)
+and converges it the same way — and every action logs what it did. In
+Python it is two calls:
 
 ```python
+from rekep.dataset import Dataset
 from rekep.iceberg import Iceberg
 
-Iceberg.deploy_folder("stacks/iceberg", parallel=True, dry_run=False)
+stack = Iceberg.load("stacks/iceberg")
+stack.deploy()  # catalogs, namespaces
+for dataset in Dataset.load_all("stacks/datasets"):
+    dataset.deploy_iceberg(stack)
 ```
 
 Doris is the same shape; without a cluster connection the deploy *is* the
@@ -130,6 +138,7 @@ ordered SQL plan:
 
 ```bash
 rekep service doris deploy --dry-run
+rekep service dataset deploy --target doris --dry-run
 ```
 
 ## 6 · Parse and land data
@@ -144,10 +153,10 @@ with LogFile.from_url("s3://bucket/app-2026-08-14.txt.gz") as log:
 
 ## Synthetic ideas to try next
 
-- **A second record**: declare `Quote`, add `tables/quotes.yaml`, redeploy —
-  only the new table is created.
-- **Schema evolution**: add an optional field to `Trade`, run
-  `tables sync`, redeploy — `create_or_update` unions the new column in.
+- **A second record**: declare `Quote`, add `stacks/datasets/quotes.yaml`,
+  `dataset deploy` — only the new table is created.
+- **Schema evolution**: add an optional field to `Trade`, `dataset deploy`
+  again — `create_or_update` unions the new column in, no side file to sync.
 - **A job**: subclass `rekep.job.Job`, implement `arrow_transform`
   (batches in, batches out), declare it in `stacks/jobs/`, and let
   `rekep.airflow.jobs.dags()` turn it into a lineage-tagged DAG.

@@ -12,6 +12,13 @@ are shared by every protocol that writes this dataset, `direct` names a
 single physical location shared the same way, and `protocols` carries
 per-protocol overrides (`iceberg`, `doris`, ...) merged over the shared ones.
 
+Deploying is autonomous: `into_iceberg_table()`/`into_doris_table()` build an
+ad hoc `IcebergTable`/`DorisTable` straight from this dataset's own fields,
+and `deploy_iceberg`/`deploy_doris` hand it to `Iceberg.deploy_one`/
+`Doris.deploy_one` -- catalog and namespace still come from the deployment's
+`stacks/iceberg`/`stacks/doris` (`catalogs/`, `namespaces/` only), but the
+table itself needs no side file of its own.
+
 Writing is generic at the top and protocol-specific underneath:
 `write_arrow_reader` dispatches by `format` to `_{format}_write_arrow_reader`
 -- a private method that opens a `Run`, calls the *public*
@@ -30,6 +37,8 @@ cached per URL, and the reader streams straight into `pyarrow.dataset.write_data
 from __future__ import annotations
 
 import dataclasses
+import os
+import pathlib
 from typing import Any
 
 import pyarrow
@@ -40,9 +49,14 @@ from rekep.filesystems import resolve as resolve_filesystem
 from rekep.imports import locate
 from rekep.job import Job
 from rekep.namespace import unique_uri
+from rekep.records import registry
 from rekep.records.record import Record, record
 from rekep.run import InputDataset, OutputDataset, Run, RunEvent, RunState
 from rekep.run import now as _now
+
+#: Where dataset side files live, relative to the deployment root. Overridable
+#: per call and by environment, so a datasets folder can point anywhere.
+DATASETS_ROOT = pathlib.Path(os.environ.get("REKEP_DATASETS_ROOT", "stacks/datasets"))
 
 
 @record
@@ -75,6 +89,20 @@ class Dataset(Record):
     """Per-protocol overrides (`iceberg`, `doris`, ...), merged over `properties`."""
 
     # -- identity / schema ----------------------------------------------
+
+    @classmethod
+    def load_all(
+        cls, root: str | os.PathLike[str] = DATASETS_ROOT, **context: Any
+    ) -> list[Dataset]:
+        """Every dataset declared under `root`, one file each, stem defaults `name`.
+
+        The same registry-of-one-folder shape `IcebergDeployment`'s
+        `catalogs/`/`namespaces/` use -- no `tables/` folder anywhere
+        declares a table directly; a `Dataset` here deploys autonomously
+        against whichever catalog/namespace registry `deploy_iceberg`/
+        `deploy_doris` is handed.
+        """
+        return registry.entries(pathlib.Path(root), cls, context)
 
     def record_class(self) -> type[Record]:
         cls = locate(self.record)
@@ -116,6 +144,51 @@ class Dataset(Record):
     def protocol_properties(self, protocol: str) -> dict[str, str]:
         """`properties` merged with `protocol`'s own, the protocol winning."""
         return {**self.properties, **self.protocols.get(protocol, {})}
+
+    # -- deploy: autonomous, no side file needed -------------------------
+
+    def into_iceberg_table(self) -> Any:
+        """This dataset as an ad hoc `IcebergTable`, ready for `Iceberg.deploy_one`."""
+        from rekep.records.iceberg import IcebergTable
+
+        return IcebergTable(
+            record=self.record,
+            name=self.dataset_name(),
+            namespace=self.namespace,
+            location=self.location("iceberg"),
+            properties=self.protocol_properties("iceberg"),
+        )
+
+    def into_doris_table(self) -> Any:
+        """This dataset as an ad hoc `DorisTable`, ready for `Doris.deploy_one`."""
+        from rekep.records.doris import DorisTable
+
+        return DorisTable(
+            record=self.record,
+            name=self.dataset_name(),
+            namespace=self.namespace,
+            properties=self.protocol_properties("doris"),
+        )
+
+    def deploy_iceberg(self, stack: Any, dry_run: bool = False) -> Any:
+        """Converge this dataset into `stack` (an `Iceberg`) -- no side file needed."""
+        return stack.deploy_one(self.into_iceberg_table(), dry_run=dry_run)
+
+    def deploy_doris(self, stack: Any, dry_run: bool = False) -> Any:
+        """Converge this dataset into `stack` (a `Doris`) -- no side file needed."""
+        return stack.deploy_one(self.into_doris_table(), dry_run=dry_run)
+
+    def deploy(self, target: str, stack: Any, dry_run: bool = False) -> Any:
+        """Converge this dataset into `stack`, dispatching by `target`.
+
+        `target="iceberg"` calls `deploy_iceberg`, `target="doris"` calls
+        `deploy_doris` -- the same generic-dispatch shape `write_arrow_reader`
+        uses for `format`, deploy's own protocol name.
+        """
+        method = getattr(self, f"deploy_{target}", None)
+        if not callable(method):
+            raise ValueError(f"dataset {self.dataset_name()!r}: no {target!r} deploy target")
+        return method(stack, dry_run=dry_run)
 
     # -- lineage refs -----------------------------------------------------
 
