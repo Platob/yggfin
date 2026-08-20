@@ -85,6 +85,13 @@ remote file. This rules out `frozen=True`/`slots=True` on such classes.
   before and after touching a hot path.
 - Transforms are batch streams: `Job.arrow_transform` takes and yields
   `RecordBatch` iterators.
+- A record is also a **target** shape: `cast_arrow_batch`/`cast_arrow_reader`
+  (unsafe by default) cast columns, fill missing *nullable* ones, drop extras
+  and reorder, so a nearly-right batch writes. A missing NOT NULL column is
+  refused by name -- filling it would only fail later, at the write.
+- **A batch is not a unit of work downstream.** Iceberg commits a snapshot
+  and lands a file per call, so writes accumulate `chunk_rows` first;
+  `iceberg_compact` repairs what accumulates across runs instead.
 
 ## 8. Let the library own what it already knows
 
@@ -135,11 +142,16 @@ rekep/
 ├── dataset.py     Dataset: the OpenLineage resource for a data product --
 │                  schema (via Record) + cross-platform location (shared
 │                  `properties`/`direct`, per-protocol `protocols`);
-│                  write_arrow_reader dispatches to `_{format}_write_arrow_reader`,
-│                  which lineage-tracks a call to the public `{format}_write_arrow_reader`
-│                  (iceberg_write_arrow_reader: append/upsert/overwrite,
-│                  branch-aware -- pyiceberg's own API, not reimplemented;
-│                  file_write_arrow_reader via rekep.filesystems)
+│                  read_arrow_reader/write_arrow_reader dispatch to
+│                  `_{format}_..._arrow_reader`, which lineage-tracks a call
+│                  to the public `{format}_..._arrow_reader` hook -- pyiceberg's
+│                  own API, not reimplemented: iceberg_read (row_filter/columns
+│                  pushed to the scan planner, use_ref/snapshot_id),
+│                  iceberg_write (one `merge_by`: True=primary key, list=those
+│                  columns, falsy=append; `overwrite`; branch-aware; chunk_rows
+│                  per commit), iceberg_compact/expire_snapshots/publish;
+│                  file_read/write via rekep.filesystems, hive-partitioned from
+│                  the record's own Arrow(partition=...)
 ├── run.py         Run/RunEvent: OpenLineage's own event shape, kept as
 │                  Job's and Dataset's internal lineage bookkeeping
 │                  (`.events()`), never emitted anywhere
@@ -208,6 +220,12 @@ converges one bare record, stack defaults filling in namespace and
 properties. `rekep service dataset deploy --target iceberg|doris` converges
 every `Dataset` under `stacks/datasets/` instead -- each carries its own
 namespace and per-protocol properties, autonomous of any table side file.
+`rekep service dataset maintain` compacts and expires those same tables,
+taking no policy arguments: `protocols.iceberg.compact_min_files`/`retain`
+in the side file are the policy. The `protocols.<protocol>` keys that *route*
+a write rather than describe the table (`location`, `branch`, `merge_by`,
+`compact_min_files`, `retain`) are filtered out of `table_properties()`, so
+they never land on disk pretending to describe the data.
 
 **The CLI is services** (`rekep service <svc> <cmd>`), plus the top-level
 `rekep tutorial`. **Human-facing CLI output is modern and animated**: rich

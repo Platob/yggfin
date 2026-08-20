@@ -174,3 +174,23 @@ logs = f2l.arrow_transform(f2l.extract())
 l2r = LogsToRecords(name="l2r")
 records = l2r.arrow_transform(logs)   # ParsedMessage-shaped batches
 ```
+
+## Branch-conditional naming
+
+Every side file already renders through `rekep.render.render` before it is
+parsed, and `git_context()`'s `git_branch_suffix`/`git_branch_slug`/
+`git_branch_prefix` are always in scope — Jinja or not. So **whether an
+asset follows the git branch is a per-file choice, not a mode**: nothing has
+to be turned on, and nothing has to be turned off for the files that should
+stay put.
+
+| File | Choice | Why |
+| --- | --- | --- |
+| `stacks/jobs/files_to_logs.yaml` | stable | one canonical ingestion job |
+| `stacks/datasets/log.yaml` | stable | the shared raw table |
+| `stacks/jobs/logs_to_records.yaml` | `{{ git_branch_suffix }}` in name and namespace | the parser under development |
+| `stacks/datasets/parsed_messages.yaml` | an Iceberg `branch` | its output, isolated per branch |
+
+The last two are the working assets, and they make the choice one layer
+apart: the job gets its own namespace, the dataset gets its own Iceberg
+branch of the *same* table (see the [Datasets guide](datasets.md#branches-write-audit-publish)).

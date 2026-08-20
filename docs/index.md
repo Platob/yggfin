@@ -49,6 +49,9 @@ Everything else is derived, never hand-written beside it:
   access over any `pyarrow.fs` filesystem.
 - **`rekep.namespace`**, **`rekep.job`**, **`rekep.dataset`**, **`rekep.run`** —
   the OpenLineage resources: `Namespace`, `Job`, `Dataset`, `Run`/`RunEvent`.
+  `Dataset` is both ends of the pipe: reads with filter pushdown, writes that
+  append or merge on the primary key, and the compaction and retention that
+  keep the table readable afterwards.
 - **`rekep.jobs`** — the concrete jobs this package ships (`FilesToLogs`,
   `LogsToRecords`), mirroring `rekep.models`.
 - **`rekep.airflow`** — DAG authoring with lineage derived from records, and

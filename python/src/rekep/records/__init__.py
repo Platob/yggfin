@@ -1,6 +1,14 @@
 """The record machinery: dataclasses that are data products."""
 
-from rekep.records.arrow import Arrow, ArrowFieldBuilder, ArrowRecordBuilder
+from rekep.records.arrow import (
+    Arrow,
+    ArrowFieldBuilder,
+    ArrowRecordBuilder,
+    cast_batch,
+    cast_reader,
+    partition_keys,
+    primary_keys,
+)
 from rekep.records.ddl import IcebergDdlBuilder
 from rekep.records.doris import (
     DorisCatalog,
@@ -34,5 +42,9 @@ __all__ = [
     "IcebergNamespace",
     "IcebergTable",
     "Record",
+    "cast_batch",
+    "cast_reader",
+    "partition_keys",
+    "primary_keys",
     "record",
 ]

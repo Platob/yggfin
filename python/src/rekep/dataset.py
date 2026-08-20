@@ -19,31 +19,54 @@ and `deploy_iceberg`/`deploy_doris` hand it to `Iceberg.deploy_one`/
 `stacks/iceberg`/`stacks/doris` (`catalogs/`, `namespaces/` only), but the
 table itself needs no side file of its own.
 
-Writing is generic at the top and protocol-specific underneath:
-`write_arrow_reader` dispatches by `format` to `_{format}_write_arrow_reader`
--- a private method that opens a `Run`, calls the *public*
-`{format}_write_arrow_reader` hook, and closes the run on the way out.
-`iceberg_write_arrow_reader` is that hook for Iceberg: public because it is
-the customisation point a deployment overrides to say how the write actually
-happens, abstract in spirit because the base implementation only knows how
-to write to a table it is handed. It leverages pyiceberg's own table-level
-API directly -- `append`/`upsert`/`overwrite`, each `branch`-aware -- rather
-than reimplementing any of it; `upsert`'s `join_cols` falls back to the
-table's Iceberg identifier fields, which is exactly what a record's
-`Arrow(key=True)` fields already become. The private method is the only
-thing between the generic dispatcher and that hook, and lineage tracking is
-the whole reason it exists rather than calling the hook directly.
-`file_write_arrow_reader` is the same shape for any `pyarrow.fs` filesystem:
-a URI maps to a `(filesystem, path)` pair through `rekep.filesystems`,
-cached per URL, and the reader streams straight into `pyarrow.dataset.write_dataset`.
+Reading and writing are both generic at the top and protocol-specific
+underneath: `read_arrow_reader`/`write_arrow_reader` dispatch by `format` to
+`_{format}_read_arrow_reader`/`_{format}_write_arrow_reader` -- private
+methods that open a `Run`, call the *public* `{format}_..._arrow_reader`
+hook, and close the run on the way out. The public hooks are the
+customisation points a deployment overrides to say how the I/O actually
+happens; the private ones exist only to be the lineage boundary around them.
+
+Both directions leverage pyiceberg's own table API rather than
+reimplementing any of it:
+
+- `iceberg_read_arrow_reader` scans with **filter pushdown** -- `row_filter`
+  and `columns` reach the scan planner, so partitions and files that cannot
+  match are never opened -- and reads a branch, a tag or a snapshot id
+  through `DataScan.use_ref`/`snapshot_id`.
+- `iceberg_write_arrow_reader` takes one `merge_by`: `True` upserts on the
+  record's own primary key (`Arrow(key=True)` -> Iceberg identifier fields),
+  a list of names upserts on those, anything falsy appends. A table with no
+  snapshot yet has nothing to merge against, so the merge is skipped and the
+  first write simply appends.
+- `iceberg_compact`/`iceberg_expire_snapshots`/`iceberg_publish` are the
+  maintenance side of the same table: rewrite the partitions that grew too
+  many small files, drop snapshots older than a cutoff, fast-forward `main`
+  onto a branch that turned out good.
+
+`file_write_arrow_reader`/`file_read_arrow_reader` are the same shape for
+any `pyarrow.fs` filesystem: a URI maps to a `(filesystem, path)` pair
+through `rekep.filesystems`, cached per URL, and the reader streams straight
+into `pyarrow.dataset.write_dataset`, **hive-partitioned by whatever the
+record declares** `Arrow(partition=...)` on -- the same declaration Iceberg's
+partition spec is built from, so both protocols partition a dataset the same
+way without being told twice.
+
+Every write is reshaped onto the target schema on the way in
+(`records.arrow.cast_reader`, unsafe by default): a transform that produces
+a wider integer, a missing nullable column or its columns in another order
+still writes, because the target -- the record, then the table -- is the
+authority on what the data is.
 """
 
 from __future__ import annotations
 
 import dataclasses
+import datetime
 import logging
 import os
 import pathlib
+import uuid
 from collections.abc import Iterator
 from typing import Any
 
@@ -56,6 +79,7 @@ from rekep.imports import locate
 from rekep.job import Job
 from rekep.namespace import unique_uri
 from rekep.records import registry
+from rekep.records.arrow import cast_reader
 from rekep.records.record import Record, record
 from rekep.run import InputDataset, OutputDataset, Run, RunEvent, RunState
 from rekep.run import now as _now
@@ -72,9 +96,29 @@ ICEBERG_MAIN_BRANCH = "main"
 #: lets Iceberg's partition pruning actually pay off.
 ICEBERG_UPSERT_CHUNK_ROWS = 100_000
 
-#: `protocols[<protocol>]` keys that route a write/deploy rather than
-#: describe the table -- excluded from `table_properties()`.
-_PROTOCOL_ROUTING_KEYS = frozenset({"location", "branch"})
+#: A partition with fewer data files than this is left alone by
+#: `iceberg_compact`: rewriting two files into one costs a whole scan and a
+#: commit to save one file open, which is not a trade worth making.
+ICEBERG_COMPACT_MIN_FILES = 8
+
+#: `protocols[<protocol>]` keys that route a write, a read or a maintenance
+#: pass rather than describe the table -- excluded from `table_properties()`.
+_PROTOCOL_ROUTING_KEYS = frozenset(
+    {"location", "branch", "merge_by", "retain", "compact_min_files"}
+)
+
+#: Suffixes `iceberg_retention()` accepts on a retention window.
+_RETENTION_UNITS = {
+    "s": "seconds",
+    "m": "minutes",
+    "h": "hours",
+    "d": "days",
+    "w": "weeks",
+}
+
+#: Spellings of `merge_by` that mean "yes, on the primary key" and "no".
+_TRUE_WORDS = frozenset({"true", "yes", "on", "1"})
+_FALSE_WORDS = frozenset({"false", "no", "off", "0", ""})
 
 #: Where dataset side files live, relative to the deployment root. Overridable
 #: per call and by environment, so a datasets folder can point anywhere.
@@ -190,6 +234,121 @@ class Dataset(Record):
         """
         return self.protocols.get("iceberg", {}).get("branch")
 
+    def iceberg_merge_by(self) -> bool | list[str] | None:
+        """This dataset's declared merge key (`protocols["iceberg"]["merge_by"]`).
+
+        Side files hold strings, so the spelling is a string too: `"true"`
+        (merge on the record's primary key), `"false"` (append), or a
+        comma-separated list of column names (merge on those). None means
+        the dataset declares nothing and the call site decides.
+        """
+        declared = self.protocols.get("iceberg", {}).get("merge_by")
+        if declared is None or isinstance(declared, bool | list):
+            return declared
+        text = str(declared).strip()
+        if text.lower() in _TRUE_WORDS:
+            return True
+        if text.lower() in _FALSE_WORDS:
+            return False
+        return [name.strip() for name in text.split(",") if name.strip()]
+
+    def merge_columns(self, merge_by: bool | list[str] | str | None = None) -> list[str] | None:
+        """The columns a write should merge on -- None meaning "append instead".
+
+        One argument decides between the two write shapes, because for a
+        caller they are one decision: `True` merges on the record's own
+        primary key (the `Arrow(key=True)` fields that already became
+        Iceberg's identifier fields), a list merges on exactly those
+        columns, and anything falsy appends. `None` defers to
+        `iceberg_merge_by()`, so a dataset that declares its merge key in
+        its side file needs nothing at the call site.
+
+        A record with no primary key cannot answer `True`, and guessing a
+        join key is how a merge silently corrupts a table -- so that case is
+        refused by name, with both ways out.
+        """
+        if merge_by is None:
+            merge_by = self.iceberg_merge_by()
+        if isinstance(merge_by, str):
+            merge_by = [name.strip() for name in merge_by.split(",") if name.strip()]
+        if not merge_by:
+            return None
+        if merge_by is True:
+            keys = self.record_class().primary_keys()
+            if not keys:
+                raise ValueError(
+                    f"dataset {self.dataset_name()!r}: merge_by=True needs a primary key, but "
+                    f"{self.record} declares no Arrow(key=True) field; declare one or pass the "
+                    "columns to merge on"
+                )
+            return keys
+        return list(merge_by)
+
+    def partition_columns(self) -> dict[str, str]:
+        """The record's declared partition fields, mapped to their transform.
+
+        The one declaration both protocols partition from: Iceberg builds
+        its `PartitionSpec` from it, the file writer builds hive directories
+        from it.
+        """
+        return self.record_class().partition_keys()
+
+    def hive_partitioning(self) -> Any:
+        """A `pyarrow.dataset` hive partitioning for the record's partition fields.
+
+        Only `identity` transforms become directories: a `day`, `hour` or
+        `bucket[16]` partition is a *computed* value Iceberg derives at write
+        time, and computing it here would mean inventing a column the record
+        never declared. Those are skipped (logged), so a record partitioned
+        only by transforms writes flat rather than wrongly.
+
+        None when nothing is left to partition on -- which is what
+        `pyarrow.dataset.write_dataset` wants for an unpartitioned write.
+        """
+        schema = self.record_class().into_arrow_schema()
+        fields = []
+        for name, transform in self.partition_columns().items():
+            if transform == "identity":
+                fields.append(schema.field(name))
+            else:
+                logger.debug(
+                    "dataset %s: partition %s=%s is a computed transform, not a directory",
+                    self.dataset_name(),
+                    name,
+                    transform,
+                )
+        if not fields:
+            return None
+        return pyarrow.dataset.partitioning(pyarrow.schema(fields), flavor="hive")
+
+    def iceberg_retention(self) -> datetime.timedelta | None:
+        """How long this dataset keeps snapshot history (`protocols.iceberg.retain`).
+
+        Spelled as a window rather than a cutoff, because that is what a
+        retention policy is: `"7d"`, `"12h"`, `"90m"`, `"2w"`, or bare
+        seconds. None means the dataset declares no policy and
+        `iceberg_maintain` leaves its history alone.
+        """
+        declared = self.protocols.get("iceberg", {}).get("retain")
+        if declared in (None, ""):
+            return None
+        if isinstance(declared, datetime.timedelta):
+            return declared
+        text = str(declared).strip().lower()
+        unit = _RETENTION_UNITS.get(text[-1:])
+        if unit is None:
+            return datetime.timedelta(seconds=float(text))
+        return datetime.timedelta(**{unit: float(text[:-1])})
+
+    def iceberg_compact_min_files(self) -> int:
+        """File count that makes a partition worth rewriting.
+
+        `protocols.iceberg.compact_min_files`, defaulting to
+        `ICEBERG_COMPACT_MIN_FILES`.
+        """
+        declared = self.protocols.get("iceberg", {}).get("compact_min_files")
+        return ICEBERG_COMPACT_MIN_FILES if declared in (None, "") else int(declared)
+
     # -- deploy: autonomous, no side file needed -------------------------
 
     def into_iceberg_table(self) -> Any:
@@ -264,7 +423,147 @@ class Dataset(Record):
         """
         return list(self.__dict__.get("_Dataset__events", ()))
 
+    # -- reading ----------------------------------------------------------
+
+    def read_arrow_reader(self, format: str, **options: Any) -> pyarrow.RecordBatchReader:
+        """Read this dataset through the protocol named `format`.
+
+        The mirror of `write_arrow_reader`: dispatches to
+        `_{format}_read_arrow_reader`, which is where the lineage tracking
+        lives, and returns a **lazy** `pyarrow.RecordBatchReader` -- nothing
+        is read until the reader is iterated, and nothing is ever
+        materialised whole.
+        """
+        private = getattr(self, f"_{format}_read_arrow_reader", None)
+        if not callable(private):
+            raise ValueError(f"dataset {self.dataset_name()!r}: no {format!r} reader")
+        return private(**options)
+
+    def iceberg_read_arrow_reader(
+        self,
+        *,
+        table: Any = None,
+        row_filter: Any = None,
+        columns: list[str] | None = None,
+        snapshot_id: int | None = None,
+        branch: str | None = None,
+        limit: int | None = None,
+        case_sensitive: bool = True,
+        scan_options: dict[str, str] | None = None,
+    ) -> pyarrow.RecordBatchReader:
+        """Scan an Iceberg table into a batch reader, filters pushed down.
+
+        `row_filter` and `columns` are not applied to the result -- they are
+        handed to the *scan planner*, which is the whole point: Iceberg
+        prunes partitions from the filter, then files from their column
+        statistics, then row groups inside the files that survive, and only
+        then reads. A filter that matches one day of a date-partitioned
+        table opens one day's files. Both spellings pyiceberg accepts work:
+        a string (`"date >= '2026-08-01'"`) or a built
+        `pyiceberg.expressions` tree.
+
+        Which snapshot is read is resolved in the same order the write side
+        resolves where to write: an explicit `snapshot_id` wins, then
+        `branch` (or this dataset's declared `protocols["iceberg"]["branch"]`),
+        then the table's current state. A declared branch that does not
+        exist yet reads `main` instead of failing -- the same bootstrap
+        asymmetry the writer has, since a branch only appears once
+        something has been written to it.
+        """
+        if table is None:
+            raise NotImplementedError(
+                f"{type(self).__name__}.iceberg_read_arrow_reader needs table=<pyiceberg "
+                "Table>; override to resolve one from protocol_properties('iceberg')"
+            )
+        arguments: dict[str, Any] = {
+            "selected_fields": tuple(columns) if columns else ("*",),
+            "case_sensitive": case_sensitive,
+            "limit": limit,
+            "options": scan_options or {},
+        }
+        if row_filter is not None:
+            arguments["row_filter"] = row_filter
+        if snapshot_id is not None:
+            arguments["snapshot_id"] = snapshot_id
+        scan = table.scan(**arguments)
+        if snapshot_id is None:
+            reference = self._read_ref(table, branch)
+            if reference:
+                scan = scan.use_ref(reference)
+        return scan.to_arrow_batch_reader()
+
+    def _iceberg_read_arrow_reader(self, **options: Any) -> pyarrow.RecordBatchReader:
+        """Lineage-wrapped call to the public `iceberg_read_arrow_reader`."""
+        return self._tracked_read("iceberg", self.iceberg_read_arrow_reader, options)
+
+    def file_read_arrow_reader(
+        self,
+        *,
+        uri: str | None = None,
+        filesystem: pyarrow.fs.FileSystem | None = None,
+        row_filter: Any = None,
+        columns: list[str] | None = None,
+        batch_size: int | None = None,
+        partitioning: Any = None,
+        **options: Any,
+    ) -> pyarrow.RecordBatchReader:
+        """Scan a file location into a batch reader, filters pushed down.
+
+        The same pushdown story as Iceberg's, through Arrow's own dataset
+        scanner: `row_filter` (a `pyarrow.compute.Expression`) prunes hive
+        partition directories before any file is opened, and parquet row
+        groups by their statistics after. `partitioning` defaults to
+        `hive_partitioning()` -- the record's own declaration -- so a
+        dataset written by `file_write_arrow_reader` reads back with its
+        partition columns intact, without being told the layout twice.
+        """
+        target = uri or self.location("file")
+        if not target:
+            raise NotImplementedError(
+                f"{type(self).__name__}.file_read_arrow_reader needs a location: pass uri=, "
+                "set direct=, or protocols['file']['location']"
+            )
+        if filesystem is None:
+            filesystem, target = resolve_filesystem(target)
+        read_format = options.pop("format", "parquet")
+        source = pyarrow.dataset.dataset(
+            target,
+            filesystem=filesystem,
+            format=read_format,
+            partitioning=self.hive_partitioning() if partitioning is None else partitioning,
+            **options,
+        )
+        scan: dict[str, Any] = {"columns": columns, "filter": row_filter}
+        if batch_size is not None:
+            scan["batch_size"] = batch_size
+        return source.scanner(**scan).to_reader()
+
+    def _file_read_arrow_reader(self, **options: Any) -> pyarrow.RecordBatchReader:
+        """Lineage-wrapped call to the public `file_read_arrow_reader`."""
+        return self._tracked_read("file", self.file_read_arrow_reader, options)
+
     # -- writing ----------------------------------------------------------
+
+    def _aligned(
+        self, reader: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch]
+    ) -> pyarrow.RecordBatchReader:
+        """`reader` reshaped onto this dataset's record schema, batch by batch.
+
+        Every public write hook starts here rather than the dispatcher
+        doing it once, so each hook is self-sufficient when called
+        directly: the reshape belongs to the write, not to the dispatch.
+        It is `records.arrow.cast_reader`, so it also accepts a plain
+        iterator of batches and casts unsafely -- the record is the
+        authority on what this dataset's data is, and a narrower target
+        type is a declaration, not an accident.
+
+        The Iceberg table's own schema is deliberately *not* the target:
+        pyiceberg spells strings `large_string` in `Schema.as_arrow()` and
+        accepts either on write, so casting to it would double every string
+        column's memory to satisfy a difference the writer does not care
+        about.
+        """
+        return cast_reader(reader, self.record_class().into_arrow_schema())
 
     def write_arrow_reader(
         self,
@@ -279,16 +578,12 @@ class Dataset(Record):
         wraps its own public write in the same lineage tracking, so the
         dispatch itself carries none.
 
-        `reader` need not already be a `pyarrow.RecordBatchReader` -- a plain
-        iterator of batches (what `Job.arrow_transform` yields) is wrapped in
-        one against `record_class().into_arrow_schema()`, so a job's output
-        pipes straight into a dataset's write with no ceremony at the call
-        site: `dataset.write_arrow_reader(job.arrow_transform(job.extract()), ...)`.
+        Every public hook reshapes what it is handed onto the record's Arrow
+        schema first (`_aligned`), so a plain iterator of batches -- what
+        `Job.arrow_transform` yields -- pipes straight in with no ceremony
+        and no exact-shape requirement at the call site:
+        `dataset.write_arrow_reader(job.arrow_transform(job.extract()), "iceberg", table=t)`.
         """
-        if not isinstance(reader, pyarrow.RecordBatchReader):
-            reader = pyarrow.RecordBatchReader.from_batches(
-                self.record_class().into_arrow_schema(), reader
-            )
         private = getattr(self, f"_{format}_write_arrow_reader", None)
         if not callable(private):
             raise ValueError(f"dataset {self.dataset_name()!r}: no {format!r} writer")
@@ -299,88 +594,103 @@ class Dataset(Record):
         reader: pyarrow.RecordBatchReader,
         *,
         table: Any = None,
-        mode: str = "append",
+        merge_by: bool | list[str] | str | None = None,
+        overwrite: bool | str | Any = False,
         branch: str | None = None,
-        join_cols: list[str] | None = None,
         chunk_rows: int = ICEBERG_UPSERT_CHUNK_ROWS,
         **options: Any,
     ) -> int:
-        """Write `reader`'s batches to an Iceberg table -- append, upsert or overwrite.
+        """Write `reader`'s batches to an Iceberg table: merge, append or overwrite.
 
         The public write itself: abstract in spirit, not by enforcement --
         override it to change how the table is resolved (a catalog lookup
         against `protocol_properties("iceberg")`, a cached connection) or how
         the write happens. The default here expects `table=`, a live
         `pyiceberg.table.Table`, and calls straight into its own API rather
-        than reimplementing any of it. `branch` defaults to `iceberg_branch()`
-        -- this dataset's own declared branch -- falling back to `main`.
+        than reimplementing any of it.
 
-        `mode`:
+        **`merge_by` picks the write shape**, because for a caller that is
+        one decision rather than a mode plus a key:
 
-        - `"append"` (default) streams one batch at a time, never
-          materialising the whole reader.
-        - `"upsert"` merges `chunk_rows` rows at a time via pyiceberg's own
-          `Table.upsert`, joined on `join_cols` when given, else the
-          identifier fields a record's `Arrow(key=True)` columns already
-          become in the Iceberg schema. Chunked, not streamed one batch at a
-          time: a merge needs to compare against existing data, so some
-          materialising is unavoidable, but accumulating first bounds memory
-          and turns many small merges into few large ones -- fewer,
-          partition-aligned commits instead of one per batch.
-        - `"overwrite"` replaces the table (or `options["overwrite_filter"]`'s
-          match) with the whole reader; needs it to fit in memory, same as
-          `Table.overwrite` itself.
+        - falsy (the default, unless the side file declares otherwise) --
+          `append`.
+        - `True` -- `upsert` on the record's primary key, the
+          `Arrow(key=True)` fields that already are the table's identifier
+          fields. `ParsedMessage.hash64` needs no extra wiring.
+        - a list of column names -- `upsert` on exactly those.
 
-        A `branch` that does not exist yet is created from `main`'s current
-        snapshot first (`_ensure_iceberg_branch`) -- pyiceberg's own
-        auto-creation on first write gives the branch no parent at all
-        (an independent, empty lineage that merely shares the table), which
-        is not what a dev/WAP branch means: it should start as a fork of
-        what `main` already has. A table with no snapshot at all yet -- the
-        very first write to it, ever -- has nothing to fork from either way;
-        Iceberg allows only `main` there, so that first write always lands
-        on `main` regardless of `branch`, logged so the redirect is never
-        silent. Every write after it is free to target the declared branch.
+        A merge into a table that **has no snapshot yet** has nothing to
+        merge against: every row is an insert by definition, and the merge's
+        anti-join would only cost a scan of nothing. That case skips the
+        merge and appends, logged rather than silent.
+
+        Both shapes accumulate `chunk_rows` rows per call rather than
+        writing batch by batch, because in Iceberg **a batch is not a unit
+        of work**: every call commits a snapshot and lands at least one data
+        file per partition it touches, so appending a reader of ten thousand
+        small batches leaves ten thousand snapshots and as many tiny files
+        for every later scan to open. Accumulating first keeps memory
+        bounded by `chunk_rows` -- the parameter, not the input -- and turns
+        that into a handful of full-sized files. (`iceberg_compact` exists
+        because the same thing happens across *runs*, which no single write
+        can batch away.)
+
+        `overwrite=True` replaces the whole table with the reader;
+        `overwrite=<filter>` replaces only what the filter matches. Both
+        need the reader to fit in memory, same as `Table.overwrite` itself,
+        and neither combines with `merge_by`.
+
+        `branch` defaults to `iceberg_branch()` -- this dataset's own
+        declared branch -- falling back to `main`. A branch that does not
+        exist yet is created from `main`'s current snapshot first
+        (`_ensure_iceberg_branch`), because pyiceberg's own auto-creation on
+        first write gives the branch no parent at all: an independent, empty
+        lineage that merely shares the table, which is not what a dev/WAP
+        branch means. A table with no snapshot at all has nothing to fork
+        from either way, and Iceberg allows only `main` there, so that very
+        first write lands on `main` regardless -- logged, never silent.
         """
         if table is None:
             raise NotImplementedError(
                 f"{type(self).__name__}.iceberg_write_arrow_reader needs table=<pyiceberg "
                 "Table>; override to resolve one from protocol_properties('iceberg')"
             )
-        branch = branch or self.iceberg_branch() or ICEBERG_MAIN_BRANCH
-        if branch != ICEBERG_MAIN_BRANCH:
-            if table.current_snapshot() is None:
-                logger.info(
-                    "dataset %s: table has no snapshot yet, bootstrapping on %s instead of %r",
-                    self.dataset_name(),
-                    ICEBERG_MAIN_BRANCH,
-                    branch,
-                )
-                branch = ICEBERG_MAIN_BRANCH
-            else:
-                _ensure_iceberg_branch(table, branch)
+        if overwrite is not False and merge_by:
+            raise ValueError(
+                f"dataset {self.dataset_name()!r}: overwrite and merge_by are two different "
+                "writes; pick one"
+            )
+        reader = self._aligned(reader)
+        bootstrapping = table.current_snapshot() is None
+        branch = self._write_ref(table, branch, bootstrapping=bootstrapping)
 
-        if mode == "append":
-            written = 0
-            for batch in reader:
-                chunk = pyarrow.Table.from_batches([batch], schema=reader.schema)
-                table.append(chunk, branch=branch, **options)
-                written += batch.num_rows
-            return written
-
-        if mode == "overwrite":
+        if overwrite is not False:
             whole = reader.read_all()
+            if overwrite is not True:
+                options["overwrite_filter"] = overwrite
             table.overwrite(whole, branch=branch, **options)
             return whole.num_rows
 
-        if mode == "upsert":
-            written = 0
-            for chunk in _chunked(reader, chunk_rows):
+        join_cols = self.merge_columns(merge_by)
+        if join_cols and bootstrapping:
+            logger.info(
+                "dataset %s: table has no snapshot to merge into, appending on %s instead of "
+                "merging by %s",
+                self.dataset_name(),
+                branch,
+                ", ".join(join_cols),
+            )
+            join_cols = None
+
+        written = 0
+        for chunk in _chunked(reader, chunk_rows):
+            if join_cols is None:
+                table.append(chunk, branch=branch, **options)
+                written += chunk.num_rows
+            else:
                 result = table.upsert(chunk, join_cols=join_cols, branch=branch, **options)
                 written += result.rows_updated + result.rows_inserted
-            return written
-
-        raise ValueError(f"dataset {self.dataset_name()!r}: no iceberg {mode!r} write mode")
+        return written
 
     def _iceberg_write_arrow_reader(self, reader: pyarrow.RecordBatchReader, **options: Any) -> int:
         """Lineage-wrapped call to the public `iceberg_write_arrow_reader`.
@@ -398,6 +708,7 @@ class Dataset(Record):
         *,
         uri: str | None = None,
         filesystem: pyarrow.fs.FileSystem | None = None,
+        partitioning: Any = None,
         **options: Any,
     ) -> int:
         """Write `reader`'s batches to a file location, any `pyarrow.fs` filesystem.
@@ -408,10 +719,24 @@ class Dataset(Record):
         to a `(filesystem, path)` pair through `rekep.filesystems.resolve`,
         cached per URL; pass `filesystem=` explicitly to skip that mapping --
         the escape hatch for a filesystem built from `protocol_properties`
-        (credentials, region) rather than parsed off the URI. `options`
-        reaches `pyarrow.dataset.write_dataset` as-is (`format="parquet"` by
-        default); the reader streams into it one batch at a time, never
-        materialising the whole thing.
+        (credentials, region) rather than parsed off the URI.
+
+        `partitioning` defaults to `hive_partitioning()`, so the record's
+        own `Arrow(partition=...)` declaration lays out the directories --
+        the same declaration Iceberg's partition spec is built from. Pass
+        `partitioning=False` for a flat write.
+
+        Each write also gets its own file basename prefix and
+        `existing_data_behavior="overwrite_or_ignore"`, so writing twice
+        into one location appends instead of colliding on
+        `part-0.parquet` -- which is what a partitioned dataset written
+        daily needs, and what `write_dataset`'s own defaults refuse. Both
+        are plain `options`, so a caller who wants replace-the-directory
+        semantics passes `existing_data_behavior="delete_matching"`.
+
+        `options` otherwise reaches `pyarrow.dataset.write_dataset` as-is
+        (`format="parquet"` by default); the reader streams into it one
+        batch at a time, never materialising the whole thing.
         """
         target = uri or self.location("file")
         if not target:
@@ -421,16 +746,247 @@ class Dataset(Record):
             )
         if filesystem is None:
             filesystem, target = resolve_filesystem(target)
-        counted, count = _counting(reader)
+        counted, count = _counting(self._aligned(reader))
         write_format = options.pop("format", "parquet")
+        options.setdefault("existing_data_behavior", "overwrite_or_ignore")
+        options.setdefault(
+            "basename_template", f"part-{uuid.uuid4().hex[:12]}-{{i}}.{write_format}"
+        )
         pyarrow.dataset.write_dataset(
-            counted, target, filesystem=filesystem, format=write_format, **options
+            counted,
+            target,
+            filesystem=filesystem,
+            format=write_format,
+            partitioning=self.hive_partitioning() if partitioning is None else partitioning or None,
+            **options,
         )
         return count[0]
 
     def _file_write_arrow_reader(self, reader: pyarrow.RecordBatchReader, **options: Any) -> int:
         """Lineage-wrapped call to the public `file_write_arrow_reader`."""
         return self._tracked_write("file", self.file_write_arrow_reader, reader, options)
+
+    # -- iceberg maintenance ----------------------------------------------
+
+    def iceberg_compact(
+        self,
+        *,
+        table: Any = None,
+        branch: str | None = None,
+        min_input_files: int = ICEBERG_COMPACT_MIN_FILES,
+        row_filter: Any = None,
+        dry_run: bool = False,
+    ) -> dict[str, Any]:
+        """Rewrite the partitions that grew too many small data files.
+
+        Streaming writes are what make this necessary: every append commits
+        at least one file per partition it touched, so a table written once
+        a minute has a thousand files a day and a scan pays a thousand file
+        opens to read them. Compaction reads those rows back and writes them
+        out as few large files -- the data is unchanged, only its layout.
+
+        pyiceberg has no `rewrite_data_files` procedure, so this is built
+        from what it does have: `inspect.data_files()` says which partition
+        each file belongs to, a scan filtered to the crowded partitions
+        reads exactly those rows, and `dynamic_partition_overwrite` replaces
+        exactly the partitions present in what is written back. One commit,
+        no other partition touched.
+
+        Only `identity` partitions can be targeted this way, because only
+        those have a partition value that is also a column value to filter
+        on; a table partitioned by a computed transform (`day`, `bucket`) is
+        refused by name rather than half-compacted, with `row_filter=` as
+        the way to say what to rewrite instead. An unpartitioned table is
+        the simple case: too many files means rewrite all of them.
+
+        Returns what it did (or, with `dry_run`, would do): the partitions
+        chosen, how many files they held and how many rows moved.
+        """
+        if table is None:
+            raise NotImplementedError(
+                f"{type(self).__name__}.iceberg_compact needs table=<pyiceberg Table>"
+            )
+        reference = self._read_ref(table, branch)
+        snapshot = table.snapshot_by_name(reference) if reference else table.current_snapshot()
+        if snapshot is None:
+            return {"partitions": [], "files": 0, "rows": 0, "compacted": False}
+
+        crowded = _crowded_partitions(table, snapshot.snapshot_id, min_input_files)
+        if not crowded:
+            return {"partitions": [], "files": 0, "rows": 0, "compacted": False}
+        files = sum(count for _, count in crowded)
+        partitions = [dict(values) for values, _ in crowded]
+        report: dict[str, Any] = {"partitions": partitions, "files": files, "rows": 0}
+        if row_filter is None and partitions:
+            row_filter = _partition_filter(table, partitions)
+        if dry_run:
+            report["compacted"] = False
+            return report
+
+        scan = table.scan(row_filter=row_filter) if row_filter is not None else table.scan()
+        if reference:
+            scan = scan.use_ref(reference)
+        data = scan.to_arrow()
+        report["rows"] = data.num_rows
+        target = reference or ICEBERG_MAIN_BRANCH
+        if partitions == [{}]:  # unpartitioned: there is nothing to overwrite dynamically
+            table.overwrite(data, branch=target)
+        else:
+            table.dynamic_partition_overwrite(data, branch=target)
+        logger.info(
+            "dataset %s: compacted %d files across %d partitions into %d rows on %s",
+            self.dataset_name(),
+            files,
+            len(partitions),
+            report["rows"],
+            target,
+        )
+        report["compacted"] = True
+        return report
+
+    def iceberg_expire_snapshots(
+        self,
+        *,
+        table: Any = None,
+        older_than: datetime.datetime | datetime.timedelta | None = None,
+        snapshot_ids: list[int] | None = None,
+        dry_run: bool = False,
+    ) -> list[int]:
+        """Drop snapshots this table no longer needs, freeing their data files.
+
+        The other half of compaction: rewriting files does not shrink the
+        table until the snapshots still referencing the old files are gone.
+        `older_than` takes a cutoff or a `timedelta` back from now -- a
+        retention window, which is the way this is actually configured --
+        and pyiceberg keeps whatever any ref still points at, so a branch or
+        tag protects its own history.
+
+        Returns the snapshot ids expired (or, with `dry_run`, the ones that
+        would be); an empty list means nothing was old enough.
+        """
+        if table is None:
+            raise NotImplementedError(
+                f"{type(self).__name__}.iceberg_expire_snapshots needs table=<pyiceberg Table>"
+            )
+        if isinstance(older_than, datetime.timedelta):
+            older_than = datetime.datetime.now(datetime.UTC) - older_than
+        chosen = list(snapshot_ids or ())
+        if older_than is not None:
+            cutoff = older_than.timestamp() * 1000
+            protected = {reference.snapshot_id for reference in table.refs().values()}
+            chosen += [
+                snapshot.snapshot_id
+                for snapshot in table.snapshots()
+                if snapshot.timestamp_ms < cutoff and snapshot.snapshot_id not in protected
+            ]
+        chosen = sorted(set(chosen))
+        if chosen and not dry_run:
+            table.maintenance.expire_snapshots().by_ids(chosen).commit()
+            logger.info("dataset %s: expired %d snapshots", self.dataset_name(), len(chosen))
+        return chosen
+
+    def iceberg_maintain(
+        self, *, table: Any = None, branch: str | None = None, dry_run: bool = False
+    ) -> dict[str, Any]:
+        """Compact, then expire -- both driven by this dataset's own config.
+
+        The two are one pass on purpose and in this order: rewriting files
+        does not shrink anything while the snapshots that referenced the old
+        ones are still around, and expiring first would only have to be
+        redone. `protocols.iceberg.compact_min_files` and
+        `protocols.iceberg.retain` are the whole policy, so a scheduled
+        `rekep service dataset maintain` needs no arguments and no code --
+        the side file already says what this dataset wants.
+
+        A dataset declaring no `retain` keeps all its history, which is the
+        safe default for something nobody has thought about yet.
+        """
+        compaction = self.iceberg_compact(
+            table=table,
+            branch=branch,
+            min_input_files=self.iceberg_compact_min_files(),
+            dry_run=dry_run,
+        )
+        retention = self.iceberg_retention()
+        expired: list[int] = []
+        if retention is not None:
+            if compaction.get("compacted"):
+                table.refresh()
+            expired = self.iceberg_expire_snapshots(
+                table=table, older_than=retention, dry_run=dry_run
+            )
+        return {"compaction": compaction, "expired": expired}
+
+    def iceberg_publish(self, *, table: Any = None, branch: str | None = None) -> int | None:
+        """Fast-forward `main` onto `branch`: the publish half of write-audit-publish.
+
+        A branch write leaves `main` untouched on purpose -- that is what
+        makes it safe to iterate against real data. Publishing is the moment
+        that stops being true, so it is its own explicit call, never
+        something a write does on its own. Returns the snapshot id `main`
+        now points at, or None when the branch has nothing to publish.
+        """
+        if table is None:
+            raise NotImplementedError(
+                f"{type(self).__name__}.iceberg_publish needs table=<pyiceberg Table>"
+            )
+        reference = branch or self.iceberg_branch()
+        if not reference or reference == ICEBERG_MAIN_BRANCH:
+            raise ValueError(
+                f"dataset {self.dataset_name()!r}: publish needs a branch other than "
+                f"{ICEBERG_MAIN_BRANCH!r}; pass branch= or declare protocols.iceberg.branch"
+            )
+        snapshot = table.snapshot_by_name(reference)
+        if snapshot is None:
+            return None
+        table.manage_snapshots().set_current_snapshot(ref_name=reference).commit()
+        logger.info(
+            "dataset %s: published %s (snapshot %s) onto %s",
+            self.dataset_name(),
+            reference,
+            snapshot.snapshot_id,
+            ICEBERG_MAIN_BRANCH,
+        )
+        return snapshot.snapshot_id
+
+    # -- iceberg ref resolution -------------------------------------------
+
+    def _read_ref(self, table: Any, branch: str | None) -> str | None:
+        """The ref a read should use: `branch`, else the declared one, else none.
+
+        A declared branch that does not exist on the table yet resolves to
+        None -- read the table's current state -- rather than failing: a
+        branch only appears once something has been written to it, so a
+        dataset declaring one is describing where writes go, not asserting
+        that reads already have somewhere to look.
+        """
+        reference = branch or self.iceberg_branch()
+        if not reference:
+            return None
+        if reference in table.refs():
+            return reference
+        logger.info(
+            "dataset %s: no %r ref on the table yet, reading its current state instead",
+            self.dataset_name(),
+            reference,
+        )
+        return None
+
+    def _write_ref(self, table: Any, branch: str | None, *, bootstrapping: bool) -> str:
+        """The branch a write should target, forking it from `main` if it is new."""
+        reference = branch or self.iceberg_branch() or ICEBERG_MAIN_BRANCH
+        if reference == ICEBERG_MAIN_BRANCH:
+            return reference
+        if bootstrapping:
+            logger.info(
+                "dataset %s: table has no snapshot yet, bootstrapping on %s instead of %r",
+                self.dataset_name(),
+                ICEBERG_MAIN_BRANCH,
+                reference,
+            )
+            return ICEBERG_MAIN_BRANCH
+        _ensure_iceberg_branch(table, reference)
+        return reference
 
     # -- internal lineage tracking ---------------------------------------
 
@@ -480,6 +1036,70 @@ class Dataset(Record):
             )
         )
         return written
+
+    def _tracked_read(
+        self, protocol: str, opener: Any, options: dict[str, Any]
+    ) -> pyarrow.RecordBatchReader:
+        """START a `Run`, open the reader, COMPLETE it when the stream ends.
+
+        A read is lazy, so its run cannot close where the call returns: the
+        reader has not read anything yet. `START` is emitted when the scan
+        is planned -- the moment the read commits to a snapshot and a filter
+        -- and `COMPLETE` when the last batch comes out, carrying the row
+        count nothing could have known before then. A reader abandoned
+        half-way therefore leaves its run open, which is the honest record
+        of what happened: the read did not finish.
+        """
+        run = Run()
+        job = Job(name=f"{self.dataset_name()}.read.{protocol}", namespace=self.namespace)
+        source = self.as_input()
+        self._emit(
+            RunEvent(
+                event_type=RunState.START, event_time=_now(), run=run, job=job, inputs=[source]
+            )
+        )
+        try:
+            reader = opener(**options)
+        except Exception:
+            self._emit(
+                RunEvent(
+                    event_type=RunState.FAIL, event_time=_now(), run=run, job=job, inputs=[source]
+                )
+            )
+            raise
+
+        def generate() -> Iterator[pyarrow.RecordBatch]:
+            rows = 0
+            try:
+                for batch in reader:
+                    rows += batch.num_rows
+                    yield batch
+            except Exception:
+                self._emit(
+                    RunEvent(
+                        event_type=RunState.FAIL,
+                        event_time=_now(),
+                        run=run,
+                        job=job,
+                        inputs=[source],
+                    )
+                )
+                raise
+            self._emit(
+                RunEvent(
+                    event_type=RunState.COMPLETE,
+                    event_time=_now(),
+                    run=run,
+                    job=job,
+                    inputs=[
+                        dataclasses.replace(
+                            source, input_facets={"inputStatistics": {"rowCount": rows}}
+                        )
+                    ],
+                )
+            )
+
+        return pyarrow.RecordBatchReader.from_batches(reader.schema, generate())
 
     def _emit(self, event: RunEvent) -> RunEvent:
         self.__dict__.setdefault("_Dataset__events", []).append(event)
@@ -537,3 +1157,53 @@ def _ensure_iceberg_branch(table: Any, branch: str) -> None:
     source = table.snapshot_by_name(ICEBERG_MAIN_BRANCH)
     if source is not None:
         table.manage_snapshots().create_branch(source.snapshot_id, branch).commit()
+
+
+def _crowded_partitions(
+    table: Any, snapshot_id: int, min_input_files: int
+) -> list[tuple[tuple[tuple[str, Any], ...], int]]:
+    """Partitions holding at least `min_input_files` data files, with their counts.
+
+    Read from `inspect.data_files()`, which is the manifest list rather than
+    the data: the file count per partition is metadata, so deciding what to
+    compact costs no scan at all. An unpartitioned table reports one group
+    with no values -- the whole table -- which is exactly how it should be
+    treated.
+    """
+    files = table.inspect.data_files(snapshot_id=snapshot_id)
+    if files.num_rows == 0:
+        return []
+    partitions = files.column("partition").to_pylist()
+    counts: dict[tuple[tuple[str, Any], ...], int] = {}
+    for values in partitions:
+        key = tuple(sorted((values or {}).items()))
+        counts[key] = counts.get(key, 0) + 1
+    return [(key, count) for key, count in counts.items() if count >= min_input_files]
+
+
+def _partition_filter(table: Any, partitions: list[dict[str, Any]]) -> Any:
+    """A row filter matching exactly `partitions`, or None for the whole table.
+
+    Only works for `identity` partitions: their partition value *is* the
+    column value, so `EqualTo(column, value)` selects the partition. Any
+    other transform stores something derived (a day number, a bucket
+    ordinal) that no predicate on the source column can name, so it is
+    refused rather than guessed at.
+    """
+    from pyiceberg.expressions import And, EqualTo, Or
+
+    if partitions == [{}]:
+        return None
+    columns = {}
+    for field in table.spec().fields:
+        if str(field.transform) != "identity":
+            raise ValueError(
+                f"partition {field.name!r} uses the {field.transform} transform, whose value is "
+                "not a column value to filter on; pass row_filter= to say what to rewrite"
+            )
+        columns[field.name] = table.schema().find_field(field.source_id).name
+    matches = []
+    for values in partitions:
+        predicates = [EqualTo(columns[name], value) for name, value in values.items()]
+        matches.append(predicates[0] if len(predicates) == 1 else And(*predicates))
+    return matches[0] if len(matches) == 1 else Or(*matches)

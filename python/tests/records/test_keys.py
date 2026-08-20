@@ -65,11 +65,14 @@ def test_keys_become_identifier_fields() -> None:
 
 
 def test_partition_spec_carries_transforms_and_spec_ids() -> None:
+    """A computed transform takes Iceberg's `<column>_<transform>` name --
+    a partition field may not shadow a column while holding another value;
+    an identity one keeps the column's name, since the value *is* it."""
     spec = Fill.into_iceberg_partition_spec()
     by_name = {field.name: field for field in spec.fields}
-    assert set(by_name) == {"day", "account", "venue"}
-    assert str(by_name["day"].transform) == "day"
-    assert str(by_name["account"].transform) == "bucket[16]"
+    assert set(by_name) == {"day_day", "account_bucket_16", "venue"}
+    assert str(by_name["day_day"].transform) == "day"
+    assert str(by_name["account_bucket_16"].transform) == "bucket[16]"
     assert str(by_name["venue"].transform) == "identity"
     assert [field.field_id for field in spec.fields] == [1000, 1001, 1002]
 
@@ -79,8 +82,8 @@ def test_partition_sources_are_schema_field_ids() -> None:
     ids = {field.name: field.field_id for field in schema.fields}
     spec = Fill.into_iceberg_partition_spec()
     assert {field.name: field.source_id for field in spec.fields} == {
-        "day": ids["day"],
-        "account": ids["account"],
+        "day_day": ids["day"],
+        "account_bucket_16": ids["account"],
         "venue": ids["venue"],
     }
 
@@ -136,3 +139,30 @@ def test_flags_survive_the_reverse_projection() -> None:
     assert schema.field("day").metadata[b"iceberg:partition_key"] == b"day"
     assert schema.field("day").metadata[b"iceberg:primary_key"] == b"true"
     assert clone.into_iceberg_schema().identifier_field_names() == {"day", "order_id"}
+
+
+# -- the one place every projection reads the declarations from -----------
+
+
+def test_primary_keys_are_read_off_the_arrow_schema() -> None:
+    assert Fill.primary_keys() == ["day", "order_id"], "declaration order"
+
+
+def test_partition_keys_carry_their_transform() -> None:
+    assert Fill.partition_keys() == {
+        "day": "day",
+        "account": "bucket[16]",
+        "venue": "identity",
+    }
+
+
+def test_a_record_declaring_nothing_has_neither() -> None:
+    @record
+    class Plain(Record):
+        """No keys, no partitions."""
+
+        value: int
+        """A value."""
+
+    assert Plain.primary_keys() == []
+    assert Plain.partition_keys() == {}

@@ -33,7 +33,14 @@ from rekep.records.annotations import (
     item_annotation,
     unwrap_annotated,
 )
-from rekep.records.arrow import ArrowFieldBuilder, ArrowRecordBuilder
+from rekep.records.arrow import (
+    ArrowFieldBuilder,
+    ArrowRecordBuilder,
+    cast_batch,
+    cast_reader,
+    partition_keys,
+    primary_keys,
+)
 from rekep.records.ddl import IcebergDdlBuilder
 from rekep.require import require
 
@@ -180,6 +187,43 @@ class Record(Convertible):
             nullable=nullable,
             metadata={"description": summary} if summary else None,
         )
+
+    # -- reshaping an incoming batch onto this record's schema ---------------
+
+    @classmethod
+    def cast_arrow_batch(cls, batch: pyarrow.RecordBatch, *, safe: bool = False) -> Any:
+        """`batch` reshaped onto this record's schema: cast, filled, reordered.
+
+        The record is the authority on what the data *is*, so a batch that
+        is only nearly the right shape -- a wider integer, a column in
+        another order, one this source never produced -- is adapted to it
+        rather than rejected. Unsafe by default: see `records.arrow.cast_batch`.
+        """
+        return cast_batch(batch, cls.into_arrow_schema(), safe=safe)
+
+    @classmethod
+    def cast_arrow_reader(cls, reader: Any, *, safe: bool = False) -> pyarrow.RecordBatchReader:
+        """`cast_arrow_batch` over a whole stream, still one batch at a time.
+
+        Takes a plain iterator of batches too, so `Job.arrow_transform`'s
+        output becomes a reader of this record's shape in one step.
+        """
+        return cast_reader(reader, cls.into_arrow_schema(), safe=safe)
+
+    @classmethod
+    def primary_keys(cls) -> list[str]:
+        """Fields this record declares `Arrow(key=True)`, in declaration order.
+
+        The same list Iceberg calls identifier fields, Doris calls key
+        columns and an upsert joins on -- declared once, read from the Arrow
+        schema like every other projection.
+        """
+        return primary_keys(cls.into_arrow_schema())
+
+    @classmethod
+    def partition_keys(cls) -> dict[str, str]:
+        """Fields this record declares `Arrow(partition=...)`, mapped to transform."""
+        return partition_keys(cls.into_arrow_schema())
 
     # -- iceberg ------------------------------------------------------------
     #

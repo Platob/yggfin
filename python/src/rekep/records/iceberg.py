@@ -12,7 +12,7 @@ import pyarrow
 from rekep.imports import locate
 from rekep.records import registry
 from rekep.records.annotations import docstring_summary
-from rekep.records.arrow import PARTITION_KEY, PRIMARY_KEY, ArrowFieldBuilder
+from rekep.records.arrow import ArrowFieldBuilder, partition_keys, primary_keys
 from rekep.records.record import Record, record
 
 if TYPE_CHECKING:  # pragma: no cover - pyiceberg is imported at the point of use
@@ -67,11 +67,8 @@ class IcebergFieldBuilder:
         except ValueError:  # no ids in the metadata: number afresh
             converted = assign_fresh_schema_ids(_pyarrow_to_schema_without_ids(arrow))
         documented = [self._document(field, arrow.field(field.name)) for field in converted.fields]
-        keys = [
-            field.field_id
-            for field in converted.fields
-            if (arrow.field(field.name).metadata or {}).get(PRIMARY_KEY)
-        ]
+        declared = set(primary_keys(arrow))
+        keys = [field.field_id for field in converted.fields if field.name in declared]
         return converted.__class__(*documented, identifier_field_ids=keys)
 
     def struct(self, cls: type) -> IcebergType:
@@ -103,23 +100,30 @@ class IcebergFieldBuilder:
         Partition field ids start at 1000, per the Iceberg spec; sources are
         matched by field id, so this must be built against the same schema
         `schema()` returns.
+
+        A partition field is named after its source column, except when the
+        transform *computes* a different value from it (`day`, `bucket[16]`):
+        Iceberg refuses a partition field that shadows a schema column with a
+        value that is not that column's, so those get Iceberg's own
+        `<column>_<transform>` spelling -- `at_day`, `account_bucket_16`.
         """
         from pyiceberg.partitioning import PartitionField, PartitionSpec
         from pyiceberg.transforms import parse_transform
 
         schema = self.schema(cls)
         arrow = self.arrow_schema(cls)
+        declared = partition_keys(arrow)
         fields = []
         for field in schema.fields:
-            transform = (arrow.field(field.name).metadata or {}).get(PARTITION_KEY)
+            transform = declared.get(field.name)
             if not transform:
                 continue
             fields.append(
                 PartitionField(
                     source_id=field.field_id,
                     field_id=1000 + len(fields),
-                    transform=parse_transform(transform.decode()),
-                    name=field.name,
+                    transform=parse_transform(transform),
+                    name=_partition_field_name(field.name, transform),
                 )
             )
         return PartitionSpec(*fields)
@@ -391,3 +395,17 @@ class IcebergDeployment(Record):
         else:
             kwargs.pop("table_name", None)
         return self.ddl(table, **kwargs)
+
+
+def _partition_field_name(column: str, transform: str) -> str:
+    """The partition field's name: the column's, unless the transform computes.
+
+    Iceberg refuses a partition field that shadows a schema column while
+    holding a *different* value, so only `identity` may keep the plain name.
+    The rest take Iceberg's own convention -- source column, then transform,
+    the width folded in with an underscore rather than brackets, which are
+    not legal in a field name.
+    """
+    if transform in ("identity", "true", "1", "yes"):
+        return column
+    return f"{column}_{transform.replace('[', '_').replace(']', '').replace(',', '_')}"

@@ -359,3 +359,122 @@ def test_dataset_list_prints_declared_datasets(
     out = capsys.readouterr().out
     assert "dataset://default/logs" in out
     assert "record=rekep.models.Log" in out
+
+
+# -- dataset maintain ---------------------------------------------------------
+
+
+def crowded_dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A deployed dataset whose table already holds too many small files."""
+    import datetime
+
+    import pyarrow
+
+    from rekep.dataset import Dataset
+    from rekep.iceberg import Iceberg
+    from rekep.models import ParsedMessage
+
+    root = dataset_workspace(tmp_path)
+    (root / "datasets" / "logs.yaml").unlink()
+    (root / "datasets" / "messages.yaml").write_text(
+        "record: rekep.models.ParsedMessage\n"
+        "name: messages\n"
+        "protocols:\n"
+        "  iceberg:\n"
+        '    compact_min_files: "3"\n'
+        "    retain: 0s\n"
+    )
+    main(
+        [
+            "service",
+            "dataset",
+            "deploy",
+            "--config",
+            str(root / "datasets"),
+            "--stack-config",
+            str(root / "iceberg"),
+        ]
+    )
+    stack = Iceberg.load(root / "iceberg")
+    (dataset,) = Dataset.load_all(root / "datasets")
+    table = stack.tables.get(dataset.into_iceberg_table())
+    schema = ParsedMessage.into_arrow_schema()
+    for index in range(4):
+        table.append(
+            pyarrow.Table.from_pylist(
+                [
+                    {
+                        "url": "u",
+                        "unix": index,
+                        "date": datetime.date(2026, 8, 14),
+                        "hash64": index,
+                        "protocol": None,
+                        "fields": {},
+                    }
+                ],
+                schema=schema,
+            )
+        )
+    return root
+
+
+def test_dataset_maintain_dry_run_reports_without_rewriting(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    root = crowded_dataset_workspace(tmp_path)
+    assert (
+        main(
+            [
+                "service",
+                "dataset",
+                "maintain",
+                "--config",
+                str(root / "datasets"),
+                "--stack-config",
+                str(root / "iceberg"),
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+    assert "would rewrite 4 files in 1 partitions" in capsys.readouterr().out
+
+    from rekep.dataset import Dataset
+    from rekep.iceberg import Iceberg
+
+    stack = Iceberg.load(root / "iceberg")
+    (dataset,) = Dataset.load_all(root / "datasets")
+    table = stack.tables.get(dataset.into_iceberg_table())
+    assert table.inspect.data_files().num_rows == 4, "dry run rewrote nothing"
+
+
+def test_dataset_maintain_compacts_and_expires_from_the_side_file(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
+) -> None:
+    """`compact_min_files` and `retain` are the whole policy -- no arguments."""
+    root = crowded_dataset_workspace(tmp_path)
+    assert (
+        main(
+            [
+                "service",
+                "dataset",
+                "maintain",
+                "--config",
+                str(root / "datasets"),
+                "--stack-config",
+                str(root / "iceberg"),
+            ]
+        )
+        == 0
+    )
+    assert "rewrote 4 files in 1 partitions" in capsys.readouterr().out
+
+    from rekep.dataset import Dataset
+    from rekep.iceberg import Iceberg
+
+    stack = Iceberg.load(root / "iceberg")
+    (dataset,) = Dataset.load_all(root / "datasets")
+    table = stack.tables.get(dataset.into_iceberg_table())
+    assert table.inspect.data_files().num_rows == 1, "one file per partition now"
+    assert table.scan().to_arrow().num_rows == 4, "same rows"
+    assert len(table.snapshots()) == 1, "retain: 0s dropped the history behind it"

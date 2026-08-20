@@ -12,7 +12,7 @@ import pyarrow
 
 from rekep.imports import locate
 from rekep.records import registry
-from rekep.records.arrow import PARTITION_KEY, PRIMARY_KEY, ArrowFieldBuilder
+from rekep.records.arrow import ArrowFieldBuilder, partition_keys, primary_keys
 from rekep.records.record import Record, record
 
 #: Where the Doris deployment lives, relative to the deployment root.
@@ -103,7 +103,7 @@ class DorisTable(Record):
         cls = self.record_class()
         builder = DorisDdlBuilder()
         schema = builder.ARROW_BUILDER().schema(cls)
-        keys = [f.name for f in schema if (f.metadata or {}).get(PRIMARY_KEY)]
+        keys = primary_keys(schema)
         fields = []
         for field in builder.ordered_fields(schema, keys):
             entry: dict[str, Any] = {"name": field.name, "type": builder.sql_type(field.type)}
@@ -261,7 +261,7 @@ class DorisDdlBuilder:
         space = deployment.namespace(namespace or deployment.namespaces[0].name)
         catalog = deployment.catalog(space.catalog)
         schema = self.ARROW_BUILDER().schema(cls)
-        keys = [f.name for f in schema if (f.metadata or {}).get(PRIMARY_KEY)]
+        keys = primary_keys(schema)
         ordered = self.ordered_fields(schema, keys)
 
         columns = ",\n".join(f"    {self.column(field)}" for field in ordered)
@@ -317,11 +317,10 @@ class DorisDdlBuilder:
 
     def partition_sql(self, schema: pyarrow.Schema) -> str | None:
         """AUTO RANGE partition on the first date-shaped partition field."""
-        for field in schema:
-            transform = (field.metadata or {}).get(PARTITION_KEY, b"").decode()
+        for name, transform in partition_keys(schema).items():
             granularity = TRUNC_SQL.get(transform)
             if granularity:
-                return f"AUTO PARTITION BY RANGE (date_trunc(`{field.name}`, '{granularity}')) ()"
+                return f"AUTO PARTITION BY RANGE (date_trunc(`{name}`, '{granularity}')) ()"
         return None
 
     def distribution_sql(
@@ -330,10 +329,9 @@ class DorisDdlBuilder:
         """HASH distribution: a bucket[] partition wins, then keys, then first."""
         buckets = namespace.buckets
         columns = keys
-        for field in schema:
-            transform = (field.metadata or {}).get(PARTITION_KEY, b"").decode()
+        for name, transform in partition_keys(schema).items():
             if transform.startswith("bucket["):
-                columns = [field.name]
+                columns = [name]
                 buckets = transform.removeprefix("bucket[").rstrip("]")
                 break
         if not columns:

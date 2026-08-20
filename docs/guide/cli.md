@@ -82,3 +82,24 @@ rekep service dataset list --config stacks/datasets
 namespace must resolve against (default `stacks/<target>`); `into_iceberg_table()`/
 `into_doris_table()` build the ad hoc table, `--dry-run` plans without
 converging.
+
+## Maintain datasets
+
+Compaction and snapshot retention, idempotent like every other verb — a
+table already laid out well reports nothing rewritten and nothing expired:
+
+```bash
+rekep service dataset maintain --dry-run
+rekep service dataset maintain --branch dev
+```
+
+It takes no policy arguments on purpose: `protocols.iceberg.compact_min_files`
+and `protocols.iceberg.retain` in each dataset's own side file are the whole
+policy, so a scheduler runs the bare command. See
+[Datasets](datasets.md#maintenance-compaction-and-retention).
+
+```console
+$ rekep service dataset maintain --dry-run
+dataset://default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired
+dataset://default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired
+```

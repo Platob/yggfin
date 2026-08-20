@@ -7,11 +7,20 @@ Run from `python/`::
 
 A fully local SQLite catalog + file warehouse, gitignored under a scratch
 temp dir (see `rekep tutorial` for the same setup interactively). Each round
-writes `rows` fresh `ParsedMessage` rows, then upserts a second batch that is
-half overlapping keys (updates) and half new ones (inserts) -- the mixed
-workload `upsert` is actually for, not a pure-insert best case. `chunk_rows`
-sweeps to show why chunking matters: too small and `upsert` pays its
-per-call planning cost too many times, too large and it stops streaming.
+writes `rows` fresh `ParsedMessage` rows arriving as many small batches --
+the shape a streaming transform actually produces -- then merges a second
+reader that is half overlapping keys (updates) and half new ones (inserts),
+the mixed workload `merge_by` is actually for rather than a pure-insert best
+case.
+
+`chunk_rows` is what the sweep is really about, and it costs twice over.
+The **throughput** column is the obvious half: too small and every call pays
+its planning cost again, too large and the write stops streaming. The
+**files** column is the half that keeps costing after the write returns:
+every call commits a snapshot and lands at least one data file per
+partition, so a small `chunk_rows` leaves a table that every later scan pays
+to open. `iceberg_compact` can repair that afterwards -- not paying for it
+in the first place is cheaper.
 """
 
 from __future__ import annotations
@@ -22,6 +31,7 @@ import pathlib
 import sys
 import tempfile
 import time
+from collections.abc import Iterator
 
 import pyarrow
 
@@ -35,20 +45,30 @@ from rekep.records.iceberg import IcebergCatalog, IcebergDeployment  # noqa: E40
 DAY = datetime.date(2026, 8, 14)
 
 
+#: Rows per incoming batch. Small on purpose: a transform yields batches,
+#: not tables, and how the writer groups them is the thing being measured.
+BATCH_ROWS = 500
+
+
 def generate_reader(rows: int, offset: int) -> pyarrow.RecordBatchReader:
     schema = ParsedMessage.into_arrow_schema()
-    batch = pyarrow.RecordBatch.from_pydict(
-        {
-            "url": ["bench"] * rows,
-            "unix": list(range(offset, offset + rows)),
-            "date": [DAY] * rows,
-            "hash64": list(range(offset, offset + rows)),
-            "protocol": ["FIX.4.4"] * rows,
-            "fields": [{"35": "D"}] * rows,
-        },
-        schema=schema,
-    )
-    return pyarrow.RecordBatchReader.from_batches(schema, [batch])
+
+    def batches() -> Iterator[pyarrow.RecordBatch]:
+        for start in range(offset, offset + rows, BATCH_ROWS):
+            size = min(BATCH_ROWS, offset + rows - start)
+            yield pyarrow.RecordBatch.from_pydict(
+                {
+                    "url": ["bench"] * size,
+                    "unix": list(range(start, start + size)),
+                    "date": [DAY] * size,
+                    "hash64": list(range(start, start + size)),
+                    "protocol": ["FIX.4.4"] * size,
+                    "fields": [{"35": "D"}] * size,
+                },
+                schema=schema,
+            )
+
+    return pyarrow.RecordBatchReader.from_batches(schema, batches())
 
 
 def bench_one(rows: int, chunk_rows: int) -> dict[str, float]:
@@ -66,8 +86,12 @@ def bench_one(rows: int, chunk_rows: int) -> dict[str, float]:
         table = stack.tables.get(dataset.into_iceberg_table())
 
         started = time.perf_counter()
-        dataset.write_arrow_reader(generate_reader(rows, 0), format="iceberg", table=table)
+        dataset.write_arrow_reader(
+            generate_reader(rows, 0), format="iceberg", table=table, chunk_rows=chunk_rows
+        )
         append_seconds = time.perf_counter() - started
+        table.refresh()
+        append_files = table.inspect.data_files().num_rows
 
         # half updates (same keys), half inserts (fresh keys) -- upsert's mixed case.
         started = time.perf_counter()
@@ -75,7 +99,7 @@ def bench_one(rows: int, chunk_rows: int) -> dict[str, float]:
             generate_reader(rows, rows // 2),
             format="iceberg",
             table=table,
-            mode="upsert",
+            merge_by=True,
             chunk_rows=chunk_rows,
         )
         upsert_seconds = time.perf_counter() - started
@@ -83,20 +107,22 @@ def bench_one(rows: int, chunk_rows: int) -> dict[str, float]:
         return {
             "append_rows_s": rows / append_seconds,
             "upsert_rows_s": rows / upsert_seconds,
+            "append_files": float(append_files),
         }
 
 
 def sweep(rows: int, quick: bool) -> None:
-    print(f"{rows:,} rows per round, mixed 50% update / 50% insert for upsert")
-    columns = ("chunk_rows", "append rows/s", "upsert rows/s")
-    widths = (12, 15, 15)
+    print(f"{rows:,} rows per round in {BATCH_ROWS}-row batches, merge is 50% update / 50% insert")
+    columns = ("chunk_rows", "append rows/s", "merge rows/s", "files left")
+    widths = (12, 15, 15, 12)
     print(" ".join(f"{c:>{w}}" for c, w in zip(columns, widths, strict=True)))
 
-    chunk_sizes = [rows] if quick else [max(1, rows // 20), max(1, rows // 4), rows]
+    chunk_sizes = [rows] if quick else [BATCH_ROWS, max(1, rows // 4), rows]
     for chunk_rows in chunk_sizes:
         result = bench_one(rows, chunk_rows)
         print(
-            f"{chunk_rows:>12,} {result['append_rows_s']:>15,.0f} {result['upsert_rows_s']:>15,.0f}"
+            f"{chunk_rows:>12,} {result['append_rows_s']:>15,.0f} "
+            f"{result['upsert_rows_s']:>15,.0f} {result['append_files']:>12,.0f}"
         )
 
 

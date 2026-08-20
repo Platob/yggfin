@@ -10,6 +10,14 @@
 
 ::: rekep.records.arrow.ArrowFieldBuilder
 
+::: rekep.records.arrow.cast_batch
+
+::: rekep.records.arrow.cast_reader
+
+::: rekep.records.arrow.primary_keys
+
+::: rekep.records.arrow.partition_keys
+
 ::: rekep.records.iceberg.IcebergFieldBuilder
 
 ::: rekep.records.ddl.IcebergDdlBuilder

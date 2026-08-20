@@ -11,7 +11,7 @@ import pathlib
 import re
 import types
 import uuid
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from typing import Annotated, Any, ClassVar, Union, get_args, get_origin, get_type_hints
 
 import pyarrow
@@ -414,6 +414,95 @@ class ArrowRecordBuilder:
         if types.is_binary(data_type) or types.is_large_binary(data_type):
             return bytes
         return str
+
+
+# -- schema helpers -----------------------------------------------------
+
+
+def primary_keys(schema: pyarrow.Schema) -> list[str]:
+    """Fields declared part of the primary key, in schema order.
+
+    The one reader of `PRIMARY_KEY` metadata: Iceberg's identifier fields,
+    Doris' key columns, a DDL `PRIMARY KEY` clause and a `merge_by` upsert
+    all mean this same list, so they all come through here rather than each
+    re-walking the metadata.
+    """
+    return [field.name for field in schema if (field.metadata or {}).get(PRIMARY_KEY)]
+
+
+def partition_keys(schema: pyarrow.Schema) -> dict[str, str]:
+    """Declared partition fields, in schema order, mapped to their transform.
+
+    The transform is spelled as it was declared -- `"identity"`, `"day"`,
+    `"bucket[16]"` -- and stays a string here: what it means is the reading
+    protocol's business (Iceberg parses it, Doris translates it, the file
+    writer only handles `identity`).
+    """
+    found = {}
+    for field in schema:
+        transform = (field.metadata or {}).get(PARTITION_KEY, b"").decode()
+        if transform:
+            found[field.name] = transform
+    return found
+
+
+def cast_batch(
+    batch: pyarrow.RecordBatch, schema: pyarrow.Schema, *, safe: bool = False
+) -> pyarrow.RecordBatch:
+    """`batch` reshaped to `schema`: columns cast, missing filled, extras dropped.
+
+    The gap this closes is the one every real pipeline hits: a transform
+    produces *almost* the target shape -- an `int64` where the table wants
+    `int32`, a column the source never had, its columns in another order --
+    and the write fails on a schema comparison rather than on the data.
+
+    `safe=False` by default, deliberately: this is `pyarrow.compute.cast`'s
+    unsafe mode, the one that lets a value narrow or a timestamp lose
+    precision instead of raising. A cast to a *target schema* is a
+    declaration that the target's types are the authority, so the
+    truncation is the intent, not an accident; pass `safe=True` to get
+    Arrow's checking back.
+
+    A column the batch does not have is filled with nulls -- but only if the
+    target field is nullable. A missing non-nullable field is refused by
+    name: filling a NOT NULL column with nulls builds a batch that only
+    fails later, at the write, where the cause is much harder to see.
+    """
+    if batch.schema.equals(schema):
+        return batch
+    arrays = []
+    for field in schema:
+        if field.name in batch.schema.names:
+            column = batch.column(field.name)
+            arrays.append(column if column.type == field.type else column.cast(field.type, safe))
+        elif field.nullable:
+            arrays.append(pyarrow.nulls(batch.num_rows, field.type))
+        else:
+            raise ValueError(
+                f"column {field.name!r} is missing and not nullable, so it cannot be filled "
+                "with nulls; produce it upstream or make the field optional"
+            )
+    return pyarrow.RecordBatch.from_arrays(arrays, schema=schema)
+
+
+def cast_reader(
+    reader: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+    schema: pyarrow.Schema,
+    *,
+    safe: bool = False,
+) -> pyarrow.RecordBatchReader:
+    """`cast_batch` over a whole stream, still one batch at a time.
+
+    Takes a plain iterator of batches too -- what `Job.arrow_transform`
+    yields -- so a job's output becomes a reader of the target shape in one
+    step, without the caller building a `RecordBatchReader` by hand first.
+    """
+
+    def generate() -> Iterator[pyarrow.RecordBatch]:
+        for batch in reader:
+            yield cast_batch(batch, schema, safe=safe)
+
+    return pyarrow.RecordBatchReader.from_batches(schema, generate())
 
 
 def _class_name(field_name: str) -> str:
