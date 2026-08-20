@@ -8,11 +8,12 @@ fields:
     field_id: 1
 - name: unix
   type: int64
-  description: Timestamp as whole nanoseconds since the epoch, naive UTC.
+  description: Timestamp as whole nanoseconds since the epoch, in the log's own zone.
   metadata:
     unit: nanosecond
     epoch: '1970-01-01'
   iceberg:
+    primary_key: true
     field_id: 2
 - name: date
   type: date32[day]
@@ -45,4 +46,5 @@ fields:
   type: int64
   description: Signed 64-bit hash of the raw line, for matching lines across captures.
   iceberg:
+    primary_key: true
     field_id: 8

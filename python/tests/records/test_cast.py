@@ -184,3 +184,87 @@ def test_the_stream_shape_is_decided_once_not_per_batch() -> None:
     surprise = batch_of(symbol=["C"], size=[3], day=[datetime.date(2026, 8, 14)], pod=["X"])
     read = Tick.cast_arrow_reader(iter([later, surprise]), merge_schema=True).read_all()
     assert "pod" not in read.column_names, "a column only a later batch has is dropped"
+
+
+# -- merging is one rule, applied at every level --------------------------
+
+
+def struct_of(**members: pyarrow.DataType) -> pyarrow.DataType:
+    return pyarrow.struct([(name, kind) for name, kind in members.items()])
+
+
+def test_a_struct_that_grew_a_member_grows_in_the_merge() -> None:
+    from rekep.records import merge_schemas
+
+    target = pyarrow.schema([pyarrow.field("venue", struct_of(mic=pyarrow.string()))])
+    source = pyarrow.schema(
+        [pyarrow.field("venue", struct_of(mic=pyarrow.string(), desk=pyarrow.int64()))]
+    )
+    merged = merge_schemas(source, target).field("venue").type
+    assert [merged.field(i).name for i in range(merged.num_fields)] == ["mic", "desk"]
+    assert merged.field(1).nullable, "an addition is nullable however deep it is"
+
+
+def test_a_list_of_structs_merges_its_item() -> None:
+    from rekep.records import merge_schemas
+
+    target = pyarrow.schema([pyarrow.field("legs", pyarrow.list_(struct_of(id=pyarrow.int64())))])
+    source = pyarrow.schema(
+        [pyarrow.field("legs", pyarrow.list_(struct_of(id=pyarrow.int64(), px=pyarrow.float64())))]
+    )
+    item = merge_schemas(source, target).field("legs").type.field(0).type
+    assert [item.field(i).name for i in range(item.num_fields)] == ["id", "px"]
+
+
+def test_a_map_merges_its_values_but_never_its_keys() -> None:
+    """A key is what identifies an entry; changing its shape changes which
+    entries exist, which is not a merge."""
+    from rekep.records import merge_schemas
+
+    target = pyarrow.schema(
+        [pyarrow.field("m", pyarrow.map_(pyarrow.string(), struct_of(a=pyarrow.int64())))]
+    )
+    source = pyarrow.schema(
+        [
+            pyarrow.field(
+                "m",
+                pyarrow.map_(
+                    pyarrow.large_string(), struct_of(a=pyarrow.int64(), b=pyarrow.string())
+                ),
+            )
+        ]
+    )
+    merged = merge_schemas(source, target).field("m").type
+    assert merged.key_type == pyarrow.string(), "the target's key survives"
+    assert merged.item_type.num_fields == 2
+
+
+def test_a_container_facing_a_scalar_leaves_the_target_alone() -> None:
+    from rekep.records import merge_schemas
+
+    target = pyarrow.schema([pyarrow.field("x", pyarrow.int64())])
+    source = pyarrow.schema([pyarrow.field("x", struct_of(a=pyarrow.int64()))])
+    assert merge_schemas(source, target).field("x").type == pyarrow.int64()
+
+
+def test_merge_fields_is_the_same_rule_on_one_field() -> None:
+    from rekep.records import merge_fields
+
+    target = pyarrow.field("venue", struct_of(mic=pyarrow.string()))
+    source = pyarrow.field("venue", struct_of(mic=pyarrow.string(), desk=pyarrow.int64()))
+    merged = merge_fields(source, target)
+    assert merged.name == "venue"
+    assert merged.type.num_fields == 2
+
+
+def test_nested_additions_get_ids_after_everything_already_numbered() -> None:
+    from rekep.records.arrow import FIELD_ID_KEY, merge_schemas
+
+    target = Tick.into_arrow_schema()
+    highest = max(int((f.metadata or {})[FIELD_ID_KEY]) for f in target)
+    source = pyarrow.schema([pyarrow.field("book", struct_of(bid=pyarrow.float64()))])
+    merged = merge_schemas(source, target)
+    added = merged.field("book")
+    assert int((added.metadata or {})[FIELD_ID_KEY]) == highest + 1
+    child = added.type.field(0)
+    assert int((child.metadata or {})[FIELD_ID_KEY]) == highest + 2, "children numbered too"

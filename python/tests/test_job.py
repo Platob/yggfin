@@ -7,6 +7,7 @@ import pytest
 
 import rekep.job
 from rekep.job import Job, Passthrough, arrow_task, load, load_all
+from rekep.lineage import Collector
 from rekep.models import Log
 from rekep.records import record
 from rekep.run import RunState
@@ -73,7 +74,7 @@ def test_qualified_name_without_a_namespace_is_just_the_name() -> None:
 
 
 def test_uri_is_scoped_to_the_job_scheme() -> None:
-    assert Job(name="orders", namespace="trading").uri() == "job://trading/orders"
+    assert Job(name="orders", namespace="trading").uri() == "job:/trading/orders"
 
 
 # -- bind / @arrow_task -------------------------------------------------
@@ -125,35 +126,54 @@ def test_calling_an_arrow_task_runs_it_tracked() -> None:
     def passthrough(batches: Iterator[pyarrow.RecordBatch]) -> Iterator[pyarrow.RecordBatch]:
         yield from batches
 
-    assert passthrough() == 24
-    events = passthrough.events()
-    assert [e.event_type for e in events] == [RunState.START, RunState.COMPLETE]
-    assert events[0].outputs[0].namespace == "trading"
-    assert events[0].outputs[0].name == "log"
+    collector = Collector()
+    assert passthrough.with_lineage(collector)() == 24
+    assert [e.event_type for e in collector.events] == [RunState.START, RunState.COMPLETE]
+    assert collector.events[0].outputs[0].namespace == "trading"
+    assert collector.events[0].outputs[0].name == "log"
 
 
 # -- run_tracked ----------------------------------------------------------
 
 
 def test_run_tracked_emits_start_then_complete() -> None:
-    job = Passthrough(name="p", source=SAMPLE.as_uri())
+    collector = Collector()
+    job = Passthrough(name="p", source=SAMPLE.as_uri()).with_lineage(collector)
     assert job.run_tracked() == 24
-    assert [e.event_type for e in job.events()] == [RunState.START, RunState.COMPLETE]
+    assert [e.event_type for e in collector.events] == [RunState.START, RunState.COMPLETE]
 
 
 def test_run_tracked_emits_start_then_fail_and_reraises() -> None:
-    job = Passthrough(name="p")  # no source: extract() raises
+    collector = Collector()
+    job = Passthrough(name="p").with_lineage(collector)  # no source: extract() raises
     with pytest.raises(NotImplementedError, match="override extract"):
         job.run_tracked()
-    assert [e.event_type for e in job.events()] == [RunState.START, RunState.FAIL]
+    assert [e.event_type for e in collector.events] == [RunState.START, RunState.FAIL]
 
 
-def test_events_are_not_shared_between_instances() -> None:
-    a = Passthrough(name="a", source=SAMPLE.as_uri())
-    b = Passthrough(name="b", source=SAMPLE.as_uri())
-    a.run_tracked()
-    assert a.events()
-    assert b.events() == []
+def test_a_failure_carries_the_error_into_the_run_facets() -> None:
+    """A FAIL that does not say what went wrong is worth less than the
+    traceback the caller is about to see anyway."""
+    collector = Collector()
+    with pytest.raises(NotImplementedError):
+        Passthrough(name="p").with_lineage(collector).run_tracked()
+    (failed,) = collector.of(RunState.FAIL)
+    assert "NotImplementedError" in failed.run.facets["errorMessage"]["message"]
+
+
+def test_runs_are_not_shared_between_instances() -> None:
+    mine, theirs = Collector(), Collector()
+    Passthrough(name="a", source=SAMPLE.as_uri()).with_lineage(mine).run_tracked()
+    Passthrough(name="b", source=SAMPLE.as_uri()).with_lineage(theirs)
+    assert mine.events
+    assert theirs.events == []
+
+
+def test_without_a_client_run_tracked_is_just_run() -> None:
+    """Not "tracked and discarded" -- no run is built at all."""
+    job = Passthrough(name="p", source=SAMPLE.as_uri())
+    assert job.lineage() is None
+    assert job.run_tracked() == job.run()
 
 
 # -- run --------------------------------------------------------------------

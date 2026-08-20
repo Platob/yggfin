@@ -15,7 +15,7 @@ override `arrow_transform` to make one that actually moves data.
 can be overridden alone. `run_tracked` wraps that whole chain in a `Run`,
 `START` before and `COMPLETE`/`FAIL` after -- the same internal lineage
 bookkeeping `Dataset`'s protocol writers use, kept on the instance
-(`Job.events()`) rather than emitted anywhere.
+to whatever lineage client is bound -- and to nothing at all when none is.
 
 `@arrow_task` is the decorator shortcut: it binds a plain
 batches-in/batches-out function as a `Job`'s `arrow_transform`, so a function
@@ -36,7 +36,7 @@ from typing import Any
 import pyarrow
 
 from rekep.imports import locate
-from rekep.namespace import Namespace, unique_uri
+from rekep.namespace import Namespace, ResourceUri
 from rekep.records import Record, record
 from rekep.render import render
 from rekep.require import require
@@ -74,6 +74,14 @@ class Job(Record):
 
     source: str | None = None
     """URL of the log the default `extract` reads, None when overridden."""
+
+    timezone: str | None = None
+    """IANA zone the source's wall-clock timestamps are in (`Europe/Paris`).
+
+    A log writes local time and says nothing about which local, so this is
+    the one piece of context that cannot be recovered from the file. None
+    reads the clock as UTC, which is right only for logs actually written
+    that way."""
 
     tags: list[str] = dataclasses.field(default_factory=list)
     """Extra tags for the orchestrator, on top of the derived lineage tags."""
@@ -115,14 +123,18 @@ class Job(Record):
         levels = [level for level in (self.namespace, self.name) if level]
         return Namespace.of(*levels).path() if levels else self.name
 
-    def uri(self) -> str:
-        """This job's globally unique id: `job://namespace/name`.
+    def resource_uri(self) -> ResourceUri:
+        """This job's identity: `job:/namespace/name`.
 
-        Built by `rekep.namespace.unique_uri`, the one place a job and a
-        dataset's identifiers come from -- so the two can never collide even
-        when they share a namespace and a name.
+        A `ResourceUri`, the one place a job's and a dataset's identifiers
+        are built and parsed -- so the two can never collide even when they
+        share a namespace and a name, and either spells the same way.
         """
-        return unique_uri("job", self.namespace, self.name)
+        return ResourceUri.of("jobs", *(self.namespace or "").split("/"), self.name)
+
+    def uri(self) -> str:
+        """This job's identity as a string: `job:/namespace/name`."""
+        return str(self.resource_uri())
 
     def source_code_location_facet(self) -> dict[str, Any]:
         """OpenLineage `SourceCodeLocationJobFacet`: where this job's code lives.
@@ -182,7 +194,7 @@ class Job(Record):
 
         if self.source is None:
             raise NotImplementedError(f"{type(self).__name__} has no source url; override extract")
-        with LogFile.from_url(self.source) as log:
+        with LogFile.from_url(self.source, timezone=self.timezone) as log:
             yield from log.into_arrow_batches()
 
     def load(self, batches: Iterator[pyarrow.RecordBatch]) -> int:
@@ -198,44 +210,69 @@ class Job(Record):
         """Extract, transform, load."""
         return self.load(self.arrow_transform(self.extract()))
 
-    def run_tracked(self) -> Any:
-        """`run()`, wrapped in a `Run`: `START` before, `COMPLETE`/`FAIL` after.
+    def with_lineage(self, client: Any) -> Job:
+        """Bind a lineage client, and return this job so the call chains.
 
-        The same boundary `Dataset`'s protocol writers wrap their own writes
-        in, but around this job's whole extract -> transform -> load: inputs
-        and outputs are the datasets `consumes`/`produces` name, identified
-        the same way a `Dataset` identifies itself. Events land in
-        `self.events()`, internal bookkeeping, not an emission.
+        A call rather than a field: a client is a runtime handle, and a side
+        file that declares a job has no business carrying one. Until one is
+        bound, `run_tracked` is `run` -- see `rekep.lineage`.
         """
-        from rekep.run import InputDataset, OutputDataset, Run, RunEvent, RunState
-        from rekep.run import now as _now
+        self.__dict__["_Job__client"] = client
+        return self
 
-        run = Run()
+    def lineage_client(self) -> Any | None:
+        """The bound client, or None when nothing is listening."""
+        return self.__dict__.get("_Job__client")
+
+    def lineage(self) -> Any | None:
+        """The boundary for one run of this job, or None when lineage is off.
+
+        Inputs and outputs are the datasets `consumes`/`produces` name,
+        identified the same way a `Dataset` identifies itself, and resolved
+        *before* the run starts: a bad dotted path should fail as a
+        configuration error, not as a run that started and then died.
+        """
+        from rekep.lineage import Lineage
+        from rekep.run import InputDataset, OutputDataset
+
+        client = self.lineage_client()
+        if client is None:
+            return None
         namespace = self.namespace or "default"
-        inputs = [
-            InputDataset(namespace=namespace, name=cls.doris_table_name())
-            for cls in self.consumed_records()
-        ]
-        outputs = [
-            OutputDataset(namespace=namespace, name=cls.doris_table_name())
-            for cls in self.produced_records()
-        ]
-        self._emit(RunEvent(RunState.START, _now(), run, self, inputs, outputs))
+        return Lineage(
+            client=client,
+            job=self,
+            inputs=[
+                InputDataset(namespace=namespace, name=cls.doris_table_name())
+                for cls in self.consumed_records()
+            ],
+            outputs=[
+                OutputDataset(namespace=namespace, name=cls.doris_table_name())
+                for cls in self.produced_records()
+            ],
+        )
+
+    def run_tracked(self) -> Any:
+        """`run()`, wrapped in a run: `START` before, `COMPLETE`/`FAIL` after.
+
+        The same boundary `Dataset`'s protocol writers wrap their own I/O
+        in, but around this job's whole extract -> transform -> load. With
+        no lineage client bound it *is* `run()` -- no run, no events, no
+        cost -- so a job is tracked by binding one, never by choosing a
+        different method to call.
+        """
+        run = self.lineage()
+        if run is None:
+            return self.run()
+
+        run.start()
         try:
             result = self.run()
-        except Exception:
-            self._emit(RunEvent(RunState.FAIL, _now(), run, self, inputs, outputs))
+        except Exception as error:
+            run.fail(error)
             raise
-        self._emit(RunEvent(RunState.COMPLETE, _now(), run, self, inputs, outputs))
+        run.complete()
         return result
-
-    def events(self) -> list[Any]:
-        """This job's own lineage log: every tracked run, `run_tracked` kept."""
-        return list(self.__dict__.get("_Job__events", ()))
-
-    def _emit(self, event: Any) -> Any:
-        self.__dict__.setdefault("_Job__events", []).append(event)
-        return event
 
     def __call__(self) -> Any:
         """Run this job, lineage tracked -- what an `@arrow_task` call does."""

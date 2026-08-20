@@ -166,3 +166,30 @@ def test_a_record_declaring_nothing_has_neither() -> None:
 
     assert Plain.primary_keys() == []
     assert Plain.partition_keys() == {}
+
+
+# -- composite keys, through every projection ----------------------------
+
+
+def test_a_composite_key_survives_every_projection() -> None:
+    """`Fill` declares two: the projections must all carry both, in order."""
+    assert Fill.primary_keys() == ["day", "order_id"]
+    assert Fill.into_iceberg_schema().identifier_field_names() == {"day", "order_id"}
+    assert "`day`, `order_id`" in Fill.into_doris_ddl()
+
+
+def test_doris_orders_every_key_column_first() -> None:
+    """Doris requires the key columns to lead the table, in key order."""
+    from rekep.records.doris import DorisDdlBuilder
+
+    builder = DorisDdlBuilder()
+    schema = builder.ARROW_BUILDER().schema(Fill)
+    ordered = [field.name for field in builder.ordered_fields(schema, Fill.primary_keys())]
+    assert ordered[:2] == ["day", "order_id"]
+
+
+def test_a_merge_joins_on_every_key_column() -> None:
+    from rekep.dataset import Dataset
+
+    dataset = Dataset(record="rekep.models.Log")
+    assert dataset.merge_columns(True) == ["unix", "hash64"]

@@ -60,14 +60,14 @@ jobs = load_all()          # every side file, name-sorted
 `namespace` and `name` give a job its OpenLineage identity;
 `qualified_name()` joins them through `Namespace`, the same recursive
 path-builder a `Dataset`'s location uses. `uri()` goes one step further —
-`rekep.namespace.unique_uri` scopes it to the `job://` scheme, so a job and a
+`rekep.namespace.ResourceUri` scopes it to the `job:` scheme, so a job and a
 `Dataset` sharing a namespace and a name never collide:
 
 ```python
 from rekep.job import Job
 
 Job(name="task", namespace="dag").qualified_name()   # "dag.task"
-Job(name="task", namespace="dag").uri()               # "job://dag/task"
+Job(name="task", namespace="dag").uri()               # "job:/dag/task"
 ```
 
 ## Configuration: source, Airflow, environment
@@ -107,11 +107,13 @@ airflow:
 For a one-off transform, `@arrow_task` skips the `@record class ... (Job)`
 declaration — it binds a plain batches-in/batches-out function as a `Job`'s
 `arrow_transform`, and calling the result runs it through `run_tracked()`:
-extract → transform → load, wrapped in a `Run` that opens `START` before and
-closes `COMPLETE`/`FAIL` after, kept on the job itself (`job.events()`):
+extract → transform → load, wrapped in a run that opens `START` before and
+closes `COMPLETE`/`FAIL` after — **when a lineage client is bound**, and as
+plain `run()` when none is:
 
 ```python
 from rekep.job import arrow_task
+from rekep.lineage import Collector
 from rekep.models import Log
 
 @arrow_task(name="errors_only", consumes=[Log], produces=[Log])
@@ -119,9 +121,17 @@ def errors_only(batches):
     for batch in batches:
         yield batch.filter(...)
 
-errors_only()               # runs it, START/COMPLETE tracked
-errors_only.events()        # the RunEvents this call just produced
+errors_only()                              # just runs; nothing is tracked
+
+collector = Collector()
+errors_only.with_lineage(collector)()      # runs, START/COMPLETE emitted
+collector.events                           # what this call produced
 ```
+
+Inputs and outputs come from `consumes`/`produces`, resolved *before* the run
+starts — a bad dotted path is a configuration error, not a run that began and
+then died. See [Datasets](datasets.md#lineage-opt-in-or-pay-nothing) for the
+same boundary around a dataset's own I/O.
 
 `config=` takes an already-built `Job` (typically loaded from a side file)
 and binds the function onto it instead of building a fresh one.

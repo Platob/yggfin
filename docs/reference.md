@@ -36,6 +36,8 @@
 
 ::: rekep.namespace.Namespace
 
+::: rekep.namespace.ResourceUri
+
 ## Jobs
 
 ::: rekep.job.Job
@@ -47,6 +49,14 @@
 ## Datasets
 
 ::: rekep.dataset.Dataset
+
+## Lineage
+
+::: rekep.lineage.LineageClient
+
+::: rekep.lineage.Collector
+
+::: rekep.lineage.Lineage
 
 ## Runs
 

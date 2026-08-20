@@ -446,43 +446,107 @@ def partition_keys(schema: pyarrow.Schema) -> dict[str, str]:
     return found
 
 
-def merge_schemas(target: pyarrow.Schema, incoming: pyarrow.Schema) -> pyarrow.Schema:
-    """`target`, extended with the fields only `incoming` has.
+def merge_fields(source: pyarrow.Field, target: pyarrow.Field) -> pyarrow.Field:
+    """`source` merged into `target`, all the way down.
 
-    Union by name, and the two halves are treated differently on purpose:
+    The one merge rule, applied recursively rather than only at the top:
 
-    - A field **both** schemas have keeps `target`'s spelling entirely --
-      its type, its nullability, its metadata. That is what makes this a
-      *merge* rather than a takeover: the shared columns are still the
-      target's, so the data is cast onto them (`cast_batch`), never the
-      other way round. A source calling a column `int64` does not get to
-      widen a table that declared `int32`.
-    - A field **only `incoming`** has is appended, and forced nullable
-      whatever the source said: rows already in the target predate the
-      column and have nothing to put in it, so a NOT NULL new column is a
-      constraint the existing data cannot satisfy. Iceberg refuses exactly
-      this, and so does anything else with rows already written.
+    - `target` wins wherever both have something -- its type, its
+      nullability, its metadata. That is what makes this a *merge* and not a
+      takeover: shared columns stay the target's, so data is cast onto them
+      (`cast_batch`), never the other way round. A source calling a column
+      `int64` does not get to widen a target that declared `int32`.
+    - Whatever `source` has and `target` does not is **added**, forced
+      nullable: values already stored under `target` predate the field and
+      have nothing to put in it. Iceberg refuses a required addition for
+      exactly that reason, and so does anything else with rows written.
 
-    New fields are renumbered from after `target`'s highest field id, so
-    column identity stays unique across the merged schema -- Iceberg and
-    parquet both match columns by id, and a duplicate id is a silently
-    wrong read rather than an error.
+    "Whatever source has" means at every level, which is the point of doing
+    this per field rather than per schema. A struct that grew a member, a
+    list whose items grew one, a map whose values grew one -- each merges
+    the same way, because each is a field with fields inside it. Only
+    matching containers recurse: a struct in the target and a scalar in the
+    source is a type conflict, and the target simply wins.
+
+    Added fields are renumbered after the highest id already in `target`, so
+    identity stays unique -- Iceberg and parquet both match columns by id,
+    and a duplicate is a silently wrong read rather than an error.
     """
-    known = set(target.names)
-    additions = [field for field in incoming if field.name not in known]
-    if not additions:
+    return _merge_field(source, target, itertools.count(_max_field_id_of(target) + 1))
+
+
+def merge_schemas(source: pyarrow.Schema, target: pyarrow.Schema) -> pyarrow.Schema:
+    """`merge_fields` over two schemas: the same rule, one level up.
+
+    A schema is a list of fields and a struct is a list of fields, so this
+    is the field merge with the ends changed -- both sides are wrapped as
+    struct fields, merged, and unwrapped. Nothing about the rule is
+    restated here, which is why a nested addition behaves exactly like a
+    top-level one.
+    """
+    merged = _merge_field_lists(
+        list(source), list(target), itertools.count(_max_field_id(target) + 1)
+    )
+    if merged == list(target):
         return target
-    counter = itertools.count(_max_field_id(target) + 1)
-    fresh = [_stamp(field.with_nullable(True), next(counter), counter) for field in additions]
-    return pyarrow.schema([*target, *fresh], metadata=target.metadata)
+    return pyarrow.schema(merged, metadata=target.metadata)
+
+
+def _merge_field(source: pyarrow.Field, target: pyarrow.Field, counter: Any) -> pyarrow.Field:
+    """One field pair: the target's spelling, with the source's extras inside."""
+    merged = _merge_type(source.type, target.type, counter)
+    if merged.equals(target.type):
+        return target
+    return pyarrow.field(target.name, merged, nullable=target.nullable, metadata=target.metadata)
+
+
+def _merge_type(
+    source: pyarrow.DataType, target: pyarrow.DataType, counter: Any
+) -> pyarrow.DataType:
+    """The container cases; anything else is the target, unchanged."""
+    kinds = pyarrow.types
+    if kinds.is_struct(source) and kinds.is_struct(target):
+        return pyarrow.struct(
+            _merge_field_lists(
+                [source.field(i) for i in range(source.num_fields)],
+                [target.field(i) for i in range(target.num_fields)],
+                counter,
+            )
+        )
+    if kinds.is_list(source) and kinds.is_list(target):
+        return pyarrow.list_(_merge_field(source.field(0), target.field(0), counter))
+    if kinds.is_large_list(source) and kinds.is_large_list(target):
+        return pyarrow.large_list(_merge_field(source.field(0), target.field(0), counter))
+    if kinds.is_map(source) and kinds.is_map(target):
+        # Only the value side can grow: a key is what identifies an entry,
+        # so changing its shape changes which entries exist.
+        return pyarrow.map_(
+            target.key_field, _merge_field(source.item_field, target.item_field, counter)
+        )
+    return target
+
+
+def _merge_field_lists(
+    source: list[pyarrow.Field], target: list[pyarrow.Field], counter: Any
+) -> list[pyarrow.Field]:
+    """Target order, each field merged with its namesake, then the additions."""
+    by_name = {field.name: field for field in source}
+    merged = [
+        _merge_field(by_name[field.name], field, counter) if field.name in by_name else field
+        for field in target
+    ]
+    known = {field.name for field in target}
+    merged.extend(
+        _stamp(field.with_nullable(True), next(counter), counter)
+        for field in source
+        if field.name not in known
+    )
+    return merged
 
 
 def _max_field_id(schema: pyarrow.Schema) -> int:
     """The highest `FIELD_ID_KEY` in `schema`, nested fields included, or 0."""
-    highest = 0
-    for field in schema:
-        highest = max(highest, _max_field_id_of(field))
-    return highest
+    return max((_max_field_id_of(field) for field in schema), default=0)
 
 
 def _max_field_id_of(field: pyarrow.Field) -> int:
@@ -565,7 +629,7 @@ def cast_reader(
     if merge_schema:
         source, incoming = _peek_schema(source)
         if incoming is not None:
-            schema = merge_schemas(schema, incoming)
+            schema = merge_schemas(incoming, schema)
 
     def generate() -> Iterator[pyarrow.RecordBatch]:
         for batch in source:

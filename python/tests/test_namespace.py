@@ -1,6 +1,6 @@
 import pytest
 
-from rekep.namespace import Namespace, unique_uri
+from rekep.namespace import Namespace, ResourceUri
 
 
 def test_a_root_namespace_is_its_own_path() -> None:
@@ -54,22 +54,72 @@ def test_round_trips_through_json() -> None:
     assert Namespace.from_json(ns.into_json()) == ns
 
 
-# -- unique_uri ---------------------------------------------------------
+# -- ResourceUri ---------------------------------------------------------
 
 
-def test_unique_uri_joins_namespace_and_name() -> None:
-    assert unique_uri("job", "trading", "orders") == "job://trading/orders"
+def test_a_dataset_uri_is_a_path_with_a_scheme() -> None:
+    uri = ResourceUri.of("datasets", "warehouse", "trading", "orders")
+    assert str(uri) == "ds:/warehouse/trading/orders"
+    assert uri.generic() == "rekep:/datasets/warehouse/trading/orders"
 
 
-def test_unique_uri_without_a_namespace_is_just_the_name() -> None:
-    assert unique_uri("job", None, "orders") == "job://orders"
+def test_levels_are_read_right_to_left() -> None:
+    """A shorter path is a less qualified name, not a different shape."""
+    full = ResourceUri.of("datasets", "warehouse", "trading", "orders")
+    assert (full.catalog(), full.namespace(), full.name()) == ("warehouse", "trading", "orders")
+
+    short = ResourceUri.of("datasets", "trading", "orders")
+    assert (short.catalog(), short.namespace(), short.name()) == (None, "trading", "orders")
+
+    bare = ResourceUri.of("datasets", "orders")
+    assert (bare.catalog(), bare.namespace(), bare.name()) == (None, "default", "orders")
 
 
-def test_unique_uri_splits_a_dotted_namespace_into_levels() -> None:
-    assert unique_uri("dataset", "iceberg.trading", "orders") == "dataset://iceberg/trading/orders"
+def test_a_branch_is_a_fragment_not_another_resource() -> None:
+    uri = ResourceUri.of("datasets", "trading", "orders", branch="dev")
+    assert str(uri) == "ds:/trading/orders#dev"
+    assert uri.at(None).path() == uri.path(), "same resource, different ref"
 
 
-def test_unique_uri_scheme_keeps_same_name_from_colliding_across_kinds() -> None:
-    job_uri = unique_uri("job", "trading", "orders")
-    dataset_uri = unique_uri("dataset", "trading", "orders")
-    assert job_uri != dataset_uri
+def test_every_spelling_parses_to_the_same_identity() -> None:
+    spellings = [
+        "ds:/warehouse/trading/orders#dev",
+        "ds://warehouse/trading/orders#dev",
+        "rekep:/datasets/warehouse/trading/orders#dev",
+        "/datasets/warehouse/trading/orders#dev",
+    ]
+    parsed = {ResourceUri.parse(text) for text in spellings}
+    assert len(parsed) == 1
+    assert str(parsed.pop()) == "ds:/warehouse/trading/orders#dev"
+
+
+def test_the_generic_scheme_names_the_service_as_a_path_part() -> None:
+    assert ResourceUri.parse("rekep:/jobs/pipeline/l2r").service == "jobs"
+    assert str(ResourceUri.parse("rekep:/jobs/pipeline/l2r")) == "job:/pipeline/l2r"
+
+
+def test_a_bare_path_needs_to_be_told_its_service() -> None:
+    assert ResourceUri.parse("trading/orders", service="datasets").name() == "orders"
+    with pytest.raises(ValueError, match="no service"):
+        ResourceUri.parse("trading/orders")
+
+
+def test_a_foreign_scheme_is_refused_by_name() -> None:
+    with pytest.raises(ValueError, match="unknown scheme 's3'"):
+        ResourceUri.parse("s3://bucket/key")
+
+
+def test_a_uri_needs_at_least_a_name() -> None:
+    with pytest.raises(ValueError, match="at least a name"):
+        ResourceUri.of("datasets")
+
+
+def test_a_job_and_a_dataset_sharing_a_name_do_not_collide() -> None:
+    job = ResourceUri.of("jobs", "trading", "orders")
+    dataset = ResourceUri.of("datasets", "trading", "orders")
+    assert str(job) != str(dataset)
+    assert job.generic() != dataset.generic()
+
+
+def test_child_goes_one_level_deeper() -> None:
+    assert ResourceUri.of("datasets", "trading").child("orders").path() == "trading/orders"

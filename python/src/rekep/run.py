@@ -8,9 +8,9 @@ by `event_type`: `START` before work begins, `COMPLETE`/`FAIL`/`ABORT` after.
 lighter than the full `Dataset` resource -- an event references what it
 moved, it does not restate the whole schema.
 
-Nothing here calls out to a lineage backend: `Dataset`'s write methods build
-and keep these events as their own internal bookkeeping (`Dataset.events()`),
-in exactly the shape an OpenLineage client would need if one is ever wired in.
+Nothing here calls out anywhere: these are the shapes, and `rekep.lineage`
+is what decides who is told. A `Dataset` or `Job` with no client bound never
+builds one of these at all.
 """
 
 from __future__ import annotations

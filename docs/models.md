@@ -11,13 +11,13 @@ One parsed line of a trading log.
 | Field | Type | Required | Description | Iceberg |
 | --- | --- | --- | --- | --- |
 | `url` | `string` | yes | Path of the log the line came from, as its filesystem addresses it. | field_id=1 |
-| `unix` | `int64` | yes | Timestamp as whole nanoseconds since the epoch, naive UTC. | field_id=2 |
+| `unix` | `int64` | yes | Timestamp as whole nanoseconds since the epoch, in the log's own zone. | primary_key=True, field_id=2 |
 | `date` | `date32[day]` | yes | Calendar day of the timestamp, naive UTC. | partition_key=True, field_id=3 |
 | `time` | `time64[us]` | yes | Time of day of the timestamp, naive UTC. | field_id=4 |
 | `thread_name` | `string` | yes | Contents of the first bracketed field. | field_id=5 |
 | `driver` | `string` | yes | Contents of the second bracketed field -- the emitting module. | field_id=6 |
 | `message` | `string` | yes | Payload with the header and level stripped, continuation lines folded in. | field_id=7 |
-| `hash64` | `int64` | yes | Signed 64-bit hash of the raw line, for matching lines across captures. | field_id=8 |
+| `hash64` | `int64` | yes | Signed 64-bit hash of the raw line, for matching lines across captures. | primary_key=True, field_id=8 |
 
 ## ParsedMessage
 
@@ -28,7 +28,7 @@ One log line's message, parsed as `|`-delimited `key=value` segments.
 | Field | Type | Required | Description | Iceberg |
 | --- | --- | --- | --- | --- |
 | `url` | `string` | yes | Path of the log the line came from. | field_id=1 |
-| `unix` | `int64` | yes | Timestamp as whole nanoseconds since the epoch, naive UTC. | field_id=2 |
+| `unix` | `int64` | yes | Timestamp as whole nanoseconds since the epoch, in the log's own zone. | primary_key=True, field_id=2 |
 | `date` | `date32[day]` | yes | Calendar day of the timestamp -- the lake partitions on it. | partition_key=True, field_id=3 |
 | `hash64` | `int64` | yes | Signed 64-bit hash of the raw message; the primary key, upsert-stable across reruns of the same file. | primary_key=True, field_id=4 |
 | `protocol` | `string` |  | Value of the `8=` tag, when the message opens with one. | field_id=5 |

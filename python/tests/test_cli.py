@@ -316,7 +316,7 @@ def test_dataset_deploy_converges_the_declared_dataset(
         )
         == 0
     )
-    assert "dataset://default/logs" in capsys.readouterr().out
+    assert "ds:/default/logs" in capsys.readouterr().out
 
     from rekep.iceberg import Iceberg
 
@@ -349,7 +349,7 @@ def test_dataset_list_prints_declared_datasets(
     root = dataset_workspace(tmp_path)
     assert main(["dataset", "list", "--config", str(root / "datasets")]) == 0
     out = capsys.readouterr().out
-    assert "dataset://default/logs" in out
+    assert "ds:/default/logs" in out
     assert "record=rekep.models.Log" in out
 
 

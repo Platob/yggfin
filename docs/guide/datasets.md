@@ -358,14 +358,31 @@ dataset://default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snap
 A dataset declaring no `retain` keeps all its history, which is the safe
 default for something nobody has thought about yet.
 
-## Lineage: internal, not emitted
+## Lineage: opt in, or pay nothing
 
-Every tracked read and write appends `RunEvent`s to the dataset instance:
+Lineage happens when a client is listening, and not otherwise:
 
 ```python
-dataset.write_arrow_reader(reader, format="iceberg", table=live_table)
-dataset.events()   # [RunEvent(START, ...), RunEvent(COMPLETE, outputStatistics={"rowCount": ...})]
+from rekep.lineage import Collector
+
+collector = Collector()
+dataset.with_lineage(collector).write_arrow_reader(reader, "iceberg", table=live_table)
+collector.events   # [RunEvent(START, ...), RunEvent(COMPLETE, outputStatistics={"rowCount": ...})]
 ```
+
+A client is anything with `emit(event)` — `Collector` keeps them in a list,
+which is what tests and notebooks want. Binding returns the dataset, so it
+chains, and it changes nothing about the *declaration*: a client is a runtime
+handle, and `dataset.into_json()` is identical either way.
+
+**With no client bound, none of it happens.** Not tracked-and-discarded: no
+run is created, no timestamp taken, no schema facet composed — and a read is
+handed back the protocol's own reader instead of one wrapped in a
+row-counting generator, which is a per-batch cost on the hot path.
+
+A `FAIL` carries the exception as an `errorMessage` run facet, because a
+failure that does not say what went wrong is worth less than the traceback
+the caller is about to see anyway.
 
 A read is lazy, so its run cannot close where the call returns: `START` is
 emitted when the scan is planned — the moment it commits to a snapshot and a
@@ -373,6 +390,10 @@ filter — and `COMPLETE` when the last batch comes out, carrying the row count
 nothing could have known before then. A reader abandoned half-way leaves its
 run open, which is the honest record of what happened.
 
-Nothing is sent anywhere — this is internal bookkeeping in exactly the shape
-an OpenLineage client would need if one is ever wired in. `Job.run_tracked()`
-(and `@arrow_task`) wrap a whole `extract -> transform -> load` the same way.
+The events are OpenLineage's own `RunEvent` shape. A real
+`openlineage-python` client type-checks its own classes, so handing one these
+unconverted will not work — the protocol here is deliberately a duck, so a
+test double is three lines and an adapter is the only thing a real backend
+needs. `Job.run_tracked()` (and `@arrow_task`) wrap a whole
+`extract -> transform -> load` the same way, and are plain `run()` until a
+client is bound.

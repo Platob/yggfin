@@ -12,6 +12,7 @@ import pytest
 
 from rekep import Arrow, Record, record
 from rekep.dataset import Dataset
+from rekep.lineage import Collector
 from rekep.models import Log, ParsedMessage
 from rekep.records.arrow import FIELD_ID_KEY
 from rekep.records.arrow import _max_field_id as max_field_id
@@ -242,12 +243,12 @@ def test_facets_include_the_schema() -> None:
 
 def test_uri_is_scoped_to_the_dataset_scheme() -> None:
     dataset = Dataset(record="rekep.models.Log", name="logs", namespace="trading")
-    assert dataset.uri() == "dataset://trading/logs"
+    assert dataset.uri() == "ds:/trading/logs"
 
 
 def test_facets_include_the_data_source_uri() -> None:
     dataset = Dataset(record="rekep.models.Log", name="logs", namespace="trading")
-    assert dataset.facets()["dataSource"] == {"uri": "dataset://trading/logs"}
+    assert dataset.facets()["dataSource"] == {"uri": "ds:/trading/logs"}
 
 
 # -- location: shared, direct, protocol-specific -------------------------
@@ -402,7 +403,7 @@ def test_merge_by_true_upserts_on_the_records_primary_key() -> None:
         parsed_reader({"hash64": 1}), format="iceberg", table=table, merge_by=True
     )
     assert table.upserted and not table.appended
-    assert table.join_cols == [["hash64"]], "the Arrow(key=True) field, unasked"
+    assert table.join_cols == [["unix", "hash64"]], "both Arrow(key=True) fields, unasked"
 
 
 def test_merge_by_a_list_upserts_on_exactly_those_columns() -> None:
@@ -415,12 +416,19 @@ def test_merge_by_a_list_upserts_on_exactly_those_columns() -> None:
 
 
 def test_merge_by_true_is_refused_without_a_primary_key() -> None:
-    """`Log` declares no `Arrow(key=True)`, and guessing a join key corrupts."""
-    dataset = Dataset(record="rekep.models.Log")
+    """Guessing a join key is how a merge silently corrupts a table."""
+
+    @record
+    class Keyless(Record):
+        """No key to merge on."""
+
+        value: int
+        """A value."""
+
+    dataset = Dataset(record=f"{__name__}.Keyless")
+    dataset.record_class = lambda: Keyless  # type: ignore[method-assign]
     with pytest.raises(ValueError, match="merge_by=True needs a primary key"):
-        dataset.write_arrow_reader(
-            reader_of([1]), format="iceberg", table=FakeTable(), merge_by=True
-        )
+        dataset.merge_columns(True)
 
 
 def test_merge_by_is_read_from_the_datasets_own_config() -> None:
@@ -429,7 +437,9 @@ def test_merge_by_is_read_from_the_datasets_own_config() -> None:
     )
     table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
-    assert table.join_cols == [["hash64"]], "declared in the side file, not at the call site"
+    assert table.join_cols == [["unix", "hash64"]], (
+        "declared in the side file, not at the call site"
+    )
 
 
 def test_a_configured_column_list_merges_on_those_columns() -> None:
@@ -536,22 +546,35 @@ def test_a_brand_new_table_bootstraps_on_main_regardless_of_the_declared_branch(
     assert table.branches == ["main"]
 
 
-# -- internal lineage tracking between public and private -----------------
+# -- lineage: only when a client is listening -----------------------------
 
 
-def test_a_successful_write_emits_start_then_complete(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_no_client_means_no_run_at_all() -> None:
+    """Not tracked-and-discarded: nothing is built, timed or counted."""
+    dataset = Dataset(record="rekep.models.Log", name="logs")
+    assert dataset.lineage_client() is None
+    assert dataset.lineage("write.iceberg") is None
+    assert dataset.write_arrow_reader(reader_of([1, 2]), format="iceberg", table=FakeTable()) == 2
+
+
+def test_a_successful_write_emits_start_then_complete() -> None:
+    collector = Collector()
     dataset = Dataset(record="rekep.models.Log", name="logs", namespace="trading")
-    dataset.write_arrow_reader(reader_of([1, 2]), format="iceberg", table=FakeTable())
+    dataset.with_lineage(collector).write_arrow_reader(
+        reader_of([1, 2]), format="iceberg", table=FakeTable()
+    )
 
-    events = dataset.events()
+    events = collector.events
     assert [e.event_type for e in events] == [RunState.START, RunState.COMPLETE]
     assert events[0].run.run_id == events[1].run.run_id, "same run, two moments"
     assert events[0].job.namespace == "trading"
+    assert events[0].job.name == "logs.write.iceberg", "the operation names the run"
     assert events[1].outputs[0].output_facets == {"outputStatistics": {"rowCount": 2}}
 
 
 def test_a_failed_write_emits_start_then_fail_and_reraises() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    collector = Collector()
+    dataset = Dataset(record="rekep.models.Log").with_lineage(collector)
 
     def boom(reader: Any, **_: Any) -> int:
         raise RuntimeError("catalog unreachable")
@@ -560,15 +583,33 @@ def test_a_failed_write_emits_start_then_fail_and_reraises() -> None:
     with pytest.raises(RuntimeError, match="catalog unreachable"):
         dataset.write_arrow_reader(reader_of([1]), format="iceberg")
 
-    assert [e.event_type for e in dataset.events()] == [RunState.START, RunState.FAIL]
+    assert [e.event_type for e in collector.events] == [RunState.START, RunState.FAIL]
+    (failed,) = collector.of(RunState.FAIL)
+    assert failed.run.facets["errorMessage"]["message"] == "RuntimeError: catalog unreachable"
 
 
-def test_events_are_not_shared_between_instances() -> None:
-    a = Dataset(record="rekep.models.Log", name="a")
-    b = Dataset(record="rekep.models.Log", name="b")
-    a.write_arrow_reader(reader_of([1]), format="iceberg", table=FakeTable())
-    assert a.events()
-    assert b.events() == []
+def test_runs_are_not_shared_between_clients() -> None:
+    mine, theirs = Collector(), Collector()
+    Dataset(record="rekep.models.Log", name="a").with_lineage(mine).write_arrow_reader(
+        reader_of([1]), format="iceberg", table=FakeTable()
+    )
+    Dataset(record="rekep.models.Log", name="b").with_lineage(theirs)
+    assert mine.events
+    assert theirs.events == []
+
+
+def test_binding_a_client_returns_the_same_dataset() -> None:
+    dataset = Dataset(record="rekep.models.Log")
+    assert dataset.with_lineage(Collector()) is dataset
+
+
+def test_a_client_is_not_part_of_the_declaration() -> None:
+    """It is a runtime handle -- a side file cannot carry one, and binding
+    one must not change what the dataset serialises to."""
+    plain = Dataset(record="rekep.models.Log", name="logs")
+    bound = Dataset(record="rekep.models.Log", name="logs").with_lineage(Collector())
+    assert bound.into_json() == plain.into_json()
+    assert bound == plain
 
 
 # -- file_write_arrow_reader: generic uri + filesystem mapping -----------
@@ -628,11 +669,11 @@ def test_two_file_writes_append_instead_of_colliding(tmp_path: pathlib.Path) -> 
 
 
 def test_file_write_tracks_lineage_like_iceberg_does(tmp_path: pathlib.Path) -> None:
+    collector = Collector()
     dataset = Dataset(record="rekep.models.Log", name="logs", direct=(tmp_path / "out").as_uri())
-    dataset.write_arrow_reader(reader_of([1, 2]), format="file")
-    events = dataset.events()
-    assert [e.event_type for e in events] == [RunState.START, RunState.COMPLETE]
-    assert events[-1].outputs[0].output_facets == {"outputStatistics": {"rowCount": 2}}
+    dataset.with_lineage(collector).write_arrow_reader(reader_of([1, 2]), format="file")
+    assert [e.event_type for e in collector.events] == [RunState.START, RunState.COMPLETE]
+    assert collector.events[-1].outputs[0].output_facets == {"outputStatistics": {"rowCount": 2}}
 
 
 # -- deploy: autonomous, no side file needed ------------------------------
@@ -839,13 +880,13 @@ def test_a_file_read_pushes_a_filter_down(tmp_path: pathlib.Path) -> None:
 def test_a_read_tracks_lineage_when_the_stream_ends(tmp_path: pathlib.Path) -> None:
     dataset = Dataset(record="rekep.models.Log", name="logs", direct=(tmp_path / "o").as_uri())
     dataset.write_arrow_reader(reader_of([1, 2]), format="file")
-    written = len(dataset.events())
 
-    reader = dataset.read_arrow_reader("file")
-    assert [e.event_type for e in dataset.events()[written:]] == [RunState.START], "planned only"
+    collector = Collector()
+    reader = dataset.with_lineage(collector).read_arrow_reader("file")
+    assert [e.event_type for e in collector.events] == [RunState.START], "planned only"
 
     reader.read_all()
-    events = dataset.events()[written:]
+    events = collector.events
     assert [e.event_type for e in events] == [RunState.START, RunState.COMPLETE]
     assert events[0].run.run_id == events[1].run.run_id, "same run, two moments"
     assert events[-1].inputs[0].input_facets == {"inputStatistics": {"rowCount": 2}}
@@ -855,10 +896,16 @@ def test_a_read_that_is_never_consumed_leaves_its_run_open(tmp_path: pathlib.Pat
     """A lazy read cannot claim to have finished; an abandoned one did not."""
     dataset = Dataset(record="rekep.models.Log", direct=(tmp_path / "o").as_uri())
     dataset.write_arrow_reader(reader_of([1]), format="file")
-    opened = len(dataset.events())
-    dataset.read_arrow_reader("file")
-    reads = dataset.events()[opened:]
-    assert [e.event_type for e in reads] == [RunState.START]
+    collector = Collector()
+    dataset.with_lineage(collector).read_arrow_reader("file")
+    assert [e.event_type for e in collector.events] == [RunState.START]
+
+
+def test_an_untracked_read_is_the_protocols_own_reader(tmp_path: pathlib.Path) -> None:
+    """No client means no per-batch counting hop between caller and data."""
+    dataset = Dataset(record="rekep.models.Log", direct=(tmp_path / "o").as_uri())
+    dataset.write_arrow_reader(reader_of([1, 2]), format="file")
+    assert dataset.read_arrow_reader("file").read_all().num_rows == 2
 
 
 # -- reading an iceberg table: real catalog, real pushdown ----------------
@@ -1052,7 +1099,7 @@ def test_the_shipped_log_dataset_is_branch_agnostic() -> None:
     repo_datasets = pathlib.Path(__file__).parents[2] / "stacks" / "datasets"
     (log,) = [d for d in Dataset.load_all(repo_datasets) if d.name == "log"]
     assert log.record_class() is Log
-    assert log.uri() == "dataset://default/log"
+    assert log.uri() == "ds:/default/log"
     assert log.iceberg_branch() is None
 
 
@@ -1137,7 +1184,7 @@ def test_merge_schemas_keeps_the_targets_spelling_for_shared_fields() -> None:
 
     target = ParsedMessage.into_arrow_schema()
     incoming = pyarrow.schema([("hash64", pyarrow.int32()), ("venue", pyarrow.string())])
-    merged = merge_schemas(target, incoming)
+    merged = merge_schemas(incoming, target)
     assert merged.field("hash64").type == pyarrow.int64(), "the target's type wins"
     assert merged.names == [*target.names, "venue"], "new one appended, order kept"
 
@@ -1148,7 +1195,7 @@ def test_merge_schemas_forces_new_fields_nullable() -> None:
 
     target = ParsedMessage.into_arrow_schema()
     incoming = pyarrow.schema([pyarrow.field("venue", pyarrow.string(), nullable=False)])
-    assert merge_schemas(target, incoming).field("venue").nullable
+    assert merge_schemas(incoming, target).field("venue").nullable
 
 
 def test_merge_schemas_numbers_new_fields_after_the_highest_existing_id() -> None:
@@ -1157,7 +1204,7 @@ def test_merge_schemas_numbers_new_fields_after_the_highest_existing_id() -> Non
     from rekep.records.arrow import FIELD_ID_KEY, merge_schemas
 
     target = ParsedMessage.into_arrow_schema()
-    merged = merge_schemas(target, pyarrow.schema([("venue", pyarrow.string())]))
+    merged = merge_schemas(pyarrow.schema([("venue", pyarrow.string())]), target)
     identifiers = {field.name: int((field.metadata or {})[FIELD_ID_KEY]) for field in merged}
     assert identifiers["venue"] == 9, "6 top-level fields + the map's key and value"
     assert len(set(identifiers.values())) == len(identifiers), "no id reused"

@@ -53,7 +53,10 @@ packages = ["src/rekep"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+# tests/ mirrors src/ folder for folder, so two modules legitimately share a
+# basename (rekep/lineage.py and rekep/airflow/lineage.py). importlib mode
+# imports each by its full path instead of demanding globally unique ones.
+addopts = "-ra --import-mode=importlib"
 
 [tool.ruff]
 src = ["src", "tests"]

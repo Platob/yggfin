@@ -18,9 +18,13 @@ class Log(Record):
     """Path of the log the line came from, as its filesystem addresses it."""
 
     # An integer rather than a timestamp type, so the column survives any
-    # downstream that is picky about time units.
-    unix: Annotated[int, Arrow(metadata={"unit": "nanosecond", "epoch": "1970-01-01"})]
-    """Timestamp as whole nanoseconds since the epoch, naive UTC."""
+    # downstream that is picky about time units. Part of the key beside
+    # `hash64`: the hash alone identifies a line, but a key that leads with
+    # time is one an engine can prune on, since it correlates with the
+    # partition. Two key columns rather than one is also the reason the
+    # projections have to handle a composite key at all.
+    unix: Annotated[int, Arrow(key=True, metadata={"unit": "nanosecond", "epoch": "1970-01-01"})]
+    """Timestamp as whole nanoseconds since the epoch, in the log's own zone."""
 
     # Derived from `unix`, denormalised so the lake partitions on a real date
     # column instead of every reader re-deriving one.
@@ -39,5 +43,5 @@ class Log(Record):
     message: str
     """Payload with the header and level stripped, continuation lines folded in."""
 
-    hash64: int
+    hash64: Annotated[int, Arrow(key=True)]
     """Signed 64-bit hash of the raw line, for matching lines across captures."""

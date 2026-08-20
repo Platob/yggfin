@@ -23,8 +23,8 @@ class ParsedMessage(Record):
     url: str
     """Path of the log the line came from."""
 
-    unix: Annotated[int, Arrow(metadata={"unit": "nanosecond", "epoch": "1970-01-01"})]
-    """Timestamp as whole nanoseconds since the epoch, naive UTC."""
+    unix: Annotated[int, Arrow(key=True, metadata={"unit": "nanosecond", "epoch": "1970-01-01"})]
+    """Timestamp as whole nanoseconds since the epoch, in the log's own zone."""
 
     date: Annotated[datetime.date, Arrow(partition=True)]
     """Calendar day of the timestamp -- the lake partitions on it."""

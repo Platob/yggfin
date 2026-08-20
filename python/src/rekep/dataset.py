@@ -77,12 +77,12 @@ import pyarrow.fs
 from rekep.filesystems import resolve as resolve_filesystem
 from rekep.imports import locate
 from rekep.job import Job
-from rekep.namespace import unique_uri
+from rekep.lineage import Lineage
+from rekep.namespace import ResourceUri
 from rekep.records import registry
 from rekep.records.arrow import FIELD_ID_KEY, cast_reader
 from rekep.records.record import Record, record
-from rekep.run import InputDataset, OutputDataset, Run, RunEvent, RunState
-from rekep.run import now as _now
+from rekep.run import InputDataset, OutputDataset
 
 logger = logging.getLogger("rekep.dataset")
 
@@ -180,14 +180,24 @@ class Dataset(Record):
         """This dataset's name; the record's snake_case name when undeclared."""
         return self.name or self.record_class().doris_table_name()
 
-    def uri(self) -> str:
-        """This dataset's globally unique id: `dataset://namespace/name`.
+    def resource_uri(self) -> ResourceUri:
+        """This dataset's identity: `ds:/catalog/namespace/name#branch`.
 
-        Built by `rekep.namespace.unique_uri`, the one place a job and a
-        dataset's identifiers come from -- so the two can never collide even
-        when they share a namespace and a name.
+        A `ResourceUri`, the one place a job's and a dataset's identifiers
+        are built and parsed -- so the two can never collide even when they
+        share a namespace and a name. The branch rides along as the
+        fragment, because a branch is not a different dataset.
         """
-        return unique_uri("dataset", self.namespace, self.dataset_name())
+        return ResourceUri.of(
+            "datasets",
+            *(self.namespace or "").split("/"),
+            self.dataset_name(),
+            branch=self.iceberg_branch(),
+        )
+
+    def uri(self) -> str:
+        """This dataset's identity as a string: `ds:/namespace/name#branch`."""
+        return str(self.resource_uri())
 
     def schema_facet(self) -> dict[str, Any]:
         """OpenLineage `SchemaDatasetFacet`: the record's fields, by name."""
@@ -433,14 +443,36 @@ class Dataset(Record):
             output_facets=output_facets,
         )
 
-    def events(self) -> list[RunEvent]:
-        """This dataset's own lineage log: every run this instance tracked.
+    def with_lineage(self, client: Any) -> Dataset:
+        """Bind a lineage client, and return this dataset so the call chains.
 
-        Internal bookkeeping, not an emission -- events accumulate on the
-        instance (lazily, so a fresh `Dataset` costs nothing extra) rather
-        than going anywhere until something else reads them.
+        A call rather than a field: a client is a runtime handle, and a side
+        file that declares a dataset has no business carrying one. Until one
+        is bound, every read and write skips tracking entirely -- see
+        `rekep.lineage`.
         """
-        return list(self.__dict__.get("_Dataset__events", ()))
+        self.__dict__["_Dataset__client"] = client
+        return self
+
+    def lineage_client(self) -> Any | None:
+        """The bound client, or None when nothing is listening."""
+        return self.__dict__.get("_Dataset__client")
+
+    def lineage(self, operation: str, **references: Any) -> Lineage | None:
+        """The boundary for one operation, or None when lineage is off.
+
+        The synthetic job name (`<dataset>.write.iceberg`) says what the run
+        was, since a dataset's own I/O has no `Job` behind it -- unlike
+        `Job.run_tracked`, which is the job.
+        """
+        client = self.lineage_client()
+        if client is None:
+            return None
+        return Lineage(
+            client=client,
+            job=Job(name=f"{self.dataset_name()}.{operation}", namespace=self.namespace),
+            **references,
+        )
 
     # -- reading ----------------------------------------------------------
 
@@ -1059,50 +1091,35 @@ class Dataset(Record):
         reader: pyarrow.RecordBatchReader,
         options: dict[str, Any],
     ) -> int:
-        """START a `Run`, call `writer`, COMPLETE or FAIL it -- return what it wrote."""
-        run = Run()
-        job = Job(name=f"{self.dataset_name()}.write.{protocol}", namespace=self.namespace)
-        output = self.as_output()
-        self._emit(
-            RunEvent(
-                event_type=RunState.START,
-                event_time=_now(),
-                run=run,
-                job=job,
-                outputs=[output],
-            )
-        )
+        """Call `writer`, wrapped in a run -- when anyone is listening.
+
+        With no client bound this is one attribute lookup and a call: no
+        run, no timestamps, no schema facet composed for an event nobody
+        receives.
+        """
+        run = self.lineage(f"write.{protocol}", outputs=[self.as_output()])
+        if run is None:
+            return writer(reader, **options)
+
+        run.start()
         try:
             written = writer(reader, **options)
-        except Exception:
-            self._emit(
-                RunEvent(
-                    event_type=RunState.FAIL,
-                    event_time=_now(),
-                    run=run,
-                    job=job,
-                    outputs=[output],
-                )
-            )
+        except Exception as error:
+            run.fail(error)
             raise
-        completed = dataclasses.replace(
-            output, output_facets={"outputStatistics": {"rowCount": written}}
-        )
-        self._emit(
-            RunEvent(
-                event_type=RunState.COMPLETE,
-                event_time=_now(),
-                run=run,
-                job=job,
-                outputs=[completed],
-            )
+        run.complete(
+            outputs=[
+                dataclasses.replace(
+                    run.outputs[0], output_facets={"outputStatistics": {"rowCount": written}}
+                )
+            ]
         )
         return written
 
     def _tracked_read(
         self, protocol: str, opener: Any, options: dict[str, Any]
     ) -> pyarrow.RecordBatchReader:
-        """START a `Run`, open the reader, COMPLETE it when the stream ends.
+        """Open the reader, wrapped in a run -- when anyone is listening.
 
         A read is lazy, so its run cannot close where the call returns: the
         reader has not read anything yet. `START` is emitted when the scan
@@ -1111,23 +1128,20 @@ class Dataset(Record):
         count nothing could have known before then. A reader abandoned
         half-way therefore leaves its run open, which is the honest record
         of what happened: the read did not finish.
+
+        Counting means a Python hop per batch, which is exactly why it does
+        not happen at all without a client: the untracked path hands back
+        the protocol's own reader, untouched.
         """
-        run = Run()
-        job = Job(name=f"{self.dataset_name()}.read.{protocol}", namespace=self.namespace)
-        source = self.as_input()
-        self._emit(
-            RunEvent(
-                event_type=RunState.START, event_time=_now(), run=run, job=job, inputs=[source]
-            )
-        )
+        run = self.lineage(f"read.{protocol}", inputs=[self.as_input()])
+        if run is None:
+            return opener(**options)
+
+        run.start()
         try:
             reader = opener(**options)
-        except Exception:
-            self._emit(
-                RunEvent(
-                    event_type=RunState.FAIL, event_time=_now(), run=run, job=job, inputs=[source]
-                )
-            )
+        except Exception as error:
+            run.fail(error)
             raise
 
         def generate() -> Iterator[pyarrow.RecordBatch]:
@@ -1136,36 +1150,18 @@ class Dataset(Record):
                 for batch in reader:
                     rows += batch.num_rows
                     yield batch
-            except Exception:
-                self._emit(
-                    RunEvent(
-                        event_type=RunState.FAIL,
-                        event_time=_now(),
-                        run=run,
-                        job=job,
-                        inputs=[source],
-                    )
-                )
+            except Exception as error:
+                run.fail(error)
                 raise
-            self._emit(
-                RunEvent(
-                    event_type=RunState.COMPLETE,
-                    event_time=_now(),
-                    run=run,
-                    job=job,
-                    inputs=[
-                        dataclasses.replace(
-                            source, input_facets={"inputStatistics": {"rowCount": rows}}
-                        )
-                    ],
-                )
+            run.complete(
+                inputs=[
+                    dataclasses.replace(
+                        run.inputs[0], input_facets={"inputStatistics": {"rowCount": rows}}
+                    )
+                ]
             )
 
         return pyarrow.RecordBatchReader.from_batches(reader.schema, generate())
-
-    def _emit(self, event: RunEvent) -> RunEvent:
-        self.__dict__.setdefault("_Dataset__events", []).append(event)
-        return event
 
 
 def _counting(reader: pyarrow.RecordBatchReader) -> tuple[pyarrow.RecordBatchReader, list[int]]:

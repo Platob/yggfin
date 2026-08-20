@@ -25,9 +25,12 @@ def test_every_column_is_documented() -> None:
         assert "\n" not in description, f"{field.name} description is not one line"
 
 
-def test_hash64_is_the_primary_key() -> None:
+def test_unix_and_hash64_are_the_primary_key() -> None:
+    """A composite key: the hash identifies the line, `unix` leads so an
+    engine can prune on it -- it correlates with the partition."""
     schema = ParsedMessage.into_iceberg_schema()
-    assert schema.identifier_field_names() == {"hash64"}
+    assert schema.identifier_field_names() == {"unix", "hash64"}
+    assert ParsedMessage.primary_keys() == ["unix", "hash64"], "declaration order"
 
 
 def test_date_is_the_partition() -> None:

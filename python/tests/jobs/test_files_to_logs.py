@@ -31,9 +31,13 @@ def test_run_parses_the_sample_file() -> None:
 
 
 def test_run_tracked_reports_log_as_the_output() -> None:
+    from rekep.lineage import Collector
+    from rekep.run import RunState
+
+    collector = Collector()
     job = FilesToLogs(name="f2l", namespace="pipeline", source=SAMPLE.as_uri())
-    job.run_tracked()
-    (event,) = [e for e in job.events() if e.event_type.value == "COMPLETE"]
+    job.with_lineage(collector).run_tracked()
+    (event,) = collector.of(RunState.COMPLETE)
     assert event.outputs[0].namespace == "pipeline"
     assert event.outputs[0].name == "log"
 

@@ -128,10 +128,14 @@ rekep/
 ├── imports.py     dotted-path resolution
 ├── render.py      Jinja + env + git context
 ├── filesystems.py FileSystem.from_uri, cached per URL
-├── namespace.py   Namespace: the OpenLineage resource for a hierarchical
-│                  identifier -- recursive parent levels building a path;
-│                  unique_uri(scheme, namespace, name) is the one place a
-│                  Job's and a Dataset's `scheme://namespace/name` id comes from
+├── namespace.py   Namespace (recursive parent levels building a path) and
+│                  ResourceUri: the one parser and formatter for every
+│                  identity here -- a service, a `/`-separated path and an
+│                  optional branch fragment: `ds:/catalog/namespace/name#dev`,
+│                  `job:/namespace/name`, generically
+│                  `rekep:/<service>/<path>` with the service as the first
+│                  path part. Paths, not dots: a dot cannot say whether
+│                  `a.b.c` is three levels or one name
 ├── job.py         Job: the OpenLineage resource for a process -- config
 │                  record + arrow_transform (not enforced abstract, bindable
 │                  via @arrow_task); repo_url/script_path -> the
@@ -157,9 +161,14 @@ rekep/
 │                  iceberg_compact/expire_snapshots/publish;
 │                  file_read/write via rekep.filesystems, hive-partitioned from
 │                  the record's own Arrow(partition=...)
-├── run.py         Run/RunEvent: OpenLineage's own event shape, kept as
-│                  Job's and Dataset's internal lineage bookkeeping
-│                  (`.events()`), never emitted anywhere
+├── run.py         Run/RunEvent: OpenLineage's own event shape -- the shapes
+│                  only; who is told is lineage.py's business
+├── lineage.py     LineageClient (anything with emit), Collector (a client
+│                  that keeps them), Lineage (one run's START ->
+│                  COMPLETE/FAIL boundary). **Opt in**: `with_lineage(client)`
+│                  binds a runtime handle, never a field; with none bound no
+│                  run is built at all -- reads are handed back the
+│                  protocol's own reader rather than a counting wrapper
 ├── cli.py         one service class per capability, each registering its own
 │                  top-level subparser (`rekep <svc> <cmd>`)
 ├── tutorial.py    the guided rich tour (`rekep tutorial`)

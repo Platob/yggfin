@@ -219,13 +219,14 @@ class Record(Convertible):
 
     @classmethod
     def merge_arrow_schema(cls, incoming: pyarrow.Schema) -> pyarrow.Schema:
-        """This record's schema, extended with the fields only `incoming` has.
+        """This record's schema, extended with whatever `incoming` has and it does not.
 
-        The target of a `merge_schema` write: shared columns stay this
-        record's (so the data is cast onto them), new ones are appended,
-        nullable, with fresh field ids.
+        The target of a `merge_schema` write: shared fields stay this
+        record's (so the data is cast onto them), new ones are added
+        nullable with fresh field ids -- at every level, so a struct column
+        that grew a member grows here too (`records.arrow.merge_fields`).
         """
-        return merge_schemas(cls.into_arrow_schema(), incoming)
+        return merge_schemas(incoming, cls.into_arrow_schema())
 
     @classmethod
     def primary_keys(cls) -> list[str]:

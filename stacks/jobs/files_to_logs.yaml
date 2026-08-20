@@ -9,6 +9,10 @@ namespace: pipeline
 description: Parse raw trading-log files into Log records.
 schedule: "@daily"
 source: "{{ env.get('REKEP_SOURCE_URL', '') }}"
+# The one thing the file itself cannot say: which local clock its header
+# timestamps are on. `unix` is only a real instant once this is named; the
+# `date`/`time` columns keep the wall clock either way.
+timezone: "{{ env.get('REKEP_LOG_TIMEZONE', 'Europe/Paris') }}"
 repo_url: https://github.com/Platob/yggfin
 script_path: python/src/rekep/jobs/files_to_logs.py
 tags: [pipeline, ingestion]
