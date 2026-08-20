@@ -32,9 +32,19 @@ class MemoryDataset(Dataset):
 
     struct: StructField
     commits: list[pyarrow.Table] = dataclasses.field(default_factory=list)
+    created: bool = False
 
     def into_struct_field(self) -> StructField:
         return self.struct
+
+    @property
+    def exists(self) -> bool:
+        return self.created
+
+    def create_with_field(self, field: StructField, **kwargs: Any) -> "MemoryDataset":
+        self.struct = field
+        self.created = True
+        return self
 
     def read_arrow_reader(self, schema: Any = None, **kwargs: Any) -> pyarrow.RecordBatchReader:
         batches: list[pyarrow.RecordBatch] = []
@@ -53,6 +63,7 @@ class MemoryDataset(Dataset):
         commit_row_size: int | None = None,
     ) -> None:
         self.merge_columns(merge_by)  # refuses an impossible merge before writing anything
+        self.get_or_create()  # a write appends, and appending to nothing is a create
         reader = self.target_field(schema).cast_arrow_reader(source)
         self.commits.extend(arrow_chunks(reader, commit_row_size))
 
@@ -104,7 +115,10 @@ def test_merge_by_true_means_the_declared_primary_key() -> None:
     @field
     class Keyed(Convertible):
         symbol: Annotated[str, Field.primary_key()]
+        """Instrument."""
+
         size: int
+        """Quantity."""
 
     assert MemoryDataset(struct=Keyed.FIELD).merge_columns(True) == ["symbol"]
 
@@ -181,3 +195,57 @@ def test_chunks_take_the_schema_from_a_reader() -> None:
     reader = pyarrow.RecordBatchReader.from_batches(rows(1).schema, iter([rows(1)]))
     (chunk,) = arrow_chunks(reader, None)
     assert chunk.schema.equals(reader.schema)
+
+
+# -- creating ---------------------------------------------------------------
+
+
+def test_a_write_creates_what_is_not_there(dataset: MemoryDataset) -> None:
+    assert not dataset.exists
+    dataset.write_arrow(rows(1))
+    assert dataset.exists, "a write appends, and appending to nothing is a create"
+
+
+def test_create_with_takes_whatever_names_a_shape(dataset: MemoryDataset) -> None:
+    schema = pyarrow.schema([("symbol", pyarrow.string())])
+    assert dataset.create_with(schema).into_arrow_schema().names == ["symbol"]
+    assert dataset.create_with_arrow_schema(schema).exists
+    assert dataset.create_with_arrow_field(
+        pyarrow.field("q", pyarrow.struct([("a", pyarrow.int64())]))
+    )
+    assert dataset.create_with(Quote).into_struct_field().names == Quote.FIELD.names
+
+
+def test_create_with_nothing_uses_the_declared_shape(dataset: MemoryDataset) -> None:
+    assert dataset.create_with().into_struct_field() is Quote.FIELD
+
+
+def test_get_or_create_is_idempotent(dataset: MemoryDataset) -> None:
+    dataset.create_with()
+    dataset.commits.append(pyarrow.Table.from_batches([rows(1)]))
+    dataset.get_or_create()
+    assert len(dataset.commits) == 1, "an existing dataset is left alone"
+
+
+# -- generic redirects ------------------------------------------------------
+
+
+def test_write_arrow_picks_the_method_by_what_it_is(dataset: MemoryDataset) -> None:
+    batch = rows(1)
+    dataset.write_arrow(batch)
+    dataset.write_arrow(pyarrow.Table.from_batches([batch]))
+    dataset.write_arrow(iter([batch]))
+    dataset.write_arrow([batch])
+    assert [commit.num_rows for commit in dataset.commits] == [1, 1, 1, 1]
+
+
+def test_read_arrow_picks_the_method_by_the_type_asked_for(dataset: MemoryDataset) -> None:
+    dataset.write_arrow(rows(2))
+    assert isinstance(dataset.read_arrow(), pyarrow.Table)
+    assert isinstance(dataset.read_arrow(pyarrow.Table), pyarrow.Table)
+    assert isinstance(dataset.read_arrow(pyarrow.RecordBatchReader), pyarrow.RecordBatchReader)
+
+
+def test_a_write_of_something_unwritable_is_refused(dataset: MemoryDataset) -> None:
+    with pytest.raises(TypeError, match="cannot infer"):
+        dataset.write_arrow("not arrow data")

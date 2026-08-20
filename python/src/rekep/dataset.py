@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import abc
 from collections.abc import Iterator, Sequence
-from typing import Any
+from typing import Any, ClassVar, Self
 
 import pyarrow
 
 from rekep.convert import Convertible
-from rekep.fields import Field, StructField
+from rekep.fields import StructField, field_of
 
 
 class Dataset(Convertible, abc.ABC):
@@ -29,9 +29,32 @@ class Dataset(Convertible, abc.ABC):
     whole of it at once. `read_arrow_table` and `write_arrow_table` are there
     for when it does fit and the caller says so.
 
+    Writes **append by default, and create what is not there yet**: a first
+    write to an empty catalog or a missing file builds it from the declared
+    shape, so a pipeline does not need a separate "deploy" step. `create_with`
+    is there for when the shape has to exist before anything is written.
+
     A dataset is a `Convertible` dataclass, so an implementation's
     configuration is also a document: `IcebergDataset.from_yaml("logs.yaml")`.
     """
+
+    #: What `read_arrow` redirects to, keyed by the type asked for.
+    READS: ClassVar[dict[Any, str]] = {
+        pyarrow.Table: "arrow_table",
+        pyarrow.RecordBatchReader: "arrow_reader",
+    }
+
+    #: What `write_arrow` redirects to, keyed by what is handed over. A batch
+    #: has its own method because wrapping it in a stream is this class's job,
+    #: not the caller's.
+    WRITES: ClassVar[dict[Any, str]] = {
+        pyarrow.RecordBatch: "arrow_batch",
+        pyarrow.Table: "arrow_table",
+        pyarrow.RecordBatchReader: "arrow_reader",
+        Iterator: "arrow_reader",
+        list: "arrow_reader",
+        tuple: "arrow_reader",
+    }
 
     # -- what it holds ------------------------------------------------------
 
@@ -43,18 +66,14 @@ class Dataset(Convertible, abc.ABC):
         """That shape as an Arrow schema."""
         return self.into_struct_field().into_arrow_schema()
 
-    def target_field(self, schema: pyarrow.Schema | StructField | None = None) -> StructField:
+    def target_field(self, schema: Any = None) -> StructField:
         """The shape a cast should land on: `schema` if given, else ours.
 
         Every read and write takes an optional schema, and they all mean the
-        same three things by it -- a field, an Arrow schema, or nothing at all
-        -- so none of them decides that for itself.
+        same by it -- a field, an Arrow schema, field or type, a `@field`
+        class, or nothing at all -- so none of them decides that for itself.
         """
-        if schema is None:
-            return self.into_struct_field()
-        if isinstance(schema, StructField):
-            return schema
-        return Field.from_arrow_schema(schema)
+        return self.into_struct_field() if schema is None else field_of(schema)
 
     def merge_columns(self, merge_by: bool | Sequence[str] | None) -> list[str]:
         """Columns a write merges on: the primary key for True, else what is named.
@@ -74,17 +93,60 @@ class Dataset(Convertible, abc.ABC):
             return keys
         return list(merge_by)
 
-    # -- reading ------------------------------------------------------------
+    # -- creating -----------------------------------------------------------
+
+    @property
+    @abc.abstractmethod
+    def exists(self) -> bool:
+        """Whether this dataset is there yet."""
 
     @abc.abstractmethod
-    def read_arrow_reader(
-        self, schema: pyarrow.Schema | StructField | None = None, **kwargs: Any
-    ) -> pyarrow.RecordBatchReader:
+    def create_with_field(self, field: StructField, **kwargs: Any) -> Self:
+        """Make this dataset exist, shaped by `field`, and hand it back.
+
+        Idempotent by contract: creating one that is already there is not an
+        error, which is what lets a write create as it goes.
+        """
+
+    def create_with(self, source: Any = None, **kwargs: Any) -> Self:
+        """`create_with_field`, from whatever names a shape.
+
+        A field, an Arrow schema, field or type, or a `@field` class -- and
+        nothing at all means this dataset's own declared shape.
+        """
+        return self.create_with_field(self.target_field(source), **kwargs)
+
+    def create_with_arrow_schema(self, schema: pyarrow.Schema, **kwargs: Any) -> Self:
+        """`create_with_field`, from an Arrow schema."""
+        return self.create_with_field(field_of(schema), **kwargs)
+
+    def create_with_arrow_field(self, field: pyarrow.Field, **kwargs: Any) -> Self:
+        """`create_with_field`, from an Arrow field."""
+        return self.create_with_field(field_of(field), **kwargs)
+
+    def get_or_create(self, source: Any = None, **kwargs: Any) -> Self:
+        """This dataset, created with that shape when it is not there yet.
+
+        What every write calls first: appending to something that does not
+        exist yet is a create, not a failure.
+        """
+        return self if self.exists else self.create_with(source, **kwargs)
+
+    # -- reading ------------------------------------------------------------
+
+    def read_arrow(self, target: Any = pyarrow.Table, **kwargs: Any) -> Any:
+        """Read, picking the method by the type asked for.
+
+        `read_arrow(pyarrow.Table)` materialises, `read_arrow(RecordBatchReader)`
+        streams; the keywords go through to whichever it is.
+        """
+        return getattr(self, f"read_{self.redirect_of(target, self.READS)}")(**kwargs)
+
+    @abc.abstractmethod
+    def read_arrow_reader(self, schema: Any = None, **kwargs: Any) -> pyarrow.RecordBatchReader:
         """Stream this dataset, cast onto `schema` when one is asked for."""
 
-    def read_arrow_table(
-        self, schema: pyarrow.Schema | StructField | None = None, **kwargs: Any
-    ) -> pyarrow.Table:
+    def read_arrow_table(self, schema: Any = None, **kwargs: Any) -> pyarrow.Table:
         """Read the whole dataset into one table. Needs it to fit in memory."""
         return self.read_arrow_reader(schema, **kwargs).read_all()
 
@@ -94,11 +156,11 @@ class Dataset(Convertible, abc.ABC):
     def write_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
-        schema: pyarrow.Schema | StructField | None = None,
+        schema: Any = None,
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
     ) -> None:
-        """Write a stream into this dataset.
+        """Write a stream into this dataset, creating it if it is not there.
 
         `schema` is the shape to cast onto on the way in, defaulting to this
         dataset's own. `merge_by` is True to merge on the primary key, a list
@@ -107,15 +169,43 @@ class Dataset(Convertible, abc.ABC):
         as one.
         """
 
+    def write_arrow(self, source: Any, *args: Any, **kwargs: Any) -> None:
+        """Write, picking the method by what is handed over.
+
+        A batch, a table, a reader or a plain iterator of batches each have
+        their own `write_arrow_*`; this redirects to the one that fits rather
+        than making every call site branch.
+        """
+        return getattr(self, f"write_{self.redirect_of(source, self.WRITES)}")(
+            source, *args, **kwargs
+        )
+
+    def write_arrow_batch(
+        self,
+        batch: pyarrow.RecordBatch,
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_row_size: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """`write_arrow_reader` for one batch."""
+        self.write_arrow_reader(iter([batch]), schema, merge_by, commit_row_size, **kwargs)
+
     def write_arrow_table(
         self,
         table: pyarrow.Table,
-        schema: pyarrow.Schema | StructField | None = None,
+        schema: Any = None,
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
+        **kwargs: Any,
     ) -> None:
-        """`write_arrow_reader` for a table already in memory."""
-        self.write_arrow_reader(table.to_reader(), schema, merge_by, commit_row_size)
+        """`write_arrow_reader` for a table already in memory.
+
+        Whatever else an implementation takes -- a branch, snapshot properties
+        -- goes straight through, so the generic `write_arrow` can hand any
+        shape to any dataset without knowing what it supports.
+        """
+        self.write_arrow_reader(table.to_reader(), schema, merge_by, commit_row_size, **kwargs)
 
 
 def arrow_chunks(

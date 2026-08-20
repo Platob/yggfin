@@ -1,4 +1,4 @@
-"""Trading log file access."""
+"""Text log files, read and written as Arrow."""
 
 from __future__ import annotations
 
@@ -11,13 +11,14 @@ import re
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
 from functools import cached_property
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import pyarrow
 import pyarrow.compute
 import pyarrow.fs
 
-from rekep.convert import Convertible
+from rekep.dataset import Dataset, arrow_chunks
+from rekep.fields import Field, StructField
 from rekep.filesystems import resolve
 from rekep.logs.log import Log
 
@@ -53,8 +54,13 @@ DEFAULT_READ_BYTE_SIZE = 1 << 22
 
 
 @dataclass(eq=False)
-class LogFile(Convertible, io.BufferedIOBase):
-    """A trading log addressed by URI, exposed as a readable binary stream.
+class TextFile(Dataset, io.BufferedIOBase):
+    """A text log addressed by URI: a dataset, and a readable binary stream.
+
+    Reading parses the lines into Arrow batches; writing renders batches back
+    into lines, in Arrow string kernels rather than a loop, so a log is a
+    dataset like any other -- `read_arrow_table()`, `write_arrow(batches)` --
+    while staying a plain file underneath.
 
     `filesystem` is optional: when omitted it is resolved from `url` at
     construction -- cached, so an object store's credential chain is not
@@ -87,6 +93,15 @@ class LogFile(Convertible, io.BufferedIOBase):
     filesystem: pyarrow.fs.FileSystem | None = None
     header_pattern: re.Pattern[bytes] = HEADER_PATTERN
 
+    #: Columns one written line is made of. The rest of `ROW` is derived when
+    #: the line is read back -- the day and the hash are functions of the line,
+    #: and the url is the file -- so a write must not demand them.
+    RENDERED: ClassVar[tuple[str, ...]] = ("unix", "thread_name", "driver", "message")
+
+    #: Shape reads and writes land on. None is `ROW`'s own -- what the parser
+    #: fills -- and anything else is cast onto on the way out and in.
+    row: StructField | None = None
+
     #: IANA zone the wall clock in the header belongs to (`Europe/Paris`).
     #: None keeps the historical reading: the clock *is* UTC. Naming the real
     #: zone is what makes `unix` a true instant -- see `_unix_nanos`.
@@ -106,20 +121,38 @@ class LogFile(Convertible, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
-    ) -> LogFile:
+    ) -> TextFile:
         """Build from a URI, or from a path when `filesystem` is given."""
         return cls(url=url, filesystem=filesystem, timezone=timezone)
 
     @classmethod
     def from_path(
         cls, path: str | os.PathLike[str], filesystem: pyarrow.fs.FileSystem | None = None
-    ) -> LogFile:
+    ) -> TextFile:
         """Build from a local path, absolute or relative."""
         if filesystem is not None:
             return cls(url=os.fspath(path), filesystem=filesystem)
         return cls(url=pathlib.Path(path).resolve().as_uri())
 
-    # -- converting ---------------------------------------------------------
+    # -- the dataset ---------------------------------------------------------
+
+    @cached_property
+    def parsed_field(self) -> StructField:
+        """What the parser produces, whatever shape reads are cast onto."""
+        return self.ROW.FIELD
+
+    def into_struct_field(self) -> StructField:
+        """The shape this file holds: the declared one, or what the parser fills."""
+        return self.row if self.row is not None else self.parsed_field
+
+    @cached_property
+    def rendered_field(self) -> StructField:
+        """What a write has to carry: the header's own columns and the message."""
+        parsed = self.parsed_field
+        return Field.from_arrow_schema(
+            pyarrow.schema([parsed.field(name).into_arrow_field() for name in self.RENDERED]),
+            parsed.name,
+        )
 
     @cached_property
     def schema(self) -> pyarrow.Schema:
@@ -128,7 +161,78 @@ class LogFile(Convertible, io.BufferedIOBase):
         Cached because `_batch` reads it once per batch: building a schema is
         cheap, but not free, and it cannot change while the file is open.
         """
-        return self.ROW.FIELD.into_arrow_schema()
+        return self.parsed_field.into_arrow_schema()
+
+    @property
+    def exists(self) -> bool:
+        """Whether the file is there yet."""
+        return self.filesystem.get_file_info(self.url).type != pyarrow.fs.FileType.NotFound
+
+    def create_with_field(self, field: StructField, **kwargs: Any) -> TextFile:
+        """Adopt `field` as this file's shape and make sure the file is there.
+
+        Creating an empty log is writing nothing to it, so this only has to
+        touch the file -- and remember the shape, which is what later reads
+        are cast onto.
+        """
+        self.row = field
+        if not self.exists:
+            with self.filesystem.open_output_stream(self.url) as stream:
+                stream.write(b"")
+        return self
+
+    def read_arrow_reader(self, schema: Any = None, **kwargs: Any) -> pyarrow.RecordBatchReader:
+        """Parse the file, cast onto `schema` when one is asked for.
+
+        With none, the reader is the parser's own -- see `into_arrow_reader`
+        for the parsing options, which are passed straight through.
+        """
+        reader = self.into_arrow_reader(**kwargs)
+        target = self.target_field(schema)
+        if target.arrow_schema.equals(reader.schema):
+            return reader
+        return target.cast_arrow_reader(reader)
+
+    def write_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_row_size: int | None = None,
+    ) -> None:
+        """Append a stream to the file, one write per chunk, as text.
+
+        The rows are cast onto the columns a line is made of -- the timestamp,
+        the two bracketed fields and the message -- and rendered back into the
+        header layout, so a file written here parses back into the same rows.
+        Everything else `ROW` declares is derived on the way in, so a write is
+        never asked for a day, a hash or a url it would only recompute.
+
+        `merge_by` has no meaning for a text file: there is nothing to match a
+        row against, so asking for one is refused rather than quietly appending.
+        """
+        if merge_by:
+            raise ValueError(
+                f"{type(self).__name__} appends lines and cannot merge on {merge_by!r}; "
+                "write to a dataset that can, or drop merge_by"
+            )
+        self.get_or_create()
+        # With no schema named, the rendered columns are the only shape a write
+        # has to satisfy: casting onto the whole row first would demand the
+        # very columns reading derives.
+        stream = source if schema is None else self.target_field(schema).cast_arrow_reader(source)
+        reader = self.rendered_field.cast_arrow_reader(stream)
+        for chunk in arrow_chunks(reader, commit_row_size):
+            self._append(_rendered(chunk))
+
+    def _append(self, payload: bytes) -> None:
+        """Add already-rendered bytes to the end of the file."""
+        if not payload:
+            return
+        with self.filesystem.open_append_stream(self.url) as stream:
+            stream.write(payload)
+
+    # -- converting ---------------------------------------------------------
 
     def into_arrow_reader(
         self,
@@ -306,6 +410,42 @@ class LogFile(Convertible, io.BufferedIOBase):
     def _check_open(self) -> None:
         if self.closed:
             raise ValueError("I/O operation on closed file.")
+
+
+def _rendered(rows: pyarrow.Table) -> bytes:
+    """One chunk of parsed rows back as log lines, in string kernels only.
+
+    The inverse of the header regex, and deliberately built the same way: the
+    timestamp is formatted by Arrow (`strftime` prints microseconds for a
+    `us` column), the underscore between millis and micros is one slice
+    insertion, the parts are joined column-wise, and the whole chunk is joined
+    into a single blob by wrapping it in a one-row list. Nothing here runs per
+    row in Python -- which is what makes writing a log as cheap as reading it.
+    """
+    if rows.num_rows == 0:
+        return b""
+    compute = pyarrow.compute
+    stamps = compute.strftime(
+        compute.divide(rows.column("unix"), 1000).cast(pyarrow.timestamp("us")),
+        format="%Y-%m-%d %H:%M:%S",
+    )
+    stamps = compute.utf8_replace_slice(stamps, start=23, stop=23, replacement="_")
+    lines = compute.binary_join_element_wise(
+        stamps.cast(pyarrow.string()),
+        " [",
+        rows.column("thread_name").cast(pyarrow.string()),
+        "] [",
+        rows.column("driver").cast(pyarrow.string()),
+        "] ",
+        rows.column("message").cast(pyarrow.string()),
+        "",
+    )
+    flat = lines.combine_chunks() if isinstance(lines, pyarrow.ChunkedArray) else lines
+    whole = pyarrow.ListArray.from_arrays(
+        pyarrow.array([0, len(flat)], pyarrow.int32()),
+        flat.combine_chunks() if isinstance(flat, pyarrow.ChunkedArray) else flat,
+    )
+    return compute.binary_join(whole, "\n")[0].as_py().encode() + b"\n"
 
 
 def _nbytes(size: int | None) -> int | None:

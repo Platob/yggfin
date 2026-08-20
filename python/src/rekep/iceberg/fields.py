@@ -24,6 +24,10 @@ DOC = b"doc"
 #: never collide with a schema's.
 FIRST_PARTITION_ID = 1000
 
+#: Arrow field metadata key the ecosystem stores Iceberg's column ids under --
+#: parquet's own, which is why the prefix is not ours.
+FIELD_ID = b"PARQUET:field_id"
+
 
 def iceberg_schema(source: StructField) -> Any:
     """`source` as a `pyiceberg.schema.Schema`, ids numbered from one.
@@ -110,11 +114,30 @@ def struct_field_of(schema: Any, name: str = "", spec: Any = None) -> StructFiel
 
 
 def _fresh(arrow: pyarrow.Schema, next_id: Any = None) -> Any:
-    """An Arrow schema as an Iceberg schema with freshly assigned ids."""
-    from pyiceberg.io.pyarrow import _pyarrow_to_schema_without_ids
+    """An Arrow schema as an Iceberg schema, keeping the ids it already carries.
+
+    Iceberg identifies a column by id, never by name, so a schema that came
+    *from* Iceberg -- or from a parquet footer written for it -- already says
+    which id each column has, and taking those back is what makes a round trip
+    lossless instead of a rename of every column. A schema that carries none,
+    or only some, is numbered fresh in Iceberg's own sibling-first order: the
+    user should not have to know the protocol to hand over a plain Arrow
+    schema.
+    """
+    from pyiceberg.io.pyarrow import _pyarrow_to_schema_without_ids, pyarrow_to_schema
     from pyiceberg.schema import assign_fresh_schema_ids
 
+    if next_id is None and all(_has_ids(field) for field in arrow):
+        return pyarrow_to_schema(arrow)
     return assign_fresh_schema_ids(_pyarrow_to_schema_without_ids(arrow), next_id)
+
+
+def _has_ids(field: pyarrow.Field) -> bool:
+    """Whether `field` and everything under it carries an Iceberg column id."""
+    if FIELD_ID not in (field.metadata or {}):
+        return False
+    data_type = field.type
+    return all(_has_ids(data_type.field(index)) for index in range(data_type.num_fields))
 
 
 def _documented(schema: pyarrow.Schema) -> pyarrow.Schema:

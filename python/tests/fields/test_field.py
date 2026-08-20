@@ -9,6 +9,7 @@ import pyarrow
 import pytest
 
 from rekep import Convertible, Field, ListField, MapField, StructField, field
+from rekep.fields import FixedSizeListField, LargeListField, LargeListViewField, ListViewField
 
 
 @field
@@ -276,7 +277,10 @@ def test_a_field_serialises_itself(tmp_path) -> None:
         (pyarrow.int64(), Field),
         (pyarrow.struct([("a", pyarrow.int64())]), StructField),
         (pyarrow.list_(pyarrow.int64()), ListField),
-        (pyarrow.large_list(pyarrow.int64()), ListField),
+        (pyarrow.large_list(pyarrow.int64()), LargeListField),
+        (pyarrow.list_view(pyarrow.int64()), ListViewField),
+        (pyarrow.large_list_view(pyarrow.int64()), LargeListViewField),
+        (pyarrow.list_(pyarrow.int64(), 2), FixedSizeListField),
         (pyarrow.map_(pyarrow.string(), pyarrow.int64()), MapField),
     ],
 )
@@ -387,3 +391,22 @@ def test_a_changed_declaration_drops_what_was_derived_from_it() -> None:
     built.field("symbol").arrow_type = pyarrow.large_string()
     assert built.into_arrow_schema() is not before
     assert built.into_arrow_schema().field("symbol").type == pyarrow.large_string()
+
+
+def test_every_list_flavour_keeps_its_own_shape() -> None:
+    """A member set on a large list must not come back a plain one."""
+    for arrow_type in (
+        pyarrow.list_(pyarrow.int64()),
+        pyarrow.large_list(pyarrow.int64()),
+        pyarrow.list_view(pyarrow.int64()),
+        pyarrow.large_list_view(pyarrow.int64()),
+        pyarrow.list_(pyarrow.int64(), 3),
+    ):
+        built = Field(name="values", arrow_type=arrow_type)
+        built.item.description = "One value."
+        assert built.arrow_type.id == arrow_type.id, str(arrow_type)
+        assert built.item.description == "One value."
+
+
+def test_a_fixed_size_list_says_how_wide_it_is() -> None:
+    assert Field(name="x", arrow_type=pyarrow.list_(pyarrow.int64(), 3)).list_size == 3

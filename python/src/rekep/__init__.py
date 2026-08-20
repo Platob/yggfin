@@ -2,8 +2,19 @@
 
 from rekep.convert import Convertible
 from rekep.dataset import Dataset
-from rekep.fields import Field, FieldBuilder, ListField, MapField, StructField, field
-from rekep.logs import Log, LogFile
+from rekep.fields import (
+    Field,
+    FieldBuilder,
+    FixedSizeListField,
+    LargeListField,
+    LargeListViewField,
+    ListField,
+    ListViewField,
+    MapField,
+    StructField,
+    field,
+)
+from rekep.logs import Log, TextFile
 
 __version__ = "0.1.0"
 
@@ -12,11 +23,15 @@ __all__ = [
     "Dataset",
     "Field",
     "FieldBuilder",
+    "FixedSizeListField",
+    "LargeListField",
+    "LargeListViewField",
     "ListField",
+    "ListViewField",
     "Log",
-    "LogFile",
     "MapField",
     "StructField",
+    "TextFile",
     "__version__",
     "field",
 ]

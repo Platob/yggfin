@@ -7,7 +7,8 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep.logs import HEADER_PATTERN, LogFile
+from rekep import Dataset, Field, Log
+from rekep.logs import HEADER_PATTERN, TextFile
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()
@@ -86,7 +87,7 @@ def test_header_pattern_rejects_continuations(line: bytes) -> None:
 
 
 def test_post_init_builds_the_filesystem_and_rewrites_url(plain: Path) -> None:
-    log = LogFile(url=plain.as_uri())
+    log = TextFile(url=plain.as_uri())
     assert isinstance(log.filesystem, pyarrow.fs.LocalFileSystem)
     assert log.url != plain.as_uri(), "url should be rewritten as a filesystem path"
     assert log.url.endswith("app.txt")
@@ -96,7 +97,7 @@ def test_post_init_builds_the_filesystem_and_rewrites_url(plain: Path) -> None:
 
 def test_supplied_filesystem_leaves_url_alone(plain: Path) -> None:
     filesystem = pyarrow.fs.LocalFileSystem()
-    log = LogFile(url=str(plain), filesystem=filesystem)
+    log = TextFile(url=str(plain), filesystem=filesystem)
     assert log.filesystem is filesystem
     assert log.url == str(plain)
     with log:
@@ -104,31 +105,31 @@ def test_supplied_filesystem_leaves_url_alone(plain: Path) -> None:
 
 
 def test_from_url(plain: Path) -> None:
-    with LogFile.from_url(plain.as_uri()) as log:
+    with TextFile.from_url(plain.as_uri()) as log:
         assert log.read() == SAMPLE_BYTES
 
 
 def test_from_path_accepts_a_relative_path(plain: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(plain.parent)
-    with LogFile.from_path("app.txt") as log:
+    with TextFile.from_path("app.txt") as log:
         assert log.read() == SAMPLE_BYTES
 
 
 def test_construction_is_only_ever_a_classmethod() -> None:
     """There is no module-level factory to drift out of step with the class."""
-    import rekep.logs.log_file as module
+    import rekep.logs.text_file as module
 
-    assert not hasattr(module, "log_file")
-    assert {"from_", "from_url", "from_path"} <= set(dir(LogFile))
+    assert not hasattr(module, "text_file")
+    assert {"from_", "from_url", "from_path"} <= set(dir(TextFile))
 
 
 # -- generic dispatch -------------------------------------------------------
 
 
 def test_from_redirects_on_the_source_type(plain: Path) -> None:
-    assert LogFile.redirect_of(plain) == "path"
-    assert LogFile.redirect_of(plain.as_uri()) == "url"
-    with LogFile.from_(plain) as from_path, LogFile.from_(plain.as_uri()) as from_url:
+    assert TextFile.redirect_of(plain) == "path"
+    assert TextFile.redirect_of(plain.as_uri()) == "url"
+    with TextFile.from_(plain) as from_path, TextFile.from_(plain.as_uri()) as from_url:
         assert from_path.url == from_url.url
 
 
@@ -141,18 +142,18 @@ def test_from_redirects_on_the_source_type(plain: Path) -> None:
     ],
 )
 def test_into_redirects_on_the_requested_type(plain: Path, requested: type, stem: str) -> None:
-    assert LogFile.redirect_of(requested) == stem
-    with LogFile.from_(plain) as log:
+    assert TextFile.redirect_of(requested) == stem
+    with TextFile.from_(plain) as log:
         assert log.into_(requested) is not None
 
 
 def test_into_table_via_dispatch_matches_the_named_method(plain: Path) -> None:
-    with LogFile.from_(plain) as dispatched, LogFile.from_(plain) as named:
+    with TextFile.from_(plain) as dispatched, TextFile.from_(plain) as named:
         assert dispatched.into_(pyarrow.Table).equals(named.into_arrow_table())
 
 
 def test_dispatch_refuses_what_it_cannot_infer(plain: Path) -> None:
-    with LogFile.from_(plain) as log, pytest.raises(TypeError, match="cannot infer"):
+    with TextFile.from_(plain) as log, pytest.raises(TypeError, match="cannot infer"):
         log.into_(object())
 
 
@@ -172,7 +173,7 @@ def test_dispatch_refuses_what_it_cannot_infer(plain: Path) -> None:
     ],
 )
 def test_codec_detected_from_extension(tmp_path: Path, name: str, expected: str | None) -> None:
-    assert LogFile(url=tmp_path.joinpath(name).as_uri())._codec == expected
+    assert TextFile(url=tmp_path.joinpath(name).as_uri())._codec == expected
 
 
 @pytest.mark.parametrize("fixture", ["plain", "gzipped", "zstandard"])
@@ -180,13 +181,13 @@ def test_reads_whole_log_whatever_the_encoding(
     request: pytest.FixtureRequest, fixture: str
 ) -> None:
     path: Path = request.getfixturevalue(fixture)
-    with LogFile(url=path.as_uri()) as log:
+    with TextFile(url=path.as_uri()) as log:
         assert log.read() == SAMPLE_BYTES
 
 
 def test_compressed_log_is_decoded_not_raw(gzipped: Path) -> None:
     assert gzipped.stat().st_size < len(SAMPLE_BYTES)
-    with LogFile(url=gzipped.as_uri()) as log:
+    with TextFile(url=gzipped.as_uri()) as log:
         assert log.read().startswith(b"2026-")
 
 
@@ -194,7 +195,7 @@ def test_compressed_log_is_decoded_not_raw(gzipped: Path) -> None:
 
 
 def test_schema(plain: Path) -> None:
-    schema = LogFile(url=plain.as_uri()).schema
+    schema = TextFile(url=plain.as_uri()).schema
     assert schema.names == [
         "url",
         "unix",
@@ -216,14 +217,14 @@ def test_schema(plain: Path) -> None:
 @pytest.mark.parametrize("fixture", ["plain", "gzipped", "zstandard"])
 def test_reader_parses_every_record(request: pytest.FixtureRequest, fixture: str) -> None:
     path: Path = request.getfixturevalue(fixture)
-    with LogFile(url=path.as_uri()) as log:
+    with TextFile(url=path.as_uri()) as log:
         table = log.into_arrow_reader().read_all()
     assert table.num_rows == EXPECTED_RECORDS
     assert table.schema == log.schema
 
 
 def test_reader_returns_a_record_batch_reader(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         reader = log.into_arrow_reader()
         assert isinstance(reader, pyarrow.RecordBatchReader)
         assert reader.schema == log.schema
@@ -231,7 +232,7 @@ def test_reader_returns_a_record_batch_reader(plain: Path) -> None:
 
 
 def test_first_row(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_table()
         url = log.url
 
@@ -245,7 +246,7 @@ def test_first_row(plain: Path) -> None:
 
 def test_date_and_time_are_derived_from_the_timestamp(plain: Path) -> None:
     """The denormalised columns must agree with the nanosecond column."""
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_table()
     for row in table.to_pylist():
         moment = datetime.datetime.fromtimestamp(row["unix"] / 1e9, tz=datetime.UTC)
@@ -260,7 +261,7 @@ def test_unix_is_total_nanos_since_epoch(plain: Path) -> None:
     expected = int(moment.timestamp()) * 1_000_000_000 + 147_250 * 1_000
     assert expected == FIRST_UNIX
 
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         unix = log.into_arrow_table().column("unix").to_pylist()
 
     assert unix[0] == expected
@@ -268,27 +269,27 @@ def test_unix_is_total_nanos_since_epoch(plain: Path) -> None:
 
 
 def test_url_column_identifies_the_source(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_table()
         assert set(table.column("url").to_pylist()) == {log.url}
 
 
 def test_hash64_is_per_line_and_fits_int64(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         hashes = log.into_arrow_table().column("hash64").to_pylist()
     assert len(set(hashes)) == EXPECTED_RECORDS, "distinct lines hash distinctly"
     assert all(-(2**63) <= h < 2**63 for h in hashes)
 
 
 def test_hash64_is_stable_across_reads(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as first, LogFile(url=plain.as_uri()) as second:
+    with TextFile(url=plain.as_uri()) as first, TextFile(url=plain.as_uri()) as second:
         assert first.into_arrow_table().column("hash64").to_pylist() == (
             second.into_arrow_table().column("hash64").to_pylist()
         )
 
 
 def test_rows_stay_in_file_order(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         unix = log.into_arrow_table().column("unix").to_pylist()
     assert unix[0] == FIRST_UNIX
     assert unix == sorted(unix), "the sample is chronological, so parsing must keep it so"
@@ -296,13 +297,13 @@ def test_rows_stay_in_file_order(plain: Path) -> None:
 
 def test_level_is_stripped_from_the_message(plain: Path) -> None:
     """`level` is parsed by the regex but not a column: it must not leak."""
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         messages = log.into_arrow_table().column("message").to_pylist()
     assert not any(message.startswith(("(DEBUG)", "(INFO)", "(WARNING)")) for message in messages)
 
 
 def test_continuations_fold_into_the_previous_message(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         messages = log.into_arrow_table().column("message").to_pylist()
 
     (folded,) = [m for m in messages if "java.lang.IllegalStateException" in m]
@@ -311,7 +312,7 @@ def test_continuations_fold_into_the_previous_message(plain: Path) -> None:
 
 
 def test_continuations_are_dropped_when_folding_is_off(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_reader(fold_continuations=False).read_all()
     assert table.num_rows == EXPECTED_RECORDS
     assert all("\n" not in message for message in table.column("message").to_pylist())
@@ -319,7 +320,7 @@ def test_continuations_are_dropped_when_folding_is_off(plain: Path) -> None:
 
 @pytest.mark.parametrize("batch_row_size", [1, 5, 23, EXPECTED_RECORDS, 10_000])
 def test_batching_does_not_change_the_result(plain: Path, batch_row_size: int) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         batches = list(log.into_arrow_reader(batch_row_size=batch_row_size))
     assert sum(batch.num_rows for batch in batches) == EXPECTED_RECORDS
     assert max(batch.num_rows for batch in batches) <= batch_row_size
@@ -328,14 +329,14 @@ def test_batching_does_not_change_the_result(plain: Path, batch_row_size: int) -
 @pytest.mark.parametrize("read_byte_size", [1, 7, 64, 1 << 20])
 def test_read_byte_size_does_not_change_the_result(plain: Path, read_byte_size: int) -> None:
     """A record split across two reads must still be parsed once, whole."""
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_reader(read_byte_size=read_byte_size).read_all()
     assert table.num_rows == EXPECTED_RECORDS
     assert table.column("unix").to_pylist()[-1] == max(table.column("unix").to_pylist())
 
 
 def test_reader_is_lazy_until_pulled(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         reader = log.into_arrow_reader(batch_row_size=1)
         assert log.tell() == 0  # nothing scanned yet
         reader.read_next_batch()
@@ -346,12 +347,12 @@ def test_reader_is_lazy_until_pulled(plain: Path) -> None:
 def test_custom_header_pattern(plain: Path) -> None:
     """A caller's pattern must supply the same groups the schema is built from."""
     pattern = re.compile(HEADER_PATTERN.pattern.replace(rb"[ \t]*(?P<seqnum>", rb"\s*(?P<seqnum>"))
-    with LogFile(url=plain.as_uri(), header_pattern=pattern) as log:
+    with TextFile(url=plain.as_uri(), header_pattern=pattern) as log:
         assert log.into_arrow_table().num_rows == EXPECTED_RECORDS
 
 
 def test_reader_on_a_closed_log_raises(plain: Path) -> None:
-    log = LogFile(url=plain.as_uri())
+    log = TextFile(url=plain.as_uri())
     log.close()
     with pytest.raises(ValueError, match="closed file"):
         log.into_arrow_reader()
@@ -361,7 +362,7 @@ def test_reader_on_a_closed_log_raises(plain: Path) -> None:
 
 
 def test_plain_log_is_seekable(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         assert log.seekable()
         assert log.read(5) == b"2026-"
         assert log.tell() == 5
@@ -370,19 +371,19 @@ def test_plain_log_is_seekable(plain: Path) -> None:
 
 
 def test_compressed_log_is_not_seekable(gzipped: Path) -> None:
-    with LogFile(url=gzipped.as_uri()) as log:
+    with TextFile(url=gzipped.as_uri()) as log:
         assert not log.seekable()
 
 
 def test_readinto(plain: Path) -> None:
     buffer = bytearray(5)
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         assert log.readinto(buffer) == 5
     assert bytes(buffer) == b"2026-"
 
 
 def test_is_read_only(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         assert log.readable()
         assert not log.writable()
         with pytest.raises(OSError):
@@ -393,7 +394,7 @@ def test_is_read_only(plain: Path) -> None:
 
 
 def test_nothing_is_opened_until_first_read(plain: Path) -> None:
-    log = LogFile(url=plain.as_uri())
+    log = TextFile(url=plain.as_uri())
     assert "_stream" not in log.__dict__
     log.read(1)
     assert "_stream" in log.__dict__
@@ -401,26 +402,26 @@ def test_nothing_is_opened_until_first_read(plain: Path) -> None:
 
 
 def test_stream_is_cached(plain: Path) -> None:
-    with LogFile(url=plain.as_uri()) as log:
+    with TextFile(url=plain.as_uri()) as log:
         assert log._stream is log._stream
 
 
 def test_missing_file_only_fails_on_read(tmp_path: Path) -> None:
-    log = LogFile(url=tmp_path.joinpath("absent.txt").as_uri())
+    log = TextFile(url=tmp_path.joinpath("absent.txt").as_uri())
     with pytest.raises(FileNotFoundError):
         log.read()
 
 
 def test_close_does_not_open(tmp_path: Path) -> None:
     """Closing an unread log must not open anything -- __del__ takes this path."""
-    log = LogFile(url=tmp_path.joinpath("absent.txt").as_uri())
+    log = TextFile(url=tmp_path.joinpath("absent.txt").as_uri())
     log.close()
     assert log.closed
     assert "_stream" not in log.__dict__
 
 
 def test_close_is_idempotent(plain: Path) -> None:
-    log = LogFile(url=plain.as_uri())
+    log = TextFile(url=plain.as_uri())
     log.read(1)
     log.close()
     log.close()
@@ -429,7 +430,7 @@ def test_close_is_idempotent(plain: Path) -> None:
 
 @pytest.mark.parametrize("operation", [lambda f: f.read(), lambda f: f.tell(), lambda f: f.seek(0)])
 def test_use_after_close_raises(plain: Path, operation) -> None:
-    log = LogFile(url=plain.as_uri())
+    log = TextFile(url=plain.as_uri())
     log.read(1)
     log.close()
     with pytest.raises(ValueError, match="closed file"):
@@ -437,7 +438,7 @@ def test_use_after_close_raises(plain: Path, operation) -> None:
 
 
 def test_repr_shows_url(plain: Path) -> None:
-    log = LogFile(url=plain.as_uri())
+    log = TextFile(url=plain.as_uri())
     assert "app.txt" in repr(log)
     log.close()
 
@@ -446,7 +447,7 @@ def test_a_crlf_log_parses_identically(plain: Path, tmp_path: Path) -> None:
     """Windows-written captures must not leak carriage returns into messages."""
     crlf = tmp_path / "crlf.txt"
     crlf.write_bytes(SAMPLE_BYTES.replace(b"\n", b"\r\n"))
-    with LogFile(url=plain.as_uri()) as a, LogFile(url=crlf.as_uri()) as b:
+    with TextFile(url=plain.as_uri()) as a, TextFile(url=crlf.as_uri()) as b:
         left, right = a.into_arrow_table(), b.into_arrow_table()
     assert left.drop_columns("url").equals(right.drop_columns("url"))
 
@@ -466,7 +467,7 @@ def test_the_fixture_starts_where_the_assertions_below_say() -> None:
 
 
 def test_without_a_timezone_the_clock_is_read_as_utc() -> None:
-    with LogFile.from_url(SAMPLE.resolve().as_uri()) as log:
+    with TextFile.from_url(SAMPLE.resolve().as_uri()) as log:
         batch = next(iter(log.into_arrow_batches()))
     instant = FIRST_CLOCK.replace(tzinfo=datetime.UTC)
     assert batch.column("unix")[0].as_py() == int(instant.timestamp() * 1_000_000) * 1_000
@@ -475,7 +476,7 @@ def test_without_a_timezone_the_clock_is_read_as_utc() -> None:
 def test_a_timezone_shifts_the_instant_by_its_offset() -> None:
     """Same characters in the file, different moment in time."""
     naive, paris, york = (
-        next(iter(LogFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone).into_arrow_batches()))
+        next(iter(TextFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone).into_arrow_batches()))
         .column("unix")[0]
         .as_py()
         for zone in (None, "Europe/Paris", "America/New_York")
@@ -488,7 +489,7 @@ def test_the_date_and_time_columns_stay_on_the_local_clock() -> None:
     """They are what the line said; `unix` is the column that answers when."""
     columns = {}
     for zone in (None, "Europe/Paris", "Pacific/Auckland"):
-        with LogFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone) as log:
+        with TextFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone) as log:
             batch = next(iter(log.into_arrow_batches()))
         columns[zone] = (batch.column("date")[0].as_py(), batch.column("time")[0].as_py())
     assert len(set(columns.values())) == 1, "the wall clock does not move"
@@ -500,7 +501,7 @@ def test_a_repeated_hour_resolves_rather_than_raising() -> None:
     pyarrow would raise by default, which would kill the parse once a year."""
     import pyarrow
 
-    from rekep.logs.log_file import _unix_nanos
+    from rekep.logs.text_file import _unix_nanos
 
     ambiguous = pyarrow.array(
         [datetime.datetime(2026, 10, 25, 2, 30)], type=pyarrow.timestamp("us")
@@ -511,7 +512,7 @@ def test_a_repeated_hour_resolves_rather_than_raising() -> None:
 def test_a_pre_epoch_timestamp_lands_on_the_right_day() -> None:
     import pyarrow
 
-    from rekep.logs.log_file import _date_and_time
+    from rekep.logs.text_file import _date_and_time
 
     before = pyarrow.array(
         [datetime.datetime(1969, 12, 31, 23, 59, 59)], type=pyarrow.timestamp("us")
@@ -519,3 +520,99 @@ def test_a_pre_epoch_timestamp_lands_on_the_right_day() -> None:
     date, time = _date_and_time(before)
     assert date[0].as_py() == datetime.date(1969, 12, 31)
     assert time[0].as_py() == datetime.time(23, 59, 59)
+
+
+# -- the dataset ------------------------------------------------------------
+
+
+def test_a_text_file_is_a_dataset(plain: Path) -> None:
+    log = TextFile.from_path(plain)
+    assert isinstance(log, Dataset)
+    assert log.exists
+    assert log.into_struct_field() is Log.FIELD
+    assert log.read_arrow_table().num_rows == EXPECTED_RECORDS
+
+
+def test_a_missing_file_does_not_exist_yet(tmp_path: Path) -> None:
+    assert not TextFile.from_path(tmp_path / "absent.txt").exists
+
+
+def test_reading_casts_only_when_asked(plain: Path) -> None:
+    log = TextFile.from_path(plain)
+    assert log.read_arrow_reader().schema.equals(Log.FIELD.into_arrow_schema())
+    narrow = pyarrow.schema([("message", pyarrow.large_string())])
+    assert log.read_arrow_reader(narrow).schema.field("message").type == pyarrow.large_string()
+
+
+def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> None:
+    """The renderer is the header regex read backwards; the proof is a round trip."""
+    source = TextFile.from_path(plain).read_arrow_table()
+    written = TextFile.from_path(tmp_path / "written.txt")
+    written.write_arrow(source)
+
+    again = TextFile.from_path(tmp_path / "written.txt").read_arrow_table()
+    assert again.num_rows == source.num_rows
+    for column in ("unix", "date", "time", "thread_name", "driver", "message"):
+        assert again.column(column).to_pylist() == source.column(column).to_pylist(), column
+
+
+def test_a_write_creates_the_file(tmp_path: Path) -> None:
+    target = tmp_path / "fresh.txt"
+    log = TextFile.from_path(target)
+    assert not log.exists
+    log.write_arrow(TextFile.from_path(SAMPLE).read_arrow_table())
+    assert log.exists and target.stat().st_size > 0
+
+
+def test_writes_append_rather_than_replace(plain: Path, tmp_path: Path) -> None:
+    rows = TextFile.from_path(plain).read_arrow_table()
+    target = TextFile.from_path(tmp_path / "appended.txt")
+    target.write_arrow(rows)
+    target.write_arrow(rows)
+    assert target.read_arrow_table().num_rows == 2 * rows.num_rows
+
+
+def test_commit_row_size_writes_in_chunks(plain: Path, tmp_path: Path) -> None:
+    rows = TextFile.from_path(plain).read_arrow_table()
+    target = TextFile.from_path(tmp_path / "chunked.txt")
+    target.write_arrow_reader(rows.to_reader(max_chunksize=5), commit_row_size=5)
+    assert target.read_arrow_table().num_rows == rows.num_rows
+
+
+def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
+    batch = pyarrow.RecordBatch.from_pydict(
+        {
+            "unix": pyarrow.array([1_786_665_901_147_250_000], pyarrow.int64()),
+            "message": ["hello"],
+            "thread_name": ["t"],
+            "driver": ["d"],
+            "noise": ["dropped"],
+        }
+    )
+    target = TextFile.from_path(tmp_path / "cast.txt")
+    target.write_arrow(batch)
+    parsed = target.read_arrow_table()
+    assert parsed.column("message").to_pylist() == ["hello"]
+    assert parsed.column("driver").to_pylist() == ["d"]
+
+
+def test_a_text_file_cannot_merge(tmp_path: Path) -> None:
+    log = TextFile.from_path(tmp_path / "merge.txt")
+    with pytest.raises(ValueError, match="cannot merge"):
+        log.write_arrow(TextFile.from_path(SAMPLE).read_arrow_table(), merge_by=True)
+
+
+def test_an_empty_write_leaves_an_empty_file(tmp_path: Path) -> None:
+    log = TextFile.from_path(tmp_path / "empty.txt")
+    log.write_arrow_reader(iter(()))
+    assert log.exists
+    assert log.read_arrow_table().num_rows == 0
+
+
+def test_create_with_adopts_a_shape(tmp_path: Path) -> None:
+    log = TextFile.from_path(tmp_path / "shaped.txt")
+    narrow = Field.from_arrow_schema(pyarrow.schema([("message", pyarrow.string())]))
+    log.create_with(narrow)
+    assert log.exists
+    assert log.into_struct_field() is narrow
+    assert log.read_arrow_table().column_names == ["message"]

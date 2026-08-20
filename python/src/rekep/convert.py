@@ -115,13 +115,20 @@ class Convertible:
         return convert(target, *args, **kwargs)
 
     @classmethod
-    def redirect_of(cls, value: Any) -> str:
-        """Method stem `value` redirects to, most specific key first."""
+    def redirect_of(cls, value: Any, redirects: Mapping[Any, str] | None = None) -> str:
+        """Method stem `value` redirects to, most specific key first.
+
+        `redirects` is the mapping to read, defaulting to this class's
+        `REDIRECTS`: a class with a second family of methods to infer between
+        (casting, writing) passes its own rather than reimplementing the
+        lookup.
+        """
+        redirects = cls.REDIRECTS if redirects is None else redirects
         for key in cls._keys(value):
-            stem = cls.REDIRECTS.get(key)
+            stem = redirects.get(key)
             if stem is not None:
                 return stem
-        for key, stem in cls.REDIRECTS.items():
+        for key, stem in redirects.items():
             if isinstance(key, type) and _matches(value, key):
                 return stem
         raise TypeError(f"{cls.__name__} cannot infer a conversion for {value!r}")

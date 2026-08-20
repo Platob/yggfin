@@ -28,6 +28,9 @@ Repository = "https://github.com/Platob/yggfin"
 Issues = "https://github.com/Platob/yggfin/issues"
 
 [dependency-groups]
+docs = [
+    "mkdocs-material>=9.5",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",

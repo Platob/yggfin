@@ -405,3 +405,64 @@ def test_the_module_functions_cover_batch_table_and_stream() -> None:
     assert cast_batch(batch, target).schema.equals(target)
     assert cast_table(table, target).schema.equals(target)
     assert cast_reader(iter([batch]), target).read_all().num_rows == 1
+
+
+# -- generic redirects ------------------------------------------------------
+
+
+def test_cast_arrow_picks_the_method_by_what_it_is() -> None:
+    batch = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)])
+    table = pyarrow.Table.from_batches([batch])
+    assert isinstance(Tick.FIELD.cast_arrow(batch), pyarrow.RecordBatch)
+    assert isinstance(Tick.FIELD.cast_arrow(table), pyarrow.Table)
+    assert isinstance(Tick.FIELD.cast_arrow(iter([batch])), pyarrow.RecordBatchReader)
+    assert isinstance(Tick.FIELD.cast_arrow(table.to_reader()), pyarrow.RecordBatchReader)
+    column = Tick.FIELD.field("size").cast_arrow(pyarrow.array([1], pyarrow.int64()))
+    assert column.type == pyarrow.int32()
+    assert Tick.FIELD.field("size").cast_arrow(table.column("size")).type == pyarrow.int32()
+
+
+def test_cast_arrow_passes_its_keywords_on() -> None:
+    batch = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])
+    assert "desk" in Tick.FIELD.cast_arrow(batch, merge_schema=True).schema.names
+
+
+def test_cast_arrow_refuses_what_it_cannot_place() -> None:
+    with pytest.raises(TypeError, match="cannot infer"):
+        Tick.FIELD.cast_arrow("a string is not arrow data")
+
+
+# -- merging with another declaration ---------------------------------------
+
+
+def test_merge_with_takes_whatever_names_a_shape() -> None:
+    other = pyarrow.schema([("symbol", pyarrow.large_string()), ("desk", pyarrow.string())])
+    for source in (other, Field.from_arrow_schema(other), Tick):
+        merged = Tick.FIELD.merge_with(source)
+        assert merged.field("symbol").arrow_type == pyarrow.string(), "this field's type wins"
+        assert "size" in merged.names
+
+
+def test_merge_with_adds_what_the_other_has() -> None:
+    other = pyarrow.schema([("desk", pyarrow.string())])
+    merged = Tick.FIELD.merge_with(other)
+    assert merged.names == [*Tick.FIELD.names, "desk"]
+    assert merged.field("desk").nullable, "rows already stored have nothing to put in it"
+
+
+def test_merge_with_an_arrow_field_directly() -> None:
+    venue = pyarrow.field("venue", struct_of(mic=pyarrow.string(), desk=pyarrow.string()))
+    target = Field(name="venue", arrow_type=struct_of(mic=pyarrow.large_string()))
+    merged = target.merge_with_arrow_field(venue)
+    assert merged.names == ["mic", "desk"]
+    assert merged.field("mic").arrow_type == pyarrow.large_string(), "this field's type wins"
+
+
+def test_merge_with_recurses_into_a_member() -> None:
+    other = pyarrow.schema(
+        [pyarrow.field("venue", struct_of(mic=pyarrow.string(), desk=pyarrow.string()))]
+    )
+    target = Field.from_arrow_schema(
+        pyarrow.schema([pyarrow.field("venue", struct_of(mic=pyarrow.string()))])
+    )
+    assert target.merge_with(other).field("venue").names == ["mic", "desk"]

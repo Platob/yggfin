@@ -109,6 +109,18 @@ def cases(rows: int) -> list[tuple[str, Callable[[], object], Callable[[], objec
         ),
     )
 
+    map_array = batch.column("tags")
+    struct_of_map = Field(
+        name="tags",
+        arrow_type=pyarrow.struct([("a", pyarrow.int64()), ("b", pyarrow.int64())]),
+        nullable=True,
+    )
+    map_of_struct = Field(
+        name="venue", arrow_type=pyarrow.map_(pyarrow.string(), pyarrow.string()), nullable=True
+    )
+    list_of_struct = Field(name="venue", arrow_type=pyarrow.list_(pyarrow.string()), nullable=True)
+    large_list = Field(name="legs", arrow_type=pyarrow.large_list(WIDER_VENUE), nullable=True)
+
     return [
         ("batch, already shaped", lambda: field.cast_arrow_batch(matching), None),
         ("batch, 40 columns over", lambda: field.cast_arrow_batch(wide), None),
@@ -136,6 +148,16 @@ def cases(rows: int) -> list[tuple[str, Callable[[], object], Callable[[], objec
             "stream of 16 batches",
             lambda: field.cast_arrow_reader(iter([batch] * 16)).read_all(),
             None,
+        ),
+        # Shape changes Arrow's own cast refuses outright, so there is nothing
+        # to compare them against -- only to keep honest about their cost.
+        ("map -> struct", lambda: struct_of_map.cast_arrow_array(map_array), None),
+        ("struct -> map", lambda: map_of_struct.cast_arrow_array(struct_array), None),
+        ("struct -> list", lambda: list_of_struct.cast_arrow_array(struct_array), None),
+        (
+            "list -> large list",
+            lambda: large_list.cast_arrow_array(list_array),
+            lambda: list_array.cast(large_list.arrow_type),
         ),
     ]
 

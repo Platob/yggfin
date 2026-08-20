@@ -41,11 +41,13 @@ Arrow struct type, and metadata. Rules:
   `metadata`, `nullable`, plus `Field.primary_key()` and
   `Field.partition_key(transform)`. A bare `DataType`/`Mapping`/`str` is a
   shorthand for the type, the metadata or the description.
-- **The type picks the class.** `Field(...)` returns `StructField`, `ListField`
-  or `MapField` when its type is one of those, through `__new__` -- so
-  `fields`, `item`, `key`/`value` and the recursive casts live on the class
-  that has them, never behind a kind check at a call site. Every builder here
-  goes through `Field(...)`, so none of them repeats the rule.
+- **The type picks the class.** `Field(...)` returns `StructField`, `MapField`
+  or one of the list flavours (`ListField`, `LargeListField`, `ListViewField`,
+  `LargeListViewField`, `FixedSizeListField`) through `__new__` -- so `fields`,
+  `item`, `key`/`value` and the recursive casts live on the class that has
+  them, never behind a kind check at a call site. Every builder here goes
+  through `Field(...)`, so none of them repeats the rule. A new Arrow kind is a
+  new subclass plus one row in `_KINDS`.
 - A member reached through a container is a **view** of it: setting
   `is_primary_key`, `is_partition_key` or `description` on it rebuilds the
   struct, list or map it came from, to the root. Derived views (the Arrow
@@ -98,19 +100,51 @@ remote file. This rules out `frozen=True`/`slots=True` on such classes.
   map both halves, so a nested member that is missing, narrowed or in another
   order is handled where it is declared. `merge_schema=True` keeps what the
   data has and the field does not, the field's own types still winning.
-- Do not hand a whole batch to one Arrow call to save the walk: measured, the
-  recursion is 1.1-2.4x faster than `Array.cast` on the same data, and
-  `RecordBatch.cast` cannot reorder columns at all
-  (`benchmarks/bench_cast.py`).
+- The recursion is also what converts *between* kinds -- map to struct
+  (`map_lookup` per member), struct to map or list (a transpose), map to a list
+  of entries, any list flavour to any other. Arrow refuses most of those
+  outright, which is why they exist here.
+- **Never a Python row loop in a cast.** Every shape change is
+  `pyarrow.compute` kernels and array builders (`fields/arrays.py`); the index
+  arithmetic an interleave needs is built from `repeat` + `cumulative_sum`,
+  never from `range`. A comprehension over columns is fine; one over rows is
+  the bug.
+- Where Arrow can do a step, let it: a list flavour change is one `cast` over
+  the layout after the item is cast here, and a same-kind cast re-wraps the
+  array's own offsets instead of flattening. Both were measured
+  (`benchmarks/bench_cast.py`): the walk is 1.1-2.1x faster than `Array.cast`
+  where Arrow can do the same job, and `RecordBatch.cast` cannot reorder
+  columns at all.
+- Generic redirects infer from what they are handed: `cast_arrow` picks
+  array/batch/table/reader, `Dataset.write_arrow` picks batch/table/reader,
+  `read_arrow` picks by the type asked for. `Convertible.redirect_of(value,
+  mapping)` is the one lookup; a second family of methods passes its own
+  mapping rather than reimplementing it.
 
 ## 8. Let the library own what it already knows
 
-Delegate to Arrow (codec detection, URI resolution, decompression) and to
-pyiceberg (type conversion, id assignment, scan planning, snapshots, upserts)
--- but probe real behaviour before designing around an assumption; several
-APIs surprise. The Iceberg projection is pyiceberg's own conversion plus the
-identity Arrow cannot carry (ids, docs, identifier fields, transforms), never
-a second walk of the type system.
+Delegate to Arrow (codec detection, URI resolution, decompression, every
+shape-changing kernel) and to pyiceberg (type conversion, id assignment, scan
+planning, snapshots, upserts, schema evolution) -- but probe real behaviour
+before designing around an assumption; several APIs surprise. The Iceberg
+projection is pyiceberg's own conversion plus the identity Arrow cannot carry
+(ids, docs, identifier fields, transforms), never a second walk of the type
+system.
+
+**The Iceberg module's own rules.** Every verb takes `branch`, and every read
+takes `snapshot_id`, so a job works on a branch without a second dataset
+object. Field ids are checked, not demanded: a schema that carries them keeps
+them, one that does not is numbered fresh, because a user handing over a plain
+Arrow schema should not have to know the protocol. FileIO defaults to
+`PyArrowFileIO` so the store is read, written, listed and swept through the
+same `pyarrow.fs` handles as everything else. Maintenance is autonomous and
+honest: `compact` plans per partition when the transforms are identities and
+rewrites nothing it cannot address, `cleanup` expires *and* sweeps what expiry
+stranded (pyiceberg's expiry is metadata-only) while never touching a file a
+live snapshot references or one younger than `orphan_age`, `add_fields` adds
+what is missing and commits nothing when there is nothing to add, and
+`optimize` is the three in the order that makes them cheap. Every one of them
+reports what it did.
 
 ## 9. A dataset is a stream in and a stream out
 
@@ -120,6 +154,10 @@ a second walk of the type system.
 - A dataset is the one thing here bigger than memory, so nothing in the
   interface may need all of it: `read_arrow_table`/`write_arrow_table` are for
   when the caller says it fits.
+- **Writes append, and appending to nothing creates.** `create_with_field` is
+  the one place a dataset is built; `create_with` infers the shape from a
+  field, an Arrow schema/field/type or a `@field` class, and `get_or_create` is
+  what a write calls first. Creating what exists is never an error.
 - `schema=` on a read or a write is what to cast onto; None means this
   dataset's own shape, and on a read it means "hand over the store's own
   reader", widths included -- a conversion nobody asked for is paid per row.
@@ -162,20 +200,23 @@ rekep/
 ├── require.py     optional deps at the point of use
 ├── filesystems.py FileSystem.from_uri, cached per URL
 ├── fields/        a dataclass is its own Arrow schema:
-│                  field.py (Field and its ListField/MapField/StructField
-│                  subclasses, the `field` decorator, the casts),
-│                  builder.py (FieldBuilder: type hints -> fields),
-│                  classes.py (ClassBuilder: the reverse projection),
-│                  arrow.py (merge_fields/merge_schemas: widening a schema)
-├── dataset.py     Dataset: the abstract read/write ends of a stored product,
-│                  and arrow_chunks, the commit-sized grouping every store
-│                  that commits per call needs
+│                  field.py (Field, its container subclasses, the `field`
+│                  decorator, every cast), arrays.py (the kernel-only array
+│                  builders those casts are made of), builder.py (FieldBuilder:
+│                  type hints -> fields), classes.py (ClassBuilder: the reverse
+│                  projection), arrow.py (merge_fields/merge_schemas)
+├── dataset.py     Dataset: the abstract read/write/create ends of a stored
+│                  product, and arrow_chunks, the commit-sized grouping every
+│                  store that commits per call needs
 ├── iceberg/       fields.py (the Field <-> pyiceberg projection: ids, docs,
-│                  identifier fields, partition transforms) and dataset.py
-│                  (IcebergDataset: scan pushdown out, cast + append/upsert
-│                  in, one commit per chunk)
-└── logs/          log.py (the Log shape) and log_file.py (LogFile:
-                   streaming Arrow-native log access)
+│                  identifier fields, partition transforms), catalog.py
+│                  (IcebergCatalog/IcebergNamespace: CRUD around the tables)
+│                  and dataset.py (IcebergDataset: scan pushdown out, cast +
+│                  append/upsert in, one commit per chunk, and the
+│                  maintenance -- add_fields, compact, cleanup, optimize)
+└── logs/          log.py (the Log shape) and text_file.py (TextFile: a log
+                   read into Arrow batches and written back out as lines,
+                   itself a Dataset)
 ```
 
 Dependencies point one way: `logs`/`iceberg` -> `dataset` -> `fields` ->
@@ -183,6 +224,12 @@ Dependencies point one way: `logs`/`iceberg` -> `dataset` -> `fields` ->
 `Field`'s `into_iceberg_*` imports `rekep.iceberg.fields` at the point of use,
 so the API stays on the class that owns the data without `fields/` depending
 on an extra. `tests/` mirrors `src/` folder for folder.
+
+**Documentation is a site, not a README.** `docs/` is mkdocs-material at the
+repo root: Types first (the field and its kinds), then Logs, then Iceberg, with
+content tabs carrying the examples so a page reads as one narrative instead of
+a wall of code. It builds `--strict` in CI, so a broken link fails there rather
+than shipping. The README is a landing page that points at it.
 
 ## 14. Typing and file structure
 
@@ -200,7 +247,12 @@ uv run ruff check
 uv run ruff format
 ```
 
-CI (`.github/workflows/ci.yml`) runs Linux + Windows. A bare
+```text
+uv sync --group docs
+uv run --project python mkdocs build --strict   # from the repo root
+```
+
+CI (`.github/workflows/ci.yml`) runs Linux + Windows, plus a docs build. A bare
 `pip install rekep` is Arrow only; `rekep[all]` adds the format extras and
 Iceberg. Benchmarks live in `python/benchmarks/` and are measured twice before
 being quoted -- say what reproduced and what is noise, never a single run as

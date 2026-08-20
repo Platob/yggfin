@@ -1,9 +1,9 @@
-"""Benchmark LogFile streaming: rows/s, MB/s, and peak Arrow memory.
+"""Benchmark TextFile streaming: rows/s, MB/s, and peak Arrow memory.
 
 Run from `python/`::
 
-    uv run python benchmarks/bench_log_file.py            # full sweep
-    uv run python benchmarks/bench_log_file.py --quick    # one config, small file
+    uv run python benchmarks/bench_text_file.py            # full sweep
+    uv run python benchmarks/bench_text_file.py --quick    # one config, small file
 
 The generated log matches the parser's target layout, with a stack trace folded
 in every ~200 lines so continuation handling is part of what is measured.
@@ -24,7 +24,7 @@ import pyarrow
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep.logs import LogFile  # noqa: E402
+from rekep.logs import TextFile  # noqa: E402
 
 DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
 LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
@@ -63,7 +63,7 @@ def run(path: pathlib.Path, batch_row_size: int, read_byte_size: int) -> dict[st
     peak = 0
     rows = 0
     started = time.perf_counter()
-    with LogFile.from_path(path) as log:
+    with TextFile.from_path(path) as log:
         reader = log.into_arrow_reader(batch_row_size=batch_row_size, read_byte_size=read_byte_size)
         for batch in reader:
             rows += batch.num_rows

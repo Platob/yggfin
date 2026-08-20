@@ -13,7 +13,8 @@ import pyarrow
 
 from rekep.annotations import hide_private, unwrap_annotated
 from rekep.convert import Convertible
-from rekep.fields.arrow import merge_schemas
+from rekep.fields import arrays
+from rekep.fields.arrow import merge_fields
 
 #: Metadata key a documentation line lands under -- the one Arrow, parquet and
 #: every viewer downstream read as the column comment.
@@ -84,6 +85,14 @@ class Field(Convertible):
         pyarrow.Schema: "arrow_schema",
         pyarrow.Field: "arrow_field",
         pyarrow.DataType: "arrow_type",
+    }
+
+    #: What `cast_arrow` redirects to, keyed by the kind of thing handed to it.
+    #: A struct adds the batch, table and stream entries: only a schema-shaped
+    #: field can reshape those.
+    CASTS: ClassVar[dict[Any, str]] = {
+        pyarrow.Array: "arrow_array",
+        pyarrow.ChunkedArray: "arrow_array",
     }
 
     #: Views computed from the declaration, dropped whenever it changes.
@@ -229,6 +238,23 @@ class Field(Convertible):
             nullable=other.nullable if other.nullable is not None else self.nullable,
             metadata={**self.metadata, **other.metadata},
         )
+
+    def merge_with(self, other: Any) -> Field:
+        """This field widened with whatever `other` has and it does not.
+
+        The merge rule, from this side: **this** field wins wherever both say
+        something -- its type, its nullability, its metadata -- so data is cast
+        onto it and never the other way round, and whatever `other` has and it
+        does not is added, forced nullable, at every level (`fields.arrow`).
+
+        `other` is anything that names a shape: a field, an Arrow field, type
+        or schema, or a `@field` class.
+        """
+        return self.merge_with_arrow_field(field_of(other).into_arrow_field())
+
+    def merge_with_arrow_field(self, other: pyarrow.Field) -> Field:
+        """`merge_with`, for an Arrow field already in hand."""
+        return Field.from_arrow_field(merge_fields(other, self.into_arrow_field()))
 
     # -- building -----------------------------------------------------------
 
@@ -417,6 +443,15 @@ class Field(Convertible):
 
     # -- casting ------------------------------------------------------------
 
+    def cast_arrow(self, source: Any, **kwargs: Any) -> Any:
+        """Cast whatever is handed over, picking the method by what it is.
+
+        An array, a chunked array, a record batch, a table, a reader or a plain
+        iterator of batches each have their own `cast_arrow_*`; this redirects
+        to the one that fits rather than making every call site branch.
+        """
+        return getattr(self, f"cast_{self.redirect_of(source, self.CASTS)}")(source, **kwargs)
+
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
         """`array` cast to this field's type, or handed back when it already is.
 
@@ -441,7 +476,12 @@ class Field(Convertible):
 
 
 class ListField(Field):
-    """A field whose values are lists, with one `item` field inside it."""
+    """A field whose values are lists, with one `item` field inside it.
+
+    The base of every list flavour Arrow has -- `large_list`, the two list
+    views and `fixed_size_list` are subclasses that differ only in how they are
+    built, so a cast into any of them is the same walk.
+    """
 
     @functools.cached_property
     def item(self) -> Field:
@@ -452,11 +492,12 @@ class ListField(Field):
     def fields(self) -> tuple[Field, ...]:
         return (self.item,)
 
+    def with_item(self, item: pyarrow.Field) -> pyarrow.DataType:
+        """This flavour of list, around another item."""
+        return pyarrow.list_(item)
+
     def _member_changed(self, member: Field) -> None:
-        build = (
-            pyarrow.large_list if pyarrow.types.is_large_list(self.arrow_type) else pyarrow.list_
-        )
-        self.arrow_type = build(member.into_arrow_field())
+        self.arrow_type = self.with_item(member.into_arrow_field())
 
     def kind(self) -> str:
         return "list"
@@ -465,33 +506,105 @@ class ListField(Field):
         return {"item": _anonymous(self.item)}
 
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
-        """Cast the values, then rebuild the list around them.
+        """Cast the values, then cut them back into rows of this flavour.
 
         Recursing into the item is what makes a list of structs castable at
         all: the members may be in another order, or one may be missing, and
         only the field that declares them knows what to do about that.
+
+        The source does not have to be a list. A **map** is a list of entries,
+        so it converts by casting its entries onto the item; a **struct** is a
+        row of members, so its members become the elements of one list each --
+        both in kernels, never row by row.
         """
         if isinstance(array, pyarrow.ChunkedArray) or array.type == self.arrow_type:
             return super().cast_arrow_array(array, safe=safe)
-        values = self.item.cast_arrow_array(array.values, safe=safe)
-        build = (
-            pyarrow.LargeListArray
-            if pyarrow.types.is_large_list(self.arrow_type)
-            else pyarrow.ListArray
+        if pyarrow.types.is_struct(array.type):
+            columns = [
+                self.item.cast_arrow_array(column, safe=safe)
+                for column in arrays.struct_columns(array).values()
+            ]
+            values, _ = arrays.interleave(columns, len(array))
+            sizes = arrays.repeat_sizes(len(columns), len(array))
+            return arrays.build_list(self.arrow_type, sizes, values, arrays.null_mask(array))
+        source = array.type
+        if not _is_list_like(source):
+            return super().cast_arrow_array(array, safe=safe)
+        if not pyarrow.types.is_map(source) and not pyarrow.types.is_fixed_size_list(source):
+            return self._rewrapped(array, safe=safe)
+        sizes, values = arrays.list_parts(array)
+        return arrays.build_list(
+            self.arrow_type,
+            sizes,
+            self.item.cast_arrow_array(values, safe=safe),
+            arrays.null_mask(array),
         )
-        return build.from_arrays(
-            array.offsets,
-            values,
-            type=self.arrow_type,
-            mask=array.is_null() if array.null_count else None,
+
+    def _rewrapped(self, array: Any, *, safe: bool) -> Any:
+        """Cast the item in the source's own layout, then change the flavour.
+
+        The two halves of a list cast are independent: what is inside a row is
+        this field's business, and where the rows are is Arrow's. Casting the
+        item and re-wrapping keeps the offsets untouched, and the flavour
+        change that may follow is one Arrow call over the layout alone. Only
+        the list views, which Arrow does not cast to or from, fall back to
+        cutting the rows again.
+        """
+        item = self.item.into_arrow_field()
+        middle = arrays.list_type_like(array.type, item)
+        wrapped = arrays.rewrap_list(
+            middle,
+            array,
+            self.item.cast_arrow_array(array.values, safe=safe),
+            arrays.null_mask(array),
         )
+        if middle == self.arrow_type:
+            return wrapped
+        try:
+            return wrapped.cast(self.arrow_type, safe)
+        except pyarrow.ArrowNotImplementedError:
+            sizes, values = arrays.list_parts(wrapped)
+            return arrays.build_list(self.arrow_type, sizes, values, arrays.null_mask(wrapped))
+
+
+class LargeListField(ListField):
+    """A list whose offsets are 64 bit."""
+
+    def with_item(self, item: pyarrow.Field) -> pyarrow.DataType:
+        return pyarrow.large_list(item)
+
+
+class ListViewField(ListField):
+    """A list whose rows carry an offset and a size, so they may be out of order."""
+
+    def with_item(self, item: pyarrow.Field) -> pyarrow.DataType:
+        return pyarrow.list_view(item)
+
+
+class LargeListViewField(ListViewField):
+    """A list view whose offsets and sizes are 64 bit."""
+
+    def with_item(self, item: pyarrow.Field) -> pyarrow.DataType:
+        return pyarrow.large_list_view(item)
+
+
+class FixedSizeListField(ListField):
+    """A list with the same number of elements in every row."""
+
+    @property
+    def list_size(self) -> int:
+        """How many elements every row holds."""
+        return self.arrow_type.list_size
+
+    def with_item(self, item: pyarrow.Field) -> pyarrow.DataType:
+        return pyarrow.list_(item, self.list_size)
 
 
 class MapField(Field):
     """A field whose values are maps, with a `key` and a `value` field."""
 
     @functools.cached_property
-    def key(self) -> Field:  # type: ignore[override]
+    def key(self) -> Field:
         """The key half of one entry."""
         return self._member_of(self.arrow_type.key_field)
 
@@ -518,16 +631,54 @@ class MapField(Field):
         return {"key": _anonymous(self.key), "value": _anonymous(self.value)}
 
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
-        """Cast both halves, then rebuild the map around them."""
+        """Cast both halves, then cut the entries back into rows.
+
+        A **struct** becomes a map of its members: the names are the keys, the
+        values are the members, and the transpose that interleaves them is a
+        `take` with computed indices (`fields.arrays.interleave`). A **list of
+        two-member structs** is already a map physically, so its halves are
+        cast and rebuilt.
+        """
         if isinstance(array, pyarrow.ChunkedArray) or array.type == self.arrow_type:
             return super().cast_arrow_array(array, safe=safe)
-        return pyarrow.MapArray.from_arrays(
-            array.offsets,
-            self.key.cast_arrow_array(array.keys, safe=safe),
-            self.value.cast_arrow_array(array.items, safe=safe),
-            type=self.arrow_type,
-            mask=array.is_null() if array.null_count else None,
+        if pyarrow.types.is_struct(array.type):
+            return self._from_struct(array, safe=safe)
+        if not _is_list_like(array.type):
+            return super().cast_arrow_array(array, safe=safe)
+        if pyarrow.types.is_map(array.type):
+            # Already entries in rows: cast the halves and re-wrap them.
+            return arrays.rewrap_map(
+                self.arrow_type,
+                array,
+                self.key.cast_arrow_array(array.keys, safe=safe),
+                self.value.cast_arrow_array(array.items, safe=safe),
+                arrays.null_mask(array),
+            )
+        sizes, entries = arrays.list_parts(array)
+        if not pyarrow.types.is_struct(entries.type) or entries.type.num_fields != 2:
+            raise TypeError(
+                f"field {self.name!r} is a map, so a list becomes one only when its item is a "
+                f"key/value struct; this one is {entries.type}"
+            )
+        halves = list(arrays.struct_columns(entries).values())
+        return arrays.build_map(
+            self.arrow_type,
+            sizes,
+            self.key.cast_arrow_array(halves[0], safe=safe),
+            self.value.cast_arrow_array(halves[1], safe=safe),
+            arrays.null_mask(array),
         )
+
+    def _from_struct(self, array: Any, *, safe: bool) -> Any:
+        """A struct as a map: its member names are the keys."""
+        columns = arrays.struct_columns(array)
+        values, member = arrays.interleave(
+            [self.value.cast_arrow_array(column, safe=safe) for column in columns.values()],
+            len(array),
+        )
+        keys = arrays.names_array(list(columns), member, self.key.arrow_type)
+        sizes = arrays.repeat_sizes(len(columns), len(array))
+        return arrays.build_map(self.arrow_type, sizes, keys, values, arrays.null_mask(array))
 
 
 class StructField(Field):
@@ -537,6 +688,18 @@ class StructField(Field):
     with the field's own name and metadata as schema metadata, and the casts
     take a batch, a table or a whole stream onto that shape.
     """
+
+    CASTS: ClassVar[dict[Any, str]] = {
+        **Field.CASTS,
+        pyarrow.RecordBatch: "arrow_batch",
+        pyarrow.Table: "arrow_table",
+        pyarrow.RecordBatchReader: "arrow_reader",
+        # A stream of batches, however it is held. Not `Iterable`: a `str` is
+        # one, and inferring "reader" for a path would be a silent mistake.
+        Iterator: "arrow_reader",
+        list: "arrow_reader",
+        tuple: "arrow_reader",
+    }
 
     # -- members ------------------------------------------------------------
 
@@ -652,26 +815,54 @@ class StructField(Field):
         Member by member rather than in one Arrow call, because only this
         field knows what a member the data does not have means: null when it
         is nullable, an error naming the path when it is not.
+
+        A **map** becomes a struct by looking each member up as a key
+        (Arrow's `map_lookup`, one pass per member), and a **list** by
+        position, so `list[a, b]` fills the first two members.
         """
         if isinstance(array, pyarrow.ChunkedArray) or array.type == self.arrow_type:
             return super().cast_arrow_array(array, safe=safe)
-        source = {
-            array.type.field(index).name: array.field(index)
-            for index in range(array.type.num_fields)
-        }
+        column_of = self._column_of(array)
+        if column_of is None:
+            return super().cast_arrow_array(array, safe=safe)
         return pyarrow.StructArray.from_arrays(
-            self.cast_arrow_columns(source.get, len(array), safe=safe),
+            self.cast_arrow_columns(column_of, len(array), safe=safe),
             fields=self.arrow_fields,
-            mask=array.is_null() if array.null_count else None,
+            mask=arrays.null_mask(array),
         )
+
+    def _column_of(self, array: Any) -> Callable[[str], Any] | None:
+        """How to find one member in `array`, or None when it is not a container."""
+        kinds = pyarrow.types
+        if kinds.is_struct(array.type):
+            return arrays.struct_columns(array).get
+        if kinds.is_map(array.type):
+
+            def from_map(name: str) -> Any:
+                column = arrays.map_column(array, name)
+                # No entry anywhere is the same as no column at all: filled when
+                # the member may be null, refused by name when it may not.
+                return None if column.null_count == len(column) else column
+
+            return from_map
+        if _is_list_like(array.type):
+            shortest = pyarrow.compute.min(pyarrow.compute.list_value_length(array)).as_py()
+            if shortest is not None and shortest < len(self.fields):
+                raise ValueError(
+                    f"{self.name or 'struct'} takes {len(self.fields)} members from a list, but "
+                    f"one row has only {shortest}; pad the rows or declare fewer members"
+                )
+            positions = {member.name: index for index, member in enumerate(self.fields)}
+            return lambda name: arrays.list_column(array, positions[name])
+        return None
 
     def cast_arrow_columns(
         self, column_of: Callable[[str], Any], length: int, *, safe: bool = False
     ) -> list[Any]:
         """One array per member: cast what `column_of` finds, null when it may be.
 
-        The shared half of every cast here -- a batch, a table and a struct
-        array all come down to "line these columns up with these members".
+        The shared half of every cast here -- a batch, a table, a struct array,
+        a map -- all come down to "line these columns up with these members".
         The source is a lookup rather than a mapping so that a batch is asked
         only for the columns this field declares: building a dict of every
         column it has, most of which may be dropped, costs more than the cast
@@ -773,16 +964,14 @@ class StructField(Field):
 
     # -- merging ------------------------------------------------------------
 
-    def merged(self, incoming: pyarrow.Schema | StructField) -> StructField:
+    def merged(self, incoming: Any) -> StructField:
         """This field widened with whatever `incoming` has and it does not.
 
         Shared members stay this field's (so data is cast onto them), new ones
         are added nullable -- at every level, so a struct column that grew a
         member grows here too (`fields.arrow.merge_fields`).
         """
-        schema = incoming.into_arrow_schema() if isinstance(incoming, Field) else incoming
-        merged = merge_schemas(schema, self.arrow_schema)
-        return self if merged is self.arrow_schema else Field.from_arrow_schema(merged)
+        return self.merge_with(incoming)
 
     def merge_arrow_schema(self, incoming: pyarrow.Schema) -> pyarrow.Schema:
         """`merged`, as the Arrow schema it produces."""
@@ -907,18 +1096,63 @@ def arrow_type_for(text: str) -> pyarrow.DataType:
     return pyarrow.type_for_alias(text)
 
 
+#: Which subclass speaks for which Arrow kind, narrowest test first. A large
+#: list view is also a list view, so order matters.
+_KINDS: tuple[tuple[Callable[[pyarrow.DataType], bool], str], ...] = (
+    (pyarrow.types.is_struct, "StructField"),
+    (pyarrow.types.is_map, "MapField"),
+    (pyarrow.types.is_large_list, "LargeListField"),
+    (pyarrow.types.is_large_list_view, "LargeListViewField"),
+    (pyarrow.types.is_list_view, "ListViewField"),
+    (pyarrow.types.is_fixed_size_list, "FixedSizeListField"),
+    (pyarrow.types.is_list, "ListField"),
+)
+
+
 def _class_for(arrow_type: pyarrow.DataType | None) -> type[Field]:
     """The `Field` subclass that speaks for `arrow_type`."""
     if arrow_type is None:
         return Field
-    kinds = pyarrow.types
-    if kinds.is_struct(arrow_type):
-        return StructField
-    if kinds.is_map(arrow_type):
-        return MapField
-    if kinds.is_list(arrow_type) or kinds.is_large_list(arrow_type):
-        return ListField
+    for matches, name in _KINDS:
+        if matches(arrow_type):
+            return globals()[name]
     return Field
+
+
+def _is_list_like(arrow_type: pyarrow.DataType) -> bool:
+    """Whether rows of `arrow_type` are runs of values: any list flavour, or a map."""
+    kinds = pyarrow.types
+    return bool(
+        kinds.is_list(arrow_type)
+        or kinds.is_large_list(arrow_type)
+        or kinds.is_list_view(arrow_type)
+        or kinds.is_large_list_view(arrow_type)
+        or kinds.is_fixed_size_list(arrow_type)
+        or kinds.is_map(arrow_type)
+    )
+
+
+def field_of(source: Any, name: str = "") -> Field:
+    """Whatever names a shape, as a `Field`.
+
+    A field is itself, an Arrow schema is a struct field, an Arrow field or
+    type is what it says, and a `@field` class is its `FIELD`. One reading of
+    "the shape" for every call site that takes one.
+    """
+    if isinstance(source, Field):
+        return source
+    if isinstance(source, pyarrow.Schema):
+        return Field.from_arrow_schema(source, name or None)
+    if isinstance(source, pyarrow.Field):
+        return Field.from_arrow_field(source)
+    if isinstance(source, pyarrow.DataType):
+        return Field.from_arrow_type(source, name)
+    declared = getattr(source, "FIELD", None)
+    if isinstance(declared, Field):
+        return declared
+    if isinstance(source, type) and dataclasses.is_dataclass(source):
+        return Field.from_dataclass(source, name or None)
+    raise TypeError(f"{source!r} does not name a shape: pass a Field, an Arrow schema or a class")
 
 
 def _column_of(batch: pyarrow.RecordBatch) -> Callable[[str], Any]:
