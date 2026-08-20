@@ -22,6 +22,8 @@
 
 ::: rekep.models.log.Log
 
+::: rekep.models.parsed_message.ParsedMessage
+
 ## Namespace
 
 ::: rekep.namespace.Namespace
@@ -29,6 +31,10 @@
 ## Jobs
 
 ::: rekep.job.Job
+
+::: rekep.jobs.files_to_logs.FilesToLogs
+
+::: rekep.jobs.logs_to_records.LogsToRecords
 
 ## Datasets
 

@@ -127,16 +127,19 @@ rekep/
 │                  Job's and a Dataset's `scheme://namespace/name` id comes from
 ├── job.py         Job: the OpenLineage resource for a process -- config
 │                  record + arrow_transform (not enforced abstract, bindable
-│                  via @arrow_task); side files under stacks/jobs,
-│                  run_tracked() lineage-wraps extract -> transform -> load,
-│                  Job -> Airflow via into_airflow
+│                  via @arrow_task); repo_url/script_path -> the
+│                  sourceCodeLocation facet, airflow{dag,task}/env/properties
+│                  dicts; side files under stacks/jobs, run_tracked()
+│                  lineage-wraps extract -> transform -> load, Job -> Airflow
+│                  via into_airflow
 ├── dataset.py     Dataset: the OpenLineage resource for a data product --
 │                  schema (via Record) + cross-platform location (shared
 │                  `properties`/`direct`, per-protocol `protocols`);
 │                  write_arrow_reader dispatches to `_{format}_write_arrow_reader`,
 │                  which lineage-tracks a call to the public `{format}_write_arrow_reader`
-│                  (iceberg_write_arrow_reader, file_write_arrow_reader via
-│                  rekep.filesystems)
+│                  (iceberg_write_arrow_reader: append/upsert/overwrite,
+│                  branch-aware -- pyiceberg's own API, not reimplemented;
+│                  file_write_arrow_reader via rekep.filesystems)
 ├── run.py         Run/RunEvent: OpenLineage's own event shape, kept as
 │                  Job's and Dataset's internal lineage bookkeeping
 │                  (`.events()`), never emitted anywhere
@@ -146,7 +149,11 @@ rekep/
 ├── records/       machinery: record.py, annotations.py, arrow.py,
 │                  iceberg.py (+deployment), doris.py (+deployment),
 │                  ddl.py, registry.py (folder registries)
-├── models/        the concrete records (one module per model)
+├── models/        the concrete records (one module per model): log.py,
+│                  parsed_message.py (pipe key=value + FIX protocol tag)
+├── jobs/          the concrete jobs (one module per job), mirroring
+│                  models/: files_to_logs.py, logs_to_records.py (regex
+│                  key=value parser, rekep.jobs.parse_fields)
 ├── logs/          LogFile: streaming Arrow-native log access
 ├── iceberg/       Iceberg stack: Catalogs/Namespaces/Tables CRUD (pyiceberg)
 ├── doris/         Doris stack: same resources, SQL plan + pluggable executor
@@ -178,6 +185,15 @@ anywhere and no protocol-adapted fields committed to disk), `product/`
 never committed (`stacks/ddl/` gitignored). Defaults are **fully local**:
 SQLite Iceberg catalog, file warehouse — a laptop runs without services. No
 READMEs in `stacks/`.
+
+**Branch-conditional naming is a per-file choice, not a mode.** Every side
+file already renders through `rekep.render.render` -- `git_context()`'s
+`git_branch_suffix`/`git_branch_slug` are always in scope, Jinja or not --
+so a file picks whether it uses them at all: `stacks/jobs/logs_to_records.yaml`
+and `stacks/datasets/parsed_messages.yaml` (an Iceberg `branch`) pick up the
+branch because they are working/iterating assets, `files_to_logs.yaml` and
+`log.yaml` stay stable because they are the shared, canonical ones. Nothing
+new to wire in for a file to make either choice.
 
 **Stacks are resource services with idempotent verbs**: `get_or_create`,
 `create_or_update`, `deploy` / `deploy_folder` / `deploy_one` — dependency

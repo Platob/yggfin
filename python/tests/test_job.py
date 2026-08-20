@@ -237,3 +237,63 @@ def test_the_shipped_side_files_load(monkeypatch: pytest.MonkeyPatch) -> None:
     jobs = load_all(REPO_JOBS)
     assert jobs, "stacks/jobs has no side files"
     assert all(isinstance(job, rekep.job.Job) for job in jobs)
+
+
+def test_the_shipped_files_to_logs_declares_its_full_config(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("REKEP_SOURCE_URL", "file:///dev/null")
+    jobs = {job.name: job for job in load_all(REPO_JOBS)}
+    f2l = jobs["files_to_logs"]
+    assert f2l.namespace == "pipeline", "stable across branches, unlike logs_to_records"
+    assert f2l.repo_url == "https://github.com/Platob/yggfin"
+    assert f2l.script_path == "python/src/rekep/jobs/files_to_logs.py"
+    assert f2l.env["LOG_LEVEL"] == "INFO"
+    assert f2l.properties["team"] == "trading-platform"
+    assert f2l.airflow["dag"]["max_active_runs"] == 1
+    assert f2l.airflow["task"]["retries"] == 2
+
+
+def test_the_shipped_logs_to_records_picks_up_the_branch_suffix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from rekep.render import git_context
+
+    monkeypatch.setenv("REKEP_SOURCE_URL", "file:///dev/null")
+    git_context.cache_clear()
+    try:
+        suffix = git_context()["git_branch_suffix"]
+        jobs = {job.name: job for job in load_all(REPO_JOBS)}
+        l2r = jobs[f"logs_to_records{suffix}"]
+        assert l2r.namespace == f"pipeline{suffix}"
+        assert l2r.consumed_records() == [Log]
+    finally:
+        git_context.cache_clear()
+
+
+# -- python config / airflow / env -----------------------------------------
+
+
+def test_source_code_location_facet_carries_repo_and_path() -> None:
+    job = Job(name="j", repo_url="https://github.com/Platob/yggfin", script_path="a/b.py")
+    facet = job.source_code_location_facet()
+    assert facet["type"] == "git"
+    assert facet["repoUrl"] == "https://github.com/Platob/yggfin"
+    assert facet["path"] == "a/b.py"
+    assert "version" in facet  # the current git sha, whatever it is here
+
+
+def test_facets_include_source_code_location_only_when_declared() -> None:
+    assert Job(name="j").facets() == {}
+    declared = Job(name="j", repo_url="https://github.com/Platob/yggfin")
+    assert "sourceCodeLocation" in declared.facets()
+
+
+def test_env_airflow_and_properties_round_trip() -> None:
+    job = Job(
+        name="j",
+        env={"BUCKET": "s3://lake"},
+        properties={"team": "trading"},
+        airflow={"dag": {"max_active_runs": 1}, "task": {"retries": 2}},
+    )
+    assert Job.from_json(job.into_json()) == job

@@ -84,6 +84,28 @@ class Job(Record):
     produces: list[str] = dataclasses.field(default_factory=list)
     """Dotted paths of the records this job writes."""
 
+    repo_url: str | None = None
+    """Git remote of the repository this job's code lives in."""
+
+    script_path: str | None = None
+    """Path to this job's source, relative to the repo root."""
+
+    airflow: dict[str, dict[str, Any]] = dataclasses.field(default_factory=dict)
+    """Airflow-specific config, under `dag`/`task` -- each merged as kwargs
+    into the matching call in `into_airflow` (`pool`, `retries`, `owner`,
+    `trigger_rule`, `max_active_runs`, ...). Generic on purpose: rekep does
+    not maintain a list of which kwarg belongs to Airflow's `DAG` versus its
+    `@task`, Airflow does."""
+
+    env: dict[str, str] = dataclasses.field(default_factory=dict)
+    """Environment variables this job's execution reads. Values may be Jinja
+    (`{{ env.BUCKET }}`, `{{ git_branch_suffix }}`) -- the whole side file is
+    rendered before parsing, so this dict arrives already resolved."""
+
+    properties: dict[str, str] = dataclasses.field(default_factory=dict)
+    """Generic extra properties: whatever a deployment needs to carry that
+    is neither lineage nor Airflow config."""
+
     __fn: Any = None  # bound arrow_transform, from @arrow_task: state, not schema
 
     # -- identity -------------------------------------------------------
@@ -101,6 +123,33 @@ class Job(Record):
         when they share a namespace and a name.
         """
         return unique_uri("job", self.namespace, self.name)
+
+    def source_code_location_facet(self) -> dict[str, Any]:
+        """OpenLineage `SourceCodeLocationJobFacet`: where this job's code lives.
+
+        `repo_url`/`script_path` are this job's own declaration; `version`
+        and `branch` come from `rekep.render.git_context()` -- the same git
+        facts side files use for branch-conditional naming -- read fresh
+        each call rather than baked in at deploy time.
+        """
+        from rekep.render import git_context
+
+        context = git_context()
+        facet: dict[str, Any] = {"type": "git", "version": context["git_sha"]}
+        if self.repo_url:
+            facet["repoUrl"] = self.repo_url
+        if self.script_path:
+            facet["path"] = self.script_path
+        if context["git_branch"]:
+            facet["branch"] = context["git_branch"]
+        return facet
+
+    def facets(self) -> dict[str, Any]:
+        """Every static facet this job carries; `sourceCodeLocation` when declared."""
+        facets: dict[str, Any] = {}
+        if self.repo_url or self.script_path:
+            facets["sourceCodeLocation"] = self.source_code_location_facet()
+        return facets
 
     # -- the program ----------------------------------------------------
 
@@ -195,7 +244,13 @@ class Job(Record):
     # -- interop ----------------------------------------------------------
 
     def into_airflow(self) -> Any:
-        """This job as a single-task Airflow DAG, lineage tagged and documented."""
+        """This job as a single-task Airflow DAG, lineage tagged and documented.
+
+        `airflow["dag"]`/`airflow["task"]` merge straight into `DAG(...)`/
+        `@task(...)`, on top of what lineage already derives -- the caller's
+        own choices win over nothing here, since there is nothing to conflict
+        with yet.
+        """
         from rekep.airflow.decorators import DAG
         from rekep.airflow.decorators import task as airflow_task
 
@@ -208,10 +263,14 @@ class Job(Record):
             consumes=consumes,
             produces=produces,
             catchup=False,
+            **self.airflow.get("dag", {}),
         ) as built:
-            airflow_task(task_id=self.name, consumes=consumes, produces=produces)(
-                self.run_tracked
-            )()
+            airflow_task(
+                task_id=self.name,
+                consumes=consumes,
+                produces=produces,
+                **self.airflow.get("task", {}),
+            )(self.run_tracked)()
         return built
 
     # -- lineage ------------------------------------------------------------

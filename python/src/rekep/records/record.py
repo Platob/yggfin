@@ -419,6 +419,8 @@ def _decode(value: Any, annotation: Any) -> Any:
         key_type, value_type = (get_args(annotation) or (Any, Any))[:2]
         return {_decode(k, key_type): _decode(v, value_type) for k, v in value.items()}
 
+    if annotation is Any:
+        return value  # untyped: trust the plain container a text format gave back
     if dataclasses.is_dataclass(annotation):
         return _decode_dataclass(annotation, value)
     if isinstance(annotation, type):

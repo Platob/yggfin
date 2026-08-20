@@ -73,17 +73,58 @@ dataset.write_arrow_reader(reader, format="file")   # uses direct/protocols["fil
 
 - **`iceberg_write_arrow_reader`** is the Iceberg hook: public because it is
   the customisation point a deployment overrides (resolve a table from a
-  catalog, choose how the append happens), abstract in spirit because the
-  default only knows how to append to a `table=` it is handed.
+  catalog, choose how the write happens), abstract in spirit because the
+  default only knows how to write to a `table=` it is handed. It calls
+  straight into pyiceberg's own `append`/`upsert`/`overwrite` -- see
+  [Iceberg branches and upsert](#iceberg-branches-and-upsert) below.
 - **`file_write_arrow_reader`** is the same shape for any `pyarrow.fs`
   filesystem: a URI maps to a `(filesystem, path)` pair through
   `rekep.filesystems.resolve`, cached per URL, and the reader streams
   straight into `pyarrow.dataset.write_dataset` — never materialised.
 
-Both stream one batch at a time and return the row count written; neither
-one is called directly by `write_arrow_reader` — the private
-`_{format}_write_arrow_reader` between them is where the lineage tracking
-lives, so a new protocol only has to implement the public hook.
+`append` (Iceberg's default `mode`) and the file writer both stream one
+batch at a time; neither hook is called directly by `write_arrow_reader` —
+the private `_{format}_write_arrow_reader` between them is where the
+lineage tracking lives, so a new protocol only has to implement the public
+hook.
+
+## Iceberg branches and upsert
+
+`iceberg_write_arrow_reader` leans on pyiceberg's own table API rather than
+reimplementing any of it:
+
+```python
+dataset = Dataset(record="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
+dataset.write_arrow_reader(reader, format="iceberg", table=live_table)          # append, branch="dev"
+dataset.write_arrow_reader(reader, format="iceberg", table=live_table,
+                            mode="upsert")                                      # merge
+dataset.write_arrow_reader(reader, format="iceberg", table=live_table,
+                            mode="overwrite")                                   # replace
+```
+
+- **`branch`** defaults to `iceberg_branch()` — `protocols["iceberg"]["branch"]`
+  — falling back to `main`. A branch that does not exist yet is created as a
+  *fork of `main`'s current snapshot* first, not pyiceberg's own
+  auto-creation (which gives a branch no parent at all — an independent,
+  empty lineage that merely shares the table). That fork is what makes a
+  branch useful for WAP: iterate against real data, `main` untouched, until
+  it's good enough to promote.
+- **`mode="upsert"`** merges `chunk_rows` rows at a time (default 100,000)
+  via pyiceberg's `Table.upsert`, joined on `join_cols` when given, else the
+  Iceberg identifier fields a record's `Arrow(key=True)` column already
+  becomes — `ParsedMessage.hash64` needs no extra wiring to upsert
+  correctly. Chunked rather than streamed one batch at a time: a merge has
+  to compare against existing data, so some materialising is unavoidable,
+  but accumulating first bounds memory and turns many small merges into
+  few large ones — see `benchmarks/bench_iceberg_upsert.py` for the actual
+  throughput difference `chunk_rows` makes.
+- **`mode="overwrite"`** replaces the table (or `overwrite_filter`'s match)
+  with the whole reader; needs it to fit in memory, same as pyiceberg's own
+  `Table.overwrite`.
+
+`stacks/datasets/parsed_messages.yaml` demonstrates the branch config end to
+end: `protocols.iceberg.branch: "{{ git_branch_slug }}"` gives every git
+branch its own Iceberg branch of the same table, `main` reserved for main.
 
 ## Lineage: internal, not emitted
 

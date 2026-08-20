@@ -1,3 +1,4 @@
+import datetime
 import pathlib
 from typing import Any
 
@@ -5,18 +6,39 @@ import pyarrow
 import pytest
 
 from rekep.dataset import Dataset
-from rekep.models import Log
+from rekep.models import Log, ParsedMessage
 from rekep.run import RunState
 
 
 class FakeTable:
-    """Stands in for a `pyiceberg.table.Table`: records what it was handed."""
+    """Stands in for a `pyiceberg.table.Table`: records what it was handed.
 
-    def __init__(self) -> None:
+    `has_snapshot=True` (the default) simulates a table that already has
+    data -- `current_snapshot()` truthy, so `iceberg_write_arrow_reader`
+    proceeds straight to the declared branch; `refs`/`snapshot_by_name`
+    still report "nothing yet" (no real snapshot store behind this), so
+    `_ensure_iceberg_branch` no-ops rather than trying to fork one.
+    `has_snapshot=False` simulates a brand new table -- the "bootstrap on
+    main first" case.
+    """
+
+    def __init__(self, has_snapshot: bool = True) -> None:
         self.appended: list[pyarrow.Table] = []
+        self.branches: list[str | None] = []
+        self.has_snapshot = has_snapshot
 
-    def append(self, table: pyarrow.Table) -> None:
+    def append(self, table: pyarrow.Table, branch: str | None = None, **_: Any) -> None:
         self.appended.append(table)
+        self.branches.append(branch)
+
+    def refs(self) -> dict[str, Any]:
+        return {}
+
+    def snapshot_by_name(self, name: str) -> None:
+        return None
+
+    def current_snapshot(self) -> Any | None:
+        return object() if self.has_snapshot else None
 
 
 def reader_of(*rows: list[int]) -> pyarrow.RecordBatchReader:
@@ -96,6 +118,31 @@ def test_protocol_properties_merge_shared_and_protocol_specific() -> None:
 # -- write_arrow_reader dispatch ------------------------------------------
 
 
+def test_write_arrow_reader_wraps_a_plain_batch_iterator() -> None:
+    """A job's `arrow_transform` output pipes straight in -- no wrapping needed."""
+    schema = Log.into_arrow_schema()
+    row = {
+        "url": "a",
+        "unix": 1,
+        "date": datetime.date(2026, 8, 14),
+        "time": datetime.time(0, 0),
+        "thread_name": "t",
+        "driver": "d",
+        "message": "m",
+        "hash64": 1,
+    }
+    batch = pyarrow.RecordBatch.from_pylist([row], schema=schema)
+
+    def plain_iterator():
+        yield batch
+
+    dataset = Dataset(record="rekep.models.Log")
+    table = FakeTable()
+    written = dataset.write_arrow_reader(plain_iterator(), format="iceberg", table=table)
+    assert written == 1
+    assert table.appended[0].schema.equals(schema)
+
+
 def test_write_arrow_reader_refuses_an_unknown_format() -> None:
     dataset = Dataset(record="rekep.models.Log")
     with pytest.raises(ValueError, match="no 'parquet' writer"):
@@ -117,6 +164,44 @@ def test_write_arrow_reader_streams_one_batch_at_a_time() -> None:
     assert len(table.appended) == 2
     assert table.appended[0].num_rows == 3
     assert table.appended[1].num_rows == 2
+
+
+def test_append_defaults_to_main_branch() -> None:
+    dataset = Dataset(record="rekep.models.Log")
+    table = FakeTable()
+    dataset.write_arrow_reader(reader_of([1]), format="iceberg", table=table)
+    assert table.branches == ["main"]
+
+
+def test_append_uses_the_datasets_declared_branch() -> None:
+    dataset = Dataset(record="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
+    table = FakeTable()
+    dataset.write_arrow_reader(reader_of([1]), format="iceberg", table=table)
+    assert table.branches == ["dev"]
+
+
+def test_an_explicit_branch_argument_wins_over_the_declared_one() -> None:
+    dataset = Dataset(record="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
+    table = FakeTable()
+    dataset.write_arrow_reader(reader_of([1]), format="iceberg", table=table, branch="hotfix")
+    assert table.branches == ["hotfix"]
+
+
+def test_a_brand_new_table_bootstraps_on_main_regardless_of_the_declared_branch() -> None:
+    """Iceberg allows only `main` before a table has any snapshot at all --
+    the very first write always lands there, whatever `branch` says."""
+    dataset = Dataset(record="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
+    table = FakeTable(has_snapshot=False)
+    dataset.write_arrow_reader(reader_of([1]), format="iceberg", table=table, branch="dev")
+    assert table.branches == ["main"]
+
+
+def test_an_unknown_iceberg_mode_is_refused() -> None:
+    dataset = Dataset(record="rekep.models.Log")
+    with pytest.raises(ValueError, match="no iceberg 'delete' write mode"):
+        dataset.write_arrow_reader(
+            reader_of([1]), format="iceberg", table=FakeTable(), mode="delete"
+        )
 
 
 # -- internal lineage tracking between public and private -----------------
@@ -203,6 +288,17 @@ def test_into_iceberg_table_carries_record_name_namespace_location() -> None:
     assert table.location == "s3://lake/iceberg/log"
 
 
+def test_into_iceberg_table_does_not_leak_location_or_branch_into_properties() -> None:
+    """`location`/`branch` route the write; they are not table properties."""
+    dataset = Dataset(
+        record="rekep.models.Log",
+        properties={"format": "parquet"},
+        protocols={"iceberg": {"location": "s3://lake/log", "branch": "dev"}},
+    )
+    table = dataset.into_iceberg_table()
+    assert table.properties == {"format": "parquet"}
+
+
 def test_into_doris_table_carries_record_name_namespace_properties() -> None:
     dataset = Dataset(
         record="rekep.models.Log",
@@ -258,30 +354,121 @@ def test_deploy_iceberg_converges_a_real_local_catalog(tmp_path: pathlib.Path) -
     assert stack.catalogs.connect("iceberg").table_exists("default.logs")
 
 
+def _local_iceberg_stack(tmp_path: pathlib.Path) -> Any:
+    from rekep.iceberg import Iceberg
+    from rekep.records.iceberg import IcebergCatalog, IcebergDeployment
+
+    root = tmp_path.as_posix()
+    return Iceberg(
+        IcebergDeployment(
+            catalogs=[IcebergCatalog(uri=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh")]
+        )
+    )
+
+
+def _parsed_message_reader(*rows: dict[str, Any]) -> pyarrow.RecordBatchReader:
+    schema = ParsedMessage.into_arrow_schema()
+    defaults = {"date": datetime.date(2026, 8, 14), "protocol": None, "fields": {}}
+    batch = pyarrow.RecordBatch.from_pylist([{**defaults, **row} for row in rows], schema=schema)
+    return pyarrow.RecordBatchReader.from_batches(schema, [batch])
+
+
+def test_upsert_against_a_real_local_catalog_uses_the_primary_key(
+    tmp_path: pathlib.Path,
+) -> None:
+    """`join_cols=None` falls back to the record's own `Arrow(key=True)`
+    field -- `ParsedMessage.hash64` -- with no extra wiring."""
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+
+    reader = _parsed_message_reader(
+        {"url": "a", "unix": 1, "hash64": 1}, {"url": "a", "unix": 2, "hash64": 2}
+    )
+    dataset.write_arrow_reader(reader, format="iceberg", table=table)
+
+    updated = _parsed_message_reader(
+        {"url": "a", "unix": 1, "hash64": 1, "protocol": "FIX.4.4"},
+        {"url": "a", "unix": 3, "hash64": 3},
+    )
+    written = dataset.write_arrow_reader(
+        reader=updated, format="iceberg", table=table, mode="upsert"
+    )
+    assert written == 2  # one updated, one inserted
+
+    rows = {row["hash64"]: row for row in table.scan().to_arrow().to_pylist()}
+    assert set(rows) == {1, 2, 3}
+    assert rows[1]["protocol"] == "FIX.4.4", "hash64=1 was updated, not duplicated"
+
+
+def test_branch_write_and_read_isolate_from_main(tmp_path: pathlib.Path) -> None:
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+
+    main_dataset = Dataset(record="rekep.models.Log", name="logs")
+    schema = table.schema().as_arrow()
+    row = {
+        "url": "a",
+        "unix": 1,
+        "date": datetime.date(2026, 8, 14),
+        "time": datetime.time(0, 0),
+        "thread_name": "t",
+        "driver": "d",
+        "message": "m",
+        "hash64": 1,
+    }
+    reader = pyarrow.RecordBatchReader.from_batches(
+        schema, [pyarrow.RecordBatch.from_pylist([row], schema=schema)]
+    )
+    main_dataset.write_arrow_reader(reader, format="iceberg", table=table)
+
+    dev_dataset = Dataset(record="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
+    reader = pyarrow.RecordBatchReader.from_batches(
+        schema, [pyarrow.RecordBatch.from_pylist([{**row, "hash64": 2}], schema=schema)]
+    )
+    dev_dataset.write_arrow_reader(reader, format="iceberg", table=table)
+
+    assert len(table.scan().to_arrow()) == 1, "main untouched by the dev branch write"
+    dev_snapshot = table.refs()["dev"].snapshot_id
+    assert len(table.scan(snapshot_id=dev_snapshot).to_arrow()) == 2
+
+
 # -- shipped stacks -----------------------------------------------------
 
 
-def test_the_shipped_dataset_declares_the_shipped_record() -> None:
-    """`stacks/datasets/log.yaml` must actually parse and name a real record."""
+def test_the_shipped_datasets_declare_real_records() -> None:
+    """Every `stacks/datasets/*.yaml` must actually parse and name a real record."""
     repo_datasets = pathlib.Path(__file__).parents[2] / "stacks" / "datasets"
-    (dataset,) = Dataset.load_all(repo_datasets)
-    assert dataset.record_class() is Log
-    assert dataset.uri() == "dataset://default/log"
+    datasets = Dataset.load_all(repo_datasets)
+    assert {d.name for d in datasets} == {"log", "parsed_messages"}
+    for dataset in datasets:
+        assert dataset.record_class() is not None  # raises TypeError otherwise
 
 
-def test_the_shipped_dataset_resolves_against_the_shipped_namespaces() -> None:
-    """The shipped dataset must resolve against the shipped catalogs/namespaces."""
+def test_the_shipped_log_dataset_is_branch_agnostic() -> None:
+    repo_datasets = pathlib.Path(__file__).parents[2] / "stacks" / "datasets"
+    (log,) = [d for d in Dataset.load_all(repo_datasets) if d.name == "log"]
+    assert log.record_class() is Log
+    assert log.uri() == "dataset://default/log"
+    assert log.iceberg_branch() is None
+
+
+def test_the_shipped_datasets_resolve_against_the_shipped_namespaces() -> None:
+    """Every shipped dataset must resolve against the shipped catalogs/namespaces."""
     from rekep.records.doris import DorisDeployment
     from rekep.records.iceberg import IcebergDeployment
 
     repo = pathlib.Path(__file__).parents[2] / "stacks"
-    (dataset,) = Dataset.load_all(repo / "datasets")
+    datasets = Dataset.load_all(repo / "datasets")
 
     iceberg_deployment = IcebergDeployment.load(repo / "iceberg")
-    iceberg_deployment.namespace(dataset.into_iceberg_table().namespace)  # does not raise
-
     doris_deployment = DorisDeployment.load(repo / "doris")
-    doris_deployment.namespace(dataset.into_doris_table().namespace)  # does not raise
+    for dataset in datasets:
+        iceberg_deployment.namespace(dataset.into_iceberg_table().namespace)  # does not raise
+        doris_deployment.namespace(dataset.into_doris_table().namespace)  # does not raise
 
 
 # -- round trip -------------------------------------------------------------
