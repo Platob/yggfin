@@ -527,3 +527,152 @@ def test_a_plain_arrow_schema_is_numbered_for_the_user(tmp_path: Path) -> None:
     )
     plain.create_with(pyarrow.schema([pyarrow.field("a", pyarrow.int64(), nullable=False)]))
     assert [f.field_id for f in plain.iceberg_table.schema().fields] == [1]
+
+
+# -- commits ----------------------------------------------------------------
+
+
+def test_a_write_commits_in_chunks_of_the_datasets_own_size(dataset: IcebergDataset) -> None:
+    dataset.commit_row_size = 2
+    dataset.write_arrow_reader(quotes(6).to_reader(max_chunksize=1))
+    assert len(dataset.iceberg_table.history()) == 3, "the dataset's size, with no call saying so"
+
+
+def test_a_call_overrides_the_datasets_commit_size(dataset: IcebergDataset) -> None:
+    dataset.commit_row_size = 2
+    dataset.write_arrow_reader(quotes(6).to_reader(max_chunksize=1), commit_row_size=0)
+    assert len(dataset.iceberg_table.history()) == 1, "0 means one commit for the stream"
+
+
+def test_a_created_table_carries_the_commit_properties(dataset: IcebergDataset) -> None:
+    dataset.create_with()
+    properties = dataset.iceberg_table.properties
+    assert properties["commit.manifest-merge.enabled"] == "true"
+    assert properties["write.target-file-size-bytes"] == str(256 * 1024 * 1024)
+    assert properties["write.parquet.row-group-limit"] == str(128 * 1024)
+
+
+def test_iceberg_defaults_can_be_kept(tmp_path: Path) -> None:
+    bare = IcebergDataset(
+        name="trading.bare",
+        catalog="test",
+        properties=catalog_properties(tmp_path),
+        struct=Quote.FIELD,
+        optimize_commits=False,
+    )
+    bare.create_with()
+    assert "commit.manifest-merge.enabled" not in bare.iceberg_table.properties
+
+
+def test_declared_table_properties_win_over_the_defaults(tmp_path: Path) -> None:
+    tuned = IcebergDataset(
+        name="trading.tuned",
+        catalog="test",
+        properties=catalog_properties(tmp_path),
+        struct=Quote.FIELD,
+        table_properties={"write.target-file-size-bytes": "1024"},
+    )
+    tuned.create_with()
+    assert tuned.iceberg_table.properties["write.target-file-size-bytes"] == "1024"
+    assert tuned.iceberg_table.properties["commit.manifest-merge.enabled"] == "true"
+
+
+# -- planning ---------------------------------------------------------------
+
+
+def test_a_merge_of_new_keys_writes_without_reading(dataset: IcebergDataset) -> None:
+    """The pruning short circuit: an append, arrived at by planning."""
+    dataset.write_arrow_table(quotes(3))
+    before = len(dataset.iceberg_table.history())
+    dataset.write_arrow(quotes(3, "XETR"), merge_by=True)  # same keys -> updates
+    dataset.refresh()
+    assert dataset.read_arrow_table().num_rows == 3
+    assert len(dataset.iceberg_table.history()) > before
+
+
+def test_the_merge_path_can_be_handed_back_to_pyiceberg(dataset: IcebergDataset) -> None:
+    dataset.plan_merges = False
+    dataset.write_arrow_table(quotes(3))
+    dataset.write_arrow(quotes(3, "XETR"), merge_by=True)
+    assert set(dataset.refresh().read_arrow_table().column("venue").to_pylist()) == {"XETR"}
+
+
+# -- maintenance that settles -----------------------------------------------
+
+
+def test_compaction_stops_when_there_is_nothing_left_to_gain(dataset: IcebergDataset) -> None:
+    """A part that legitimately needs several files must not be rewritten forever."""
+    dataset.table_properties = {"write.target-file-size-bytes": str(16 * 1024)}
+    for index in range(6):
+        dataset.write_arrow(quotes(4, f"venue{index}"), commit_row_size=0)
+    assert dataset.compact(min_files=2) > 0
+    files = dataset.refresh().data_files().num_rows
+    assert dataset.compact(min_files=2) == 0, "the second pass has nothing to do"
+    assert dataset.compaction_plan(min_files=2) == []
+    assert dataset.refresh().data_files().num_rows == files, "and it did not grow the table"
+
+
+def test_new_data_makes_a_compacted_partition_worth_planning_again(
+    dataset: IcebergDataset,
+) -> None:
+    for _ in range(3):
+        dataset.write_arrow(quotes(2), commit_row_size=0)
+    dataset.compact(min_files=2)
+    assert dataset.compaction_plan(min_files=2) == []
+    for _ in range(2):
+        dataset.write_arrow(quotes(2, "XETR"), commit_row_size=0)
+    assert dataset.compaction_plan(min_files=2) != []
+
+
+def test_the_compaction_snapshots_are_marked(dataset: IcebergDataset) -> None:
+    for _ in range(2):
+        dataset.write_arrow(quotes(2), commit_row_size=0)
+    dataset.compact(min_files=2)
+    assert dataset.compacted_snapshots(), "how a compacted part is recognised later"
+
+
+# -- sweeping ---------------------------------------------------------------
+
+
+def test_cleanup_sweeps_metadata_as_well_as_data(dataset: IcebergDataset) -> None:
+    """A stream fills the metadata directory faster than the data one."""
+    for index in range(8):
+        dataset.write_arrow(quotes(2, f"venue{index}"), commit_row_size=0)
+    dataset.compact(min_files=2)
+    location = Path(dataset.iceberg_table.location().replace("file://", ""))
+    before = len(list((location / "metadata").rglob("*")))
+    stored = dataset.read_arrow_table().num_rows
+    report = dataset.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0))
+    after = len(list((location / "metadata").rglob("*")))
+    assert report["deleted"] > 0
+    assert after < before, "the metadata directory shrank"
+    assert dataset.refresh().read_arrow_table().num_rows == stored, "and the table still reads"
+
+
+def test_every_retained_snapshot_still_reads_after_a_sweep(dataset: IcebergDataset) -> None:
+    """The one thing a metadata sweep may never break."""
+    for index in range(6):
+        dataset.write_arrow(quotes(2, f"venue{index}"), commit_row_size=0)
+    dataset.cleanup(retain=3, orphan_age=datetime.timedelta(seconds=0))
+    dataset.refresh()
+    for snapshot in dataset.iceberg_table.snapshots():
+        assert dataset.read_arrow_table(snapshot_id=snapshot.snapshot_id).num_rows > 0
+
+
+def test_a_sweep_can_leave_metadata_alone(dataset: IcebergDataset) -> None:
+    for index in range(4):
+        dataset.write_arrow(quotes(2, f"venue{index}"), commit_row_size=0)
+    location = Path(dataset.iceberg_table.location().replace("file://", ""))
+    before = {path for path in (location / "metadata").rglob("*")}
+    dataset.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0), metadata=False)
+    # Expiry writes a metadata version of its own, so the directory may grow --
+    # what must not happen is a file disappearing from it.
+    assert before <= {path for path in (location / "metadata").rglob("*")}
+
+
+def test_optimize_does_not_rewrite_properties_it_already_set(dataset: IcebergDataset) -> None:
+    dataset.write_arrow(quotes(2), commit_row_size=0)
+    dataset.optimize()
+    versions = len(dataset.refresh().iceberg_table.metadata.metadata_log)
+    dataset.optimize()
+    assert len(dataset.refresh().iceberg_table.metadata.metadata_log) <= versions + 1

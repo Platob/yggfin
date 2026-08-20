@@ -1,0 +1,415 @@
+"""Benchmark the pipeline that matters: a log parsed and streamed into Iceberg.
+
+Run from `python/`::
+
+    uv run python benchmarks/bench_iceberg.py --quick     # one small sweep
+    uv run python benchmarks/bench_iceberg.py             # the full sweep
+    uv run python benchmarks/bench_iceberg.py --only read
+
+Three questions, measured rather than assumed:
+
+1. **How fast does a stream land?** Append, upsert, and upsert on a stream that
+   cannot match anything already stored -- at several commit sizes, partitioned
+   and not. Seconds are only half of it: the files and snapshots a
+   configuration leaves behind are what the *next* reader pays for, so both are
+   reported.
+2. **Does a read prune?** A filter on a partition column, on a column that
+   correlates with one, and on one that does not -- with the planned file count
+   beside the wall time, because a fast scan that read every file is a scan that
+   got lucky.
+3. **What do the table properties buy?** The same stream written with Iceberg's
+   commit knobs at their defaults and at the ones this package sets.
+
+Everything runs against a local SQLite catalog and a file warehouse, so the
+numbers are storage-latency-free: they measure planning, commit and Arrow work,
+which is what this package is responsible for. On an object store every commit
+also pays a round trip, which makes the *number* of commits matter more, not
+less.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import pathlib
+import shutil
+import sys
+import tempfile
+import time
+from collections.abc import Callable, Iterator
+from typing import Any
+
+import pyarrow
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
+
+from rekep import Log, TextFile  # noqa: E402
+from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
+
+DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
+LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
+TRACE = b"java.lang.IllegalStateException: synthetic\n\tat com.example.A.b(A.java:1)\n"
+
+#: Table properties this package sets when commits are optimised.
+OPTIMISED = {
+    "commit.manifest-merge.enabled": "true",
+    "write.target-file-size-bytes": str(256 * 1024 * 1024),
+}
+
+
+# -- the log ----------------------------------------------------------------
+
+
+def generate(path: pathlib.Path, rows: int, days: int) -> int:
+    """Write a synthetic log of `rows` records spread over `days`.
+
+    Spread on purpose: a log that all lands on one day cannot show whether a
+    read prunes, and a partitioned table with one partition is not a
+    partitioned table.
+    """
+    per_day = max(rows // days, 1)
+    with path.open("wb") as out:
+        for i in range(rows):
+            day = 14 + min(i // per_day, days - 1)
+            second, micro = divmod(i % per_day, 1_000_000)
+            out.write(
+                b"2026-08-%02d %02d:%02d:%02d.%03d_%03d [250-e7256476:9effef3e6a:%05d] [%s] %s"
+                % (
+                    day,
+                    second // 3600 % 24,
+                    second // 60 % 60,
+                    second % 60,
+                    micro // 1000,
+                    micro % 1000,
+                    72500 + i % 8,
+                    DRIVERS[i % len(DRIVERS)],
+                    LEVELS[i % len(LEVELS)],
+                )
+            )
+            out.write(
+                b"payload %d: ACCOUNT=ACCT-%06d routed XPAR qty=%d\n" % (i, i % 500, i % 10_000)
+            )
+            if i % 200 == 199:
+                out.write(TRACE)
+    return path.stat().st_size
+
+
+def parsed(path: pathlib.Path) -> pyarrow.Table:
+    """The whole log as one table, so a write benchmark measures the write."""
+    with TextFile.from_path(path) as log:
+        return log.read_arrow_table()
+
+
+def batches(table: pyarrow.Table, batch_row_size: int) -> Iterator[pyarrow.RecordBatch]:
+    """The table as a stream, the way a parser hands one over."""
+    return iter(table.to_batches(max_chunksize=batch_row_size))
+
+
+# -- the table --------------------------------------------------------------
+
+
+def catalog(root: pathlib.Path) -> IcebergCatalog:
+    warehouse = root / "warehouse"
+    warehouse.mkdir(parents=True, exist_ok=True)
+    return IcebergCatalog(
+        name="bench",
+        properties={
+            "type": "sql",
+            "uri": f"sqlite:///{(root / 'catalog.db').as_posix()}",
+            "warehouse": warehouse.as_uri(),
+        },
+    )
+
+
+def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]) -> IcebergDataset:
+    """A fresh table, partitioned by day or not at all."""
+    field = Log.FIELD
+    if not partitioned:
+        field = field.into_dataclass("Flat").FIELD
+        field.field("date").is_partition_key = False
+    built = catalog(root).dataset("bench.logs", struct=field, table_properties=properties)
+    return built.create_with()
+
+
+def stats(target: IcebergDataset) -> dict[str, int]:
+    """What the next reader will pay for: files, manifests, snapshots."""
+    table = target.refresh().iceberg_table
+    return {
+        "files": table.inspect.data_files().num_rows,
+        "manifests": table.inspect.manifests().num_rows,
+        "snapshots": len(table.snapshots()),
+    }
+
+
+def timed(call: Callable[[], Any]) -> tuple[float, Any]:
+    started = time.perf_counter()
+    result = call()
+    return time.perf_counter() - started, result
+
+
+# -- writing ----------------------------------------------------------------
+
+
+def write_case(
+    table: pyarrow.Table,
+    *,
+    mode: str,
+    commit_row_size: int | None,
+    batch_row_size: int = 16_384,
+    partitioned: bool = True,
+    properties: dict[str, str] | None = None,
+    preload: pyarrow.Table | None = None,
+    plan_merges: bool = True,
+) -> dict[str, Any]:
+    """One write configuration, measured on a table of its own."""
+    root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-"))
+    try:
+        target = dataset(root, partitioned=partitioned, properties=properties or {})
+        target.plan_merges = plan_merges
+        if preload is not None:  # something for a merge to match against
+            target.write_arrow(preload, commit_row_size=0)
+        merge_by = True if mode.startswith("merge") else None
+        seconds, _ = timed(
+            lambda: target.write_arrow(
+                batches(table, batch_row_size),
+                merge_by=merge_by,
+                commit_row_size=commit_row_size,
+            )
+        )
+        report = {"seconds": seconds, "rows": table.num_rows, **stats(target)}
+        report["stored"] = target.read_arrow_table().num_rows
+        return report
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+# -- reading ----------------------------------------------------------------
+
+
+def read_case(target: IcebergDataset, *, row_filter: Any, columns: Any, schema: Any) -> dict:
+    """One read configuration: wall time, rows, and how many files it planned."""
+    scan = target.iceberg_table.scan(
+        **({"row_filter": row_filter} if row_filter is not None else {}),
+        selected_fields=tuple(columns) if columns else ("*",),
+    )
+    planned = len(list(scan.plan_files()))
+    seconds, table = timed(
+        lambda: target.read_arrow_table(schema, row_filter=row_filter, columns=columns)
+    )
+    return {"seconds": seconds, "rows": table.num_rows, "planned": planned}
+
+
+# -- sweeps -----------------------------------------------------------------
+
+
+def header(columns: tuple[str, ...], widths: tuple[int, ...]) -> None:
+    print(" ".join(f"{c:>{w}}" for c, w in zip(columns, widths, strict=True)))
+
+
+def sweep_parse(rows: int, days: int, repeat: int) -> None:
+    """Parsing on its own, so the write numbers can be read net of it."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "bench.txt"
+        size = generate(path, rows, days)
+        print(f"\n== parse: {rows:,} rows over {days} days, {size / 2**20:.1f} MiB ==")
+        header(("case", "seconds", "rows/s", "MB/s"), (28, 9, 12, 8))
+        cases: list[tuple[str, Callable[[], Any]]] = [
+            ("read_arrow_table", lambda: TextFile.from_path(path).read_arrow_table()),
+            (
+                "reader, 16k batches",
+                lambda: (
+                    TextFile.from_path(path).read_arrow_reader(batch_row_size=16_384).read_all()
+                ),
+            ),
+            (
+                "reader, 256k batches",
+                lambda: (
+                    TextFile.from_path(path).read_arrow_reader(batch_row_size=262_144).read_all()
+                ),
+            ),
+            (
+                "with timezone",
+                lambda: TextFile.from_url(
+                    path.resolve().as_uri(), timezone="Europe/Paris"
+                ).read_arrow_table(),
+            ),
+            (
+                "no continuation folding",
+                lambda: (
+                    TextFile.from_path(path).read_arrow_reader(fold_continuations=False).read_all()
+                ),
+            ),
+        ]
+        for name, call in cases:
+            best = min(timed(call)[0] for _ in range(repeat))
+            print(f"{name:>28} {best:>9.3f} {rows / best:>12,.0f} {size / 2**20 / best:>8.1f}")
+
+
+def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
+    """Streaming a parsed log into a table, in every shape worth trying."""
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-log-"))
+    path = tmp / "bench.txt"
+    generate(path, rows, days)
+    table = parsed(path)
+    # One throwaway write first: the first configuration would otherwise pay for
+    # importing pyiceberg, opening the catalog and warming the page cache.
+    write_case(table.slice(0, 1_000), mode="append", commit_row_size=0)
+    print(f"\n== write: {table.num_rows:,} rows over {days} days ==")
+    header(
+        ("case", "commit rows", "seconds", "rows/s", "files", "manif", "snaps", "stored"),
+        (26, 12, 9, 11, 7, 6, 6, 9),
+    )
+
+    # A commit closes at the first batch boundary at or beyond its size, so a
+    # commit smaller than the reader's batch is one batch: the sweep uses a
+    # realistic parser batch (16k rows) and commit sizes around it.
+    commits: list[int | None] = (
+        [50_000, None] if quick else [16_384, 65_536, 262_144, 1_000_000, None]
+    )
+    half = table.slice(0, table.num_rows // 2)
+    # (label, mode, commit, partitioned, properties, preload, plan_merges)
+    configurations: list[tuple] = []
+    for commit in commits:
+        configurations.append(("append", "append", commit, True, "optimised", None, True))
+    for commit in commits:
+        configurations.append(("merge, all new", "merge", commit, True, "optimised", None, True))
+    for commit in commits:
+        configurations.append(
+            ("merge, half stored", "merge", commit, True, "optimised", half, True)
+        )
+    if not quick:
+        # The same work through pyiceberg's own `Table.upsert`. On a slice, not
+        # the whole table: its scan filter carries one term per incoming row, so
+        # the full sweep would take hours (see `merge_arrow_table`).
+        configurations.append(
+            ("merge, official (1/100th)", "merge", None, True, "optimised", half, False)
+        )
+        for commit in (50_000, None):
+            configurations.extend(
+                [
+                    ("append, no partition", "append", commit, False, "optimised", None, True),
+                    ("append, iceberg defaults", "append", commit, True, "default", None, True),
+                    ("merge, no partition", "merge", commit, False, "optimised", half, True),
+                ]
+            )
+
+    for label, mode, commit, partitioned, props, preload, planned in configurations:
+        written = table.slice(0, table.num_rows // 100) if "official" in label else table
+        report = write_case(
+            written,
+            mode=mode,
+            commit_row_size=commit,
+            partitioned=partitioned,
+            properties=OPTIMISED if props == "optimised" else {},
+            preload=preload,
+            plan_merges=planned,
+        )
+        print(
+            f"{label:>26} {('one' if commit is None else f'{commit:,}'):>12} "
+            f"{report['seconds']:>9.2f} {report['rows'] / report['seconds']:>11,.0f} "
+            f"{report['files']:>7,} {report['manifests']:>6,} {report['snapshots']:>6,} "
+            f"{report['stored']:>9,}"
+        )
+    return tmp
+
+
+def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
+    """Reading it back: what prunes, what does not, and what a projection saves."""
+    root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-read-"))
+    try:
+        path = root / "bench.txt"
+        generate(path, rows, days)
+        table = parsed(path)
+        target = dataset(root, partitioned=True, properties=OPTIMISED)
+        target.write_arrow(batches(table, 65_536), commit_row_size=rows // max(days, 1))
+        day = datetime.date(2026, 8, 14)
+        # The unix bound of the third day: a filter on a column that is not the
+        # partition, but correlates with it, so only file statistics can prune.
+        third_day = (
+            int(
+                (
+                    datetime.datetime.combine(day + datetime.timedelta(days=2), datetime.time())
+                    - datetime.datetime(1970, 1, 1)
+                ).total_seconds()
+            )
+            * 10**9
+        )
+        print(f"\n== read: {table.num_rows:,} rows, {stats(target)['files']} files ==")
+        header(("case", "seconds", "rows", "rows/s", "planned", "skipped"), (30, 9, 12, 12, 8, 8))
+        cases = [
+            ("everything", None, None, None),
+            ("partition = one day", f"date = '{day}'", None, None),
+            ("partition, 3 columns", f"date = '{day}'", ["unix", "driver", "message"], None),
+            ("3 columns, no filter", None, ["unix", "driver", "message"], None),
+            ("correlated column", f"unix < {third_day}", None, None),
+            ("no stats to prune on", "driver = 'ULBridge'", None, None),
+            ("narrow shape (pushdown)", None, None, narrow_field()),
+            ("narrow shape, store widths", None, None, "stored"),
+        ]
+        for name, row_filter, columns, schema in cases:
+            if schema == "stored":
+                schema = stored_narrow(target)
+            report = min(
+                (
+                    read_case(target, row_filter=row_filter, columns=columns, schema=schema)
+                    for _ in range(repeat)
+                ),
+                key=lambda found: found["seconds"],
+            )
+            plan = target.scan_plan(row_filter, columns=columns)
+            print(
+                f"{name:>30} {report['seconds']:>9.3f} {report['rows']:>12,} "
+                f"{report['rows'] / report['seconds'] if report['seconds'] else 0:>12,.0f} "
+                f"{report['planned']:>8,} {plan['skipped']:>8,}"
+            )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def stored_narrow(target: IcebergDataset) -> Any:
+    """The same three columns, declared with the widths the store reads back.
+
+    The difference between this and `narrow_field` is one conversion per string
+    column per row -- which is the price of declaring `string` where Iceberg
+    hands back `large_string`.
+    """
+    from rekep.fields import Field
+
+    schema = target.table_field.into_arrow_schema()
+    return Field.from_arrow_schema(
+        pyarrow.schema([schema.field(name) for name in ("unix", "driver", "message")]), "Narrow"
+    )
+
+
+def narrow_field() -> Any:
+    """Three of the eight columns, as a declared shape rather than a column list."""
+    from rekep.fields import Field
+
+    schema = Log.FIELD.into_arrow_schema()
+    return Field.from_arrow_schema(
+        pyarrow.schema([schema.field(name) for name in ("unix", "driver", "message")]), "Narrow"
+    )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--rows", type=int, default=500_000)
+    parser.add_argument("--days", type=int, default=8)
+    parser.add_argument("--repeat", type=int, default=3)
+    parser.add_argument("--quick", action="store_true")
+    parser.add_argument("--only", choices=["parse", "write", "read"], default=None)
+    arguments = parser.parse_args()
+    rows = 100_000 if arguments.quick else arguments.rows
+    days = 4 if arguments.quick else arguments.days
+
+    if arguments.only in (None, "parse"):
+        sweep_parse(rows, days, 2 if arguments.quick else arguments.repeat)
+    if arguments.only in (None, "write"):
+        shutil.rmtree(sweep_write(rows, days, arguments.quick), ignore_errors=True)
+    if arguments.only in (None, "read"):
+        sweep_read(rows, days, 2 if arguments.quick else arguments.repeat)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -79,7 +79,10 @@ quotes = IcebergDataset(
     name="trading.quotes",
     catalog="local",
     properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file:///wh"},
-    struct=Quote.FIELD,     # optional: the shape to create the table from
+    struct=Quote.FIELD,        # optional: the shape to create the table from
+    commit_row_size=1_000_000, # rows per commit when a write does not say
+    optimize_commits=True,     # commit properties tuned for a stream
+    plan_merges=True,          # plan a merge's scan instead of handing it over
 )
 ```
 
@@ -109,11 +112,17 @@ keys and partitions intact.
     quotes.write_arrow(reader, merge_by=True, commit_row_size=1_000_000)
     quotes.write_arrow(table, merge_by=["symbol", "day"])
     quotes.write_arrow(table, branch="dev")
+    quotes.write_arrow(table, commit_row_size=0)   # one commit, whatever the size
     ```
 
     Writes **append by default and create what is not there yet**. The stream is
     cast onto the shape first, so a nearly-right batch lands instead of failing
     pyiceberg's schema check.
+
+    Iceberg lands a file and a snapshot per commit, so `commit_row_size` is the
+    knob that decides what a later scan has to plan. It is a *lower bound*: a
+    chunk closes at the first batch boundary at or beyond it, so a commit can
+    never be smaller than the reader's batch.
 
 === "Read"
 
@@ -124,11 +133,21 @@ keys and partitions intact.
     quotes.read_arrow_table(
         row_filter="day = '2026-08-14' and size > 10",     # pushed to the planner
         columns=["symbol", "size"],                        # so is the projection
-        limit=1_000,
         snapshot_id=...,                                   # or an older state
         branch="dev",                                      # or another line of it
     )
+    quotes.read_arrow_table(Narrow.FIELD)   # the projection follows the shape
     ```
+
+    Asking for a narrow shape reads narrow columns: the projection is taken from
+    the target field rather than reading everything and dropping the rest.
+    Naming `columns` overrides it.
+
+!!! warning "`limit` is not a planning hint"
+
+    pyiceberg applies `limit` to the rows, *after* opening the files a filter
+    allowed. Measured: `limit=1` on a four-file table read all four files and
+    every byte. Take what you need from the reader instead when it matters.
 
 === "Delete"
 
@@ -150,17 +169,75 @@ keys and partitions intact.
 | value | what happens |
 | --- | --- |
 | `None` / `False` / `[]` | append |
-| `True` | upsert on the primary key the shape declares |
-| `["symbol", "day"]` | upsert on those columns |
+| `True` | merge on the primary key the shape declares |
+| `["symbol", "day"]` | merge on those columns |
 
 ```python
 quotes.write_arrow(table, merge_by=True)
+updated, inserted = quotes.merge_arrow_table(chunk, True)   # one chunk, reported
 ```
 
-An upsert is pyiceberg's own: it plans the matching rows itself, which is a job
-for the engine that holds the statistics. Declaring the key once —
-`Annotated[str, Field.primary_key()]` — is what makes `merge_by=True` mean
-something.
+Declaring the key once — `Annotated[str, Field.primary_key()]` — is what makes
+`merge_by=True` mean something.
+
+### How a merge is planned
+
+The algorithm is pyiceberg's: find the stored rows a chunk matches, overwrite
+the ones whose non-key columns changed, append the rest. What this package
+changes is how the matching rows are *found*, because that is where the time
+goes.
+
+=== "The problem"
+
+    `Table.upsert` builds its scan filter with **one equality term per incoming
+    row** — for a composite key, `Or(And(k1 = …, k2 = …), …)` — and then binds
+    that same expression to Arrow once per matched batch to work out what to
+    insert. Both are quadratic in the chunk. Measured on a two-column key:
+
+    | chunk rows | pyiceberg upsert |
+    | --- | --- |
+    | 500 | 700 rows/s |
+    | 1,000 | 730 rows/s |
+    | 2,000 | 590 rows/s |
+    | 4,000 | 440 rows/s |
+
+    Worse, pyiceberg's evaluators give up on an `In` of more than 200 literals,
+    so past that a single-column upsert stops pruning altogether and reads every
+    file in the table.
+
+=== "The fix"
+
+    The scan is filtered by the chunk's **key values or ranges** — a couple of
+    terms per key column, whatever the chunk's size — which every matching row
+    satisfies, so the scan returns a superset and nothing can be missed. Rows to
+    insert then come from one Arrow anti-join, and rows to update from a
+    vectorised comparison instead of pyiceberg's per-row Python loop.
+
+    | scenario (4,000-row chunk, 20k-row table) | planned | pyiceberg |
+    | --- | --- | --- |
+    | every key new | 0.09 s | 2.47 s (28×) |
+    | every key already stored | 0.20 s | 9.83 s (48×) |
+    | half and half | 0.20 s | 8.12 s (42×) |
+
+    A chunk of entirely new keys prunes to **zero files** and becomes a plain
+    append, which is what a log ingest hits every time.
+
+=== "Coherence"
+
+    Same rows, same values, same snapshots: `tests/iceberg/test_coherence.py`
+    runs every scenario twice on identical tables — once through this package,
+    once through `Table.upsert` — and compares the contents. Set
+    `plan_merges=False` to use the library's own path.
+
+    ```python
+    quotes.plan_merges = False      # hand the whole chunk to Table.upsert
+    ```
+
+!!! tip "One key column merges faster than two"
+
+    With a single join column pyiceberg uses `In(...)` rather than a per-row
+    `Or`, which is 10–20× faster on its own path and prunes better on ours. If a
+    hash or a surrogate id identifies a row on its own, declare that as the key.
 
 ## Schema evolution
 
@@ -190,7 +267,15 @@ something.
     quotes.snapshots()          # Iceberg's own metadata table
     quotes.refs()               # branches and tags
     quotes.data_files()         # every data file the current snapshot holds
+    quotes.scan_plan("day = '2026-08-14'")
+    # {'files': 2, 'rows': 20000, 'bytes': 190_000, 'total_files': 16, 'skipped': 14}
     ```
+
+    `scan_plan` is metadata only, and it is the honest way to see whether a
+    filter prunes: the rows a scan *returns* say nothing about the files it
+    *opened*. A filter Iceberg cannot use — `!=`, a range over a bucketed
+    column, a nested field, a column written without metrics — returns the right
+    answer and reads the whole table. `skipped: 0` is that, visible.
 
 === "Branch"
 
@@ -249,22 +334,41 @@ calls are the whole routine.
     ```
 
     Expiry in pyiceberg is metadata-only: it forgets snapshots, it does not
-    remove what they were keeping alive. This does both — and the sweep is
-    conservative on purpose: a file goes only when no live snapshot references
-    it **and** it is older than `orphan_age` (three days by default), because a
-    writer committing right now has files on disk that no snapshot mentions yet.
-    Branch and tag heads are never expired.
+    remove what they were keeping alive. This does both — in **both**
+    directories, because a stream fills `metadata/` faster than `data/`: after
+    fifteen commits and a compaction, one measured table held 18 data files and
+    58 metadata files, and the sweep took it to 2 and 22 with every retained
+    snapshot still readable.
+
+    The sweep is conservative on purpose: a file goes only when nothing live
+    references it **and** it is older than `orphan_age` (three days by
+    default), because a writer committing right now has files on disk that no
+    snapshot mentions yet. The live set for metadata is built from every
+    direction at once — the current pointer, every entry in the metadata log,
+    every retained snapshot's manifest list and every manifest reachable from
+    it — because deleting one of those does not lose a row, it loses the table.
+    Pass `metadata=False` to sweep data only.
+
+    `dry_run=True` reports what it would expire and what is *already* orphaned
+    — not what expiring would strand, which is strictly more and cannot be
+    known without committing the expiry.
 
 === "Everything"
 
     ```python
     quotes.optimize()
-    # {'rewritten': 24, 'expired': 12, 'deleted': 24, 'bytes': 1048576}
+    # {'rewritten': 24, 'expired': 12, 'deleted': 53, 'bytes': 784345}
     ```
 
     Manifest merging on, then compact, then expire and sweep — in that order,
     because compacting makes the snapshots that cleanup then expires, and
     merging manifests first means those commits land in fewer of them.
+
+    It **settles**. A part is only planned again once something has landed in
+    it since it was last rewritten — which is the only reliable signal, because
+    pyiceberg sizes its output files from in-memory bytes, so a part that
+    legitimately needs ten files still reports ten afterwards. A plan that only
+    counted files would rewrite it on every run and double the table each time.
 
 === "Properties"
 
@@ -272,6 +376,28 @@ calls are the whole routine.
     quotes.set_properties({"write.target-file-size-bytes": "268435456"})
     quotes.iceberg_table.properties
     ```
+
+    `optimize_commits=True` (the default) creates a table with the properties a
+    stream needs, measured over 40 commits against Iceberg's own defaults:
+
+    | property | why |
+    | --- | --- |
+    | `commit.manifest-merge.enabled=true` | merge the manifests a stream produces |
+    | `commit.manifest.min-count-to-merge=10` | **without this the merge is inert** — Iceberg waits for 100 manifests by default |
+    | `write.metadata.previous-versions-max=20` | how many `metadata.json` versions to keep |
+    | `write.metadata.delete-after-commit.enabled=true` | delete the ones past that, instead of leaking them |
+    | `write.target-file-size-bytes` | how one commit's output is sliced |
+    | `write.parquet.row-group-limit=131072` | a filter can only skip a row group, and Iceberg's default makes most files a single one |
+
+    Result: manifests 40 → 4, `metadata.json` files 41 → 21, scan planning
+    61 ms → 9 ms, at no commit-time cost.
+
+    !!! note "`write.target-file-size-bytes` does less than it sounds"
+
+        pyiceberg derives rows-per-file from the *in-memory* size of one commit
+        and has no cross-commit state, so it can only split a large commit — it
+        cannot fill a file across commits. `commit_row_size` and `compact` are
+        the levers on file count.
 
 ## The escape hatch
 

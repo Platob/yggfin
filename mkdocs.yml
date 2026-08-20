@@ -32,6 +32,7 @@ nav:
   - Types: types.md
   - Logs: logs.md
   - Iceberg: iceberg.md
+  - Benchmarks: benchmarks.md
 
 markdown_extensions:
   - admonition

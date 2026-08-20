@@ -146,6 +146,30 @@ what is missing and commits nothing when there is nothing to add, and
 `optimize` is the three in the order that makes them cheap. Every one of them
 reports what it did.
 
+Five things that were learned the expensive way, all of them measured:
+
+- **A maintenance verb must settle.** `compact` marks its own snapshots and
+  skips a part nothing has landed in since; without that it replans forever,
+  because pyiceberg sizes output files from *in-memory* bytes and a part that
+  legitimately needs ten files still reports ten afterwards. A version of this
+  that counted files quadrupled a table in three runs.
+- **Never assume a library default is doing something.**
+  `commit.manifest-merge.enabled` is inert until `min-count-to-merge` (default
+  100) is lowered; `write.target-file-size-bytes` cannot fill a file across
+  commits; `limit=` is not pushed down at all. Read the source, then measure.
+- **Rows returned say nothing about files read.** A filter Iceberg cannot use
+  returns the right answer and reads the whole table, so pruning is asserted on
+  planned files (`scan_plan`), never on results.
+- **A merge's scan filter is a *superset*.** Anything implied by "equal on
+  every key column" is safe and cheap -- key values under
+  `IN_PREDICATE_LIMIT`, ranges past it -- but the rows it brings back must be
+  narrowed to the keys the chunk actually references before anything looks at
+  them. The filter that decides what is *deleted* stays exact; ranges may only
+  narrow it.
+- **Our own commits update the table object in place.** `refresh()` is for
+  seeing *other* writers, and calling it per chunk is a catalog round trip per
+  commit -- free on SQLite, a network hop on REST or Glue.
+
 ## 9. A dataset is a stream in and a stream out
 
 `Dataset` is three methods -- `into_struct_field`, `read_arrow_reader`,
@@ -175,18 +199,29 @@ batch/byte parameter. Hot paths work in `bytes`; Arrow does one bulk UTF-8
 cast per batch. Size parameters name unit and dimension: `batch_row_size`,
 `read_byte_size`.
 
-## 11. Comments say why
+## 11. Optimise what was measured, and keep the measurement
+
+A benchmark lives in `python/benchmarks/`, sweeps the configurations that
+matter *including the ones expected to be bad*, and reports what the next
+reader pays for -- files, manifests and snapshots -- beside the seconds. Verify
+the result before timing it: a benchmark that measures the wrong answer
+measures nothing. Where a faster path replaces a library's own, the
+replacement is compared against it row by row in the tests
+(`tests/iceberg/test_coherence.py`), and a flag switches back to the library.
+Numbers quoted in docstrings or docs are measured twice; a single run is noise.
+
+## 12. Comments say why
 
 Docstrings and comments carry the constraint, trade-off, or failure that
 motivated the code -- never a restated signature.
 
-## 12. Tests derive expectations, then pin them
+## 13. Tests derive expectations, then pin them
 
 Derive from the fixture, then assert the derived count against a literal so
 a broken regex cannot move both sides together. Cover lifecycle (laziness,
 double-close, use-after-close) and the sweeps that must not change results.
 
-## 13. Module layout
+## 14. Module layout
 
 ```text
 rekep/
@@ -231,7 +266,7 @@ content tabs carrying the examples so a page reads as one narrative instead of
 a wall of code. It builds `--strict` in CI, so a broken link fails there rather
 than shipping. The README is a landing page that points at it.
 
-## 14. Typing and file structure
+## 15. Typing and file structure
 
 `from __future__ import annotations` everywhere; full annotations on public
 methods; `ClassVar` for registries; classes first, private helpers last,
