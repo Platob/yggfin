@@ -38,6 +38,7 @@ from rekep.records.arrow import (
     ArrowRecordBuilder,
     cast_batch,
     cast_reader,
+    merge_schemas,
     partition_keys,
     primary_keys,
 )
@@ -202,13 +203,29 @@ class Record(Convertible):
         return cast_batch(batch, cls.into_arrow_schema(), safe=safe)
 
     @classmethod
-    def cast_arrow_reader(cls, reader: Any, *, safe: bool = False) -> pyarrow.RecordBatchReader:
+    def cast_arrow_reader(
+        cls, reader: Any, *, safe: bool = False, merge_schema: bool = False
+    ) -> pyarrow.RecordBatchReader:
         """`cast_arrow_batch` over a whole stream, still one batch at a time.
 
         Takes a plain iterator of batches too, so `Job.arrow_transform`'s
         output becomes a reader of this record's shape in one step.
+
+        `merge_schema=True` keeps the columns the stream has and this record
+        does not, appended after the declared ones rather than dropped --
+        see `records.arrow.merge_schemas`.
         """
-        return cast_reader(reader, cls.into_arrow_schema(), safe=safe)
+        return cast_reader(reader, cls.into_arrow_schema(), safe=safe, merge_schema=merge_schema)
+
+    @classmethod
+    def merge_arrow_schema(cls, incoming: pyarrow.Schema) -> pyarrow.Schema:
+        """This record's schema, extended with the fields only `incoming` has.
+
+        The target of a `merge_schema` write: shared columns stay this
+        record's (so the data is cast onto them), new ones are appended,
+        nullable, with fresh field ids.
+        """
+        return merge_schemas(cls.into_arrow_schema(), incoming)
 
     @classmethod
     def primary_keys(cls) -> list[str]:

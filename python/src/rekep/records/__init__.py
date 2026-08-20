@@ -6,6 +6,7 @@ from rekep.records.arrow import (
     ArrowRecordBuilder,
     cast_batch,
     cast_reader,
+    merge_schemas,
     partition_keys,
     primary_keys,
 )
@@ -44,6 +45,7 @@ __all__ = [
     "Record",
     "cast_batch",
     "cast_reader",
+    "merge_schemas",
     "partition_keys",
     "primary_keys",
     "record",

@@ -10,7 +10,7 @@
 #   rows in place instead of duplicating them -- which is exactly what a
 #   parser under development does all day.
 # - `compact_min_files`/`retain` are the maintenance policy
-#   `rekep service dataset maintain` reads: rewrite a partition once it has
+#   `rekep dataset maintain` reads: rewrite a partition once it has
 #   grown four files, keep a week of snapshot history for time travel.
 #
 # "main"/"master" map onto Iceberg's own literal "main" ref, not a branch

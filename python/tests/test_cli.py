@@ -8,7 +8,7 @@ NAMESPACE = "rekep.models.Log"
 
 
 def dump(*extra: str) -> int:
-    return main(["service", "ddl", "dump", "--namespace", NAMESPACE, *extra])
+    return main(["ddl", "dump", "--namespace", NAMESPACE, *extra])
 
 
 def test_ddl_dump_writes_the_file(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
@@ -58,7 +58,7 @@ def test_partition_by_flows_through(tmp_path: pathlib.Path) -> None:
 
 def test_a_non_record_namespace_is_refused() -> None:
     with pytest.raises(SystemExit, match="not a Record"):
-        main(["service", "ddl", "dump", "--namespace", "pathlib.Path", "--out", "-"])
+        main(["ddl", "dump", "--namespace", "pathlib.Path", "--out", "-"])
 
 
 def test_a_malformed_property_is_refused() -> None:
@@ -70,9 +70,7 @@ def test_a_malformed_property_is_refused() -> None:
 
 
 def test_product_dump_defaults_to_yaml(tmp_path: pathlib.Path) -> None:
-    assert (
-        main(["service", "product", "dump", "--namespace", NAMESPACE, "--out", str(tmp_path)]) == 0
-    )
+    assert main(["product", "dump", "--namespace", NAMESPACE, "--out", str(tmp_path)]) == 0
     written = tmp_path / "log.yaml"
     assert written.exists()
     payload = written.read_bytes()
@@ -83,7 +81,6 @@ def test_product_dump_defaults_to_yaml(tmp_path: pathlib.Path) -> None:
 def test_product_dump_other_formats(tmp_path: pathlib.Path) -> None:
     main(
         [
-            "service",
             "product",
             "dump",
             "--namespace",
@@ -98,7 +95,7 @@ def test_product_dump_other_formats(tmp_path: pathlib.Path) -> None:
 
 
 def test_product_dump_to_stdout(capsys: pytest.CaptureFixture) -> None:
-    assert main(["service", "product", "dump", "--namespace", NAMESPACE, "--out", "-"]) == 0
+    assert main(["product", "dump", "--namespace", NAMESPACE, "--out", "-"]) == 0
     assert "fields:" in capsys.readouterr().out
 
 
@@ -144,7 +141,7 @@ def test_iceberg_deploy_dry_run_touches_nothing(
     (catalogs / "iceberg.yaml").write_text(
         f'type: sql\nuri: "sqlite:///{root}/cat.db"\nwarehouse: "file://{root}/wh"\n'
     )
-    assert main(["service", "iceberg", "deploy", "--config", str(tmp_path), "--dry-run"]) == 0
+    assert main(["iceberg", "deploy", "--config", str(tmp_path), "--dry-run"]) == 0
     out = capsys.readouterr().out
     assert "would converge" in out
     assert not (tmp_path / "wh").exists(), "nothing materialised"
@@ -171,7 +168,6 @@ def test_records_deploy_converges_one_record(
     assert (
         main(
             [
-                "service",
                 "records",
                 "deploy",
                 "--pyclass",
@@ -197,7 +193,6 @@ def test_records_deploy_dry_run_touches_nothing(tmp_path: pathlib.Path) -> None:
     assert (
         main(
             [
-                "service",
                 "records",
                 "deploy",
                 "--pyclass",
@@ -216,7 +211,6 @@ def test_records_deploy_doris_emits_the_plan(capsys: pytest.CaptureFixture) -> N
     assert (
         main(
             [
-                "service",
                 "records",
                 "deploy",
                 "--pyclass",
@@ -233,7 +227,7 @@ def test_records_deploy_doris_emits_the_plan(capsys: pytest.CaptureFixture) -> N
 
 def test_records_deploy_refuses_a_non_record() -> None:
     with pytest.raises(SystemExit, match="not a Record"):
-        main(["service", "records", "deploy", "--pyclass", "pathlib.Path", "--dry-run"])
+        main(["records", "deploy", "--pyclass", "pathlib.Path", "--dry-run"])
 
 
 # -- registry sync ----------------------------------------------------------
@@ -254,7 +248,7 @@ def test_sync_writes_every_registry_in_full(tmp_path: pathlib.Path) -> None:
     import yaml
 
     root = registry(tmp_path)
-    assert main(["service", "iceberg", "sync", "--config", str(root)]) == 0
+    assert main(["iceberg", "sync", "--config", str(root)]) == 0
 
     catalog = yaml.safe_load((root / "catalogs" / "iceberg.yaml").read_bytes())
     assert catalog["name"] == "iceberg", "the stem-defaulted name is written out"
@@ -268,8 +262,8 @@ def test_sync_writes_every_registry_in_full(tmp_path: pathlib.Path) -> None:
 
 def test_sync_is_idempotent(tmp_path: pathlib.Path) -> None:
     root = registry(tmp_path)
-    main(["service", "iceberg", "sync", "--config", str(root)])
-    assert main(["service", "iceberg", "sync", "--config", str(root), "--dry-run"]) == 0
+    main(["iceberg", "sync", "--config", str(root)])
+    assert main(["iceberg", "sync", "--config", str(root), "--dry-run"]) == 0
 
 
 def test_sync_leaves_templated_files_alone(
@@ -281,7 +275,7 @@ def test_sync_leaves_templated_files_alone(
     templated.write_text("catalog: iceberg\nlocation: \"{{ env.get('X', '/tmp') }}\"\n")
     before = templated.read_bytes()
 
-    assert main(["service", "iceberg", "sync", "--config", str(root)]) == 0
+    assert main(["iceberg", "sync", "--config", str(root)]) == 0
     assert templated.read_bytes() == before
     assert "templated" in capsys.readouterr().out
 
@@ -310,7 +304,6 @@ def test_dataset_deploy_converges_the_declared_dataset(
     assert (
         main(
             [
-                "service",
                 "dataset",
                 "deploy",
                 "--config",
@@ -336,7 +329,6 @@ def test_dataset_deploy_dry_run_touches_nothing(tmp_path: pathlib.Path) -> None:
     assert (
         main(
             [
-                "service",
                 "dataset",
                 "deploy",
                 "--config",
@@ -355,7 +347,7 @@ def test_dataset_list_prints_declared_datasets(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
 ) -> None:
     root = dataset_workspace(tmp_path)
-    assert main(["service", "dataset", "list", "--config", str(root / "datasets")]) == 0
+    assert main(["dataset", "list", "--config", str(root / "datasets")]) == 0
     out = capsys.readouterr().out
     assert "dataset://default/logs" in out
     assert "record=rekep.models.Log" in out
@@ -386,7 +378,6 @@ def crowded_dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     )
     main(
         [
-            "service",
             "dataset",
             "deploy",
             "--config",
@@ -425,7 +416,6 @@ def test_dataset_maintain_dry_run_reports_without_rewriting(
     assert (
         main(
             [
-                "service",
                 "dataset",
                 "maintain",
                 "--config",
@@ -456,7 +446,6 @@ def test_dataset_maintain_compacts_and_expires_from_the_side_file(
     assert (
         main(
             [
-                "service",
                 "dataset",
                 "maintain",
                 "--config",

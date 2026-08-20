@@ -39,7 +39,8 @@ dataset.protocol_properties("iceberg")    # properties merged with iceberg's own
 Everything below is configuration, not code: a `stacks/datasets/*.yaml` file
 declares it once and every verb — deploy, write, read, maintain — reads it
 from there. This is `stacks/datasets/parsed_messages.yaml`, the shipped
-example that uses all of it:
+example — the working, iterating dataset, as opposed to `log.yaml`'s stable
+one, which declares nothing but its record, name and namespace:
 
 ```yaml
 record: rekep.models.ParsedMessage
@@ -58,13 +59,21 @@ protocols:
 | `location` | Where the table lives | `into_iceberg_table()` |
 | `branch` | Which Iceberg branch writes and reads target | `iceberg_branch()` |
 | `merge_by` | `true` (merge on the primary key), `false`, or `a,b` | `merge_columns()` |
+| `merge_schema` | `true` to add columns the stream has and the table does not | `merge_schema()` |
 | `compact_min_files` | Files in a partition before it is worth rewriting | `iceberg_compact_min_files()` |
 | `retain` | Snapshot retention window: `7d`, `12h`, `90m`, `2w` | `iceberg_retention()` |
 
 Every other key under `protocols.iceberg` (and every key in `properties`) is
-a **table property**, persisted on the table itself — the five above route a
+a **table property**, persisted on the table itself — the six above route a
 write or a maintenance pass instead, so `table_properties()` filters them out
 rather than writing them to disk as if they described the data.
+
+The two layers apply to the policy keys: `properties` is what every protocol
+sees and `protocols.<name>` is the exception layer over it, so a dataset that
+wants one policy everywhere declares it once at the top and only the
+differences go underneath. `location` is the exception to the exception — it
+has `direct` as its own shared spelling, so `properties: {location: ...}`
+means nothing; use `direct:`.
 
 Side files render through Jinja before they are parsed, with `git_context()`
 always in scope, so `branch` above resolves per git branch with nothing extra
@@ -90,9 +99,9 @@ for dataset in Dataset.load_all("stacks/datasets"):
 `into_iceberg_table()`/`into_doris_table()` build the ad hoc `IcebergTable`/
 `DorisTable` `deploy_iceberg`/`deploy_doris` hand to `Iceberg.deploy_one`/
 `Doris.deploy_one` — the same catalog-check, namespace-`get_or_create`,
-table-`create_or_update` sequence `rekep service records deploy` uses for a
+table-`create_or_update` sequence `rekep records deploy` uses for a
 bare record, just resolved from the dataset's own fields instead of stack
-defaults. The CLI shape is `rekep service dataset deploy --target iceberg`
+defaults. The CLI shape is `rekep dataset deploy --target iceberg`
 (see the [CLI guide](cli.md)).
 
 ## Writing
@@ -134,6 +143,56 @@ dataset.write_arrow_reader(reader, "iceberg", table=t, overwrite="date = '2026-0
   merge is skipped and the first write simply appends — logged, not silent.
 - `overwrite` and `merge_by` are two different writes and refuse to combine.
 
+### `merge_schema`: when the source grows a column
+
+`merge_by` decides what happens to a *row* that is already there;
+`merge_schema` decides what happens to a **column** that is not:
+
+```python
+dataset.write_arrow_reader(reader, "iceberg", table=t, merge_schema=True)
+```
+
+- Columns the record and the stream **both** have are cast to the record's
+  declared types, exactly as always. A source spelling a column `int64`
+  does not get to widen a table that declared `int32` — that is losing the
+  declaration, not evolving the schema.
+- Columns **only the stream** has are added to the table
+  (pyiceberg's own `union_by_name`) and then written. They are added
+  nullable, which is not a preference: rows already written have nothing to
+  put in them, and Iceberg refuses a required addition outright.
+- Off by default, and off unless declared: a table growing a column should
+  be a decision, made once, in the file that describes the dataset.
+
+Only the genuinely new fields are handed to `union_by_name`, never the whole
+union. Restating a column the table already has would re-assert its
+nullability too, and Iceberg maps Arrow's nullable flag onto `required`
+verbatim — a NOT NULL column would silently become optional. Nothing is
+restated, so nothing can be relaxed.
+
+**Column identity comes back from the table, never from the record.**
+`union_by_name` does not keep the field ids an Arrow schema arrives with; it
+assigns its own, counting on from the table's `last-column-id`. Since
+Iceberg matches columns by id, a write that kept the record's numbering
+would be right only by luck — and wrong the moment two widening writes carry
+*different* extra columns, filing the second one's data under the first
+one's column with no error anywhere. Every write therefore takes its ids
+back from the table after evolving it.
+
+One thing looks odd in the snapshot log and is deliberate. **A snapshot
+records the schema it was written under, and a scan projects that schema,
+not the table's current one** — so after any schema change, reading a branch
+back still yields the old column set, and a merge fails comparing the two
+against the data it was handed. Every Iceberg write therefore checks the ref
+it is about to write to, and moves a stale one forward with an empty append:
+no rows, so no data file, one metadata-only commit. It is the ref that is
+checked, not the table — a branch forked before an evolution is stale even
+when the table itself is perfectly up to date, and a `deploy` that added a
+column leaves every existing branch in exactly that state.
+
+The file writer takes the same argument and means the same thing, with no
+evolution step — a file layout has no schema to migrate, so the widened
+columns simply land in the parquet.
+
 ### `chunk_rows`: why a batch is not a unit of work
 
 Both shapes accumulate `chunk_rows` rows (default 100,000) per call rather
@@ -141,14 +200,18 @@ than writing batch by batch. In Iceberg every call commits a snapshot and
 lands at least one data file per partition it touches, so appending a reader
 of ten thousand small batches leaves ten thousand snapshots and as many tiny
 files for every later scan to open. Accumulating first keeps memory bounded
-by the *parameter* rather than the input, and `benchmarks/bench_iceberg_upsert.py`
-shows what it buys (8,000 rows arriving in 500-row batches):
+by the *parameter* rather than the input, and it is worth roughly an order of
+magnitude — 20,000 rows arriving in 500-row batches:
 
 | `chunk_rows` | append rows/s | merge rows/s | files left |
 | ---: | ---: | ---: | ---: |
-| 500 | 10,468 | 1,907 | 16 |
-| 2,000 | 29,684 | 5,945 | 4 |
-| 8,000 | 72,696 | 12,814 | 1 |
+| 500 | 10,259 | 879 | 40 |
+| 5,000 | 95,565 | 7,418 | 4 |
+| 20,000 | 90,114 | 13,286 | 1 |
+
+See [Benchmarks](../benchmarks.md#writing-iceberg-bench_iceberg_upsertpy) for
+how much of that is solid (the file count and the merge column) and how much
+is measurement noise (the append column above 5,000).
 
 ### Reshaping onto the record's schema
 
@@ -287,7 +350,7 @@ the snapshots referencing the old ones are still there. The CLI needs no
 arguments at all, because the side file already carries the policy:
 
 ```console
-$ rekep service dataset maintain --dry-run
+$ rekep dataset maintain --dry-run
 dataset://default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired
 dataset://default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired
 ```

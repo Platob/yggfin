@@ -217,7 +217,7 @@ class Tutorial:
         self.panel(
             "Where next",
             "- `stacks/iceberg/`, `stacks/doris/` -- declare your deployment\n"
-            "- `rekep service iceberg deploy --dry-run` -- see a real plan\n"
+            "- `rekep iceberg deploy --dry-run` -- see a real plan\n"
             "- `rekep install doris` / `rekep install airflow` -- go live\n"
             "- docs: Use cases → Tutorial for the full written version",
             emoji=":rocket:",

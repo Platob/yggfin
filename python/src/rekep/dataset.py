@@ -79,7 +79,7 @@ from rekep.imports import locate
 from rekep.job import Job
 from rekep.namespace import unique_uri
 from rekep.records import registry
-from rekep.records.arrow import cast_reader
+from rekep.records.arrow import FIELD_ID_KEY, cast_reader
 from rekep.records.record import Record, record
 from rekep.run import InputDataset, OutputDataset, Run, RunEvent, RunState
 from rekep.run import now as _now
@@ -104,7 +104,7 @@ ICEBERG_COMPACT_MIN_FILES = 8
 #: `protocols[<protocol>]` keys that route a write, a read or a maintenance
 #: pass rather than describe the table -- excluded from `table_properties()`.
 _PROTOCOL_ROUTING_KEYS = frozenset(
-    {"location", "branch", "merge_by", "retain", "compact_min_files"}
+    {"location", "branch", "merge_by", "merge_schema", "retain", "compact_min_files"}
 )
 
 #: Suffixes `iceberg_retention()` accepts on a retention window.
@@ -208,7 +208,14 @@ class Dataset(Record):
         return self.direct
 
     def protocol_properties(self, protocol: str) -> dict[str, str]:
-        """`properties` merged with `protocol`'s own, the protocol winning."""
+        """`properties` merged with `protocol`'s own, the protocol winning.
+
+        Every per-protocol setting resolves through here, the routing keys
+        (`branch`, `merge_by`, `merge_schema`, `retain`,
+        `compact_min_files`) included -- so a dataset that wants one policy
+        everywhere declares it once in `properties`, and only the exceptions
+        go under `protocols`.
+        """
         return {**self.properties, **self.protocols.get(protocol, {})}
 
     def table_properties(self, protocol: str) -> dict[str, str]:
@@ -232,7 +239,7 @@ class Dataset(Record):
         None means pyiceberg's own default (`main`) -- a dataset need not
         declare one to be written or deployed.
         """
-        return self.protocols.get("iceberg", {}).get("branch")
+        return self.protocol_properties("iceberg").get("branch")
 
     def iceberg_merge_by(self) -> bool | list[str] | None:
         """This dataset's declared merge key (`protocols["iceberg"]["merge_by"]`).
@@ -242,7 +249,7 @@ class Dataset(Record):
         comma-separated list of column names (merge on those). None means
         the dataset declares nothing and the call site decides.
         """
-        declared = self.protocols.get("iceberg", {}).get("merge_by")
+        declared = self.protocol_properties("iceberg").get("merge_by")
         if declared is None or isinstance(declared, bool | list):
             return declared
         text = str(declared).strip()
@@ -251,6 +258,18 @@ class Dataset(Record):
         if text.lower() in _FALSE_WORDS:
             return False
         return [name.strip() for name in text.split(",") if name.strip()]
+
+    def merge_schema(self, protocol: str = "iceberg") -> bool:
+        """Whether a write may widen this dataset (`protocols.<protocol>.merge_schema`).
+
+        Off unless declared: silently growing a table because a source grew
+        a column is the kind of thing that should be a decision, made once,
+        in the file that describes the dataset.
+        """
+        declared = self.protocol_properties(protocol).get("merge_schema")
+        if isinstance(declared, bool):
+            return declared
+        return str(declared or "").strip().lower() in _TRUE_WORDS
 
     def merge_columns(self, merge_by: bool | list[str] | str | None = None) -> list[str] | None:
         """The columns a write should merge on -- None meaning "append instead".
@@ -329,7 +348,7 @@ class Dataset(Record):
         seconds. None means the dataset declares no policy and
         `iceberg_maintain` leaves its history alone.
         """
-        declared = self.protocols.get("iceberg", {}).get("retain")
+        declared = self.protocol_properties("iceberg").get("retain")
         if declared in (None, ""):
             return None
         if isinstance(declared, datetime.timedelta):
@@ -346,7 +365,7 @@ class Dataset(Record):
         `protocols.iceberg.compact_min_files`, defaulting to
         `ICEBERG_COMPACT_MIN_FILES`.
         """
-        declared = self.protocols.get("iceberg", {}).get("compact_min_files")
+        declared = self.protocol_properties("iceberg").get("compact_min_files")
         return ICEBERG_COMPACT_MIN_FILES if declared in (None, "") else int(declared)
 
     # -- deploy: autonomous, no side file needed -------------------------
@@ -545,7 +564,10 @@ class Dataset(Record):
     # -- writing ----------------------------------------------------------
 
     def _aligned(
-        self, reader: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch]
+        self,
+        reader: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        *,
+        merge_schema: bool = False,
     ) -> pyarrow.RecordBatchReader:
         """`reader` reshaped onto this dataset's record schema, batch by batch.
 
@@ -557,13 +579,20 @@ class Dataset(Record):
         authority on what this dataset's data is, and a narrower target
         type is a declaration, not an accident.
 
+        `merge_schema=True` keeps the columns the stream has and the record
+        does not, appended nullable after the declared ones instead of
+        dropped. The returned reader's `schema` is the merged one, which is
+        what the protocol then evolves its table to.
+
         The Iceberg table's own schema is deliberately *not* the target:
         pyiceberg spells strings `large_string` in `Schema.as_arrow()` and
         accepts either on write, so casting to it would double every string
         column's memory to satisfy a difference the writer does not care
         about.
         """
-        return cast_reader(reader, self.record_class().into_arrow_schema())
+        return cast_reader(
+            reader, self.record_class().into_arrow_schema(), merge_schema=merge_schema
+        )
 
     def write_arrow_reader(
         self,
@@ -595,6 +624,7 @@ class Dataset(Record):
         *,
         table: Any = None,
         merge_by: bool | list[str] | str | None = None,
+        merge_schema: bool | None = None,
         overwrite: bool | str | Any = False,
         branch: str | None = None,
         chunk_rows: int = ICEBERG_UPSERT_CHUNK_ROWS,
@@ -635,6 +665,22 @@ class Dataset(Record):
         because the same thing happens across *runs*, which no single write
         can batch away.)
 
+        **`merge_schema`** is the other half of the same idea, for columns
+        rather than rows: on, a column the stream has and the table does
+        not is *added* to the table (pyiceberg's own `union_by_name`,
+        nullable, since rows already written have nothing to put in it)
+        instead of being dropped on the way in. Columns both sides have are
+        cast to the table's declared types either way -- widening a column
+        because a source spelled it differently is not schema evolution,
+        it is losing the declaration. Defaults to
+        `protocols.iceberg.merge_schema`, which defaults to off: a table
+        growing a column should be a decision, made once, in the file that
+        describes the dataset. Whether or not it is on, the branch is first
+        moved onto a snapshot using the table's current schema
+        (`_align_iceberg_ref`) -- a scan projects the schema its snapshot
+        was written under, so a ref that predates *any* schema change reads
+        back the old column set.
+
         `overwrite=True` replaces the whole table with the reader;
         `overwrite=<filter>` replaces only what the filter matches. Both
         need the reader to fit in memory, same as `Table.overwrite` itself,
@@ -660,18 +706,16 @@ class Dataset(Record):
                 f"dataset {self.dataset_name()!r}: overwrite and merge_by are two different "
                 "writes; pick one"
             )
-        reader = self._aligned(reader)
+        if merge_schema is None:
+            merge_schema = self.merge_schema("iceberg")
+        reader = self._aligned(reader, merge_schema=merge_schema)
         bootstrapping = table.current_snapshot() is None
         branch = self._write_ref(table, branch, bootstrapping=bootstrapping)
+        if merge_schema:
+            _evolve_iceberg_table(table, reader.schema, self.dataset_name())
+        _align_iceberg_ref(table, branch)
 
-        if overwrite is not False:
-            whole = reader.read_all()
-            if overwrite is not True:
-                options["overwrite_filter"] = overwrite
-            table.overwrite(whole, branch=branch, **options)
-            return whole.num_rows
-
-        join_cols = self.merge_columns(merge_by)
+        join_cols = None if overwrite is not False else self.merge_columns(merge_by)
         if join_cols and bootstrapping:
             logger.info(
                 "dataset %s: table has no snapshot to merge into, appending on %s instead of "
@@ -681,6 +725,16 @@ class Dataset(Record):
                 ", ".join(join_cols),
             )
             join_cols = None
+        reader = cast_reader(
+            reader, _iceberg_write_schema(table, reader.schema, complete=join_cols is not None)
+        )
+
+        if overwrite is not False:
+            whole = reader.read_all()
+            if overwrite is not True:
+                options["overwrite_filter"] = overwrite
+            table.overwrite(whole, branch=branch, **options)
+            return whole.num_rows
 
         written = 0
         for chunk in _chunked(reader, chunk_rows):
@@ -709,6 +763,7 @@ class Dataset(Record):
         uri: str | None = None,
         filesystem: pyarrow.fs.FileSystem | None = None,
         partitioning: Any = None,
+        merge_schema: bool | None = None,
         **options: Any,
     ) -> int:
         """Write `reader`'s batches to a file location, any `pyarrow.fs` filesystem.
@@ -734,6 +789,11 @@ class Dataset(Record):
         are plain `options`, so a caller who wants replace-the-directory
         semantics passes `existing_data_behavior="delete_matching"`.
 
+        `merge_schema` means the same thing here as on the Iceberg side --
+        keep the columns the stream has and the record does not -- and needs
+        no evolution step, since a file layout has no schema to migrate;
+        the widened columns simply land in the parquet the write produces.
+
         `options` otherwise reaches `pyarrow.dataset.write_dataset` as-is
         (`format="parquet"` by default); the reader streams into it one
         batch at a time, never materialising the whole thing.
@@ -746,7 +806,9 @@ class Dataset(Record):
             )
         if filesystem is None:
             filesystem, target = resolve_filesystem(target)
-        counted, count = _counting(self._aligned(reader))
+        if merge_schema is None:
+            merge_schema = self.merge_schema("file")
+        counted, count = _counting(self._aligned(reader, merge_schema=merge_schema))
         write_format = options.pop("format", "parquet")
         options.setdefault("existing_data_behavior", "overwrite_or_ignore")
         options.setdefault(
@@ -895,7 +957,7 @@ class Dataset(Record):
         ones are still around, and expiring first would only have to be
         redone. `protocols.iceberg.compact_min_files` and
         `protocols.iceberg.retain` are the whole policy, so a scheduled
-        `rekep service dataset maintain` needs no arguments and no code --
+        `rekep dataset maintain` needs no arguments and no code --
         the side file already says what this dataset wants.
 
         A dataset declaring no `retain` keeps all its history, which is the
@@ -1140,6 +1202,102 @@ def _chunked(reader: pyarrow.RecordBatchReader, chunk_rows: int) -> Iterator[pya
             pending, pending_rows = [], 0
     if pending:
         yield pyarrow.Table.from_batches(pending, schema=reader.schema)
+
+
+def _evolve_iceberg_table(table: Any, schema: pyarrow.Schema, dataset: str) -> None:
+    """Add the columns `schema` has and `table` does not, in one commit.
+
+    pyiceberg's own `union_by_name` does the adding. It is handed **only the
+    new fields**, never the whole union: a column both sides have is already
+    exactly what the table declared, and union_by_name maps Arrow
+    nullability onto Iceberg's `required` verbatim, so re-stating an
+    existing column can silently relax a NOT NULL one to optional. Nothing
+    is restated, so nothing can be relaxed.
+
+    New columns are nullable, which is not a preference: `union_by_name`
+    refuses a required addition outright ("cannot add required column"),
+    because rows already written have nothing to put in it.
+
+    Nothing happens when there is nothing to add, so a `merge_schema` write
+    over a table that has already caught up costs one name comparison.
+    """
+    existing = {field.name for field in table.schema().fields}
+    additions = [field for field in schema if field.name not in existing]
+    if not additions:
+        return
+    with table.update_schema() as update:
+        update.union_by_name(pyarrow.schema(additions))
+    table.refresh()
+    logger.info(
+        "dataset %s: added columns %s", dataset, ", ".join(field.name for field in additions)
+    )
+
+
+def _iceberg_write_schema(table: Any, schema: pyarrow.Schema, *, complete: bool) -> pyarrow.Schema:
+    """`schema`, in the table's column order, carrying the table's field ids.
+
+    Identity is the whole point. Iceberg matches columns **by field id**, and
+    `union_by_name` does not keep the ids an Arrow schema arrives with -- it
+    assigns its own, counting on from the table's `last-column-id`. So the
+    ids `merge_schemas` stamped (counted on from the *record*, which never
+    changes) are only accidentally right, and diverge the moment two
+    widening writes carry different extra columns: the second write's data
+    would be filed under the first write's column, silently, with no error
+    anywhere. Taking every id back from the table closes that.
+
+    Only the ids are taken. The *types* stay the reader's, because pyiceberg
+    spells strings `large_string` in `Schema.as_arrow()` and accepts either
+    on write -- adopting them wholesale would re-encode every string column
+    on every batch to satisfy a difference the writer does not care about.
+
+    `complete=True` also carries the columns the table has and the stream
+    does not, as nulls. An append does not need them (Iceberg fills an
+    absent optional column itself) but a **merge** does: pyiceberg's
+    `upsert` compares the incoming frame against the rows it scanned back,
+    column for column, and refuses a frame that is merely narrower.
+    """
+    live = {field.name: field for field in table.schema().as_arrow()}
+    fields = []
+    for field in schema:
+        source = live.pop(field.name, None)
+        identifier = (source.metadata or {}).get(FIELD_ID_KEY) if source is not None else None
+        if identifier is None:
+            # A column the table does not have is left exactly as it came:
+            # dropping it would hide the mismatch, and pyiceberg's own
+            # "contains more columns" error says it far better than a
+            # silently narrower write would.
+            fields.append(field)
+        else:
+            fields.append(field.with_metadata({**(field.metadata or {}), FIELD_ID_KEY: identifier}))
+    if complete:
+        fields.extend(live.values())
+    return pyarrow.schema(fields, metadata=schema.metadata)
+
+
+def _align_iceberg_ref(table: Any, branch: str) -> None:
+    """Move `branch` onto a snapshot that uses the table's current schema.
+
+    **A snapshot records the schema it was written under, and a scan
+    projects that schema, not the table's current one.** So after any schema
+    change -- this write's own `merge_schema`, a `deploy` that converged new
+    columns, someone else's evolution -- reading the branch back still
+    yields the old column set, and pyiceberg's `upsert` fails outright
+    comparing that against the widened data it was handed.
+
+    An empty append moves the ref forward: no rows, so no data file, one
+    metadata-only commit. It is guarded on the ref's own snapshot rather
+    than on "did I just add a column", because those are different
+    questions -- a branch forked before an evolution is stale even when the
+    table itself is perfectly up to date.
+    """
+    snapshot = table.snapshot_by_name(branch)
+    if snapshot is None:
+        return
+    current = table.schema()
+    if getattr(snapshot, "schema_id", None) == current.schema_id:
+        return
+    table.append(current.as_arrow().empty_table(), branch=branch)
+    table.refresh()
 
 
 def _ensure_iceberg_branch(table: Any, branch: str) -> None:

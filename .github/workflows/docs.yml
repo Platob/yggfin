@@ -24,7 +24,7 @@ jobs:
         run: |
           cd python
           uv sync --group docs
-          uv run rekep service docs models --out ../docs/models.md
+          uv run rekep docs models --out ../docs/models.md
           cd ..
           python/.venv/bin/mkdocs build --strict
       - uses: actions/upload-pages-artifact@v3

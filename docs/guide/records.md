@@ -90,6 +90,28 @@ mode, the one that lets a value narrow or a timestamp lose precision instead
 of raising. A cast *to a target schema* is a declaration that the target's
 types are the authority, so the truncation is the intent.
 
+`merge_schema=True` keeps the columns the source has and the record does
+not, rather than dropping them:
+
+```python
+Fill.merge_arrow_schema(incoming)                  # this record's fields, then the new ones
+Fill.cast_arrow_reader(batches, merge_schema=True)  # cast the shared, keep the rest
+```
+
+Shared columns stay the record's — its types, its nullability — so the data
+is cast onto the declaration, never the declaration onto the data. New ones
+are appended, forced nullable (existing rows predate them), and renumbered
+after the record's highest field id so column identity stays unique.
+
+The widened shape is decided once, from the reader's schema or the first
+batch, because a `RecordBatchReader` cannot change schema under its
+consumer. A hand-rolled iterator whose batches disagree is resolved in the
+target's favour: a column a later batch drops comes back as nulls, a column
+only a later batch has is dropped.
+`records.merge_schemas` is the same against any two schemas. This is what
+[`Dataset`'s `merge_schema`](datasets.md#merge_schema-when-the-source-grows-a-column)
+writes are built on.
+
 A missing **non-nullable** column is refused by name instead of filled —
 filling a NOT NULL column with nulls builds a batch that only fails later,
 at the write, where the cause is much harder to see. `records.cast_batch`/

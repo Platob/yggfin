@@ -123,7 +123,7 @@ class DorisTable(Record):
         if self.fields and self.fields != fresh.fields:
             raise ValueError(
                 f"table {self.name or self.record}: `fields` drifted from the record; "
-                "regenerate with: rekep service doris tables sync"
+                "regenerate with: rekep doris sync"
             )
         return fresh
 

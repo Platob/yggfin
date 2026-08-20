@@ -148,14 +148,20 @@ rekep/
 │                  own API, not reimplemented: iceberg_read (row_filter/columns
 │                  pushed to the scan planner, use_ref/snapshot_id),
 │                  iceberg_write (one `merge_by`: True=primary key, list=those
-│                  columns, falsy=append; `overwrite`; branch-aware; chunk_rows
-│                  per commit), iceberg_compact/expire_snapshots/publish;
+│                  columns, falsy=append; `merge_schema` adds the columns the
+│                  stream has and the table lacks via union_by_name -- ids
+│                  always taken back from the table, and a stale ref moved
+│                  forward first, since a scan projects its snapshot's schema
+│                  rather than the table's; `overwrite`; branch-aware;
+│                  chunk_rows per commit),
+│                  iceberg_compact/expire_snapshots/publish;
 │                  file_read/write via rekep.filesystems, hive-partitioned from
 │                  the record's own Arrow(partition=...)
 ├── run.py         Run/RunEvent: OpenLineage's own event shape, kept as
 │                  Job's and Dataset's internal lineage bookkeeping
 │                  (`.events()`), never emitted anywhere
-├── cli.py         one service class per capability
+├── cli.py         one service class per capability, each registering its own
+│                  top-level subparser (`rekep <svc> <cmd>`)
 ├── tutorial.py    the guided rich tour (`rekep tutorial`)
 ├── install/       installers: check, plan, converge
 ├── records/       machinery: record.py, annotations.py, arrow.py,
@@ -215,19 +221,22 @@ mutating verb takes `dry_run`. Installers (`rekep install`) follow
 the same contract: honest `installed()` check, exact `plan()`, converge.
 Never call pyiceberg raw at a call site — extend the resource service.
 
-`rekep service records deploy --pyclass <dotted> --target iceberg|doris`
+`rekep records deploy --pyclass <dotted> --target iceberg|doris`
 converges one bare record, stack defaults filling in namespace and
-properties. `rekep service dataset deploy --target iceberg|doris` converges
+properties. `rekep dataset deploy --target iceberg|doris` converges
 every `Dataset` under `stacks/datasets/` instead -- each carries its own
 namespace and per-protocol properties, autonomous of any table side file.
-`rekep service dataset maintain` compacts and expires those same tables,
+`rekep dataset maintain` compacts and expires those same tables,
 taking no policy arguments: `protocols.iceberg.compact_min_files`/`retain`
 in the side file are the policy. The `protocols.<protocol>` keys that *route*
 a write rather than describe the table (`location`, `branch`, `merge_by`,
-`compact_min_files`, `retain`) are filtered out of `table_properties()`, so
-they never land on disk pretending to describe the data.
+`merge_schema`, `compact_min_files`, `retain`) are filtered out of
+`table_properties()`, so they never land on disk pretending to describe the
+data.
 
-**The CLI is services** (`rekep service <svc> <cmd>`), plus the top-level
+**The CLI is services** (`rekep <svc> <cmd>` -- the service *is* the command
+word, with no grouping noun in front of it: each service class registers its
+own subparser straight on the top level), plus `rekep install` and
 `rekep tutorial`. **Human-facing CLI output is modern and animated**: rich
 panels, spinners and progress (rich is a core dependency; construct
 `Console(legacy_windows=False)` and reconfigure stdout to UTF-8) — while
@@ -237,8 +246,10 @@ String options may be Jinja, rendered with args + `env` + git context
 trunk). Undefined template variables raise.
 
 **Documentation is generated where it can be**: `docs/models.md` comes from
-`rekep service docs models`; new code-describing docs should be a
-`DocsService` projection, not prose that drifts. mkdocs-material at the repo
+`rekep docs models`; new code-describing docs should be a
+`DocsService` projection, not prose that drifts. Benchmark tables live in
+`docs/benchmarks.md` and are measured twice before being published -- say
+what reproduced and what is noise, never a single run as if it were a spec. mkdocs-material at the repo
 root, built `--strict`; the tutorial lives at `docs/use-cases/tutorial.md`
 and as the CLI tour.
 

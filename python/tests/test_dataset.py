@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import dataclasses
 import datetime
+import itertools
 import pathlib
+import types
 from typing import Annotated, Any
 
 import pyarrow
@@ -9,6 +13,8 @@ import pytest
 from rekep import Arrow, Record, record
 from rekep.dataset import Dataset
 from rekep.models import Log, ParsedMessage
+from rekep.records.arrow import FIELD_ID_KEY
+from rekep.records.arrow import _max_field_id as max_field_id
 from rekep.run import RunState
 
 
@@ -33,7 +39,14 @@ class FakeTable:
     into, just append" cases.
     """
 
-    def __init__(self, has_snapshot: bool = True) -> None:
+    def __init__(self, has_snapshot: bool = True, record: type[Record] = Log) -> None:
+        #: This table's own Arrow schema: the record it was created from.
+        #: `union_by_name` extends it the way a real table's does,
+        #: **assigning its own field ids** rather than keeping the incoming
+        #: ones, which is the behaviour the write path has to survive.
+        self.arrow = record.into_arrow_schema()
+        self.schema_version = 0
+        self.unioned: list[pyarrow.Schema] = []
         self.appended: list[pyarrow.Table] = []
         self.upserted: list[pyarrow.Table] = []
         self.overwritten: list[pyarrow.Table] = []
@@ -68,6 +81,52 @@ class FakeTable:
         self.overwritten.append(table)
         self.branches.append(branch)
         self.overwrite_filters.append(overwrite_filter)
+
+    def schema(self) -> Any:
+        """Enough of a `pyiceberg.schema.Schema` for the write path to use."""
+        arrow = self.arrow
+        return types.SimpleNamespace(
+            fields=[
+                types.SimpleNamespace(name=field.name, required=not field.nullable)
+                for field in arrow
+            ],
+            schema_id=self.schema_version,
+            as_arrow=lambda: arrow,
+        )
+
+    def update_schema(self) -> Any:
+        """A context manager whose `union_by_name` adds the names it is given.
+
+        It renumbers the additions from this table's own highest field id,
+        exactly as pyiceberg does -- the ids the caller stamped are dropped.
+        """
+        table = self
+
+        class Update:
+            def __enter__(self) -> Any:
+                return self
+
+            def __exit__(self, *_: Any) -> None:
+                return None
+
+            def union_by_name(self, schema: pyarrow.Schema) -> None:
+                table.unioned.append(schema)
+                counter = itertools.count(max_field_id(table.arrow) + 1)
+                added = [
+                    field.with_nullable(True).with_metadata(
+                        {FIELD_ID_KEY: str(next(counter)).encode()}
+                    )
+                    for field in schema
+                    if field.name not in table.arrow.names
+                ]
+                if added:
+                    table.arrow = pyarrow.schema([*table.arrow, *added])
+                    table.schema_version += 1
+
+        return Update()
+
+    def refresh(self) -> FakeTable:
+        return self
 
     def refs(self) -> dict[str, Any]:
         return {}
@@ -117,12 +176,16 @@ def reader_of(*batches: list[int]) -> pyarrow.RecordBatchReader:
 
 
 def parsed_reader(
-    *rows: dict[str, Any], batch_size: int | None = None
+    *rows: dict[str, Any],
+    batch_size: int | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> pyarrow.RecordBatchReader:
     """A `ParsedMessage`-shaped reader; each row overrides a valid default.
 
     `batch_size` splits the rows across batches, which is how the chunking
-    tests get a stream of many small batches to accumulate.
+    tests get a stream of many small batches to accumulate. `extra` adds
+    columns the record does *not* declare, the same value on every row --
+    what a source that grew a field looks like arriving.
     """
     schema = ParsedMessage.into_arrow_schema()
     defaults = {
@@ -132,7 +195,14 @@ def parsed_reader(
         "protocol": None,
         "fields": {},
     }
-    filled = [{**defaults, **row} for row in rows]
+    filled = [{**defaults, **row, **(extra or {})} for row in rows]
+    if extra:
+        schema = pyarrow.schema(
+            [
+                *schema,
+                *(pyarrow.field(name, pyarrow.scalar(value).type) for name, value in extra.items()),
+            ]
+        )
     size = batch_size or max(len(filled), 1)
     batches = [
         pyarrow.RecordBatch.from_pylist(filled[i : i + size], schema=schema)
@@ -290,7 +360,7 @@ def test_a_write_fills_a_missing_nullable_column_with_nulls() -> None:
             "fields": pyarrow.array([{}], type=pyarrow.map_(pyarrow.string(), pyarrow.string())),
         }
     )
-    table = FakeTable()
+    table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(iter([partial]), format="iceberg", table=table)
     written = table.appended[0]
     assert written.schema.equals(schema)
@@ -320,14 +390,14 @@ def test_a_write_drops_a_column_the_record_does_not_declare() -> None:
 
 def test_no_merge_by_appends() -> None:
     dataset = Dataset(record="rekep.models.ParsedMessage")
-    table = FakeTable()
+    table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
     assert table.appended and not table.upserted
 
 
 def test_merge_by_true_upserts_on_the_records_primary_key() -> None:
     dataset = Dataset(record="rekep.models.ParsedMessage")
-    table = FakeTable()
+    table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(
         parsed_reader({"hash64": 1}), format="iceberg", table=table, merge_by=True
     )
@@ -337,7 +407,7 @@ def test_merge_by_true_upserts_on_the_records_primary_key() -> None:
 
 def test_merge_by_a_list_upserts_on_exactly_those_columns() -> None:
     dataset = Dataset(record="rekep.models.ParsedMessage")
-    table = FakeTable()
+    table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(
         parsed_reader({"hash64": 1}), format="iceberg", table=table, merge_by=["url", "unix"]
     )
@@ -357,7 +427,7 @@ def test_merge_by_is_read_from_the_datasets_own_config() -> None:
     dataset = Dataset(
         record="rekep.models.ParsedMessage", protocols={"iceberg": {"merge_by": "true"}}
     )
-    table = FakeTable()
+    table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
     assert table.join_cols == [["hash64"]], "declared in the side file, not at the call site"
 
@@ -379,7 +449,7 @@ def test_a_configured_false_appends() -> None:
 def test_merge_by_is_skipped_when_the_table_has_no_snapshot_to_merge_into() -> None:
     """Nothing to merge against: every row is an insert, so just append."""
     dataset = Dataset(record="rekep.models.ParsedMessage")
-    table = FakeTable(has_snapshot=False)
+    table = FakeTable(has_snapshot=False, record=ParsedMessage)
     written = dataset.write_arrow_reader(
         parsed_reader({"hash64": 1}), format="iceberg", table=table, merge_by=True
     )
@@ -389,7 +459,7 @@ def test_merge_by_is_skipped_when_the_table_has_no_snapshot_to_merge_into() -> N
 
 def test_merge_chunks_are_bounded_by_chunk_rows() -> None:
     dataset = Dataset(record="rekep.models.ParsedMessage")
-    table = FakeTable()
+    table = FakeTable(record=ParsedMessage)
     reader = parsed_reader(*({"hash64": i} for i in range(5)), batch_size=1)
     written = dataset.write_arrow_reader(
         reader, format="iceberg", table=table, merge_by=True, chunk_rows=2
@@ -427,7 +497,7 @@ def test_overwrite_and_merge_by_together_are_refused() -> None:
         dataset.write_arrow_reader(
             parsed_reader({"hash64": 1}),
             format="iceberg",
-            table=FakeTable(),
+            table=FakeTable(record=ParsedMessage),
             overwrite=True,
             merge_by=True,
         )
@@ -1056,3 +1126,405 @@ def test_an_unpartitioned_table_filters_on_nothing() -> None:
     from rekep.dataset import _partition_filter
 
     assert _partition_filter(FakeTable(), [{}]) is None
+
+
+# -- merge_schema: cast the shared columns, add the new ones --------------
+
+
+def test_merge_schemas_keeps_the_targets_spelling_for_shared_fields() -> None:
+    """A source calling a column `int32` does not get to narrow the target."""
+    from rekep.records import merge_schemas
+
+    target = ParsedMessage.into_arrow_schema()
+    incoming = pyarrow.schema([("hash64", pyarrow.int32()), ("venue", pyarrow.string())])
+    merged = merge_schemas(target, incoming)
+    assert merged.field("hash64").type == pyarrow.int64(), "the target's type wins"
+    assert merged.names == [*target.names, "venue"], "new one appended, order kept"
+
+
+def test_merge_schemas_forces_new_fields_nullable() -> None:
+    """Rows already written predate the column and have nothing to put in it."""
+    from rekep.records import merge_schemas
+
+    target = ParsedMessage.into_arrow_schema()
+    incoming = pyarrow.schema([pyarrow.field("venue", pyarrow.string(), nullable=False)])
+    assert merge_schemas(target, incoming).field("venue").nullable
+
+
+def test_merge_schemas_numbers_new_fields_after_the_highest_existing_id() -> None:
+    """`fields` is a map, so it eats two ids of its own -- the new column
+    must come after those, not after the top-level count."""
+    from rekep.records.arrow import FIELD_ID_KEY, merge_schemas
+
+    target = ParsedMessage.into_arrow_schema()
+    merged = merge_schemas(target, pyarrow.schema([("venue", pyarrow.string())]))
+    identifiers = {field.name: int((field.metadata or {})[FIELD_ID_KEY]) for field in merged}
+    assert identifiers["venue"] == 9, "6 top-level fields + the map's key and value"
+    assert len(set(identifiers.values())) == len(identifiers), "no id reused"
+
+
+def test_merge_schemas_with_nothing_new_returns_the_target_itself() -> None:
+    from rekep.records import merge_schemas
+
+    target = ParsedMessage.into_arrow_schema()
+    assert merge_schemas(target, target) is target
+
+
+def test_a_write_keeps_an_unknown_column_when_merge_schema_is_on() -> None:
+    dataset = Dataset(record="rekep.models.ParsedMessage")
+    table = FakeTable(record=ParsedMessage)
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 1}, extra={"venue": "X"}),
+        format="iceberg",
+        table=table,
+        merge_schema=True,
+    )
+    assert [schema.names for schema in table.unioned] == [["venue"]], "only the addition"
+    (written,) = table.appended
+    assert "venue" in written.schema.names
+    assert written.column("venue").to_pylist() == ["X"]
+
+
+def test_the_written_columns_carry_the_tables_field_ids_not_the_records() -> None:
+    """Iceberg matches columns by id, and `union_by_name` renumbers what it
+    adds -- so the ids the write carries have to come back from the table."""
+    dataset = Dataset(record="rekep.models.ParsedMessage")
+    table = FakeTable(record=ParsedMessage)
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 1}, extra={"venue": "X"}),
+        format="iceberg",
+        table=table,
+        merge_schema=True,
+    )
+    (written,) = table.appended
+    identifiers = {field.name: (field.metadata or {}).get(FIELD_ID_KEY) for field in written.schema}
+    assert identifiers == {
+        field.name: (field.metadata or {}).get(FIELD_ID_KEY) for field in table.arrow
+    }, "every column identified the way the table identifies it"
+
+
+def test_two_widening_writes_with_different_extras_stay_in_their_own_columns() -> None:
+    """The corruption this guards against: the record's numbering does not
+    move between writes, but the table's does, so the second write's column
+    would otherwise be filed under the first write's id."""
+    dataset = Dataset(record="rekep.models.ParsedMessage")
+    table = FakeTable(record=ParsedMessage)
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 1}, extra={"region": "REGION"}),
+        format="iceberg",
+        table=table,
+        merge_schema=True,
+    )
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 2}, extra={"venue": "VENUE"}),
+        format="iceberg",
+        table=table,
+        merge_schema=True,
+    )
+    live = {field.name: (field.metadata or {})[FIELD_ID_KEY] for field in table.arrow}
+    assert live["region"] != live["venue"], "the table gave them different ids"
+    second = table.appended[-1]
+    assert (second.schema.field("venue").metadata or {})[FIELD_ID_KEY] == live["venue"]
+
+
+def test_merge_schema_is_off_unless_declared() -> None:
+    dataset = Dataset(record="rekep.models.ParsedMessage")
+    table = FakeTable(record=ParsedMessage)
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 1}, extra={"venue": "X"}), format="iceberg", table=table
+    )
+    assert "venue" not in table.appended[0].schema.names, "dropped, as before"
+
+
+def test_merge_schema_is_read_from_the_datasets_own_config() -> None:
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage", protocols={"iceberg": {"merge_schema": "true"}}
+    )
+    assert dataset.merge_schema("iceberg") is True
+    assert dataset.merge_schema("file") is False, "declared for iceberg only"
+
+
+def test_a_shared_property_reaches_every_protocol() -> None:
+    """`properties` is the shared layer; `protocols` is the exception layer."""
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        properties={"merge_schema": "true"},
+        protocols={"file": {"merge_schema": "false"}},
+    )
+    assert dataset.merge_schema("iceberg") is True
+    assert dataset.merge_schema("file") is False, "the protocol overrides the shared default"
+
+
+def test_merge_schema_does_not_leak_into_table_properties() -> None:
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        protocols={"iceberg": {"merge_schema": "true", "team": "trading"}},
+    )
+    assert dataset.table_properties("iceberg") == {"team": "trading"}
+
+
+def test_a_plain_iterator_is_peeked_not_consumed_for_its_schema() -> None:
+    """merge_schema needs the incoming shape before the first write; a plain
+    iterator only reveals it by producing a batch, so one is pulled and put
+    straight back -- every batch still arrives, once, in order."""
+    dataset = Dataset(record="rekep.models.ParsedMessage")
+    table = FakeTable(record=ParsedMessage)
+    reader = parsed_reader({"hash64": 1}, {"hash64": 2}, extra={"venue": "X"}, batch_size=1)
+    written = dataset.write_arrow_reader(
+        iter(reader), format="iceberg", table=table, merge_schema=True
+    )
+    assert written == 2, "both batches, neither lost to the peek"
+    assert table.appended[-1].column("venue").to_pylist() == ["X", "X"]
+
+
+def test_an_empty_stream_leaves_the_schema_alone() -> None:
+    dataset = Dataset(record="rekep.models.ParsedMessage")
+    table = FakeTable(record=ParsedMessage)
+    written = dataset.write_arrow_reader(iter(()), format="iceberg", table=table, merge_schema=True)
+    assert written == 0
+    assert table.appended == [], "nothing written, nothing to widen"
+
+
+# -- merge_schema against a real catalog ---------------------------------
+
+
+def test_merge_schema_adds_the_column_to_a_real_table(tmp_path: pathlib.Path) -> None:
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"merge_schema": "true"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    dataset.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
+    table.refresh()
+    assert "venue" not in {field.name for field in table.schema().fields}
+
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 2}, extra={"venue": "LSE"}), format="iceberg", table=table
+    )
+    table.refresh()
+    added = {field.name: field for field in table.schema().fields}
+    assert "venue" in added
+    assert added["venue"].required is False, "rows already written have no value for it"
+
+    rows = {row["hash64"]: row for row in table.scan().to_arrow().to_pylist()}
+    assert rows[1]["venue"] is None, "backfilled null on the older row"
+    assert rows[2]["venue"] == "LSE"
+
+
+def test_merge_schema_leaves_an_existing_column_required(tmp_path: pathlib.Path) -> None:
+    """union_by_name maps nullability verbatim, so restating a column would
+    silently relax it -- only the additions are ever handed over."""
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"merge_schema": "true"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 1}, extra={"venue": "X"}), format="iceberg", table=table
+    )
+    table.refresh()
+    assert {f.name for f in table.schema().fields if f.required} == {
+        "url",
+        "unix",
+        "date",
+        "hash64",
+        "fields",
+    }
+
+
+def test_merging_rows_and_widening_columns_in_one_write(tmp_path: pathlib.Path) -> None:
+    """The combination that needs the branch stamped: a snapshot records the
+    schema it was written under, and a merge reads the branch back."""
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"merge_schema": "true", "merge_by": "true"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 1}, {"hash64": 2}), format="iceberg", table=table
+    )
+    table.refresh()
+
+    written = dataset.write_arrow_reader(
+        parsed_reader({"hash64": 2, "protocol": "FIX.4.4"}, {"hash64": 3}, extra={"venue": "X"}),
+        format="iceberg",
+        table=table,
+    )
+    table.refresh()
+    assert written == 2, "one updated, one inserted"
+    rows = {row["hash64"]: row for row in table.scan().to_arrow().to_pylist()}
+    assert set(rows) == {1, 2, 3}, "merged on the key, not appended"
+    assert rows[1]["venue"] is None
+    assert rows[2] == {**rows[2], "protocol": "FIX.4.4", "venue": "X"}
+
+
+def test_a_second_widening_write_costs_no_extra_schema_version(
+    tmp_path: pathlib.Path,
+) -> None:
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"merge_schema": "true"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 1}, extra={"venue": "X"}), format="iceberg", table=table
+    )
+    table.refresh()
+    versions = len(table.metadata.schemas)
+
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 2}, extra={"venue": "Y"}), format="iceberg", table=table
+    )
+    table.refresh()
+    assert len(table.metadata.schemas) == versions, "already caught up: no commit"
+
+
+def test_a_file_write_carries_the_widened_column(tmp_path: pathlib.Path) -> None:
+    import pyarrow.parquet
+
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        direct=(tmp_path / "out").as_uri(),
+        properties={"merge_schema": "true"},
+    )
+    dataset.write_arrow_reader(parsed_reader({"hash64": 1}, extra={"venue": "X"}), format="file")
+    (written,) = list((tmp_path / "out").rglob("*.parquet"))
+    assert "venue" in pyarrow.parquet.read_schema(written).names
+
+
+def test_two_widening_writes_land_in_the_right_columns(tmp_path: pathlib.Path) -> None:
+    """A source that grows one column, then a different one, is the whole
+    point of merge_schema -- and the case where a stale field id would file
+    the second write's data under the first write's column, silently."""
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"merge_schema": "true"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 1}, extra={"region": "REGION"}), format="iceberg", table=table
+    )
+    table.refresh()
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 2}, extra={"venue": "VENUE"}), format="iceberg", table=table
+    )
+    table.refresh()
+
+    rows = {row["hash64"]: row for row in table.scan().to_arrow().to_pylist()}
+    assert rows[1]["region"] == "REGION"
+    assert rows[1]["venue"] is None
+    assert rows[2]["venue"] == "VENUE", "not filed under `region`"
+    assert rows[2]["region"] is None
+
+
+def test_two_live_columns_declared_in_the_other_order_keep_their_values(
+    tmp_path: pathlib.Path,
+) -> None:
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"merge_schema": "true"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 1}, extra={"region": "R1"}), format="iceberg", table=table
+    )
+    table.refresh()
+    dataset.write_arrow_reader(
+        parsed_reader({"hash64": 2}, extra={"venue": "VENUE", "region": "REGION"}),
+        format="iceberg",
+        table=table,
+    )
+    table.refresh()
+
+    rows = {row["hash64"]: row for row in table.scan().to_arrow().to_pylist()}
+    assert rows[2]["venue"] == "VENUE"
+    assert rows[2]["region"] == "REGION", "declaration order does not move values"
+
+
+def test_a_branch_forked_before_an_evolution_is_brought_forward(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The ref, not the table, is what a merge reads back -- so a branch
+    that predates the schema change has to be moved forward even when the
+    table itself has nothing left to add."""
+    stack = _local_iceberg_stack(tmp_path)
+    trunk = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"merge_schema": "true"}},
+    )
+    trunk.deploy_iceberg(stack)
+    table = stack.tables.get(trunk.into_iceberg_table())
+    trunk.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
+    table.refresh()
+
+    # a branch forked from the pre-evolution snapshot
+    table.manage_snapshots().create_branch(table.current_snapshot().snapshot_id, "dev").commit()
+    table.refresh()
+
+    # main widens; the table is now current but `dev`'s snapshot is not
+    trunk.write_arrow_reader(
+        parsed_reader({"hash64": 2}, extra={"venue": "X"}), format="iceberg", table=table
+    )
+    table.refresh()
+
+    dev = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"branch": "dev", "merge_by": "true", "merge_schema": "true"}},
+    )
+    written = dev.write_arrow_reader(
+        parsed_reader({"hash64": 1, "protocol": "FIX.4.4"}), format="iceberg", table=table
+    )
+    table.refresh()
+    assert written == 1, "the merge ran rather than failing on a stale ref"
+    rows = {r["hash64"]: r for r in table.scan().use_ref("dev").to_arrow().to_pylist()}
+    assert rows[1]["protocol"] == "FIX.4.4"
+
+
+def test_a_merge_after_a_deploy_widened_the_table(tmp_path: pathlib.Path) -> None:
+    """Nothing about this write widens anything -- the *deploy* did. The ref
+    is stale all the same, and the write has to cope."""
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"merge_by": "true"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    dataset.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
+    table.refresh()
+
+    with table.update_schema() as update:
+        update.union_by_name(pyarrow.schema([pyarrow.field("desk", pyarrow.string())]))
+    table.refresh()
+
+    written = dataset.write_arrow_reader(
+        parsed_reader({"hash64": 1, "protocol": "FIX.4.4"}, {"hash64": 2}),
+        format="iceberg",
+        table=table,
+    )
+    table.refresh()
+    assert written == 2, "one updated, one inserted"
+    assert {r["hash64"] for r in table.scan().to_arrow().to_pylist()} == {1, 2}

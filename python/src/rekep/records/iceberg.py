@@ -305,12 +305,12 @@ class IcebergTable(Record):
         if self.fields and self.fields != fresh.fields:
             raise ValueError(
                 f"table {self.name or self.record}: `fields` drifted from the record; "
-                "regenerate with: rekep service iceberg tables sync"
+                "regenerate with: rekep iceberg sync"
             )
         if self.partition and self.partition != fresh.partition:
             raise ValueError(
                 f"table {self.name or self.record}: `partition` drifted from the record; "
-                "regenerate with: rekep service iceberg tables sync"
+                "regenerate with: rekep iceberg sync"
             )
         return fresh
 

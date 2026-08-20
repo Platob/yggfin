@@ -79,8 +79,8 @@ Trade.into_yaml()             # the declaration itself, reviewable YAML
 Or from the shell, for any record on the import path:
 
 ```bash
-rekep service product dump --namespace models.Trade --out -
-rekep service ddl dump --namespace models.Trade --dialect doris --out -
+rekep product dump --namespace models.Trade --out -
+rekep ddl dump --namespace models.Trade --dialect doris --out -
 ```
 
 ## 4 · Declare the deployment
@@ -112,10 +112,10 @@ stays clean on `main`.
 ## 5 · Deploy
 
 ```bash
-rekep service iceberg deploy --dry-run          # catalogs, namespaces: the plan
-rekep service iceberg deploy                    # catalog -> namespace
-rekep service dataset deploy --target iceberg   # tables, from stacks/datasets/
-rekep service dataset deploy --target iceberg   # second run: every line a no-op
+rekep iceberg deploy --dry-run          # catalogs, namespaces: the plan
+rekep iceberg deploy                    # catalog -> namespace
+rekep dataset deploy --target iceberg   # tables, from stacks/datasets/
+rekep dataset deploy --target iceberg   # second run: every line a no-op
 ```
 
 Priority is built in — catalogs are checked, then namespaces converge, then
@@ -137,8 +137,8 @@ Doris is the same shape; without a cluster connection the deploy *is* the
 ordered SQL plan:
 
 ```bash
-rekep service doris deploy --dry-run
-rekep service dataset deploy --target doris --dry-run
+rekep doris deploy --dry-run
+rekep dataset deploy --target doris --dry-run
 ```
 
 ## 6 · Parse and land data

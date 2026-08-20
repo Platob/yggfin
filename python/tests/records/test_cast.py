@@ -126,3 +126,61 @@ def test_the_module_functions_take_any_schema() -> None:
     batch = batch_of(symbol=["A"], size=[7], extra=[1])
     assert cast_batch(batch, target).schema.equals(target)
     assert cast_reader(iter([batch]), target).read_all().num_rows == 1
+
+
+# -- merge_schema: keeping what the target does not declare ---------------
+
+
+def test_merge_schema_keeps_an_unknown_column() -> None:
+    batch = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])
+    cast = Tick.cast_arrow_reader(iter([batch]), merge_schema=True).read_all()
+    assert cast.column_names == [*Tick.into_arrow_schema().names, "desk"]
+    assert cast.column("desk").to_pylist() == ["EQ"]
+
+
+def test_merge_schema_still_casts_the_shared_columns() -> None:
+    batch = batch_of(
+        symbol=["A"],
+        size=pyarrow.array([1], type=pyarrow.int64()),
+        day=[datetime.date(2026, 8, 14)],
+        desk=["EQ"],
+    )
+    cast = Tick.cast_arrow_reader(iter([batch]), merge_schema=True).read_all()
+    assert cast.column("size").type == pyarrow.int32(), "the record's declaration still wins"
+
+
+def test_merge_schema_delivers_every_batch_exactly_once() -> None:
+    """The peek pulls one batch to learn the shape; it must put it back."""
+    batches = [
+        batch_of(symbol=[name], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])
+        for name in ("A", "B", "C")
+    ]
+    read = Tick.cast_arrow_reader(iter(batches), merge_schema=True).read_all()
+    assert read.column("symbol").to_pylist() == ["A", "B", "C"]
+
+
+def test_merge_schema_on_an_empty_stream_leaves_the_schema_alone() -> None:
+    reader = Tick.cast_arrow_reader(iter(()), merge_schema=True)
+    assert reader.schema.equals(Tick.into_arrow_schema())
+    assert reader.read_all().num_rows == 0
+
+
+def test_a_readers_own_schema_is_used_without_consuming_it() -> None:
+    source = pyarrow.RecordBatchReader.from_batches(
+        pyarrow.schema([("symbol", pyarrow.string()), ("desk", pyarrow.string())]),
+        iter(()),
+    )
+    assert "desk" in Tick.cast_arrow_reader(source, merge_schema=True).schema.names
+
+
+def test_the_stream_shape_is_decided_once_not_per_batch() -> None:
+    """A reader cannot change schema under its consumer, so later batches are
+    resolved in the target's favour -- documented, not accidental."""
+    first = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])
+    later = batch_of(symbol=["B"], size=[2], day=[datetime.date(2026, 8, 14)])
+    read = Tick.cast_arrow_reader(iter([first, later]), merge_schema=True).read_all()
+    assert read.column("desk").to_pylist() == ["EQ", None], "the dropped column comes back null"
+
+    surprise = batch_of(symbol=["C"], size=[3], day=[datetime.date(2026, 8, 14)], pod=["X"])
+    read = Tick.cast_arrow_reader(iter([later, surprise]), merge_schema=True).read_all()
+    assert "pod" not in read.column_names, "a column only a later batch has is dropped"

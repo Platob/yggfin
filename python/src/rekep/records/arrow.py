@@ -446,6 +446,53 @@ def partition_keys(schema: pyarrow.Schema) -> dict[str, str]:
     return found
 
 
+def merge_schemas(target: pyarrow.Schema, incoming: pyarrow.Schema) -> pyarrow.Schema:
+    """`target`, extended with the fields only `incoming` has.
+
+    Union by name, and the two halves are treated differently on purpose:
+
+    - A field **both** schemas have keeps `target`'s spelling entirely --
+      its type, its nullability, its metadata. That is what makes this a
+      *merge* rather than a takeover: the shared columns are still the
+      target's, so the data is cast onto them (`cast_batch`), never the
+      other way round. A source calling a column `int64` does not get to
+      widen a table that declared `int32`.
+    - A field **only `incoming`** has is appended, and forced nullable
+      whatever the source said: rows already in the target predate the
+      column and have nothing to put in it, so a NOT NULL new column is a
+      constraint the existing data cannot satisfy. Iceberg refuses exactly
+      this, and so does anything else with rows already written.
+
+    New fields are renumbered from after `target`'s highest field id, so
+    column identity stays unique across the merged schema -- Iceberg and
+    parquet both match columns by id, and a duplicate id is a silently
+    wrong read rather than an error.
+    """
+    known = set(target.names)
+    additions = [field for field in incoming if field.name not in known]
+    if not additions:
+        return target
+    counter = itertools.count(_max_field_id(target) + 1)
+    fresh = [_stamp(field.with_nullable(True), next(counter), counter) for field in additions]
+    return pyarrow.schema([*target, *fresh], metadata=target.metadata)
+
+
+def _max_field_id(schema: pyarrow.Schema) -> int:
+    """The highest `FIELD_ID_KEY` in `schema`, nested fields included, or 0."""
+    highest = 0
+    for field in schema:
+        highest = max(highest, _max_field_id_of(field))
+    return highest
+
+
+def _max_field_id_of(field: pyarrow.Field) -> int:
+    highest = int((field.metadata or {}).get(FIELD_ID_KEY, b"0"))
+    data_type = field.type
+    for index in range(data_type.num_fields):
+        highest = max(highest, _max_field_id_of(data_type.field(index)))
+    return highest
+
+
 def cast_batch(
     batch: pyarrow.RecordBatch, schema: pyarrow.Schema, *, safe: bool = False
 ) -> pyarrow.RecordBatch:
@@ -486,23 +533,64 @@ def cast_batch(
 
 
 def cast_reader(
-    reader: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+    source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
     schema: pyarrow.Schema,
     *,
     safe: bool = False,
+    merge_schema: bool = False,
 ) -> pyarrow.RecordBatchReader:
     """`cast_batch` over a whole stream, still one batch at a time.
 
     Takes a plain iterator of batches too -- what `Job.arrow_transform`
     yields -- so a job's output becomes a reader of the target shape in one
     step, without the caller building a `RecordBatchReader` by hand first.
+
+    `merge_schema=True` widens the target with `merge_schemas` first, so a
+    column the source has and the target does not is **kept** instead of
+    dropped. It has to look at the incoming schema to do that, which for a
+    plain iterator means pulling one batch early (put straight back, so
+    nothing is lost or read twice); a reader already declares its schema and
+    is not touched. An empty iterator leaves the target as it was: there was
+    no incoming schema to merge.
+
+    The widened schema is decided **once**, from the reader's own schema or
+    the first batch, and every later batch is cast onto it -- a stream is
+    one shape, and a `RecordBatchReader` cannot say otherwise. A hand-rolled
+    iterator whose batches disagree is therefore resolved in the target's
+    favour: a column a later batch drops comes back as nulls, a column only
+    a later batch has is dropped. Widening again mid-stream would mean a
+    reader whose schema changes under its consumer, which no downstream
+    writer accepts.
     """
+    if merge_schema:
+        source, incoming = _peek_schema(source)
+        if incoming is not None:
+            schema = merge_schemas(schema, incoming)
 
     def generate() -> Iterator[pyarrow.RecordBatch]:
-        for batch in reader:
+        for batch in source:
             yield cast_batch(batch, schema, safe=safe)
 
     return pyarrow.RecordBatchReader.from_batches(schema, generate())
+
+
+def _peek_schema(
+    source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+) -> tuple[Any, pyarrow.Schema | None]:
+    """`(source, its schema)`, reading one batch only when it has to.
+
+    A `RecordBatchReader` states its schema up front, so it comes back
+    untouched and still fully lazy. A plain iterator only reveals its shape
+    by producing a batch, so one is pulled and then chained back on the
+    front -- the caller still sees every batch, in order, exactly once.
+    """
+    if isinstance(source, pyarrow.RecordBatchReader):
+        return source, source.schema
+    iterator = iter(source)
+    first = next(iterator, None)
+    if first is None:
+        return iter(()), None
+    return itertools.chain([first], iterator), first.schema
 
 
 def _class_name(field_name: str) -> str:

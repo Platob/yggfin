@@ -38,6 +38,7 @@ nav:
       - Datasets: guide/datasets.md
       - CLI: guide/cli.md
   - Data models: models.md
+  - Benchmarks: benchmarks.md
   - Reference: reference.md
 
 plugins:
