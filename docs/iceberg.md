@@ -244,14 +244,26 @@ goes.
     quotes.plan_merges = False      # hand the whole chunk to Table.upsert
     ```
 
-    Two refusals are deliberately **stricter** than the library's, because both
-    alternatives corrupt the table:
+    Four refusals are deliberately **stricter** than the library's, because
+    every alternative corrupts the table:
 
     - a stored table with duplicate merge keys is refused wherever the copies
       are (pyiceberg checks one record batch at a time, so copies in two files
       slip past it and it writes a third);
-    - a null merge key is refused outright — no predicate can find the row it
-      would match, so merging it would insert a second one.
+    - a null merge key, and a NaN one — no predicate can name either, so the
+      stored row is never found and a second one is inserted, again on every
+      later merge;
+    - a chunk that does not carry every column the table has: Iceberg's own
+      schema check allows a missing **optional** column, and a merge that took
+      it would write nulls over whatever is stored there.
+
+    And two are deliberately more forgiving, because refusing costs data and
+    accepting cannot: a `-0.0` key matches the `0.0` it equals (Arrow hashes
+    them apart, so the library inserts a duplicate key), and a chunk whose
+    columns arrive in another order is merged rather than rejected. A column
+    renamed since the branch's last commit is matched by **field id**, not by
+    name — the library reads the head under the old schema and cannot cast at
+    all.
 
 !!! tip "One key column merges faster than two"
 

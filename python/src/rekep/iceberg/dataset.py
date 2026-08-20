@@ -149,8 +149,9 @@ class IcebergDataset(Dataset):
     sort_by: Sequence[str] | None = None
 
     #: Whether a merge plans its own scan instead of handing the whole chunk to
-    #: `Table.upsert`. Same algorithm, same result -- see `merge_arrow_table`
-    #: for why it is worth several orders of magnitude on a composite key.
+    #: `Table.upsert`. Same algorithm, same rows -- and worth two orders of
+    #: magnitude on a stream of new or unchanged keys, about 2x when the rows
+    #: genuinely change. `merge_arrow_table` says why, and where it is stricter.
     plan_merges: bool = True
 
     #: Whether a table created here gets `COMMIT_PROPERTIES`. The defaults are
@@ -357,9 +358,10 @@ class IcebergDataset(Dataset):
         a write appends, and appending to nothing is a create.
 
         `merge_by=True` merges on the primary key the shape declares, a list of
-        names merges on those, and falsy appends. A merge is pyiceberg's own
-        upsert: it plans the matching rows itself, which is a job for the engine
-        that holds the statistics, not for this code.
+        names merges on those, and falsy appends. A merge goes through
+        `merge_arrow_table`, which plans the rows it has to look at from the
+        chunk's key ranges; `plan_merges=False` hands the chunk to
+        `Table.upsert` instead, for the same rows and a great deal more time.
         """
         table = self.get_or_create_table()
         reader = self.target_field(schema).cast_arrow_reader(source)
@@ -373,7 +375,12 @@ class IcebergDataset(Dataset):
             elif self.plan_merges:
                 self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
             else:
-                table.upsert(chunk, join_cols=join, branch=reference)
+                table.upsert(
+                    chunk,
+                    join_cols=join,
+                    branch=reference,
+                    snapshot_properties=properties or {},
+                )
 
     def merge_arrow_table(
         self,
@@ -387,17 +394,28 @@ class IcebergDataset(Dataset):
 
         The algorithm is pyiceberg's own -- find the stored rows a chunk
         matches, overwrite the ones whose non-key columns changed, append the
-        rest -- and its own helpers do the row-level work, so the result is the
-        one `Table.upsert` would produce, down to the schema check it makes
-        first. What changes is **how the matching rows are found**.
+        rest -- and its own helpers do the row-level work, so the rows this
+        leaves behind are the rows `Table.upsert` would leave behind, down to
+        the schema check it makes first. What changes is **how the matching
+        rows are found**.
 
-        Two refusals are deliberately stricter than the library's, because both
-        of the alternatives are a corrupted table: a stored table with
-        duplicate merge keys is refused wherever the copies are (pyiceberg
-        checks one record batch at a time, so copies in two files slip past it
-        and it writes a third), and a null merge key is refused outright (no
-        predicate can find the row it would match, so it would be inserted
-        again).
+        Four refusals are deliberately stricter than the library's, because
+        every alternative is a corrupted table:
+
+        - a stored table with duplicate merge keys, wherever the copies are
+          (pyiceberg checks one record batch at a time, so copies in two files
+          slip past it and it writes a third);
+        - a null merge key, and a NaN one -- no predicate can name either, so
+          the stored row is never found and a second one is inserted, again on
+          every later merge;
+        - a chunk that does not carry every column the table has: the schema
+          check allows a missing *optional* column, and a merge that took it
+          would write nulls over whatever is stored there.
+
+        And two are deliberately more forgiving, because refusing costs data
+        and accepting cannot: a `-0.0` key matches the `0.0` it equals (Arrow
+        hashes them apart, so the library inserts a duplicate key), and a chunk
+        whose columns are in another order is merged rather than rejected.
 
         `Table.upsert` builds its scan filter as one equality term per incoming
         row (`Or(And(k1 = .., k2 = ..), ...)` for a composite key), then binds
@@ -431,39 +449,60 @@ class IcebergDataset(Dataset):
         join = self.merge_columns(merge_by)
         if not join:
             raise ValueError("merge_arrow_table needs columns to merge on")
-        if chunk.num_rows == 0:
-            # Nothing to match: planning a scan for it would read the table to
-            # discover that, and `_key_ranges` has no bounds to build from.
-            return 0, 0
+        if SOURCE_INDEX in join or TARGET_INDEX in join:
+            # pyiceberg's own message, because the joins here reach these names
+            # before its check does and would fail on the duplicate instead.
+            raise ValueError(
+                f"{SOURCE_INDEX} and {TARGET_INDEX} are reserved for joining DataFrames"
+            )
         if upsert_util.has_duplicate_rows(chunk, join):
             raise ValueError(
                 "Duplicate rows found in source dataset based on the key columns. "
                 "No upsert executed"
             )
         table = self.get_or_create_table()
-        # The same check `Table.upsert` makes, and for the same reason: a chunk
-        # that is missing a column, or carries one at another precision, would
-        # otherwise be written as nulls or silently downcast. Making it here
-        # keeps the two paths interchangeable.
+        # The check `Table.upsert` makes, on the configuration it reads it
+        # from: a chunk carrying a column the table does not have, or one at a
+        # precision Iceberg cannot store, is refused here exactly as it would
+        # be there. What it does *not* cover is a column the chunk leaves out,
+        # which it allows whenever the field is optional -- and a merge that
+        # allowed that would write nulls over whatever is stored.
         _check_pyarrow_schema_compatible(
-            table.schema(), provided_schema=chunk.schema, format_version=table.format_version
+            table.schema(),
+            provided_schema=chunk.schema,
+            format_version=table.format_version,
+            downcast_ns_timestamp_to_us=_downcasts_ns(),
         )
+        # `schema().fields`, not `column_names`: the latter names nested members
+        # too (`book.key`), and a merge only ever writes whole top-level columns.
+        stored = [member.name for member in table.schema().fields]
+        missing = [name for name in stored if name not in chunk.column_names]
+        if missing:
+            raise ValueError(
+                f"chunk is missing {missing}, and a merge writes the row it matches: the stored "
+                "values would become nulls. Cast it onto the table's shape before merging"
+            )
+        if chunk.num_rows == 0:
+            # Nothing to match, and the schema was still worth checking: a scan
+            # for it would read the table to discover that, and `_key_ranges`
+            # has no bounds to build from.
+            return 0, 0
         # The chunk's own shape is the one everything is brought onto: an Arrow
         # join refuses to match a `string` key against the `large_string` a scan
         # hands back, and converting what was *read* costs less than converting
         # what is being written -- a streaming merge reads far fewer rows than
-        # it writes. It also keeps a write that carries a column the table does
-        # not have an error, exactly as an append of the same rows would be,
-        # rather than a silent drop.
+        # it writes.
         shape = field_of(chunk.schema)
         reference = branch or self.branch or MAIN
         scan = table.scan(row_filter=_key_ranges(chunk, join))
         if reference in table.refs():
             scan = scan.use_ref(reference)
-        # The batch reader, not `to_arrow()`: pyiceberg's two read paths disagree
-        # about string widths (`string` from one, `large_string` from the other),
-        # and only one of them is the shape the table reports.
-        matched = shape.cast_arrow_table(scan.to_arrow_batch_reader().read_all())
+        # The batch reader, not `to_arrow()`: the two read paths disagree about
+        # string widths -- `to_arrow()` hands back `string` where the reader
+        # hands back the `large_string` the table itself reports -- and this one
+        # streams, which is what a merge of an arbitrary chunk needs.
+        matched = _under_current_names(table, scan.to_arrow_batch_reader().read_all())
+        matched = shape.cast_arrow_table(matched)
         # The scan filter is a *superset* -- a range covers stored keys the
         # chunk never mentions -- so the rows it brought back are narrowed to
         # the ones the chunk actually references before anything looks at them.
@@ -597,7 +636,15 @@ class IcebergDataset(Dataset):
         """
         table = self.iceberg_table
         planned = self._planned(table, row_filter, columns, snapshot_id, branch)
-        whole = self._planned(table, None, columns, snapshot_id, branch)
+        # With no filter the two plans *are* the same plan, and planning is what
+        # this call costs: on 40 files, doing it twice took 17.1 ms against 8.6,
+        # for a `skipped` that is zero by construction. `compact` asks for one
+        # partition at a time through here, so the doubling was per partition.
+        whole = (
+            planned
+            if row_filter is None
+            else self._planned(table, None, columns, snapshot_id, branch)
+        )
         return {
             **planned,
             "total_files": whole["files"],
@@ -618,7 +665,10 @@ class IcebergDataset(Dataset):
             **({"row_filter": row_filter} if row_filter is not None else {}),
         )
         reference = branch or self.branch
-        if reference and snapshot_id is None and reference in table.refs():
+        if reference and snapshot_id is None:
+            # Not guarded by `in table.refs()`: this reports what a *read* would
+            # touch, and a read of a branch that is not there raises. Planning
+            # main instead and calling it the answer would be a lie.
             scan = scan.use_ref(reference)
         tasks = list(scan.plan_files())
         return {
@@ -927,20 +977,69 @@ def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
                 f"column {column!r} is a merge key and cannot be null; "
                 "a null key matches nothing, so merging on it would duplicate rows"
             )
+        if (
+            pyarrow.types.is_floating(values.type)
+            and pyarrow.compute.any(pyarrow.compute.is_nan(values)).as_py()
+        ):
+            # And no literal can name a NaN, which the two branches below
+            # disagree about: `In` refuses it (pyiceberg will not build the
+            # literal), while `min_max` skips it and hands back a range the
+            # stored row falls outside -- so the merge would insert a second
+            # copy, and a third next time, without ever raising.
+            raise ValueError(
+                f"column {column!r} is a merge key and cannot be NaN; "
+                "no predicate can name a NaN, so merging on it would duplicate rows"
+            )
         distinct = _distinct_under(values, MERGE_IN_LIMIT)
         if distinct is not None:
             if len(distinct) == 0:
                 continue
             terms.append(In(column, distinct.to_pylist()))
             continue
+        # Neither bound can be null here: the column has rows, no nulls and no
+        # NaN, which is everything `min_max` would have skipped.
         bounds = pyarrow.compute.min_max(values).as_py()
-        low, high = bounds["min"], bounds["max"]
-        if low is None or high is None:  # every key is null: nothing to bound
-            continue
-        terms.append(And(GreaterThanOrEqual(column, low), LessThanOrEqual(column, high)))
+        terms.append(
+            And(GreaterThanOrEqual(column, bounds["min"]), LessThanOrEqual(column, bounds["max"]))
+        )
     if not terms:
         return _always_true()
     return And(*terms) if len(terms) > 1 else terms[0]
+
+
+def _downcasts_ns() -> bool:
+    """Whether Iceberg is configured to accept nanosecond timestamps by rounding.
+
+    Read the way pyiceberg reads it, from the same configuration, because the
+    check it guards is pyiceberg's: hard-coding it to False would refuse a
+    write the library itself accepts, which is a divergence introduced by the
+    very check that exists to remove them.
+    """
+    from pyiceberg.io.pyarrow import DOWNCAST_NS_TIMESTAMP_TO_US_ON_WRITE
+    from pyiceberg.utils.config import Config
+
+    return Config().get_bool(DOWNCAST_NS_TIMESTAMP_TO_US_ON_WRITE) or False
+
+
+def _under_current_names(table: Any, matched: pyarrow.Table) -> pyarrow.Table:
+    """`matched` with its columns named the way the table names them *now*.
+
+    A scan pinned to a ref reads under that snapshot's schema, not the current
+    one -- and a rename is metadata-only, so until something else commits, the
+    branch head still carries the old names. Matching by name there would
+    compare a renamed column against nulls and rewrite every row it read.
+
+    Field ids are what a rename does not change, and pyiceberg puts them on the
+    columns it hands back, so they are what the names are recovered from. Top
+    level only: that is what a merge joins and compares on.
+    """
+    current = {field.field_id: field.name for field in table.schema().fields}
+    names = []
+    for field in matched.schema:
+        identifier = (field.metadata or {}).get(b"PARQUET:field_id")
+        renamed = current.get(int(identifier)) if identifier is not None else None
+        names.append(renamed or field.name)
+    return matched.rename_columns(names) if names != matched.column_names else matched
 
 
 def _distinct_under(values: Any, limit: int) -> Any:

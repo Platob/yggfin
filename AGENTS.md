@@ -146,7 +146,7 @@ what is missing and commits nothing when there is nothing to add, and
 `optimize` is the three in the order that makes them cheap. Every one of them
 reports what it did.
 
-Six things that were learned the expensive way, all of them measured:
+Seven things that were learned the expensive way, all of them measured:
 
 - **A maintenance verb must settle.** `compact` marks its own snapshots and
   skips a part nothing has landed in since; without that it replans forever,
@@ -172,6 +172,16 @@ Six things that were learned the expensive way, all of them measured:
   `NotInstalledError` on the first write. Building the spec was tested;
   *writing* one was not. The extra now pulls the core in, and a merge through a
   transformed partition is compared with pyiceberg's own upsert.
+- **A guard is only as wide as the branch it is on.** A merge key that is
+  null was refused; one that is NaN was refused *only* under the 200-literal
+  ceiling, because the other branch of the same filter builds a range and
+  `min_max` skips NaN -- so past the ceiling the stored row fell outside the
+  scan and was inserted again, and again on every later merge. Any test of a
+  guard on a filter with two branches has to cross the boundary between them.
+  The same reading found a chunk missing an *optional* column passing Iceberg's
+  own schema check and then writing nulls over what was stored, and a scan
+  pinned to a ref reading under that snapshot's schema, so a renamed column
+  compared against nulls until field ids were used to recover the name.
 - **Our own commits update the table object in place.** `refresh()` is for
   seeing *other* writers, and calling it per chunk is a catalog round trip per
   commit -- free on SQLite, a network hop on REST or Glue.

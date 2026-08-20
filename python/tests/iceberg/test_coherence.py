@@ -15,6 +15,7 @@ import pytest
 
 from rekep import Convertible, Field, field
 from rekep.iceberg import IcebergCatalog, IcebergDataset
+from rekep.iceberg.dataset import MERGE_IN_LIMIT
 
 
 @field
@@ -672,8 +673,16 @@ def test_a_transformed_partition_prunes_a_read(event_pair) -> None:
     assert plan["files"] < plan["total_files"]
 
 
-def test_a_nan_merge_key_is_refused_by_both(tmp_path: Path) -> None:
-    """No literal can name a NaN, so neither library will build a filter with one."""
+@pytest.mark.parametrize("keys", [1, MERGE_IN_LIMIT + 20])
+def test_a_nan_merge_key_is_refused_by_both(tmp_path: Path, keys: int) -> None:
+    """No literal can name a NaN, so no filter either library builds can find one.
+
+    Parameterised across the `In` limit because the two branches of the scan
+    filter fail *differently*: pyiceberg refuses to build a NaN literal, while
+    `min_max` silently skips it and returns a range the stored row falls
+    outside -- which would insert a second copy, and a third on the next merge,
+    without ever raising. A one-row chunk only ever tests the first branch.
+    """
 
     @field
     class Level(Convertible):
@@ -686,13 +695,95 @@ def test_a_nan_merge_key_is_refused_by_both(tmp_path: Path) -> None:
         """Quantity."""
 
     schema = Level.FIELD.into_arrow_schema()
+    prices = [float(index) for index in range(keys)] + [float("nan")]
     catalog = IcebergCatalog(name="nan", properties=properties(tmp_path, "nan"))
     dataset = catalog.dataset("trading.levels", struct=Level.FIELD)
-    dataset.write_arrow(
-        pyarrow.Table.from_pydict({"price": [1.0], "size": [1]}, schema=schema), commit_row_size=0
-    )
-    chunk = pyarrow.Table.from_pydict({"price": [float("nan")], "size": [2]}, schema=schema)
+    stored = pyarrow.Table.from_pydict({"price": prices, "size": [1] * len(prices)}, schema=schema)
+    dataset.write_arrow(stored, commit_row_size=0)
+    chunk = pyarrow.Table.from_pydict({"price": prices, "size": [2] * len(prices)}, schema=schema)
     with pytest.raises(ValueError, match="NaN"):
         dataset.merge_arrow_table(chunk, ["price"])
     with pytest.raises(ValueError, match="NaN"):
         dataset.get_or_create_table().upsert(chunk, join_cols=["price"])
+    assert dataset.refresh().read_arrow_table().num_rows == len(prices), "and nothing was written"
+
+
+def test_the_snapshot_log_the_two_paths_leave_is_the_same(pair) -> None:
+    """Same rows is not the whole claim: the same *commits* is.
+
+    Every assertion here compares what a reader of the metadata sees -- the
+    operation of each snapshot, the records it says it added and deleted, and
+    the properties the job stamped on it -- which rows alone would never catch.
+    """
+    ours, theirs = pair
+    theirs.plan_merges = False
+    for dataset in pair:
+        dataset.write_arrow(quotes(0, 6), commit_row_size=0)
+        dataset.write_arrow(
+            quotes(3, 6, "XETR"), merge_by=True, commit_row_size=0, properties={"job": "abc"}
+        )
+    counted = ("added-records", "deleted-records", "job")
+
+    def log(dataset: IcebergDataset) -> list[tuple]:
+        return [
+            (
+                snapshot.summary.operation.value,
+                {
+                    name: value
+                    for name, value in snapshot.summary.additional_properties.items()
+                    if name in counted
+                },
+            )
+            for snapshot in dataset.refresh().iceberg_table.snapshots()
+        ]
+
+    assert log(ours) == log(theirs)
+    assert any("job" in properties for _, properties in log(ours)), "and the job was recorded"
+
+
+def test_a_chunk_missing_a_column_is_refused(stored) -> None:
+    """The schema check allows a missing optional column; a merge cannot.
+
+    Without the refusal the narrow chunk passes the check, becomes the shape
+    everything is cast onto, and writes nulls over the column it left out.
+    `Table.upsert` refuses this too -- but only where a row actually matches,
+    because that is where it casts; on a chunk of new keys it appends happily.
+    Refusing either way is the stricter of the two, and the safe one.
+    """
+    narrow = Quote.FIELD.into_arrow_schema().remove(4)  # `venue`, which is optional
+    matching = pyarrow.Table.from_pydict(
+        {"symbol": ["S1"], "day": [DAY + datetime.timedelta(days=1)], "seq": [1], "size": [99]},
+        schema=narrow,
+    )
+    with pytest.raises(ValueError, match="missing"):
+        stored.merge_arrow_table(matching, True)
+    with pytest.raises(ValueError, match="not matching"):
+        stored.get_or_create_table().upsert(matching, join_cols=["symbol", "day", "seq"])
+    assert set(stored.refresh().read_arrow_table().column("venue").to_pylist()) == {"XPAR"}
+
+
+def test_a_merge_after_a_rename_compares_the_column_that_was_renamed(tmp_path: Path) -> None:
+    """A rename is metadata-only, so the branch head still carries the old name.
+
+    A scan pinned to a ref reads under *that snapshot's* schema. Matching the
+    columns by name there compares the renamed column against nulls: every row
+    read looks changed, and a merge of rows identical to the stored ones
+    rewrites the whole table.
+    """
+    catalog = IcebergCatalog(name="renamed", properties=properties(tmp_path, "renamed"))
+    dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
+    dataset.write_arrow(quotes(0, 4), commit_row_size=0)
+    with dataset.get_or_create_table().update_schema() as update:
+        update.rename_column("venue", "market")
+    dataset.refresh()
+    dataset.struct = dataset.table_field
+    same = dataset.read_arrow_table()
+    before = len(dataset.iceberg_table.snapshots())
+    dataset.write_arrow(same, merge_by=["symbol", "day", "seq"], commit_row_size=0)
+    dataset.refresh()
+    assert dataset.read_arrow_table().sort_by("seq").to_pylist() == same.sort_by("seq").to_pylist()
+    assert len(dataset.iceberg_table.snapshots()) == before, "nothing changed, so nothing committed"
+    with pytest.raises(ValueError, match="not matching"):
+        # And the library's own path cannot do this at all: it reads the head
+        # under the old schema and then fails to cast the chunk onto it.
+        dataset.get_or_create_table().upsert(same, join_cols=["symbol", "day", "seq"])
