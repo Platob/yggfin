@@ -173,6 +173,13 @@ class IcebergDataset(Dataset):
     #: Iceberg's, and Iceberg's defaults are not tuned for a stream.
     optimize_commits: bool = True
 
+    #: Whether `cleanup` may sweep a `write.data.path` or `write.metadata.path`
+    #: that points outside the table's own location. Off, because several
+    #: tables may legally share one and nothing in the metadata says which of
+    #: them a file belongs to -- so a sweep there deletes the others' live
+    #: files. Turn it on for a directory you know is this table's alone.
+    sweep_relocated: bool = False
+
     #: Only used when the table is created: where it lives and what it carries.
     location: str | None = None
     table_properties: dict[str, str] = dataclasses.field(default_factory=dict)
@@ -1027,20 +1034,43 @@ class IcebergDataset(Dataset):
         """
         table = self.iceberg_table
         cutoff = datetime.datetime.now(datetime.UTC) - older_than
-        directories = [(self._data_path(table), self._live_data(table))]
+        # The union, never one set per directory: `write.data.path` may put the
+        # data inside the metadata directory or the other way round, and a
+        # directory swept against half the live set deletes the other half.
+        data, meta = self._live(table)
+        live = data | meta
+        directories = [self._data_path(table)]
         if metadata:
-            directories.append((self._metadata_path(table), self._live_metadata(table)))
+            directories.append(self._metadata_path(table))
 
-        found = []
-        for directory, live in directories:
+        found: dict[tuple[int, str], tuple[Any, str, int]] = {}
+        for directory in directories:
+            if not self._is_ours(table, directory):
+                continue
             filesystem, base = resolve(directory)
             bases = (directory.rstrip("/"), base.rstrip("/"), _path_of(directory).rstrip("/"))
-            relative = {_relative(path, bases) for path in live}
+            relative = set()
+            for path in live:
+                tail = _relative(path, bases)
+                if tail is not None:
+                    relative.add(tail)
             selector = pyarrow.fs.FileSelector(base, recursive=True, allow_not_found=True)
             for info in filesystem.get_file_info(selector):
                 if info.type != pyarrow.fs.FileType.File:
                     continue
-                if _relative(info.path, bases) in relative:
+                tail = _relative(info.path, bases)
+                if tail is None:
+                    # The listing spells a file in this very directory in a way
+                    # none of the bases reduce, so the comparison that follows
+                    # would be against nothing. Iceberg's own sweep carries a
+                    # `PrefixMismatchMode` for exactly this; refusing is the
+                    # only safe reading, because the alternative is deleting on
+                    # the strength of a match that never happened.
+                    raise ValueError(
+                        f"cannot tell whether {info.path!r} belongs to {directory!r}; "
+                        "refusing to sweep a directory whose files do not reduce against it"
+                    )
+                if tail in relative:
                     continue
                 # A Hadoop-style catalog keeps its pointer beside the metadata
                 # and nothing inside the metadata names it: reading the table
@@ -1049,8 +1079,33 @@ class IcebergDataset(Dataset):
                     continue
                 if info.mtime and info.mtime > cutoff:
                     continue
-                found.append((filesystem, info.path, info.size))
-        return found
+                # Keyed, because two directories that nest list the same file
+                # twice -- and deleting it twice is a `FileNotFoundError` half
+                # way through the sweep.
+                found[(id(filesystem), info.path)] = (filesystem, info.path, info.size)
+        return list(found.values())
+
+    def _is_ours(self, table: Any, directory: str) -> bool:
+        """Whether this table is the only thing that can own `directory`.
+
+        Under the table's own location, it is: Iceberg gives every table a
+        location of its own and writes nothing else there. A relocated
+        `write.data.path` is a different matter -- it is legal to point several
+        tables at one, and the files are UUID-named precisely so they can
+        share -- and there is nothing in the metadata that says which of them a
+        given file belongs to. Sweeping it would delete the other tables' live
+        files: measured, one `cleanup()` on a table whose data path was the
+        warehouse root took out both tables under it.
+
+        So a relocated directory is swept only when `sweep_relocated` says the
+        caller knows it is theirs alone. The default is to leave it, which
+        strands files rather than losing them.
+        """
+        if self.sweep_relocated:
+            return True
+        location = table.location().rstrip("/")
+        bases = (location, resolve(location)[1].rstrip("/"), _path_of(location).rstrip("/"))
+        return _relative(directory.rstrip("/"), bases) is not None
 
     def _data_path(self, table: Any) -> str:
         """Where this table's data files live, as Iceberg decides it."""
@@ -1067,46 +1122,53 @@ class IcebergDataset(Dataset):
         return load_location_provider(table.location(), table.properties)
 
     def _live_data(self, table: Any) -> set[str]:
-        """Every data and delete file any retained snapshot still holds.
+        """Every data and delete file any retained snapshot still holds."""
+        return self._live(table)[0]
+
+    def _live_metadata(self, table: Any) -> set[str]:
+        """Every metadata file a retained snapshot, the log, or the pointer names."""
+        return self._live(table)[1]
+
+    def _live(self, table: Any) -> tuple[set[str], set[str]]:
+        """`(data files, metadata files)` nothing may delete: one walk for both.
 
         Walked from the manifests rather than read off `inspect.all_files()`,
         which builds -- per data file -- the column sizes, value counts, null
         counts and a decoded lower *and* upper bound for every field in the
         schema, so that one column of paths can be kept. Measured on 40 columns
         and 80 snapshots: 550 ms against 143, and the gap grows with the column
-        count. `_live_metadata` walks the same manifests, so this is the
-        module's existing idiom rather than a second way of doing it.
-        """
-        live = set()
-        for _, manifest in _manifests(table):
-            for entry in manifest.fetch_manifest_entry(table.io):
-                live.add(entry.data_file.file_path)
-        return live
+        count. Both sets come out of the same pass because both need it: two
+        passes read every manifest list twice, 160 object-store reads where 80
+        will do (192 ms against 143).
 
-    def _live_metadata(self, table: Any) -> set[str]:
-        """Every metadata file a retained snapshot, the log, or the pointer names.
-
-        Deleting one of these does not lose a row; it loses the *table*. So the
-        set is built from every direction at once -- the current pointer, the
-        metadata log, every snapshot's manifest list and its manifests, and the
-        statistics the metadata registers -- and a file is only swept when none
-        of them mention it.
+        Deleting a metadata file does not lose a row; it loses the *table*. So
+        that half is built from every direction at once -- the current pointer,
+        the metadata log, every snapshot's manifest list, every manifest, and
+        the statistics the metadata registers. **Manifest lists come from the
+        snapshots themselves**, not from the deduped manifest walk: a snapshot
+        that introduces no manifest of its own -- an empty commit, or one from
+        another engine -- yields nothing there, and its list is then the file
+        the sweep deletes.
 
         The statistics are the ones nothing else reaches: a Puffin file another
         engine wrote sits in `metadata/` beside everything else, is named only
         by `metadata.statistics`, and is exactly as old as the snapshot it
         describes -- so an age rule does not save it either.
         """
-        live = {table.metadata_location}
+        data = set()
+        metadata = {table.metadata_location}
         for entry in table.metadata.metadata_log:
-            live.add(entry.metadata_file)
-        for snapshot, manifest in _manifests(table):
+            metadata.add(entry.metadata_file)
+        for snapshot in table.snapshots():
             if snapshot.manifest_list:
-                live.add(snapshot.manifest_list)
-            live.add(manifest.manifest_path)
+                metadata.add(snapshot.manifest_list)
         for statistics in (*table.metadata.statistics, *table.metadata.partition_statistics):
-            live.add(statistics.statistics_path)
-        return live
+            metadata.add(statistics.statistics_path)
+        for _, manifest in _manifests(table):
+            metadata.add(manifest.manifest_path)
+            for entry in manifest.fetch_manifest_entry(table.io):
+                data.add(entry.data_file.file_path)
+        return data, metadata
 
     def optimize(self, *, min_files: int = 2, retain: int = 1, **kwargs: Any) -> dict[str, int]:
         """Merge manifests, compact files, then expire and sweep -- in that order.
@@ -1603,18 +1665,23 @@ def _path_of(location: str) -> str:
     return location.split("://", 1)[-1]
 
 
-def _relative(path: str, bases: Sequence[str]) -> str:
+def _relative(path: str, bases: Sequence[str]) -> str | None:
     """`path` under whichever of `bases` it is spelled against, tail only.
 
     The one comparison that survives a store naming its files differently from
     the URI the metadata records: both sides are reduced to what follows the
     directory they are in, so how the directory itself is spelled stops
     mattering.
+
+    None when no base prefixes it, and the caller must treat that as "I do not
+    know", never as a tail. Falling back to the whole path made two files that
+    are the same file compare unequal, which in a sweep means deleting a live
+    one.
     """
     for base in sorted(bases, key=len, reverse=True):
         if base and path.startswith(base):
             return path[len(base) :].lstrip("/")
-    return path.lstrip("/")
+    return None
 
 
 def _cutoff_ms(older_than: datetime.datetime | datetime.timedelta | None) -> int | None:

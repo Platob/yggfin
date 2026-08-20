@@ -424,6 +424,13 @@ calls are the whole routine.
     `version-hint.text` — because deleting one of those does not lose a row, it
     loses the table. Pass `metadata=False` to sweep data only.
 
+    A `write.data.path` or `write.metadata.path` pointing **outside** the
+    table's own location is left alone. Several tables may legally share one —
+    the file names are UUIDs precisely so they can — and nothing in the
+    metadata says which table a given file belongs to, so a sweep there deletes
+    the others' live files. Set `sweep_relocated=True` on the dataset for a
+    directory you know is this table's alone.
+
     `dry_run=True` reports what it would expire and what is *already* orphaned
     — not what expiring would strand, which is strictly more and cannot be
     known without committing the expiry.

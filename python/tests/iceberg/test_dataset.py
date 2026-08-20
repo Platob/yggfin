@@ -958,7 +958,12 @@ def test_a_sweep_finds_the_files_however_the_warehouse_is_spelled(tmp_path: Path
 
 
 def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
-    """`write.data.path` moves the data; assuming `<location>/data` swept nothing."""
+    """`write.data.path` moves the data; assuming `<location>/data` swept nothing.
+
+    With `sweep_relocated`, because a directory outside the table's location
+    may belong to several tables and nothing in the metadata says which file is
+    whose -- see the test below for what the default protects.
+    """
     warehouse = tmp_path / "warehouse"
     elsewhere = tmp_path / "elsewhere"
     warehouse.mkdir()
@@ -975,6 +980,7 @@ def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
         "trading.quotes",
         struct=Quote.FIELD,
         table_properties={"write.data.path": elsewhere.as_uri()},
+        sweep_relocated=True,
     )
     for index in range(4):
         quotes_.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
@@ -994,6 +1000,62 @@ def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
     remaining = {path.name for path in elsewhere.rglob("*.parquet")}
     assert remaining == live, "what the sweep left is exactly what is still referenced"
     assert quotes_.read_arrow_table().num_rows == stored, "and the table still reads"
+
+
+def test_a_commit_that_adds_no_manifest_keeps_its_manifest_list(dataset: IcebergDataset) -> None:
+    """The live set takes manifest lists from the snapshots, not from the walk.
+
+    The manifest walk dedupes on the manifest path, so a snapshot that
+    introduces nothing new -- an empty commit, or one from another engine --
+    never yields, and its manifest list looked like an orphan. It is the file
+    that makes the table readable.
+    """
+    dataset.write_arrow(quotes(4), commit_row_size=0)
+    dataset.get_or_create_table().append(Quote.FIELD.into_arrow_schema().empty_table())
+    dataset.refresh()
+    report = dataset.cleanup(retain=5, orphan_age=datetime.timedelta(seconds=0))
+
+    assert report["deleted"] == 0, "every metadata file is still named by a snapshot"
+    assert dataset.refresh().read_arrow_table().num_rows == 4, "and the table still reads"
+
+
+def test_a_sweep_leaves_a_shared_data_path_alone(tmp_path: Path) -> None:
+    """Two tables, one `write.data.path`: neither may sweep the other's files.
+
+    Legal in Iceberg -- the file names are UUIDs so they can share -- and
+    nothing in the metadata says which table a given file belongs to. Sweeping
+    it deleted both tables outright, so the default is to strand files rather
+    than lose them.
+    """
+    warehouse = tmp_path / "warehouse"
+    shared = tmp_path / "shared"
+    warehouse.mkdir()
+    shared.mkdir()
+    catalog = IcebergCatalog(
+        name="shared",
+        properties={
+            "type": "sql",
+            "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
+            "warehouse": warehouse.as_uri(),
+        },
+    )
+    built = [
+        catalog.dataset(
+            f"trading.{name}",
+            struct=Quote.FIELD,
+            table_properties={"write.data.path": shared.as_uri()},
+        )
+        for name in ("one", "two")
+    ]
+    for index, dataset in enumerate(built):
+        dataset.write_arrow(quotes(3, f"v{index}"), commit_row_size=0)
+    before = {path.name for path in shared.rglob("*.parquet")}
+    report = built[0].cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0))
+
+    assert report["deleted"] == 0, "nothing in a directory it cannot prove is its own"
+    assert {path.name for path in shared.rglob("*.parquet")} == before
+    for dataset in built:
+        assert dataset.refresh().read_arrow_table().num_rows == 3, "both still read"
 
 
 def test_a_sweep_does_not_delete_another_writers_files(tmp_path: Path) -> None:
