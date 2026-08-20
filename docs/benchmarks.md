@@ -1,112 +1,226 @@
 # Benchmarks
 
-Three harnesses under `python/benchmarks/`, each a plain script with
-`--rows` and `--quick`. Run them before and after touching a hot path —
-that is the rule in `AGENTS.md`, and these tables are what it produced.
+Two benchmarks ship with the package, and every number below came out of them on
+one machine, **measured twice**: what reproduced is stated as a number, what did
+not is called noise.
 
 ```bash
 cd python
-uv run python benchmarks/bench_log_file.py
-uv run python benchmarks/bench_message_parser.py
-uv run python benchmarks/bench_iceberg_upsert.py
+uv run python benchmarks/bench_text_file.py     # parsing a log
+uv run python benchmarks/bench_iceberg.py       # parse, stream into Iceberg, read back
+uv run python benchmarks/bench_cast.py          # casting data onto a shape
 ```
 
-!!! note "What these numbers are, and are not"
-    One timed pass per configuration, no warmup, no repetition, on a 4 vCPU
-    Xeon @ 2.80 GHz / 15 GiB microVM, Python 3.12, pyarrow 25.0.1,
-    pyiceberg 0.11.1, with the `fast` extra (xxhash) installed. Every number
-    below was measured twice; where the two runs disagreed enough to matter,
-    it says so. **Read them as ratios, not as a spec sheet** — the shapes
-    reproduce, the absolute figures move with the machine.
+The Iceberg numbers use a local SQLite catalog and a file warehouse, so they are
+storage-latency-free: they measure planning, commit and Arrow work, which is
+what this package is responsible for. On an object store every commit also pays
+a round trip — which makes the number of commits matter *more*, not less.
 
-## Reading logs — `bench_log_file.py`
+## Parsing
 
-1,000,000 rows, 136.3 MiB plain, 12.5 MiB gzipped.
+400,000 rows, 54.4 MiB of synthetic log, best of three.
 
-| file | batch_rows | read_KiB | seconds | rows/s | MiB/s | peak MiB |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| plain | 16,384 | 64 | 3.02 | 330,783 | 45.1 | 2.7 |
-| plain | 65,536 | 64 | 3.22 | 310,898 | 42.4 | 10.7 |
-| plain | 65,536 | 1,024 | 3.16 | 316,242 | 43.1 | 10.7 |
-| plain | 65,536 | 4,096 | 3.14 | 318,215 | 43.4 | 10.7 |
-| plain | 65,536 | 8,192 | 3.02 | 330,880 | 45.1 | 10.7 |
-| plain | 262,144 | 4,096 | 4.66 | 214,385 | 29.2 | 42.9 |
-| gz | 16,384 | 64 | 3.24 | 308,981 | 42.1 | 3.8 |
-| gz | 65,536 | 64 | 3.33 | 300,682 | 41.0 | 12.0 |
-| gz | 65,536 | 1,024 | 3.50 | 286,054 | 39.0 | 12.0 |
-| gz | 65,536 | 4,096 | 3.28 | 304,791 | 41.5 | 12.0 |
-| gz | 65,536 | 8,192 | 3.26 | 306,669 | 41.8 | 12.0 |
-| gz | 262,144 | 4,096 | 4.57 | 218,897 | 29.8 | 44.8 |
+| case | seconds | rows/s |
+| --- | --- | --- |
+| `read_arrow_table` | 0.99–1.12 | 358k–402k |
+| reader, 16k batches | 0.94–1.10 | 364k–425k |
+| reader, 256k batches | 1.00–1.31 | 306k–399k |
+| with `timezone="Europe/Paris"` | 1.00–1.05 | 380k–399k |
+| no continuation folding | 0.97–1.01 | 396k–412k |
 
-**`batch_rows=262,144` is a real regression, not noise**: 30–45% slower *and*
-four times the memory, in both runs. The 16K and 65K rows are all within a
-few percent of each other and swap places between runs — do not tune on
-that spread. `peak MiB` is deterministic: byte-identical across both runs,
-and the reason the default batch is 65,536 rather than as large as possible.
+Every configuration lands between 306k and 425k rows/s: naming a timezone
+(one `assume_timezone` kernel per batch) and folding wrapped lines both cost
+less than the spread between two runs of the same configuration, and batch size
+does not separate them either. The parser is bound by the per-line regex, not
+by any of these.
 
-Gzip costs a few percent in the five pairings at 16K and 65K batches —
-decompression is cheaper than the parse it feeds. Not in the sixth: at
-262,144 the gz row is *faster* than plain here (218,897 vs 214,385 rows/s),
-and re-running flips that around, so that pairing says nothing. It is the
-same row that is 30% slower than the rest either way. Two caveats on the
-columns: throughput is
-computed against the *plain* size, so the gz rows report logical rows and
-bytes, not the 12.5 MiB actually read off disk; and the file is written and
-re-read on the same box, so these are parse rates with a warm page cache, not
-storage rates.
+What *does* move it, on a million rows, best of three:
 
-## Parsing messages — `bench_message_parser.py`
+| case | rows/s | vs the baseline |
+| --- | --- | --- |
+| a stack trace every 200 lines (the baseline) | 393k | — |
+| no stack traces at all | 393k | none |
+| a trace every other line | 322k | −18% |
+| no continuation folding | 410k | +4% |
+| 64 KiB reads | 375k | −5% |
+| 64 MiB reads | 291k | −26% |
+| **blake2b line hash** (no `xxhash` installed) | 264k | **−33%** |
+| gzip (12.5 MiB instead of 136 MiB) | 379k | −4% |
 
-1,000,000 FIX-shaped messages through `rekep.jobs.parse_fields`.
+Two things to take from that. Folding is cheap until continuations dominate:
+a trace every 200 lines costs nothing measurable, one every other line costs
+18%, because folding is the only per-line work that is not a regex match.
+And the `fast` extra is worth a third of the parser -- `pip install
+"rekep[fast]"` swaps blake2b for xxhash. (The two hashes are not
+interchangeable: `hash64` is stable within an environment, not across
+environments that differ in whether xxhash is installed.)
 
-| batch_rows | fields/row | seconds | rows/s |
-| ---: | ---: | ---: | ---: |
-| 16,384 | 5 | 4.58 | 218,351 |
-| 65,536 | 5 | 4.71 | 212,414 |
-| 65,536 | 10 | 9.06 | 110,347 |
-| 262,144 | 10 | 10.34 | 96,678 |
+Read size has a floor and a ceiling: 64 KiB is syscall-bound, 64 MiB spends
+more time waiting for a whole read than parsing it. The 4 MiB default sits
+where both are flat. Compression is close to free in rows/s -- Arrow decodes in
+its C++ layer while the row loop is the bottleneck -- so a gzipped log parses
+at nearly the same rate from a tenth of the bytes.
 
-The tightest of the three — every figure reproduced within 4%. The
-relationship worth knowing: **cost is linear in fields per row, not in
-rows.** Doubling fields from 5 to 10 halves throughput (212k → 110k, and
-204k → 109k on the second run). `batch_rows` is not a lever here: 16K and
-65K differ by ~3%, inside the noise.
+## Streaming into Iceberg
 
-That linearity is why the parser stays a per-row regex rather than moving to
-`pyarrow.compute`: the work is proportional to the segments in the message,
-which no columnar kernel changes.
+400,000 parsed rows over 8 days, partitioned by day, written from a reader whose
+batches are 16,384 rows.
 
-## Writing Iceberg — `bench_iceberg_upsert.py`
+### How much a commit costs
 
-20,000 rows per round arriving in 500-row batches — the shape a streaming
-transform actually produces — then a second reader that is half overlapping
-keys (updates) and half new ones (inserts).
+| commit rows | seconds | rows/s | files | manifests | snapshots |
+| --- | --- | --- | --- | --- | --- |
+| 16,384 | 1.9–2.7 | 148k–213k | 32 | 7 | 25 |
+| 65,536 | 0.50–0.64 | 623k–797k | 14 | 7 | 7 |
+| 262,144 | 0.23–0.28 | 1.4M–1.7M | 9 | 2 | 2 |
+| 1,000,000 | 0.26–0.32 | 1.3M–1.6M | 8 | 1 | 1 |
+| the whole stream | 0.27–0.51 | 790k–1.5M | 8 | 1 | 1 |
 
-| chunk_rows | append rows/s | merge rows/s | files left |
-| ---: | ---: | ---: | ---: |
-| 500 | 10,259 | 879 | 40 |
-| 5,000 | 95,565 | 7,418 | 4 |
-| 20,000 | 90,114 | 13,286 | 1 |
+Twenty-five commits leave **7** manifests rather than 25, because
+`commit.manifest.min-count-to-merge` is set: Iceberg's own default waits for a
+hundred manifests before merging any, which no stream of this size ever
+reaches.
 
-This is the table behind `chunk_rows`' existence, and it says three things,
-in descending order of confidence:
+A commit is a file, a manifest and a snapshot, and every later scan pays for all
+three — planning is linear in the number of files. That is why
+`commit_row_size` defaults to a million rows rather than to the batch: below
+about 250k rows the commits, not the data, are the work.
 
-1. **`files left` is deterministic** — 40 / 4 / 1 in both runs. It is the
-   cost that keeps being paid after the write returns: every scan of that
-   table opens forty files instead of one. Compaction can repair it
-   afterwards; not creating it is cheaper.
-2. **Merging genuinely rewards larger chunks**, monotonically and within 5%
-   across runs: 879 → 7,418 → 13,286 rows/s. A merge compares against
-   existing data, so a small chunk pays that planning cost again and again.
-3. **`chunk_rows=500` is catastrophic for both**, by roughly 9× on append
-   and 15× on merge, stably.
+!!! note "A commit cannot be smaller than a batch"
 
-What the table does *not* support: any ranking between 5,000 and 20,000 on
-the **append** column. Those two flipped between runs (95,565 / 90,114 then
-86,441 / 116,303) because the timed window is only ~0.2 s there — treat the
-append column as approximate above 5,000.
+    Chunks close at the first batch boundary at or beyond `commit_row_size`, so
+    16,384 above is "one batch per commit". Asking for less changes nothing.
 
-These are the least portable numbers of the three: a local SQLite catalog and
-a file warehouse on real ext4, so every commit is a real `fsync`. A REST
-catalog and object storage add a network round trip per commit and will not
-resemble this at all — the *ratios* are the transferable part.
+### Appending, merging, and what pyiceberg's own upsert costs
+
+| case | commit rows | seconds | rows/s |
+| --- | --- | --- | --- |
+| append | 1,000,000 | 0.26–0.32 | 1.3M–1.6M |
+| merge, every key new | 1,000,000 | 0.28–0.71 | 564k–1.4M |
+| merge, half already stored | 1,000,000 | 0.76–0.89 | 449k–527k |
+| **merge through `Table.upsert`** | one commit | 11.3–11.6 (for **4,000** rows) | **344–354** |
+
+The last row is not a typo and not the same amount of work: pyiceberg's own
+upsert was given a hundredth of the data and still took twenty times longer than
+the full merge above it. Its scan filter carries one equality term per incoming
+row, so the cost grows faster than the chunk:
+
+| chunk rows | 1 join column | 2 join columns |
+| --- | --- | --- |
+| 500 | 6,200 rows/s | 700 rows/s |
+| 1,000 | 9,100 rows/s | 730 rows/s |
+| 2,000 | 7,100 rows/s | 590 rows/s |
+| 4,000 | 10,700 rows/s | 440 rows/s |
+
+Head to head on the same table (4,000-row chunk, 20,000-row table), with
+identical results:
+
+| scenario | planned merge | `Table.upsert` |
+| --- | --- | --- |
+| every key new | 0.09 s | 2.47 s (28×) |
+| every key stored, values unchanged | 0.20 s | 9.83 s (48×) |
+| half new, half unchanged | 0.20 s | 8.12 s (42×) |
+
+Those are the streaming shapes: new data, and replays of data that has not
+changed. A merge where most rows genuinely *change* is a different story —
+about 2× — because the delete half still carries pyiceberg's exact per-row
+filter, which it must: a range there would delete rows the chunk never touched.
+Finding the rows is what got fast; rewriting them costs what it costs.
+
+[How the merge is planned](iceberg.md#how-a-merge-is-planned) explains why. The
+two paths are compared row by row in `tests/iceberg/test_coherence.py`; set
+`plan_merges=False` to use the library's own.
+
+Building that scan filter is itself measured, because it runs once per commit
+and it used to hash the whole key column to decide it could not name the values
+in it. Probing a 201-row slice first answers the same question, on a 400k-row
+chunk:
+
+| merge key | before | after |
+| --- | --- | --- |
+| one high-cardinality integer | 27.0 ms | 0.4 ms |
+| an integer and a string | 69.9 ms | 6.3 ms |
+| one eight-value partition column | 1.3 ms | 1.5 ms |
+
+The last row is the tax: where there really are few distinct values, the probe
+is paid on top of the full pass — and that is the case where naming them one by
+one prunes to exactly the right partitions, so it is worth paying.
+
+### Partitioning and properties
+
+| case | commit rows | rows/s | files |
+| --- | --- | --- | --- |
+| append, partitioned by day | 65,536 | 623k–797k | 14 |
+| append, no partition | 50,000 | 1.01M–1.03M | 7 |
+| append, Iceberg's default properties | 50,000 | 802k–852k | 14 |
+| merge, no partition | 50,000 | 506k | 5 |
+
+Partitioning costs about half the write throughput here, because eight days
+means up to eight files per commit instead of one. It buys the read below.
+
+## Reading it back
+
+400,000 rows in 14 files, best of three. `planned` is how many files the scan
+opened; `skipped` is what the filter saved.
+
+| case | seconds | rows | planned | skipped |
+| --- | --- | --- | --- | --- |
+| everything | 0.082–0.097 | 400,000 | 14 | 0 |
+| `date = '2026-08-14'` (partition) | 0.019–0.022 | 50,000 | 1 | 13 |
+| partition + 3 of 8 columns | 0.015–0.019 | 50,000 | 1 | 13 |
+| 3 of 8 columns, no filter | 0.087–0.094 | 400,000 | 14 | 0 |
+| `unix < …` (correlates with the partition) | 0.039–0.045 | 100,000 | 3 | 11 |
+| `driver = 'ULBridge'` (no useful statistics) | 0.086–0.096 | 100,000 | 14 | **0** |
+| narrow shape, projection from the shape | 0.075–0.080 | 400,000 | 14 | 0 |
+| narrow shape declared with the store's widths | 0.055–0.063 | 400,000 | 14 | 0 |
+
+One more, measured separately because it is a write-side choice: sorting each
+commit on the column a read filters. On a single 600k-row commit, a filter
+matching the top 5% of `unix` values took **214 ms** when the rows arrived
+shuffled and **22 ms** when the commit was sorted (`sort_by=["unix"]`), with
+one file planned in both cases. That is row-group skipping inside the file, and
+it only exists because `write.parquet.row-group-limit` is set: Iceberg's
+default of a million rows per group would make the whole file one group with
+nothing to skip.
+
+Three things worth taking away:
+
+- **A partition filter is worth 13 of 14 files.** A filter on a column that
+  merely *correlates* with the partition still skips 11 — Iceberg prunes on
+  per-file column bounds, not only on partitions.
+- **A filter that cannot prune says nothing about it.** The `driver` filter
+  returns exactly the right rows and reads every file. `scan_plan` is how you
+  see that:
+
+    ```python
+    quotes.scan_plan("driver = 'ULBridge'")["skipped"]   # 0
+    ```
+
+- **Declaring narrower widths than the store costs a conversion per row.**
+  Reading three columns into `string` took 0.075–0.080 s where the same three
+  columns in the store's own `large_string` took 0.055–0.063 s — about 25%, and
+  it reproduced across both runs. Declare the store's widths
+  (`dataset.table_field`) when a read is hot and the shape is only there to
+  select columns.
+
+## Casting
+
+`benchmarks/bench_cast.py`, 200,000 rows per batch, best of seven, against
+pyarrow's own cast on the same data (it asserts the two agree before timing):
+
+| case | rows/s | vs `Array.cast` |
+| --- | --- | --- |
+| batch, already the right shape | — | returned as-is |
+| batch, full reshape | 431k–542k per column-pass | 1.39–1.58× |
+| struct, member added | 8.5B (zero-copy) | 1.07–1.13× |
+| list of structs | 5.9B–6.9B | 0.98–1.16× |
+| map, narrowed value | 1.6B–2.0B | 1.78–2.13× |
+| stream of 16 batches | 287M–310M | — |
+| map → struct | 3.3M | Arrow refuses |
+| struct → map | 17M | Arrow refuses |
+| struct → list | 21M | Arrow refuses |
+| list → large list | 1.2B | 0.83× |
+
+The last four are conversions `Array.cast` will not do at all. `map → struct` is
+the slowest because it is one `map_lookup` pass per member; the rest are
+`take` with computed indices.

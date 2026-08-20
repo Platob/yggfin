@@ -1,5 +1,0 @@
-# rekep.records.doris.DorisNamespace; the file stem defaults `name`.
-catalog: iceberg
-replication_num: "{{ env.get('DORIS_REPLICATION', '1') }}"
-properties:
-  compression: zstd

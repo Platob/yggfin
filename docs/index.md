@@ -1,58 +1,117 @@
-# yggfin / rekep
+# rekep
 
-**rekep** parses trading application logs into [Apache Arrow](https://arrow.apache.org/)
-and treats every data product as a single Python class: its schema, its files,
-its DDL and its lineage all derive from one dataclass declaration.
+Trading logs as Arrow, a declaration that *is* a schema, and Iceberg tables you
+can read and write without learning Iceberg first.
 
-```python
-from rekep.logs import LogFile
+Three ideas, and everything else is built from them:
 
-with LogFile.from_url("s3://bucket/app-2026-08-14.txt.gz") as log:
-    table = log.into_arrow_table()
-```
+<div class="grid cards" markdown>
 
-## One declaration, every projection
+- :material-shape: **[Types](types.md)** — `Field` is one name, one Arrow type
+  and metadata. `@field` turns a class into one, and the same object casts real
+  data onto the shape it declares.
 
-A record is declared once, as a dataclass with one docstring per field:
+- :material-file-document-outline: **[Logs](logs.md)** — `TextFile` parses a
+  trading log into Arrow batches, and writes them back out as lines. It is a
+  dataset, so pushing a log into a table is one call.
 
-```python
-from rekep import Record, record
+- :material-table: **[Iceberg](iceberg.md)** — `IcebergDataset` reads and writes
+  a table through pyiceberg, creates it from your declaration, and keeps it fast
+  (compact, expire, sweep) without a maintenance job of your own.
 
-@record
-class Log(Record):
-    """One parsed line of a trading log."""
+</div>
 
-    url: str
-    """Path of the log the line came from, as its filesystem addresses it."""
+## Install
 
-    unix: int
-    """Timestamp as whole nanoseconds since the epoch, naive UTC."""
-```
+=== "Just Arrow"
 
-Everything else is derived, never hand-written beside it:
+    ```bash
+    pip install rekep
+    ```
 
-| You call | You get |
-| --- | --- |
-| `Log.into_arrow_schema()` | Arrow schema, descriptions as field metadata |
-| `Log.into_iceberg_schema()` | Iceberg schema, fresh field ids, docs carried over |
-| `Log.into_iceberg_ddl()` | `CREATE TABLE ... USING iceberg`, comments included |
-| `Log.into_yaml()` | the declaration itself, reviewable and diffable |
-| `row.into_json()` | one instance's values |
-| `Record.from_arrow_schema(schema)` | a record class built back from an external schema |
+=== "With Iceberg"
 
-## Where things live
+    ```bash
+    pip install "rekep[iceberg]"    # pyiceberg + a local SQLite catalog
+    ```
 
-- **`rekep.records`** — the machinery: `@record`, `Record`, the Arrow, Iceberg
-  and DDL builders.
-- **`rekep.models`** — the concrete records this package reads and writes.
-- **`rekep.logs`** — `LogFile`: lazy, streaming, compression-transparent log
-  access over any `pyarrow.fs` filesystem.
-- **`rekep.namespace`**, **`rekep.job`**, **`rekep.dataset`**, **`rekep.run`** —
-  the OpenLineage resources: `Namespace`, `Job`, `Dataset`, `Run`/`RunEvent`.
-  `Dataset` is both ends of the pipe: reads with filter pushdown, writes that
-  append or merge on the primary key, and the compaction and retention that
-  keep the table readable afterwards.
-- **`rekep.jobs`** — the concrete jobs this package ships (`FilesToLogs`,
-  `LogsToRecords`), mirroring `rekep.models`.
-- **`rekep.airflow`** — one DAG per job, lineage derived from records. It
-  wraps none of Airflow's authoring API: a `Job` is the task.
+=== "Everything"
+
+    ```bash
+    pip install "rekep[all]"        # + yaml, toml writing, faster line hashing
+    ```
+
+## In one screen
+
+=== "Declare"
+
+    ```python
+    import datetime
+    from typing import Annotated
+
+    from rekep import Convertible, Field, field
+
+
+    @field
+    class Quote(Convertible):
+        """One quote."""
+
+        symbol: Annotated[str, Field.primary_key()]
+        """Instrument."""
+
+        day: Annotated[datetime.date, Field.partition_key()]
+        """Trading day."""
+
+        size: int
+        """Quantity."""
+
+        venue: str | None = None
+        """Where it traded, when known."""
+    ```
+
+=== "Project"
+
+    ```python
+    Quote.FIELD.into_arrow_schema()      # symbol: string not null, day: date32 ...
+    Quote.FIELD.into_iceberg_schema()    # ids, docs, identifier fields
+    Quote.FIELD.primary_keys()           # ['symbol']
+    Quote.FIELD.partition_keys()         # {'day': 'identity'}
+    Quote.FIELD.into_json("quote.json")  # the declaration, as a document
+    ```
+
+=== "Cast"
+
+    ```python
+    # A batch that is nearly right: wrong order, a narrow int, a missing column
+    Quote.FIELD.cast_arrow(batch)
+    Quote.FIELD.cast_arrow(table)
+    Quote.FIELD.cast_arrow(batches, merge_schema=True)
+    ```
+
+=== "Store"
+
+    ```python
+    from rekep.iceberg import IcebergDataset
+
+    quotes = IcebergDataset(
+        name="trading.quotes",
+        catalog="local",
+        properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file:///wh"},
+        struct=Quote.FIELD,
+    )
+    quotes.write_arrow(batches, merge_by=True)     # creates the table if absent
+    quotes.read_arrow_table(row_filter="day = '2026-08-14'")
+    quotes.optimize()                              # compact, expire, sweep
+    ```
+
+## What holds it together
+
+Arrow is the hub. A declaration projects onto an Arrow schema; every other view
+— Iceberg, documentation, a rebuilt Python class — comes from that one
+projection rather than a second walk of the type system. Data is cast onto the
+declaration, never the other way round, so a nearly-right batch lands instead of
+failing a schema comparison.
+
+Everything is a stream unless you say otherwise: a log is read batch by batch, a
+write commits once per chunk of rows, and nothing here needs a dataset to fit in
+memory.

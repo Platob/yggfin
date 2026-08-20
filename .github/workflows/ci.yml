@@ -21,14 +21,22 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Sync
         run: uv sync
-      # Airflow is POSIX-only, so only the Linux job can exercise the DAG
-      # tests that Windows skips.
-      - name: Add airflow (linux)
-        if: runner.os == 'Linux'
-        run: uv sync --extra airflow
       - name: Lint
         run: uv run ruff check .
       - name: Format
         run: uv run ruff format --check .
       - name: Test
         run: uv run pytest -q
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Sync
+        run: uv sync --group docs
+      # --strict: a broken link or a page nobody navigates to fails the build
+      # rather than shipping. mkdocs.yml is at the repo root, the project is not.
+      - name: Build
+        run: uv run --project python mkdocs build --strict
+        working-directory: .

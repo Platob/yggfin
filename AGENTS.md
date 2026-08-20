@@ -8,55 +8,66 @@ do the same thing.
 Behaviour lives on the class that owns the data: `log.into_arrow_table()`,
 never `read_log_as_table(log)`. Justified free functions stay private
 (`_utf8`) and sit below the classes they serve. Shared behaviour is a mixin
-(`Convertible`, `Record`), not a copy.
+(`Convertible`), not a copy.
 
 ## 2. `from_*` builds, `into_*` converts
 
 - `from_<thing>`: classmethod, builds an instance (`LogFile.from_path`).
-- `into_<thing>`: instance method, converts or emits (`Record.into_json`).
-- Never a `format=` argument; never a module-level factory beside a class —
+- `into_<thing>`: instance method, converts or emits (`Field.into_json`).
+- Never a `format=` argument; never a module-level factory beside a class --
   `LogFile.from_path(...)` is the whole API.
 
 ## 3. `from_` and `into_` infer and redirect
 
 The generic forms dispatch through the class's `REDIRECTS` mapping (keyed by
-file extension or type): `venue.into_("v.json")` → `into_json`,
-`log.into_(pyarrow.Table)` → `into_arrow_table`. A **type** argument is the
+file extension or by type): `book.into_("b.json")` -> `into_json`,
+`log.into_(pyarrow.Table)` -> `into_arrow_table`. A **type** argument is the
 requested result (consumed); a **value** is a source/destination (passed
 through). Never re-implement the inference at a call site.
 
-## 4. Data products are records
+## 4. A declaration is a schema
 
-One `@record class X(Record)` is the whole product: schema, files, DDL,
-tables, lineage. Rules:
+`@field` turns a class into one `StructField`, reachable as `FIELD`: a name, an
+Arrow struct type, and metadata. Rules:
 
-- `__`-prefixed annotations are working state, never fields or columns.
-- Nullability is declared: `str` is NOT NULL, `str | None` is nullable —
-  through Arrow, Iceberg and DDL alike. Item nullability survives:
-  `list[str | None]`.
-- **A field doc is the string literal under the field, one line** — it lands
-  as the column comment everywhere (recovered from source via `ast`, like
-  Sphinx). Rationale goes in a `#` comment above the field. Never an
-  `Attributes:` block; never restate a description in metadata.
-- Overrides ride on `Annotated[..., Arrow(...)]`: exact type, metadata,
-  `partition=True|"day"|"bucket[16]"`, `key=True` (primary key; nullable
-  keys are refused). Bare `DataType`/`Mapping`/`str` are shorthands.
-- Refuse rather than guess: recursive records, non-optional unions, unknown
-  leaves all raise naming the field and the way out.
-- Projections are `functools.cache`d per class (immutable outputs); derive
-  the second projection from the first — Iceberg is built from the Arrow
-  schema, never a second walk of the hints.
-- Extend `ArrowFieldBuilder.SCALARS` in a subclass and wire it with
-  `ARROW_BUILDER`; same for `ICEBERG_BUILDER`, `DDL_BUILDER`.
-- Serialisers are dual: instance dumps values, class dumps the declaration
-  (`dualmethod`). `into_*` with no destination returns bytes. `from_*`
-  accepts files, paths, URIs, or raw bytes.
-- Reverse projection: `Record.from_arrow_schema(schema)` builds a lossless
-  record class, identity included (schema metadata carries `name` and
-  `namespace`).
-- A format nobody needs is an extra (`yaml`, `toml`, `jinja`, `fast`,
-  `local`, `airflow`); import optional deps at the point of use via
-  `require`, never at module top.
+- `__`-prefixed annotations are working state, never members or columns.
+- Nullability is declared: `str` is NOT NULL, `str | None` is nullable. Item
+  nullability survives: `list[str | None]`.
+- **A field doc is the string literal under the member, one line** -- it lands
+  as the column comment (recovered from source via `ast`, like Sphinx).
+  Rationale goes in a `#` comment above the member. Never an `Attributes:`
+  block; never restate a description in metadata.
+- Declarations ride on `Annotated[..., Field(...)]`: exact `arrow_type`,
+  `metadata`, `nullable`, plus `Field.primary_key()` and
+  `Field.partition_key(transform)`. A bare `DataType`/`Mapping`/`str` is a
+  shorthand for the type, the metadata or the description.
+- **The type picks the class.** `Field(...)` returns `StructField`, `MapField`
+  or one of the list flavours (`ListField`, `LargeListField`, `ListViewField`,
+  `LargeListViewField`, `FixedSizeListField`) through `__new__` -- so `fields`,
+  `item`, `key`/`value` and the recursive casts live on the class that has
+  them, never behind a kind check at a call site. Every builder here goes
+  through `Field(...)`, so none of them repeats the rule. A new Arrow kind is a
+  new subclass plus one row in `_KINDS`.
+- A member reached through a container is a **view** of it: setting
+  `is_primary_key`, `is_partition_key` or `description` on it rebuilds the
+  struct, list or map it came from, to the root. Derived views (the Arrow
+  schema, the member list) are cached and dropped whenever the declaration
+  changes.
+- Protocol properties live in metadata under a prefixed key
+  (`iceberg:primary_key`); unprefixed keys are ours. A nullable primary key is
+  refused, at the declaration and at the setter.
+- Refuse rather than guess: recursive classes, non-optional unions and unknown
+  leaves all raise, naming the member and the way out.
+- The projection is built once per class, lazily, by a descriptor -- and a
+  subclass builds its own.
+- Extend `FieldBuilder.SCALARS` in a subclass and wire it with
+  `FIELD_BUILDER`.
+- Reverse projection: `Field.from_arrow_schema(schema).into_dataclass()`
+  builds a lossless class, identity included (schema metadata carries `name`
+  and `namespace`). Same for Iceberg, both ways
+  (`into_iceberg_schema`/`from_iceberg_schema`).
+- A format nobody needs is an extra (`yaml`, `toml`, `fast`, `iceberg`);
+  import optional deps at the point of use via `require`, never at module top.
 
 ## 5. Dataclasses hold state, `__post_init__` normalises it
 
@@ -67,224 +78,264 @@ handle-like dataclasses.
 ## 6. Lazy by `cached_property`, and teardown never triggers it
 
 Expensive resources are `cached_property`; `close()`/`__del__`/`__repr__`
-must pop `self.__dict__`, never read the property — or disposal opens a
+must pop `self.__dict__`, never read the property -- or disposal opens a
 remote file. This rules out `frozen=True`/`slots=True` on such classes.
 
 ## 7. Arrow is the hub: metadata and processing
 
 - The Arrow schema is the one authority on what data *is*; every other view
-  (Iceberg, DDL, lineage, docs) derives from it.
-- Builders stamp default schema metadata (`name`, `namespace`,
-  `description`) and Iceberg-order field ids under `PARQUET:field_id` —
-  column identity is by id, not name.
-- Field metadata keys for a downstream protocol are prefixed
-  (`iceberg:partition_key`); unprefixed keys are ours. Product dumps group them
-  under protocol blocks (`iceberg: {field_id: 1, partition_key: day}`).
+  derives from it.
+- A schema carries `name`, `namespace` and `description` metadata, so it still
+  says which class it came from wherever it travels -- and
+  `Field.from_arrow_schema` reads that identity back.
 - Hot paths hand columns to `pyarrow.compute`, never loop in Python; per-row
   work is a regex match, an append, a hash. Benchmark (`python/benchmarks/`)
   before and after touching a hot path.
-- Transforms are batch streams: `Job.arrow_transform` takes and yields
-  `RecordBatch` iterators.
-- A record is also a **target** shape: `cast_arrow_batch`/`cast_arrow_reader`
-  (unsafe by default) cast columns, fill missing *nullable* ones, drop extras
-  and reorder, so a nearly-right batch writes. A missing NOT NULL column is
-  refused by name -- filling it would only fail later, at the write.
-- **A batch is not a unit of work downstream.** Iceberg commits a snapshot
-  and lands a file per call, so writes accumulate `chunk_rows` first;
-  `iceberg_compact` repairs what accumulates across runs instead.
+- A field is also a **target** shape: `cast_arrow_array`, `cast_arrow_batch`,
+  `cast_arrow_table` and `cast_arrow_reader` (unsafe by default) cast columns,
+  fill missing *nullable* ones, drop extras and reorder, so a nearly-right
+  batch writes. A missing NOT NULL column is refused by its path
+  (`venue.mic`) -- filling it would only fail later, at the write.
+- The cast **recurses**: a struct casts member by member, a list its item, a
+  map both halves, so a nested member that is missing, narrowed or in another
+  order is handled where it is declared. `merge_schema=True` keeps what the
+  data has and the field does not, the field's own types still winning.
+- The recursion is also what converts *between* kinds -- map to struct
+  (`map_lookup` per member), struct to map or list (a transpose), map to a list
+  of entries, any list flavour to any other. Arrow refuses most of those
+  outright, which is why they exist here.
+- **Never a Python row loop in a cast.** Every shape change is
+  `pyarrow.compute` kernels and array builders (`fields/arrays.py`); the index
+  arithmetic an interleave needs is built from `repeat` + `cumulative_sum`,
+  never from `range`. A comprehension over columns is fine; one over rows is
+  the bug.
+- Where Arrow can do a step, let it: a list flavour change is one `cast` over
+  the layout after the item is cast here, and a same-kind cast re-wraps the
+  array's own offsets instead of flattening. Both were measured
+  (`benchmarks/bench_cast.py`): the walk runs at 0.8-2.1x of `Array.cast`
+  where Arrow can do the same job -- faster on everything but a plain flavour
+  change, which is where Arrow's own kernel is one memcpy -- and
+  `RecordBatch.cast` cannot reorder columns at all. Quote the slow row too:
+  rounding it away is how a claim stops matching the benchmark under it.
+- Generic redirects infer from what they are handed: `cast_arrow` picks
+  array/batch/table/reader, `Dataset.write_arrow` picks batch/table/reader,
+  `read_arrow` picks by the type asked for. `Convertible.redirect_of(value,
+  mapping)` is the one lookup; a second family of methods passes its own
+  mapping rather than reimplementing it.
 
 ## 8. Let the library own what it already knows
 
-Delegate to Arrow (codec detection, URI resolution, decompression) and to
-pyiceberg (schema conversion, evolution) — but probe real behaviour before
-designing around an assumption; several APIs surprise.
+Delegate to Arrow (codec detection, URI resolution, decompression, every
+shape-changing kernel) and to pyiceberg (type conversion, id assignment, scan
+planning, snapshots, upserts, schema evolution) -- but probe real behaviour
+before designing around an assumption; several APIs surprise. The Iceberg
+projection is pyiceberg's own conversion plus the identity Arrow cannot carry
+(ids, docs, identifier fields, transforms), never a second walk of the type
+system.
 
-## 9. Stream; never materialise
+**The Iceberg module's own rules.** Every verb takes `branch`, and every read
+takes `snapshot_id`, so a job works on a branch without a second dataset
+object. Field ids are checked, not demanded: a schema that carries them keeps
+them, one that does not is numbered fresh, because a user handing over a plain
+Arrow schema should not have to know the protocol. FileIO defaults to
+`PyArrowFileIO` so the store is read, written, listed and swept through the
+same `pyarrow.fs` handles as everything else. Maintenance is autonomous and
+honest: `compact` plans per partition when the transforms are identities and
+rewrites nothing it cannot address, `cleanup` expires *and* sweeps what expiry
+stranded (pyiceberg's expiry is metadata-only) while never touching a file a
+live snapshot references or one younger than `orphan_age`, `add_fields` adds
+what is missing and commits nothing when there is nothing to add, and
+`optimize` is the three in the order that makes them cheap. Every one of them
+reports what it did.
+
+Ten things that were learned the expensive way, all of them measured:
+
+- **A maintenance verb must settle.** `compact` marks its own snapshots and
+  skips a part nothing has landed in since; without that it replans forever,
+  because pyiceberg sizes output files from *in-memory* bytes and a part that
+  legitimately needs ten files still reports ten afterwards. A version of this
+  that counted files quadrupled a table in three runs.
+- **Never assume a library default is doing something.**
+  `commit.manifest-merge.enabled` is inert until `min-count-to-merge` (default
+  100) is lowered; `write.target-file-size-bytes` cannot fill a file across
+  commits; `limit=` is not pushed down at all. Read the source, then measure.
+- **Rows returned say nothing about files read.** A filter Iceberg cannot use
+  returns the right answer and reads the whole table, so pruning is asserted on
+  planned files (`scan_plan`), never on results.
+- **A merge's scan filter is a *superset*.** Anything implied by "equal on
+  every key column" is safe and cheap -- key values under
+  `IN_PREDICATE_LIMIT`, ranges past it -- but the rows it brings back must be
+  narrowed to the keys the chunk actually references before anything looks at
+  them. The filter that decides what is *deleted* stays exact; ranges may only
+  narrow it.
+- **A feature is advertised only once something wrote through it.** Every
+  partition transform but `identity` is computed by Iceberg's Rust core, so a
+  `day` or `bucket[16]` partition our docstrings had shown since day one raised
+  `NotInstalledError` on the first write. Building the spec was tested;
+  *writing* one was not. The extra now pulls the core in, and a merge through a
+  transformed partition is compared with pyiceberg's own upsert.
+- **Find every branch first, then test the guard on each.** The NaN key was
+  refused below the 200-literal ceiling and silently duplicated above it,
+  because `min_max` skips NaN where `In` refuses it. Crossing that one ceiling
+  then found a *second* boundary nobody had named: an `In` of one literal
+  collapses to `EqualTo`, which compares numerically and matches `-0.0`, while
+  an `In` of two or more becomes `pc.is_in`, which hashes it apart -- so a
+  stored `-0.0` was updated and never deleted, at two keys and not at one.
+  A guard is only as wide as the branch it is on, and the branches are not
+  always the ones the constant names.
+- **A guard is only as wide as the branch it is on.** A merge key that is
+  null was refused; one that is NaN was refused *only* under the 200-literal
+  ceiling, because the other branch of the same filter builds a range and
+  `min_max` skips NaN -- so past the ceiling the stored row fell outside the
+  scan and was inserted again, and again on every later merge. Any test of a
+  guard on a filter with two branches has to cross the boundary between them.
+  The same reading found a chunk missing an *optional* column passing Iceberg's
+  own schema check and then writing nulls over what was stored, and a scan
+  pinned to a ref reading under that snapshot's schema, so a renamed column
+  compared against nulls until field ids were used to recover the name.
+- **A path is not a string.** The live set for the sweep was built by
+  stripping `://` off recorded URIs while the listing resolved its paths
+  through `pyarrow.fs`. They agree on `file:///x` and `s3://b/x` and on
+  nothing else -- `file:/x`, `abfss://c@acct.dfs.../x`, `hdfs://host:8020/x`,
+  a Windows drive letter -- so every live file looked orphaned and `cleanup`
+  deleted the table. Two paths are only comparable through the same resolver;
+  reduce both to what follows a directory that was resolved once.
+- **Ask Iceberg where things are.** `write.data.path` moves the data,
+  `list_namespaces` returns one level, and a scan pinned to a ref projects
+  under that snapshot's schema. Each of those was assumed instead, and each
+  assumption was a silent skip: a sweep that swept nothing, a maintenance loop
+  that never saw a nested namespace, a read that filled a renamed column with
+  nulls.
+- **Our own commits update the table object in place.** `refresh()` is for
+  seeing *other* writers, and calling it per chunk is a catalog round trip per
+  commit -- free on SQLite, a network hop on REST or Glue.
+
+## 9. A dataset is a stream in and a stream out
+
+`Dataset` is three methods -- `into_struct_field`, `read_arrow_reader`,
+`write_arrow_reader` -- and everything else is built from them. Rules:
+
+- A dataset is the one thing here bigger than memory, so nothing in the
+  interface may need all of it: `read_arrow_table`/`write_arrow_table` are for
+  when the caller says it fits.
+- **Writes append, and appending to nothing creates.** `create_with_field` is
+  the one place a dataset is built; `create_with` infers the shape from a
+  field, an Arrow schema/field/type or a `@field` class, and `get_or_create` is
+  what a write calls first. Creating what exists is never an error.
+- `schema=` on a read or a write is what to cast onto; None means this
+  dataset's own shape, and on a read it means "hand over the store's own
+  reader", widths included -- a conversion nobody asked for is paid per row.
+- `merge_by` is one argument: True is the declared primary key, a list is
+  those columns, falsy appends.
+- **A batch is not a unit of work downstream.** A store that commits per call
+  accumulates `commit_row_size` rows first (`dataset.arrow_chunks`).
+- Push filters, columns and limits down to the engine that holds the
+  statistics; never read rows to throw them away here.
+
+## 10. Stream; never materialise
 
 Anything scaling with input is an iterator; memory is bounded by a
 batch/byte parameter. Hot paths work in `bytes`; Arrow does one bulk UTF-8
 cast per batch. Size parameters name unit and dimension: `batch_row_size`,
 `read_byte_size`.
 
-## 10. Comments say why
+## 11. Optimise what was measured, and keep the measurement
+
+A benchmark lives in `python/benchmarks/`, sweeps the configurations that
+matter *including the ones expected to be bad*, and reports what the next
+reader pays for -- files, manifests and snapshots -- beside the seconds. Verify
+the result before timing it: a benchmark that measures the wrong answer
+measures nothing. Where a faster path replaces a library's own, the
+replacement is compared against it row by row in the tests
+(`tests/iceberg/test_coherence.py`), and a flag switches back to the library.
+Numbers quoted in docstrings or docs are measured twice; a single run is noise.
+
+Measure warm, and in isolation. An Acero join costs its own initialisation on
+the first call in a process, so a sequence of timed stages charges the whole of
+it to whichever stage ran first: one reordering looked 5x faster that way and
+was worth 1.7 ms once both sides were warmed and run best-of-five. A profile
+made of single calls, in order, is a story about warm-up.
+
+## 12. Comments say why
 
 Docstrings and comments carry the constraint, trade-off, or failure that
-motivated the code — never a restated signature.
+motivated the code -- never a restated signature.
 
-## 11. Tests derive expectations, then pin them
+## 13. Tests derive expectations, then pin them
 
 Derive from the fixture, then assert the derived count against a literal so
 a broken regex cannot move both sides together. Cover lifecycle (laziness,
 double-close, use-after-close) and the sweeps that must not change results.
-Shipped artifacts are drift-tested: product dumps and table side files fail
-CI when they lag the record.
 
-## 12. Module layout
+**A test that cannot fail is worse than no test**, because it is counted. An
+adversarial pass over this package found four of them, each sitting on a live
+defect: a batching sweep that compared `sum` and `max` of row counts, which
+dropping a continuation never changes; a "custom pattern" built by a `replace`
+that matched nothing, so it ran the default pattern against the default
+fixture; a compaction suite that only ever used the partitioned fixture, so
+every verb raised on an unpartitioned table untested; and a NaN guard tested
+with a one-row chunk, which only reaches one of the two branches it guards.
+When a test passes the first time you write it, break the code and watch it
+fail.
+
+Three shapes worth reaching for, all of which found real defects here:
+
+- **Compare against the reference, not against yourself.** pyiceberg for
+  anything Iceberg, `Array.cast` for anything cast-shaped, parse -> render ->
+  parse for anything that claims a round trip. Where the reference is *wrong*
+  -- Arrow's view-to-list cast reads offsets and ignores sizes -- say so in the
+  test and compare against the source's own values.
+- **Cross every boundary the code branches on.** The 200-literal `In` limit,
+  the batch size, the width a slicing path assumes, zero rows, one row.
+- **Assert what a later reader pays for**, not only what came back: planned
+  files, snapshot summaries, catalog round trips, the files a sweep left.
+
+## 14. Module layout
 
 ```text
 rekep/
-├── convert.py     Convertible: generic from_/into_ dispatch
+├── annotations.py what a declaration says: type hints, and the docstrings
+│                  (class summary, Google/Sphinx sections, and the literal
+│                  under a member) that become descriptions
+├── convert.py     Convertible: generic from_/into_ dispatch, and the
+│                  serialisation it dispatches to -- any dataclass to and
+│                  from dict/JSON/YAML/TOML, nested classes included, over
+│                  files, paths, URIs or raw bytes
 ├── require.py     optional deps at the point of use
-├── imports.py     dotted-path resolution
-├── render.py      Jinja + env + git context
 ├── filesystems.py FileSystem.from_uri, cached per URL
-├── namespace.py   Namespace (recursive parent levels building a path) and
-│                  ResourceUri: the one parser and formatter for every
-│                  identity here -- a service, a `/`-separated path and an
-│                  optional branch fragment: `ds:/catalog/namespace/name#dev`,
-│                  `job:/namespace/name`, generically
-│                  `rekep:/<service>/<path>` with the service as the first
-│                  path part. Paths, not dots: a dot cannot say whether
-│                  `a.b.c` is three levels or one name
-├── job.py         Job: the OpenLineage resource for a process -- config
-│                  record + arrow_transform (not enforced abstract, bindable
-│                  via @arrow_task); repo_url/script_path -> the
-│                  sourceCodeLocation facet, airflow{dag,task}/env/properties
-│                  dicts; side files under stacks/jobs, run_tracked()
-│                  lineage-wraps extract -> transform -> load, Job -> Airflow
-│                  via into_airflow
-├── config.py      folder(service, root): the checkout's stacks/<service> if
-│                  it has one, else ~/.config/rekep/<service>; REGISTRY, one
-│                  process-wide dict of loaded resources keyed by URI
-├── dataset.py     Dataset: the OpenLineage resource for a data product --
-│                  `schema:` (a dotted Record path; arrow_schema() is the
-│                  Arrow view) + `uri:` (identity as one path) +
-│                  cross-platform location (shared
-│                  `properties`/`direct`, per-protocol `protocols`);
-│                  read_arrow_reader/write_arrow_reader dispatch to
-│                  `_{format}_..._arrow_reader`, which lineage-tracks a call
-│                  to the public `{format}_..._arrow_reader` hook -- pyiceberg's
-│                  own API, not reimplemented: iceberg_read (row_filter/columns
-│                  pushed to the scan planner, use_ref/snapshot_id),
-│                  iceberg_write (one `merge_by`: True=primary key, list=those
-│                  columns, falsy=append; `merge_schema` adds the columns the
-│                  stream has and the table lacks via union_by_name -- ids
-│                  always taken back from the table, and a stale ref moved
-│                  forward first, since a scan projects its snapshot's schema
-│                  rather than the table's; `overwrite`; branch-aware;
-│                  chunk_rows per commit),
-│                  compact/cleanup/optimize dispatch by protocol like I/O
-│                  does: iceberg_compact rewrites fragmented partitions
-│                  (write.target-file-size-bytes decides the output size,
-│                  not us), iceberg_cleanup sets the metadata-retention
-│                  properties, expires snapshots and then **deletes the
-│                  files that expiry stranded** -- pyiceberg's expire is
-│                  metadata-only, so it produces garbage rather than
-│                  removing it -- and iceberg_optimize turns manifest
-│                  merging on, compacts, then cleans, in that order;
-│                  iceberg_publish fast-forwards main onto a branch;
-│                  a merge prunes each chunk against the min/max Iceberg
-│                  already records, appending instead when nothing can match;
-│                  file_read/write via rekep.filesystems, hive-partitioned from
-│                  the record's own Arrow(partition=...)
-├── run.py         Run/RunEvent: OpenLineage's own event shape -- the shapes
-│                  only; who is told is lineage.py's business
-├── lineage.py     LineageClient (anything with emit), Collector (a client
-│                  that keeps them), Lineage (one run's START ->
-│                  COMPLETE/FAIL boundary). **Opt in**: `with_lineage(client)`
-│                  binds a runtime handle, never a field; with none bound no
-│                  run is built at all -- reads are handed back the
-│                  protocol's own reader rather than a counting wrapper
-├── cli.py         one service class per capability, each registering its own
-│                  top-level subparser (`rekep <svc> <cmd>`)
-├── tutorial.py    the guided rich tour (`rekep tutorial`)
-├── install/       installers: check, plan, converge
-├── records/       machinery: record.py, annotations.py, arrow.py,
-│                  iceberg.py (+deployment), doris.py (+deployment),
-│                  ddl.py, registry.py (folder registries)
-├── models/        the concrete records (one module per model): log.py,
-│                  parsed_message.py (pipe key=value + FIX protocol tag)
-├── jobs/          the concrete jobs (one module per job), mirroring
-│                  models/: files_to_logs.py, logs_to_records.py (regex
-│                  key=value parser, rekep.jobs.parse_fields)
-├── logs/          LogFile: streaming Arrow-native log access
-├── iceberg/       Iceberg stack: Catalogs/Namespaces/Tables CRUD (pyiceberg)
-├── doris/         Doris stack: same resources, SQL plan + pluggable executor
-└── airflow/       one DAG per Job, record lineage derived (POSIX-only).
-                   **Wraps none of Airflow's authoring API** -- no @dag, no
-                   @task, no DAG subclass: a Job already declares what a task
-                   needs, Job.into_airflow() hands it to Airflow's own
-                   decorators via sdk.py, and airflow{dag,task} passes
-                   anything else through. lineage.py derives what Airflow
-                   cannot (tags, docs, inlets/outlets); service.py: Dags
-                   resource deploying generated DAG modules (renders
-                   strings, never imports Airflow)
+├── fields/        a dataclass is its own Arrow schema:
+│                  field.py (Field, its container subclasses, the `field`
+│                  decorator, every cast), arrays.py (the kernel-only array
+│                  builders those casts are made of), builder.py (FieldBuilder:
+│                  type hints -> fields), classes.py (ClassBuilder: the reverse
+│                  projection), arrow.py (merge_fields/merge_schemas)
+├── dataset.py     Dataset: the abstract read/write/create ends of a stored
+│                  product, and arrow_chunks, the commit-sized grouping every
+│                  store that commits per call needs
+├── iceberg/       fields.py (the Field <-> pyiceberg projection: ids, docs,
+│                  identifier fields, partition transforms), catalog.py
+│                  (IcebergCatalog/IcebergNamespace: CRUD around the tables)
+│                  and dataset.py (IcebergDataset: scan pushdown out, cast +
+│                  append/upsert in, one commit per chunk, and the
+│                  maintenance -- add_fields, compact, cleanup, optimize)
+└── logs/          log.py (the Log shape) and text_file.py (TextFile: a log
+                   read into Arrow batches and written back out as lines,
+                   itself a Dataset)
 ```
 
-Dependencies point one way: services → models → records → convert; among the
-root OpenLineage resources, `namespace.py` -> `job.py` -> `run.py` ->
-`dataset.py`, never back. A new model is a new module in `models/`. `tests/`
-mirrors `src/` folder for folder.
+Dependencies point one way: `logs`/`iceberg` -> `dataset` -> `fields` ->
+`convert` -> `annotations`. The one loop back is deliberate and lazy: a
+`Field`'s `into_iceberg_*` imports `rekep.iceberg.fields` at the point of use,
+so the API stays on the class that owns the data without `fields/` depending
+on an extra. `tests/` mirrors `src/` folder for folder.
 
-**Records are the schema helper.** `Record` (`records/record.py`) carries no
-resource identity of its own -- it is the dataclass-is-its-own-schema
-machinery every data-carrying model and every OpenLineage resource's `record:`
-field project through (`Dataset.schema_facet()`, `IcebergTable`/`DorisTable`'s
-own `record:`). The resources are `Namespace`, `Job`, `Dataset`, `Run`/`RunEvent`.
+**Documentation is a site, not a README.** `docs/` is mkdocs-material at the
+repo root: Types first (the field and its kinds), then Logs, then Iceberg, with
+content tabs carrying the examples so a page reads as one narrative instead of
+a wall of code. It builds `--strict` in CI, so a broken link fails there rather
+than shipping. The README is a landing page that points at it.
 
-**Deploy artifacts** live under repo `stacks/`, all tracked — only runtime
-state is ignored (`stacks/iceberg/catalog.db`, `stacks/iceberg/warehouse/`,
-generated `stacks/ddl/`), and the tutorial builds in gitignored `tutorial/`.
-The layout: `jobs/` (one job per file), `iceberg/` and `doris/` (folder
-registries: `catalogs/`, `namespaces/` only, file stem defaults `name`),
-`datasets/` (one `Dataset` per file -- `schema:`/`uri:`, deployed
-autonomously into whichever `--target` names, no `tables/` folder anywhere
-and no protocol-adapted fields committed to disk), `product/`
-(whole definitions as YAML, `name` only — no namespace). Generated DDL is
-never committed (`stacks/ddl/` gitignored). Defaults are **fully local**:
-SQLite Iceberg catalog, file warehouse — a laptop runs without services. No
-READMEs in `stacks/`.
-
-**Branch-conditional naming is a per-file choice, not a mode.** Every side
-file already renders through `rekep.render.render` -- `git_context()`'s
-`git_branch_suffix`/`git_branch_slug` are always in scope, Jinja or not --
-so a file picks whether it uses them at all: `stacks/jobs/logs_to_records.yaml`
-and `stacks/datasets/parsed_messages.yaml` (an Iceberg `branch`) pick up the
-branch because they are working/iterating assets, `files_to_logs.yaml` and
-`log.yaml` stay stable because they are the shared, canonical ones. Nothing
-new to wire in for a file to make either choice.
-
-**Stacks are resource services with idempotent verbs**: `get_or_create`,
-`create_or_update`, `deploy` / `deploy_folder` / `deploy_one` — dependency
-order catalog → namespace → table, parallel within a level, every action
-logged ("created", "exists, nothing to do", "would add columns [x]"). Every
-mutating verb takes `dry_run`. Installers (`rekep install`) follow
-the same contract: honest `installed()` check, exact `plan()`, converge.
-Never call pyiceberg raw at a call site — extend the resource service.
-
-`rekep records deploy --pyclass <dotted> --target iceberg|doris`
-converges one bare record, stack defaults filling in namespace and
-properties. `rekep dataset deploy --target iceberg|doris` converges
-every `Dataset` under `stacks/datasets/` instead -- each carries its own
-namespace and per-protocol properties, autonomous of any table side file.
-`rekep dataset optimize` compacts and reclaims on those same tables,
-taking no policy arguments: `protocols.iceberg.compact_min_files`/`retain`
-in the side file are the policy. The `protocols.<protocol>` keys that *route*
-a write rather than describe the table (`location`, `branch`, `merge_by`,
-`merge_schema`, `compact_min_files`, `retain`) are filtered out of
-`table_properties()`, so they never land on disk pretending to describe the
-data.
-
-**The CLI is services** (`rekep <svc> <cmd>` -- the service *is* the command
-word, with no grouping noun in front of it: each service class registers its
-own subparser straight on the top level), plus `rekep install` and
-`rekep tutorial`. **Human-facing CLI output is modern and animated**: rich
-panels, spinners and progress (rich is a core dependency; construct
-`Console(legacy_windows=False)` and reconfigure stdout to UTF-8) — while
-machine-facing output (plans, dumps, paths) stays plain text on stdout.
-String options may be Jinja, rendered with args + `env` + git context
-(`git_branch_suffix`/`git_branch_prefix` carry their own `_`, empty on
-trunk). Undefined template variables raise.
-
-**Documentation is generated where it can be**: `docs/models.md` comes from
-`rekep docs models`; new code-describing docs should be a
-`DocsService` projection, not prose that drifts. Benchmark tables live in
-`docs/benchmarks.md` and are measured twice before being published -- say
-what reproduced and what is noise, never a single run as if it were a spec. mkdocs-material at the repo
-root, built `--strict`; the tutorial lives at `docs/use-cases/tutorial.md`
-and as the CLI tour.
-
-## 13. Typing and file structure
+## 15. Typing and file structure
 
 `from __future__ import annotations` everywhere; full annotations on public
 methods; `ClassVar` for registries; classes first, private helpers last,
@@ -300,7 +351,13 @@ uv run ruff check
 uv run ruff format
 ```
 
-CI (`.github/workflows/ci.yml`) runs Linux + Windows (Airflow only on
-Linux); docs deploy from `docs.yml`; stack deploys from `deploy.yml`
-(dispatch inputs for stack and dry-run, logs uploaded as artifacts). A bare
-`pip install rekep` is Arrow + Iceberg; `rekep[all]` adds everything.
+```text
+uv sync --group docs
+uv run --project python mkdocs build --strict   # from the repo root
+```
+
+CI (`.github/workflows/ci.yml`) runs Linux + Windows, plus a docs build. A bare
+`pip install rekep` is Arrow only; `rekep[all]` adds the format extras and
+Iceberg. Benchmarks live in `python/benchmarks/` and are measured twice before
+being quoted -- say what reproduced and what is noise, never a single run as
+if it were a spec.
