@@ -26,7 +26,7 @@ from rekep.logs.log import Log
 #: payload to `message`::
 #:
 #:     2026-08-14 00:05:01.167_520 [77-e72:9ef:72503] [ModuleFoo] (DEBUG) Found code
-#:     ^timestamp                  ^thread_name       ^driver     ^level  ^message
+#:     ^timestamp                  ^thread_name       ^driver_name ^level ^message
 #:
 #: `level` is optional -- some drivers print none -- and the fractional second
 #: carries millis and micros separated by an underscore. Matching is done on
@@ -36,7 +36,7 @@ HEADER_PATTERN = re.compile(
     rb"^[ \t]*"
     rb"(?P<timestamp>\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[.,]\d{3}[._,]\d{3})[ \t]+"
     rb"\[(?P<thread_name>[^\]]*)\][ \t]+"
-    rb"\[(?P<driver>[^\]]*)\][ \t]*"
+    rb"\[(?P<driver_name>[^\]]*)\][ \t]*"
     rb"(?:\((?P<level>[A-Za-z]{1,12})\)[ \t]*)?"
     rb"(?P<message>.*)$",
     re.DOTALL,
@@ -110,8 +110,14 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     #: Columns one written line is made of. The rest of `ROW` is derived when
     #: the line is read back -- the day and the hash are functions of the line,
-    #: and the url is the file -- so a write must not demand them.
-    RENDERED: ClassVar[tuple[str, ...]] = ("unix", "thread_name", "driver", "message")
+    #: the url is the file, the categories are placeholders -- so a write must
+    #: not demand them.
+    RENDERED: ClassVar[tuple[str, ...]] = (
+        "recorded_at_unix",
+        "thread_name",
+        "driver_name",
+        "message",
+    )
 
     #: Shape reads and writes land on. None is `ROW`'s own -- what the parser
     #: fills -- and anything else is cast onto on the way out and in.
@@ -119,8 +125,15 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     #: IANA zone the wall clock in the header belongs to (`Europe/Paris`).
     #: None keeps the historical reading: the clock *is* UTC. Naming the real
-    #: zone is what makes `unix` a true instant -- see `_unix_nanos`.
+    #: zone is what makes `recorded_at_unix` a true instant -- see
+    #: `_unix_nanos`.
     timezone: str | None = None
+
+    #: Name of the ULBridge instance the log came from -- the static column
+    #: every parsed row repeats, the way `url` is. Empty when the capture
+    #: does not say; naming it is the caller's job, because the file itself
+    #: never does.
+    ulbridge_name: str = ""
 
     def __post_init__(self) -> None:
         """Resolve the filesystem, and rewrite `url` as a path on it."""
@@ -136,9 +149,10 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
+        ulbridge_name: str = "",
     ) -> TextFile:
         """Build from a URI, or from a path when `filesystem` is given."""
-        return cls(url=url, filesystem=filesystem, timezone=timezone)
+        return cls(url=url, filesystem=filesystem, timezone=timezone, ulbridge_name=ulbridge_name)
 
     @classmethod
     def from_path(
@@ -147,6 +161,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
+        ulbridge_name: str = "",
     ) -> TextFile:
         """Build from a local path, absolute or relative.
 
@@ -155,8 +170,17 @@ class TextFile(Dataset, io.BufferedIOBase):
         example that raised `TypeError`.
         """
         if filesystem is not None:
-            return cls(url=os.fspath(path), filesystem=filesystem, timezone=timezone)
-        return cls(url=pathlib.Path(path).resolve().as_uri(), timezone=timezone)
+            return cls(
+                url=os.fspath(path),
+                filesystem=filesystem,
+                timezone=timezone,
+                ulbridge_name=ulbridge_name,
+            )
+        return cls(
+            url=pathlib.Path(path).resolve().as_uri(),
+            timezone=timezone,
+            ulbridge_name=ulbridge_name,
+        )
 
     # -- the dataset ---------------------------------------------------------
 
@@ -327,7 +351,9 @@ class TextFile(Dataset, io.BufferedIOBase):
         columnar happens once per batch in `_batch`.
         """
         groups = self.header_pattern.groupindex
-        indices = tuple(groups[name] for name in ("timestamp", "thread_name", "driver", "message"))
+        indices = tuple(
+            groups[name] for name in ("timestamp", "thread_name", "driver_name", "message")
+        )
         rows: list[tuple[bytes, bytes | None, bytes | None, bytes | None]] = []
         hashes: list[int] = []
         match_header = self.header_pattern.match
@@ -360,11 +386,16 @@ class TextFile(Dataset, io.BufferedIOBase):
         batch = pyarrow.RecordBatch.from_arrays(
             [
                 pyarrow.repeat(self.url, len(rows)),
+                pyarrow.repeat(self.ulbridge_name, len(rows)),
                 unix,
                 date,
                 time,
                 _utf8(threads),
                 _utf8(drivers),
+                # The category placeholders: zero and empty, never null, so a
+                # store keeps the columns NOT NULL for the categoriser to fill.
+                pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(rows)),
+                pyarrow.repeat("", len(rows)),
                 _utf8(messages),
                 pyarrow.array(hashes, type=pyarrow.int64()),
             ],
@@ -473,7 +504,7 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
     into a single blob by wrapping it in a one-row list. Nothing here runs per
     row in Python -- which is what makes writing a log as cheap as reading it.
 
-    `timezone` is the inverse of the one reading assumed. `unix` is an
+    `timezone` is the inverse of the one reading assumed. `recorded_at_unix` is an
     instant, and a log line is a wall clock, so rendering the instant as UTC
     would move every stamp by the offset -- and by twice it on the next round
     trip, since reading would then add the offset back. Naming the zone here
@@ -484,7 +515,7 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
     if rows.num_rows == 0:
         return b""
     compute = pyarrow.compute
-    stamps = compute.divide(rows.column("unix"), 1000).cast(pyarrow.timestamp("us"))
+    stamps = compute.divide(rows.column("recorded_at_unix"), 1000).cast(pyarrow.timestamp("us"))
     if timezone:
         stamps = stamps.cast(pyarrow.timestamp("us", "UTC")).cast(pyarrow.timestamp("us", timezone))
     stamps = compute.strftime(stamps, format="%Y-%m-%d %H:%M:%S")
@@ -494,7 +525,7 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
         " [",
         rows.column("thread_name").cast(pyarrow.string()),
         "] [",
-        rows.column("driver").cast(pyarrow.string()),
+        rows.column("driver_name").cast(pyarrow.string()),
         "] ",
         rows.column("message").cast(pyarrow.string()),
         "",
@@ -579,7 +610,7 @@ def _unix_nanos(local: pyarrow.Array, timezone: str | None) -> pyarrow.Array:
     pyarrow's `raise`: a DST transition is a property of the calendar, not a
     defect in the log, and a parser that dies once a year on an hour that
     repeats is worse than one that picks the first of the two. The cost is
-    that `unix` is not monotonic across a fall-back hour, which is true of
+    that `recorded_at_unix` is not monotonic across a fall-back hour, true of
     the underlying reality too.
 
     The `int64` cast after it is a reinterpret, not a conversion: an Arrow
@@ -599,9 +630,9 @@ def _date_and_time(local: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
     partition column exists in the data instead of every reader re-deriving
     it.
 
-    Taken from the **local** clock, not from `unix`: these two columns are
+    Taken from the **local** clock, not from `recorded_at_unix`: these columns are
     what the line says, and a line stamped `2026-08-14 00:05` belongs to the
-    14th for whoever wrote it, whatever instant that was in UTC. `unix` is
+    14th for whoever wrote it, whatever instant that was in UTC. `recorded_at_unix` is
     the column that answers "when", `date` and `time` answer "what did the
     log say" -- and a partition on the local day is the one an operator can
     reason about.

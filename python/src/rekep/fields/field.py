@@ -6,7 +6,7 @@ import dataclasses
 import functools
 import itertools
 import re
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping, MutableMapping
 from typing import Any, ClassVar
 
 import pyarrow
@@ -28,7 +28,11 @@ NAMESPACE = "namespace"
 NAME = "name"
 
 #: Keys a downstream protocol owns are prefixed with its name, so one
-#: namespace's keys can never collide with another's.
+#: namespace's keys can never collide with another's. `Field.protocol` is the
+#: one reader and writer of a prefix; these two spell out the keys the Iceberg
+#: protocol already claims.
+ICEBERG = "iceberg"
+FIX = "fix"
 PRIMARY_KEY = "iceberg:primary_key"
 PARTITION_KEY = "iceberg:partition_key"
 
@@ -37,6 +41,57 @@ IDENTITY = "identity"
 
 #: The declaration; everything else a field holds is derived from these.
 DECLARED = ("name", "arrow_type", "nullable", "metadata")
+
+
+class ProtocolMetadata(MutableMapping):
+    """One protocol's keys in a field's metadata: `prefix:key = value`.
+
+    A **view**, never a copy: a get reads the field's own metadata with the
+    prefix put back on, so looking a key up allocates nothing, and a write
+    goes through the field's `metadata` assignment -- which is what drops the
+    derived views and rebuilds the containers above it, exactly as setting
+    `metadata` directly would. Two proxies over one field always agree,
+    because neither holds any state beyond the prefix.
+
+    Values are strings, like all field metadata: what a value *means* is the
+    protocol's business, and `__setitem__` coerces with `str` the way the
+    field itself does.
+    """
+
+    __slots__ = ("field", "prefix")
+
+    def __init__(self, field: Field, prefix: str) -> None:
+        self.field = field
+        self.prefix = prefix
+
+    def key_of(self, key: str) -> str:
+        """The metadata key one of this protocol's keys lands under."""
+        return f"{self.prefix}:{key}"
+
+    def __getitem__(self, key: str) -> str:
+        try:
+            return self.field.metadata[self.key_of(key)]
+        except KeyError:
+            raise KeyError(f"{self.field.name or 'field'} has no {self.key_of(key)!r}") from None
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.field.metadata = {**self.field.metadata, self.key_of(key): str(value)}
+
+    def __delitem__(self, key: str) -> None:
+        full = self.key_of(key)
+        if full not in self.field.metadata:
+            raise KeyError(f"{self.field.name or 'field'} has no {full!r}")
+        self.field.metadata = _without(self.field.metadata, full)
+
+    def __iter__(self) -> Iterator[str]:
+        marker = f"{self.prefix}:"
+        return (key[len(marker) :] for key in self.field.metadata if key.startswith(marker))
+
+    def __len__(self) -> int:
+        return sum(1 for _ in self)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.prefix!r}, {dict(self)!r})"
 
 
 @dataclasses.dataclass(eq=True)
@@ -182,6 +237,27 @@ class Field(Convertible):
     def description(self, value: str) -> None:
         self.metadata = {**self.metadata, DESCRIPTION: value}
 
+    def protocol(self, prefix: str) -> ProtocolMetadata:
+        """This field's metadata under one protocol's prefix, live.
+
+        The one reader and writer of `prefix:key` keys: a protocol never
+        spells its prefix at a call site, so two spellings of one key cannot
+        drift apart. The proxy is a view -- `field.protocol("iceberg")["x"]`
+        reads the metadata in place, and setting through it rebuilds the
+        containers above exactly as assigning `metadata` would.
+        """
+        return ProtocolMetadata(self, prefix)
+
+    @property
+    def iceberg(self) -> ProtocolMetadata:
+        """The keys the Iceberg protocol owns: `iceberg:primary_key`, ..."""
+        return self.protocol(ICEBERG)
+
+    @property
+    def fix(self) -> ProtocolMetadata:
+        """The keys the FIX protocol owns: `fix:tag`, `fix:type`, ..."""
+        return self.protocol(FIX)
+
     @property
     def is_primary_key(self) -> bool:
         """Whether this field is part of the primary key.
@@ -189,7 +265,7 @@ class Field(Convertible):
         The one list Iceberg calls identifier fields and an upsert joins on --
         declared once, read from metadata like every other protocol property.
         """
-        return bool(self.metadata.get(PRIMARY_KEY))
+        return bool(self.iceberg.get("primary_key"))
 
     @is_primary_key.setter
     def is_primary_key(self, value: bool) -> None:
@@ -198,19 +274,15 @@ class Field(Convertible):
                 f"field {self.name!r} is a primary key and cannot be nullable; "
                 "drop the `| None` or the key"
             )
-        self.metadata = (
-            _without(self.metadata, PRIMARY_KEY)
-            if not value
-            else {
-                **self.metadata,
-                PRIMARY_KEY: "true",
-            }
-        )
+        if not value:
+            self.iceberg.pop("primary_key", None)
+        else:
+            self.iceberg["primary_key"] = "true"
 
     @property
     def is_partition_key(self) -> bool:
         """Whether the data is partitioned on this field."""
-        return bool(self.metadata.get(PARTITION_KEY))
+        return bool(self.iceberg.get("partition_key"))
 
     @is_partition_key.setter
     def is_partition_key(self, value: bool | str) -> None:
@@ -221,14 +293,14 @@ class Field(Convertible):
         protocol's business.
         """
         if not value:
-            self.metadata = _without(self.metadata, PARTITION_KEY)
+            self.iceberg.pop("partition_key", None)
             return
-        self.metadata = {**self.metadata, PARTITION_KEY: IDENTITY if value is True else str(value)}
+        self.iceberg["partition_key"] = IDENTITY if value is True else str(value)
 
     @property
     def partition_transform(self) -> str:
         """How the data is partitioned on this field, or an empty string."""
-        return self.metadata.get(PARTITION_KEY, "")
+        return self.iceberg.get("partition_key", "")
 
     def merge(self, other: Field) -> Field:
         """Combine two declarations, letting `other` win where it says anything."""

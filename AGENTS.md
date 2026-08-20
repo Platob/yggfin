@@ -226,7 +226,10 @@ Ten things that were learned the expensive way, all of them measured:
   dataset's own shape, and on a read it means "hand over the store's own
   reader", widths included -- a conversion nobody asked for is paid per row.
 - `merge_by` is one argument: True is the declared primary key, a list is
-  those columns, falsy appends.
+  those columns, falsy appends. On a **write** it upserts; on an **append**
+  (`append_arrow_reader`, same signature) it only *skips* the rows a stored
+  key already matches -- nothing stored is ever rewritten, which is the half
+  of an upsert an immutable stream needs and the cheap one.
 - **A batch is not a unit of work downstream.** A store that commits per call
   accumulates `commit_row_size` rows first (`dataset.arrow_chunks`).
 - Push filters, columns and limits down to the engine that holds the
@@ -309,22 +312,31 @@ rekep/
 │                  builders those casts are made of), builder.py (FieldBuilder:
 │                  type hints -> fields), classes.py (ClassBuilder: the reverse
 │                  projection), arrow.py (merge_fields/merge_schemas)
-├── dataset.py     Dataset: the abstract read/write/create ends of a stored
-│                  product, and arrow_chunks, the commit-sized grouping every
-│                  store that commits per call needs
+├── dataset.py     Dataset: the abstract read/write/append/create ends of a
+│                  stored product, arrow_chunks (the commit-sized grouping
+│                  every store that commits per call needs), and the key
+│                  joins every merge-shaped write is made of (keys_of,
+│                  semi_join, anti_join, first_rows, normalised_keys)
 ├── iceberg/       fields.py (the Field <-> pyiceberg projection: ids, docs,
 │                  identifier fields, partition transforms), catalog.py
 │                  (IcebergCatalog/IcebergNamespace: CRUD around the tables)
 │                  and dataset.py (IcebergDataset: scan pushdown out, cast +
 │                  append/upsert in, one commit per chunk, and the
 │                  maintenance -- add_fields, compact, cleanup, optimize)
+├── fix/           message.py (FixMessage and the vectorised line parsing:
+│                  separator detection, tag=value cutting, repeating
+│                  groups), fields.py (the FIX datatype -> Arrow projection
+│                  and the forgiving Boolean reading) and registry.py
+│                  (FixRegistry: the OnixS dictionary scraped per version,
+│                  cached in ~/.config/fix/, lookup and fuzzy search)
 └── logs/          log.py (the Log shape) and text_file.py (TextFile: a log
                    read into Arrow batches and written back out as lines,
                    itself a Dataset)
 ```
 
 Dependencies point one way: `logs`/`iceberg` -> `dataset` -> `fields` ->
-`convert` -> `annotations`. The one loop back is deliberate and lazy: a
+`convert` -> `annotations`, and `fix` sits beside `dataset` on the same
+`fields` base. The one loop back is deliberate and lazy: a
 `Field`'s `into_iceberg_*` imports `rekep.iceberg.fields` at the point of use,
 so the API stays on the class that owns the data without `fields/` depending
 on an extra. `tests/` mirrors `src/` folder for folder.

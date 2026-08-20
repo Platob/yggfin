@@ -44,9 +44,9 @@ logs = IcebergDataset(
     struct=Log.FIELD,
 )
 with TextFile.from_path("app.txt.gz") as log:
-    logs.write_arrow(log.read_arrow_reader(), merge_by=True, commit_row_size=1_000_000)
+    logs.append_arrow(log.read_arrow_reader(), merge_by=True, commit_row_size=1_000_000)
 
-logs.read_arrow_table(row_filter="date = '2026-08-14'")
+logs.read_arrow_table(row_filter="recorded_at_date = '2026-08-14'")
 logs.optimize()                      # compact, expire, sweep
 ```
 
@@ -61,6 +61,12 @@ logs.optimize()                      # compact, expire, sweep
 - **`dataset` / `iceberg`** — `Dataset` is a stream in and a stream out;
   `IcebergDataset` is that over an Iceberg table, with catalog and namespace
   CRUD and the maintenance (compact, expire, sweep) a streaming table needs.
+  `write_arrow(merge_by=...)` upserts; `append_arrow(merge_by=...)` inserts
+  only what is not stored yet and never rewrites a row.
+- **`fix`** — `FixMessage` parses FIX log lines (SOH-, `|`- or `^A`-separated),
+  `parse_arrow_array` does whole columns in Arrow kernels, and `FixRegistry`
+  scrapes every FIX version's fields from the OnixS dictionary into
+  `~/.config/fix/` — name, datatype, comment, values — to work offline after.
 - **`convert`** — `Convertible`: paired `from_*`/`into_*` methods that serialise
   any dataclass to dict, JSON, YAML or TOML and back.
 

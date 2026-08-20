@@ -13,7 +13,17 @@ from typing import Any
 import pyarrow
 import pyarrow.fs
 
-from rekep.dataset import Dataset, arrow_chunks
+from rekep.dataset import (
+    SOURCE_INDEX,
+    TARGET_INDEX,
+    Dataset,
+    anti_join,
+    arrow_chunks,
+    first_rows,
+    keys_of,
+    normalised_keys,
+    semi_join,
+)
 from rekep.fields import StructField, field_of
 from rekep.filesystems import resolve
 from rekep.iceberg.catalog import IcebergCatalog
@@ -570,7 +580,7 @@ class IcebergDataset(Dataset):
         # hands back, and converting what was *read* costs less than converting
         # what is being written -- a streaming merge reads far fewer rows than
         # it writes.
-        chunk = _normalised_keys(chunk, join)
+        chunk = normalised_keys(chunk, join)
         shape = field_of(chunk.schema)
         reference = branch or self.branch or MAIN
         scan = table.scan(row_filter=_key_ranges(chunk, join))
@@ -587,13 +597,13 @@ class IcebergDataset(Dataset):
         # the ones the chunk actually references before anything looks at them.
         # Without this, a duplicate key stored anywhere inside the chunk's key
         # range aborts a merge that has nothing to do with it.
-        matched = _semi_join(matched, chunk, join)
+        matched = semi_join(matched, chunk, join)
 
         # An Arrow join hands back nullable columns whatever it was given, and
         # pyiceberg checks a write against the table's own requiredness -- so
         # both halves go back onto the stored shape before they are committed.
         updates = shape.cast_arrow_table(_changed(chunk, matched, join))
-        inserts = shape.cast_arrow_table(_unmatched(chunk, matched, join))
+        inserts = shape.cast_arrow_table(anti_join(chunk, matched, join))
         if len(updates) == 0 and len(inserts) == 0:
             return 0, 0
         with table.transaction() as transaction:
@@ -621,6 +631,92 @@ class IcebergDataset(Dataset):
         # here would be a round trip per commit to learn what we just did.
         # `refresh()` is for seeing *other* writers, and stays the caller's.
         return len(updates), len(inserts)
+
+    def append_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_row_size: int | None = None,
+        *,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
+    ) -> None:
+        """Append a stream, inserting only the keys the table does not hold yet.
+
+        `write_arrow_reader`'s arguments, `append_arrow_reader`'s meaning for
+        `merge_by`: stored rows are never rewritten, rows whose key is already
+        stored are dropped, and the rest are appended -- one commit per chunk,
+        through `insert_arrow_table`. The generic form would read every stored
+        key once; this one plans a scan per chunk instead, pruned to the
+        chunk's own key ranges *and* projected to the key columns alone, so a
+        chunk of new keys costs a plain append and a replayed one reads keys,
+        not rows.
+        """
+        join = self.merge_columns(merge_by)
+        if not join:
+            self.write_arrow_reader(
+                source, schema, None, commit_row_size, branch=branch, properties=properties
+            )
+            return
+        self.get_or_create_table()
+        reader = self.target_field(schema).cast_arrow_reader(source)
+        rows = self.commit_row_size if commit_row_size is None else commit_row_size
+        for chunk in arrow_chunks(reader, rows):
+            self.insert_arrow_table(self.sorted(chunk), join, branch=branch, properties=properties)
+
+    def insert_arrow_table(
+        self,
+        chunk: pyarrow.Table,
+        merge_by: bool | Sequence[str] | None = True,
+        *,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
+    ) -> int:
+        """One chunk appended where no stored row matches: rows inserted.
+
+        The insert half of `merge_arrow_table`, alone -- and cheaper than the
+        merge by more than the update it skips. The scan that finds what is
+        already stored is pruned to the chunk's key ranges exactly as a
+        merge's is, but it also **projects to the key columns alone**: an
+        append never compares non-key columns, so it never has to read them,
+        and what comes back per matched row is a key instead of a row. The
+        rows to insert then come from one Arrow anti-join.
+
+        The guards a merge needs mostly fall away because nothing stored is
+        ever rewritten: a stored duplicate key just keeps its copies, a chunk
+        missing an optional column inserts nulls into *new* rows only. What
+        stays is what protects the keys themselves -- a null or NaN key is
+        refused (`_key_ranges`: no predicate can name either, so a replay
+        would insert it again every time), `-0.0` is written as the `0.0` it
+        equals, and duplicate keys inside the chunk collapse to their first
+        row, which is what a replay of them would leave behind.
+        """
+        join = self.merge_columns(merge_by)
+        if not join:
+            raise ValueError("insert_arrow_table needs columns to merge on")
+        if SOURCE_INDEX in join or TARGET_INDEX in join:
+            raise ValueError(
+                f"{SOURCE_INDEX} and {TARGET_INDEX} are reserved for joining DataFrames"
+            )
+        table = self.get_or_create_table()
+        if chunk.num_rows == 0:
+            return 0
+        chunk = first_rows(normalised_keys(chunk, join), join)
+        reference = branch or self.branch or MAIN
+        # Keys only: `_key_ranges` raises on a null or NaN key before the scan
+        # is even built, which is the same refusal a merge makes.
+        scan = table.scan(row_filter=_key_ranges(chunk, join), selected_fields=tuple(join))
+        if reference in table.refs():
+            scan = scan.use_ref(reference)
+        matched = _under_current_names(table, scan.to_arrow_batch_reader().read_all())
+        # Onto the chunk's own key columns, so the anti-join can run: a scan
+        # hands back `large_string` where the chunk carries `string`.
+        keys = field_of(pyarrow.schema([chunk.schema.field(name) for name in join]))
+        fresh = anti_join(chunk, keys.cast_arrow_table(matched), join)
+        if fresh.num_rows:
+            table.append(fresh, snapshot_properties=properties or {}, branch=reference)
+        return fresh.num_rows
 
     def sorted(self, chunk: pyarrow.Table) -> pyarrow.Table:
         """`chunk` in `sort_by` order, or exactly as it came when nothing says.
@@ -1279,14 +1375,6 @@ def _distinct_under(values: Any, limit: int) -> Any:
     return distinct if len(distinct) <= limit else None
 
 
-#: Marker columns the joins below carry, named like pyiceberg's reserved pair.
-#: A merge key of either name is refused before a join ever runs, with the
-#: library's own message -- the joins reach these names first, and would fail
-#: on the duplicate column rather than on what is actually wrong.
-SOURCE_INDEX = "__source_index"
-TARGET_INDEX = "__target_index"
-
-
 def _has_zero(values: Any) -> bool:
     """Whether a float column holds a zero of either sign; False for any other type."""
     if not pyarrow.types.is_floating(values.type):
@@ -1324,68 +1412,6 @@ def _match_filter(updates: pyarrow.Table, join: Sequence[str]) -> Any:
     )
 
 
-def _normalised_keys(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
-    """`table` with `-0.0` in a float merge key replaced by the `0.0` it equals.
-
-    On the values that are *written*, not only on the join, because three
-    things have to agree about a key and only two of them can be talked round:
-    Iceberg's comparison says they are the same number, an Arrow join hashes
-    them apart, and `pc.is_in` -- what pyiceberg's exact delete filter becomes
-    once it reaches Arrow -- hashes them apart too. Normalising the join alone
-    left the update finding the stored row and the delete failing to name it,
-    so the merge wrote the new value beside the old one: 221 rows for 220 keys,
-    and only above the `In` limit, where the filter changes shape.
-
-    Nothing else is touched: not a float that is not a key, not a key that is
-    not a float, and not the sign of anything that is not zero.
-    """
-    columns = list(table.columns)
-    changed = False
-    for name in join:
-        index = table.schema.get_field_index(name)
-        if index < 0:
-            continue
-        column = table.column(index)
-        if not pyarrow.types.is_floating(column.type):
-            continue
-        # Applied whether or not a negative zero is in there: telling requires
-        # a pass of its own, and the kernel is the same pass either way.
-        zero = pyarrow.scalar(0.0, column.type)
-        columns[index] = pyarrow.compute.if_else(pyarrow.compute.equal(column, zero), zero, column)
-        changed = True
-    return pyarrow.Table.from_arrays(columns, schema=table.schema) if changed else table
-
-
-def _keys_of(table: pyarrow.Table, join: Sequence[str], marker: str) -> pyarrow.Table:
-    """Just the key columns, numbered, and normalised for Arrow's equality.
-
-    Two reasons the joins never see the whole table. **Arrow refuses nested
-    columns as join payload**, so a struct, list or map anywhere in the row
-    would make a merge crash rather than fall back; carrying only the keys and
-    an index, then taking the rows back by that index, keeps every column type
-    out of Acero's way.
-
-    And Arrow's equality is not Iceberg's on one point: `-0.0` and `0.0` are
-    the same number to IEEE 754 and to Python, and pyiceberg compares them as
-    equal -- but they hash apart in a join, which would insert a duplicate key.
-    Normalising the sign of zero on float key columns keeps the two agreeing.
-    `merge_arrow_table` has normalised the chunk itself by the time this runs,
-    so here it is what keeps a *stored* `-0.0` -- written before that, or by
-    another engine -- joinable to the `0.0` a chunk carries.
-    """
-    columns = []
-    for name in join:
-        column = table.column(name).combine_chunks()
-        if pyarrow.types.is_floating(column.type):
-            zero = pyarrow.scalar(0.0, column.type)
-            column = pyarrow.compute.if_else(pyarrow.compute.equal(column, zero), zero, column)
-        columns.append(column)
-    keys = pyarrow.Table.from_arrays(columns, names=list(join))
-    from rekep.fields import arrays
-
-    return keys.append_column(marker, arrays.sequence(table.num_rows))
-
-
 def _align_keys(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
     """`matched` with its key columns at the chunk's types, so a join can run."""
     for name in join:
@@ -1397,18 +1423,6 @@ def _align_keys(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str
             index, matched.schema.field(index).with_type(wanted), matched.column(name).cast(wanted)
         )
     return matched
-
-
-def _semi_join(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
-    """The rows of `matched` whose key the chunk references."""
-    if matched.num_rows == 0:
-        return matched
-    kept = _keys_of(matched, join, TARGET_INDEX).join(
-        _keys_of(chunk, join, SOURCE_INDEX).select(list(join)),
-        keys=list(join),
-        join_type="left semi",
-    )
-    return matched.take(kept.column(TARGET_INDEX))
 
 
 def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
@@ -1457,8 +1471,8 @@ def _changed_by_kernel(
 ) -> pyarrow.Table:
     """`_changed`'s fast path: one pass per column instead of one pass per row."""
     keys = list(join)
-    pairs = _keys_of(chunk, keys, SOURCE_INDEX).join(
-        _keys_of(matched, keys, TARGET_INDEX), keys=keys, join_type="inner"
+    pairs = keys_of(chunk, keys, SOURCE_INDEX).join(
+        keys_of(matched, keys, TARGET_INDEX), keys=keys, join_type="inner"
     )
     if pairs.num_rows == 0:
         return chunk.schema.empty_table()
@@ -1478,23 +1492,6 @@ def _changed_by_kernel(
         # Python list of falses costs 14 ms a million rows, and buys nothing.
         differs = column if differs is None else compute.or_(differs, column)
     return chunk.take(compute.filter(pairs.column(SOURCE_INDEX), differs))
-
-
-def _unmatched(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
-    """The rows of `chunk` no row of `matched` shares a key with.
-
-    One Arrow anti-join over the keys alone, rather than binding a per-row
-    equality expression and filtering with it once per batch, which is what
-    makes the insert half of a merge linear instead of quadratic.
-    """
-    if matched.num_rows == 0:
-        return chunk
-    fresh = _keys_of(chunk, join, SOURCE_INDEX).join(
-        _keys_of(matched, join, TARGET_INDEX).select(list(join)),
-        keys=list(join),
-        join_type="left anti",
-    )
-    return chunk.take(fresh.column(SOURCE_INDEX))
 
 
 def _renamed(reader: Any, names: dict[str, str]) -> Any:

@@ -118,6 +118,7 @@ keys and partitions intact.
     quotes.write_arrow(table, merge_by=["symbol", "day"])
     quotes.write_arrow(table, branch="dev")
     quotes.write_arrow(table, commit_row_size=0)   # one commit, whatever the size
+    quotes.append_arrow(reader, merge_by=True)     # insert-only: never rewrites
     ```
 
     Writes **append by default and create what is not there yet**. The stream is
@@ -184,6 +185,26 @@ updated, inserted = quotes.merge_arrow_table(chunk, True)   # one chunk, reporte
 
 Declaring the key once — `Annotated[str, Field.primary_key()]` — is what makes
 `merge_by=True` mean something.
+
+### Appending without rewriting
+
+`append_arrow` takes the same arguments as `write_arrow`, and `merge_by` means
+something cheaper there: rows whose key is already stored are **dropped**, the
+rest are inserted, and nothing stored is ever rewritten — the half of an upsert
+a stream of immutable rows needs.
+
+```python
+quotes.append_arrow(reader, merge_by=True, commit_row_size=1_000_000)
+inserted = quotes.insert_arrow_table(chunk, True)   # one chunk, reported
+```
+
+The scan that finds what is already stored is pruned to the chunk's key ranges
+exactly as a merge's is, and it also projects to the **key columns alone**: an
+append never compares non-key columns, so it never reads them. A chunk of new
+keys plans to zero files and costs a plain append; a full replay reads keys,
+matches everything, and commits nothing. Duplicate keys inside the stream
+collapse to their first row; a null or NaN key is refused, because no predicate
+can ever find it again.
 
 ### How a merge is planned
 

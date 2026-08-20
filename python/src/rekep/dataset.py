@@ -7,9 +7,16 @@ from collections.abc import Iterator, Sequence
 from typing import Any, ClassVar, Self
 
 import pyarrow
+import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.fields import StructField, field_of
+from rekep.fields import Field, StructField, field_of
+
+#: Marker columns the key joins below carry, named like pyiceberg's reserved
+#: pair so a merge key of either name is refused with the library's own
+#: message before a join fails on the duplicate column instead.
+SOURCE_INDEX = "__source_index"
+TARGET_INDEX = "__target_index"
 
 
 class Dataset(Convertible, abc.ABC):
@@ -207,6 +214,87 @@ class Dataset(Convertible, abc.ABC):
         """
         self.write_arrow_reader(table.to_reader(), schema, merge_by, commit_row_size, **kwargs)
 
+    # -- appending -----------------------------------------------------------
+
+    def append_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_row_size: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Append a stream, skipping the rows a stored row already matches.
+
+        Same arguments as `write_arrow_reader`, and the same falsy-appends
+        rule -- but `merge_by` means something cheaper here. A *write* with
+        `merge_by` upserts: it finds the stored row a key matches and rewrites
+        it. An *append* never touches what is stored: a row whose key is
+        already there is dropped, the rest are inserted. That is the half of
+        an upsert a stream of immutable rows needs -- replaying it inserts
+        nothing, rewrites nothing, and costs no delete files.
+
+        Duplicate keys *inside* the stream collapse to their first row for the
+        same reason: by the time the second arrives, the dataset already has
+        that key. A null merge key is refused -- no join can match it, so a
+        replay would insert it again every time.
+
+        This generic form reads the stored key columns once and anti-joins
+        each chunk against them in Arrow, so it fits any store that can read;
+        a store that can plan better overrides it (`IcebergDataset` prunes
+        the stored side to each chunk's key ranges).
+        """
+        join = self.merge_columns(merge_by)
+        if not join:
+            self.write_arrow_reader(source, schema, None, commit_row_size, **kwargs)
+            return
+        target = self.target_field(schema)
+        key_field = _key_field(target, join)
+        reader = target.cast_arrow_reader(source)
+        seen = (
+            self.read_arrow_table(key_field)
+            if self.exists
+            else key_field.arrow_schema.empty_table()
+        )
+        seen = normalised_keys(seen, join)
+        for chunk in arrow_chunks(reader, commit_row_size):
+            _refuse_null_keys(chunk, join)
+            fresh = first_rows(normalised_keys(chunk, join), join)
+            if seen.num_rows:
+                fresh = anti_join(fresh, seen, join)
+            if fresh.num_rows == 0:
+                continue
+            self.write_arrow_table(fresh, target, None, None, **kwargs)
+            seen = pyarrow.concat_tables([seen, fresh.select(list(join))])
+
+    def append_arrow(self, source: Any, *args: Any, **kwargs: Any) -> None:
+        """Append, picking the method by what is handed over, like `write_arrow`."""
+        return getattr(self, f"append_{self.redirect_of(source, self.WRITES)}")(
+            source, *args, **kwargs
+        )
+
+    def append_arrow_batch(
+        self,
+        batch: pyarrow.RecordBatch,
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_row_size: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """`append_arrow_reader` for one batch."""
+        self.append_arrow_reader(iter([batch]), schema, merge_by, commit_row_size, **kwargs)
+
+    def append_arrow_table(
+        self,
+        table: pyarrow.Table,
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_row_size: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """`append_arrow_reader` for a table already in memory."""
+        self.append_arrow_reader(table.to_reader(), schema, merge_by, commit_row_size, **kwargs)
+
 
 def arrow_chunks(
     source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch], row_size: int | None
@@ -231,3 +319,129 @@ def arrow_chunks(
             batches, rows = [], 0
     if batches:
         yield pyarrow.Table.from_batches(batches, schema)
+
+
+# -- key joins ---------------------------------------------------------------
+#
+# The vocabulary every merge-shaped write is made of, shared here so a store
+# never grows a second copy: which stored rows a chunk references, which of a
+# chunk's rows are new, and one row per key. All of it is Arrow joins over the
+# key columns and an index -- never the whole row, because Acero refuses
+# nested columns as join payload, and never a Python row loop.
+
+
+def keys_of(table: pyarrow.Table, join: Sequence[str], marker: str) -> pyarrow.Table:
+    """Just the key columns, numbered, and normalised for Arrow's equality.
+
+    Arrow's equality is not every store's on one point: `-0.0` and `0.0` are
+    the same number to IEEE 754, but they hash apart in a join, which would
+    let one key match nothing and be inserted twice. Normalising the sign of
+    zero on float key columns keeps a stored `-0.0` -- written before this
+    package normalised keys, or by another engine -- joinable to the `0.0` a
+    chunk carries.
+    """
+    columns = []
+    for name in join:
+        column = table.column(name).combine_chunks()
+        if pyarrow.types.is_floating(column.type):
+            zero = pyarrow.scalar(0.0, column.type)
+            column = pyarrow.compute.if_else(pyarrow.compute.equal(column, zero), zero, column)
+        columns.append(column)
+    keys = pyarrow.Table.from_arrays(columns, names=list(join))
+    from rekep.fields import arrays
+
+    return keys.append_column(marker, arrays.sequence(table.num_rows))
+
+
+def normalised_keys(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """`table` with `-0.0` in a float merge key replaced by the `0.0` it equals.
+
+    On the values that are *written*, not only inside the joins, because three
+    things have to agree about a key and only two of them can be talked round:
+    a store's comparison says they are the same number, an Arrow join hashes
+    them apart, and so does `pc.is_in` -- what a predicate filter becomes once
+    it reaches Arrow. Storing one spelling is the only way a later merge or
+    append finds the row again.
+
+    Nothing else is touched: not a float that is not a key, not a key that is
+    not a float, and not the sign of anything that is not zero.
+    """
+    columns = list(table.columns)
+    changed = False
+    for name in join:
+        index = table.schema.get_field_index(name)
+        if index < 0:
+            continue
+        column = table.column(index)
+        if not pyarrow.types.is_floating(column.type):
+            continue
+        # Applied whether or not a negative zero is in there: telling requires
+        # a pass of its own, and the kernel is the same pass either way.
+        zero = pyarrow.scalar(0.0, column.type)
+        columns[index] = pyarrow.compute.if_else(pyarrow.compute.equal(column, zero), zero, column)
+        changed = True
+    return pyarrow.Table.from_arrays(columns, schema=table.schema) if changed else table
+
+
+def semi_join(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """The rows of `matched` whose key the chunk references."""
+    if matched.num_rows == 0:
+        return matched
+    kept = keys_of(matched, join, TARGET_INDEX).join(
+        keys_of(chunk, join, SOURCE_INDEX).select(list(join)),
+        keys=list(join),
+        join_type="left semi",
+    )
+    return matched.take(kept.column(TARGET_INDEX))
+
+
+def anti_join(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """The rows of `chunk` no row of `matched` shares a key with.
+
+    One Arrow anti-join over the keys alone, rather than binding a per-row
+    equality expression and filtering with it once per batch, which is what
+    makes the insert half of a merge linear instead of quadratic.
+    """
+    if matched.num_rows == 0:
+        return chunk
+    fresh = keys_of(chunk, join, SOURCE_INDEX).join(
+        keys_of(matched, join, TARGET_INDEX).select(list(join)),
+        keys=list(join),
+        join_type="left anti",
+    )
+    return chunk.take(fresh.column(SOURCE_INDEX))
+
+
+def first_rows(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """One row per distinct key -- the first -- in the table's own order.
+
+    What makes an insert-only append idempotent *within* a stream: by the
+    time a duplicate key arrives, the dataset already holds that key, so
+    keeping the first row is the same answer the replay would produce. One
+    `group_by` and one `take`; a table with no duplicate keys comes back
+    untouched, which is the common case and costs the group alone.
+    """
+    keys = keys_of(table, join, SOURCE_INDEX)
+    firsts = keys.group_by(list(join)).aggregate([(SOURCE_INDEX, "min")])
+    if firsts.num_rows == table.num_rows:
+        return table
+    indices = firsts.column(f"{SOURCE_INDEX}_min").combine_chunks()
+    return table.take(indices.take(pyarrow.compute.sort_indices(indices)))
+
+
+def _key_field(target: StructField, join: Sequence[str]) -> StructField:
+    """The key columns of `target` as a shape of their own, to read and cast onto."""
+    return Field.from_arrow_schema(
+        pyarrow.schema([target.field(name).into_arrow_field() for name in join]),
+        target.name,
+    )
+
+
+def _refuse_null_keys(chunk: pyarrow.Table, join: Sequence[str]) -> None:
+    """A null merge key matches nothing, so appending on it would duplicate rows."""
+    for name in join:
+        if chunk.column(name).null_count:
+            raise ValueError(
+                f"column {name!r} is a merge key and cannot be null; "
+                "a null key matches nothing, so appending on it would duplicate rows"
+            )

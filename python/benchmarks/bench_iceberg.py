@@ -126,7 +126,7 @@ def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]
     field = Log.FIELD
     if not partitioned:
         field = field.into_dataclass("Flat").FIELD
-        field.field("date").is_partition_key = False
+        field.field("recorded_at_date").is_partition_key = False
     built = catalog(root).dataset("bench.logs", struct=field, table_properties=properties)
     return built.create_with()
 
@@ -323,7 +323,7 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         target = dataset(root, partitioned=True, properties=OPTIMISED)
         target.write_arrow(batches(table, 65_536), commit_row_size=rows // max(days, 1))
         day = datetime.date(2026, 8, 14)
-        # The unix bound of the third day: a filter on a column that is not the
+        # The recorded_at_unix bound of the third day: a filter on a column that is not the
         # partition, but correlates with it, so only file statistics can prune.
         third_day = (
             int(
@@ -338,11 +338,16 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         header(("case", "seconds", "rows", "rows/s", "planned", "skipped"), (30, 9, 12, 12, 8, 8))
         cases = [
             ("everything", None, None, None),
-            ("partition = one day", f"date = '{day}'", None, None),
-            ("partition, 3 columns", f"date = '{day}'", ["unix", "driver", "message"], None),
-            ("3 columns, no filter", None, ["unix", "driver", "message"], None),
-            ("correlated column", f"unix < {third_day}", None, None),
-            ("no stats to prune on", "driver = 'ULBridge'", None, None),
+            ("partition = one day", f"recorded_at_date = '{day}'", None, None),
+            (
+                "partition, 3 columns",
+                f"recorded_at_date = '{day}'",
+                ["recorded_at_unix", "driver_name", "message"],
+                None,
+            ),
+            ("3 columns, no filter", None, ["recorded_at_unix", "driver_name", "message"], None),
+            ("correlated column", f"recorded_at_unix < {third_day}", None, None),
+            ("no stats to prune on", "driver_name = 'ULBridge'", None, None),
             ("narrow shape (pushdown)", None, None, narrow_field()),
             ("narrow shape, store widths", None, None, "stored"),
         ]
@@ -377,7 +382,10 @@ def stored_narrow(target: IcebergDataset) -> Any:
 
     schema = target.table_field.into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema([schema.field(name) for name in ("unix", "driver", "message")]), "Narrow"
+        pyarrow.schema(
+            [schema.field(name) for name in ("recorded_at_unix", "driver_name", "message")]
+        ),
+        "Narrow",
     )
 
 
@@ -387,7 +395,10 @@ def narrow_field() -> Any:
 
     schema = Log.FIELD.into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema([schema.field(name) for name in ("unix", "driver", "message")]), "Narrow"
+        pyarrow.schema(
+            [schema.field(name) for name in ("recorded_at_unix", "driver_name", "message")]
+        ),
+        "Narrow",
     )
 
 

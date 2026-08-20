@@ -5,6 +5,8 @@ from rekep.fields.builder import FieldBuilder
 from rekep.fields.classes import ClassBuilder
 from rekep.fields.field import (
     DESCRIPTION,
+    FIX,
+    ICEBERG,
     NAME,
     NAMESPACE,
     PARTITION_KEY,
@@ -16,6 +18,7 @@ from rekep.fields.field import (
     ListField,
     ListViewField,
     MapField,
+    ProtocolMetadata,
     StructField,
     cast_batch,
     cast_reader,
@@ -26,6 +29,8 @@ from rekep.fields.field import (
 
 __all__ = [
     "DESCRIPTION",
+    "FIX",
+    "ICEBERG",
     "NAME",
     "NAMESPACE",
     "PARTITION_KEY",
@@ -33,6 +38,7 @@ __all__ = [
     "ClassBuilder",
     "Field",
     "FieldBuilder",
+    "ProtocolMetadata",
     "FixedSizeListField",
     "LargeListField",
     "LargeListViewField",
