@@ -216,6 +216,12 @@ replacement is compared against it row by row in the tests
 (`tests/iceberg/test_coherence.py`), and a flag switches back to the library.
 Numbers quoted in docstrings or docs are measured twice; a single run is noise.
 
+Measure warm, and in isolation. An Acero join costs its own initialisation on
+the first call in a process, so a sequence of timed stages charges the whole of
+it to whichever stage ran first: one reordering looked 5x faster that way and
+was worth 1.7 ms once both sides were warmed and run best-of-five. A profile
+made of single calls, in order, is a story about warm-up.
+
 ## 12. Comments say why
 
 Docstrings and comments carry the constraint, trade-off, or failure that
