@@ -530,8 +530,39 @@ class ListField(Field):
         source = array.type
         if not _is_list_like(source):
             return super().cast_arrow_array(array, safe=safe)
-        if not pyarrow.types.is_map(source) and not pyarrow.types.is_fixed_size_list(source):
+        if self._reusable(array):
             return self._rewrapped(array, safe=safe)
+        return self._rebuilt(array, safe=safe)
+
+    def _reusable(self, array: Any) -> bool:
+        """Whether the source's own row layout can be handed to a builder as is.
+
+        Three shapes cannot, and each of them is silent or fatal if it is:
+
+        A **map** and a **fixed size list** do not carry the offsets a builder
+        wants at all. A **sliced** array carries offsets that are themselves a
+        slice, and Arrow refuses those beside a validity mask outright ("Null
+        bitmap with offsets slice not supported") -- which is every sliced list
+        with a null row, and a slice is what `Table.slice` and every reader
+        hands out. And a **list view** whose rows are not laid out back to back
+        -- anything that has been through `take` or `filter` -- survives the
+        re-wrap but not the flavour change after it: Arrow's view-to-list cast
+        reads the offsets buffer and ignores the sizes one, so rows come back
+        holding other rows' values. `_rebuilt` cuts the rows again through
+        `list_flatten`, which reads the sizes, and is right in all three cases.
+        """
+        kinds = pyarrow.types
+        if kinds.is_map(array.type) or kinds.is_fixed_size_list(array.type):
+            return False
+        if array.offset:
+            return False
+        views = kinds.is_list_view(array.type) or kinds.is_large_list_view(array.type)
+        return not views or arrays.list_type_like(array.type, self.item.into_arrow_field()) == (
+            self.arrow_type
+        )
+
+    def _rebuilt(self, array: Any, *, safe: bool) -> Any:
+        """Cut the rows again, from the sizes: right for any layout at all."""
         sizes, values = arrays.list_parts(array)
         return arrays.build_list(
             self.arrow_type,
@@ -563,8 +594,10 @@ class ListField(Field):
         try:
             return wrapped.cast(self.arrow_type, safe)
         except pyarrow.ArrowNotImplementedError:
-            sizes, values = arrays.list_parts(wrapped)
-            return arrays.build_list(self.arrow_type, sizes, values, arrays.null_mask(wrapped))
+            # A flavour Arrow will not cast between at all: cut the rows again.
+            return type(self)(name=self.name, arrow_type=self.arrow_type)._rebuilt(
+                wrapped, safe=True
+            )
 
 
 class LargeListField(ListField):
@@ -645,8 +678,11 @@ class MapField(Field):
             return self._from_struct(array, safe=safe)
         if not _is_list_like(array.type):
             return super().cast_arrow_array(array, safe=safe)
-        if pyarrow.types.is_map(array.type):
-            # Already entries in rows: cast the halves and re-wrap them.
+        if pyarrow.types.is_map(array.type) and not array.offset:
+            # Already entries in rows: cast the halves and re-wrap them. Only
+            # when the array owns its offsets, though -- a *sliced* map hands
+            # the builder a slice of the offsets buffer, which Arrow refuses
+            # beside a validity mask. Cutting the entries again works for both.
             return arrays.rewrap_map(
                 self.arrow_type,
                 array,
@@ -841,8 +877,13 @@ class StructField(Field):
             def from_map(name: str) -> Any:
                 column = arrays.map_column(array, name)
                 # No entry anywhere is the same as no column at all: filled when
-                # the member may be null, refused by name when it may not.
-                return None if column.null_count == len(column) else column
+                # the member may be null, refused by name when it may not. A
+                # map with no rows at all says nothing either way, and reading
+                # it as "no column" would make an empty batch -- routine in any
+                # stream -- refuse a member every other batch produces.
+                if len(column) and column.null_count == len(column):
+                    return None
+                return column
 
             return from_map
         if _is_list_like(array.type):
@@ -877,7 +918,19 @@ class StructField(Field):
         for member in self.fields:
             column = column_of(member.name)
             if column is not None:
-                columns.append(member.cast_arrow_array(column, safe=safe))
+                cast = member.cast_arrow_array(column, safe=safe)
+                if not member.nullable and cast.null_count:
+                    # The same reason the missing case is refused, one step
+                    # later: a schema that says NOT NULL over a column holding
+                    # nulls is a lie every other reader has to discover for
+                    # itself, and the write that fails on it is far from here.
+                    # `pyarrow.Table.cast` refuses this too.
+                    raise ValueError(
+                        f"column {self._path(member.name)!r} is not nullable and "
+                        f"{cast.null_count} of {len(cast)} values are null; fill them upstream "
+                        "or make the field optional"
+                    )
+                columns.append(cast)
             elif member.nullable:
                 columns.append(pyarrow.nulls(length, member.arrow_type))
             else:
@@ -905,8 +958,14 @@ class StructField(Field):
         """
         target = self.merged(batch.schema) if merge_schema else self
         schema = target.arrow_schema
-        if batch.schema.equals(schema):
+        if batch.schema.equals(schema, check_metadata=True):
             return batch
+        if batch.schema.equals(schema):
+            # The types already line up and only the metadata does not: the
+            # column comments and the identity this field declares are part of
+            # the shape (AGENTS.md, "Arrow is the hub"), so a cast has to
+            # attach them -- but no value moves, only the schema is swapped.
+            return pyarrow.RecordBatch.from_arrays(batch.columns, schema=schema)
         columns = target.cast_arrow_columns(_column_of(batch), batch.num_rows, safe=safe)
         return pyarrow.RecordBatch.from_arrays(columns, schema=schema)
 
@@ -920,7 +979,7 @@ class StructField(Field):
         batch instead of a second copy of the whole column.
         """
         target = self.merged(table.schema) if merge_schema else self
-        if table.schema.equals(target.arrow_schema):
+        if table.schema.equals(target.arrow_schema, check_metadata=True):
             return table
         batches = (target.cast_arrow_batch(batch, safe=safe) for batch in table.to_batches())
         return pyarrow.Table.from_batches(batches, target.arrow_schema)
@@ -1096,8 +1155,10 @@ def arrow_type_for(text: str) -> pyarrow.DataType:
     return pyarrow.type_for_alias(text)
 
 
-#: Which subclass speaks for which Arrow kind, narrowest test first. A large
-#: list view is also a list view, so order matters.
+#: Which subclass speaks for which Arrow kind. Every `is_*` here is a type-id
+#: equality, so the seven are disjoint and the order is for reading only --
+#: measured, not assumed: no kind satisfies another's test. A new kind is one
+#: more row.
 _KINDS: tuple[tuple[Callable[[pyarrow.DataType], bool], str], ...] = (
     (pyarrow.types.is_struct, "StructField"),
     (pyarrow.types.is_map, "MapField"),

@@ -112,9 +112,11 @@ remote file. This rules out `frozen=True`/`slots=True` on such classes.
 - Where Arrow can do a step, let it: a list flavour change is one `cast` over
   the layout after the item is cast here, and a same-kind cast re-wraps the
   array's own offsets instead of flattening. Both were measured
-  (`benchmarks/bench_cast.py`): the walk is 1.1-2.1x faster than `Array.cast`
-  where Arrow can do the same job, and `RecordBatch.cast` cannot reorder
-  columns at all.
+  (`benchmarks/bench_cast.py`): the walk runs at 0.8-2.1x of `Array.cast`
+  where Arrow can do the same job -- faster on everything but a plain flavour
+  change, which is where Arrow's own kernel is one memcpy -- and
+  `RecordBatch.cast` cannot reorder columns at all. Quote the slow row too:
+  rounding it away is how a claim stops matching the benchmark under it.
 - Generic redirects infer from what they are handed: `cast_arrow` picks
   array/batch/table/reader, `Dataset.write_arrow` picks batch/table/reader,
   `read_arrow` picks by the type asked for. `Convertible.redirect_of(value,

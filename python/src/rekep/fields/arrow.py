@@ -63,15 +63,33 @@ def _merge_type(source: pyarrow.DataType, target: pyarrow.DataType) -> pyarrow.D
                 [target.field(i) for i in range(target.num_fields)],
             )
         )
-    if kinds.is_list(source) and kinds.is_list(target):
-        return pyarrow.list_(merge_fields(source.field(0), target.field(0)))
-    if kinds.is_large_list(source) and kinds.is_large_list(target):
-        return pyarrow.large_list(merge_fields(source.field(0), target.field(0)))
     if kinds.is_map(source) and kinds.is_map(target):
         # Only the value side can grow: a key is what identifies an entry,
         # so changing its shape changes which entries exist.
         return pyarrow.map_(target.key_field, merge_fields(source.item_field, target.item_field))
+    if _same_list_kind(source, target):
+        # Every list flavour through one rebuilder rather than a branch each:
+        # spelling out `list` and `large_list` by hand is what left the three
+        # view flavours silently dropping a member their items had grown.
+        from rekep.fields.arrays import list_type_like
+
+        return list_type_like(target, merge_fields(source.field(0), target.field(0)))
     return target
+
+
+def _same_list_kind(source: pyarrow.DataType, target: pyarrow.DataType) -> bool:
+    """Whether both are lists, of the same flavour and (if fixed) the same width."""
+    kinds = pyarrow.types
+    tests = (
+        kinds.is_list,
+        kinds.is_large_list,
+        kinds.is_list_view,
+        kinds.is_large_list_view,
+        kinds.is_fixed_size_list,
+    )
+    if not any(test(source) and test(target) for test in tests):
+        return False
+    return not kinds.is_fixed_size_list(target) or source.list_size == target.list_size
 
 
 def _merge_field_lists(
