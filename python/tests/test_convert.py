@@ -139,6 +139,41 @@ def test_none_is_omitted_not_written_as_null(book: Book) -> None:
     assert Venue.from_toml(Venue(mic="XETR").into_toml()).timeout is None
 
 
+def test_none_inside_a_container_is_kept(tmp_path: pathlib.Path) -> None:
+    """A field can fall back to its default; a list element cannot.
+
+    Dropping one shifts every element after it, silently -- and a fixed-width
+    tuple stops loading at all, which is how this was found.
+    """
+
+    @dataclasses.dataclass
+    class Book(Convertible):
+        """A book of quotes."""
+
+        slots: list[str | None]
+        """Names, some of them not known yet."""
+
+        lookup: dict[str, str | None]
+        """What each slot maps to, where it maps to anything."""
+
+        flags: tuple[int, int | None, int]
+        """Three flags, the middle one optional."""
+
+    book = Book(slots=["a", None, "c"], lookup={"k1": "v", "k2": None}, flags=(1, None, 3))
+    assert book.into_dict() == {
+        "slots": ["a", None, "c"],
+        "lookup": {"k1": "v", "k2": None},
+        "flags": [1, None, 3],
+    }
+    assert Book.from_dict(book.into_dict()) == book
+    assert Book.from_json(book.into_json()) == book
+    assert Book.from_yaml(book.into_yaml()) == book
+    with pytest.raises(TypeError, match="TOML"):
+        # The one format that cannot hold it says so, rather than the encoder
+        # dropping the element to make it fit.
+        book.into_toml()
+
+
 def test_scalars_precede_tables_in_toml() -> None:
     """A bare key after a table header would silently land inside that table."""
 

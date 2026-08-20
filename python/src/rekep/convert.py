@@ -234,8 +234,13 @@ def _suffixes(name: str) -> list[str]:
 def _encode(value: Any) -> Any:
     """Reduce `value` to containers every one of the three encoders accepts.
 
-    None is dropped rather than emitted: TOML cannot express it, and on the way
-    back a missing key is what lets the dataclass default apply.
+    A dataclass **field** whose value is None is dropped rather than emitted:
+    TOML cannot express it, and on the way back a missing key is what lets the
+    dataclass default apply. Inside a container it is kept, because there is
+    nothing for it to fall back to -- a positional element has no default, and
+    dropping one shifts every element after it and makes a fixed-width tuple
+    unloadable. TOML then refuses the value by name, which is the honest answer
+    from the one format that cannot hold it.
 
     A nested value whose class defines its own `into_dict` is dumped by it: a
     `Field` holds an Arrow type, which only the field knows how to write.
@@ -251,11 +256,11 @@ def _encode(value: Any) -> Any:
     if isinstance(value, enum.Enum):  # before str: a str-valued enum is also a str
         return _encode(value.value)
     if isinstance(value, Mapping):
-        return {str(k): _encode(v) for k, v in value.items() if v is not None}
+        return {str(k): _encode(v) for k, v in value.items()}
     if isinstance(value, (str, bytes)):
         return value
     if isinstance(value, (Sequence, set, frozenset)):
-        return [_encode(v) for v in value if v is not None]
+        return [_encode(v) for v in value]
     if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
         return value.isoformat()
     if isinstance(value, (pathlib.PurePath, uuid.UUID, decimal.Decimal)):
