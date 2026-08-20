@@ -368,7 +368,6 @@ class IcebergDataset(Dataset):
                 table.append(chunk, snapshot_properties=properties or {}, branch=reference)
             elif self.plan_merges:
                 self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
-                table = self.iceberg_table
             else:
                 table.upsert(chunk, join_cols=join, branch=reference)
 
@@ -495,7 +494,10 @@ class IcebergDataset(Dataset):
                 )
             if len(inserts) > 0:
                 transaction.append(inserts, branch=reference, snapshot_properties=properties or {})
-        self.refresh()
+        # No `refresh()`: a commit updates the table object it was made on, in
+        # place, and this runs once per chunk -- reloading it from the catalog
+        # here would be a round trip per commit to learn what we just did.
+        # `refresh()` is for seeing *other* writers, and stays the caller's.
         return len(updates), len(inserts)
 
     def sorted(self, chunk: pyarrow.Table) -> pyarrow.Table:

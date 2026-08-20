@@ -590,6 +590,35 @@ def test_a_merge_of_new_keys_writes_without_reading(dataset: IcebergDataset) -> 
     assert len(dataset.iceberg_table.history()) > before
 
 
+def test_a_streamed_merge_loads_the_table_once(dataset: IcebergDataset) -> None:
+    """A commit updates the table it was made on, so no chunk reloads it.
+
+    The catalog round trip is free on SQLite and a network hop on REST or Glue;
+    at one per commit a streaming merge would pay it per chunk, to learn what
+    it had just done itself.
+    """
+    dataset.write_arrow_table(quotes(9))
+    loaded = 0
+    original = dataset.store.load_table
+
+    def counted(name: str):
+        nonlocal loaded
+        loaded += 1
+        return original(name)
+
+    dataset.refresh()
+    dataset.store.load_table = counted  # type: ignore[method-assign]
+    try:
+        rows = quotes(9, "XETR")
+        dataset.write_arrow(rows.to_reader(max_chunksize=3), merge_by=True, commit_row_size=3)
+    finally:
+        del dataset.store.load_table
+    assert loaded == 1, "one load for the whole stream, not one per commit"
+    assert set(dataset.read_arrow_table().column("venue").to_pylist()) == {"XETR"}, (
+        "and what was committed is visible without a reload"
+    )
+
+
 def test_the_merge_path_can_be_handed_back_to_pyiceberg(dataset: IcebergDataset) -> None:
     dataset.plan_merges = False
     dataset.write_arrow_table(quotes(3))
