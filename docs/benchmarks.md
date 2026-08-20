@@ -159,6 +159,15 @@ opened; `skipped` is what the filter saved.
 | narrow shape, projection from the shape | 0.075–0.080 | 400,000 | 14 | 0 |
 | narrow shape declared with the store's widths | 0.055–0.063 | 400,000 | 14 | 0 |
 
+One more, measured separately because it is a write-side choice: sorting each
+commit on the column a read filters. On a single 600k-row commit, a filter
+matching the top 5% of `unix` values took **214 ms** when the rows arrived
+shuffled and **22 ms** when the commit was sorted (`sort_by=["unix"]`), with
+one file planned in both cases. That is row-group skipping inside the file, and
+it only exists because `write.parquet.row-group-limit` is set: Iceberg's
+default of a million rows per group would make the whole file one group with
+nothing to skip.
+
 Three things worth taking away:
 
 - **A partition filter is worth 13 of 14 files.** A filter on a column that

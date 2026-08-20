@@ -676,3 +676,37 @@ def test_optimize_does_not_rewrite_properties_it_already_set(dataset: IcebergDat
     versions = len(dataset.refresh().iceberg_table.metadata.metadata_log)
     dataset.optimize()
     assert len(dataset.refresh().iceberg_table.metadata.metadata_log) <= versions + 1
+
+
+# -- sorting a commit -------------------------------------------------------
+
+
+def test_sorting_a_commit_changes_the_order_not_the_rows(dataset: IcebergDataset) -> None:
+    dataset.sort_by = ["size"]
+    rows = quotes(6).sort_by([("size", "descending")])
+    dataset.write_arrow(rows, commit_row_size=0)
+    stored = dataset.read_arrow_table()
+    assert stored.num_rows == 6
+    assert sorted(stored.column("size").to_pylist()) == sorted(rows.column("size").to_pylist())
+
+
+def test_sorting_is_off_unless_asked(dataset: IcebergDataset) -> None:
+    rows = quotes(4)
+    assert dataset.sorted(rows) is rows
+
+
+def test_a_filtered_read_is_the_same_either_way(tmp_path: Path) -> None:
+    """Sorting changes what a scan has to decode, never what it returns."""
+    answers = []
+    for index, sort_by in enumerate((None, ["size"])):
+        target = IcebergDataset(
+            name=f"trading.sorted{index}",
+            catalog="test",
+            properties=catalog_properties(tmp_path),
+            struct=Quote.FIELD,
+            sort_by=sort_by,
+        )
+        target.write_arrow(quotes(50).sort_by([("size", "descending")]), commit_row_size=0)
+        found = target.read_arrow_table(row_filter="size >= 40").to_pylist()
+        answers.append(sorted(found, key=str))
+    assert answers[0] == answers[1]

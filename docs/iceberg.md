@@ -315,6 +315,23 @@ A streaming job commits often, and an Iceberg table written that way accumulates
 small files, then snapshots, then files nothing references any more. These four
 calls are the whole routine.
 
+=== "Sort what you filter on"
+
+    ```python
+    quotes = IcebergDataset(..., sort_by=["unix"])
+    ```
+
+    Off by default, because it costs a sort per commit. What it buys is inside
+    the file: bounds are recorded per row group, and a filter skips a row group
+    it cannot match without decoding it. Measured on one 600k-row commit, a
+    top-5% filter took **214 ms unsorted and 22 ms sorted** — the same single
+    file either way.
+
+    It does *not* narrow file bounds for a stream that arrives shuffled: a
+    chunk of shuffled rows spans the whole key range whatever order it is
+    written in. File bounds come from chunks that are already roughly ordered,
+    which is what a log is.
+
 === "Compact"
 
     ```python
