@@ -1575,3 +1575,206 @@ def test_a_merge_after_a_deploy_widened_the_table(tmp_path: pathlib.Path) -> Non
     table.refresh()
     assert written == 2, "one updated, one inserted"
     assert {r["hash64"] for r in table.scan().to_arrow().to_pylist()} == {1, 2}
+
+
+# -- merges prune on the bounds Iceberg already records -------------------
+
+
+def seeded(tmp_path: pathlib.Path, first: int, last: int) -> tuple[Any, Any, Dataset]:
+    """A merging dataset whose table already holds keys `first`..`last`."""
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"merge_by": "true"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    dataset.write_arrow_reader(
+        parsed_reader(*({"hash64": key, "unix": key} for key in range(first, last + 1))),
+        format="iceberg",
+        table=table,
+    )
+    table.refresh()
+    return stack, table, dataset
+
+
+def test_key_bounds_come_from_the_manifests(tmp_path: pathlib.Path) -> None:
+    from rekep.dataset import _key_bounds
+
+    _, table, _ = seeded(tmp_path, 0, 9)
+    assert _key_bounds(table, "main", ["unix", "hash64"]) == {"unix": (0, 9), "hash64": (0, 9)}
+
+
+def test_an_empty_branch_has_no_bounds_to_reason_with(tmp_path: pathlib.Path) -> None:
+    from rekep.dataset import _key_bounds
+
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    assert _key_bounds(table, "main", ["hash64"]) is None
+
+
+def test_a_disjoint_chunk_cannot_match_anything(tmp_path: pathlib.Path) -> None:
+    from rekep.dataset import _key_bounds, _outside
+
+    _, table, _ = seeded(tmp_path, 0, 9)
+    bounds = _key_bounds(table, "main", ["unix", "hash64"])
+    beyond = parsed_reader(*({"hash64": k, "unix": k} for k in range(100, 105))).read_all()
+    assert _outside(beyond, ["unix", "hash64"], bounds) is True
+
+
+def test_an_overlapping_chunk_is_not_pruned(tmp_path: pathlib.Path) -> None:
+    from rekep.dataset import _key_bounds, _outside
+
+    _, table, _ = seeded(tmp_path, 0, 9)
+    bounds = _key_bounds(table, "main", ["unix", "hash64"])
+    across = parsed_reader(*({"hash64": k, "unix": k} for k in range(5, 15))).read_all()
+    assert _outside(across, ["unix", "hash64"], bounds) is False
+
+
+def test_one_column_missing_the_range_is_enough(tmp_path: pathlib.Path) -> None:
+    """A row matches only if it matches on every key column."""
+    from rekep.dataset import _outside
+
+    chunk = parsed_reader({"hash64": 3, "unix": 500}).read_all()
+    bounds = {"unix": (0, 9), "hash64": (0, 9)}
+    assert _outside(chunk, ["unix", "hash64"], bounds) is True, "unix is far outside"
+
+
+def test_pruning_never_changes_what_the_table_ends_up_with(tmp_path: pathlib.Path) -> None:
+    """Pruned or merged, the same rows: the whole optimization rests on
+    'cannot match', which must never become 'did not match'."""
+    _, table, dataset = seeded(tmp_path, 0, 9)
+
+    dataset.write_arrow_reader(  # disjoint: pruned to an append
+        parsed_reader(*({"hash64": k, "unix": k} for k in range(100, 105))),
+        format="iceberg",
+        table=table,
+    )
+    table.refresh()
+    dataset.write_arrow_reader(  # overlapping: a real merge, correcting in place
+        parsed_reader(*({"hash64": k, "unix": k, "protocol": "FIX.4.4"} for k in range(8, 13))),
+        format="iceberg",
+        table=table,
+    )
+    table.refresh()
+
+    rows = {row["hash64"]: row for row in table.scan().to_arrow().to_pylist()}
+    assert set(rows) == set(range(0, 13)) | set(range(100, 105))
+    assert rows[8]["protocol"] == "FIX.4.4", "corrected, not duplicated"
+    assert rows[0]["protocol"] is None, "untouched"
+    assert len(rows) == len(table.scan().to_arrow()), "no duplicate keys anywhere"
+
+
+# -- compact / cleanup / optimize -----------------------------------------
+
+
+def test_a_partition_of_full_sized_files_is_not_fragmented(tmp_path: pathlib.Path) -> None:
+    """Many files is not the test on its own -- a big partition is allowed
+    to have many big files."""
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    for index in range(6):
+        dataset.write_arrow_reader(parsed_reader({"hash64": index}), format="iceberg", table=table)
+    table.refresh()
+
+    with table.transaction() as transaction:
+        transaction.set_properties(**{"write.target-file-size-bytes": "1"})
+    table.refresh()
+    assert dataset.compact(table=table, min_input_files=3)["compacted"] is False
+
+
+def test_cleanup_frees_the_files_expiry_strands(tmp_path: pathlib.Path) -> None:
+    """pyiceberg's expire_snapshots is metadata-only: it *creates* garbage.
+    Reclaiming it is the step nothing else does."""
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"retain": "0s", "compact_min_files": "3"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    for index in range(5):
+        dataset.write_arrow_reader(parsed_reader({"hash64": index}), format="iceberg", table=table)
+    table.refresh()
+    dataset.compact(table=table)
+    table.refresh()
+
+    warehouse = tmp_path / "wh"
+    before = len(list(warehouse.rglob("*.parquet")))
+    report = dataset.cleanup(table=table, orphan_grace=datetime.timedelta(seconds=-1))
+    table.refresh()
+
+    assert report["properties"], "the metadata-retention properties were set"
+    assert report["expired"], "snapshots past the retention window went"
+    assert report["orphans"], "and the files they stranded were freed"
+    assert len(list(warehouse.rglob("*.parquet"))) < before
+    assert table.scan().to_arrow().num_rows == 5, "every row still readable"
+
+
+def test_cleanup_spares_files_younger_than_the_grace_period(tmp_path: pathlib.Path) -> None:
+    """A writer mid-commit has files no snapshot references yet."""
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"retain": "0s"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    for index in range(4):
+        dataset.write_arrow_reader(parsed_reader({"hash64": index}), format="iceberg", table=table)
+    table.refresh()
+    dataset.compact(table=table, min_input_files=2)
+    table.refresh()
+
+    report = dataset.cleanup(table=table)  # default grace: three days
+    assert report["orphans"] == [], "nothing on this table is old enough"
+
+
+def test_optimize_enables_manifest_merging_once(tmp_path: pathlib.Path) -> None:
+    """pyiceberg does not merge manifests by default, so a streaming table
+    grows one per commit forever."""
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    dataset.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
+    table.refresh()
+
+    assert dataset.optimize(table=table)["manifest_merge"] is True
+    table.refresh()
+    assert table.properties["commit.manifest-merge.enabled"] == "true"
+    assert dataset.optimize(table=table)["manifest_merge"] is False, "already on"
+
+
+def test_optimize_is_idempotent(tmp_path: pathlib.Path) -> None:
+    stack = _local_iceberg_stack(tmp_path)
+    dataset = Dataset(
+        record="rekep.models.ParsedMessage",
+        name="messages",
+        protocols={"iceberg": {"compact_min_files": "3", "retain": "0s"}},
+    )
+    dataset.deploy_iceberg(stack)
+    table = stack.tables.get(dataset.into_iceberg_table())
+    for index in range(4):
+        dataset.write_arrow_reader(parsed_reader({"hash64": index}), format="iceberg", table=table)
+    table.refresh()
+
+    assert dataset.optimize(table=table)["compaction"]["compacted"] is True
+    table.refresh()
+    settled = dataset.optimize(table=table)
+    assert settled["compaction"]["compacted"] is False
+    assert settled["cleanup"]["properties"] == []
+    assert table.scan().to_arrow().num_rows == 4
+
+
+def test_a_maintenance_verb_refuses_an_unknown_protocol() -> None:
+    dataset = Dataset(record="rekep.models.Log")
+    with pytest.raises(ValueError, match="no 'doris' compact"):
+        dataset.compact("doris")

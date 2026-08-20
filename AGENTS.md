@@ -158,7 +158,18 @@ rekep/
 │                  forward first, since a scan projects its snapshot's schema
 │                  rather than the table's; `overwrite`; branch-aware;
 │                  chunk_rows per commit),
-│                  iceberg_compact/expire_snapshots/publish;
+│                  compact/cleanup/optimize dispatch by protocol like I/O
+│                  does: iceberg_compact rewrites fragmented partitions
+│                  (write.target-file-size-bytes decides the output size,
+│                  not us), iceberg_cleanup sets the metadata-retention
+│                  properties, expires snapshots and then **deletes the
+│                  files that expiry stranded** -- pyiceberg's expire is
+│                  metadata-only, so it produces garbage rather than
+│                  removing it -- and iceberg_optimize turns manifest
+│                  merging on, compacts, then cleans, in that order;
+│                  iceberg_publish fast-forwards main onto a branch;
+│                  a merge prunes each chunk against the min/max Iceberg
+│                  already records, appending instead when nothing can match;
 │                  file_read/write via rekep.filesystems, hive-partitioned from
 │                  the record's own Arrow(partition=...)
 ├── run.py         Run/RunEvent: OpenLineage's own event shape -- the shapes
@@ -235,7 +246,7 @@ converges one bare record, stack defaults filling in namespace and
 properties. `rekep dataset deploy --target iceberg|doris` converges
 every `Dataset` under `stacks/datasets/` instead -- each carries its own
 namespace and per-protocol properties, autonomous of any table side file.
-`rekep dataset maintain` compacts and expires those same tables,
+`rekep dataset optimize` compacts and reclaims on those same tables,
 taking no policy arguments: `protocols.iceberg.compact_min_files`/`retain`
 in the side file are the policy. The `protocols.<protocol>` keys that *route*
 a write rather than describe the table (`location`, `branch`, `merge_by`,

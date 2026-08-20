@@ -98,23 +98,23 @@ namespace must resolve against (default `stacks/<target>`); `into_iceberg_table(
 `into_doris_table()` build the ad hoc table, `--dry-run` plans without
 converging.
 
-## Maintain datasets
+## Optimize datasets
 
 Compaction and snapshot retention, idempotent like every other verb — a
 table already laid out well reports nothing rewritten and nothing expired:
 
 ```bash
-rekep dataset maintain --dry-run
-rekep dataset maintain --branch dev
+rekep dataset optimize --dry-run
+rekep dataset optimize --branch dev
 ```
 
 It takes no policy arguments on purpose: `protocols.iceberg.compact_min_files`
 and `protocols.iceberg.retain` in each dataset's own side file are the whole
 policy, so a scheduler runs the bare command. See
-[Datasets](datasets.md#maintenance-compaction-and-retention).
+[Datasets](datasets.md#maintenance-compact-cleanup-optimize).
 
 ```console
-$ rekep dataset maintain --dry-run
-dataset://default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired
-dataset://default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired
+$ rekep dataset optimize --dry-run
+ds:/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
+ds:/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
 ```

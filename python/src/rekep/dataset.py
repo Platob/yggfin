@@ -101,6 +101,29 @@ ICEBERG_UPSERT_CHUNK_ROWS = 100_000
 #: commit to save one file open, which is not a trade worth making.
 ICEBERG_COMPACT_MIN_FILES = 8
 
+#: How long a file must have been sitting unreferenced before `iceberg_cleanup`
+#: will delete it. A write in flight has files on disk that no committed
+#: snapshot points at yet; deleting those destroys a concurrent writer's work,
+#: so the grace period is deliberately generous.
+ICEBERG_ORPHAN_GRACE = datetime.timedelta(days=3)
+
+#: Table properties that make Iceberg prune its own `metadata.json` trail.
+#: Set rather than emulated: once these are on, every commit does the work,
+#: and the first one does it retroactively.
+ICEBERG_METADATA_RETENTION = {
+    "write.metadata.delete-after-commit.enabled": "true",
+    "write.metadata.previous-versions-max": "20",
+}
+
+#: Merging manifests on commit; off by default in pyiceberg, which is why an
+#: untuned table grows one manifest per write forever.
+ICEBERG_MANIFEST_MERGE = "commit.manifest-merge.enabled"
+
+#: The table's own bin-packing target for a written data file. Read rather
+#: than guessed at: a table that wants 128MB files says so once, here.
+ICEBERG_TARGET_FILE_BYTES = "write.target-file-size-bytes"
+ICEBERG_TARGET_FILE_BYTES_DEFAULT = 512 * 1024 * 1024
+
 #: `protocols[<protocol>]` keys that route a write, a read or a maintenance
 #: pass rather than describe the table -- excluded from `table_properties()`.
 _PROTOCOL_ROUTING_KEYS = frozenset(
@@ -356,7 +379,7 @@ class Dataset(Record):
         Spelled as a window rather than a cutoff, because that is what a
         retention policy is: `"7d"`, `"12h"`, `"90m"`, `"2w"`, or bare
         seconds. None means the dataset declares no policy and
-        `iceberg_maintain` leaves its history alone.
+        `iceberg_cleanup` leaves its history alone.
         """
         declared = self.protocol_properties("iceberg").get("retain")
         if declared in (None, ""):
@@ -686,6 +709,20 @@ class Dataset(Record):
         anti-join would only cost a scan of nothing. That case skips the
         merge and appends, logged rather than silent.
 
+        The same reasoning prunes each chunk. Iceberg already records the
+        min and max of every column in every data file, so before merging a
+        chunk this compares its own key range against those bounds
+        (`_key_bounds`): if no existing file's range can overlap on even one
+        join column, no row in the chunk can match anything, and the merge
+        is an anti-join guaranteed to find nothing. That chunk appends
+        instead. It costs one manifest read for the whole write and one
+        `min_max` kernel per key column per chunk, against a merge that
+        would otherwise scan and join -- and for the common shape, a stream
+        of *new* data keyed on something time-ordered, it prunes every
+        chunk. Bounds are only ever widened by Iceberg's own truncation of
+        long strings, so the comparison can say "cannot match" but never
+        wrongly say "does not match".
+
         Both shapes accumulate `chunk_rows` rows per call rather than
         writing batch by batch, because in Iceberg **a batch is not a unit
         of work**: every call commits a snapshot and lands at least one data
@@ -768,9 +805,10 @@ class Dataset(Record):
             table.overwrite(whole, branch=branch, **options)
             return whole.num_rows
 
+        bounds = _key_bounds(table, branch, join_cols) if join_cols else None
         written = 0
         for chunk in _chunked(reader, chunk_rows):
-            if join_cols is None:
+            if join_cols is None or _outside(chunk, join_cols, bounds):
                 table.append(chunk, branch=branch, **options)
                 written += chunk.num_rows
             else:
@@ -860,41 +898,70 @@ class Dataset(Record):
         """Lineage-wrapped call to the public `file_write_arrow_reader`."""
         return self._tracked_write("file", self.file_write_arrow_reader, reader, options)
 
-    # -- iceberg maintenance ----------------------------------------------
+    # -- maintenance: compact, cleanup, optimize ---------------------------
+
+    def compact(self, protocol: str = "iceberg", **options: Any) -> dict[str, Any]:
+        """Rewrite the partitions that grew too many small files."""
+        return self._maintenance(protocol, "compact", options)
+
+    def cleanup(self, protocol: str = "iceberg", **options: Any) -> dict[str, Any]:
+        """Reclaim what the table no longer needs: old snapshots, dead files."""
+        return self._maintenance(protocol, "cleanup", options)
+
+    def optimize(self, protocol: str = "iceberg", **options: Any) -> dict[str, Any]:
+        """Do whatever this table actually needs, in the order it needs it."""
+        return self._maintenance(protocol, "optimize", options)
+
+    def _maintenance(self, protocol: str, verb: str, options: dict[str, Any]) -> dict[str, Any]:
+        """Dispatch a maintenance verb the same way I/O dispatches a format."""
+        method = getattr(self, f"{protocol}_{verb}", None)
+        if not callable(method):
+            raise ValueError(f"dataset {self.dataset_name()!r}: no {protocol!r} {verb}")
+        return method(**options)
 
     def iceberg_compact(
         self,
         *,
         table: Any = None,
         branch: str | None = None,
-        min_input_files: int = ICEBERG_COMPACT_MIN_FILES,
+        min_input_files: int | None = None,
         row_filter: Any = None,
         dry_run: bool = False,
     ) -> dict[str, Any]:
         """Rewrite the partitions that grew too many small data files.
 
-        Streaming writes are what make this necessary: every append commits
-        at least one file per partition it touched, so a table written once
-        a minute has a thousand files a day and a scan pays a thousand file
+        Streaming writes are what make this necessary: every commit lands at
+        least one file per partition it touched, so a table written once a
+        minute has a thousand files a day and a scan pays a thousand file
         opens to read them. Compaction reads those rows back and writes them
         out as few large files -- the data is unchanged, only its layout.
 
         pyiceberg has no `rewrite_data_files` procedure, so this is built
-        from what it does have: `inspect.data_files()` says which partition
-        each file belongs to, a scan filtered to the crowded partitions
-        reads exactly those rows, and `dynamic_partition_overwrite` replaces
-        exactly the partitions present in what is written back. One commit,
-        no other partition touched.
+        from what it does have, and leans on it rather than reinventing it:
 
-        Only `identity` partitions can be targeted this way, because only
-        those have a partition value that is also a column value to filter
-        on; a table partitioned by a computed transform (`day`, `bucket`) is
-        refused by name rather than half-compacted, with `row_filter=` as
-        the way to say what to rewrite instead. An unpartitioned table is
-        the simple case: too many files means rewrite all of them.
+        - `inspect.partitions()` says how many files and how many bytes each
+          partition holds. That is manifest metadata, so choosing what to
+          rewrite costs no scan at all.
+        - The output size is **not decided here**. `write.target-file-size-bytes`
+          is the table's own property and pyiceberg's writer already
+          bin-packs to it, so a table that wants 128MB files says so once, on
+          the table, and every writer agrees -- including this one.
+        - `dynamic_partition_overwrite` replaces exactly the partitions
+          present in what is written back. One commit, no other partition
+          touched.
 
-        Returns what it did (or, with `dry_run`, would do): the partitions
-        chosen, how many files they held and how many rows moved.
+        A partition is worth rewriting when it holds `min_input_files` or
+        more files *and* they average under the target size -- the second
+        half matters, because a partition of eight full-sized files is not
+        fragmented, it is just big. `min_input_files` defaults to
+        `protocols.iceberg.compact_min_files`.
+
+        Only `identity` partitions can be targeted, because only those have a
+        partition value that is also a column value to filter on; a table
+        partitioned by a computed transform (`day`, `bucket`) is refused by
+        name rather than half-compacted, with `row_filter=` as the way to say
+        what to rewrite instead. An unpartitioned table is the simple case:
+        too many files means rewrite all of them.
         """
         if table is None:
             raise NotImplementedError(
@@ -902,12 +969,18 @@ class Dataset(Record):
             )
         reference = self._read_ref(table, branch)
         snapshot = table.snapshot_by_name(reference) if reference else table.current_snapshot()
+        empty: dict[str, Any] = {"partitions": [], "files": 0, "rows": 0, "compacted": False}
         if snapshot is None:
-            return {"partitions": [], "files": 0, "rows": 0, "compacted": False}
+            return empty
 
-        crowded = _crowded_partitions(table, snapshot.snapshot_id, min_input_files)
+        crowded = _crowded_partitions(
+            table,
+            snapshot.snapshot_id,
+            self.iceberg_compact_min_files() if min_input_files is None else min_input_files,
+            _target_file_bytes(table),
+        )
         if not crowded:
-            return {"partitions": [], "files": 0, "rows": 0, "compacted": False}
+            return empty
         files = sum(count for _, count in crowded)
         partitions = [dict(values) for values, _ in crowded]
         report: dict[str, Any] = {"partitions": partitions, "files": files, "rows": 0}
@@ -946,17 +1019,21 @@ class Dataset(Record):
         snapshot_ids: list[int] | None = None,
         dry_run: bool = False,
     ) -> list[int]:
-        """Drop snapshots this table no longer needs, freeing their data files.
+        """Drop snapshots this table no longer needs.
 
-        The other half of compaction: rewriting files does not shrink the
-        table until the snapshots still referencing the old files are gone.
         `older_than` takes a cutoff or a `timedelta` back from now -- a
-        retention window, which is the way this is actually configured --
-        and pyiceberg keeps whatever any ref still points at, so a branch or
-        tag protects its own history.
+        retention window, which is how this is actually configured -- and
+        pyiceberg keeps whatever any ref still points at, so a branch or tag
+        protects its own history.
 
-        Returns the snapshot ids expired (or, with `dry_run`, the ones that
-        would be); an empty list means nothing was old enough.
+        **This frees no disk on its own.** pyiceberg's `expire_snapshots` is
+        metadata-only: it drops the snapshots and leaves every data file they
+        alone referenced sitting in the warehouse, unreachable. That is what
+        `iceberg_cleanup` is for, and why it runs this and then goes looking
+        for what it stranded.
+
+        Returns the snapshot ids expired, or with `dry_run` the ones that
+        would be; an empty list means nothing was old enough.
         """
         if table is None:
             raise NotImplementedError(
@@ -979,37 +1056,112 @@ class Dataset(Record):
             logger.info("dataset %s: expired %d snapshots", self.dataset_name(), len(chosen))
         return chosen
 
-    def iceberg_maintain(
-        self, *, table: Any = None, branch: str | None = None, dry_run: bool = False
+    def iceberg_cleanup(
+        self,
+        *,
+        table: Any = None,
+        older_than: datetime.datetime | datetime.timedelta | None = None,
+        orphan_grace: datetime.timedelta = ICEBERG_ORPHAN_GRACE,
+        dry_run: bool = False,
     ) -> dict[str, Any]:
-        """Compact, then expire -- both driven by this dataset's own config.
+        """Reclaim the space the table is no longer using. Three steps.
 
-        The two are one pass on purpose and in this order: rewriting files
-        does not shrink anything while the snapshots that referenced the old
-        ones are still around, and expiring first would only have to be
-        redone. `protocols.iceberg.compact_min_files` and
-        `protocols.iceberg.retain` are the whole policy, so a scheduled
-        `rekep dataset maintain` needs no arguments and no code --
-        the side file already says what this dataset wants.
+        1. **Metadata files** are pyiceberg's own job, once the table says so:
+           `write.metadata.delete-after-commit.enabled` and
+           `write.metadata.previous-versions-max` make every commit prune the
+           `metadata.json` trail behind it, retroactively on the first commit
+           after they are set. So this sets them rather than deleting
+           anything itself -- a table that keeps itself tidy needs no
+           maintenance pass at all.
+        2. **Snapshots** older than `older_than` (default:
+           `protocols.iceberg.retain`) are expired.
+        3. **Orphans** -- and this is the step nothing else does. Expiring a
+           snapshot in pyiceberg drops metadata and *nothing else*: every
+           data file only that snapshot referenced stays on disk, unreachable
+           and unaccounted for. So the reachable set is computed from
+           `inspect.all_files()`/`all_manifests()` across every surviving
+           snapshot, the warehouse under the table's location is listed, and
+           what is in the second and not the first is deleted.
 
-        A dataset declaring no `retain` keeps all its history, which is the
-        safe default for something nobody has thought about yet.
+           `orphan_grace` is why that is safe: a file younger than the grace
+           period is left alone, because a write in flight has files on disk
+           that no committed snapshot references yet. Deleting those would
+           destroy a concurrent writer's work. Three days by default, which
+           is the same conservative default the JVM implementation uses.
         """
-        compaction = self.iceberg_compact(
+        if table is None:
+            raise NotImplementedError(
+                f"{type(self).__name__}.iceberg_cleanup needs table=<pyiceberg Table>"
+            )
+        report: dict[str, Any] = {"properties": [], "expired": [], "orphans": []}
+
+        missing = {
+            key: value
+            for key, value in ICEBERG_METADATA_RETENTION.items()
+            if key not in table.properties
+        }
+        if missing and not dry_run:
+            with table.transaction() as transaction:
+                transaction.set_properties(**missing)
+            table.refresh()
+        report["properties"] = sorted(missing)
+
+        report["expired"] = self.iceberg_expire_snapshots(
             table=table,
-            branch=branch,
-            min_input_files=self.iceberg_compact_min_files(),
+            older_than=self.iceberg_retention() if older_than is None else older_than,
             dry_run=dry_run,
         )
-        retention = self.iceberg_retention()
-        expired: list[int] = []
-        if retention is not None:
-            if compaction.get("compacted"):
-                table.refresh()
-            expired = self.iceberg_expire_snapshots(
-                table=table, older_than=retention, dry_run=dry_run
+        if report["expired"] and not dry_run:
+            table.refresh()
+
+        report["orphans"] = _orphan_files(table, orphan_grace)
+        if report["orphans"] and not dry_run:
+            for path in report["orphans"]:
+                table.io.delete(path)
+            logger.info(
+                "dataset %s: deleted %d orphaned files",
+                self.dataset_name(),
+                len(report["orphans"]),
             )
-        return {"compaction": compaction, "expired": expired}
+        return report
+
+    def iceberg_optimize(
+        self, *, table: Any = None, branch: str | None = None, dry_run: bool = False
+    ) -> dict[str, Any]:
+        """Compact, then clean up -- both driven by this dataset's own config.
+
+        The order is not a preference. Compaction *creates* garbage: the
+        files it replaced become unreachable the moment the new ones commit,
+        so cleaning first would only have to be redone. And enabling manifest
+        merging comes before either, because it is the one that stops the
+        problem recurring: pyiceberg writes a manifest per commit and does
+        **not** merge them by default, so a streaming table accumulates
+        manifests as fast as it accumulates files. Turning
+        `commit.manifest-merge.enabled` on costs nothing per commit and means
+        the next thousand writes do not need this pass.
+
+        `protocols.iceberg.compact_min_files` and `protocols.iceberg.retain`
+        are the whole policy, so a scheduled `rekep dataset optimize` needs
+        no arguments and no code -- the side file already says what this
+        dataset wants.
+        """
+        if table is None:
+            raise NotImplementedError(
+                f"{type(self).__name__}.iceberg_optimize needs table=<pyiceberg Table>"
+            )
+        report: dict[str, Any] = {"manifest_merge": False}
+        if ICEBERG_MANIFEST_MERGE not in table.properties:
+            report["manifest_merge"] = True
+            if not dry_run:
+                with table.transaction() as transaction:
+                    transaction.set_properties(**{ICEBERG_MANIFEST_MERGE: "true"})
+                table.refresh()
+
+        report["compaction"] = self.iceberg_compact(table=table, branch=branch, dry_run=dry_run)
+        if report["compaction"].get("compacted"):
+            table.refresh()
+        report["cleanup"] = self.iceberg_cleanup(table=table, dry_run=dry_run)
+        return report
 
     def iceberg_publish(self, *, table: Any = None, branch: str | None = None) -> int | None:
         """Fast-forward `main` onto `branch`: the publish half of write-audit-publish.
@@ -1313,26 +1465,153 @@ def _ensure_iceberg_branch(table: Any, branch: str) -> None:
         table.manage_snapshots().create_branch(source.snapshot_id, branch).commit()
 
 
+def _target_file_bytes(table: Any) -> int:
+    """The table's own bin-packing target, or Iceberg's default."""
+    declared = table.properties.get(ICEBERG_TARGET_FILE_BYTES)
+    return int(declared) if declared else ICEBERG_TARGET_FILE_BYTES_DEFAULT
+
+
 def _crowded_partitions(
-    table: Any, snapshot_id: int, min_input_files: int
+    table: Any, snapshot_id: int, min_input_files: int, target_bytes: int
 ) -> list[tuple[tuple[tuple[str, Any], ...], int]]:
-    """Partitions holding at least `min_input_files` data files, with their counts.
+    """Partitions worth rewriting: many files, and small ones.
 
     Read from `inspect.data_files()`, which is the manifest list rather than
-    the data: the file count per partition is metadata, so deciding what to
-    compact costs no scan at all. An unpartitioned table reports one group
-    with no values -- the whole table -- which is exactly how it should be
-    treated.
+    the data, so deciding what to compact costs no scan at all. An
+    unpartitioned table reports one group with no values -- the whole table
+    -- which is exactly how it should be treated.
+
+    Both halves of the test matter. A partition of eight files is not
+    fragmented if each is already the target size; it is just a big
+    partition, and rewriting it would read and write everything to achieve
+    nothing.
     """
     files = table.inspect.data_files(snapshot_id=snapshot_id)
     if files.num_rows == 0:
         return []
-    partitions = files.column("partition").to_pylist()
-    counts: dict[tuple[tuple[str, Any], ...], int] = {}
-    for values in partitions:
+    counts: dict[tuple[tuple[str, Any], ...], list[int]] = {}
+    for values, size in zip(
+        files.column("partition").to_pylist(),
+        files.column("file_size_in_bytes").to_pylist(),
+        strict=True,
+    ):
         key = tuple(sorted((values or {}).items()))
-        counts[key] = counts.get(key, 0) + 1
-    return [(key, count) for key, count in counts.items() if count >= min_input_files]
+        tally = counts.setdefault(key, [0, 0])
+        tally[0] += 1
+        tally[1] += size or 0
+    return [
+        (key, count)
+        for key, (count, total) in counts.items()
+        if count >= min_input_files and total / count < target_bytes
+    ]
+
+
+def _key_bounds(table: Any, branch: str, join_cols: list[str]) -> dict[str, tuple[Any, Any]] | None:
+    """The min and max each join column spans across the table's data files.
+
+    Iceberg writes these into every manifest, so this is a metadata read --
+    no scan, one call for a whole write. None means "no bounds to reason
+    with": an empty branch, or a column whose statistics were not collected
+    (`write.metadata.metrics.*` can turn them off), in which case the merge
+    must go ahead as normal.
+    """
+    snapshot = table.snapshot_by_name(branch)
+    if snapshot is None:
+        return None
+    files = table.inspect.data_files(snapshot_id=snapshot.snapshot_id)
+    if files.num_rows == 0:
+        return None
+    metrics = files.column("readable_metrics").to_pylist()
+    spans: dict[str, tuple[Any, Any]] = {}
+    for column in join_cols:
+        lows = [row[column]["lower_bound"] for row in metrics if row.get(column)]
+        highs = [row[column]["upper_bound"] for row in metrics if row.get(column)]
+        known = [(low, high) for low, high in zip(lows, highs, strict=True) if low is not None]
+        if len(known) != len(metrics):
+            return None
+        spans[column] = (min(low for low, _ in known), max(high for _, high in known))
+    return spans
+
+
+def _outside(chunk: pyarrow.Table, join_cols: list[str], bounds: Any) -> bool:
+    """True when nothing in `chunk` can possibly match what the table holds.
+
+    One column is enough: a row matches only if it matches on *every* join
+    column, so a chunk whose range on any single one misses the table's
+    range entirely cannot contain a match at all.
+    """
+    if not bounds:
+        return False
+    for column, (low, high) in bounds.items():
+        span = pyarrow.compute.min_max(chunk.column(column)).as_py()
+        if span["min"] is None:
+            return False
+        if span["max"] < low or span["min"] > high:
+            return True
+    return False
+
+
+def _orphan_files(table: Any, grace: datetime.timedelta) -> list[str]:
+    """Files under the table's location that nothing reachable references.
+
+    The reachable set is every surviving snapshot's data, delete and manifest
+    files, plus the manifest lists and the `metadata.json` trail -- so a file
+    is an orphan only if no snapshot the table still has can reach it.
+
+    Anything younger than `grace` is spared regardless: a writer mid-commit
+    has files on disk that no snapshot references *yet*, and they are
+    indistinguishable from garbage by reachability alone. Age is what tells
+    them apart.
+    """
+    location = table.location()
+    filesystem, root = resolve_filesystem(location)
+    cutoff = datetime.datetime.now(datetime.UTC) - grace
+
+    reachable = {
+        _bare_path(path) for path in table.inspect.all_files().column("file_path").to_pylist()
+    }
+    reachable |= {
+        _bare_path(path) for path in table.inspect.all_manifests().column("path").to_pylist()
+    }
+    reachable |= {
+        _bare_path(snapshot.manifest_list)
+        for snapshot in table.snapshots()
+        if snapshot.manifest_list
+    }
+    reachable |= {
+        _bare_path(entry["file"])
+        for entry in table.inspect.metadata_log_entries().to_pylist()
+        if entry.get("file")
+    }
+    reachable |= {_bare_path(table.metadata_location)}
+
+    selector = pyarrow.fs.FileSelector(root, recursive=True, allow_not_found=True)
+    orphans = []
+    for info in filesystem.get_file_info(selector):
+        if info.type is not pyarrow.fs.FileType.File:
+            continue
+        if _bare_path(info.path) in reachable:
+            continue
+        modified = info.mtime
+        if modified is not None and modified.astimezone(datetime.UTC) > cutoff:
+            continue
+        orphans.append(f"{location.rstrip('/')}/{info.path[len(root) :].lstrip('/')}")
+    return sorted(orphans)
+
+
+def _bare_path(uri: str | None) -> str:
+    """A path with any scheme and authority stripped, for comparing sets.
+
+    The same file is spelled `file:///wh/t/data/x.parquet` in a manifest and
+    `/wh/t/data/x.parquet` by the filesystem that lists it. Comparing those
+    as strings finds no overlap at all -- and an orphan sweep that thinks
+    nothing is reachable deletes the table.
+    """
+    if not uri:
+        return ""
+    _, _, rest = str(uri).partition("://")
+    path = rest or str(uri)
+    return "/" + path.partition("/")[2].strip("/") if rest else "/" + path.strip("/")
 
 
 def _partition_filter(table: Any, partitions: list[dict[str, Any]]) -> Any:

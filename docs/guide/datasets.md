@@ -60,8 +60,8 @@ protocols:
 | `branch` | Which Iceberg branch writes and reads target | `iceberg_branch()` |
 | `merge_by` | `true` (merge on the primary key), `false`, or `a,b` | `merge_columns()` |
 | `merge_schema` | `true` to add columns the stream has and the table does not | `merge_schema()` |
-| `compact_min_files` | Files in a partition before it is worth rewriting | `iceberg_compact_min_files()` |
 | `retain` | Snapshot retention window: `7d`, `12h`, `90m`, `2w` | `iceberg_retention()` |
+| `compact_min_files` | Files in a partition before it is worth rewriting | `iceberg_compact_min_files()` |
 
 Every other key under `protocols.iceberg` (and every key in `properties`) is
 a **table property**, persisted on the table itself — the six above route a
@@ -319,7 +319,29 @@ regardless of `branch`, logged. That is why the shipped config maps git's
 `main`/`master` onto Iceberg's literal `main` rather than through
 `git_branch_slug`'s own spelling of it.
 
-## Maintenance: compaction and retention
+### Pruning a merge on the bounds Iceberg already has
+
+Iceberg records the min and max of every column in every data file. Before
+merging a chunk, its own key range is compared against those bounds: if no
+existing file's range can overlap on even one join column, no row in the
+chunk can match anything, and the merge is an anti-join guaranteed to find
+nothing — so that chunk appends instead.
+
+It costs one manifest read for the whole write and one `min_max` kernel per
+key column per chunk. For the common shape — a stream of *new* data keyed on
+something time-ordered — it prunes every chunk, and the difference is not
+subtle: writing 1,000 fresh keys into a 1,000-row table took **0.058 s
+pruned against 1.66 s merged**, same result either way.
+
+That is why `unix` sits in the key beside `hash64`: the hash identifies a
+line, but it is random, so a chunk of hashes always overlaps everything. A
+key that leads with time gives the bounds something to prune on.
+
+Bounds are only ever *widened* by Iceberg's own truncation of long strings,
+so this can conclude "cannot match" but never wrongly conclude "does not
+match".
+
+## Maintenance: compact, cleanup, optimize
 
 Streaming writes make this necessary across *runs*, which no single write can
 batch away: every run commits at least one file per partition it touched, so
@@ -327,32 +349,73 @@ a table written once a minute has a thousand files a day and a scan pays a
 thousand file opens.
 
 ```python
-dataset.iceberg_compact(table=t, min_input_files=8, dry_run=True)
-dataset.iceberg_expire_snapshots(table=t, older_than=datetime.timedelta(days=7))
-dataset.iceberg_maintain(table=t)      # both, from the side file's own policy
+dataset.compact(table=t, dry_run=True)   # rewrite the fragmented partitions
+dataset.cleanup(table=t)                 # reclaim what nothing references
+dataset.optimize(table=t)                # whatever this table actually needs
 ```
 
+### `compact()`
+
 pyiceberg has no `rewrite_data_files` procedure, so compaction is built from
-what it does have: `inspect.data_files()` says which partition each file
-belongs to (metadata, so choosing costs no scan), a scan filtered to the
+what it does have, and leans on it rather than reinventing it:
+`inspect.data_files()` says how many files and how many bytes each partition
+holds — metadata, so *choosing* costs no scan — a scan filtered to the
 crowded partitions reads exactly those rows, and `dynamic_partition_overwrite`
 replaces exactly the partitions written back. One commit, no other partition
 touched.
 
-Only `identity` partitions can be targeted that way — only they have a
-partition value that is also a column value to filter on. A table partitioned
-by a computed transform is refused by name, with `row_filter=` as the way to
-say what to rewrite instead. An unpartitioned table is the simple case: too
-many files means rewrite all of them.
+The **output size is not decided here**: `write.target-file-size-bytes` is the
+table's own property and pyiceberg's writer already bin-packs to it, so a
+table that wants 128 MB files says so once, on the table. That same property
+is half the test for what to rewrite — a partition needs
+`compact_min_files` files *and* an average size under the target, because a
+partition of eight full-sized files is not fragmented, it is just big.
 
-Compaction runs before expiry on purpose: rewriting files frees nothing while
-the snapshots referencing the old ones are still there. The CLI needs no
-arguments at all, because the side file already carries the policy:
+Only `identity` partitions can be targeted — only they have a partition value
+that is also a column value to filter on. A table partitioned by a computed
+transform is refused by name, with `row_filter=` as the way to say what to
+rewrite instead.
+
+### `cleanup()`
+
+Three steps, and the third is the one nothing else does:
+
+1. **Metadata files** are pyiceberg's own job once the table says so.
+   `write.metadata.delete-after-commit.enabled` and
+   `write.metadata.previous-versions-max` make every commit prune the
+   `metadata.json` trail behind it — retroactively, on the first commit after
+   they are set. So `cleanup` sets them rather than deleting anything itself.
+2. **Snapshots** past `protocols.iceberg.retain` are expired.
+3. **Orphans.** Expiring a snapshot in pyiceberg drops metadata and *nothing
+   else*: every data file only that snapshot referenced stays on disk,
+   unreachable and unaccounted for. Expiry is a garbage *producer*. So the
+   reachable set is computed from `inspect.all_files()`/`all_manifests()`
+   across every surviving snapshot, the warehouse is listed, and the
+   difference is deleted.
+
+   `orphan_grace` (three days by default) is what makes that safe: a write in
+   flight has files on disk that no committed snapshot references yet, and
+   reachability alone cannot tell those from garbage. Age can.
+
+### `optimize()`
+
+Compact, then clean up — and enable manifest merging before either. The order
+is not a preference:
+
+- Compaction **creates** garbage: the files it replaced become unreachable
+  the moment the new ones commit, so cleaning first would only have to be
+  redone.
+- `commit.manifest-merge.enabled` is **off** in pyiceberg, so a streaming
+  table accumulates one manifest per commit forever. Turning it on costs
+  nothing per commit and means the next thousand writes never need this pass.
+
+`compact_min_files` and `retain` are the whole policy, so the CLI needs no
+arguments at all:
 
 ```console
-$ rekep dataset maintain --dry-run
-dataset://default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired
-dataset://default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired
+$ rekep dataset optimize --dry-run
+ds:/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
+ds:/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
 ```
 
 A dataset declaring no `retain` keeps all its history, which is the safe

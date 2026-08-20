@@ -530,18 +530,18 @@ class DatasetService:
         deploy.set_defaults(run=self.deploy)
 
         maintain = commands.add_parser(
-            "maintain", help="compact and expire every declared dataset's iceberg table"
+            "optimize", help="compact and reclaim space on every declared dataset's table"
         )
         maintain.add_argument("--config", default=None, help="datasets directory")
         maintain.add_argument("--stack-config", default=None, help="iceberg deployment directory")
         maintain.add_argument(
-            "--branch", default=None, help="branch to maintain (default: the dataset's own)"
+            "--branch", default=None, help="branch to optimize (default: the dataset's own)"
         )
         maintain.add_argument(
             "--dry-run", action="store_true", help="report what would be rewritten and expired"
         )
         maintain.add_argument(
-            "--verbose", action="store_true", help="debug logging: every maintained detail"
+            "--verbose", action="store_true", help="debug logging: every optimized detail"
         )
         maintain.add_argument(
             "--var",
@@ -551,7 +551,7 @@ class DatasetService:
             metavar="KEY=VALUE",
             help="extra Jinja variable; repeatable",
         )
-        maintain.set_defaults(run=self.maintain)
+        maintain.set_defaults(run=self.optimize)
 
         listing = commands.add_parser("list", help="list declared datasets")
         listing.add_argument("--config", default=None, help="datasets directory")
@@ -574,11 +574,11 @@ class DatasetService:
                 print(f"{target} {verb}: {dataset.uri()}")
         return 0
 
-    def maintain(self, arguments: argparse.Namespace) -> int:
-        """Every declared dataset's Iceberg table, compacted then expired.
+    def optimize(self, arguments: argparse.Namespace) -> int:
+        """Every declared dataset's Iceberg table: compacted, then reclaimed.
 
         Idempotent like every other verb here: a table already laid out well
-        reports nothing rewritten and nothing expired. The policy is each
+        reports nothing rewritten and nothing freed. The policy is each
         dataset's own (`protocols.iceberg.compact_min_files`, `retain`), so
         this is the whole command a scheduler needs.
         """
@@ -591,15 +591,16 @@ class DatasetService:
 
         for dataset in Dataset.load_all(arguments.config or DATASETS_ROOT, **context):
             table = stack.tables.get(dataset.into_iceberg_table())
-            report = dataset.iceberg_maintain(
+            report = dataset.optimize(
                 table=table, branch=arguments.branch, dry_run=arguments.dry_run
             )
-            compaction = report["compaction"]
+            compaction, cleanup = report["compaction"], report["cleanup"]
             verb = "would rewrite" if arguments.dry_run else "rewrote"
             print(
                 f"{dataset.uri()}: {verb} {compaction['files']} files in "
                 f"{len(compaction['partitions'])} partitions, "
-                f"{len(report['expired'])} snapshots expired"
+                f"{len(cleanup['expired'])} snapshots expired, "
+                f"{len(cleanup['orphans'])} files freed"
             )
         return 0
 

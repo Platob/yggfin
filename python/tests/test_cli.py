@@ -353,7 +353,7 @@ def test_dataset_list_prints_declared_datasets(
     assert "record=rekep.models.Log" in out
 
 
-# -- dataset maintain ---------------------------------------------------------
+# -- dataset optimize --------------------------------------------------------
 
 
 def crowded_dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
@@ -409,7 +409,7 @@ def crowded_dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     return root
 
 
-def test_dataset_maintain_dry_run_reports_without_rewriting(
+def test_dataset_optimize_dry_run_reports_without_rewriting(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
 ) -> None:
     root = crowded_dataset_workspace(tmp_path)
@@ -417,7 +417,7 @@ def test_dataset_maintain_dry_run_reports_without_rewriting(
         main(
             [
                 "dataset",
-                "maintain",
+                "optimize",
                 "--config",
                 str(root / "datasets"),
                 "--stack-config",
@@ -438,7 +438,7 @@ def test_dataset_maintain_dry_run_reports_without_rewriting(
     assert table.inspect.data_files().num_rows == 4, "dry run rewrote nothing"
 
 
-def test_dataset_maintain_compacts_and_expires_from_the_side_file(
+def test_dataset_optimize_compacts_and_reclaims_from_the_side_file(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture
 ) -> None:
     """`compact_min_files` and `retain` are the whole policy -- no arguments."""
@@ -447,7 +447,7 @@ def test_dataset_maintain_compacts_and_expires_from_the_side_file(
         main(
             [
                 "dataset",
-                "maintain",
+                "optimize",
                 "--config",
                 str(root / "datasets"),
                 "--stack-config",
