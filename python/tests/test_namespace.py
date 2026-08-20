@@ -60,7 +60,7 @@ def test_round_trips_through_json() -> None:
 def test_a_uri_is_the_service_then_the_path() -> None:
     """One spelling: the service is a path part, never a scheme of its own."""
     uri = ResourceUri.of("datasets", "warehouse", "trading", "orders")
-    assert str(uri) == "rekep:/datasets/warehouse/trading/orders"
+    assert str(uri) == "rekep:///datasets/warehouse/trading/orders"
     assert uri.path() == "warehouse/trading/orders", "the path alone carries no service"
 
 
@@ -78,25 +78,52 @@ def test_levels_are_read_right_to_left() -> None:
 
 def test_a_branch_is_a_fragment_not_another_resource() -> None:
     uri = ResourceUri.of("datasets", "trading", "orders", branch="dev")
-    assert str(uri) == "rekep:/datasets/trading/orders#dev"
+    assert str(uri) == "rekep:///datasets/trading/orders#dev"
     assert uri.at(None).path() == uri.path(), "same resource, different ref"
 
 
-def test_every_spelling_parses_to_the_same_identity() -> None:
+def test_every_way_of_writing_it_parses_to_the_same_identity() -> None:
+    """The full form, an empty level, and the incomplete-reference fallback."""
     spellings = [
-        "rekep:/datasets/warehouse/trading/orders#dev",
-        "rekep:/datasets//warehouse/trading/orders#dev",
-        "rekep:/datasets/warehouse/trading/orders#dev",
+        "rekep:///datasets/warehouse/trading/orders#dev",
+        "rekep:///datasets//warehouse/trading/orders#dev",
+        "  rekep:///datasets/warehouse/trading/orders#dev  ",
         "/datasets/warehouse/trading/orders#dev",
     ]
     parsed = {ResourceUri.parse(text) for text in spellings}
     assert len(parsed) == 1
-    assert str(parsed.pop()) == "rekep:/datasets/warehouse/trading/orders#dev"
+    assert str(parsed.pop()) == "rekep:///datasets/warehouse/trading/orders#dev"
 
 
-def test_the_scheme_names_the_service_as_a_path_part() -> None:
-    assert ResourceUri.parse("rekep:/jobs/pipeline/l2r").service == "jobs"
-    assert str(ResourceUri.parse("rekep:/jobs/pipeline/l2r")) == "rekep:/jobs/pipeline/l2r"
+def test_the_service_is_the_authority() -> None:
+    """Two slashes, the shape every other data uri has: `s3://bucket/key`."""
+    parsed = ResourceUri.parse("rekep:///jobs/pipeline/l2r")
+    assert parsed.service == "jobs"
+    assert parsed.path() == "pipeline/l2r", "the authority is not part of the path"
+    assert str(parsed) == "rekep:///jobs/pipeline/l2r"
+
+
+def test_too_few_slashes_are_refused_and_the_error_writes_it_out() -> None:
+    """Two would put the service in the host's slot and a second string in
+    circulation for one identity; one leaves the authority missing rather
+    than empty. Both are the same mistake, and the error spells the fix."""
+    for wrong in ("rekep:/datasets/trading/orders", "rekep://datasets/trading/orders"):
+        with pytest.raises(
+            ValueError, match=r"rekep:///datasets/trading/orders|reserved for a host"
+        ):
+            ResourceUri.parse(wrong)
+
+
+def test_a_filled_authority_is_refused_rather_than_dropped() -> None:
+    """Nothing reads a host yet, and a name half-kept is worse than one refused."""
+    with pytest.raises(ValueError, match="reserved for a host"):
+        ResourceUri.parse("rekep://lake.internal/datasets/trading/orders")
+
+
+def test_a_scheme_with_nothing_after_it_is_a_missing_service() -> None:
+    """There is no path to point at, so a spelling hint would be nonsense."""
+    with pytest.raises(ValueError, match="no service"):
+        ResourceUri.parse("rekep:///")
 
 
 def test_a_short_scheme_is_gone_not_merely_discouraged() -> None:

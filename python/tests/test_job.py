@@ -32,7 +32,7 @@ class Doubler(Job):
 
 def test_bare_job_has_no_transform_but_still_declares() -> None:
     """`Job` is concrete -- not enforced abstract -- so it round-trips."""
-    job = Job(uri="rekep:/jobs/nope")
+    job = Job(uri="rekep:///jobs/nope")
     assert Job.from_json(job.into_json()) == job
     with pytest.raises(NotImplementedError, match="arrow_transform"):
         job.run()
@@ -40,23 +40,23 @@ def test_bare_job_has_no_transform_but_still_declares() -> None:
 
 def test_passthrough_is_the_identity() -> None:
     batch = pyarrow.RecordBatch.from_pydict({"a": [1, 2, 3]})
-    (out,) = list(Passthrough(uri="rekep:/jobs/p").arrow_transform(iter([batch])))
+    (out,) = list(Passthrough(uri="rekep:///jobs/p").arrow_transform(iter([batch])))
     assert out is batch
 
 
 def test_job_is_a_record() -> None:
-    job = Passthrough(uri="rekep:/jobs/p", schedule="@daily", consumes=["rekep.models.Log"])
+    job = Passthrough(uri="rekep:///jobs/p", schedule="@daily", consumes=["rekep.models.Log"])
     assert Passthrough.from_json(job.into_json()) == job
 
 
 def test_lineage_paths_resolve_to_record_classes() -> None:
-    job = Passthrough(uri="rekep:/jobs/p", produces=["rekep.models.Log"])
+    job = Passthrough(uri="rekep:///jobs/p", produces=["rekep.models.Log"])
     assert job.produced_records() == [Log]
     assert job.consumed_records() == []
 
 
 def test_a_non_record_lineage_path_is_refused() -> None:
-    job = Passthrough(uri="rekep:/jobs/p", consumes=["pathlib.Path"])
+    job = Passthrough(uri="rekep:///jobs/p", consumes=["pathlib.Path"])
     with pytest.raises(TypeError, match="not a Record"):
         job.consumed_records()
 
@@ -65,26 +65,29 @@ def test_a_non_record_lineage_path_is_refused() -> None:
 
 
 def test_task_name_joins_every_level_of_the_uri() -> None:
-    assert Job(uri="rekep:/jobs/dag/task").task_name() == "dag.task"
+    assert Job(uri="rekep:///jobs/dag/task").task_name() == "dag.task"
 
 
 def test_task_name_of_a_bare_uri_is_just_the_name() -> None:
-    assert Job(uri="rekep:/jobs/task").task_name() == "task"
+    assert Job(uri="rekep:///jobs/task").task_name() == "task"
 
 
 def test_task_id_and_namespace_read_the_levels_back_out() -> None:
-    job = Job(uri="rekep:/jobs/trading/orders")
+    job = Job(uri="rekep:///jobs/trading/orders")
     assert (job.task_id(), job.task_namespace()) == ("orders", "trading")
 
 
 def test_an_unqualified_task_lands_in_the_default_namespace() -> None:
-    assert Job(uri="rekep:/jobs/orders").task_namespace() == "default"
+    assert Job(uri="rekep:///jobs/orders").task_namespace() == "default"
 
 
 def test_uri_is_scoped_to_the_job_scheme() -> None:
     """A bare path is a job here, and reads back as one however it was spelled."""
-    assert str(Job(uri="trading/orders").resource_uri()) == "rekep:/jobs/trading/orders"
-    assert str(Job(uri="rekep:/jobs/trading/orders").resource_uri()) == "rekep:/jobs/trading/orders"
+    assert str(Job(uri="trading/orders").resource_uri()) == "rekep:///jobs/trading/orders"
+    assert (
+        str(Job(uri="rekep:///jobs/trading/orders").resource_uri())
+        == "rekep:///jobs/trading/orders"
+    )
 
 
 # -- bind / @arrow_task -------------------------------------------------
@@ -96,7 +99,7 @@ def test_bind_attaches_a_transform_that_run_uses() -> None:
             yield batch
             yield batch
 
-    job = Job(uri="rekep:/jobs/bound", source=SAMPLE.as_uri()).bind(double)
+    job = Job(uri="rekep:///jobs/bound", source=SAMPLE.as_uri()).bind(double)
     assert job.run() == 48
 
 
@@ -110,7 +113,7 @@ def test_arrow_task_bare_builds_a_job_named_after_the_function() -> None:
 
 
 def test_arrow_task_configured_carries_lineage_and_identity() -> None:
-    @arrow_task(uri="rekep:/jobs/trading/etl", consumes=[Log], produces=[Log])
+    @arrow_task(uri="rekep:///jobs/trading/etl", consumes=[Log], produces=[Log])
     def transform(batches: Iterator[pyarrow.RecordBatch]) -> Iterator[pyarrow.RecordBatch]:
         yield from batches
 
@@ -120,9 +123,9 @@ def test_arrow_task_configured_carries_lineage_and_identity() -> None:
 
 
 def test_arrow_task_config_wins_over_kwargs() -> None:
-    configured = Job(uri="rekep:/jobs/preloaded", source=SAMPLE.as_uri())
+    configured = Job(uri="rekep:///jobs/preloaded", source=SAMPLE.as_uri())
 
-    @arrow_task(config=configured, uri="rekep:/jobs/ignored")
+    @arrow_task(config=configured, uri="rekep:///jobs/ignored")
     def passthrough(batches: Iterator[pyarrow.RecordBatch]) -> Iterator[pyarrow.RecordBatch]:
         yield from batches
 
@@ -132,7 +135,7 @@ def test_arrow_task_config_wins_over_kwargs() -> None:
 
 
 def test_calling_an_arrow_task_runs_it() -> None:
-    @arrow_task(uri="rekep:/jobs/trading/counted", source=SAMPLE.as_uri(), produces=[Log])
+    @arrow_task(uri="rekep:///jobs/trading/counted", source=SAMPLE.as_uri(), produces=[Log])
     def passthrough(batches: Iterator[pyarrow.RecordBatch]) -> Iterator[pyarrow.RecordBatch]:
         yield from batches
 
@@ -144,7 +147,7 @@ def test_calling_an_arrow_task_runs_it() -> None:
 
 def test_into_run_event_describes_the_task_and_what_it_moves() -> None:
     """rekep represents a run; it does not emit one. There is no client."""
-    job = Passthrough(uri="rekep:/jobs/trading/p", consumes=["rekep.models.Log"])
+    job = Passthrough(uri="rekep:///jobs/trading/p", consumes=["rekep.models.Log"])
     event = job.into_run_event(RunState.START)
     assert event.event_type is RunState.START
     assert event.job is job
@@ -154,14 +157,14 @@ def test_into_run_event_describes_the_task_and_what_it_moves() -> None:
 
 
 def test_run_events_of_one_run_share_its_id() -> None:
-    job = Passthrough(uri="rekep:/jobs/p")
+    job = Passthrough(uri="rekep:///jobs/p")
     start = job.into_run_event(RunState.START)
     complete = job.into_run_event(RunState.COMPLETE, start.run)
     assert complete.run.run_id == start.run.run_id
 
 
 def test_run_events_of_separate_runs_do_not() -> None:
-    job = Passthrough(uri="rekep:/jobs/p")
+    job = Passthrough(uri="rekep:///jobs/p")
     first, second = job.into_run_event(RunState.START), job.into_run_event(RunState.START)
     assert first.run.run_id != second.run.run_id
 
@@ -170,17 +173,17 @@ def test_run_events_of_separate_runs_do_not() -> None:
 
 
 def test_run_extracts_transforms_and_counts() -> None:
-    job = Passthrough(uri="rekep:/jobs/p", source=SAMPLE.as_uri())
+    job = Passthrough(uri="rekep:///jobs/p", source=SAMPLE.as_uri())
     assert job.run() == 24
 
 
 def test_transform_output_is_what_load_sees() -> None:
-    assert Doubler(uri="rekep:/jobs/d", source=SAMPLE.as_uri()).run() == 48
+    assert Doubler(uri="rekep:///jobs/d", source=SAMPLE.as_uri()).run() == 48
 
 
 def test_run_without_a_source_says_what_to_override() -> None:
     with pytest.raises(NotImplementedError, match="override extract"):
-        Passthrough(uri="rekep:/jobs/p").run()
+        Passthrough(uri="rekep:///jobs/p").run()
 
 
 # -- side files -------------------------------------------------------------
@@ -188,7 +191,7 @@ def test_run_without_a_source_says_what_to_override() -> None:
 
 def test_load_builds_the_declared_class(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "job.json"
-    path.write_text(json.dumps({"job": "rekep.job.Passthrough", "uri": "rekep:/jobs/j"}))
+    path.write_text(json.dumps({"job": "rekep.job.Passthrough", "uri": "rekep:///jobs/j"}))
     job = load(path)
     assert isinstance(job, Passthrough)
     assert job.task_id() == "j"
@@ -200,27 +203,27 @@ def test_load_renders_jinja_with_the_environment(
     monkeypatch.setenv("BUCKET", "s3://lake")
     path = tmp_path / "job.yaml"
     path.write_text(
-        'job: rekep.job.Passthrough\nuri: rekep:/jobs/y\nsource: "{{ env.BUCKET }}/app.txt"\n'
+        'job: rekep.job.Passthrough\nuri: rekep:///jobs/y\nsource: "{{ env.BUCKET }}/app.txt"\n'
     )
     assert load(path).source == "s3://lake/app.txt"
 
 
 def test_load_passes_extra_context(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "job.yaml"
-    path.write_text('job: rekep.job.Passthrough\nuri: "rekep:/jobs/{{ suffix }}"\n')
+    path.write_text('job: rekep.job.Passthrough\nuri: "rekep:///jobs/{{ suffix }}"\n')
     assert load(path, suffix="rendered").task_id() == "rendered"
 
 
 def test_load_requires_a_job_key(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "job.yaml"
-    path.write_text("uri: rekep:/jobs/anonymous\n")
+    path.write_text("uri: rekep:///jobs/anonymous\n")
     with pytest.raises(ValueError, match="declares no"):
         load(path)
 
 
 def test_load_refuses_a_non_job_class(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "job.yaml"
-    path.write_text("job: rekep.models.Log\nuri: rekep:/jobs/x\n")
+    path.write_text("job: rekep.models.Log\nuri: rekep:///jobs/x\n")
     with pytest.raises(TypeError, match="not a Job subclass"):
         load(path)
 
@@ -228,7 +231,7 @@ def test_load_refuses_a_non_job_class(tmp_path: pathlib.Path) -> None:
 def test_load_allows_the_bare_job_class(tmp_path: pathlib.Path) -> None:
     """Concrete, not abstract: a purely descriptive job is a valid side file."""
     path = tmp_path / "job.yaml"
-    path.write_text("job: rekep.job.Job\nuri: rekep:/jobs/x\n")
+    path.write_text("job: rekep.job.Job\nuri: rekep:///jobs/x\n")
     job = load(path)
     assert type(job) is Job
     with pytest.raises(NotImplementedError, match="arrow_transform"):
@@ -236,9 +239,9 @@ def test_load_allows_the_bare_job_class(tmp_path: pathlib.Path) -> None:
 
 
 def test_load_all_reads_a_directory(tmp_path: pathlib.Path) -> None:
-    (tmp_path / "b.yaml").write_text("job: rekep.job.Passthrough\nuri: rekep:/jobs/b\n")
+    (tmp_path / "b.yaml").write_text("job: rekep.job.Passthrough\nuri: rekep:///jobs/b\n")
     (tmp_path / "a.json").write_text(
-        json.dumps({"job": "rekep.job.Passthrough", "uri": "rekep:/jobs/a"})
+        json.dumps({"job": "rekep.job.Passthrough", "uri": "rekep:///jobs/a"})
     )
     (tmp_path / "notes.txt").write_text("not a job")
     jobs = load_all(tmp_path)
@@ -247,15 +250,15 @@ def test_load_all_reads_a_directory(tmp_path: pathlib.Path) -> None:
 
 def test_find_resolves_a_uri_through_the_registry(tmp_path: pathlib.Path) -> None:
     """Any spelling of the identity finds the one loaded object, not a copy."""
-    (tmp_path / "a.yaml").write_text("job: rekep.job.Passthrough\nuri: rekep:/jobs/trading/a\n")
+    (tmp_path / "a.yaml").write_text("job: rekep.job.Passthrough\nuri: rekep:///jobs/trading/a\n")
     (declared,) = load_all(tmp_path)
-    assert find("rekep:/jobs/trading/a", tmp_path) is declared
-    assert find("rekep:/jobs/trading/a", tmp_path) is declared
+    assert find("rekep:///jobs/trading/a", tmp_path) is declared
+    assert find("rekep:///jobs/trading/a", tmp_path) is declared
 
 
 def test_find_says_where_it_looked(tmp_path: pathlib.Path) -> None:
     with pytest.raises(KeyError, match="no job"):
-        find("rekep:/jobs/nowhere", tmp_path)
+        find("rekep:///jobs/nowhere", tmp_path)
 
 
 def test_the_shipped_side_files_load(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -303,7 +306,7 @@ def test_the_shipped_logs_to_records_picks_up_the_branch_suffix(
 
 def test_source_code_location_facet_carries_repo_and_path() -> None:
     job = Job(
-        uri="rekep:/jobs/j", repo_url="https://github.com/Platob/yggfin", script_path="a/b.py"
+        uri="rekep:///jobs/j", repo_url="https://github.com/Platob/yggfin", script_path="a/b.py"
     )
     facet = job.source_code_location_facet()
     assert facet["type"] == "git"
@@ -313,14 +316,14 @@ def test_source_code_location_facet_carries_repo_and_path() -> None:
 
 
 def test_facets_include_source_code_location_only_when_declared() -> None:
-    assert Job(uri="rekep:/jobs/j").facets() == {}
-    declared = Job(uri="rekep:/jobs/j", repo_url="https://github.com/Platob/yggfin")
+    assert Job(uri="rekep:///jobs/j").facets() == {}
+    declared = Job(uri="rekep:///jobs/j", repo_url="https://github.com/Platob/yggfin")
     assert "sourceCodeLocation" in declared.facets()
 
 
 def test_env_airflow_tags_and_properties_round_trip() -> None:
     job = Job(
-        uri="rekep:/jobs/j",
+        uri="rekep:///jobs/j",
         env={"BUCKET": "s3://lake"},
         properties={"team": "trading"},
         tags={"stage": "ingestion"},

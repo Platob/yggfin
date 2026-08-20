@@ -156,8 +156,8 @@ policy, so a scheduler runs the bare command. See
 
 ```console
 $ rekep dataset optimize --dry-run
-rekep:/datasets/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
-rekep:/datasets/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
+rekep:///datasets/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
+rekep:///datasets/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
 ```
 
 ## Dags: list, show, run
@@ -167,15 +167,15 @@ need no orchestrator installed:
 
 ```console
 $ rekep dag list
-rekep:/dags/passthrough  schedule=@daily  passthrough
-rekep:/dags/pipeline/trading_logs  schedule=@daily  files_to_logs -> logs_to_records
+rekep:///dags/passthrough  schedule=@daily  passthrough
+rekep:///dags/pipeline/trading_logs  schedule=@daily  files_to_logs -> logs_to_records
 
-$ rekep dag show --uri rekep:/dags/pipeline/trading_logs
-rekep:/dags/pipeline/trading_logs  schedule=@daily
-  trading_logs.files_to_logs  uri=rekep:/jobs/pipeline/files_to_logs  after=-
-  trading_logs.logs_to_records  uri=rekep:/jobs/pipeline/logs_to_records  after=files_to_logs
+$ rekep dag show --uri rekep:///dags/pipeline/trading_logs
+rekep:///dags/pipeline/trading_logs  schedule=@daily
+  trading_logs.files_to_logs  uri=rekep:///jobs/pipeline/files_to_logs  after=-
+  trading_logs.logs_to_records  uri=rekep:///jobs/pipeline/logs_to_records  after=files_to_logs
 
-$ rekep dag run --uri rekep:/dags/pipeline/trading_logs
+$ rekep dag run --uri rekep:///dags/pipeline/trading_logs
 trading_logs.files_to_logs: 24
 trading_logs.logs_to_records: 24
 ```
@@ -192,8 +192,8 @@ $ rekep airflow deploy --config stacks/dags --dags-folder /opt/airflow/dags
 converged dags: passthrough.py, trading_logs.py
 
 $ rekep airflow dags list
-passthrough.py  rekep:/dags/passthrough  1 task(s)
-trading_logs.py  rekep:/dags/pipeline/trading_logs  2 task(s)
+passthrough.py  rekep:///dags/passthrough  1 task(s)
+trading_logs.py  rekep:///dags/pipeline/trading_logs  2 task(s)
 ```
 
 One generated module per side file, idempotent like every other verb: the

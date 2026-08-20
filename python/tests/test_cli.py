@@ -102,7 +102,7 @@ def test_dataset_sync_writes_the_records_schema_into_the_side_file(
     datasets = tmp_path / "datasets"
     datasets.mkdir()
     path = datasets / "logs.yaml"
-    path.write_text("schema: rekep.models.Log\nuri: rekep:/datasets/logs\n")
+    path.write_text("schema: rekep.models.Log\nuri: rekep:///datasets/logs\n")
 
     assert main(["dataset", "sync", "--config", str(datasets)]) == 0
     written = yaml.safe_load(path.read_bytes())
@@ -115,7 +115,7 @@ def test_dataset_sync_writes_the_records_schema_into_the_side_file(
 def test_dataset_sync_dry_run_reports_drift_and_exits_one(tmp_path: pathlib.Path) -> None:
     datasets = tmp_path / "datasets"
     datasets.mkdir()
-    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: rekep:/datasets/logs\n")
+    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: rekep:///datasets/logs\n")
     assert main(["dataset", "sync", "--config", str(datasets), "--dry-run"]) == 1
 
     main(["dataset", "sync", "--config", str(datasets)])
@@ -128,7 +128,7 @@ def test_dataset_sync_leaves_a_templated_file_alone(
     """Rewriting it would resolve the template against this machine."""
     datasets = tmp_path / "datasets"
     datasets.mkdir()
-    declared = 'schema: rekep.models.Log\nuri: "rekep:/datasets/{{ git_branch_slug }}/logs"\n'
+    declared = 'schema: rekep.models.Log\nuri: "rekep:///datasets/{{ git_branch_slug }}/logs"\n'
     (datasets / "logs.yaml").write_text(declared)
     assert main(["dataset", "sync", "--config", str(datasets)]) == 0
     assert "skipped" in capsys.readouterr().out
@@ -141,7 +141,7 @@ def test_a_dataset_whose_side_file_drifted_is_refused(tmp_path: pathlib.Path) ->
 
     stale = Dataset(
         schema="rekep.models.Log",
-        uri="rekep:/datasets/logs",
+        uri="rekep:///datasets/logs",
         fields=[{"name": "gone", "type": "string"}],
     )
     with pytest.raises(ValueError, match="drifted"):
@@ -342,7 +342,7 @@ def dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     )
     datasets = tmp_path / "datasets"
     datasets.mkdir()
-    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: rekep:/datasets/logs\n")
+    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: rekep:///datasets/logs\n")
     return tmp_path
 
 
@@ -365,7 +365,7 @@ def test_dataset_deploy_converges_the_declared_dataset(
         )
         == 0
     )
-    assert "rekep:/datasets/logs" in capsys.readouterr().out
+    assert "rekep:///datasets/logs" in capsys.readouterr().out
 
     from rekep.iceberg import Iceberg
 
@@ -398,7 +398,7 @@ def test_dataset_list_prints_declared_datasets(
     root = dataset_workspace(tmp_path)
     assert main(["dataset", "list", "--config", str(root / "datasets")]) == 0
     out = capsys.readouterr().out
-    assert "rekep:/datasets/logs" in out
+    assert "rekep:///datasets/logs" in out
     assert "schema=rekep.models.Log" in out
 
 
@@ -419,7 +419,7 @@ def crowded_dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     (root / "datasets" / "logs.yaml").unlink()
     (root / "datasets" / "messages.yaml").write_text(
         "schema: rekep.models.ParsedMessage\n"
-        "uri: rekep:/datasets/messages\n"
+        "uri: rekep:///datasets/messages\n"
         "protocols:\n"
         "  iceberg:\n"
         '    compact_min_files: "3"\n'
@@ -527,16 +527,16 @@ def dag_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     jobs, dags = tmp_path / "jobs", tmp_path / "dags"
     jobs.mkdir()
     dags.mkdir()
-    (jobs / "parse.yaml").write_text(
-        f"job: rekep.job.Passthrough\nuri: rekep:/jobs/pipeline/parse\nsource: {sample.as_uri()}\n"
-    )
-    (jobs / "count.yaml").write_text(
-        f"job: rekep.job.Passthrough\nuri: rekep:/jobs/pipeline/count\nsource: {sample.as_uri()}\n"
-    )
+    for task in ("parse", "count"):
+        (jobs / f"{task}.yaml").write_text(
+            f"job: rekep.job.Passthrough\n"
+            f"uri: rekep:///jobs/pipeline/{task}\n"
+            f"source: {sample.as_uri()}\n"
+        )
     (dags / "demo.yaml").write_text(
-        "uri: rekep:/dags/pipeline/demo\n"
+        "uri: rekep:///dags/pipeline/demo\n"
         "schedule: '@daily'\n"
-        "tasks: [rekep:/jobs/pipeline/parse, rekep:/jobs/pipeline/count]\n"
+        "tasks: [rekep:///jobs/pipeline/parse, rekep:///jobs/pipeline/count]\n"
         "dependencies: {count: [parse]}\n"
     )
     return tmp_path
@@ -549,7 +549,7 @@ def test_dag_list_shows_the_order(tmp_path: pathlib.Path, capsys: pytest.Capture
         == 0
     )
     out = capsys.readouterr().out
-    assert "rekep:/dags/pipeline/demo" in out
+    assert "rekep:///dags/pipeline/demo" in out
     assert "parse -> count" in out
 
 
@@ -563,7 +563,7 @@ def test_dag_show_names_each_task_and_what_it_waited_for(
                 "dag",
                 "show",
                 "--uri",
-                "rekep:/dags/pipeline/demo",
+                "rekep:///dags/pipeline/demo",
                 "--config",
                 str(root / "dags"),
                 "--jobs-config",
@@ -587,7 +587,7 @@ def test_dag_run_runs_every_task_in_order(
                 "dag",
                 "run",
                 "--uri",
-                "rekep:/dags/pipeline/demo",
+                "rekep:///dags/pipeline/demo",
                 "--config",
                 str(root / "dags"),
                 "--jobs-config",

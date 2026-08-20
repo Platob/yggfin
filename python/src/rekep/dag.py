@@ -15,7 +15,7 @@ runs in the same sequence), and executed here (`run`). Airflow is one
 with Iceberg -- not the thing that defines it. A dag whose tasks are all
 independent is still a dag; it just has no edges.
 
-Tasks are referenced by URI (`rekep:/jobs/pipeline/files_to_logs`), never restated:
+Tasks are referenced by URI (`rekep:///jobs/pipeline/files_to_logs`), never restated:
 the task's own side file is its declaration, and a graph that copied a task's
 config would be a second place for it to disagree with itself. `dependencies`
 names them by task id -- the last level of the URI -- because that is what a
@@ -53,14 +53,14 @@ class Dag(Record):
     """A named graph of tasks: what runs, in what order, on what schedule."""
 
     uri: str
-    """This dag's identity as a path: `rekep:/dags/namespace/name`.
+    """This dag's identity as a path: `rekep:///dags/namespace/name`.
 
     The same spelling a job and a dataset use, scoped to its own service --
-    so `rekep:/dags/pipeline/trading_logs` and `rekep:/jobs/pipeline/trading_logs` are two
+    so `rekep:///dags/pipeline/trading_logs` and `rekep:///jobs/pipeline/trading_logs` are two
     resources, not one name used twice."""
 
     tasks: list[str] = dataclasses.field(default_factory=list)
-    """The tasks in this dag, as job URIs (`rekep:/jobs/pipeline/files_to_logs`).
+    """The tasks in this dag, as job URIs (`rekep:///jobs/pipeline/files_to_logs`).
 
     References, not copies: the task's own side file stays its only
     declaration. Declaration order is the tie-break `order()` falls back on,
@@ -97,7 +97,7 @@ class Dag(Record):
     # -- identity ---------------------------------------------------------
 
     def resource_uri(self) -> ResourceUri:
-        """This dag's identity: `rekep:/dags/namespace/name`."""
+        """This dag's identity: `rekep:///dags/namespace/name`."""
         return ResourceUri.parse(self.uri, service="dags")
 
     def dag_id(self) -> str:

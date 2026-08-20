@@ -23,7 +23,7 @@ class Report(Record):
 
 
 def test_asset_uri_is_stable_and_scheme_qualified() -> None:
-    assert asset_uri(Log) == "rekep://rekep.models.log.Log"
+    assert asset_uri(Log) == "rekep:///records/rekep.models.log.Log"
     assert asset_uri(Log) == asset_uri(Log)
 
 
@@ -82,5 +82,12 @@ def test_documentation_omits_an_empty_section() -> None:
     assert "### Produces" in docs
 
 
-def test_scheme_constant_is_what_the_uris_use() -> None:
-    assert asset_uri(Report).startswith(f"{lineage.ASSET_SCHEME}://")
+def test_an_asset_uri_is_a_real_resource_uri() -> None:
+    """A string that looked like one of ours and was not would be worse than
+    either: it parses back, three slashes and all."""
+    from rekep.namespace import ResourceUri
+
+    assert asset_uri(Report).startswith("rekep:///")
+    parsed = ResourceUri.parse(asset_uri(Report))
+    assert parsed.service == lineage.ASSET_SERVICE
+    assert parsed.name().endswith(".Report")

@@ -9,13 +9,16 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from rekep.namespace import SCHEME, ResourceUri
 from rekep.records.annotations import docstring_summary
 from rekep.records.record import Record
 
-#: URI scheme for assets this package defines. Airflow treats a URI as opaque,
-#: so the only requirement is that it is stable: rename a record and you have
-#: renamed the asset, which is exactly the lineage break it represents.
-ASSET_SCHEME = "rekep"
+#: The service an asset's URI names. Airflow treats a URI as opaque, so the
+#: only requirement is that it is stable -- rename a record and you have
+#: renamed the asset, which is exactly the lineage break it represents -- but
+#: it is spelled through `ResourceUri` anyway: a string that looks like one of
+#: ours and is not would be worse than either.
+ASSET_SERVICE = "records"
 
 #: Tag key marking a dag as generated from rekep declarations, whatever else
 #: it carries. A mapping needs the key to say what the value means, so the
@@ -26,8 +29,14 @@ Records = Sequence[type[Record]]
 
 
 def asset_uri(record: type[Record]) -> str:
-    """Stable URI for the data product `record` describes."""
-    return f"{ASSET_SCHEME}://{record.__module__}.{record.__qualname__}"
+    """Stable URI for the data product `record` describes.
+
+    `rekep:///records/<module>.<Class>` -- the same three-slash form every
+    other identity here has, built by the same formatter. A record is a
+    schema rather than a declared resource, so it names itself by the one
+    thing that does identify it: where the class lives.
+    """
+    return str(ResourceUri.of(ASSET_SERVICE, f"{record.__module__}.{record.__qualname__}"))
 
 
 def asset_name(record: type[Record]) -> str:
@@ -67,7 +76,7 @@ def tags_of(consumes: Records, produces: Records) -> dict[str, str]:
     and a record both read and written gets one tag saying both, rather than
     appearing twice or, worse, once.
     """
-    tags = {GENERATOR_KEY: ASSET_SCHEME}
+    tags = {GENERATOR_KEY: SCHEME}
     for records, direction in ((consumes, "consumes"), (produces, "produces")):
         for entry in records:
             name = asset_name(entry)

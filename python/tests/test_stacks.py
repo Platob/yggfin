@@ -216,7 +216,7 @@ def test_dataset_deploys_autonomously_one_call(
     )
 
     stack = Iceberg.load(tmp_path)
-    dataset = Dataset(schema="rekep.models.Log", uri="rekep:/datasets/logs")
+    dataset = Dataset(schema="rekep.models.Log", uri="rekep:///datasets/logs")
     dataset.deploy_iceberg(stack)
     assert stack.catalogs.connect("iceberg").table_exists("default.logs")
 

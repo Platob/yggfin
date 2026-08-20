@@ -13,10 +13,10 @@ namespace, name, and the branch — as one path:
 ```python
 from rekep.dataset import Dataset
 
-dataset = Dataset(schema="rekep.models.Log", uri="rekep:/datasets/warehouse/trading/logs")
+dataset = Dataset(schema="rekep.models.Log", uri="rekep:///datasets/warehouse/trading/logs")
 dataset.arrow_schema()          # pyarrow.Schema -- what everything downstream uses
 dataset.schema_facet()          # OpenLineage SchemaDatasetFacet: the same fields
-dataset.resource_uri()          # rekep:/datasets/warehouse/trading/logs
+dataset.resource_uri()          # rekep:///datasets/warehouse/trading/logs
 dataset.dataset_name()          # "logs"
 dataset.dataset_namespace()     # "trading"
 ```
@@ -25,15 +25,27 @@ A **path** rather than dots, because a catalog contains namespaces and a
 namespace contains tables — `a.b.c` cannot say whether that is three levels or
 one name with dots in it, and Iceberg namespaces are legitimately multi-level.
 Levels read right to left, so a shorter URI is a *less qualified* name rather
-than a different shape: `rekep:/datasets/logs` is `logs` in `default`.
+than a different shape: `rekep:///datasets/logs` is `logs` in `default`.
 
 **One spelling, not a family of them.** `rekep:` is the only scheme and the
 service is the first path part, so a new kind of resource is a new path part
 rather than a new scheme to teach every parser — and a URI in a log line, a
 side file and the registry key is the same string rather than three that have
-to be normalised before they can be compared. The branch rides along as the
-fragment, because a branch is not a different dataset: a dataset declaring
-`protocols.iceberg.branch: dev` has the URI `rekep:/datasets/trading/logs#dev`.
+to be normalised before they can be compared.
+
+**Three slashes**, the shape `file:///var/log` has: `//` opens the slot a URI
+keeps for a host and the third `/` begins the path. Nothing hosts a rekep
+identity today, so the slot stays empty — but a deployment that one day needs
+to say *whose* datasets these are writes
+`rekep://lake.internal/datasets/...` without one committed URI changing.
+Anything else with this scheme is refused by name: too few slashes (which
+would spend the host's slot on a name the path already has room for), or a
+filled authority (which nothing reads yet, and dropping it silently would be
+worse than refusing it).
+
+The branch rides along as the fragment, because a branch is not a different
+dataset: a dataset declaring `protocols.iceberg.branch: dev` has the URI
+`rekep:///datasets/trading/logs#dev`.
 
 `schema` is a dotted path rather than an inline field list on purpose. A
 declaration has to survive a round trip through a file, and only a name can:
@@ -44,7 +56,7 @@ Undeclared, the URI is built from the record's own snake_case name in
 `default` — so the smallest useful dataset is one line:
 
 ```python
-Dataset(schema="rekep.models.Log")   # rekep:/datasets/log
+Dataset(schema="rekep.models.Log")   # rekep:///datasets/log
 ```
 
 ## Where declarations live
@@ -58,8 +70,8 @@ pipelines is never quietly overridden by a home directory, and a bare
 ```python
 Dataset.load_all()                       # stacks/datasets, else ~/.config/rekep/datasets
 Dataset.load_all("/etc/rekep/datasets")  # or wherever you say
-Dataset(schema="rekep.models.Log", uri="rekep:/datasets/trading/logs").dump()  # writes logs.yaml, schema included
-Dataset.load("rekep:/datasets/trading/logs")         # from the registry, or by loading the folder
+Dataset(schema="rekep.models.Log", uri="rekep:///datasets/trading/logs").dump()  # writes logs.yaml, schema included
+Dataset.load("rekep:///datasets/trading/logs")         # from the registry, or by loading the folder
 ```
 
 Everything loaded lands in a process-wide registry keyed by URI
@@ -96,7 +108,7 @@ reads the second without opening Python:
 ```yaml
 # stacks/datasets/log.yaml, after `rekep dataset sync`
 schema: rekep.models.Log
-uri: rekep:/datasets/default/log
+uri: rekep:///datasets/default/log
 description: One parsed line of a trading log.
 fields:
 - name: url
@@ -121,7 +133,7 @@ iterating dataset, as opposed to `log.yaml`'s stable one:
 
 ```yaml
 schema: rekep.models.ParsedMessage
-uri: rekep:/datasets/default/parsed_messages
+uri: rekep:///datasets/default/parsed_messages
 protocols:
   iceberg:
     branch: "{{ 'main' if git_branch_slug in ('main', 'master') else git_branch_slug }}"
@@ -517,8 +529,8 @@ arguments at all:
 
 ```console
 $ rekep dataset optimize --dry-run
-rekep:/datasets/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
-rekep:/datasets/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
+rekep:///datasets/default/log: would rewrite 0 files in 0 partitions, 0 snapshots expired, 0 files freed
+rekep:///datasets/default/parsed_messages: would rewrite 6 files in 1 partitions, 0 snapshots expired, 0 files freed
 ```
 
 A dataset declaring no `retain` keeps all its history, which is the safe
@@ -529,7 +541,7 @@ default for something nobody has thought about yet.
 A dataset describes what it *is* to a run, and stops there:
 
 ```python
-dataset.facets()      # {"schema": {...}, "dataSource": {"uri": "rekep:/datasets/trading/logs"}}
+dataset.facets()      # {"schema": {...}, "dataSource": {"uri": "rekep:///datasets/trading/logs"}}
 dataset.as_input()    # InputDataset(namespace="trading", name="logs", facets=...)
 dataset.as_output(outputStatistics={"rowCount": 2})
 ```

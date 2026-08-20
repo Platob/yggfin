@@ -49,8 +49,8 @@ Everything else is derived, never hand-written beside it:
   access over any `pyarrow.fs` filesystem.
 - **`rekep.namespace`**, **`rekep.job`**, **`rekep.dataset`**, **`rekep.run`** —
   the OpenLineage resources: `Namespace`/`ResourceUri`, `Job`, `Dataset`,
-  `Run`/`RunEvent`. Each is identified by one URI (`rekep:/datasets/warehouse/orders`,
-  `rekep:/jobs/pipeline/parse`), and lineage is *represented* here, never emitted:
+  `Run`/`RunEvent`. Each is identified by one URI (`rekep:///datasets/warehouse/orders`,
+  `rekep:///jobs/pipeline/parse`), and lineage is *represented* here, never emitted:
   there is no client and no transport. `Dataset` is both ends of the pipe:
   reads with filter pushdown, writes that append or merge on the primary key,
   and the compaction and retention that keep the table readable afterwards.

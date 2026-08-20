@@ -135,10 +135,16 @@ rekep/
 │                  ResourceUri: the one parser and formatter for every
 │                  identity here -- a service, a `/`-separated path and an
 │                  optional branch fragment, in **one** spelling:
-│                  `rekep:/<service>/<path>#branch` -- the service is the
-│                  first path part, never a scheme of its own, so a new kind
-│                  of resource is a new path part rather than a second scheme
-│                  every parser has to learn. Paths, not dots: a dot cannot say whether
+│                  `rekep:///<service>/<path>#branch` -- three slashes, the
+│                  shape `file:///var/log` has, because the authority is
+│                  **empty and reserved for a host** nothing names yet
+│                  (`rekep://lake.internal/datasets/...` stays addable without
+│                  rewriting a committed URI). The service is the first path
+│                  part, never a scheme of its own, so a new kind of resource
+│                  is a new path part rather than a second scheme every parser
+│                  has to learn; too few slashes and a filled authority are
+│                  both refused by name. Paths, not dots:
+│                  a dot cannot say whether
 │                  `a.b.c` is three levels or one name. **A resource that
 │                  names itself names itself with `uri:`, and nothing else
 │                  may take that word** -- an Iceberg catalog's connection
@@ -249,8 +255,8 @@ task), `Dag` (the graph of tasks), `Dataset`, `Run`/`RunEvent`.
 
 **A resource is identified by one `uri:`.** A dataset, a task and a dag each
 spell their whole identity as one path
-(`rekep:/<service>/<path>#branch` -- `rekep:/datasets/warehouse/orders`,
-`rekep:/jobs/pipeline/parse`) rather than a name beside a namespace, and in
+(`rekep:///<service>/<path>#branch` -- `rekep:///datasets/warehouse/orders`,
+`rekep:///jobs/pipeline/parse`) rather than a name beside a namespace, and in
 **one** spelling: a resource that can spell itself two ways eventually spells
 itself two different ways. Accessors read the levels back out
 (`task_id()`/`task_namespace()`/`task_name()`, `dag_id()`, `dataset_name()`),
@@ -272,8 +278,8 @@ client rekep cannot get wrong.
 **Deploy artifacts** live under repo `stacks/`, all tracked — only runtime
 state is ignored (`stacks/iceberg/catalog.db`, `stacks/iceberg/warehouse/`,
 generated `stacks/ddl/`), and the tutorial builds in gitignored `tutorial/`.
-The layout: `jobs/` (one task per file, `uri: rekep:/jobs/...`), `dags/` (one graph
-per file, `uri: rekep:/dags/...`, its tasks referenced by URI and never restated),
+The layout: `jobs/` (one task per file, `uri: rekep:///jobs/...`), `dags/` (one graph
+per file, `uri: rekep:///dags/...`, its tasks referenced by URI and never restated),
 `iceberg/` and `doris/` (folder registries: `catalogs/`, `namespaces/` only,
 file stem defaults `name`),
 `datasets/` (one `Dataset` per file, and **the only place a data product is

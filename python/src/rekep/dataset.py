@@ -183,7 +183,7 @@ class Dataset(Record):
     everything downstream actually uses."""
 
     uri: str | None = None
-    """This dataset's identity, as a path: `rekep:/datasets/catalog/namespace/name#branch`.
+    """This dataset's identity, as a path: `rekep:///datasets/catalog/namespace/name#branch`.
 
     One string instead of separate name/namespace/catalog fields, because
     they are one identity -- and a path, because a catalog contains
@@ -230,7 +230,7 @@ class Dataset(Record):
         `stacks/datasets` when it has one, the user's config home when it
         does not -- so a repository's own declarations win, and a bare
         install still has somewhere to keep them. Everything loaded lands in
-        the process-wide registry, so a `rekep:/datasets/...` reference resolves without
+        the process-wide registry, so a `rekep:///datasets/...` reference resolves without
         reading the directory again.
         """
         folder = config.folder("datasets", root if root is not None else DATASETS_ROOT)
@@ -313,7 +313,7 @@ class Dataset(Record):
         return self.resource_uri().namespace() if self.uri else "default"
 
     def resource_uri(self) -> ResourceUri:
-        """This dataset's identity: `rekep:/datasets/catalog/namespace/name#branch`.
+        """This dataset's identity: `rekep:///datasets/catalog/namespace/name#branch`.
 
         A `ResourceUri`, the one place a job's and a dataset's identifiers
         are built and parsed -- so the two can never collide even when they

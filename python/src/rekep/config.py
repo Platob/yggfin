@@ -10,7 +10,7 @@ prefers an explicit argument, then the repository's, then the user's -- so a
 checkout keeps working unchanged and a bare `pip install rekep` still has
 somewhere to put things.
 
-**A registry.** Resolving a `rekep:/datasets/...` reference should not mean
+**A registry.** Resolving a `rekep:///datasets/...` reference should not mean
 re-reading a directory, and two modules asking for the same dataset should get the same
 object. `REGISTRY` is that: process-wide, keyed by URI, filled as resources
 load. It is deliberately a plain dict behind three functions rather than a
@@ -24,7 +24,7 @@ import os
 import pathlib
 from typing import Any
 
-from rekep.namespace import SCHEME
+from rekep.namespace import PREFIX
 
 #: Root of the user's own configuration: `$REKEP_CONFIG_HOME`, else
 #: XDG's `$XDG_CONFIG_HOME/rekep`, else `~/.config/rekep`.
@@ -74,7 +74,7 @@ def register(resource: Any) -> Any:
 def lookup(uri: str, service: str | None = None) -> Any | None:
     """The registered resource `uri` names, or None.
 
-    Every way of writing the identity finds it -- `rekep:/datasets/a/b`,
+    Every way of writing the identity finds it -- `rekep:///datasets/a/b`,
     `/datasets/a/b`, and a bare `a/b` with `service="datasets"` are one
     resource, so they resolve to one entry rather than three misses.
     """
@@ -86,13 +86,13 @@ def lookup(uri: str, service: str | None = None) -> Any | None:
 def registered(service: str | None = None) -> list[Any]:
     """Everything loaded so far, optionally just one service's.
 
-    The key is the whole URI, so the service is simply its first path part --
+    The key is the whole URI, so the service is simply what it leads with --
     no second index to keep in step with the first, and nothing to normalise:
     every key was written by one formatter.
     """
     if service is None:
         return list(REGISTRY.values())
-    prefix = f"{SCHEME}:/{service}/"
+    prefix = f"{PREFIX}/{service}/"
     return [resource for uri, resource in REGISTRY.items() if uri.startswith(prefix)]
 
 

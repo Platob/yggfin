@@ -10,8 +10,13 @@ that walks the chain -- so `Job` and `Dataset` build their identifiers from it
 instead of hand-joining strings.
 
 `ResourceUri` is the identity those levels add up to: a service, a path and
-an optional branch, spelled `rekep:/<service>/<path>#branch` --
-`rekep:/datasets/catalog/namespace/name#dev`, `rekep:/jobs/namespace/name`.
+an optional branch, spelled `rekep:///<service>/<path>#branch` --
+`rekep:///datasets/catalog/namespace/name#dev`, `rekep:///jobs/namespace/name`.
+Three slashes, the shape `file:///var/log` has: the authority is **empty and
+reserved**, because what would go there is a host, and a rekep identity is not
+hosted anywhere yet. Leaving the slot open costs nothing now and is the
+difference between adding `rekep://lake.internal/datasets/...` later and
+rewriting every URI ever committed.
 **One spelling, not a family of them**: it is the one parser and the one
 formatter, so a URI in a log line, a side file and the registry key is the
 same string rather than three that have to be normalised before they can be
@@ -19,7 +24,7 @@ compared.
 
 **A resource that names itself names itself with a URI, and `uri:` never
 means anything else.** A dataset, a task and a dag each spell one
-(`uri: rekep:/jobs/pipeline/files_to_logs`); a stack's catalogs and
+(`uri: rekep:///jobs/pipeline/files_to_logs`); a stack's catalogs and
 namespaces are named by the registry folder and file stem they live in
 instead. Either way nothing else may take the word: an Iceberg catalog's
 connection string is `endpoint:`, not a second thing called `uri`.
@@ -96,33 +101,54 @@ class Namespace(Record):
 
 
 #: Every service a URI may name: one entry per resource that names *itself*,
-#: a dataset, a task, a dag. A stack's catalogs and namespaces are not here --
-#: their identity is the registry folder they sit in and the stem of their
-#: file, which is why they are addressed by name and not by URI.
-SERVICES = ("datasets", "jobs", "dags")
+#: a dataset, a task, a dag -- plus `records`, whose members are classes named
+#: by their dotted path (`rekep:///records/rekep.models.log.Log`) rather than
+#: declared in a side file: an orchestrator's asset graph has to point at the
+#: schema itself, and a URI that looks like ours must be one of ours.
+#: A stack's catalogs and namespaces are not here -- their identity is the
+#: registry folder they sit in and the stem of their file, which is why they
+#: are addressed by name and not by URI.
+SERVICES = ("datasets", "jobs", "dags", "records")
 
-#: The one scheme. There is no short form: a `ds:`/`job:`/`dag:` shorthand
-#: would be a second spelling of the same identity, and every parser, every
-#: log line and every side file would then have to know both.
+#: The one scheme, written with an empty authority: `rekep:///<service>/<path>`.
+#: There is no short form -- a `ds:`/`job:`/`dag:` shorthand would be a second
+#: spelling of the same identity, and every parser, every log line and every
+#: side file would then have to know both.
 SCHEME = "rekep"
+
+#: Scheme and authority: what every identity starts with, before the path. One
+#: constant because it is both what `__str__` writes and what `parse` insists
+#: on, and two places spelling a prefix separately is how they drift apart.
+PREFIX = f"{SCHEME}://"
 
 
 @dataclasses.dataclass(frozen=True)
 class ResourceUri:
     """One resource's identity: a service, a path, and optionally a branch.
 
-    Every resource this package addresses -- a dataset, a task, a dag -- is
-    named the same way, in one spelling, and that spelling is a **path**::
+    Every resource this package addresses -- a dataset, a task, a dag, and
+    the record a schema lives in -- is named the same way, in one spelling::
 
-        rekep:/datasets/warehouse/trading/orders#dev
-        rekep:/jobs/pipeline/logs_to_records
-        rekep:/dags/pipeline/trading_logs
+        rekep:///datasets/warehouse/trading/orders#dev
+        rekep:///jobs/pipeline/logs_to_records
+        rekep:///dags/pipeline/trading_logs
+        rekep:///records/rekep.models.log.Log
 
     A path because that is what the thing is: a catalog contains namespaces,
     a namespace contains tables, and `/` is how every filesystem, URL and
     object store already spells containment. A dot cannot say that without
     ambiguity -- `a.b.c` might be three levels or a name with dots in it,
     and Iceberg namespaces are legitimately multi-level.
+
+    **Three slashes, because the authority is empty and reserved.** `//`
+    opens the slot a URI keeps for a host and the third `/` begins the path,
+    exactly as `file:///var/log` does. Nothing hosts a rekep identity today,
+    so nothing goes in that slot -- but a deployment that one day needs to
+    say *whose* datasets these are writes
+    `rekep://lake.internal/datasets/...` without one existing URI changing.
+    Spending the slot on the service instead would spend, for a name the
+    path already has room for, the one part of the syntax that cannot be
+    added later.
 
     **The service is the first path part, never a scheme of its own.** That
     is what makes `rekep:` generic: a new kind of resource is a new first
@@ -160,27 +186,48 @@ class ResourceUri:
 
     @classmethod
     def parse(cls, text: str, *, service: str | None = None) -> ResourceUri:
-        """Read `rekep:/<service>/<path>#branch` back into one identity.
+        """Read `rekep:///<service>/<path>#branch` back into one identity.
 
         A schemeless path is accepted as well, because a reference made from
         inside a service already knows which one it is in: `service=` names
         it, and the path may still lead with the service itself. That is a
         *fallback for an incomplete reference*, not a second spelling -- what
         comes back out of `__str__` is always the full form.
+
+        Anything else carrying this scheme is refused by name, because the
+        slashes are the point:
+
+        - fewer than three (`rekep:/x`, `rekep://x`) writes the service into
+          the slot the host is reserved for, and puts a second string in
+          circulation for one identity -- which is what a single spelling
+          exists to prevent.
+        - a filled authority (`rekep://host/x`) names a host nothing reads
+          yet. Parsing it would mean dropping that host silently, and a name
+          half-kept is worse than one refused: this way the mistake lands
+          here rather than in whichever lookup quietly misses.
         """
-        split = urllib.parse.urlsplit(str(text).strip())
-        levels = [part for part in (split.netloc, *split.path.split("/")) if part]
+        text = str(text).strip()
+        split = urllib.parse.urlsplit(text)
         scheme = split.scheme.lower()
         if scheme not in (SCHEME, ""):
             raise ValueError(
                 f"{text!r}: unknown scheme {scheme!r}; every resource is named "
-                f"{SCHEME}:/<service>/<path>, with the service one of {', '.join(SERVICES)}"
+                f"{PREFIX}/<service>/<path>, with the service one of {', '.join(SERVICES)}"
             )
+        if scheme and split.netloc:
+            raise ValueError(
+                f"{text!r}: {split.netloc!r} sits in the authority, which is reserved for a host "
+                f"and read by nothing yet; write {PREFIX}/<service>/<path>"
+            )
+        if scheme and split.path.strip("/") and not text.lower().startswith(f"{PREFIX}/"):
+            raise ValueError(
+                f"{text!r}: an identity is written with three slashes -- the authority is empty, "
+                f"not missing; write {PREFIX}/{split.path.lstrip('/')}"
+            )
+        levels = [part for part in split.path.split("/") if part]
         found = levels.pop(0) if levels and levels[0] in SERVICES else service
         if not found:
-            raise ValueError(
-                f"{text!r}: no service; name one as the first path part or pass service="
-            )
+            raise ValueError(f"{text!r}: no service; name one as the first path part or service=")
         return cls.of(found, *levels, branch=split.fragment or None)
 
     # -- reading ----------------------------------------------------------
@@ -212,8 +259,8 @@ class ResourceUri:
     # -- writing ----------------------------------------------------------
 
     def __str__(self) -> str:
-        """The whole identity: `rekep:/<service>/<path>#branch`."""
-        return f"{SCHEME}:/{self.service}/{self.path()}{self._fragment()}"
+        """The whole identity: `rekep:///<service>/<path>#branch`."""
+        return f"{PREFIX}/{self.service}/{self.path()}{self._fragment()}"
 
     def _fragment(self) -> str:
         return f"#{self.branch}" if self.branch else ""

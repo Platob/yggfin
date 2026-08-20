@@ -57,7 +57,7 @@ EXTENSIONS = side_files.EXTENSIONS
 class Job(Record):
     """One task: a process definition that consumes and produces datasets.
 
-    `uri` is the whole identity -- `rekep:/jobs/namespace/name`, a path like every
+    `uri` is the whole identity -- `rekep:///jobs/namespace/name`, a path like every
     other resource here -- and `task_id`/`task_namespace`/`task_name` read
     the levels back out of it. Everything else is deployment configuration:
     when to run, what it reads and writes, and -- via `arrow_transform` --
@@ -65,11 +65,11 @@ class Job(Record):
     """
 
     uri: str
-    """This task's identity as a path: `rekep:/jobs/namespace/name`.
+    """This task's identity as a path: `rekep:///jobs/namespace/name`.
 
     One string rather than a name beside a namespace, because they are one
     identity and a resource that can spell itself two ways eventually spells
-    itself two different ways. A bare `rekep:/jobs/passthrough` is a less qualified
+    itself two different ways. A bare `rekep:///jobs/passthrough` is a less qualified
     name, not a different shape."""
 
     schedule: str | None = None
@@ -130,7 +130,7 @@ class Job(Record):
     # -- identity -------------------------------------------------------
 
     def resource_uri(self) -> ResourceUri:
-        """This task's identity: `rekep:/jobs/namespace/name`.
+        """This task's identity: `rekep:///jobs/namespace/name`.
 
         A `ResourceUri`, the one place a job's and a dataset's identifiers
         are built and parsed -- so the two can never collide even when they
@@ -314,10 +314,10 @@ def arrow_task(
 ) -> Any:
     """Bind a batches-in/batches-out function as a `Job`'s `arrow_transform`.
 
-    `@arrow_task` (bare) or `@arrow_task(uri="rekep:/jobs/trading/etl", consumes=[Log])`
+    `@arrow_task` (bare) or `@arrow_task(uri="rekep:///jobs/trading/etl", consumes=[Log])`
     turns a plain function into a fully-declared task -- calling the result
     runs `run()`, extract -> transform -> load. Undeclared, the identity is
-    `rekep:/jobs/<function name>`: a decorator that made you name the thing twice
+    `rekep:///jobs/<function name>`: a decorator that made you name the thing twice
     would be a worse decorator.
 
     `config=` takes an already-built `Job` (typically one loaded from a side
@@ -328,7 +328,7 @@ def arrow_task(
 
     def wrap(target: Callable[..., Any]) -> Job:
         job = config or Job(
-            uri=uri or f"rekep:/jobs/{target.__name__}",
+            uri=uri or str(ResourceUri.of("jobs", target.__name__)),
             consumes=[_dotted(entry) for entry in consumes],
             produces=[_dotted(entry) for entry in produces],
             **job_kwargs,

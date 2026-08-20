@@ -45,7 +45,7 @@ schema'd by the `Job` record itself and rendered with Jinja before parsing:
 ```yaml
 # stacks/jobs/passthrough.yaml
 job: rekep.job.Passthrough
-uri: rekep:/jobs/passthrough
+uri: rekep:///jobs/passthrough
 schedule: "@daily"
 source: "{{ env.get('REKEP_SOURCE_URL', '') }}"
 consumes: [rekep.models.Log]
@@ -57,7 +57,7 @@ from rekep.job import find, load, load_all
 
 job = load("stacks/jobs/passthrough.yaml")   # one file, whatever it declares
 jobs = load_all()                            # every side file, name-sorted
-job = find("rekep:/jobs/passthrough")         # one identity, from the registry
+job = find("rekep:///jobs/passthrough")         # one identity, from the registry
 ```
 
 `load` takes a path and builds whatever it declares; `find` takes an identity
@@ -75,11 +75,11 @@ can spell itself two ways eventually spells itself two different ways.
 ```python
 from rekep.job import Job
 
-job = Job(uri="rekep:/jobs/dag/task")
+job = Job(uri="rekep:///jobs/dag/task")
 job.task_id()          # "task"       -- what Airflow calls a task_id
 job.task_namespace()   # "dag"
 job.task_name()        # "dag.task"   -- every level joined
-str(job.resource_uri())  # "rekep:/jobs/dag/task"
+str(job.resource_uri())  # "rekep:///jobs/dag/task"
 ```
 
 `task_name()` is the whole hierarchy, joined the way OpenLineage names a job.
@@ -137,7 +137,7 @@ declaration — it binds a plain batches-in/batches-out function as a `Job`'s
 from rekep.job import arrow_task
 from rekep.models import Log
 
-@arrow_task(uri="rekep:/jobs/trading/errors_only", consumes=[Log], produces=[Log])
+@arrow_task(uri="rekep:///jobs/trading/errors_only", consumes=[Log], produces=[Log])
 def errors_only(batches):
     for batch in batches:
         yield batch.filter(...)
@@ -145,7 +145,7 @@ def errors_only(batches):
 errors_only()          # runs it
 ```
 
-Undeclared, the identity is `rekep:/jobs/<function name>` — a decorator that
+Undeclared, the identity is `rekep:///jobs/<function name>` — a decorator that
 made you name the thing twice would be a worse decorator. `config=` takes an
 already-built `Job` (typically loaded from a side file) and binds the
 function onto it instead of building a fresh one.
@@ -208,10 +208,10 @@ tasks built on it, declared under `stacks/jobs/` and wired together by
 ```python
 from rekep.jobs import FilesToLogs, LogsToRecords
 
-f2l = FilesToLogs(uri="rekep:/jobs/f2l", source="app.txt")
+f2l = FilesToLogs(uri="rekep:///jobs/f2l", source="app.txt")
 logs = f2l.arrow_transform(f2l.extract())
 
-l2r = LogsToRecords(uri="rekep:/jobs/l2r")
+l2r = LogsToRecords(uri="rekep:///jobs/l2r")
 records = l2r.arrow_transform(logs)   # ParsedMessage-shaped batches
 ```
 

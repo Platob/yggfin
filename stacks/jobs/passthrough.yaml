@@ -2,7 +2,7 @@
 # Rendered with Jinja before parsing, so deploy-time values come from the
 # environment; see rekep.job.load.
 job: rekep.job.Passthrough
-uri: rekep:/jobs/passthrough
+uri: rekep:///jobs/passthrough
 description: Copy log batches through unchanged; the wiring reference.
 schedule: "@daily"
 source: "{{ env.get('REKEP_SOURCE_URL', '') }}"

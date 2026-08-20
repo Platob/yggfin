@@ -204,14 +204,14 @@ class Tutorial:
         declared = (
             "# stacks/jobs/passthrough.yaml\n"
             "job: rekep.job.Passthrough\n"
-            "uri: rekep:/jobs/passthrough\n"
+            "uri: rekep:///jobs/passthrough\n"
             "consumes: [rekep.models.Log]\n"
             "produces: [rekep.models.Log]\n"
             "\n"
             "# stacks/dags/passthrough.yaml\n"
-            "uri: rekep:/dags/passthrough\n"
+            "uri: rekep:///dags/passthrough\n"
             'schedule: "@daily"\n'
-            "tasks: [rekep:/jobs/passthrough]\n"
+            "tasks: [rekep:///jobs/passthrough]\n"
         )
         self.console.print(Syntax(declared, "yaml", background_color="default"))
         with self.spin("deriving lineage"):

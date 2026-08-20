@@ -13,15 +13,15 @@ orchestrator installed at all.
 
 ```yaml
 # stacks/dags/trading_logs.yaml
-uri: rekep:/dags/pipeline/trading_logs
+uri: rekep:///dags/pipeline/trading_logs
 description: Parse raw trading logs, then structure their messages.
 schedule: "@daily"
 tags:
   domain: pipeline
   owner: data-eng
 tasks:
-  - rekep:/jobs/pipeline/files_to_logs
-  - rekep:/jobs/pipeline/logs_to_records
+  - rekep:///jobs/pipeline/files_to_logs
+  - rekep:///jobs/pipeline/logs_to_records
 dependencies:
   logs_to_records:
     - files_to_logs
@@ -31,9 +31,9 @@ airflow:
 ```
 
 - **`uri`** is the identity, the same path spelling everything else uses:
-  `rekep:/dags/pipeline/trading_logs` and `rekep:/jobs/pipeline/trading_logs`
+  `rekep:///dags/pipeline/trading_logs` and `rekep:///jobs/pipeline/trading_logs`
   are two resources, not one name used twice — the service is what tells them
-  apart, and it is a path part like any other.
+  apart, and it is the first part of the path.
 - **`tasks`** are **references**, by task URI, never copies. The task's own
   side file under `stacks/jobs/` stays its only declaration; a graph that
   restated a task's config would be a second place for it to disagree with
@@ -55,7 +55,7 @@ required ceremony.
 ```python
 from rekep.dag import find, load, load_all
 
-dag = find("rekep:/dags/pipeline/trading_logs")
+dag = find("rekep:///dags/pipeline/trading_logs")
 
 dag.tasks_by_id()    # {"files_to_logs": Job(...), "logs_to_records": Job(...)}
 dag.upstreams()      # {"files_to_logs": [], "logs_to_records": ["files_to_logs"]}
@@ -96,15 +96,15 @@ From the CLI:
 
 ```console
 $ rekep dag list
-rekep:/dags/passthrough  schedule=@daily  passthrough
-rekep:/dags/pipeline/trading_logs  schedule=@daily  files_to_logs -> logs_to_records
+rekep:///dags/passthrough  schedule=@daily  passthrough
+rekep:///dags/pipeline/trading_logs  schedule=@daily  files_to_logs -> logs_to_records
 
-$ rekep dag show --uri rekep:/dags/pipeline/trading_logs
-rekep:/dags/pipeline/trading_logs  schedule=@daily
-  trading_logs.files_to_logs  uri=rekep:/jobs/pipeline/files_to_logs  after=-
-  trading_logs.logs_to_records  uri=rekep:/jobs/pipeline/logs_to_records  after=files_to_logs
+$ rekep dag show --uri rekep:///dags/pipeline/trading_logs
+rekep:///dags/pipeline/trading_logs  schedule=@daily
+  trading_logs.files_to_logs  uri=rekep:///jobs/pipeline/files_to_logs  after=-
+  trading_logs.logs_to_records  uri=rekep:///jobs/pipeline/logs_to_records  after=files_to_logs
 
-$ rekep dag run --uri rekep:/dags/pipeline/trading_logs
+$ rekep dag run --uri rekep:///dags/pipeline/trading_logs
 trading_logs.files_to_logs: 24
 trading_logs.logs_to_records: 24
 ```
@@ -117,7 +117,7 @@ should not have to write a second file to say so:
 ```python
 from rekep.dag import Dag
 
-Dag.from_job(job)     # rekep:/dags/<the job's own path>, one task, no edges
+Dag.from_job(job)     # rekep:///dags/<the job's own path>, one task, no edges
 ```
 
 Schedule, description and tags come from the task, since with one task there

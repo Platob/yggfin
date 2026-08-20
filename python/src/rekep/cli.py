@@ -655,7 +655,7 @@ class DagService:
 
         show = commands.add_parser("show", help="one dag's tasks, in the order they run")
         show.add_argument(
-            "--uri", required=True, help="dag uri, e.g. rekep:/dags/pipeline/trading_logs"
+            "--uri", required=True, help="dag uri, e.g. rekep:///dags/pipeline/trading_logs"
         )
         show.add_argument("--config", default=None, help="dags directory")
         show.add_argument("--jobs-config", default=None, help="jobs directory")
@@ -663,7 +663,7 @@ class DagService:
 
         runner = commands.add_parser("run", help="run every task, in dependency order")
         runner.add_argument(
-            "--uri", required=True, help="dag uri, e.g. rekep:/dags/pipeline/trading_logs"
+            "--uri", required=True, help="dag uri, e.g. rekep:///dags/pipeline/trading_logs"
         )
         runner.add_argument("--config", default=None, help="dags directory")
         runner.add_argument("--jobs-config", default=None, help="jobs directory")

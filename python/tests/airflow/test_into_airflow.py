@@ -87,11 +87,11 @@ def declare(uri: str, **kwargs: Any) -> Job:
 
 
 def test_a_dag_becomes_one_airflow_dag_with_one_task_per_job(sdk: Any) -> None:
-    declare("rekep:/jobs/pipeline/extract")
-    declare("rekep:/jobs/pipeline/load")
+    declare("rekep:///jobs/pipeline/extract")
+    declare("rekep:///jobs/pipeline/load")
     built = Dag(
-        uri="rekep:/dags/pipeline/demo",
-        tasks=["rekep:/jobs/pipeline/extract", "rekep:/jobs/pipeline/load"],
+        uri="rekep:///dags/pipeline/demo",
+        tasks=["rekep:///jobs/pipeline/extract", "rekep:///jobs/pipeline/load"],
         description="what it does",
         schedule="@daily",
     ).into_airflow()
@@ -103,17 +103,17 @@ def test_a_dag_becomes_one_airflow_dag_with_one_task_per_job(sdk: Any) -> None:
 
 
 def test_each_task_runs_its_own_job(sdk: Any) -> None:
-    job = declare("rekep:/jobs/pipeline/extract")
-    (task,) = Dag(uri="rekep:/dags/pipeline/demo", tasks=[job.uri]).into_airflow().tasks
+    job = declare("rekep:///jobs/pipeline/extract")
+    (task,) = Dag(uri="rekep:///dags/pipeline/demo", tasks=[job.uri]).into_airflow().tasks
     assert task["callable"] == job.run, "the job is the task"
 
 
 def test_dependencies_become_airflow_edges(sdk: Any) -> None:
-    declare("rekep:/jobs/pipeline/extract")
-    declare("rekep:/jobs/pipeline/load")
+    declare("rekep:///jobs/pipeline/extract")
+    declare("rekep:///jobs/pipeline/load")
     dag = Dag(
-        uri="rekep:/dags/pipeline/demo",
-        tasks=["rekep:/jobs/pipeline/extract", "rekep:/jobs/pipeline/load"],
+        uri="rekep:///dags/pipeline/demo",
+        tasks=["rekep:///jobs/pipeline/extract", "rekep:///jobs/pipeline/load"],
         dependencies={"load": ["extract"]},
     )
     built = dag.into_airflow()
@@ -123,10 +123,10 @@ def test_dependencies_become_airflow_edges(sdk: Any) -> None:
 
 def test_airflow_config_passes_straight_through(sdk: Any) -> None:
     """rekep keeps no list of which kwarg belongs to which; Airflow has one."""
-    declare("rekep:/jobs/pipeline/extract", airflow={"task": {"retries": 3, "pool": "etl"}})
+    declare("rekep:///jobs/pipeline/extract", airflow={"task": {"retries": 3, "pool": "etl"}})
     built = Dag(
-        uri="rekep:/dags/pipeline/demo",
-        tasks=["rekep:/jobs/pipeline/extract"],
+        uri="rekep:///dags/pipeline/demo",
+        tasks=["rekep:///jobs/pipeline/extract"],
         airflow={"dag": {"max_active_runs": 1}},
     ).into_airflow()
     assert built.kwargs["max_active_runs"] == 1
@@ -135,11 +135,11 @@ def test_airflow_config_passes_straight_through(sdk: Any) -> None:
 
 
 def test_a_task_overrides_the_dags_own_task_defaults(sdk: Any) -> None:
-    declare("rekep:/jobs/pipeline/extract", airflow={"task": {"retries": 3}})
-    declare("rekep:/jobs/pipeline/load")
+    declare("rekep:///jobs/pipeline/extract", airflow={"task": {"retries": 3}})
+    declare("rekep:///jobs/pipeline/load")
     built = Dag(
-        uri="rekep:/dags/pipeline/demo",
-        tasks=["rekep:/jobs/pipeline/extract", "rekep:/jobs/pipeline/load"],
+        uri="rekep:///dags/pipeline/demo",
+        tasks=["rekep:///jobs/pipeline/extract", "rekep:///jobs/pipeline/load"],
         airflow={"task": {"retries": 1, "pool": "etl"}},
     ).into_airflow()
     extract, load = built.tasks
@@ -149,12 +149,14 @@ def test_a_task_overrides_the_dags_own_task_defaults(sdk: Any) -> None:
 
 def test_lineage_is_derived_not_declared(sdk: Any) -> None:
     declare(
-        "rekep:/jobs/pipeline/parse",
+        "rekep:///jobs/pipeline/parse",
         consumes=["rekep.models.Log"],
         produces=["rekep.models.ParsedMessage"],
     )
     built = Dag(
-        uri="rekep:/dags/pipeline/demo", tasks=["rekep:/jobs/pipeline/parse"], tags={"mine": "yes"}
+        uri="rekep:///dags/pipeline/demo",
+        tasks=["rekep:///jobs/pipeline/parse"],
+        tags={"mine": "yes"},
     ).into_airflow()
     assert set(built.kwargs["tags"]) >= {"mine=yes", "Log=consumes", "ParsedMessage=produces"}
     assert "### Consumes" in built.kwargs["doc_md"]
@@ -166,9 +168,9 @@ def test_lineage_is_derived_not_declared(sdk: Any) -> None:
 
 
 def test_a_dag_declaring_no_lineage_gets_no_assets(sdk: Any) -> None:
-    declare("rekep:/jobs/pipeline/extract")
+    declare("rekep:///jobs/pipeline/extract")
     (task,) = (
-        Dag(uri="rekep:/dags/pipeline/demo", tasks=["rekep:/jobs/pipeline/extract"])
+        Dag(uri="rekep:///dags/pipeline/demo", tasks=["rekep:///jobs/pipeline/extract"])
         .into_airflow()
         .tasks
     )
@@ -178,7 +180,7 @@ def test_a_dag_declaring_no_lineage_gets_no_assets(sdk: Any) -> None:
 
 def test_a_single_job_dag_needs_no_side_file(sdk: Any) -> None:
     """`Dag.from_job` is the one-step pipeline, named after the task it runs."""
-    job = declare("rekep:/jobs/pipeline/extract", schedule="@hourly", tags={"stage": "ingestion"})
+    job = declare("rekep:///jobs/pipeline/extract", schedule="@hourly", tags={"stage": "ingestion"})
     built = Dag.from_job(job).into_airflow()
     assert built.dag_id == "extract"
     assert built.kwargs["schedule"] == "@hourly"
