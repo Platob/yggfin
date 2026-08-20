@@ -654,10 +654,74 @@ def test_a_missing_file_does_not_exist_yet(tmp_path: Path) -> None:
 
 
 def test_reading_casts_only_when_asked(plain: Path) -> None:
-    log = TextFile.from_path(plain)
-    assert log.read_arrow_reader().schema.equals(Log.FIELD.into_arrow_schema())
+    # One log per reader: two readers share one stream, so the second is
+    # refused while the first is live -- see the test below.
+    with TextFile.from_path(plain) as log:
+        assert log.read_arrow_reader().schema.equals(Log.FIELD.into_arrow_schema())
     narrow = pyarrow.schema([("message", pyarrow.large_string())])
-    assert log.read_arrow_reader(narrow).schema.field("message").type == pyarrow.large_string()
+    with TextFile.from_path(plain) as log:
+        assert log.read_arrow_reader(narrow).schema.field("message").type == pyarrow.large_string()
+
+
+@pytest.mark.parametrize(
+    "stamp",
+    [
+        b"2026-08-14 00:05:01.167_520",  # the bundled shape
+        b"2026-08-14 00:05:01.167520",  # plain ISO microseconds, one shorter
+        b"2026-08-14 00:05:01.1675200",  # .NET ticks: the right width, the wrong layout
+        b"2026-08-14T00:05:01,167,520",  # commas, which the bundled pattern admits
+    ],
+)
+def test_a_timestamp_is_sliced_only_when_its_parts_are_where_they_look(stamp: bytes) -> None:
+    """The fast path reads by offset, so it has to know the offsets mean something.
+
+    The width alone does not say that: `.1675200` is exactly as long as
+    `.167_520` and puts a digit where the separator belongs, so slicing it
+    yields `.167200` -- 320 microseconds out, from a cast that succeeds. Both
+    the per-row path and the batch path check the separators, and they have to
+    make the same check, or routing between them changes nothing.
+    """
+    from rekep.logs.text_file import _epoch_nanos, _epoch_nanos_slow, _local_micros
+
+    expected = _epoch_nanos_slow(stamp)
+    assert _epoch_nanos(stamp) == expected, "row by row"
+    micros = _local_micros([stamp])[0].as_py()
+    assert int(micros.timestamp() * 1_000_000) * 1_000 == expected, "and one batch at a time"
+
+
+def test_a_second_reader_is_refused_while_the_first_is_live(plain: Path) -> None:
+    """They share one stream, and the second reopening it rewinds the first.
+
+    Without the refusal the first reader read the file a second time and
+    handed the same rows out twice -- to a merge, that is every row duplicated.
+    """
+    with TextFile.from_path(plain) as log:
+        first = log.into_arrow_reader()
+        with pytest.raises(ValueError, match="already has a reader"):
+            log.into_arrow_reader()
+        rows = first.read_all().num_rows
+        assert rows > 0
+        # And once it is done, the log reads again -- from the top.
+        assert log.into_arrow_reader().read_all().num_rows == rows
+
+
+@pytest.mark.parametrize("read", ["into_arrow_table", "into_arrow_batches", "generic"])
+def test_every_read_path_reopens_the_log(plain: Path, read: str) -> None:
+    """The reopen belongs to the one place they all go through.
+
+    Put in `into_arrow_reader` alone, it left `into_arrow_batches` -- and the
+    generic `into_(RecordBatch)` redirect, which is the whole API by another
+    name -- returning nothing at all on a second read.
+    """
+    calls = {
+        "into_arrow_table": lambda log: log.into_arrow_table().num_rows,
+        "into_arrow_batches": lambda log: sum(b.num_rows for b in log.into_arrow_batches()),
+        "generic": lambda log: sum(b.num_rows for b in log.into_(pyarrow.RecordBatch)),
+    }
+    with TextFile.from_path(plain) as log:
+        first = calls[read](log)
+        assert first > 0
+        assert calls[read](log) == first, "and the second read reads the same log"
 
 
 def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> None:

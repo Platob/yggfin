@@ -294,7 +294,10 @@ class TextFile(Dataset, io.BufferedIOBase):
         ones.
 
         The reader takes over this log's stream: consume the reader, not `self`
-        -- and only one reader at a time, because they share that stream.
+        -- and only one reader at a time, because they share that stream. A
+        second while one is still live is refused rather than served: it would
+        reopen the stream under the first, which then reads the file again from
+        the top and hands the same rows out twice.
 
         Each call reopens it, so reading the same log twice reads the log
         twice. Reopening rather than seeking, because a seek to zero on a
@@ -302,8 +305,6 @@ class TextFile(Dataset, io.BufferedIOBase):
         grown since -- which a write through this same object does -- would
         still be read from its old end.
         """
-        self._check_open()
-        self.__dict__.pop("_stream", None)
         return pyarrow.RecordBatchReader.from_batches(
             self.schema,
             self.into_arrow_batches(batch_row_size, read_byte_size, fold_continuations),
@@ -321,6 +322,33 @@ class TextFile(Dataset, io.BufferedIOBase):
     ) -> Iterator[pyarrow.RecordBatch]:
         """Yield one record batch per `batch_row_size` parsed lines.
 
+        Every read of this log comes through here -- `into_arrow_reader` and
+        the generic `into_` redirect included -- so this is where the stream is
+        reopened and where a second live reader is refused. Both happen when it
+        is *called*, not when the first batch is pulled: a check inside the
+        generator would not run until something iterated it, by which time the
+        other reader has already been served.
+        """
+        self._check_open()
+        if self.__dict__.get("_reading"):
+            raise ValueError(
+                "this log already has a reader; consume or close it before starting another, "
+                "because the two would share one stream and each re-read what the other had"
+            )
+        stream = self.__dict__.pop("_stream", None)
+        if stream is not None:
+            stream.close()
+        self.__dict__["_reading"] = True
+        return self._arrow_batches(batch_row_size, read_byte_size, fold_continuations)
+
+    def _arrow_batches(
+        self,
+        batch_row_size: int,
+        read_byte_size: int,
+        fold_continuations: bool,
+    ) -> Iterator[pyarrow.RecordBatch]:
+        """`into_arrow_batches` itself, once the stream is its own.
+
         The row loop is deliberately spartan -- profiling puts it, not Arrow,
         on the critical path. Groups come out in one `group(...)` call against
         indices resolved once, and land as one tuple append; everything
@@ -332,25 +360,31 @@ class TextFile(Dataset, io.BufferedIOBase):
         hashes: list[int] = []
         match_header = self.header_pattern.match
 
-        for line in self._iter_lines(read_byte_size):
-            match = match_header(line)
-            if match is None:
-                if fold_continuations and rows:
-                    timestamp, thread, driver, message = rows[-1]
-                    rows[-1] = (timestamp, thread, driver, (message or b"") + b"\n" + line)
-                continue
-            rows.append(match.group(*indices))
-            hashes.append(_hash64(line))
-            # One row past the size, not at it: a continuation belongs to the
-            # row above it, and cutting the batch the moment that row is
-            # complete puts it out of reach of the next line. A stack trace
-            # that happens to land on the boundary would be dropped, silently,
-            # at any batch size -- including the default one.
-            if len(rows) > batch_row_size:
-                yield self._batch(rows[:batch_row_size], hashes[:batch_row_size])
-                del rows[:batch_row_size], hashes[:batch_row_size]
-        if rows:
-            yield self._batch(rows, hashes)
+        try:
+            for line in self._iter_lines(read_byte_size):
+                match = match_header(line)
+                if match is None:
+                    if fold_continuations and rows:
+                        timestamp, thread, driver, message = rows[-1]
+                        rows[-1] = (timestamp, thread, driver, (message or b"") + b"\n" + line)
+                    continue
+                rows.append(match.group(*indices))
+                hashes.append(_hash64(line))
+                # One row past the size, not at it: a continuation belongs to
+                # the row above it, and cutting the batch the moment that row
+                # is complete puts it out of reach of the next line. A stack
+                # trace that happens to land on the boundary would be dropped,
+                # silently, at any batch size -- including the default one.
+                if len(rows) > batch_row_size:
+                    yield self._batch(rows[:batch_row_size], hashes[:batch_row_size])
+                    del rows[:batch_row_size], hashes[:batch_row_size]
+            if rows:
+                yield self._batch(rows, hashes)
+        finally:
+            # However this ends -- exhausted, closed, or abandoned -- the log
+            # is readable again. Without it a reader nobody finished would lock
+            # the log out of being read at all.
+            self.__dict__.pop("_reading", None)
 
     def _batch(self, rows: list[tuple], hashes: list[int]) -> pyarrow.RecordBatch:
         timestamps, threads, drivers, messages = zip(*rows, strict=True)
@@ -453,6 +487,7 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     def close(self) -> None:
         """Close the stream if one was ever opened, without opening one."""
+        self.__dict__.pop("_reading", None)
         stream = self.__dict__.pop("_stream", None)
         if stream is not None:
             stream.close()
@@ -536,17 +571,32 @@ def _local_micros(timestamps: Sequence[bytes]) -> pyarrow.Array:
     micros -- are never even read: the components are sliced out and joined
     into canonical ISO form, and one cast parses the whole column.
 
-    That is only sound for the width the bundled pattern pins,
-    `STAMP_WIDTH` characters. A custom `header_pattern` matching anything else
-    is not caught by the cast -- `2026-08-14 00:05:01.167520`, one character
-    shorter, slices into valid ISO holding *other digits* and casts happily to
-    `.167200` -- so the width is checked first and anything else goes row by
-    row. Measured on the bundled shape the check is one `utf8_length` pass per
-    batch, under a percent.
+    That is only sound for the shape the bundled pattern pins. A custom
+    `header_pattern` matching anything else is not caught by the cast --
+    `2026-08-14 00:05:01.167520`, one character shorter, slices into valid ISO
+    holding *other digits* and casts happily to `.167200`.
+
+    So the shape is checked first, and the width alone does not say it: a
+    27-character stamp whose fraction runs `.1675200` -- .NET's 100-nanosecond
+    ticks -- is the right length and the wrong layout, and slices to `.167200`,
+    320 microseconds out. What the check asks is that the two separator
+    positions really hold separators, which is what makes the surrounding
+    slices mean what they are read as. Anything else goes row by row. Measured
+    on the bundled shape it is one `utf8_length` and two one-character slices
+    per batch, under a percent.
     """
     compute = pyarrow.compute
     raw = pyarrow.array(timestamps, type=pyarrow.binary()).cast(pyarrow.string())
-    fixed = compute.all(compute.equal(compute.utf8_length(raw), STAMP_WIDTH), min_count=0).as_py()
+    fixed = compute.all(
+        compute.and_(
+            compute.equal(compute.utf8_length(raw), STAMP_WIDTH),
+            compute.and_(
+                compute.invert(compute.utf8_is_digit(compute.utf8_slice_codeunits(raw, 19, 20))),
+                compute.invert(compute.utf8_is_digit(compute.utf8_slice_codeunits(raw, 23, 24))),
+            ),
+        ),
+        min_count=0,
+    ).as_py()
     if fixed:
         joined = compute.binary_join_element_wise(
             compute.utf8_slice_codeunits(raw, 0, 10),
@@ -620,10 +670,16 @@ def _epoch_nanos(timestamp: bytes) -> int:
     Per-row fallback for batches the Arrow path will not take. Sliced rather
     than parsed: the bundled header regex has already pinned every field to a
     fixed offset. The date half is cached because a log covers few distinct
-    days but many rows. Any other width goes to `_epoch_nanos_slow`, which
-    reads the string rather than assuming where its parts are.
+    days but many rows.
+
+    Any other *shape* goes to `_epoch_nanos_slow`, which reads the string
+    rather than assuming where its parts are -- and the width alone does not
+    say the shape, which is why the separator positions are checked too. This
+    is the same test the Arrow path makes, and it has to be: routing a stamp
+    here because the column failed the batch check, only to slice it here by
+    the same offsets, is not a fallback.
     """
-    if len(timestamp) != STAMP_WIDTH:
+    if len(timestamp) != STAMP_WIDTH or timestamp[19:20].isdigit() or timestamp[23:24].isdigit():
         return _epoch_nanos_slow(timestamp)
     try:
         day = timestamp[:10]
