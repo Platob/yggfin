@@ -34,6 +34,33 @@ less than the spread between two runs of the same configuration, and batch size
 does not separate them either. The parser is bound by the per-line regex, not
 by any of these.
 
+What *does* move it, on a million rows, best of three:
+
+| case | rows/s | vs the baseline |
+| --- | --- | --- |
+| a stack trace every 200 lines (the baseline) | 393k | — |
+| no stack traces at all | 393k | none |
+| a trace every other line | 322k | −18% |
+| no continuation folding | 410k | +4% |
+| 64 KiB reads | 375k | −5% |
+| 64 MiB reads | 291k | −26% |
+| **blake2b line hash** (no `xxhash` installed) | 264k | **−33%** |
+| gzip (12.5 MiB instead of 136 MiB) | 379k | −4% |
+
+Two things to take from that. Folding is cheap until continuations dominate:
+a trace every 200 lines costs nothing measurable, one every other line costs
+18%, because folding is the only per-line work that is not a regex match.
+And the `fast` extra is worth a third of the parser -- `pip install
+"rekep[fast]"` swaps blake2b for xxhash. (The two hashes are not
+interchangeable: `hash64` is stable within an environment, not across
+environments that differ in whether xxhash is installed.)
+
+Read size has a floor and a ceiling: 64 KiB is syscall-bound, 64 MiB spends
+more time waiting for a whole read than parsing it. The 4 MiB default sits
+where both are flat. Compression is close to free in rows/s -- Arrow decodes in
+its C++ layer while the row loop is the bottleneck -- so a gzipped log parses
+at nearly the same rate from a tenth of the bytes.
+
 ## Streaming into Iceberg
 
 400,000 parsed rows over 8 days, partitioned by day, written from a reader whose

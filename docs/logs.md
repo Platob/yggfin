@@ -200,4 +200,6 @@ uv run python benchmarks/bench_text_file.py --quick
 
 The hot loop is deliberately spartan — per row it is a regex match, an append
 and a hash; everything columnar (timestamps, UTF-8 validation, the day and time
-split) happens once per batch in Arrow.
+split) happens once per batch in Arrow. About 390k rows/s, and the two things
+that move it are continuation density and whether `xxhash` is installed — see
+[Benchmarks](benchmarks.md#parsing).
