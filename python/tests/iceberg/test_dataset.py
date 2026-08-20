@@ -996,6 +996,33 @@ def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
     assert quotes_.read_arrow_table().num_rows == stored, "and the table still reads"
 
 
+def test_a_sweep_does_not_delete_another_writers_files(tmp_path: Path) -> None:
+    """A dataset that has been open a while has not seen the other writers.
+
+    The live set is what decides a deletion, so building it from a stale table
+    deletes whatever landed since -- measured before the fix: twelve files
+    gone and the table unreadable.
+    """
+    properties = catalog_properties(tmp_path)
+    catalog = IcebergCatalog(name="shared", properties=properties)
+    catalog.dataset("trading.quotes", struct=Quote.FIELD).write_arrow(quotes(2), commit_row_size=0)
+    sweeper = IcebergCatalog(name="shared", properties=properties).dataset(
+        "trading.quotes", struct=Quote.FIELD
+    )
+    sweeper.get_or_create_table()  # loads the table, and caches it
+
+    other = IcebergCatalog(name="shared", properties=properties).dataset(
+        "trading.quotes", struct=Quote.FIELD
+    )
+    for index in range(3):
+        other.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+    stored = other.read_arrow_table().num_rows
+
+    report = sweeper.cleanup(retain=10, orphan_age=datetime.timedelta(seconds=0))
+    assert report["deleted"] == 0, "nothing the other writer left is an orphan"
+    assert other.refresh().read_arrow_table().num_rows == stored, "and the table still reads"
+
+
 def test_a_sweep_keeps_the_files_only_the_metadata_names(dataset: IcebergDataset) -> None:
     """A Puffin statistics file and a Hadoop pointer are reachable no other way.
 

@@ -937,6 +937,12 @@ class IcebergDataset(Dataset):
         strictly more. A dry run under-reports the sweep on purpose: it is the
         one number that cannot be known without committing the expiry.
         """
+        # Before anything is looked at, and not once per chunk the way a write
+        # must not: what another writer has committed since this object loaded
+        # the table is invisible to the live set, and a file missing from the
+        # live set is a file this deletes. One catalog round trip against
+        # listing a whole store is nothing.
+        self.refresh()
         expired = self._expirable(retain, older_than)
         report = {"expired": len(expired), "deleted": 0, "bytes": 0}
         if expired and not dry_run:
@@ -974,9 +980,17 @@ class IcebergDataset(Dataset):
         The live set is deliberately over-broad: every retained snapshot's
         manifest list and every manifest reachable from it, every entry in the
         metadata log, the statistics the metadata registers, and the current
-        metadata pointer. Anything younger than `older_than` is spared whether
-        or not it is referenced, because a writer committing right now has files
-        on disk that no snapshot mentions yet.
+        metadata pointer -- read from the catalog now, not from whatever this
+        object loaded when it was made. A dataset that has been open a while
+        has not seen the other writers, and a file missing from the live set is
+        a file this deletes: measured, a stale sweeper deleted twelve of
+        another writer's files and left the table unreadable.
+
+        Anything younger than `older_than` is spared whether or not it is
+        referenced, and that is the **only** protection against a writer
+        committing *during* the sweep -- one has files on disk that no snapshot
+        mentions yet. Three days by default; lowering it is safe when nothing
+        else is writing, and nowhere else.
 
         Listed through `pyarrow.fs`, like every other file this package touches,
         so an object store is walked by the same handle the reads use -- and
@@ -987,6 +1001,7 @@ class IcebergDataset(Dataset):
         produce, so every live file fell out of the live set and `cleanup`
         deleted the whole table.
         """
+        self.refresh()
         return [(path, size) for _, path, size in self._orphans(older_than, metadata=metadata)]
 
     def _orphans(

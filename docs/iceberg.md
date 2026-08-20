@@ -413,7 +413,11 @@ calls are the whole routine.
     The sweep is conservative on purpose: a file goes only when nothing live
     references it **and** it is older than `orphan_age` (three days by
     default), because a writer committing right now has files on disk that no
-    snapshot mentions yet. The live set for metadata is built from every
+    snapshot mentions yet. The live set is read from the catalog at the moment
+    of the sweep — a dataset object that has been open a while has not seen the
+    other writers — but `orphan_age` is the only thing standing between the
+    sweep and a writer committing *during* it. Lower it when nothing else is
+    writing, and nowhere else. The live set for metadata is built from every
     direction at once — the current pointer, every entry in the metadata log,
     every retained snapshot's manifest list and every manifest reachable from
     it, the statistics the metadata registers, and a Hadoop catalog's
