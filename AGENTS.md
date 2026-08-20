@@ -324,11 +324,13 @@ rekep/
 │                  append/upsert in, one commit per chunk, and the
 │                  maintenance -- add_fields, compact, cleanup, optimize)
 ├── fix/           message.py (FixMessage and the vectorised line parsing:
-│                  separator detection, tag=value cutting, repeating
-│                  groups), fields.py (the FIX datatype -> Arrow projection
-│                  and the forgiving Boolean reading) and registry.py
-│                  (FixRegistry: the OnixS dictionary scraped per version,
-│                  cached in ~/.config/fix/, lookup and fuzzy search)
+│                  separator detection, tag=value and rendered
+│                  Name[i]=Member=value cutting, repeating groups, and
+│                  tag_arrow_array: map keys as integer tags), fields.py
+│                  (the FIX datatype -> Arrow projection and the forgiving
+│                  Boolean reading) and registry.py (FixRegistry: the OnixS
+│                  dictionary scraped per version, cached in ~/.config/fix/,
+│                  lookup and fuzzy search, all names case-insensitive)
 └── logs/          log.py (the Log shape) and text_file.py (TextFile: a log
                    read into Arrow batches and written back out as lines,
                    itself a Dataset)

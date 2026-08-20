@@ -108,19 +108,25 @@ class FixRegistry(Convertible):
         except OSError:
             # Offline before the index was ever cached: the versions that
             # *were* scraped are the ones this registry can honestly serve.
-            stored = tuple(
-                sorted(
-                    (
-                        path.stem
-                        for path in pathlib.Path(self.cache_dir).glob("*.json")
-                        if path.stem != "versions"
-                    ),
-                    key=_version_key,
-                    reverse=True,
-                )
+            # Deduplicated case-blind, because a copied-in cache can hold two
+            # spellings of one version and they are one version here.
+            stems = sorted(
+                (
+                    path.stem
+                    for path in pathlib.Path(self.cache_dir).glob("*.json")
+                    if path.stem != "versions"
+                ),
+                key=_version_key,
+                reverse=True,
             )
-            if stored:
-                return stored
+            seen: set[str] = set()
+            unique: list[str] = []
+            for stem in stems:
+                if stem.lower() not in seen:
+                    seen.add(stem.lower())
+                    unique.append(stem)
+            if unique:
+                return tuple(unique)
             raise
         found = dict.fromkeys(_VERSION_LINK.findall(page))
         found.pop("latest", None)
@@ -131,12 +137,20 @@ class FixRegistry(Convertible):
         return versions
 
     def _versions(self, version: str | None) -> tuple[str, ...]:
-        """The versions a call walks: all of them, or the one it named."""
+        """The versions a call walks: all of them, or the one it named.
+
+        Case-insensitive like every other name here -- `fixt1.1` finds
+        `FIXT1.1` -- and the canonical spelling is what comes back, so the
+        cache files and the site's directories are always addressed the one
+        way they are spelled.
+        """
         if version is None:
             return self.versions
-        if version not in self.versions:
-            raise KeyError(f"{version!r} is not a FIX version here; one of {self.versions}")
-        return (version,)
+        wanted = str(version).strip().lower()
+        for candidate in self.versions:
+            if candidate.lower() == wanted:
+                return (candidate,)
+        raise KeyError(f"{version!r} is not a FIX version here; one of {self.versions}")
 
     # -- fields --------------------------------------------------------------
 
@@ -146,7 +160,15 @@ class FixRegistry(Convertible):
         The first call for a version is the expensive one -- one page per
         field -- and the last: the result lands in the cache file the next
         call answers from. `refresh=True` scrapes again over a stale cache.
+
+        The version is resolved to its canonical spelling first (`fixt1.1`
+        is `FIXT1.1` wherever either has been seen), so the cache file, the
+        site's case-sensitive directory and the lookup indexes are always
+        addressed the one way the version is spelled -- a refresh through a
+        lowercased spelling would otherwise scrape a 404, or fork the cache
+        into a second file and leave a stale index serving the old fields.
         """
+        version = self._spelling(version)
         name = f"{version}.json"
         if not refresh:
             cached = self._read_cache(name)
@@ -163,6 +185,28 @@ class FixRegistry(Convertible):
         )
         self._indexes.pop(version, None)
         return fields
+
+    def _spelling(self, version: str) -> str:
+        """The canonical spelling of `version`, and a refusal of non-names.
+
+        Resolved case-blind against what is already known -- the fetched
+        version list when there is one, else the cache files on disk -- and
+        never by a network round trip a plain cache read did not need. The
+        character check is what keeps `fields()` from being handed a *path*:
+        the version lands in a cache file name, and `..` or a separator in it
+        would read and write outside the cache directory.
+        """
+        wanted = str(version).strip()
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._\-]*", wanted):
+            raise ValueError(f"{version!r} does not name a FIX version")
+        lowered = wanted.lower()
+        for candidate in self.__dict__.get("versions") or ():
+            if candidate.lower() == lowered:
+                return candidate
+        for path in sorted(pathlib.Path(self.cache_dir).glob("*.json")):
+            if path.stem != "versions" and path.stem.lower() == lowered:
+                return path.stem
+        return wanted
 
     def load(self, *versions: str, refresh: bool = False) -> dict[str, int]:
         """Scrape (or verify) whole versions into the cache: `{version: fields}`.
@@ -202,6 +246,32 @@ class FixRegistry(Convertible):
             where = version or "any version"
             raise KeyError(f"no FIX field {key!r} in {where}")
         return found[0]
+
+    def tags(self, version: str | None = None) -> dict[str, int]:
+        """Every field name to its tag number, lowercased, newest version winning.
+
+        The `names` mapping `rekep.fix.tag_arrow_array` resolves rendered
+        keys through: build it once and hand it to every call, because it
+        walks whole versions. Lowercased here so the lookup there is one
+        dictionary probe, never a scan.
+
+        A version named explicitly loads through `fields`, so a cache or
+        network failure *raises* -- an empty mapping here would quietly
+        un-resolve every rendered key downstream, which is the worst way to
+        learn the cache is cold. The walk over all versions keeps skipping
+        the ones that cannot be had, like `lookup` does.
+        """
+        mapping: dict[str, int] = {}
+        if version is not None:
+            (candidate,) = self._versions(version)
+            members = self.fields(candidate)
+            for member in members:
+                mapping.setdefault(member.name.lower(), int(member.fix["tag"]))
+            return mapping
+        for candidate in self._versions(None):
+            for member in self._members(candidate):
+                mapping.setdefault(member.name.lower(), int(member.fix["tag"]))
+        return mapping
 
     def search(
         self,
@@ -261,7 +331,12 @@ class FixRegistry(Convertible):
                 built = self._indexes[version] = None
             else:
                 by_tag = {int(member.fix["tag"]): member for member in members}
-                by_name = {member.name.lower(): member for member in members}
+                # First declaration wins on a duplicated name, matching
+                # `tags()` -- so the tag a name resolves to and the field a
+                # lookup returns can never disagree about each other.
+                by_name: dict[str, Field] = {}
+                for member in members:
+                    by_name.setdefault(member.name.lower(), member)
                 built = self._indexes[version] = (by_tag, by_name)
         return built
 

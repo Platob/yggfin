@@ -63,10 +63,12 @@ logs.optimize()                      # compact, expire, sweep
   CRUD and the maintenance (compact, expire, sweep) a streaming table needs.
   `write_arrow(merge_by=...)` upserts; `append_arrow(merge_by=...)` inserts
   only what is not stored yet and never rewrites a row.
-- **`fix`** — `FixMessage` parses FIX log lines (SOH-, `|`- or `^A`-separated),
-  `parse_arrow_array` does whole columns in Arrow kernels, and `FixRegistry`
-  scrapes every FIX version's fields from the OnixS dictionary into
-  `~/.config/fix/` — name, datatype, comment, values — to work offline after.
+- **`fix`** — `FixMessage` parses FIX log lines (SOH-, `|`- or `^A`-separated,
+  wire tags or rendered `Name=Value` / `Group[i]=Member=Value` spellings),
+  `parse_arrow_array` does whole columns in Arrow kernels, `tag_arrow_array`
+  turns the maps' text keys into integer FIX tags, and `FixRegistry` scrapes
+  every FIX version's fields from the OnixS dictionary into `~/.config/fix/` —
+  name, datatype, comment, values — to work offline after.
 - **`convert`** — `Convertible`: paired `from_*`/`into_*` methods that serialise
   any dataclass to dict, JSON, YAML or TOML and back.
 

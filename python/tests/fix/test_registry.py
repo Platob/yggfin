@@ -157,6 +157,56 @@ def test_lookup_by_tag_name_and_case(registry: FixtureRegistry) -> None:
     assert registry.field(54, "4.4").name == "Side"
     assert registry.field("54", "4.4").name == "Side"
     assert registry.field("side", "4.4").name == "Side"
+    assert registry.field("SIDE", "4.4").name == "Side"
+
+
+def test_the_version_filter_is_case_insensitive_too(registry: FixtureRegistry) -> None:
+    """`fixt1.1` names `FIXT1.1`; a version that exists in no case is refused."""
+    assert registry.lookup("Side", "fixt1.1") == [], "resolved, and that version has no pages"
+    with pytest.raises(KeyError, match="not a FIX version"):
+        registry.lookup("Side", "9.9")
+
+
+def test_the_cache_answers_a_version_in_any_case(registry: FixtureRegistry) -> None:
+    registry.fields("4.4")
+    cached = Path(registry.cache_dir) / "4.4.json"
+    (Path(registry.cache_dir) / "FIXT1.1.json").write_text(cached.read_text())
+    offline = OfflineRegistry(cache_dir=registry.cache_dir)
+    assert [f.name for f in offline.fields("fixt1.1")] == [f.name for f in offline.fields("4.4")]
+
+
+def test_tags_maps_lowercased_names_to_tag_numbers(registry: FixtureRegistry) -> None:
+    registry.fields("4.4")
+    tags = registry.tags()
+    assert tags["side"] == 54
+    assert tags["possdupflag"] == 43
+    assert registry.tags("4.4")["ordrejreason"] == 103
+
+
+def test_tags_for_an_explicit_version_raises_when_it_cannot_load(
+    registry: FixtureRegistry,
+) -> None:
+    """An empty mapping would silently un-resolve every key downstream."""
+    with pytest.raises(OSError, match="404"):
+        registry.tags("FIXT1.1")
+
+
+def test_a_version_that_would_be_a_path_is_refused(registry: FixtureRegistry) -> None:
+    """The version lands in a cache file name, so it must never carry a path."""
+    for hostile in ("../evil", "a/b", "..", ""):
+        with pytest.raises(ValueError, match="does not name a FIX version"):
+            registry.fields(hostile)
+
+
+def test_duplicate_case_spellings_in_the_cache_are_one_version(
+    registry: FixtureRegistry,
+) -> None:
+    registry.fields("4.4")
+    cached = (Path(registry.cache_dir) / "4.4.json").read_text()
+    (Path(registry.cache_dir) / "FIXT1.1.json").write_text(cached)
+    (Path(registry.cache_dir) / "fixt1.1.json").write_text(cached)
+    offline = OfflineRegistry(cache_dir=registry.cache_dir)
+    assert [version.lower() for version in offline.versions] == ["4.4", "fixt1.1"]
 
 
 def test_lookup_without_a_version_walks_them_newest_first(registry: FixtureRegistry) -> None:

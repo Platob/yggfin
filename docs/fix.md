@@ -46,7 +46,24 @@ cached under `~/.config/fix/` so everything after works offline.
     The same rules, vectorised: one split, one regex classification and one
     cumulative sum per batch — no Python per row. A map rather than a struct,
     because a repeating group *is* tags repeating, and an Arrow map keeps
-    duplicate keys in order.
+    duplicate keys in order. Measured (`benchmarks/bench_fix.py`, twice):
+    ~300k wire rows/s at twelve fields per row, ~5× the scalar parser, and
+    ~140–260k rendered rows/s depending on group density.
+
+    ```python
+    from rekep.fix import FixRegistry, tag_arrow_array
+
+    tagged = tag_arrow_array(maps)                     # map<int32, string>
+    tagged = tag_arrow_array(maps, names=FixRegistry().tags())
+    ```
+
+    `tag_arrow_array` turns the text keys into the integer tags FIX defines —
+    what a join or a filter wants. All-numeric keys (tag-mode parsing) are one
+    cast kernel, ~140M keys/s; rendered keys resolve through `names` by their
+    member (`NoPartyIDs[0].PartyID` → `PartyID` → 448), each distinct
+    spelling once. A key that resolves nowhere is refused by name;
+    `drop_unknown=True` drops those entries instead, which is how a rendered
+    log's `took=5ms` noise falls out.
 
 === "Repeating groups"
 
@@ -59,6 +76,25 @@ cached under `~/.config/fix/` so everything after works offline.
     entry starts with the delimiter tag — the first tag after the count — and
     tags never repeat within one entry. Without `members` the last entry's end
     is taken from that no-repetition rule; with them it is exact.
+
+=== "Rendered names"
+
+    ```python
+    parsed = FixMessage.from_text(
+        "Side=1 | NoPartyIDs[0]=PartyID=BRK | NoPartyIDs[1]=PartyID=CLI"
+    )
+    parsed.pairs                     # [('Side','1'), ('NoPartyIDs[0].PartyID','BRK'), ...]
+    parsed.indexed_group("NoPartyIDs")   # entries folded back, ordered by index
+    parsed.values("PartyID")             # ['BRK', 'CLI'] — reaches through the indexes
+    ```
+
+    Logs also print messages *decoded*: `Name=Value` pairs, and repeating
+    groups entry by entry as `Group[i]=Member=Value` (or the canonical
+    `Group[i].Member=Value`, which round-trips). One regex grammar reads all
+    the spellings; a line with a BeginString keeps the wire rule (digits
+    only), a line without one is taken as rendered pairs, and `named=True` /
+    `named=False` forces either. Name matching is case-insensitive
+    throughout.
 
 ## The dictionary
 
