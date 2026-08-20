@@ -331,6 +331,7 @@ class IcebergDataset(Dataset):
         a renamed column is found and comes back under the name the shape asked
         for it by -- matching by name would have filled it with nulls.
         """
+        reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
         table = self.iceberg_table
         # Pinned *before* the projection is chosen: a scan on a ref or a
@@ -341,8 +342,7 @@ class IcebergDataset(Dataset):
             limit=limit,
             **({"row_filter": row_filter} if row_filter is not None else {}),
         )
-        reference = branch or self.branch
-        if reference and snapshot_id is None:
+        if reference:
             scan = scan.use_ref(reference)
         found: dict[str, str] = {}
         if columns:
@@ -354,6 +354,26 @@ class IcebergDataset(Dataset):
         if target is None:
             return reader
         return target.cast_arrow_reader(_renamed(reader, found))
+
+    def _reference(self, branch: str | None, snapshot_id: int | None) -> str | None:
+        """The branch a read follows, or None when a snapshot id decides instead.
+
+        Naming both is a contradiction and is refused, the way pyiceberg
+        refuses it ("Cannot override ref, already set snapshot id"): a snapshot
+        id names one state exactly, and nothing checks that it belongs to that
+        branch. Ignoring one of the two silently is the worst of the three
+        available answers. The dataset's *own* `branch` is not a contradiction
+        -- it is a default, and an explicit snapshot id is how a caller reads
+        past it.
+        """
+        if snapshot_id is None:
+            return branch or self.branch
+        if branch is not None:
+            raise ValueError(
+                f"snapshot_id={snapshot_id} and branch={branch!r} name two different states; "
+                "a snapshot id is already exact, so pass one or the other"
+            )
+        return None
 
     def _selected(self, target: StructField, scan: Any) -> dict[str, str]:
         """`{the scan's name: the target's name}` for every column it can fill.
@@ -384,8 +404,9 @@ class IcebergDataset(Dataset):
             stored = pinned.get(current.get(name, -1)) or (name if name in by_name else None)
             if stored is not None:
                 wanted[stored] = name
-        # Nothing in common: the rows still have to be counted, but reading
-        # every column of them to hand back a table of nulls would be absurd.
+        # Nothing in common: one column is named because a scan must project
+        # something, and what comes back is a table of no columns and no rows
+        # -- which is pyiceberg's own answer to an empty projection too.
         return wanted or {next(iter(pinned.values())): next(iter(pinned.values()))}
 
     # -- writing ------------------------------------------------------------
@@ -715,8 +736,8 @@ class IcebergDataset(Dataset):
             snapshot_id=snapshot_id,
             **({"row_filter": row_filter} if row_filter is not None else {}),
         )
-        reference = branch or self.branch
-        if reference and snapshot_id is None:
+        reference = self._reference(branch, snapshot_id)
+        if reference:
             # Not guarded by `in table.refs()`: this reports what a *read* would
             # touch, and a read of a branch that is not there raises. Planning
             # main instead and calling it the answer would be a lie.

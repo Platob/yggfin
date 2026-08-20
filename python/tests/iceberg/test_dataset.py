@@ -755,6 +755,28 @@ def test_a_merge_of_new_keys_writes_without_reading(dataset: IcebergDataset) -> 
     assert len(dataset.iceberg_table.history()) > before
 
 
+def test_a_snapshot_id_and_a_branch_together_are_refused(dataset: IcebergDataset) -> None:
+    """Nothing checks the snapshot belongs to the branch, so one had to be ignored.
+
+    pyiceberg refuses the same pair for the same reason. The dataset's own
+    default branch is not the same thing -- an explicit snapshot id is how a
+    caller reads past it.
+    """
+    dataset.write_arrow(quotes(2), commit_row_size=0)
+    table = dataset.get_or_create_table()
+    first = table.current_snapshot().snapshot_id
+    table.manage_snapshots().create_branch(first, "dev").commit()
+    dataset.refresh()
+    dataset.write_arrow(quotes(1, "later"), commit_row_size=0)
+
+    with pytest.raises(ValueError, match="two different states"):
+        dataset.read_arrow_table(snapshot_id=first, branch="dev")
+    with pytest.raises(ValueError, match="two different states"):
+        dataset.scan_plan(snapshot_id=first, branch="dev")
+    dataset.branch = "dev"
+    assert dataset.read_arrow_table(snapshot_id=first).num_rows == 2, "a default is not a conflict"
+
+
 def test_a_streamed_merge_loads_the_table_once(dataset: IcebergDataset) -> None:
     """A commit updates the table it was made on, so no chunk reloads it.
 

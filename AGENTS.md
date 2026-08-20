@@ -148,7 +148,7 @@ what is missing and commits nothing when there is nothing to add, and
 `optimize` is the three in the order that makes them cheap. Every one of them
 reports what it did.
 
-Seven things that were learned the expensive way, all of them measured:
+Nine things that were learned the expensive way, all of them measured:
 
 - **A maintenance verb must settle.** `compact` marks its own snapshots and
   skips a part nothing has landed in since; without that it replans forever,
@@ -184,6 +184,19 @@ Seven things that were learned the expensive way, all of them measured:
   own schema check and then writing nulls over what was stored, and a scan
   pinned to a ref reading under that snapshot's schema, so a renamed column
   compared against nulls until field ids were used to recover the name.
+- **A path is not a string.** The live set for the sweep was built by
+  stripping `://` off recorded URIs while the listing resolved its paths
+  through `pyarrow.fs`. They agree on `file:///x` and `s3://b/x` and on
+  nothing else -- `file:/x`, `abfss://c@acct.dfs.../x`, `hdfs://host:8020/x`,
+  a Windows drive letter -- so every live file looked orphaned and `cleanup`
+  deleted the table. Two paths are only comparable through the same resolver;
+  reduce both to what follows a directory that was resolved once.
+- **Ask Iceberg where things are.** `write.data.path` moves the data,
+  `list_namespaces` returns one level, and a scan pinned to a ref projects
+  under that snapshot's schema. Each of those was assumed instead, and each
+  assumption was a silent skip: a sweep that swept nothing, a maintenance loop
+  that never saw a nested namespace, a read that filled a renamed column with
+  nulls.
 - **Our own commits update the table object in place.** `refresh()` is for
   seeing *other* writers, and calling it per chunk is a catalog round trip per
   commit -- free on SQLite, a network hop on REST or Glue.
@@ -244,6 +257,29 @@ motivated the code -- never a restated signature.
 Derive from the fixture, then assert the derived count against a literal so
 a broken regex cannot move both sides together. Cover lifecycle (laziness,
 double-close, use-after-close) and the sweeps that must not change results.
+
+**A test that cannot fail is worse than no test**, because it is counted. An
+adversarial pass over this package found four of them, each sitting on a live
+defect: a batching sweep that compared `sum` and `max` of row counts, which
+dropping a continuation never changes; a "custom pattern" built by a `replace`
+that matched nothing, so it ran the default pattern against the default
+fixture; a compaction suite that only ever used the partitioned fixture, so
+every verb raised on an unpartitioned table untested; and a NaN guard tested
+with a one-row chunk, which only reaches one of the two branches it guards.
+When a test passes the first time you write it, break the code and watch it
+fail.
+
+Three shapes worth reaching for, all of which found real defects here:
+
+- **Compare against the reference, not against yourself.** pyiceberg for
+  anything Iceberg, `Array.cast` for anything cast-shaped, parse -> render ->
+  parse for anything that claims a round trip. Where the reference is *wrong*
+  -- Arrow's view-to-list cast reads offsets and ignores sizes -- say so in the
+  test and compare against the source's own values.
+- **Cross every boundary the code branches on.** The 200-literal `In` limit,
+  the batch size, the width a slicing path assumes, zero rows, one row.
+- **Assert what a later reader pays for**, not only what came back: planned
+  files, snapshot summaries, catalog round trips, the files a sweep left.
 
 ## 14. Module layout
 
