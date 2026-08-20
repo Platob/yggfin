@@ -10,7 +10,8 @@ from typing import Annotated, Any, ClassVar
 import pyarrow
 
 from rekep.convert import Convertible
-from rekep.fields.field import DESCRIPTION, NAMESPACE, Field, FieldBuilder, field
+from rekep.fields.builder import FieldBuilder
+from rekep.fields.field import DESCRIPTION, NAMESPACE, Field, StructField, field
 
 
 class ClassBuilder:
@@ -31,7 +32,9 @@ class ClassBuilder:
     #: is what makes an instance of one serialise itself.
     BASE: ClassVar[type] = Convertible
 
-    def dataclass(self, source: Field, name: str | None = None, base: type | None = None) -> type:
+    def dataclass(
+        self, source: StructField, name: str | None = None, base: type | None = None
+    ) -> type:
         """One class, one member per field, in declaration order.
 
         A field this package built carries its class name and module, and the

@@ -8,7 +8,7 @@ from typing import Annotated
 import pyarrow
 import pytest
 
-from rekep import Convertible, Field, field
+from rekep import Convertible, Field, ListField, MapField, StructField, field
 
 
 @field
@@ -264,3 +264,126 @@ def test_a_field_serialises_itself(tmp_path) -> None:
     Book.FIELD.into_json(path)
     assert Field.from_json(path) == Book.FIELD
     assert Field.from_yaml(Book.FIELD.into_yaml()) == Book.FIELD
+
+
+# -- the type picks the class -----------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("arrow_type", "expected"),
+    [
+        (None, Field),
+        (pyarrow.int64(), Field),
+        (pyarrow.struct([("a", pyarrow.int64())]), StructField),
+        (pyarrow.list_(pyarrow.int64()), ListField),
+        (pyarrow.large_list(pyarrow.int64()), ListField),
+        (pyarrow.map_(pyarrow.string(), pyarrow.int64()), MapField),
+    ],
+)
+def test_the_arrow_type_picks_the_subclass(arrow_type: object, expected: type) -> None:
+    assert type(Field(name="x", arrow_type=arrow_type)) is expected
+
+
+def test_every_way_of_building_one_lands_on_the_same_class() -> None:
+    struct = pyarrow.struct([("a", pyarrow.int64())])
+    assert isinstance(Field.from_arrow_type(struct, "x"), StructField)
+    assert isinstance(Field.from_arrow_field(pyarrow.field("x", struct)), StructField)
+    assert isinstance(
+        Field.from_arrow_schema(pyarrow.schema([("a", pyarrow.int64())])), StructField
+    )
+    assert isinstance(Field.from_dict(Book.FIELD.into_dict()), StructField)
+    assert isinstance(Field.of(pyarrow.list_(pyarrow.int64())), ListField)
+    assert isinstance(Book.FIELD.field("venues"), ListField)
+    assert isinstance(Book.FIELD.field("limits"), MapField)
+
+
+def test_asking_for_a_subclass_is_honoured() -> None:
+    """The redirect is for `Field(...)`; a subclass named outright is built."""
+    assert type(StructField(name="x", arrow_type=pyarrow.struct([]))) is StructField
+
+
+def test_a_container_reaches_what_is_inside_it() -> None:
+    assert Book.FIELD.field("venues").item.field("mic").arrow_type == pyarrow.string()
+    limits = Book.FIELD.field("limits")
+    assert limits.key.arrow_type == pyarrow.string()
+    assert limits.value.arrow_type == pyarrow.int64()
+    assert limits.value.nullable, "`int | None` values stay nullable through the map"
+
+
+def test_a_leaf_has_no_fields() -> None:
+    assert Field(name="x", arrow_type=pyarrow.int64()).fields == ()
+
+
+# -- keys and partitions ----------------------------------------------------
+
+
+def test_a_key_is_declared_and_read_back() -> None:
+    @field
+    class Quote(Convertible):
+        symbol: Annotated[str, Field.primary_key()]
+        day: Annotated[datetime.date, Field.partition_key("day")]
+        size: int
+
+    assert Quote.FIELD.primary_keys() == ["symbol"]
+    assert Quote.FIELD.partition_keys() == {"day": "day"}
+    assert Quote.FIELD.field("symbol").is_primary_key
+    assert Quote.FIELD.field("day").partition_transform == "day"
+    assert not Quote.FIELD.field("size").is_primary_key
+
+
+def test_an_identity_partition_says_so() -> None:
+    @field
+    class Quote(Convertible):
+        day: Annotated[datetime.date, Field.partition_key()]
+
+    assert Quote.FIELD.partition_keys() == {"day": "identity"}
+
+
+def test_a_nullable_key_is_refused_at_declaration() -> None:
+    with pytest.raises(TypeError, match="primary key and cannot be nullable"):
+
+        @field
+        class Loose(Convertible):
+            symbol: Annotated[str | None, Field.primary_key()] = None
+
+        Loose.FIELD.into_arrow_schema()
+
+
+def test_a_nullable_key_is_refused_by_the_setter() -> None:
+    built = Field(name="symbol", arrow_type=pyarrow.string(), nullable=True)
+    with pytest.raises(TypeError, match="primary key and cannot be nullable"):
+        built.is_primary_key = True
+
+
+def test_setting_a_key_reaches_the_struct_it_came_from() -> None:
+    """A member is a view of its container, not a copy of it."""
+    required = pyarrow.field("symbol", pyarrow.string(), nullable=False)
+    built = Field.from_arrow_schema(pyarrow.schema([required]), "Quote")
+    built.field("symbol").is_primary_key = True
+    assert built.primary_keys() == ["symbol"]
+    assert built.into_arrow_schema().field("symbol").metadata[b"iceberg:primary_key"] == b"true"
+
+
+def test_setting_something_deep_reaches_the_root() -> None:
+    built = Field.from_arrow_schema(
+        pyarrow.schema([("venue", pyarrow.struct([("mic", pyarrow.string())]))]), "Quote"
+    )
+    built.field("venue").field("mic").description = "Where it lists."
+    nested = built.into_arrow_schema().field("venue").type.field(0)
+    assert nested.metadata[b"description"] == b"Where it lists."
+
+
+def test_a_partition_can_be_taken_back_off() -> None:
+    built = Field(name="day", arrow_type=pyarrow.date32())
+    built.is_partition_key = "day"
+    assert built.is_partition_key and built.partition_transform == "day"
+    built.is_partition_key = False
+    assert not built.is_partition_key and built.partition_transform == ""
+
+
+def test_a_changed_declaration_drops_what_was_derived_from_it() -> None:
+    built = Field.from_arrow_schema(pyarrow.schema([("symbol", pyarrow.string())]), "Quote")
+    before = built.into_arrow_schema()
+    built.field("symbol").arrow_type = pyarrow.large_string()
+    assert built.into_arrow_schema() is not before
+    assert built.into_arrow_schema().field("symbol").type == pyarrow.large_string()

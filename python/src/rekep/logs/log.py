@@ -19,13 +19,16 @@ class Log(Convertible):
     """Path of the log the line came from, as its filesystem addresses it."""
 
     # An integer rather than a timestamp type, so the column survives any
-    # downstream that is picky about time units.
-    unix: Annotated[int, Field(metadata={"unit": "nanosecond", "epoch": "1970-01-01"})]
+    # downstream that is picky about time units. Part of the key beside
+    # `hash64`: the hash alone identifies a line, but a key that leads with
+    # time is one an engine can prune on, since it correlates with the
+    # partition.
+    unix: Annotated[int, Field.primary_key(metadata={"unit": "nanosecond", "epoch": "1970-01-01"})]
     """Timestamp as whole nanoseconds since the epoch, in the log's own zone."""
 
-    # Derived from `unix`, denormalised so a reader can filter on a real date
-    # column instead of re-deriving one per query.
-    date: datetime.date
+    # Derived from `unix`, denormalised so a store partitions on a real date
+    # column instead of every reader re-deriving one.
+    date: Annotated[datetime.date, Field.partition_key()]
     """Calendar day of the timestamp, naive UTC."""
 
     time: datetime.time
@@ -40,5 +43,5 @@ class Log(Convertible):
     message: str
     """Payload with the header and level stripped, continuation lines folded in."""
 
-    hash64: int
+    hash64: Annotated[int, Field.primary_key()]
     """Signed 64-bit hash of the raw line, for matching lines across captures."""

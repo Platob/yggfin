@@ -1,97 +1,12 @@
-"""Arrow schema surgery: reshaping a batch, and widening a schema.
+"""Widening one Arrow schema with another, at every level.
 
-Everything here speaks pyarrow only. A `Field` is what *declares* a shape;
-these are the operations that make real data agree with one.
+Everything here speaks pyarrow only, so a `Field` can be built on it: casting
+data onto a shape lives on the field that declares the shape.
 """
 
 from __future__ import annotations
 
-import itertools
-from collections.abc import Iterator
-from typing import Any
-
 import pyarrow
-
-
-def cast_batch(
-    batch: pyarrow.RecordBatch, schema: pyarrow.Schema, *, safe: bool = False
-) -> pyarrow.RecordBatch:
-    """`batch` reshaped to `schema`: columns cast, missing filled, extras dropped.
-
-    The gap this closes is the one every real pipeline hits: a transform
-    produces *almost* the target shape -- an `int64` where the target wants
-    `int32`, a column the source never had, its columns in another order --
-    and the write fails on a schema comparison rather than on the data.
-
-    `safe=False` by default, deliberately: this is `pyarrow.compute.cast`'s
-    unsafe mode, the one that lets a value narrow or a timestamp lose
-    precision instead of raising. A cast to a *target schema* is a
-    declaration that the target's types are the authority, so the
-    truncation is the intent, not an accident; pass `safe=True` to get
-    Arrow's checking back.
-
-    A column the batch does not have is filled with nulls -- but only if the
-    target field is nullable. A missing non-nullable field is refused by
-    name: filling a NOT NULL column with nulls builds a batch that only
-    fails later, at the write, where the cause is much harder to see.
-    """
-    if batch.schema.equals(schema):
-        return batch
-    arrays = []
-    for field in schema:
-        if field.name in batch.schema.names:
-            column = batch.column(field.name)
-            arrays.append(column if column.type == field.type else column.cast(field.type, safe))
-        elif field.nullable:
-            arrays.append(pyarrow.nulls(batch.num_rows, field.type))
-        else:
-            raise ValueError(
-                f"column {field.name!r} is missing and not nullable, so it cannot be filled "
-                "with nulls; produce it upstream or make the field optional"
-            )
-    return pyarrow.RecordBatch.from_arrays(arrays, schema=schema)
-
-
-def cast_reader(
-    source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
-    schema: pyarrow.Schema,
-    *,
-    safe: bool = False,
-    merge_schema: bool = False,
-) -> pyarrow.RecordBatchReader:
-    """`cast_batch` over a whole stream, still one batch at a time.
-
-    Takes a plain iterator of batches too, so a transform's output becomes a
-    reader of the target shape in one step, without the caller building a
-    `RecordBatchReader` by hand first.
-
-    `merge_schema=True` widens the target with `merge_schemas` first, so a
-    column the source has and the target does not is **kept** instead of
-    dropped. It has to look at the incoming schema to do that, which for a
-    plain iterator means pulling one batch early (put straight back, so
-    nothing is lost or read twice); a reader already declares its schema and
-    is not touched. An empty iterator leaves the target as it was: there was
-    no incoming schema to merge.
-
-    The widened schema is decided **once**, from the reader's own schema or
-    the first batch, and every later batch is cast onto it -- a stream is
-    one shape, and a `RecordBatchReader` cannot say otherwise. A hand-rolled
-    iterator whose batches disagree is therefore resolved in the target's
-    favour: a column a later batch drops comes back as nulls, a column only
-    a later batch has is dropped. Widening again mid-stream would mean a
-    reader whose schema changes under its consumer, which no downstream
-    writer accepts.
-    """
-    if merge_schema:
-        source, incoming = _peek_schema(source)
-        if incoming is not None:
-            schema = merge_schemas(incoming, schema)
-
-    def generate() -> Iterator[pyarrow.RecordBatch]:
-        for batch in source:
-            yield cast_batch(batch, schema, safe=safe)
-
-    return pyarrow.RecordBatchReader.from_batches(schema, generate())
 
 
 def merge_fields(source: pyarrow.Field, target: pyarrow.Field) -> pyarrow.Field:
@@ -171,22 +86,3 @@ def _merge_field_lists(
     known = {field.name for field in target}
     merged.extend(field.with_nullable(True) for field in source if field.name not in known)
     return merged
-
-
-def _peek_schema(
-    source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
-) -> tuple[Any, pyarrow.Schema | None]:
-    """`(source, its schema)`, reading one batch only when it has to.
-
-    A `RecordBatchReader` states its schema up front, so it comes back
-    untouched and still fully lazy. A plain iterator only reveals its shape
-    by producing a batch, so one is pulled and then chained back on the
-    front -- the caller still sees every batch, in order, exactly once.
-    """
-    if isinstance(source, pyarrow.RecordBatchReader):
-        return source, source.schema
-    iterator = iter(source)
-    first = next(iterator, None)
-    if first is None:
-        return iter(()), None
-    return itertools.chain([first], iterator), first.schema

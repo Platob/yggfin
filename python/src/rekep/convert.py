@@ -229,7 +229,12 @@ def _encode(value: Any) -> Any:
 
     None is dropped rather than emitted: TOML cannot express it, and on the way
     back a missing key is what lets the dataclass default apply.
+
+    A nested value whose class defines its own `into_dict` is dumped by it: a
+    `Field` holds an Arrow type, which only the field knows how to write.
     """
+    if _owns(type(value), "into_dict"):
+        return _encode(value.into_dict())
     if dataclasses.is_dataclass(value) and not isinstance(value, type):
         return {
             f.name: _encode(attribute)
@@ -249,6 +254,15 @@ def _encode(value: Any) -> Any:
     if isinstance(value, (pathlib.PurePath, uuid.UUID, decimal.Decimal)):
         return str(value)
     return value
+
+
+def _owns(cls: Any, method: str) -> bool:
+    """Whether `cls` defines its own `method` rather than inheriting ours."""
+    if not isinstance(cls, type) or not issubclass(cls, Convertible):
+        return False
+    mine = getattr(getattr(cls, method), "__func__", getattr(cls, method))
+    ours = getattr(getattr(Convertible, method), "__func__", getattr(Convertible, method))
+    return mine is not ours
 
 
 def _toml_ordered(value: Any) -> Any:
@@ -317,6 +331,8 @@ def _decode(value: Any, annotation: Any) -> Any:
 
     if annotation is Any:
         return value  # untyped: trust the plain container a text format gave back
+    if _owns(annotation, "from_dict"):
+        return annotation.from_dict(value)  # the other half of `_encode`'s rule
     if dataclasses.is_dataclass(annotation):
         return _decode_dataclass(annotation, value)
     if isinstance(annotation, type):

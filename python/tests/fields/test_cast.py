@@ -7,7 +7,7 @@ import pyarrow
 import pytest
 
 from rekep import Convertible, Field, field
-from rekep.fields import cast_batch, cast_reader, merge_fields, merge_schemas
+from rekep.fields import cast_batch, cast_reader, cast_table, merge_fields, merge_schemas
 
 
 @field
@@ -75,7 +75,7 @@ def test_a_missing_nullable_column_is_filled_with_nulls() -> None:
 
 def test_a_missing_non_nullable_column_is_refused_by_name() -> None:
     batch = batch_of(symbol=["A"], size=[1])
-    with pytest.raises(ValueError, match="'day' is missing and not nullable"):
+    with pytest.raises(ValueError, match=r"'Tick\.day' is missing and not nullable"):
         Tick.FIELD.cast_arrow_batch(batch)
 
 
@@ -255,3 +255,153 @@ def test_merge_fields_is_the_same_rule_on_one_field() -> None:
     merged = merge_fields(source, target)
     assert merged.name == "venue"
     assert merged.type.num_fields == 2
+
+
+# -- arrays, recursively ----------------------------------------------------
+
+
+def venue(**members: pyarrow.DataType) -> pyarrow.DataType:
+    return pyarrow.struct([(name, kind) for name, kind in members.items()])
+
+
+def test_an_array_that_already_matches_is_handed_back() -> None:
+    array = pyarrow.array([1, 2], type=pyarrow.int32())
+    assert Field(name="size", arrow_type=pyarrow.int32()).cast_arrow_array(array) is array
+
+
+def test_a_leaf_array_is_cast() -> None:
+    array = pyarrow.array([2**40], type=pyarrow.int64())
+    cast = Field(name="size", arrow_type=pyarrow.int32()).cast_arrow_array(array)
+    assert cast.type == pyarrow.int32(), "unsafe by default, like every other cast here"
+
+
+def test_a_chunked_array_is_cast_chunk_by_chunk() -> None:
+    chunked = pyarrow.chunked_array([[1, 2], [3]], type=pyarrow.int64())
+    cast = Field(name="size", arrow_type=pyarrow.int32()).cast_arrow_array(chunked)
+    assert isinstance(cast, pyarrow.ChunkedArray)
+    assert cast.num_chunks == 2, "the chunking survives; a column is never materialised whole"
+    assert cast.type == pyarrow.int32()
+
+
+def test_a_struct_array_is_cast_member_by_member() -> None:
+    """Members in another order, one narrowed, one the source never had."""
+    array = pyarrow.array(
+        [{"desk": "EQ", "mic": "XPAR", "extra": 1}, None],
+        type=venue(desk=pyarrow.string(), mic=pyarrow.string(), extra=pyarrow.int64()),
+    )
+    target = Field(
+        name="venue",
+        arrow_type=pyarrow.struct(
+            [
+                pyarrow.field("mic", pyarrow.string(), nullable=False),
+                pyarrow.field("size", pyarrow.int32()),
+            ]
+        ),
+        nullable=True,
+    )
+    cast = target.cast_arrow_array(array)
+    assert cast.type == target.arrow_type
+    assert cast.to_pylist() == [{"mic": "XPAR", "size": None}, None], "the null row stays null"
+
+
+def test_a_missing_non_nullable_member_names_its_path() -> None:
+    array = pyarrow.array([{"mic": "XPAR"}], type=venue(mic=pyarrow.string()))
+    target = Field(
+        name="venue",
+        arrow_type=pyarrow.struct(
+            [("mic", pyarrow.string()), pyarrow.field("desk", pyarrow.string(), nullable=False)]
+        ),
+    )
+    with pytest.raises(ValueError, match=r"'venue\.desk' is missing and not nullable"):
+        target.cast_arrow_array(array)
+
+
+def test_a_list_of_structs_casts_its_item() -> None:
+    array = pyarrow.array(
+        [[{"mic": "XPAR"}], None, []], type=pyarrow.list_(venue(mic=pyarrow.string()))
+    )
+    item = pyarrow.struct([("mic", pyarrow.large_string()), ("desk", pyarrow.string())])
+    target = Field(
+        name="legs", arrow_type=pyarrow.list_(pyarrow.field("item", item)), nullable=True
+    )
+    cast = target.cast_arrow_array(array)
+    assert cast.type == target.arrow_type
+    assert cast.to_pylist() == [[{"mic": "XPAR", "desk": None}], None, []]
+
+
+def test_a_map_casts_both_halves() -> None:
+    array = pyarrow.array(
+        [[("a", {"n": 1})], None],
+        type=pyarrow.map_(pyarrow.string(), venue(n=pyarrow.int64())),
+    )
+    target = Field(
+        name="tags",
+        arrow_type=pyarrow.map_(pyarrow.large_string(), venue(n=pyarrow.int32())),
+        nullable=True,
+    )
+    cast = target.cast_arrow_array(array)
+    assert cast.type == target.arrow_type
+    assert cast.to_pylist() == [[("a", {"n": 1})], None]
+
+
+def test_the_recursion_agrees_with_arrows_own_cast() -> None:
+    """Where Arrow can do the same cast, the answer must be the same one."""
+    array = pyarrow.array(
+        [[{"mic": "XPAR"}], None], type=pyarrow.list_(venue(mic=pyarrow.string()))
+    )
+    target = Field(
+        name="legs",
+        arrow_type=pyarrow.list_(pyarrow.field("item", venue(mic=pyarrow.large_string()))),
+        nullable=True,
+    )
+    assert target.cast_arrow_array(array).equals(array.cast(target.arrow_type))
+
+
+# -- tables -----------------------------------------------------------------
+
+
+def test_a_table_is_cast_batch_by_batch() -> None:
+    table = pyarrow.Table.from_batches(
+        [
+            batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)]),
+            batch_of(symbol=["B"], size=[2], day=[datetime.date(2026, 8, 15)]),
+        ]
+    )
+    cast = Tick.FIELD.cast_arrow_table(table)
+    assert cast.schema.equals(Tick.FIELD.into_arrow_schema())
+    assert cast.num_rows == 2
+    assert cast.column("size").type == pyarrow.int32()
+    assert cast.column("venue").to_pylist() == [None, None], "the missing nullable column is filled"
+
+
+def test_a_table_that_already_matches_is_handed_back() -> None:
+    table = Tick.FIELD.cast_arrow_table(
+        pyarrow.Table.from_batches(
+            [batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)])]
+        )
+    )
+    assert Tick.FIELD.cast_arrow_table(table) is table
+
+
+def test_a_table_can_merge_the_columns_it_has() -> None:
+    table = pyarrow.Table.from_batches(
+        [batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])]
+    )
+    cast = Tick.FIELD.cast_arrow_table(table, merge_schema=True)
+    assert cast.column_names == [*Tick.FIELD.names, "desk"]
+
+
+def test_a_batch_can_merge_the_columns_it_has() -> None:
+    batch = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])
+    cast = Tick.FIELD.cast_arrow_batch(batch, merge_schema=True)
+    assert cast.schema.names == [*Tick.FIELD.names, "desk"]
+    assert cast.column("size").type == pyarrow.int32(), "shared columns stay the target's"
+
+
+def test_the_module_functions_cover_batch_table_and_stream() -> None:
+    target = pyarrow.schema([("size", pyarrow.int16()), ("symbol", pyarrow.string())])
+    batch = batch_of(symbol=["A"], size=[7], extra=[1])
+    table = pyarrow.Table.from_batches([batch])
+    assert cast_batch(batch, target).schema.equals(target)
+    assert cast_table(table, target).schema.equals(target)
+    assert cast_reader(iter([batch]), target).read_all().num_rows == 1
