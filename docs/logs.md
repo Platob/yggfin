@@ -94,7 +94,9 @@ whatever consumes them.
 ## Writing one
 
 Writes render the header back — in Arrow string kernels, not a loop — so a file
-written here parses back into the same rows.
+written here parses back into the same rows. Give the writer the same
+`timezone` you gave the reader: `unix` is an instant and a log line is a wall
+clock, so the zone is what turns one back into the other.
 
 === "Round trip"
 
@@ -103,7 +105,7 @@ written here parses back into the same rows.
 
     out = TextFile.from_path("copy.txt")
     out.write_arrow(rows)                  # creates the file, appends the lines
-    TextFile.from_path("copy.txt").read_arrow_table()   # the same rows
+    out.read_arrow_table()                 # the same rows, read again from the head
     ```
 
 === "What a write needs"

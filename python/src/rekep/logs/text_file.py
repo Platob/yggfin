@@ -42,6 +42,15 @@ HEADER_PATTERN = re.compile(
     re.DOTALL,
 )
 
+#: Characters `HEADER_PATTERN` pins a timestamp to. The slicing path is sound
+#: only at this width, so anything else is read rather than sliced.
+STAMP_WIDTH = 27
+
+#: A timestamp split into "up to the seconds" and "everything after the first
+#: separator", so a fraction written `167_520` or `167,520` can be put back
+#: together as digits instead of as more separators.
+_FRACTION = re.compile(r"^([^.,]*)([.,])?(.*)$")
+
 #: Rows per record batch: memory is bounded by it, per-batch Arrow overhead is
 #: amortised over it.
 DEFAULT_BATCH_ROW_SIZE = 65_536
@@ -127,12 +136,21 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     @classmethod
     def from_path(
-        cls, path: str | os.PathLike[str], filesystem: pyarrow.fs.FileSystem | None = None
+        cls,
+        path: str | os.PathLike[str],
+        filesystem: pyarrow.fs.FileSystem | None = None,
+        *,
+        timezone: str | None = None,
     ) -> TextFile:
-        """Build from a local path, absolute or relative."""
+        """Build from a local path, absolute or relative.
+
+        Takes `timezone` like `from_url` does: a local log is the one most
+        likely to be in local time, and the alternative was a documented
+        example that raised `TypeError`.
+        """
         if filesystem is not None:
-            return cls(url=os.fspath(path), filesystem=filesystem)
-        return cls(url=pathlib.Path(path).resolve().as_uri())
+            return cls(url=os.fspath(path), filesystem=filesystem, timezone=timezone)
+        return cls(url=pathlib.Path(path).resolve().as_uri(), timezone=timezone)
 
     # -- the dataset ---------------------------------------------------------
 
@@ -223,7 +241,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         stream = source if schema is None else self.target_field(schema).cast_arrow_reader(source)
         reader = self.rendered_field.cast_arrow_reader(stream)
         for chunk in arrow_chunks(reader, commit_row_size):
-            self._append(_rendered(chunk))
+            self._append(_rendered(chunk, self.timezone))
 
     def _append(self, payload: bytes) -> None:
         """Add already-rendered bytes to the end of the file."""
@@ -254,9 +272,17 @@ class TextFile(Dataset, io.BufferedIOBase):
         which keeps a multi-line exception one record instead of many dropped
         ones.
 
-        The reader takes over this log's stream: consume the reader, not `self`.
+        The reader takes over this log's stream: consume the reader, not `self`
+        -- and only one reader at a time, because they share that stream.
+
+        Each call reopens it, so reading the same log twice reads the log
+        twice. Reopening rather than seeking, because a seek to zero on a
+        compressed stream rewinds the *decoded* position and a file that has
+        grown since -- which a write through this same object does -- would
+        still be read from its old end.
         """
         self._check_open()
+        self.__dict__.pop("_stream", None)
         return pyarrow.RecordBatchReader.from_batches(
             self.schema,
             self.into_arrow_batches(batch_row_size, read_byte_size, fold_continuations),
@@ -294,8 +320,14 @@ class TextFile(Dataset, io.BufferedIOBase):
                 continue
             rows.append(match.group(*indices))
             hashes.append(_hash64(line))
-            if len(rows) >= batch_row_size:
-                yield self._batch(rows, hashes)
+            # One row past the size, not at it: a continuation belongs to the
+            # row above it, and cutting the batch the moment that row is
+            # complete puts it out of reach of the next line. A stack trace
+            # that happens to land on the boundary would be dropped, silently,
+            # at any batch size -- including the default one.
+            if len(rows) > batch_row_size:
+                yield self._batch(rows[:batch_row_size], hashes[:batch_row_size])
+                del rows[:batch_row_size], hashes[:batch_row_size]
         if rows:
             yield self._batch(rows, hashes)
 
@@ -317,8 +349,6 @@ class TextFile(Dataset, io.BufferedIOBase):
             ],
             schema=self.schema,
         )
-        rows.clear()
-        hashes.clear()
         return batch
 
     def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
@@ -412,7 +442,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             raise ValueError("I/O operation on closed file.")
 
 
-def _rendered(rows: pyarrow.Table) -> bytes:
+def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
     """One chunk of parsed rows back as log lines, in string kernels only.
 
     The inverse of the header regex, and deliberately built the same way: the
@@ -421,14 +451,22 @@ def _rendered(rows: pyarrow.Table) -> bytes:
     insertion, the parts are joined column-wise, and the whole chunk is joined
     into a single blob by wrapping it in a one-row list. Nothing here runs per
     row in Python -- which is what makes writing a log as cheap as reading it.
+
+    `timezone` is the inverse of the one reading assumed. `unix` is an
+    instant, and a log line is a wall clock, so rendering the instant as UTC
+    would move every stamp by the offset -- and by twice it on the next round
+    trip, since reading would then add the offset back. Naming the zone here
+    is what makes "a file written here parses back into the same rows" true
+    of a zoned log and not only of a naive one. Both casts are metadata: an
+    Arrow timestamp is the same integer in any zone.
     """
     if rows.num_rows == 0:
         return b""
     compute = pyarrow.compute
-    stamps = compute.strftime(
-        compute.divide(rows.column("unix"), 1000).cast(pyarrow.timestamp("us")),
-        format="%Y-%m-%d %H:%M:%S",
-    )
+    stamps = compute.divide(rows.column("unix"), 1000).cast(pyarrow.timestamp("us"))
+    if timezone:
+        stamps = stamps.cast(pyarrow.timestamp("us", "UTC")).cast(pyarrow.timestamp("us", timezone))
+    stamps = compute.strftime(stamps, format="%Y-%m-%d %H:%M:%S")
     stamps = compute.utf8_replace_slice(stamps, start=23, stop=23, replacement="_")
     lines = compute.binary_join_element_wise(
         stamps.cast(pyarrow.string()),
@@ -472,16 +510,23 @@ def _local_micros(timestamps: Sequence[bytes]) -> pyarrow.Array:
     is the only honest intermediate, since the line itself does not say what
     zone it is in.
 
-    The header regex has pinned every component to a fixed offset, so the
+    The bundled header regex pins every component to a fixed offset, so the
     separators -- `T` or space, `.` or `,`, and the `_` between millis and
     micros -- are never even read: the components are sliced out and joined
-    into canonical ISO form, and one cast parses the whole column. A batch a
-    custom `header_pattern` shapes differently fails that cast and drops to
-    the per-row Python fallback.
+    into canonical ISO form, and one cast parses the whole column.
+
+    That is only sound for the width the bundled pattern pins,
+    `STAMP_WIDTH` characters. A custom `header_pattern` matching anything else
+    is not caught by the cast -- `2026-08-14 00:05:01.167520`, one character
+    shorter, slices into valid ISO holding *other digits* and casts happily to
+    `.167200` -- so the width is checked first and anything else goes row by
+    row. Measured on the bundled shape the check is one `utf8_length` pass per
+    batch, under a percent.
     """
     compute = pyarrow.compute
     raw = pyarrow.array(timestamps, type=pyarrow.binary()).cast(pyarrow.string())
-    try:
+    fixed = compute.all(compute.equal(compute.utf8_length(raw), STAMP_WIDTH), min_count=0).as_py()
+    if fixed:
         joined = compute.binary_join_element_wise(
             compute.utf8_slice_codeunits(raw, 0, 10),
             " ",
@@ -491,10 +536,12 @@ def _local_micros(timestamps: Sequence[bytes]) -> pyarrow.Array:
             compute.utf8_slice_codeunits(raw, 24, 27),
             "",
         )
-        return joined.cast(pyarrow.timestamp("us"))
-    except pyarrow.ArrowInvalid:
-        micros = [_epoch_nanos(stamp) // 1000 for stamp in timestamps]
-        return pyarrow.array(micros, type=pyarrow.int64()).cast(pyarrow.timestamp("us"))
+        try:
+            return joined.cast(pyarrow.timestamp("us"))
+        except pyarrow.ArrowInvalid:
+            pass
+    micros = [_epoch_nanos(stamp) // 1000 for stamp in timestamps]
+    return pyarrow.array(micros, type=pyarrow.int64()).cast(pyarrow.timestamp("us"))
 
 
 def _unix_nanos(local: pyarrow.Array, timezone: str | None) -> pyarrow.Array:
@@ -549,11 +596,14 @@ _DAY_SECONDS: dict[bytes, int] = {}
 def _epoch_nanos(timestamp: bytes) -> int:
     """`2026-08-14 00:05:01.167_520` -> nanoseconds since the epoch, naive UTC.
 
-    Per-row fallback for batches the Arrow path cannot cast. Sliced rather
-    than parsed: the header regex has already pinned every field to a fixed
-    offset. The date half is cached because a log covers few distinct days but
-    many rows.
+    Per-row fallback for batches the Arrow path will not take. Sliced rather
+    than parsed: the bundled header regex has already pinned every field to a
+    fixed offset. The date half is cached because a log covers few distinct
+    days but many rows. Any other width goes to `_epoch_nanos_slow`, which
+    reads the string rather than assuming where its parts are.
     """
+    if len(timestamp) != STAMP_WIDTH:
+        return _epoch_nanos_slow(timestamp)
     try:
         day = timestamp[:10]
         seconds = _DAY_SECONDS.get(day)
@@ -570,8 +620,17 @@ def _epoch_nanos(timestamp: bytes) -> int:
 
 
 def _epoch_nanos_slow(timestamp: bytes) -> int:
-    """Fallback for timestamps a custom `header_pattern` shapes differently."""
-    text = timestamp.decode("utf-8", "replace").replace("_", "").replace(",", ".")
+    """Fallback for timestamps a custom `header_pattern` shapes differently.
+
+    The fraction's separators are *removed*, not replaced: the bundled pattern
+    itself admits `01,167,520`, and turning each comma into a dot builds
+    `01.167.520`, which no ISO parser takes. One dot goes back in front of
+    whatever digits followed the seconds.
+    """
+    text = timestamp.decode("utf-8", "replace")
+    head, separator, fraction = _FRACTION.match(text).groups()
+    if separator:
+        text = f"{head}.{re.sub(r'[._,]', '', fraction)}"
     delta = datetime.datetime.fromisoformat(text) - _EPOCH_DATETIME
     return (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000
 

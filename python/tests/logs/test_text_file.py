@@ -320,10 +320,33 @@ def test_continuations_are_dropped_when_folding_is_off(plain: Path) -> None:
 
 @pytest.mark.parametrize("batch_row_size", [1, 5, 23, EXPECTED_RECORDS, 10_000])
 def test_batching_does_not_change_the_result(plain: Path, batch_row_size: int) -> None:
+    """The rows *and their messages*: a folded continuation is a message, not a row.
+
+    Counting alone passes over a continuation dropped at a batch boundary,
+    because dropping one never changes how many rows there are.
+    """
     with TextFile(url=plain.as_uri()) as log:
         batches = list(log.into_arrow_reader(batch_row_size=batch_row_size))
+    with TextFile(url=plain.as_uri()) as log:
+        whole = log.into_arrow_table(batch_row_size=EXPECTED_RECORDS * 2)
     assert sum(batch.num_rows for batch in batches) == EXPECTED_RECORDS
     assert max(batch.num_rows for batch in batches) <= batch_row_size
+    messages = [message for batch in batches for message in batch.column("message").to_pylist()]
+    assert messages == whole.column("message").to_pylist()
+
+
+def test_a_continuation_on_the_batch_boundary_is_still_folded(tmp_path: Path) -> None:
+    """The row a continuation belongs to must still be reachable when it arrives."""
+    path = tmp_path / "boundary.txt"
+    with path.open("wb") as out:
+        for index in range(6):
+            out.write(b"2026-08-14 00:05:%02d.000_000 [t] [M] (INFO) r%d\n" % (index, index))
+            if index == 3:  # the last row of a four-row batch
+                out.write(b"\tat com.example.A.b(A.java:1)\n")
+    with TextFile(url=path.as_uri()) as log:
+        table = log.into_arrow_table(batch_row_size=4)
+    assert table.num_rows == 6
+    assert table.column("message")[3].as_py() == "r3\n\tat com.example.A.b(A.java:1)"
 
 
 @pytest.mark.parametrize("read_byte_size", [1, 7, 64, 1 << 20])
@@ -344,11 +367,89 @@ def test_reader_is_lazy_until_pulled(plain: Path) -> None:
         reader.close()
 
 
-def test_custom_header_pattern(plain: Path) -> None:
-    """A caller's pattern must supply the same groups the schema is built from."""
-    pattern = re.compile(HEADER_PATTERN.pattern.replace(rb"[ \t]*(?P<seqnum>", rb"\s*(?P<seqnum>"))
-    with TextFile(url=plain.as_uri(), header_pattern=pattern) as log:
-        assert log.into_arrow_table().num_rows == EXPECTED_RECORDS
+def test_custom_header_pattern(tmp_path: Path) -> None:
+    """A caller's pattern must supply the same groups the schema is built from.
+
+    A *different* pattern, over a differently shaped line -- the timestamp
+    written the way `datetime.isoformat()` writes it, which is one character
+    shorter than the bundled shape and therefore cannot be sliced at the
+    bundled offsets.
+    """
+    pattern = re.compile(
+        rb"^(?P<timestamp>\S+)\|(?P<thread_name>[^|]*)\|(?P<driver>[^|]*)\|(?P<message>.*)$",
+        re.DOTALL,
+    )
+    path = tmp_path / "custom.txt"
+    path.write_bytes(
+        b"2026-08-14T00:05:01.167520|t1|Mod|first\n2026-08-14T00:05:02.000001|t2|Mod|second\n"
+    )
+    with TextFile(url=path.as_uri(), header_pattern=pattern) as log:
+        table = log.into_arrow_table()
+    assert table.column("message").to_pylist() == ["first", "second"]
+    assert [time.microsecond for time in table.column("time").to_pylist()] == [167520, 1]
+
+
+@pytest.mark.parametrize(
+    ("stamp", "microsecond"),
+    [
+        (b"2026-08-14 00:05:01.167_520", 167520),  # the bundled shape
+        (b"2026-08-14 00:05:01,167,520", 167520),  # which the bundled regex also admits
+        (b"2026-08-14T00:05:01.167520", 167520),  # what `datetime.isoformat()` writes
+        (b"2026-08-14 00:05:01.167520123", 167520),  # nanoseconds, truncated
+        (b"2026-08-14 00:05:01", 0),  # no fraction at all
+    ],
+)
+def test_a_timestamp_is_read_not_sliced_at_another_width(stamp: bytes, microsecond: int) -> None:
+    """Slicing at fixed offsets is only sound at the width the pattern pins.
+
+    One character short, the same slices land on other digits and cast
+    happily: `.167520` came back as `.167200`, silently.
+    """
+    from rekep.logs.text_file import _local_micros
+
+    assert _local_micros([stamp])[0].as_py().microsecond == microsecond
+
+
+def test_from_path_takes_the_zone_too(plain: Path) -> None:
+    """The documented example: a local log is the one most likely to be local time."""
+    naive = TextFile.from_path(plain).read_arrow_table()
+    zoned = TextFile.from_path(plain, timezone="Europe/Paris").read_arrow_table()
+    assert zoned.column("unix").to_pylist() != naive.column("unix").to_pylist()
+    assert zoned.column("time").to_pylist() == naive.column("time").to_pylist(), "same wall clock"
+
+
+def test_reading_the_same_log_twice_reads_it_twice(plain: Path) -> None:
+    """A reader takes the stream, so the next one has to be given a new one."""
+    log = TextFile(url=plain.as_uri())
+    assert [log.read_arrow_table().num_rows for _ in range(3)] == [EXPECTED_RECORDS] * 3
+
+
+def test_a_write_is_visible_to_the_next_read_of_the_same_object(tmp_path: Path) -> None:
+    """Reopening, not seeking: a seek rewinds the decoded position, not the file."""
+    source = tmp_path / "in.txt"
+    source.write_bytes(b"2026-08-14 00:05:01.167_520 [t] [M] (INFO) one\n")
+    grown = tmp_path / "out.txt"
+    rows = TextFile.from_path(source).read_arrow_table()
+    writer = TextFile.from_path(grown)
+    writer.write_arrow(rows)
+    assert writer.read_arrow_table().num_rows == 1
+    writer.write_arrow(rows)
+    assert writer.read_arrow_table().num_rows == 2
+
+
+@pytest.mark.parametrize("zone", [None, "Europe/Paris", "America/New_York", "Asia/Tokyo"])
+def test_a_write_renders_the_zone_it_read(tmp_path: Path, plain: Path, zone: str | None) -> None:
+    """`unix` is an instant and a line is a wall clock: rendering as UTC shifts it.
+
+    And shifts it again on the next round trip, since reading adds the offset
+    back -- so this compares the columns, not just the row count.
+    """
+    rows = TextFile.from_url(plain.as_uri(), timezone=zone).read_arrow_table()
+    written = tmp_path / "written.txt"
+    TextFile.from_url(written.as_uri(), timezone=zone).write_arrow(rows)
+    back = TextFile.from_url(written.as_uri(), timezone=zone).read_arrow_table()
+    for column in ("unix", "date", "time", "message"):
+        assert back.column(column).to_pylist() == rows.column(column).to_pylist(), column
 
 
 def test_reader_on_a_closed_log_raises(plain: Path) -> None:
