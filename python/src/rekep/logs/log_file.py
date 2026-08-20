@@ -19,7 +19,7 @@ import pyarrow.fs
 
 from rekep.convert import Convertible
 from rekep.filesystems import resolve
-from rekep.models import Log
+from rekep.logs.log import Log
 
 #: Matches the fixed header every log row opens with, leaving the free-form
 #: payload to `message`::
@@ -79,9 +79,9 @@ class LogFile(Convertible, io.BufferedIOBase):
         os.PathLike: "path",
     }
 
-    #: Record whose fields define the parsed columns. Override it, and the
+    #: Class whose fields define the parsed columns. Override it, and the
     #: schema, the descriptions and the column order all follow.
-    RECORD: ClassVar[type[Log]] = Log
+    ROW: ClassVar[type[Log]] = Log
 
     url: str
     filesystem: pyarrow.fs.FileSystem | None = None
@@ -121,10 +121,14 @@ class LogFile(Convertible, io.BufferedIOBase):
 
     # -- converting ---------------------------------------------------------
 
-    @property
+    @cached_property
     def schema(self) -> pyarrow.Schema:
-        """Arrow schema of the parsed rows, projected from `RECORD`."""
-        return self.RECORD.into_arrow_schema()
+        """Arrow schema of the parsed rows, projected from `ROW`.
+
+        Cached because `_batch` reads it once per batch: building a schema is
+        cheap, but not free, and it cannot change while the file is open.
+        """
+        return self.ROW.FIELD.into_arrow_schema()
 
     def into_arrow_reader(
         self,

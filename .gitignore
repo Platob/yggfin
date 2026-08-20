@@ -216,8 +216,3 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-site/
-stacks/ddl/
-tutorial/
-stacks/iceberg/catalog.db
-stacks/iceberg/warehouse/

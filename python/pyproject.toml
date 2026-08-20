@@ -10,42 +10,26 @@ requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
     "pyarrow>=17.0",
-    "pyiceberg>=0.7",
 ]
 
 [project.optional-dependencies]
 # Reading TOML needs nothing: `tomllib` is stdlib. Writing it does.
 yaml = ["pyyaml>=6.0"]
 toml = ["tomli-w>=1.0"]
-# Authoring DAGs already means having Airflow; nothing else here needs it.
-airflow = ["apache-airflow>=2.9"]
 # ~2x parse throughput: swaps the line hash from blake2b to xxhash.
 fast = ["xxhash>=3.4"]
-# The fully local Iceberg catalog: SQLite-backed, no services.
-local = ["pyiceberg[sql-sqlite]>=0.7"]
-jinja = ["jinja2>=3.1"]
-all = ["rekep[airflow,fast,jinja,local,toml,yaml]"]
+all = ["rekep[fast,toml,yaml]"]
 
 [project.urls]
-Homepage = "https://platob.github.io/yggfin/"
-Documentation = "https://platob.github.io/yggfin/"
+Homepage = "https://github.com/Platob/yggfin"
 Repository = "https://github.com/Platob/yggfin"
 Issues = "https://github.com/Platob/yggfin/issues"
 
-[project.scripts]
-rekep = "rekep.cli:main"
-
 [dependency-groups]
-# Airflow is deliberately absent: it is POSIX-only, so `uv sync` must not pull
-# 100+ packages that cannot import on Windows. Use `uv sync --extra airflow`.
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
-    "rekep[fast,jinja,local,toml,yaml]",
-]
-docs = [
-    "mkdocs-material>=9.5",
-    "mkdocstrings[python]>=0.26",
+    "rekep[fast,toml,yaml]",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -53,9 +37,9 @@ packages = ["src/rekep"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# tests/ mirrors src/ folder for folder, so two modules legitimately share a
-# basename (rekep/lineage.py and rekep/airflow/lineage.py). importlib mode
-# imports each by its full path instead of demanding globally unique ones.
+# tests/ mirrors src/ folder for folder, so two modules can legitimately share
+# a basename. importlib mode imports each by its full path instead of demanding
+# globally unique ones.
 addopts = "-ra --import-mode=importlib"
 
 [tool.ruff]

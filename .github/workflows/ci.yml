@@ -21,11 +21,6 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Sync
         run: uv sync
-      # Airflow is POSIX-only, so only the Linux job can exercise the DAG
-      # tests that Windows skips.
-      - name: Add airflow (linux)
-        if: runner.os == 'Linux'
-        run: uv sync --extra airflow
       - name: Lint
         run: uv run ruff check .
       - name: Format
