@@ -4,18 +4,68 @@ A `Dataset` is OpenLineage's resource for one namespace-qualified data
 product: schema, physical location across platforms, and the readers and
 writers that move data in and out of it — each internally lineage-tracked.
 
-## Declaring
+## Declaring: a schema and a URI
 
-`record` names the schema helper — any `Record` subclass, whose Arrow
-projection *is* the dataset's schema facet:
+Two fields carry the identity. `schema` names the `Record` class whose Arrow
+projection *is* this dataset's schema; `uri` is everything else — catalog,
+namespace, name, and the branch — as one path:
 
 ```python
 from rekep.dataset import Dataset
 
-dataset = Dataset(record="rekep.models.Log", name="logs", namespace="trading")
-dataset.schema_facet()   # OpenLineage SchemaDatasetFacet: the record's fields
-dataset.uri()            # "dataset://trading/logs" -- globally unique
+dataset = Dataset(schema="rekep.models.Log", uri="ds:/warehouse/trading/logs")
+dataset.arrow_schema()          # pyarrow.Schema -- what everything downstream uses
+dataset.schema_facet()          # OpenLineage SchemaDatasetFacet: the same fields
+dataset.resource_uri()          # ds:/warehouse/trading/logs
+dataset.dataset_name()          # "logs"
+dataset.dataset_namespace()     # "trading"
 ```
+
+A **path** rather than dots, because a catalog contains namespaces and a
+namespace contains tables — `a.b.c` cannot say whether that is three levels or
+one name with dots in it, and Iceberg namespaces are legitimately multi-level.
+Levels read right to left, so a shorter URI is a *less qualified* name rather
+than a different shape: `ds:/logs` is `logs` in `default`.
+
+Every spelling is one identity — `ds:/a/b`, `ds://a/b` and
+`rekep:/datasets/a/b` all parse to the same `ResourceUri`, and the generic
+`rekep:` form puts the service in the path so a new kind of resource is a new
+path part rather than a new scheme. The branch rides along as the fragment,
+because a branch is not a different dataset: a dataset declaring
+`protocols.iceberg.branch: dev` has the URI `ds:/trading/logs#dev`.
+
+`schema` is a dotted path rather than an inline field list on purpose. A
+declaration has to survive a round trip through a file, and only a name can:
+the class *is* the schema, so pointing at it keeps one definition instead of
+two that can disagree.
+
+Undeclared, the URI is built from the record's own snake_case name in
+`default` — so the smallest useful dataset is one line:
+
+```python
+Dataset(schema="rekep.models.Log")   # ds:/log
+```
+
+## Where declarations live
+
+`Dataset.load_all()` and `Job.load_all()` read the checkout's
+`stacks/datasets`/`stacks/jobs` when it has them, and the user's
+`~/.config/rekep/...` when it does not — a repository that declares its own
+pipelines is never quietly overridden by a home directory, and a bare
+`pip install rekep` still has somewhere to keep things.
+
+```python
+Dataset.load_all()                       # stacks/datasets, else ~/.config/rekep/datasets
+Dataset.load_all("/etc/rekep/datasets")  # or wherever you say
+Dataset(schema="rekep.models.Log", uri="ds:/trading/logs").dump()   # writes logs.yaml there
+Dataset.load("ds:/trading/logs")         # from the registry, or by loading the folder
+```
+
+Everything loaded lands in a process-wide registry keyed by URI
+(`rekep.config.REGISTRY`), so resolving a reference does not mean re-reading a
+directory and two modules asking for the same dataset get the same object.
+`REKEP_CONFIG_HOME`, `REKEP_STACKS_HOME`, `REKEP_DATASETS_ROOT` and
+`REKEP_JOBS_ROOT` override the defaults.
 
 ## Location: shared, direct, protocol-specific
 
@@ -24,7 +74,7 @@ keys and protocol-prefixed overrides:
 
 ```python
 dataset = Dataset(
-    record="rekep.models.Log",
+    schema="rekep.models.Log",
     direct="s3://lake/log",                              # every protocol's fallback
     properties={"format": "parquet"},                     # shared by every protocol
     protocols={"iceberg": {"location": "s3://lake/iceberg/log"}},  # iceberg's own
@@ -40,12 +90,11 @@ Everything below is configuration, not code: a `stacks/datasets/*.yaml` file
 declares it once and every verb — deploy, write, read, maintain — reads it
 from there. This is `stacks/datasets/parsed_messages.yaml`, the shipped
 example — the working, iterating dataset, as opposed to `log.yaml`'s stable
-one, which declares nothing but its record, name and namespace:
+one, which declares nothing but its schema and its URI:
 
 ```yaml
-record: rekep.models.ParsedMessage
-name: parsed_messages
-namespace: default
+schema: rekep.models.ParsedMessage
+uri: ds:/default/parsed_messages
 protocols:
   iceberg:
     branch: "{{ 'main' if git_branch_slug in ('main', 'master') else git_branch_slug }}"
@@ -238,7 +287,7 @@ defaults to `hive_partitioning()`, built from the same `Arrow(partition=...)`
 declaration Iceberg's partition spec comes from:
 
 ```python
-dataset = Dataset(record="rekep.models.Log", direct="file:///lake/log")
+dataset = Dataset(schema="rekep.models.Log", direct="file:///lake/log")
 dataset.write_arrow_reader(reader, "file")        # -> /lake/log/date=2026-08-14/part-....parquet
 dataset.write_arrow_reader(reader, "file", partitioning=False)   # flat
 ```
@@ -298,7 +347,7 @@ dataset.read_arrow_reader("file", row_filter=pyarrow.compute.field("hash64") > 0
 ## Branches: write-audit-publish
 
 ```python
-dev = Dataset(record="rekep.models.ParsedMessage", protocols={"iceberg": {"branch": "dev"}})
+dev = Dataset(schema="rekep.models.ParsedMessage", protocols={"iceberg": {"branch": "dev"}})
 dev.write_arrow_reader(reader, "iceberg", table=t)   # main untouched
 dev.read_arrow_reader("iceberg", table=t)            # reads the branch back
 dev.iceberg_publish(table=t)                         # fast-forward main onto it

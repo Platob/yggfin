@@ -191,5 +191,5 @@ def test_doris_orders_every_key_column_first() -> None:
 def test_a_merge_joins_on_every_key_column() -> None:
     from rekep.dataset import Dataset
 
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     assert dataset.merge_columns(True) == ["unix", "hash64"]

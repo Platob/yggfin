@@ -17,9 +17,8 @@
 # named "main" or "master" -- Iceberg requires a table's very first write
 # (before it has any snapshot at all) to land on "main", so trunk has to
 # resolve there exactly, not through git_branch_slug's own spelling of it.
-record: rekep.models.ParsedMessage
-name: parsed_messages
-namespace: default
+schema: rekep.models.ParsedMessage
+uri: ds:/default/parsed_messages
 protocols:
   iceberg:
     branch: "{{ 'main' if git_branch_slug in ('main', 'master') else git_branch_slug }}"

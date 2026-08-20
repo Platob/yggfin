@@ -17,10 +17,10 @@ import os
 from typing import Any
 
 from rekep.airflow import lineage
-from rekep.job import JOBS_ROOT, Job, load_all
+from rekep.job import Job, load_all
 
 
-def dags(root: str | os.PathLike[str] = JOBS_ROOT, **context: Any) -> dict[str, Any]:
+def dags(root: str | os.PathLike[str] | None = None, **context: Any) -> dict[str, Any]:
     """One built DAG per side file under `root`, keyed by dag id."""
     return {job.name: build(job) for job in load_all(root, **context)}
 

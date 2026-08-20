@@ -216,38 +216,38 @@ def parsed_reader(
 
 
 def test_dataset_name_defaults_to_the_record_snake_name() -> None:
-    assert Dataset(record="rekep.models.Log").dataset_name() == "log"
+    assert Dataset(schema="rekep.models.Log").dataset_name() == "log"
 
 
 def test_dataset_name_override_wins() -> None:
-    assert Dataset(record="rekep.models.Log", name="logs").dataset_name() == "logs"
+    assert Dataset(schema="rekep.models.Log", uri="ds:/logs").dataset_name() == "logs"
 
 
 def test_record_class_resolves_the_dotted_path() -> None:
-    assert Dataset(record="rekep.models.Log").record_class() is Log
+    assert Dataset(schema="rekep.models.Log").record_class() is Log
 
 
 def test_record_class_refuses_a_non_record() -> None:
     with pytest.raises(TypeError, match="not a Record"):
-        Dataset(record="pathlib.Path").record_class()
+        Dataset(schema="pathlib.Path").record_class()
 
 
 def test_schema_facet_carries_the_records_fields() -> None:
-    facet = Dataset(record="rekep.models.Log").schema_facet()
+    facet = Dataset(schema="rekep.models.Log").schema_facet()
     assert {f["name"] for f in facet["fields"]} == {f.name for f in Log.into_arrow_schema()}
 
 
 def test_facets_include_the_schema() -> None:
-    assert "schema" in Dataset(record="rekep.models.Log").facets()
+    assert "schema" in Dataset(schema="rekep.models.Log").facets()
 
 
 def test_uri_is_scoped_to_the_dataset_scheme() -> None:
-    dataset = Dataset(record="rekep.models.Log", name="logs", namespace="trading")
-    assert dataset.uri() == "ds:/trading/logs"
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/trading/logs")
+    assert str(dataset.resource_uri()) == "ds:/trading/logs"
 
 
 def test_facets_include_the_data_source_uri() -> None:
-    dataset = Dataset(record="rekep.models.Log", name="logs", namespace="trading")
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/trading/logs")
     assert dataset.facets()["dataSource"] == {"uri": "ds:/trading/logs"}
 
 
@@ -255,14 +255,14 @@ def test_facets_include_the_data_source_uri() -> None:
 
 
 def test_direct_location_is_the_fallback() -> None:
-    dataset = Dataset(record="rekep.models.Log", direct="s3://lake/log")
+    dataset = Dataset(schema="rekep.models.Log", direct="s3://lake/log")
     assert dataset.location() == "s3://lake/log"
     assert dataset.location("iceberg") == "s3://lake/log"
 
 
 def test_protocol_location_overrides_direct() -> None:
     dataset = Dataset(
-        record="rekep.models.Log",
+        schema="rekep.models.Log",
         direct="s3://lake/log",
         protocols={"iceberg": {"location": "s3://lake/iceberg/log"}},
     )
@@ -272,7 +272,7 @@ def test_protocol_location_overrides_direct() -> None:
 
 def test_protocol_properties_merge_shared_and_protocol_specific() -> None:
     dataset = Dataset(
-        record="rekep.models.Log",
+        schema="rekep.models.Log",
         properties={"a": "shared", "b": "shared"},
         protocols={"iceberg": {"b": "iceberg"}},
     )
@@ -291,7 +291,7 @@ def test_write_arrow_reader_wraps_a_plain_batch_iterator() -> None:
     def plain_iterator():
         yield batch
 
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     table = FakeTable()
     written = dataset.write_arrow_reader(plain_iterator(), format="iceberg", table=table)
     assert written == 1
@@ -299,13 +299,13 @@ def test_write_arrow_reader_wraps_a_plain_batch_iterator() -> None:
 
 
 def test_write_arrow_reader_refuses_an_unknown_format() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     with pytest.raises(ValueError, match="no 'parquet' writer"):
         dataset.write_arrow_reader(reader_of([1]), format="parquet")
 
 
 def test_iceberg_write_arrow_reader_needs_a_table() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     with pytest.raises(NotImplementedError, match="needs table="):
         dataset.write_arrow_reader(reader_of([1]), format="iceberg")
 
@@ -313,7 +313,7 @@ def test_iceberg_write_arrow_reader_needs_a_table() -> None:
 def test_an_append_batches_the_whole_reader_into_one_commit() -> None:
     """A batch is not a unit of work in Iceberg: every call is a snapshot
     and at least one file, so batches accumulate up to `chunk_rows`."""
-    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     reader = reader_of([1, 2, 3], [4, 5])
     table = FakeTable()
     written = dataset.write_arrow_reader(reader, format="iceberg", table=table)
@@ -322,7 +322,7 @@ def test_an_append_batches_the_whole_reader_into_one_commit() -> None:
 
 
 def test_an_append_is_still_bounded_by_chunk_rows() -> None:
-    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     reader = reader_of([1, 2, 3], [4, 5], [6])
     table = FakeTable()
     written = dataset.write_arrow_reader(reader, format="iceberg", table=table, chunk_rows=3)
@@ -335,7 +335,7 @@ def test_an_append_is_still_bounded_by_chunk_rows() -> None:
 
 def test_a_write_casts_columns_to_the_records_types() -> None:
     """int32 in, int64 out: the record's declaration is the authority."""
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     rows = log_rows(1)
     narrow = pyarrow.RecordBatch.from_pydict(
         {
@@ -350,7 +350,7 @@ def test_a_write_casts_columns_to_the_records_types() -> None:
 
 
 def test_a_write_fills_a_missing_nullable_column_with_nulls() -> None:
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     schema = ParsedMessage.into_arrow_schema()
     partial = pyarrow.RecordBatch.from_pydict(
         {
@@ -369,14 +369,14 @@ def test_a_write_fills_a_missing_nullable_column_with_nulls() -> None:
 
 
 def test_a_write_refuses_a_missing_non_nullable_column() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     partial = pyarrow.RecordBatch.from_pydict({"url": ["a"], "unix": [1]})
     with pytest.raises(ValueError, match="'date' is missing and not nullable"):
         dataset.write_arrow_reader(iter([partial]), format="iceberg", table=FakeTable())
 
 
 def test_a_write_drops_a_column_the_record_does_not_declare() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     rows = log_rows(1)
     extra = pyarrow.RecordBatch.from_pydict(
         {**{name: [value] for name, value in rows[0].items()}, "extra": ["ignored"]}
@@ -390,14 +390,14 @@ def test_a_write_drops_a_column_the_record_does_not_declare() -> None:
 
 
 def test_no_merge_by_appends() -> None:
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
     assert table.appended and not table.upserted
 
 
 def test_merge_by_true_upserts_on_the_records_primary_key() -> None:
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(
         parsed_reader({"hash64": 1}), format="iceberg", table=table, merge_by=True
@@ -407,7 +407,7 @@ def test_merge_by_true_upserts_on_the_records_primary_key() -> None:
 
 
 def test_merge_by_a_list_upserts_on_exactly_those_columns() -> None:
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(
         parsed_reader({"hash64": 1}), format="iceberg", table=table, merge_by=["url", "unix"]
@@ -425,7 +425,7 @@ def test_merge_by_true_is_refused_without_a_primary_key() -> None:
         value: int
         """A value."""
 
-    dataset = Dataset(record=f"{__name__}.Keyless")
+    dataset = Dataset(schema=f"{__name__}.Keyless")
     dataset.record_class = lambda: Keyless  # type: ignore[method-assign]
     with pytest.raises(ValueError, match="merge_by=True needs a primary key"):
         dataset.merge_columns(True)
@@ -433,7 +433,7 @@ def test_merge_by_true_is_refused_without_a_primary_key() -> None:
 
 def test_merge_by_is_read_from_the_datasets_own_config() -> None:
     dataset = Dataset(
-        record="rekep.models.ParsedMessage", protocols={"iceberg": {"merge_by": "true"}}
+        schema="rekep.models.ParsedMessage", protocols={"iceberg": {"merge_by": "true"}}
     )
     table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
@@ -444,21 +444,21 @@ def test_merge_by_is_read_from_the_datasets_own_config() -> None:
 
 def test_a_configured_column_list_merges_on_those_columns() -> None:
     dataset = Dataset(
-        record="rekep.models.ParsedMessage", protocols={"iceberg": {"merge_by": "url, unix"}}
+        schema="rekep.models.ParsedMessage", protocols={"iceberg": {"merge_by": "url, unix"}}
     )
     assert dataset.merge_columns() == ["url", "unix"]
 
 
 def test_a_configured_false_appends() -> None:
     dataset = Dataset(
-        record="rekep.models.ParsedMessage", protocols={"iceberg": {"merge_by": "false"}}
+        schema="rekep.models.ParsedMessage", protocols={"iceberg": {"merge_by": "false"}}
     )
     assert dataset.merge_columns() is None
 
 
 def test_merge_by_is_skipped_when_the_table_has_no_snapshot_to_merge_into() -> None:
     """Nothing to merge against: every row is an insert, so just append."""
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(has_snapshot=False, record=ParsedMessage)
     written = dataset.write_arrow_reader(
         parsed_reader({"hash64": 1}), format="iceberg", table=table, merge_by=True
@@ -468,7 +468,7 @@ def test_merge_by_is_skipped_when_the_table_has_no_snapshot_to_merge_into() -> N
 
 
 def test_merge_chunks_are_bounded_by_chunk_rows() -> None:
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     reader = parsed_reader(*({"hash64": i} for i in range(5)), batch_size=1)
     written = dataset.write_arrow_reader(
@@ -482,7 +482,7 @@ def test_merge_chunks_are_bounded_by_chunk_rows() -> None:
 
 
 def test_overwrite_true_replaces_the_whole_table() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     table = FakeTable()
     written = dataset.write_arrow_reader(
         reader_of([1, 2]), format="iceberg", table=table, overwrite=True
@@ -493,7 +493,7 @@ def test_overwrite_true_replaces_the_whole_table() -> None:
 
 
 def test_overwrite_with_a_filter_passes_it_through() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     table = FakeTable()
     dataset.write_arrow_reader(
         reader_of([1]), format="iceberg", table=table, overwrite="date = '2026-08-14'"
@@ -502,7 +502,7 @@ def test_overwrite_with_a_filter_passes_it_through() -> None:
 
 
 def test_overwrite_and_merge_by_together_are_refused() -> None:
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     with pytest.raises(ValueError, match="two different"):
         dataset.write_arrow_reader(
             parsed_reader({"hash64": 1}),
@@ -517,21 +517,21 @@ def test_overwrite_and_merge_by_together_are_refused() -> None:
 
 
 def test_append_defaults_to_main_branch() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     table = FakeTable()
     dataset.write_arrow_reader(reader_of([1]), format="iceberg", table=table)
     assert table.branches == ["main"]
 
 
 def test_append_uses_the_datasets_declared_branch() -> None:
-    dataset = Dataset(record="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
+    dataset = Dataset(schema="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
     table = FakeTable()
     dataset.write_arrow_reader(reader_of([1]), format="iceberg", table=table)
     assert table.branches == ["dev"]
 
 
 def test_an_explicit_branch_argument_wins_over_the_declared_one() -> None:
-    dataset = Dataset(record="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
+    dataset = Dataset(schema="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
     table = FakeTable()
     dataset.write_arrow_reader(reader_of([1]), format="iceberg", table=table, branch="hotfix")
     assert table.branches == ["hotfix"]
@@ -540,7 +540,7 @@ def test_an_explicit_branch_argument_wins_over_the_declared_one() -> None:
 def test_a_brand_new_table_bootstraps_on_main_regardless_of_the_declared_branch() -> None:
     """Iceberg allows only `main` before a table has any snapshot at all --
     the very first write always lands there, whatever `branch` says."""
-    dataset = Dataset(record="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
+    dataset = Dataset(schema="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
     table = FakeTable(has_snapshot=False)
     dataset.write_arrow_reader(reader_of([1]), format="iceberg", table=table, branch="dev")
     assert table.branches == ["main"]
@@ -551,7 +551,7 @@ def test_a_brand_new_table_bootstraps_on_main_regardless_of_the_declared_branch(
 
 def test_no_client_means_no_run_at_all() -> None:
     """Not tracked-and-discarded: nothing is built, timed or counted."""
-    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     assert dataset.lineage_client() is None
     assert dataset.lineage("write.iceberg") is None
     assert dataset.write_arrow_reader(reader_of([1, 2]), format="iceberg", table=FakeTable()) == 2
@@ -559,7 +559,7 @@ def test_no_client_means_no_run_at_all() -> None:
 
 def test_a_successful_write_emits_start_then_complete() -> None:
     collector = Collector()
-    dataset = Dataset(record="rekep.models.Log", name="logs", namespace="trading")
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/trading/logs")
     dataset.with_lineage(collector).write_arrow_reader(
         reader_of([1, 2]), format="iceberg", table=FakeTable()
     )
@@ -574,7 +574,7 @@ def test_a_successful_write_emits_start_then_complete() -> None:
 
 def test_a_failed_write_emits_start_then_fail_and_reraises() -> None:
     collector = Collector()
-    dataset = Dataset(record="rekep.models.Log").with_lineage(collector)
+    dataset = Dataset(schema="rekep.models.Log").with_lineage(collector)
 
     def boom(reader: Any, **_: Any) -> int:
         raise RuntimeError("catalog unreachable")
@@ -590,24 +590,24 @@ def test_a_failed_write_emits_start_then_fail_and_reraises() -> None:
 
 def test_runs_are_not_shared_between_clients() -> None:
     mine, theirs = Collector(), Collector()
-    Dataset(record="rekep.models.Log", name="a").with_lineage(mine).write_arrow_reader(
+    Dataset(schema="rekep.models.Log", uri="ds:/a").with_lineage(mine).write_arrow_reader(
         reader_of([1]), format="iceberg", table=FakeTable()
     )
-    Dataset(record="rekep.models.Log", name="b").with_lineage(theirs)
+    Dataset(schema="rekep.models.Log", uri="ds:/b").with_lineage(theirs)
     assert mine.events
     assert theirs.events == []
 
 
 def test_binding_a_client_returns_the_same_dataset() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     assert dataset.with_lineage(Collector()) is dataset
 
 
 def test_a_client_is_not_part_of_the_declaration() -> None:
     """It is a runtime handle -- a side file cannot carry one, and binding
     one must not change what the dataset serialises to."""
-    plain = Dataset(record="rekep.models.Log", name="logs")
-    bound = Dataset(record="rekep.models.Log", name="logs").with_lineage(Collector())
+    plain = Dataset(schema="rekep.models.Log", uri="ds:/logs")
+    bound = Dataset(schema="rekep.models.Log", uri="ds:/logs").with_lineage(Collector())
     assert bound.into_json() == plain.into_json()
     assert bound == plain
 
@@ -616,20 +616,20 @@ def test_a_client_is_not_part_of_the_declaration() -> None:
 
 
 def test_file_write_needs_a_location() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     with pytest.raises(NotImplementedError, match="needs a location"):
         dataset.write_arrow_reader(reader_of([1]), format="file")
 
 
 def test_file_write_uses_direct_as_the_fallback_location(tmp_path: pathlib.Path) -> None:
-    dataset = Dataset(record="rekep.models.Log", name="logs", direct=(tmp_path / "out").as_uri())
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs", direct=(tmp_path / "out").as_uri())
     written = dataset.write_arrow_reader(reader_of([1, 2, 3], [4, 5]), format="file")
     assert written == 5
     assert list((tmp_path / "out").rglob("*.parquet"))
 
 
 def test_file_write_uri_override_wins_over_direct(tmp_path: pathlib.Path) -> None:
-    dataset = Dataset(record="rekep.models.Log", direct="s3://elsewhere/log")
+    dataset = Dataset(schema="rekep.models.Log", direct="s3://elsewhere/log")
     target = tmp_path / "override"
     written = dataset.write_arrow_reader(reader_of([1, 2]), format="file", uri=target.as_uri())
     assert written == 2
@@ -642,12 +642,12 @@ def test_file_write_uri_override_wins_over_direct(tmp_path: pathlib.Path) -> Non
 def test_file_write_lays_out_hive_directories_for_the_records_partitions() -> None:
     """`Log.date` is `Arrow(partition=True)`, so the file writer uses it --
     the same declaration Iceberg's partition spec is built from."""
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     assert dataset.partition_columns() == {"date": "identity"}
 
 
 def test_file_write_partitions_by_date(tmp_path: pathlib.Path) -> None:
-    dataset = Dataset(record="rekep.models.Log", direct=(tmp_path / "out").as_uri())
+    dataset = Dataset(schema="rekep.models.Log", direct=(tmp_path / "out").as_uri())
     dataset.write_arrow_reader(reader_of([1, 2]), format="file")
     written = list((tmp_path / "out").rglob("*.parquet"))
     assert written, "something was written"
@@ -655,14 +655,14 @@ def test_file_write_partitions_by_date(tmp_path: pathlib.Path) -> None:
 
 
 def test_file_write_can_be_asked_for_a_flat_layout(tmp_path: pathlib.Path) -> None:
-    dataset = Dataset(record="rekep.models.Log", direct=(tmp_path / "flat").as_uri())
+    dataset = Dataset(schema="rekep.models.Log", direct=(tmp_path / "flat").as_uri())
     dataset.write_arrow_reader(reader_of([1]), format="file", partitioning=False)
     assert list((tmp_path / "flat").glob("*.parquet")), "no partition directory"
 
 
 def test_two_file_writes_append_instead_of_colliding(tmp_path: pathlib.Path) -> None:
     """`write_dataset` defaults would raise on the second `part-0.parquet`."""
-    dataset = Dataset(record="rekep.models.Log", direct=(tmp_path / "out").as_uri())
+    dataset = Dataset(schema="rekep.models.Log", direct=(tmp_path / "out").as_uri())
     dataset.write_arrow_reader(reader_of([1]), format="file")
     dataset.write_arrow_reader(reader_of([2]), format="file")
     assert len(list((tmp_path / "out").rglob("*.parquet"))) == 2
@@ -670,7 +670,7 @@ def test_two_file_writes_append_instead_of_colliding(tmp_path: pathlib.Path) -> 
 
 def test_file_write_tracks_lineage_like_iceberg_does(tmp_path: pathlib.Path) -> None:
     collector = Collector()
-    dataset = Dataset(record="rekep.models.Log", name="logs", direct=(tmp_path / "out").as_uri())
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs", direct=(tmp_path / "out").as_uri())
     dataset.with_lineage(collector).write_arrow_reader(reader_of([1, 2]), format="file")
     assert [e.event_type for e in collector.events] == [RunState.START, RunState.COMPLETE]
     assert collector.events[-1].outputs[0].output_facets == {"outputStatistics": {"rowCount": 2}}
@@ -681,9 +681,8 @@ def test_file_write_tracks_lineage_like_iceberg_does(tmp_path: pathlib.Path) -> 
 
 def test_into_iceberg_table_carries_record_name_namespace_location() -> None:
     dataset = Dataset(
-        record="rekep.models.Log",
-        name="logs",
-        namespace="trading",
+        schema="rekep.models.Log",
+        uri="ds:/trading/logs",
         protocols={"iceberg": {"location": "s3://lake/iceberg/log"}},
     )
     table = dataset.into_iceberg_table()
@@ -696,7 +695,7 @@ def test_into_iceberg_table_carries_record_name_namespace_location() -> None:
 def test_into_iceberg_table_does_not_leak_location_or_branch_into_properties() -> None:
     """`location`/`branch` route the write; they are not table properties."""
     dataset = Dataset(
-        record="rekep.models.Log",
+        schema="rekep.models.Log",
         properties={"format": "parquet"},
         protocols={"iceberg": {"location": "s3://lake/log", "branch": "dev"}},
     )
@@ -706,9 +705,8 @@ def test_into_iceberg_table_does_not_leak_location_or_branch_into_properties() -
 
 def test_into_doris_table_carries_record_name_namespace_properties() -> None:
     dataset = Dataset(
-        record="rekep.models.Log",
-        name="logs",
-        namespace="trading",
+        schema="rekep.models.Log",
+        uri="ds:/trading/logs",
         properties={"a": "shared"},
         protocols={"doris": {"b": "doris"}},
     )
@@ -728,7 +726,7 @@ def test_deploy_dispatches_to_iceberg_or_doris() -> None:
             self.deployed.append((table, dry_run))
             return table
 
-    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     stack = FakeStack()
     dataset.deploy("iceberg", stack, dry_run=True)
     (table, dry_run) = stack.deployed[0]
@@ -738,7 +736,7 @@ def test_deploy_dispatches_to_iceberg_or_doris() -> None:
 
 def test_deploy_refuses_an_unknown_target() -> None:
     with pytest.raises(ValueError, match="no 'parquet' deploy target"):
-        Dataset(record="rekep.models.Log").deploy("parquet", stack=None)
+        Dataset(schema="rekep.models.Log").deploy("parquet", stack=None)
 
 
 def test_deploy_iceberg_converges_a_real_local_catalog(tmp_path: pathlib.Path) -> None:
@@ -754,7 +752,7 @@ def test_deploy_iceberg_converges_a_real_local_catalog(tmp_path: pathlib.Path) -
             ],
         )
     )
-    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     dataset.deploy_iceberg(stack)
     assert stack.catalogs.connect("iceberg").table_exists("default.logs")
 
@@ -777,7 +775,7 @@ def test_upsert_against_a_real_local_catalog_uses_the_primary_key(
     """`join_cols=None` falls back to the record's own `Arrow(key=True)`
     field -- `ParsedMessage.hash64` -- with no extra wiring."""
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
 
@@ -802,11 +800,11 @@ def test_upsert_against_a_real_local_catalog_uses_the_primary_key(
 
 def test_branch_write_and_read_isolate_from_main(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
 
-    main_dataset = Dataset(record="rekep.models.Log", name="logs")
+    main_dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     schema = table.schema().as_arrow()
     row = {
         "url": "a",
@@ -823,7 +821,7 @@ def test_branch_write_and_read_isolate_from_main(tmp_path: pathlib.Path) -> None
     )
     main_dataset.write_arrow_reader(reader, format="iceberg", table=table)
 
-    dev_dataset = Dataset(record="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
+    dev_dataset = Dataset(schema="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
     reader = pyarrow.RecordBatchReader.from_batches(
         schema, [pyarrow.RecordBatch.from_pylist([{**row, "hash64": 2}], schema=schema)]
     )
@@ -838,19 +836,19 @@ def test_branch_write_and_read_isolate_from_main(tmp_path: pathlib.Path) -> None
 
 
 def test_read_arrow_reader_refuses_an_unknown_format() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     with pytest.raises(ValueError, match="no 'parquet' reader"):
         dataset.read_arrow_reader("parquet")
 
 
 def test_iceberg_read_arrow_reader_needs_a_table() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     with pytest.raises(NotImplementedError, match="needs table="):
         dataset.read_arrow_reader("iceberg")
 
 
 def test_file_read_needs_a_location() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     with pytest.raises(NotImplementedError, match="needs a location"):
         dataset.read_arrow_reader("file")
 
@@ -858,7 +856,7 @@ def test_file_read_needs_a_location() -> None:
 def test_a_file_round_trip_keeps_the_partition_column(tmp_path: pathlib.Path) -> None:
     """Written into `date=.../`, read back with `date` still a column --
     the record's own declaration lays it out and picks it up again."""
-    dataset = Dataset(record="rekep.models.Log", direct=(tmp_path / "out").as_uri())
+    dataset = Dataset(schema="rekep.models.Log", direct=(tmp_path / "out").as_uri())
     dataset.write_arrow_reader(reader_of([1, 2]), format="file")
     read = dataset.read_arrow_reader("file").read_all()
     assert read.num_rows == 2
@@ -868,7 +866,7 @@ def test_a_file_round_trip_keeps_the_partition_column(tmp_path: pathlib.Path) ->
 def test_a_file_read_pushes_a_filter_down(tmp_path: pathlib.Path) -> None:
     import pyarrow.compute
 
-    dataset = Dataset(record="rekep.models.Log", direct=(tmp_path / "out").as_uri())
+    dataset = Dataset(schema="rekep.models.Log", direct=(tmp_path / "out").as_uri())
     dataset.write_arrow_reader(reader_of([1, 2, 3]), format="file")
     matched = dataset.read_arrow_reader(
         "file", row_filter=pyarrow.compute.field("hash64") > 1, columns=["hash64"]
@@ -878,7 +876,7 @@ def test_a_file_read_pushes_a_filter_down(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_read_tracks_lineage_when_the_stream_ends(tmp_path: pathlib.Path) -> None:
-    dataset = Dataset(record="rekep.models.Log", name="logs", direct=(tmp_path / "o").as_uri())
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs", direct=(tmp_path / "o").as_uri())
     dataset.write_arrow_reader(reader_of([1, 2]), format="file")
 
     collector = Collector()
@@ -894,7 +892,7 @@ def test_a_read_tracks_lineage_when_the_stream_ends(tmp_path: pathlib.Path) -> N
 
 def test_a_read_that_is_never_consumed_leaves_its_run_open(tmp_path: pathlib.Path) -> None:
     """A lazy read cannot claim to have finished; an abandoned one did not."""
-    dataset = Dataset(record="rekep.models.Log", direct=(tmp_path / "o").as_uri())
+    dataset = Dataset(schema="rekep.models.Log", direct=(tmp_path / "o").as_uri())
     dataset.write_arrow_reader(reader_of([1]), format="file")
     collector = Collector()
     dataset.with_lineage(collector).read_arrow_reader("file")
@@ -903,7 +901,7 @@ def test_a_read_that_is_never_consumed_leaves_its_run_open(tmp_path: pathlib.Pat
 
 def test_an_untracked_read_is_the_protocols_own_reader(tmp_path: pathlib.Path) -> None:
     """No client means no per-batch counting hop between caller and data."""
-    dataset = Dataset(record="rekep.models.Log", direct=(tmp_path / "o").as_uri())
+    dataset = Dataset(schema="rekep.models.Log", direct=(tmp_path / "o").as_uri())
     dataset.write_arrow_reader(reader_of([1, 2]), format="file")
     assert dataset.read_arrow_reader("file").read_all().num_rows == 2
 
@@ -913,7 +911,7 @@ def test_an_untracked_read_is_the_protocols_own_reader(tmp_path: pathlib.Path) -
 
 def test_an_iceberg_read_filters_and_projects(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     dataset.write_arrow_reader(
@@ -937,14 +935,14 @@ def test_an_iceberg_read_falls_back_to_main_for_a_branch_that_does_not_exist(
     tmp_path: pathlib.Path,
 ) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     dataset.write_arrow_reader(reader_of([1]), format="iceberg", table=table)
     table.refresh()
 
     unborn = Dataset(
-        record="rekep.models.Log", name="logs", protocols={"iceberg": {"branch": "nope"}}
+        schema="rekep.models.Log", uri="ds:/logs", protocols={"iceberg": {"branch": "nope"}}
     )
     assert unborn.read_arrow_reader("iceberg", table=table).read_all().num_rows == 1
 
@@ -967,7 +965,7 @@ def test_compaction_rewrites_crowded_partitions_and_keeps_every_row(
     tmp_path: pathlib.Path,
 ) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     _crowd(dataset, table, [14, 15] * 3)
@@ -986,7 +984,7 @@ def test_compaction_rewrites_crowded_partitions_and_keeps_every_row(
 
 def test_compaction_leaves_partitions_below_the_threshold_alone(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     _crowd(dataset, table, [14, 15])
@@ -998,7 +996,7 @@ def test_compaction_leaves_partitions_below_the_threshold_alone(tmp_path: pathli
 
 def test_compaction_dry_run_reports_without_writing(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     _crowd(dataset, table, [14] * 4)
@@ -1012,7 +1010,7 @@ def test_compaction_dry_run_reports_without_writing(tmp_path: pathlib.Path) -> N
 
 def test_compaction_of_an_empty_table_does_nothing(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     assert dataset.iceberg_compact(table=table)["compacted"] is False
@@ -1020,7 +1018,7 @@ def test_compaction_of_an_empty_table_does_nothing(tmp_path: pathlib.Path) -> No
 
 def test_expiring_snapshots_frees_history_but_not_data(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     _crowd(dataset, table, [14] * 4)
@@ -1040,7 +1038,7 @@ def test_expiring_snapshots_frees_history_but_not_data(tmp_path: pathlib.Path) -
 
 def test_nothing_old_enough_expires_nothing(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     _crowd(dataset, table, [14] * 3)
@@ -1051,15 +1049,15 @@ def test_nothing_old_enough_expires_nothing(tmp_path: pathlib.Path) -> None:
 
 def test_publish_fast_forwards_main_onto_the_branch(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    trunk = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    trunk = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     trunk.deploy_iceberg(stack)
     table = stack.tables.get(trunk.into_iceberg_table())
     trunk.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
     table.refresh()
 
     dev = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"branch": "dev"}},
     )
     dev.write_arrow_reader(parsed_reader({"hash64": 2}), format="iceberg", table=table)
@@ -1073,13 +1071,13 @@ def test_publish_fast_forwards_main_onto_the_branch(tmp_path: pathlib.Path) -> N
 
 
 def test_publishing_main_onto_itself_is_refused(tmp_path: pathlib.Path) -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     with pytest.raises(ValueError, match="needs a branch other than 'main'"):
         dataset.iceberg_publish(table=FakeTable())
 
 
 def test_publishing_a_branch_with_no_snapshot_yet_does_nothing() -> None:
-    dataset = Dataset(record="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
+    dataset = Dataset(schema="rekep.models.Log", protocols={"iceberg": {"branch": "dev"}})
     assert dataset.iceberg_publish(table=FakeTable()) is None
 
 
@@ -1090,16 +1088,16 @@ def test_the_shipped_datasets_declare_real_records() -> None:
     """Every `stacks/datasets/*.yaml` must actually parse and name a real record."""
     repo_datasets = pathlib.Path(__file__).parents[2] / "stacks" / "datasets"
     datasets = Dataset.load_all(repo_datasets)
-    assert {d.name for d in datasets} == {"log", "parsed_messages"}
+    assert {d.dataset_name() for d in datasets} == {"log", "parsed_messages"}
     for dataset in datasets:
         assert dataset.record_class() is not None  # raises TypeError otherwise
 
 
 def test_the_shipped_log_dataset_is_branch_agnostic() -> None:
     repo_datasets = pathlib.Path(__file__).parents[2] / "stacks" / "datasets"
-    (log,) = [d for d in Dataset.load_all(repo_datasets) if d.name == "log"]
+    (log,) = [d for d in Dataset.load_all(repo_datasets) if d.dataset_name() == "log"]
     assert log.record_class() is Log
-    assert log.uri() == "ds:/default/log"
+    assert str(log.resource_uri()) == "ds:/default/log"
     assert log.iceberg_branch() is None
 
 
@@ -1123,9 +1121,8 @@ def test_the_shipped_datasets_resolve_against_the_shipped_namespaces() -> None:
 
 def test_dataset_round_trips_through_json() -> None:
     dataset = Dataset(
-        record="rekep.models.Log",
-        name="logs",
-        namespace="trading",
+        schema="rekep.models.Log",
+        uri="ds:/trading/logs",
         direct="s3://lake/log",
         properties={"format": "parquet"},
         protocols={"iceberg": {"location": "s3://lake/iceberg/log"}},
@@ -1144,7 +1141,7 @@ def test_compaction_refuses_a_computed_partition_transform(tmp_path: pathlib.Pat
     from rekep.dataset import _partition_filter
 
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record=f"{__name__}.Trade", name="trades")
+    dataset = Dataset(schema=f"{__name__}.Trade", uri="ds:/trades")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     assert [field.name for field in table.spec().fields] == ["at_day"], "not shadowing `at`"
@@ -1155,7 +1152,7 @@ def test_compaction_refuses_a_computed_partition_transform(tmp_path: pathlib.Pat
 
 def test_a_partition_filter_matches_identity_partitions(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.Log", name="logs")
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/logs")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
 
@@ -1218,7 +1215,7 @@ def test_merge_schemas_with_nothing_new_returns_the_target_itself() -> None:
 
 
 def test_a_write_keeps_an_unknown_column_when_merge_schema_is_on() -> None:
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(
         parsed_reader({"hash64": 1}, extra={"venue": "X"}),
@@ -1235,7 +1232,7 @@ def test_a_write_keeps_an_unknown_column_when_merge_schema_is_on() -> None:
 def test_the_written_columns_carry_the_tables_field_ids_not_the_records() -> None:
     """Iceberg matches columns by id, and `union_by_name` renumbers what it
     adds -- so the ids the write carries have to come back from the table."""
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(
         parsed_reader({"hash64": 1}, extra={"venue": "X"}),
@@ -1254,7 +1251,7 @@ def test_two_widening_writes_with_different_extras_stay_in_their_own_columns() -
     """The corruption this guards against: the record's numbering does not
     move between writes, but the table's does, so the second write's column
     would otherwise be filed under the first write's id."""
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(
         parsed_reader({"hash64": 1}, extra={"region": "REGION"}),
@@ -1275,7 +1272,7 @@ def test_two_widening_writes_with_different_extras_stay_in_their_own_columns() -
 
 
 def test_merge_schema_is_off_unless_declared() -> None:
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     dataset.write_arrow_reader(
         parsed_reader({"hash64": 1}, extra={"venue": "X"}), format="iceberg", table=table
@@ -1285,7 +1282,7 @@ def test_merge_schema_is_off_unless_declared() -> None:
 
 def test_merge_schema_is_read_from_the_datasets_own_config() -> None:
     dataset = Dataset(
-        record="rekep.models.ParsedMessage", protocols={"iceberg": {"merge_schema": "true"}}
+        schema="rekep.models.ParsedMessage", protocols={"iceberg": {"merge_schema": "true"}}
     )
     assert dataset.merge_schema("iceberg") is True
     assert dataset.merge_schema("file") is False, "declared for iceberg only"
@@ -1294,7 +1291,7 @@ def test_merge_schema_is_read_from_the_datasets_own_config() -> None:
 def test_a_shared_property_reaches_every_protocol() -> None:
     """`properties` is the shared layer; `protocols` is the exception layer."""
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
+        schema="rekep.models.ParsedMessage",
         properties={"merge_schema": "true"},
         protocols={"file": {"merge_schema": "false"}},
     )
@@ -1304,7 +1301,7 @@ def test_a_shared_property_reaches_every_protocol() -> None:
 
 def test_merge_schema_does_not_leak_into_table_properties() -> None:
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
+        schema="rekep.models.ParsedMessage",
         protocols={"iceberg": {"merge_schema": "true", "team": "trading"}},
     )
     assert dataset.table_properties("iceberg") == {"team": "trading"}
@@ -1314,7 +1311,7 @@ def test_a_plain_iterator_is_peeked_not_consumed_for_its_schema() -> None:
     """merge_schema needs the incoming shape before the first write; a plain
     iterator only reveals it by producing a batch, so one is pulled and put
     straight back -- every batch still arrives, once, in order."""
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     reader = parsed_reader({"hash64": 1}, {"hash64": 2}, extra={"venue": "X"}, batch_size=1)
     written = dataset.write_arrow_reader(
@@ -1325,7 +1322,7 @@ def test_a_plain_iterator_is_peeked_not_consumed_for_its_schema() -> None:
 
 
 def test_an_empty_stream_leaves_the_schema_alone() -> None:
-    dataset = Dataset(record="rekep.models.ParsedMessage")
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
     table = FakeTable(record=ParsedMessage)
     written = dataset.write_arrow_reader(iter(()), format="iceberg", table=table, merge_schema=True)
     assert written == 0
@@ -1338,8 +1335,8 @@ def test_an_empty_stream_leaves_the_schema_alone() -> None:
 def test_merge_schema_adds_the_column_to_a_real_table(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"merge_schema": "true"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1366,8 +1363,8 @@ def test_merge_schema_leaves_an_existing_column_required(tmp_path: pathlib.Path)
     silently relax it -- only the additions are ever handed over."""
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"merge_schema": "true"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1390,8 +1387,8 @@ def test_merging_rows_and_widening_columns_in_one_write(tmp_path: pathlib.Path) 
     schema it was written under, and a merge reads the branch back."""
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"merge_schema": "true", "merge_by": "true"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1419,8 +1416,8 @@ def test_a_second_widening_write_costs_no_extra_schema_version(
 ) -> None:
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"merge_schema": "true"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1442,7 +1439,7 @@ def test_a_file_write_carries_the_widened_column(tmp_path: pathlib.Path) -> None
     import pyarrow.parquet
 
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
+        schema="rekep.models.ParsedMessage",
         direct=(tmp_path / "out").as_uri(),
         properties={"merge_schema": "true"},
     )
@@ -1457,8 +1454,8 @@ def test_two_widening_writes_land_in_the_right_columns(tmp_path: pathlib.Path) -
     the second write's data under the first write's column, silently."""
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"merge_schema": "true"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1485,8 +1482,8 @@ def test_two_live_columns_declared_in_the_other_order_keep_their_values(
 ) -> None:
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"merge_schema": "true"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1516,8 +1513,8 @@ def test_a_branch_forked_before_an_evolution_is_brought_forward(
     table itself has nothing left to add."""
     stack = _local_iceberg_stack(tmp_path)
     trunk = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"merge_schema": "true"}},
     )
     trunk.deploy_iceberg(stack)
@@ -1536,8 +1533,8 @@ def test_a_branch_forked_before_an_evolution_is_brought_forward(
     table.refresh()
 
     dev = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"branch": "dev", "merge_by": "true", "merge_schema": "true"}},
     )
     written = dev.write_arrow_reader(
@@ -1554,8 +1551,8 @@ def test_a_merge_after_a_deploy_widened_the_table(tmp_path: pathlib.Path) -> Non
     is stale all the same, and the write has to cope."""
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"merge_by": "true"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1584,8 +1581,8 @@ def seeded(tmp_path: pathlib.Path, first: int, last: int) -> tuple[Any, Any, Dat
     """A merging dataset whose table already holds keys `first`..`last`."""
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"merge_by": "true"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1610,7 +1607,7 @@ def test_an_empty_branch_has_no_bounds_to_reason_with(tmp_path: pathlib.Path) ->
     from rekep.dataset import _key_bounds
 
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     assert _key_bounds(table, "main", ["hash64"]) is None
@@ -1675,7 +1672,7 @@ def test_a_partition_of_full_sized_files_is_not_fragmented(tmp_path: pathlib.Pat
     """Many files is not the test on its own -- a big partition is allowed
     to have many big files."""
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     for index in range(6):
@@ -1693,8 +1690,8 @@ def test_cleanup_frees_the_files_expiry_strands(tmp_path: pathlib.Path) -> None:
     Reclaiming it is the step nothing else does."""
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"retain": "0s", "compact_min_files": "3"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1721,8 +1718,8 @@ def test_cleanup_spares_files_younger_than_the_grace_period(tmp_path: pathlib.Pa
     """A writer mid-commit has files no snapshot references yet."""
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"retain": "0s"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1741,7 +1738,7 @@ def test_optimize_enables_manifest_merging_once(tmp_path: pathlib.Path) -> None:
     """pyiceberg does not merge manifests by default, so a streaming table
     grows one per commit forever."""
     stack = _local_iceberg_stack(tmp_path)
-    dataset = Dataset(record="rekep.models.ParsedMessage", name="messages")
+    dataset = Dataset(schema="rekep.models.ParsedMessage", uri="ds:/messages")
     dataset.deploy_iceberg(stack)
     table = stack.tables.get(dataset.into_iceberg_table())
     dataset.write_arrow_reader(parsed_reader({"hash64": 1}), format="iceberg", table=table)
@@ -1756,8 +1753,8 @@ def test_optimize_enables_manifest_merging_once(tmp_path: pathlib.Path) -> None:
 def test_optimize_is_idempotent(tmp_path: pathlib.Path) -> None:
     stack = _local_iceberg_stack(tmp_path)
     dataset = Dataset(
-        record="rekep.models.ParsedMessage",
-        name="messages",
+        schema="rekep.models.ParsedMessage",
+        uri="ds:/messages",
         protocols={"iceberg": {"compact_min_files": "3", "retain": "0s"}},
     )
     dataset.deploy_iceberg(stack)
@@ -1775,6 +1772,92 @@ def test_optimize_is_idempotent(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_maintenance_verb_refuses_an_unknown_protocol() -> None:
-    dataset = Dataset(record="rekep.models.Log")
+    dataset = Dataset(schema="rekep.models.Log")
     with pytest.raises(ValueError, match="no 'doris' compact"):
         dataset.compact("doris")
+
+
+# -- identity: a schema and a URI, not a record and three fields ----------
+
+
+def test_a_dataset_names_its_schema_and_projects_it() -> None:
+    dataset = Dataset(schema="rekep.models.Log")
+    assert dataset.record_class() is Log
+    assert dataset.arrow_schema().equals(Log.into_arrow_schema())
+
+
+def test_without_a_uri_the_record_names_the_dataset() -> None:
+    dataset = Dataset(schema="rekep.models.ParsedMessage")
+    assert str(dataset.resource_uri()) == "ds:/parsed_message"
+    assert dataset.dataset_name() == "parsed_message"
+    assert dataset.dataset_namespace() == "default"
+
+
+def test_the_uri_carries_catalog_namespace_and_name() -> None:
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/warehouse/trading/orders")
+    assert dataset.dataset_name() == "orders"
+    assert dataset.dataset_namespace() == "trading"
+    assert dataset.resource_uri().catalog() == "warehouse"
+
+
+def test_the_branch_rides_along_as_a_fragment() -> None:
+    dataset = Dataset(
+        schema="rekep.models.Log",
+        uri="ds:/trading/orders",
+        protocols={"iceberg": {"branch": "dev"}},
+    )
+    assert str(dataset.resource_uri()) == "ds:/trading/orders#dev"
+
+
+def test_a_branch_written_into_the_uri_wins() -> None:
+    """The identity is the identity; config fills a gap, it does not override."""
+    dataset = Dataset(
+        schema="rekep.models.Log",
+        uri="ds:/trading/orders#hotfix",
+        protocols={"iceberg": {"branch": "dev"}},
+    )
+    assert dataset.resource_uri().branch == "hotfix"
+
+
+def test_any_spelling_of_the_uri_declares_the_same_dataset() -> None:
+    spellings = [
+        "ds:/warehouse/trading/orders",
+        "ds://warehouse/trading/orders",
+        "rekep:/datasets/warehouse/trading/orders",
+    ]
+    resolved = {
+        str(Dataset(schema="rekep.models.Log", uri=text).resource_uri()) for text in spellings
+    }
+    assert resolved == {"ds:/warehouse/trading/orders"}
+
+
+def test_the_deployed_table_takes_its_name_from_the_uri() -> None:
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/warehouse/trading/orders")
+    table = dataset.into_iceberg_table()
+    assert (table.name, table.namespace, table.record) == ("orders", "trading", "rekep.models.Log")
+
+
+def test_a_schema_that_is_not_a_record_is_refused() -> None:
+    with pytest.raises(TypeError, match="not a Record"):
+        Dataset(schema="pathlib.Path").record_class()
+
+
+def test_a_relative_file_uri_is_still_listable() -> None:
+    """`file://stacks/wh` is a spelling catalogs accept and pyarrow refuses,
+    because the first segment reads as a hostname."""
+    from rekep.dataset import _listable
+
+    assert _listable("file://stacks/iceberg/warehouse") == "stacks/iceberg/warehouse"
+    assert _listable("file:///abs/warehouse") == "file:///abs/warehouse"
+    assert _listable("s3://bucket/wh") == "s3://bucket/wh"
+
+
+def test_an_unlistable_location_frees_nothing_rather_than_failing() -> None:
+    """A maintenance pass must not die on a URI it cannot enumerate."""
+    from rekep.dataset import _orphan_files
+
+    class Unlistable(FakeTable):
+        def location(self) -> str:
+            return "weird://not/a/filesystem"
+
+    assert _orphan_files(Unlistable(), datetime.timedelta(days=3)) == []

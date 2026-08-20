@@ -143,8 +143,13 @@ rekep/
 │                  dicts; side files under stacks/jobs, run_tracked()
 │                  lineage-wraps extract -> transform -> load, Job -> Airflow
 │                  via into_airflow
+├── config.py      folder(service, root): the checkout's stacks/<service> if
+│                  it has one, else ~/.config/rekep/<service>; REGISTRY, one
+│                  process-wide dict of loaded resources keyed by URI
 ├── dataset.py     Dataset: the OpenLineage resource for a data product --
-│                  schema (via Record) + cross-platform location (shared
+│                  `schema:` (a dotted Record path; arrow_schema() is the
+│                  Arrow view) + `uri:` (identity as one path) +
+│                  cross-platform location (shared
 │                  `properties`/`direct`, per-protocol `protocols`);
 │                  read_arrow_reader/write_arrow_reader dispatch to
 │                  `_{format}_..._arrow_reader`, which lineage-tracks a call
@@ -216,9 +221,9 @@ state is ignored (`stacks/iceberg/catalog.db`, `stacks/iceberg/warehouse/`,
 generated `stacks/ddl/`), and the tutorial builds in gitignored `tutorial/`.
 The layout: `jobs/` (one job per file), `iceberg/` and `doris/` (folder
 registries: `catalogs/`, `namespaces/` only, file stem defaults `name`),
-`datasets/` (one `Dataset` per file -- `record:`/`name:`/`namespace:`,
-deployed autonomously into whichever `--target` names, no `tables/` folder
-anywhere and no protocol-adapted fields committed to disk), `product/`
+`datasets/` (one `Dataset` per file -- `schema:`/`uri:`, deployed
+autonomously into whichever `--target` names, no `tables/` folder anywhere
+and no protocol-adapted fields committed to disk), `product/`
 (whole definitions as YAML, `name` only — no namespace). Generated DDL is
 never committed (`stacks/ddl/` gitignored). Defaults are **fully local**:
 SQLite Iceberg catalog, file warehouse — a laptop runs without services. No

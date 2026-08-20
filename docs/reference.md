@@ -50,6 +50,14 @@
 
 ::: rekep.dataset.Dataset
 
+## Configuration
+
+::: rekep.config.folder
+
+::: rekep.config.register
+
+::: rekep.config.lookup
+
 ## Lineage
 
 ::: rekep.lineage.LineageClient

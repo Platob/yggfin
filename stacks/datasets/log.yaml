@@ -1,6 +1,5 @@
 # One dataset: rekep.models.Log, deployed autonomously into iceberg or doris.
 # No matching tables/ side file needed -- namespace and (when they differ per
 # protocol) properties live right here; see rekep.dataset.Dataset.
-record: rekep.models.Log
-name: log
-namespace: default
+schema: rekep.models.Log
+uri: ds:/default/log

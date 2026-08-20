@@ -293,7 +293,7 @@ def dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     )
     datasets = tmp_path / "datasets"
     datasets.mkdir()
-    (datasets / "logs.yaml").write_text("record: rekep.models.Log\n")
+    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: ds:/logs\n")
     return tmp_path
 
 
@@ -316,7 +316,7 @@ def test_dataset_deploy_converges_the_declared_dataset(
         )
         == 0
     )
-    assert "ds:/default/logs" in capsys.readouterr().out
+    assert "ds:/logs" in capsys.readouterr().out
 
     from rekep.iceberg import Iceberg
 
@@ -349,8 +349,8 @@ def test_dataset_list_prints_declared_datasets(
     root = dataset_workspace(tmp_path)
     assert main(["dataset", "list", "--config", str(root / "datasets")]) == 0
     out = capsys.readouterr().out
-    assert "ds:/default/logs" in out
-    assert "record=rekep.models.Log" in out
+    assert "ds:/logs" in out
+    assert "schema=rekep.models.Log" in out
 
 
 # -- dataset optimize --------------------------------------------------------
@@ -369,8 +369,8 @@ def crowded_dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     root = dataset_workspace(tmp_path)
     (root / "datasets" / "logs.yaml").unlink()
     (root / "datasets" / "messages.yaml").write_text(
-        "record: rekep.models.ParsedMessage\n"
-        "name: messages\n"
+        "schema: rekep.models.ParsedMessage\n"
+        "uri: ds:/messages\n"
         "protocols:\n"
         "  iceberg:\n"
         '    compact_min_files: "3"\n'

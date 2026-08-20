@@ -74,7 +74,7 @@ def test_qualified_name_without_a_namespace_is_just_the_name() -> None:
 
 
 def test_uri_is_scoped_to_the_job_scheme() -> None:
-    assert Job(name="orders", namespace="trading").uri() == "job:/trading/orders"
+    assert str(Job(name="orders", namespace="trading").resource_uri()) == "job:/trading/orders"
 
 
 # -- bind / @arrow_task -------------------------------------------------

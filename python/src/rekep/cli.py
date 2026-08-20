@@ -559,19 +559,19 @@ class DatasetService:
 
     def deploy(self, arguments: argparse.Namespace) -> int:
         """Every declared dataset, autonomous: no per-table side file needed."""
-        from rekep.dataset import DATASETS_ROOT, Dataset
+        from rekep.dataset import Dataset
 
         level = logging.DEBUG if arguments.verbose else logging.INFO
         logging.basicConfig(level=level, format="%(asctime)s %(name)s %(message)s")
         context = _pairs(arguments.variables)
-        datasets = Dataset.load_all(arguments.config or DATASETS_ROOT, **context)
+        datasets = Dataset.load_all(arguments.config, **context)
 
         for target in arguments.targets or ["iceberg"]:
             stack = self._stack(target, arguments.stack_config, context)
             verb = "would converge" if arguments.dry_run else "converged"
             for dataset in datasets:
                 dataset.deploy(target, stack, dry_run=arguments.dry_run)
-                print(f"{target} {verb}: {dataset.uri()}")
+                print(f"{target} {verb}: {dataset.resource_uri()}")
         return 0
 
     def optimize(self, arguments: argparse.Namespace) -> int:
@@ -582,14 +582,14 @@ class DatasetService:
         dataset's own (`protocols.iceberg.compact_min_files`, `retain`), so
         this is the whole command a scheduler needs.
         """
-        from rekep.dataset import DATASETS_ROOT, Dataset
+        from rekep.dataset import Dataset
 
         level = logging.DEBUG if arguments.verbose else logging.INFO
         logging.basicConfig(level=level, format="%(asctime)s %(name)s %(message)s")
         context = _pairs(arguments.variables)
         stack = self._stack("iceberg", arguments.stack_config, context)
 
-        for dataset in Dataset.load_all(arguments.config or DATASETS_ROOT, **context):
+        for dataset in Dataset.load_all(arguments.config, **context):
             table = stack.tables.get(dataset.into_iceberg_table())
             report = dataset.optimize(
                 table=table, branch=arguments.branch, dry_run=arguments.dry_run
@@ -597,7 +597,7 @@ class DatasetService:
             compaction, cleanup = report["compaction"], report["cleanup"]
             verb = "would rewrite" if arguments.dry_run else "rewrote"
             print(
-                f"{dataset.uri()}: {verb} {compaction['files']} files in "
+                f"{dataset.resource_uri()}: {verb} {compaction['files']} files in "
                 f"{len(compaction['partitions'])} partitions, "
                 f"{len(cleanup['expired'])} snapshots expired, "
                 f"{len(cleanup['orphans'])} files freed"
@@ -605,10 +605,10 @@ class DatasetService:
         return 0
 
     def list_datasets(self, arguments: argparse.Namespace) -> int:
-        from rekep.dataset import DATASETS_ROOT, Dataset
+        from rekep.dataset import Dataset
 
-        for dataset in Dataset.load_all(arguments.config or DATASETS_ROOT):
-            print(f"{dataset.uri()}  record={dataset.record}")
+        for dataset in Dataset.load_all(arguments.config):
+            print(f"{dataset.resource_uri()}  schema={dataset.schema}")
         return 0
 
     def _stack(self, target: str, config: str | None, context: dict[str, str]) -> Any:
@@ -651,12 +651,11 @@ class AirflowService:
 
     def deploy(self, arguments: argparse.Namespace) -> int:
         from rekep.airflow.service import Airflow
-        from rekep.job import JOBS_ROOT
 
         level = logging.DEBUG if arguments.verbose else logging.INFO
         logging.basicConfig(level=level, format="%(asctime)s %(name)s %(message)s")
         deployed = Airflow.deploy_folder(
-            arguments.config or JOBS_ROOT,
+            arguments.config,
             dags_folder=arguments.dags_folder,
             dry_run=arguments.dry_run,
         )
@@ -666,9 +665,8 @@ class AirflowService:
 
     def list_dags(self, arguments: argparse.Namespace) -> int:
         from rekep.airflow.service import Dags
-        from rekep.job import JOBS_ROOT
 
-        for job in Dags(arguments.config or JOBS_ROOT).list():
+        for job in Dags(arguments.config).list():
             print(f"{job.name}  namespace={job.namespace or '-'}  schedule={job.schedule or '-'}")
         return 0
 

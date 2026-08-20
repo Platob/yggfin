@@ -74,6 +74,7 @@ import pyarrow
 import pyarrow.dataset
 import pyarrow.fs
 
+from rekep import config
 from rekep.filesystems import resolve as resolve_filesystem
 from rekep.imports import locate
 from rekep.job import Job
@@ -143,9 +144,10 @@ _RETENTION_UNITS = {
 _TRUE_WORDS = frozenset({"true", "yes", "on", "1"})
 _FALSE_WORDS = frozenset({"false", "no", "off", "0", ""})
 
-#: Where dataset side files live, relative to the deployment root. Overridable
-#: per call and by environment, so a datasets folder can point anywhere.
-DATASETS_ROOT = pathlib.Path(os.environ.get("REKEP_DATASETS_ROOT", "stacks/datasets"))
+#: Where dataset side files live when nothing says otherwise: the checkout's
+#: `stacks/datasets` if it has one, else the user's `~/.config/rekep/datasets`
+#: -- see `rekep.config.folder`. `REKEP_DATASETS_ROOT` overrides both.
+DATASETS_ROOT = os.environ.get("REKEP_DATASETS_ROOT")
 
 
 @record
@@ -159,14 +161,23 @@ class Dataset(Record):
     resolves exactly what an Iceberg write should see.
     """
 
-    record: str
-    """Dotted path of the `Record` class that is this dataset's schema."""
+    schema: str
+    """Dotted path of the `Record` class whose Arrow projection is this schema.
 
-    name: str | None = None
-    """Dataset name; defaults to the record's snake_case name."""
+    A path rather than an inline field list because a declaration has to
+    survive a round trip through a file, and only a name can: the class is
+    the schema, and pointing at it keeps one definition instead of two that
+    can disagree. `arrow_schema()` is the Arrow view of it, which is what
+    everything downstream actually uses."""
 
-    namespace: str = "default"
-    """OpenLineage namespace this dataset is identified under."""
+    uri: str | None = None
+    """This dataset's identity, as a path: `ds:/catalog/namespace/name#branch`.
+
+    One string instead of separate name/namespace/catalog fields, because
+    they are one identity -- and a path, because a catalog contains
+    namespaces and a namespace contains tables, which a dot cannot say
+    without ambiguity. Undeclared, it is built from the record's own
+    snake_case name in `default`."""
 
     direct: str | None = None
     """A single physical location (a path or URI), shared by every protocol."""
@@ -180,47 +191,81 @@ class Dataset(Record):
     # -- identity / schema ----------------------------------------------
 
     @classmethod
-    def load_all(
-        cls, root: str | os.PathLike[str] = DATASETS_ROOT, **context: Any
-    ) -> list[Dataset]:
-        """Every dataset declared under `root`, one file each, stem defaults `name`.
+    def load_all(cls, root: str | os.PathLike[str] | None = None, **context: Any) -> list[Dataset]:
+        """Every dataset declared under `root`, one file each, and registered.
 
         The same registry-of-one-folder shape `IcebergDeployment`'s
         `catalogs/`/`namespaces/` use -- no `tables/` folder anywhere
         declares a table directly; a `Dataset` here deploys autonomously
         against whichever catalog/namespace registry `deploy_iceberg`/
         `deploy_doris` is handed.
+
+        `root` defaults through `rekep.config.folder`: the checkout's
+        `stacks/datasets` when it has one, the user's config home when it
+        does not -- so a repository's own declarations win, and a bare
+        install still has somewhere to keep them. Everything loaded lands in
+        the process-wide registry, so a `ds:/...` reference resolves without
+        reading the directory again.
         """
-        return registry.entries(pathlib.Path(root), cls, context)
+        folder = config.folder("datasets", root if root is not None else DATASETS_ROOT)
+        return [config.register(entry) for entry in registry.entries(folder, cls, context)]
+
+    @classmethod
+    def load(cls, uri: str, root: str | os.PathLike[str] | None = None) -> Dataset:
+        """The dataset `uri` names: from the registry, or by loading the folder."""
+        found = config.lookup(uri, service="datasets")
+        if found is None:
+            cls.load_all(root)
+            found = config.lookup(uri, service="datasets")
+        if found is None:
+            raise KeyError(f"no dataset {uri!r} declared under {config.folder('datasets', root)}")
+        return found
+
+    def dump(self, root: str | os.PathLike[str] | None = None) -> pathlib.Path:
+        """Write this dataset's declaration where `load_all` will find it."""
+        folder = config.folder("datasets", root if root is not None else DATASETS_ROOT, create=True)
+        path = folder / f"{self.dataset_name()}.yaml"
+        self.into_yaml(path)
+        config.register(self)
+        return path
 
     def record_class(self) -> type[Record]:
-        cls = locate(self.record)
+        """The `Record` class `schema` names."""
+        cls = locate(self.schema)
         if not (isinstance(cls, type) and issubclass(cls, Record)):
-            raise TypeError(f"{self.record} is not a Record class")
+            raise TypeError(f"{self.schema} is not a Record class")
         return cls
 
+    def arrow_schema(self) -> pyarrow.Schema:
+        """This dataset's schema, as Arrow -- the view everything else uses."""
+        return self.record_class().into_arrow_schema()
+
     def dataset_name(self) -> str:
-        """This dataset's name; the record's snake_case name when undeclared."""
-        return self.name or self.record_class().doris_table_name()
+        """This dataset's name: the URI's last level, else the record's own."""
+        if self.uri:
+            return self.resource_uri().name()
+        return self.record_class().doris_table_name()
+
+    def dataset_namespace(self) -> str:
+        """The namespace this dataset is identified under."""
+        return self.resource_uri().namespace() if self.uri else "default"
 
     def resource_uri(self) -> ResourceUri:
         """This dataset's identity: `ds:/catalog/namespace/name#branch`.
 
         A `ResourceUri`, the one place a job's and a dataset's identifiers
         are built and parsed -- so the two can never collide even when they
-        share a namespace and a name. The branch rides along as the
-        fragment, because a branch is not a different dataset.
+        share a namespace and a name, and every spelling resolves to one
+        identity. The branch rides along as the fragment, because a branch
+        is not a different dataset; a declared `uri` without one picks up
+        whatever `protocols.iceberg.branch` says.
         """
+        if self.uri:
+            parsed = ResourceUri.parse(self.uri, service="datasets")
+            return parsed if parsed.branch else parsed.at(self.iceberg_branch())
         return ResourceUri.of(
-            "datasets",
-            *(self.namespace or "").split("/"),
-            self.dataset_name(),
-            branch=self.iceberg_branch(),
+            "datasets", self.record_class().doris_table_name(), branch=self.iceberg_branch()
         )
-
-    def uri(self) -> str:
-        """This dataset's identity as a string: `ds:/namespace/name#branch`."""
-        return str(self.resource_uri())
 
     def schema_facet(self) -> dict[str, Any]:
         """OpenLineage `SchemaDatasetFacet`: the record's fields, by name."""
@@ -228,7 +273,7 @@ class Dataset(Record):
 
     def facets(self) -> dict[str, Any]:
         """Every static facet this dataset carries; `schema` and `dataSource` always included."""
-        return {"schema": self.schema_facet(), "dataSource": {"uri": self.uri()}}
+        return {"schema": self.schema_facet(), "dataSource": {"uri": str(self.resource_uri())}}
 
     # -- location -------------------------------------------------------
 
@@ -330,7 +375,7 @@ class Dataset(Record):
             if not keys:
                 raise ValueError(
                     f"dataset {self.dataset_name()!r}: merge_by=True needs a primary key, but "
-                    f"{self.record} declares no Arrow(key=True) field; declare one or pass the "
+                    f"{self.schema} declares no Arrow(key=True) field; declare one or pass the "
                     "columns to merge on"
                 )
             return keys
@@ -408,9 +453,9 @@ class Dataset(Record):
         from rekep.records.iceberg import IcebergTable
 
         return IcebergTable(
-            record=self.record,
+            record=self.schema,
             name=self.dataset_name(),
-            namespace=self.namespace,
+            namespace=self.dataset_namespace(),
             location=self.location("iceberg"),
             properties=self.table_properties("iceberg"),
         )
@@ -420,9 +465,9 @@ class Dataset(Record):
         from rekep.records.doris import DorisTable
 
         return DorisTable(
-            record=self.record,
+            record=self.schema,
             name=self.dataset_name(),
-            namespace=self.namespace,
+            namespace=self.dataset_namespace(),
             properties=self.table_properties("doris"),
         )
 
@@ -451,7 +496,7 @@ class Dataset(Record):
     def as_input(self, **input_facets: Any) -> InputDataset:
         """This dataset as a run's `InputDataset` reference."""
         return InputDataset(
-            namespace=self.namespace,
+            namespace=self.dataset_namespace(),
             name=self.dataset_name(),
             facets=self.facets(),
             input_facets=input_facets,
@@ -460,7 +505,7 @@ class Dataset(Record):
     def as_output(self, **output_facets: Any) -> OutputDataset:
         """This dataset as a run's `OutputDataset` reference."""
         return OutputDataset(
-            namespace=self.namespace,
+            namespace=self.dataset_namespace(),
             name=self.dataset_name(),
             facets=self.facets(),
             output_facets=output_facets,
@@ -493,7 +538,7 @@ class Dataset(Record):
             return None
         return Lineage(
             client=client,
-            job=Job(name=f"{self.dataset_name()}.{operation}", namespace=self.namespace),
+            job=Job(name=f"{self.dataset_name()}.{operation}", namespace=self.dataset_namespace()),
             **references,
         )
 
@@ -1564,7 +1609,11 @@ def _orphan_files(table: Any, grace: datetime.timedelta) -> list[str]:
     them apart.
     """
     location = table.location()
-    filesystem, root = resolve_filesystem(location)
+    try:
+        filesystem, root = resolve_filesystem(_listable(location))
+    except Exception as error:  # a location no pyarrow filesystem can enumerate
+        logger.warning("cannot list %s to look for orphans (%s); nothing freed", location, error)
+        return []
     cutoff = datetime.datetime.now(datetime.UTC) - grace
 
     reachable = {
@@ -1597,6 +1646,20 @@ def _orphan_files(table: Any, grace: datetime.timedelta) -> list[str]:
             continue
         orphans.append(f"{location.rstrip('/')}/{info.path[len(root) :].lstrip('/')}")
     return sorted(orphans)
+
+
+def _listable(location: str) -> str:
+    """A location `pyarrow.fs` can enumerate.
+
+    `file://` with a *relative* path -- `file://stacks/iceberg/warehouse` --
+    is a spelling catalogs accept and pyarrow refuses, because the first
+    segment reads as a hostname. It is unambiguous in practice (there is no
+    such host), so it is resolved as the path it plainly means rather than
+    failing a maintenance pass over a URI's punctuation.
+    """
+    if location.startswith("file://") and not location.startswith("file:///"):
+        return location[len("file://") :]
+    return location
 
 
 def _bare_path(uri: str | None) -> str:

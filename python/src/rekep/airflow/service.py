@@ -15,7 +15,7 @@ import logging
 import os
 import pathlib
 
-from rekep.job import JOBS_ROOT, Job, load_all
+from rekep.job import Job, load_all
 
 __all__ = ["Airflow", "Dags"]
 
@@ -35,7 +35,7 @@ globals()["{name}"] = build(load(r"{side_file}"))
 class Dags:
     """The deployable DAG modules a jobs folder declares."""
 
-    def __init__(self, root: str | os.PathLike[str] = JOBS_ROOT) -> None:
+    def __init__(self, root: str | os.PathLike[str] | None = None) -> None:
         self.root = pathlib.Path(root)
 
     def list(self) -> list[Job]:
@@ -82,13 +82,13 @@ class Dags:
 class Airflow:
     """One deployment's Airflow stack: the dags resource and its deploy."""
 
-    def __init__(self, root: str | os.PathLike[str] = JOBS_ROOT) -> None:
+    def __init__(self, root: str | os.PathLike[str] | None = None) -> None:
         self.dags = Dags(root)
 
     @classmethod
     def deploy_folder(
         cls,
-        root: str | os.PathLike[str] = JOBS_ROOT,
+        root: str | os.PathLike[str] | None = None,
         *,
         dags_folder: str | os.PathLike[str],
         dry_run: bool = False,

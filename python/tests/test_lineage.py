@@ -113,7 +113,7 @@ def test_a_collector_keeps_order_and_filters_by_state() -> None:
 
 @pytest.mark.parametrize(
     "resource",
-    [Dataset(record="rekep.models.Log", name="d"), Passthrough(name="p")],
+    [Dataset(schema="rekep.models.Log", uri="ds:/d"), Passthrough(name="p")],
     ids=["dataset", "job"],
 )
 def test_nothing_is_bound_until_something_binds_it(resource: object) -> None:
@@ -122,5 +122,5 @@ def test_nothing_is_bound_until_something_binds_it(resource: object) -> None:
 
 def test_binding_twice_keeps_the_last_client() -> None:
     first, second = Collector(), Collector()
-    dataset = Dataset(record="rekep.models.Log", name="d").with_lineage(first)
+    dataset = Dataset(schema="rekep.models.Log", uri="ds:/d").with_lineage(first)
     assert dataset.with_lineage(second).lineage_client() is second

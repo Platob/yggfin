@@ -41,9 +41,10 @@ from rekep.records import Record, record
 from rekep.render import render
 from rekep.require import require
 
-#: Where job side files live, relative to the deployment root. Overridable per
-#: call and by environment, so a jobs folder can point anywhere.
-JOBS_ROOT = pathlib.Path(os.environ.get("REKEP_JOBS_ROOT", "stacks/jobs"))
+#: Where job side files live when nothing says otherwise: the checkout's
+#: `stacks/jobs` if it has one, else the user's `~/.config/rekep/jobs` -- see
+#: `rekep.config.folder`. `REKEP_JOBS_ROOT` overrides both.
+JOBS_ROOT = os.environ.get("REKEP_JOBS_ROOT")
 
 #: Config extensions a jobs directory is scanned for.
 EXTENSIONS = (".yaml", ".yml", ".toml", ".json")
@@ -71,6 +72,12 @@ class Job(Record):
 
     description: str | None = None
     """One line on what this job does."""
+
+    uri: str | None = None
+    """This job's identity as a path: `job:/namespace/name`.
+
+    An override for `namespace`/`name`, in the same spelling a dataset uses,
+    for a declaration that would rather name itself once than twice."""
 
     source: str | None = None
     """URL of the log the default `extract` reads, None when overridden."""
@@ -128,13 +135,13 @@ class Job(Record):
 
         A `ResourceUri`, the one place a job's and a dataset's identifiers
         are built and parsed -- so the two can never collide even when they
-        share a namespace and a name, and either spells the same way.
+        share a namespace and a name, and every spelling resolves to one
+        identity. A declared `uri` wins; otherwise it is built from
+        `namespace` and `name`, which is what an orchestrator uses anyway.
         """
+        if self.uri:
+            return ResourceUri.parse(self.uri, service="jobs")
         return ResourceUri.of("jobs", *(self.namespace or "").split("/"), self.name)
-
-    def uri(self) -> str:
-        """This job's identity as a string: `job:/namespace/name`."""
-        return str(self.resource_uri())
 
     def source_code_location_facet(self) -> dict[str, Any]:
         """OpenLineage `SourceCodeLocationJobFacet`: where this job's code lives.
@@ -395,11 +402,18 @@ def load(path: str | os.PathLike[str], **context: Any) -> Job:
     return cls.from_dict(mapping)
 
 
-def load_all(root: str | os.PathLike[str] = JOBS_ROOT, **context: Any) -> list[Job]:
-    """Every job declared under `root`, in name order."""
+def load_all(root: str | os.PathLike[str] | None = None, **context: Any) -> list[Job]:
+    """Every job declared under `root`, in name order, and registered.
+
+    `root` defaults through `rekep.config.folder`: the checkout's
+    `stacks/jobs` when it has one, the user's config home when it does not.
+    """
+    from rekep import config
+
+    folder = config.folder("jobs", root if root is not None else JOBS_ROOT)
     return [
-        load(path, **context)
-        for path in sorted(pathlib.Path(root).glob("*"))
+        config.register(load(path, **context))
+        for path in sorted(folder.glob("*"))
         if path.suffix in EXTENSIONS
     ]
 
