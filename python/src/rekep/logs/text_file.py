@@ -66,24 +66,30 @@ DEFAULT_READ_BYTE_SIZE = 1 << 22
 class TextFile(Dataset, io.BufferedIOBase):
     """A text log addressed by URI: a dataset, and a readable binary stream.
 
-    Reading parses the lines into Arrow batches; writing renders batches back
-    into lines, in Arrow string kernels rather than a loop, so a log is a
-    dataset like any other -- `read_arrow_table()`, `write_arrow(batches)` --
-    while staying a plain file underneath.
+        Reading parses the lines into Arrow batches; writing renders batches back
+        into lines, in Arrow string kernels rather than a loop, so a log is a
+        dataset like any other -- `read_arrow_table()`, `write_arrow(batches)` --
+        while staying a plain file underneath.
+
+        Reading works wherever `pyarrow.fs` reaches, object stores included.
+    **Writing needs a filesystem that can append**, which S3 and GCS cannot:
+    they have no append, only a whole-object put, and reading a log back to
+    rewrite it is what a log is least able to afford. Write to a local path
+    and upload, or write to a dataset that owns its own files.
 
     `filesystem` is optional: when omitted it is resolved from `url` at
-    construction -- cached, so an object store's credential chain is not
-    re-walked per file -- while a caller holding a configured filesystem
-    passes it in and has `url` treated as a path on it. Either way `url` is
-    rewritten in `__post_init__` to the path its filesystem understands, so
-    the two fields always agree and `url` can be used directly as the source
-    column.
+        construction -- cached, so an object store's credential chain is not
+        re-walked per file -- while a caller holding a configured filesystem
+        passes it in and has `url` treated as a path on it. Either way `url` is
+        rewritten in `__post_init__` to the path its filesystem understands, so
+        the two fields always agree and `url` can be used directly as the source
+        column.
 
-    Opening stays lazy -- construction resolves the filesystem but touches no
-    data; the first read opens the stream. Arrow infers compression from the
-    path extension, so `app.txt.gz` and `app.txt.zst` decode transparently.
-    Uncompressed logs are opened for random access and are seekable; compressed
-    ones can only be read forward.
+        Opening stays lazy -- construction resolves the filesystem but touches no
+        data; the first read opens the stream. Arrow infers compression from the
+        path extension, so `app.txt.gz` and `app.txt.zst` decode transparently.
+        Uncompressed logs are opened for random access and are seekable; compressed
+        ones can only be read forward.
     """
 
     REDIRECTS: ClassVar[dict[object, str]] = {
@@ -244,10 +250,25 @@ class TextFile(Dataset, io.BufferedIOBase):
             self._append(_rendered(chunk, self.timezone))
 
     def _append(self, payload: bytes) -> None:
-        """Add already-rendered bytes to the end of the file."""
+        """Add already-rendered bytes to the end of the file.
+
+        Appending is the whole of writing here -- a log is a file you add lines
+        to -- and an object store cannot do it: S3 and GCS have no append, only
+        a whole-object put. Reading one back to rewrite it is what a log is
+        least able to afford, so the refusal is passed on with the two things
+        that do work in its place.
+        """
         if not payload:
             return
-        with self.filesystem.open_append_stream(self.url) as stream:
+        try:
+            stream = self.filesystem.open_append_stream(self.url)
+        except pyarrow.ArrowNotImplementedError as error:
+            raise NotImplementedError(
+                f"{self.filesystem.type_name} cannot append, and a log is written by appending; "
+                "write to a local path and upload the file, or write to a dataset that owns its "
+                "own files (IcebergDataset)"
+            ) from error
+        with stream:
             stream.write(payload)
 
     # -- converting ---------------------------------------------------------

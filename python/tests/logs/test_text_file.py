@@ -410,6 +410,21 @@ def test_a_timestamp_is_read_not_sliced_at_another_width(stamp: bytes, microseco
     assert _local_micros([stamp])[0].as_py().microsecond == microsecond
 
 
+def test_a_store_that_cannot_append_says_so(tmp_path: Path) -> None:
+    """S3 and GCS have no append, and a log is written by appending.
+
+    The refusal comes from `pyarrow.fs` itself, so no network is involved --
+    what is tested is that it arrives naming the two things that do work
+    instead of as an `ArrowNotImplementedError` from three frames down.
+    """
+    import pyarrow.fs
+
+    store = pyarrow.fs.S3FileSystem(endpoint_override="http://127.0.0.1:1", region="us-east-1")
+    log = TextFile(url="bucket/app.txt", filesystem=store)
+    with pytest.raises(NotImplementedError, match="cannot append"):
+        log._append(b"a line\n")
+
+
 def test_from_path_takes_the_zone_too(plain: Path) -> None:
     """The documented example: a local log is the one most likely to be local time."""
     naive = TextFile.from_path(plain).read_arrow_table()

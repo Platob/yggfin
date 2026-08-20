@@ -39,6 +39,12 @@ whatever consumes them.
     log = TextFile.from_url("logs/app.txt", filesystem)
     ```
 
+    **Reading** works wherever `pyarrow.fs` reaches. **Writing** does not: a log
+    is written by appending, and S3 and GCS have no append — only a whole-object
+    put, and reading a log back to rewrite it is what a log is least able to
+    afford. Write to a local path and upload it, or push the rows into an
+    [Iceberg table](iceberg.md), which owns its own files.
+
 === "Tuning"
 
     ```python
