@@ -615,6 +615,51 @@ def test_a_signed_zero_key_matches_the_zero_it_equals(
     assert set(rows.column("size").to_pylist()) == {2}, "and every one of them updated"
 
 
+@pytest.mark.parametrize("side", ["chunk", "stored"])
+def test_both_signs_of_zero_at_once_are_refused_as_the_duplicate_they_are(
+    tmp_path: Path, side: str
+) -> None:
+    """One key cannot arrive twice, however it is spelled.
+
+    The signs are folded so `-0.0` finds the `0.0` it equals -- which means a
+    chunk, or a table, carrying *both* holds one key twice. Checked on the
+    folded keys, because a check on the raw column groups them apart and lets
+    the join fold them afterwards: the row is then written once per copy, and
+    the table it leaves is one no later merge can touch.
+    """
+
+    @field
+    class Level(Convertible):
+        """A price level."""
+
+        price: float
+        """The key, deliberately a float."""
+
+        size: int
+        """Quantity."""
+
+    schema = Level.FIELD.into_arrow_schema()
+    catalog = IcebergCatalog(name="zeros", properties=properties(tmp_path, "zeros"))
+    dataset = catalog.dataset("trading.levels", struct=Level.FIELD)
+
+    def rows(prices: list[float], size: int) -> pyarrow.Table:
+        return pyarrow.Table.from_pydict(
+            {"price": prices, "size": [size] * len(prices)}, schema=schema
+        )
+
+    if side == "chunk":
+        dataset.write_arrow(rows([0.0, 1.0], 1), commit_row_size=0)
+        incoming = rows([0.0, -0.0, 1.0], 2)
+    else:
+        # Two commits, so the copies land in different files -- which is where
+        # pyiceberg's own per-batch check cannot see them either.
+        dataset.write_arrow(rows([0.0, 1.0], 1), commit_row_size=0)
+        dataset.write_arrow(rows([-0.0], 2), commit_row_size=0)
+        incoming = rows([0.0, 1.0], 3)
+    with pytest.raises(ValueError, match="[Dd]uplicate"):
+        dataset.write_arrow(incoming, merge_by=["price"], commit_row_size=0)
+
+
 def test_a_null_merge_key_is_refused(stored) -> None:
     """No predicate finds the row it would match, so merging it duplicates it."""
     rows = pyarrow.Table.from_pydict(

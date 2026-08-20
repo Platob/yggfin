@@ -533,6 +533,12 @@ class IcebergDataset(Dataset):
             raise ValueError(
                 f"{SOURCE_INDEX} and {TARGET_INDEX} are reserved for joining DataFrames"
             )
+        # Before the duplicate check, not after it: `-0.0` and `0.0` are one
+        # key everywhere else here, and a chunk carrying both would otherwise
+        # pass a check that groups them apart and then be folded into one key
+        # by the join -- which writes the row twice and leaves a table no later
+        # merge can touch.
+        chunk = _normalised_keys(chunk, join)
         if upsert_util.has_duplicate_rows(chunk, join):
             raise ValueError(
                 "Duplicate rows found in source dataset based on the key columns. "
@@ -570,7 +576,6 @@ class IcebergDataset(Dataset):
         # hands back, and converting what was *read* costs less than converting
         # what is being written -- a streaming merge reads far fewer rows than
         # it writes.
-        chunk = _normalised_keys(chunk, join)
         shape = field_of(chunk.schema)
         reference = branch or self.branch or MAIN
         scan = table.scan(row_filter=_key_ranges(chunk, join))
@@ -1444,22 +1449,30 @@ def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) 
         matched = _align_keys(matched, chunk, join)
     except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, pyarrow.ArrowTypeError):
         return upsert_util.get_rows_to_update(chunk, matched, join)
-    if upsert_util.has_duplicate_rows(matched, join):
+    # The stored keys as the join will see them, which is not as Arrow groups
+    # them: `-0.0` and `0.0` hash apart there and are one key here, so a table
+    # holding both would pass a duplicate check made on the raw column and then
+    # be folded into one key by the join -- matching a single chunk row twice
+    # and writing it twice. Built once and handed to the join below.
+    stored = _keys_of(matched, list(join), TARGET_INDEX)
+    if upsert_util.has_duplicate_rows(stored, join):
         raise ValueError("Target table has duplicate rows, aborting upsert")
     try:
-        return _changed_by_kernel(chunk, matched, join, compare)
+        return _changed_by_kernel(chunk, matched, stored, join, compare)
     except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, pyarrow.ArrowTypeError):
         return upsert_util.get_rows_to_update(chunk, matched, join)
 
 
 def _changed_by_kernel(
-    chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str], compare: Sequence[str]
+    chunk: pyarrow.Table,
+    matched: pyarrow.Table,
+    stored: pyarrow.Table,
+    join: Sequence[str],
+    compare: Sequence[str],
 ) -> pyarrow.Table:
     """`_changed`'s fast path: one pass per column instead of one pass per row."""
     keys = list(join)
-    pairs = _keys_of(chunk, keys, SOURCE_INDEX).join(
-        _keys_of(matched, keys, TARGET_INDEX), keys=keys, join_type="inner"
-    )
+    pairs = _keys_of(chunk, keys, SOURCE_INDEX).join(stored, keys=keys, join_type="inner")
     if pairs.num_rows == 0:
         return chunk.schema.empty_table()
 
