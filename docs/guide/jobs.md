@@ -44,13 +44,21 @@ schema'd by the `Job` record itself and rendered with Jinja before parsing:
 
 ```yaml
 # stacks/jobs/passthrough.yaml
-job: rekep.job.Passthrough
-uri: rekep:///jobs/passthrough
+job: passthrough                    # the class, by name -- never an import path
+uri: rekep:///jobs/passthrough      # this task's identity
 schedule: "@daily"
 source: "{{ env.get('REKEP_SOURCE_URL', '') }}"
-consumes: [rekep.models.Log]
-produces: [rekep.models.Log]
+consumes: [rekep:///records/log]    # the records it reads, by URI
+produces: [rekep:///records/log]
 ```
+
+Nothing here points at a module. `job:` names a **declared class** — writing
+`@record class Passthrough(Job)` is the declaration, and `rekep.classes` is
+where a name is looked back up — and `consumes`/`produces` name **records by
+URI**, the same way a dataset does. A file move renames nothing, and the
+identity in a config stops being an import statement in disguise. A
+deployment's own modules are declared to rekep once, in `$REKEP_MODULES`,
+rather than in every reference.
 
 ```python
 from rekep.job import find, load, load_all

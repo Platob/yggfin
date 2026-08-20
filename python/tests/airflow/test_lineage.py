@@ -22,8 +22,8 @@ class Report(Record):
     """ISO date the report covers."""
 
 
-def test_asset_uri_is_stable_and_scheme_qualified() -> None:
-    assert asset_uri(Log) == "rekep:///records/rekep.models.log.Log"
+def test_an_asset_uri_is_the_records_own_identity() -> None:
+    assert asset_uri(Log) == "rekep:///records/log"
     assert asset_uri(Log) == asset_uri(Log)
 
 
@@ -33,7 +33,7 @@ def test_asset_name_is_the_class_name() -> None:
 
 def test_metadata_carries_the_contract() -> None:
     metadata = metadata_of(Log)
-    assert metadata["record"] == "rekep.models.log.Log"
+    assert metadata["record"] == "rekep:///records/log"
     assert metadata["description"] == "One parsed line of a trading log."
     assert "unix: int64" in metadata["fields"]
     assert metadata["rekep_version"]
@@ -90,4 +90,4 @@ def test_an_asset_uri_is_a_real_resource_uri() -> None:
     assert asset_uri(Report).startswith("rekep:///")
     parsed = ResourceUri.parse(asset_uri(Report))
     assert parsed.service == lineage.ASSET_SERVICE
-    assert parsed.name().endswith(".Report")
+    assert parsed.name() == Report.record_name()

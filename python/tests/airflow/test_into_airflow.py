@@ -150,8 +150,8 @@ def test_a_task_overrides_the_dags_own_task_defaults(sdk: Any) -> None:
 def test_lineage_is_derived_not_declared(sdk: Any) -> None:
     declare(
         "rekep:///jobs/pipeline/parse",
-        consumes=["rekep.models.Log"],
-        produces=["rekep.models.ParsedMessage"],
+        consumes=["rekep:///records/log"],
+        produces=["rekep:///records/parsed_message"],
     )
     built = Dag(
         uri="rekep:///dags/pipeline/demo",

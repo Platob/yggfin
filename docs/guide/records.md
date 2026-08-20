@@ -68,6 +68,27 @@ The same two lists are what a DDL `PRIMARY KEY` clause, an Iceberg
 hive-partitioned file write all resolve to — none of them re-walks the
 declaration.
 
+## A record's name and URI
+
+A record answers to one name -- its class name, snake_cased -- and that name
+is its identity everywhere outside Python:
+
+```python
+Log.record_name()          # "log"      -- and the table name every protocol defaults to
+Log.record_uri()           # rekep:///records/log
+Record.locate("log")       # the class back, from the name
+Record.locate("rekep:///records/log")
+```
+
+Writing `@record class Log(Record)` is what **declares** it: the decorator
+registers the class under that name, which is how a side file can point at it
+without naming a module (`schema: rekep:///records/log`). Since importing is
+what declares, rekep imports its own `models` and `jobs` packages, and a
+deployment names its own modules in `$REKEP_MODULES` -- imported once, the
+first time a lookup misses. Two records sharing a name are fine until someone
+looks that name up, and then they are refused together rather than one being
+picked silently.
+
 ## Casting onto a record's schema
 
 A record is also a *target* shape, for data that arrives nearly right:

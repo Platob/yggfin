@@ -148,7 +148,7 @@ class Tutorial:
                         endpoint=f"sqlite:///{root}/catalog.db", warehouse=f"file://{root}/wh"
                     )
                 ],
-                tables=[IcebergTable(record="rekep.models.Log", name="logs")],
+                tables=[IcebergTable(record="rekep:///records/log", name="logs")],
             )
         )
         with self.progress(("catalog", "namespace", "table")) as advance:
@@ -203,10 +203,10 @@ class Tutorial:
         )
         declared = (
             "# stacks/jobs/passthrough.yaml\n"
-            "job: rekep.job.Passthrough\n"
+            "job: passthrough\n"
             "uri: rekep:///jobs/passthrough\n"
-            "consumes: [rekep.models.Log]\n"
-            "produces: [rekep.models.Log]\n"
+            "consumes: [rekep:///records/log]\n"
+            "produces: [rekep:///records/log]\n"
             "\n"
             "# stacks/dags/passthrough.yaml\n"
             "uri: rekep:///dags/passthrough\n"

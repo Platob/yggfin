@@ -4,7 +4,7 @@
 
 ## Log
 
-`rekep.models.log.Log`
+`rekep:///records/log`
 
 One parsed line of a trading log.
 
@@ -21,7 +21,7 @@ One parsed line of a trading log.
 
 ## ParsedMessage
 
-`rekep.models.parsed_message.ParsedMessage`
+`rekep:///records/parsed_message`
 
 One log line's message, parsed as `|`-delimited `key=value` segments.
 

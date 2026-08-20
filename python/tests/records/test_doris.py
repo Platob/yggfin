@@ -61,7 +61,7 @@ def test_catalogs_and_namespaces_come_from_their_folders(tmp_path: pathlib.Path)
 def test_a_tables_folder_is_no_longer_loaded(tmp_path: pathlib.Path) -> None:
     """Tables deploy autonomously now (`rekep.dataset.Dataset`) -- a stray
     `tables/` folder from an older-style deployment is simply never read."""
-    declare(tmp_path, "tables", "fills", "record: rekep.models.Log\n")
+    declare(tmp_path, "tables", "fills", "record: rekep:///records/log\n")
     assert DorisDeployment.load(tmp_path).tables == []
 
 
@@ -89,9 +89,11 @@ def test_a_dangling_catalog_fails_at_lookup(tmp_path: pathlib.Path) -> None:
         DorisDeployment.load(tmp_path).namespace("lake")
 
 
-def test_a_table_naming_a_non_record_is_refused() -> None:
-    with pytest.raises(TypeError, match="not a Record"):
-        DorisTable(record="pathlib.Path").record_class()
+def test_a_table_naming_an_undeclared_record_is_refused() -> None:
+    """The message lists what is declared, because the cause is almost always
+    a module nobody imported."""
+    with pytest.raises(KeyError, match="no record named 'nowhere'"):
+        DorisTable(record="rekep:///records/nowhere").record_class()
 
 
 def test_properties_flow_catalog_then_namespace_then_table(tmp_path: pathlib.Path) -> None:

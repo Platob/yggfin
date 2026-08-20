@@ -30,7 +30,8 @@ with LogFile.from_path("app-2026-08-14.txt.gz") as log:
 
 Compression is inferred from the extension and decoded in Arrow's C++ layer;
 `.gz`, `.zst`, `.bz2` and `.lz4` all work. The parsed columns are defined by
-`rekep.models.Log` — override `LogFile.RECORD` to reshape them.
+the `Log` record (`rekep:///records/log`) — override `LogFile.RECORD` to
+reshape them.
 
 ## Develop
 

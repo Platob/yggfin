@@ -8,12 +8,12 @@ SAMPLE = pathlib.Path(__file__).parent.parent / "data" / "app_sample.txt"
 
 def test_produces_defaults_to_log() -> None:
     job = FilesToLogs(uri="rekep:///jobs/f2l")
-    assert job.produces == ["rekep.models.Log"]
+    assert job.produces == ["rekep:///records/log"]
     assert job.produced_records() == [Log]
 
 
 def test_produces_override_wins() -> None:
-    job = FilesToLogs(uri="rekep:///jobs/f2l", produces=["rekep.models.ParsedMessage"])
+    job = FilesToLogs(uri="rekep:///jobs/f2l", produces=["rekep:///records/parsed_message"])
     assert job.produced_records() == [ParsedMessage]
 
 

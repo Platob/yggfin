@@ -54,10 +54,12 @@ class LogsToRecords(Job):
     count survives the transform and every input line stays traceable.
     """
 
-    consumes: list[str] = dataclasses.field(default_factory=lambda: ["rekep.models.Log"])
+    consumes: list[str] = dataclasses.field(default_factory=lambda: ["rekep:///records/log"])
     """Defaults to `Log` -- this job structures what `FilesToLogs` produces."""
 
-    produces: list[str] = dataclasses.field(default_factory=lambda: ["rekep.models.ParsedMessage"])
+    produces: list[str] = dataclasses.field(
+        default_factory=lambda: ["rekep:///records/parsed_message"]
+    )
     """Defaults to `ParsedMessage` -- the transform's only possible output."""
 
     def arrow_transform(

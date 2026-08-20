@@ -44,7 +44,7 @@ def test_a_tables_folder_is_no_longer_loaded(tmp_path: pathlib.Path) -> None:
     """Tables deploy autonomously now (`rekep.dataset.Dataset`) -- a stray
     `tables/` folder from an older-style deployment is simply never read."""
     declare(tmp_path, "namespaces", "prod")
-    declare(tmp_path, "tables", "logs", "record: rekep.models.Log\nnamespace: prod\n")
+    declare(tmp_path, "tables", "logs", "record: rekep:///records/log\nnamespace: prod\n")
     assert IcebergDeployment.load(tmp_path).tables == []
 
 

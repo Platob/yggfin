@@ -1,5 +1,11 @@
 """rekep: trading log parser."""
 
+# Importing is declaring: a class can only be found by name once Python has
+# run its `class` statement, so the packages this one ships are imported here
+# rather than left to whoever happens to reference them first. A deployment's
+# own modules go in $REKEP_MODULES -- see `rekep.classes`.
+from rekep import jobs as jobs
+from rekep import models as models
 from rekep.convert import Convertible
 from rekep.dag import Dag
 from rekep.dataset import Dataset

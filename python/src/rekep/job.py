@@ -39,7 +39,6 @@ from typing import Any
 
 import pyarrow
 
-from rekep.imports import locate
 from rekep.namespace import Namespace, ResourceUri
 from rekep.records import Record, record
 from rekep.records import registry as side_files
@@ -98,10 +97,10 @@ class Job(Record):
     the same key are one decision to resolve, not two tags to carry."""
 
     consumes: list[str] = dataclasses.field(default_factory=list)
-    """Dotted paths of the records this task reads."""
+    """The records this task reads, as URIs (`rekep:///records/log`)."""
 
     produces: list[str] = dataclasses.field(default_factory=list)
-    """Dotted paths of the records this task writes."""
+    """The records this task writes, as URIs (`rekep:///records/log`)."""
 
     repo_url: str | None = None
     """Git remote of the repository this task's code lives in."""
@@ -240,18 +239,18 @@ class Job(Record):
 
     def consumed_records(self) -> list[type[Record]]:
         """The record classes behind `consumes`."""
-        return [_record_class(path) for path in self.consumes]
+        return [Record.locate(reference) for reference in self.consumes]
 
     def produced_records(self) -> list[type[Record]]:
         """The record classes behind `produces`."""
-        return [_record_class(path) for path in self.produces]
+        return [Record.locate(reference) for reference in self.produces]
 
     def inputs(self) -> list[Any]:
         """The datasets `consumes` names, as run references."""
         from rekep.run import InputDataset
 
         return [
-            InputDataset(namespace=self.task_namespace(), name=cls.doris_table_name())
+            InputDataset(namespace=self.task_namespace(), name=cls.record_name())
             for cls in self.consumed_records()
         ]
 
@@ -260,7 +259,7 @@ class Job(Record):
         from rekep.run import OutputDataset
 
         return [
-            OutputDataset(namespace=self.task_namespace(), name=cls.doris_table_name())
+            OutputDataset(namespace=self.task_namespace(), name=cls.record_name())
             for cls in self.produced_records()
         ]
 
@@ -322,15 +321,15 @@ def arrow_task(
 
     `config=` takes an already-built `Job` (typically one loaded from a side
     file) and binds `fn` onto it, config staying authoritative; everything
-    else builds a fresh one. Lineage takes record classes or dotted paths
-    interchangeably, like `Job.consumes`/`produces` do.
+    else builds a fresh one. Lineage takes record classes or the URIs that
+    name them interchangeably, like `Job.consumes`/`produces` do.
     """
 
     def wrap(target: Callable[..., Any]) -> Job:
         job = config or Job(
             uri=uri or str(ResourceUri.of("jobs", target.__name__)),
-            consumes=[_dotted(entry) for entry in consumes],
-            produces=[_dotted(entry) for entry in produces],
+            consumes=[_reference(entry) for entry in consumes],
+            produces=[_reference(entry) for entry in produces],
             **job_kwargs,
         )
         return job.bind(target)
@@ -338,27 +337,26 @@ def arrow_task(
     return wrap if fn is None else wrap(fn)
 
 
-def _dotted(entry: type[Record] | str) -> str:
-    if isinstance(entry, str):
-        return entry
-    return f"{entry.__module__}.{entry.__qualname__}"
+def _reference(entry: type[Record] | str) -> str:
+    """A record class or a reference to one, as the reference it is written as."""
+    return entry if isinstance(entry, str) else str(entry.record_uri())
 
 
 def load(path: str | os.PathLike[str], **context: Any) -> Job:
     """Build the task a side file declares.
 
-    The file names its class under the `job` key and configures it with the
-    rest; it may use Jinja (`{{ env.BUCKET }}`), rendered with `context` and
-    the environment before parsing. Which job classes exist is Python's
-    business -- the side file only picks one and fills its fields in.
+    The file names its class under the `job` key -- by name (`files_to_logs`),
+    never by import path -- and configures it with the rest; it may use Jinja
+    (`{{ env.BUCKET }}`), rendered with `context` and the environment before
+    parsing. Which job classes exist is Python's business: the side file only
+    picks a declared one and fills its fields in.
     """
     path = pathlib.Path(path)
     mapping = side_files.parse(path, context)
-    dotted = mapping.pop("job", None)
-    if not dotted:
+    declared = mapping.pop("job", None)
+    if not declared:
         raise ValueError(f"{path} declares no `job:` class")
-    cls = _job_class(str(dotted))
-    return cls.from_dict(mapping)
+    return Job.locate(str(declared)).from_dict(mapping)
 
 
 def load_all(root: str | os.PathLike[str] | None = None, **context: Any) -> list[Job]:
@@ -393,17 +391,3 @@ def find(uri: str, root: str | os.PathLike[str] | None = None, **context: Any) -
     if found is None:
         raise KeyError(f"no job {uri!r} declared under {config.folder('jobs', root)}")
     return found
-
-
-def _job_class(dotted: str) -> type[Job]:
-    cls = locate(dotted)
-    if not (isinstance(cls, type) and issubclass(cls, Job)):
-        raise TypeError(f"{dotted} is not a Job subclass")
-    return cls
-
-
-def _record_class(dotted: str) -> type[Record]:
-    cls = locate(dotted)
-    if not (isinstance(cls, type) and issubclass(cls, Record)):
-        raise TypeError(f"{dotted} is not a Record")
-    return cls

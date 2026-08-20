@@ -334,16 +334,16 @@ def _unique(classes: Iterable[type[Record]]) -> list[type[Record]]:
 def load(path: str | os.PathLike[str], **context: Any) -> Dag:
     """Build the dag a side file declares.
 
-    The file may name its class under `dag:` -- for a subclass that overrides
-    `run` or `into_airflow` -- and configures it with the rest. Unlike a job
-    side file, naming one is optional: a graph of references has nothing to
-    subclass for, so `Dag` itself is the default rather than a required
-    ceremony. Jinja is rendered before parsing, like everywhere else.
+    The file may name its class under `dag:` -- by name, for a subclass that
+    overrides `run` or `into_airflow` -- and configures it with the rest.
+    Unlike a job side file, naming one is optional: a graph of references has
+    nothing to subclass for, so `Dag` itself is the default rather than a
+    required ceremony. Jinja is rendered before parsing, like everywhere else.
     """
     path = pathlib.Path(path)
     mapping = side_files.parse(path, context)
-    dotted = mapping.pop("dag", None)
-    cls = _dag_class(str(dotted)) if dotted else Dag
+    declared = mapping.pop("dag", None)
+    cls = Dag.locate(str(declared)) if declared else Dag
     return cls.from_dict(mapping)
 
 
@@ -370,12 +370,3 @@ def find(uri: str, root: str | os.PathLike[str] | None = None, **context: Any) -
     if found is None:
         raise KeyError(f"no dag {uri!r} declared under {config.folder('dags', root)}")
     return found
-
-
-def _dag_class(dotted: str) -> type[Dag]:
-    from rekep.imports import locate
-
-    cls = locate(dotted)
-    if not (isinstance(cls, type) and issubclass(cls, Dag)):
-        raise TypeError(f"{dotted} is not a Dag subclass")
-    return cls

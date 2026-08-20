@@ -21,7 +21,7 @@
 # named "main" or "master" -- Iceberg requires a table's very first write
 # (before it has any snapshot at all) to land on "main", so trunk has to
 # resolve there exactly, not through git_branch_slug's own spelling of it.
-schema: rekep.models.ParsedMessage
+schema: rekep:///records/parsed_message
 uri: rekep:///datasets/default/parsed_messages
 protocols:
   iceberg:

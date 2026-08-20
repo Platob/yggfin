@@ -22,6 +22,8 @@ from typing import Any, ClassVar, Self, Union, get_args, get_origin, get_type_hi
 import pyarrow
 import pyarrow.fs
 
+from rekep import classes
+from rekep.classes import snake
 from rekep.convert import Convertible
 from rekep.records.annotations import (
     MAPPING_ORIGINS,
@@ -70,7 +72,7 @@ class dualmethod:
         return types.MethodType(self.method, instance if instance is not None else owner)
 
 
-def record(cls: type | None = None, /, **kwargs: Any) -> Any:
+def record(cls: type | None = None, /, declare: bool = True, **kwargs: Any) -> Any:
     """Declare a data product: a dataclass whose fields are its schema.
 
     Wraps `dataclasses.dataclass`, so every keyword it takes is accepted here,
@@ -86,11 +88,18 @@ def record(cls: type | None = None, /, **kwargs: Any) -> Any:
 
     Python mangles those names inside a class body, so both the written and the
     mangled spelling are excluded.
+
+    **Declaring is what makes the class findable by name** (`rekep.classes`),
+    which is how a side file points at it now that nothing points at a module.
+    `declare=False` is for a class built from a schema at runtime
+    (`Record.from_arrow_schema`): that is a *copy of* an identity, and a copy
+    answering to the name of the original would make the name ambiguous.
     """
 
     def wrap(target: type) -> type:
         hide_private(target)
-        return dataclasses.dataclass(**kwargs)(target)
+        built = dataclasses.dataclass(**kwargs)(target)
+        return classes.declare(built) if declare else built
 
     return wrap if cls is None else wrap(cls)
 
@@ -306,12 +315,45 @@ class Record(Convertible):
         from rekep.records.doris import DorisDdlBuilder
 
         builder: Any = getattr(cls, "DORIS_BUILDER", DorisDdlBuilder)
-        return builder().create_table(cls, table_name or _snake(cls.__name__), **kwargs)
+        return builder().create_table(cls, table_name or cls.record_name(), **kwargs)
 
     @classmethod
-    def doris_table_name(cls) -> str:
-        """Default Doris table name: the record's snake_case name."""
-        return _snake(cls.__name__)
+    def record_name(cls) -> str:
+        """This record's own name: its class name, snake_cased.
+
+        The one name it answers to -- the key it is declared under, the last
+        level of `record_uri()`, and the table name every protocol defaults
+        to. A record with one name in a URI and another on a table would be
+        two things to whoever has to match them up.
+        """
+        return snake(cls.__name__)
+
+    @classmethod
+    def record_uri(cls) -> Any:
+        """This record's identity: `rekep:///records/<record_name>`.
+
+        A record carries no *deployment* identity -- where it lands is a
+        `Dataset`'s business -- but it is still something a config has to
+        point at, and everything a config points at here is named by URI.
+
+        `ResourceUri` is imported at the point of use on purpose:
+        `rekep.namespace` is built on this module, so the dependency runs one
+        way at import and meets in the middle only when someone asks.
+        """
+        from rekep.namespace import ResourceUri
+
+        return ResourceUri.of("records", cls.record_name())
+
+    @classmethod
+    def locate(cls, reference: str) -> type:
+        """The declared subclass `reference` names -- a name, or a record URI.
+
+        The replacement for a dotted path: `Record.locate("rekep:///records/log")`
+        and `Job.locate("files_to_logs")` both resolve through the one
+        registry `@record` fills, so a class is found by what it is called
+        rather than by which module happens to hold it.
+        """
+        return classes.find(reference, cls)
 
     @classmethod
     def into_iceberg_ddl(cls, table_name: str | None = None, **kwargs: Any) -> str:
@@ -320,7 +362,7 @@ class Record(Convertible):
         Not cached: `kwargs` carries unhashable mappings, and DDL is emitted
         once per deploy, not once per row.
         """
-        return cls.DDL_BUILDER().create_table(cls, table_name or _snake(cls.__name__), **kwargs)
+        return cls.DDL_BUILDER().create_table(cls, table_name or cls.record_name(), **kwargs)
 
     # -- dump ---------------------------------------------------------------
 
@@ -571,11 +613,6 @@ def _read(source: Target, filesystem: pyarrow.fs.FileSystem | None) -> bytes:
 def _is_text(target: Any) -> bool:
     """Whether an open file wants str rather than bytes."""
     return isinstance(target, io.TextIOBase) or "b" not in getattr(target, "mode", "b")
-
-
-def _snake(name: str) -> str:
-    """`Log` -> `log_record`, for default table names."""
-    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", name).lower()
 
 
 def _identifier(name: str) -> str:

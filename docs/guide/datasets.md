@@ -13,7 +13,7 @@ namespace, name, and the branch — as one path:
 ```python
 from rekep.dataset import Dataset
 
-dataset = Dataset(schema="rekep.models.Log", uri="rekep:///datasets/warehouse/trading/logs")
+dataset = Dataset(schema="rekep:///records/log", uri="rekep:///datasets/warehouse/trading/logs")
 dataset.arrow_schema()          # pyarrow.Schema -- what everything downstream uses
 dataset.schema_facet()          # OpenLineage SchemaDatasetFacet: the same fields
 dataset.resource_uri()          # rekep:///datasets/warehouse/trading/logs
@@ -47,16 +47,18 @@ The branch rides along as the fragment, because a branch is not a different
 dataset: a dataset declaring `protocols.iceberg.branch: dev` has the URI
 `rekep:///datasets/trading/logs#dev`.
 
-`schema` is a dotted path rather than an inline field list on purpose. A
+`schema` is a reference rather than an inline field list on purpose. A
 declaration has to survive a round trip through a file, and only a name can:
 the class *is* the schema, so pointing at it keeps one definition instead of
-two that can disagree.
+two that can disagree. And a **URI** rather than an import path, because the
+record is a resource like everything else here -- named by what it is called,
+not by which module happens to hold it, so moving the file renames nothing.
 
 Undeclared, the URI is built from the record's own snake_case name in
 `default` — so the smallest useful dataset is one line:
 
 ```python
-Dataset(schema="rekep.models.Log")   # rekep:///datasets/log
+Dataset(schema="rekep:///records/log")   # rekep:///datasets/log
 ```
 
 ## Where declarations live
@@ -70,7 +72,7 @@ pipelines is never quietly overridden by a home directory, and a bare
 ```python
 Dataset.load_all()                       # stacks/datasets, else ~/.config/rekep/datasets
 Dataset.load_all("/etc/rekep/datasets")  # or wherever you say
-Dataset(schema="rekep.models.Log", uri="rekep:///datasets/trading/logs").dump()  # writes logs.yaml, schema included
+Dataset(schema="rekep:///records/log", uri="rekep:///datasets/trading/logs").dump()  # writes logs.yaml, schema included
 Dataset.load("rekep:///datasets/trading/logs")         # from the registry, or by loading the folder
 ```
 
@@ -87,7 +89,7 @@ keys and protocol-prefixed overrides:
 
 ```python
 dataset = Dataset(
-    schema="rekep.models.Log",
+    schema="rekep:///records/log",
     direct="s3://lake/log",                              # every protocol's fallback
     properties={"format": "parquet"},                     # shared by every protocol
     protocols={"iceberg": {"location": "s3://lake/iceberg/log"}},  # iceberg's own
@@ -107,7 +109,7 @@ reads the second without opening Python:
 
 ```yaml
 # stacks/datasets/log.yaml, after `rekep dataset sync`
-schema: rekep.models.Log
+schema: rekep:///records/log
 uri: rekep:///datasets/default/log
 description: One parsed line of a trading log.
 fields:
@@ -132,7 +134,7 @@ The other half is configuration, not code. This is
 iterating dataset, as opposed to `log.yaml`'s stable one:
 
 ```yaml
-schema: rekep.models.ParsedMessage
+schema: rekep:///records/parsed_message
 uri: rekep:///datasets/default/parsed_messages
 protocols:
   iceberg:
@@ -353,7 +355,7 @@ defaults to `hive_partitioning()`, built from the same `Arrow(partition=...)`
 declaration Iceberg's partition spec comes from:
 
 ```python
-dataset = Dataset(schema="rekep.models.Log", direct="file:///lake/log")
+dataset = Dataset(schema="rekep:///records/log", direct="file:///lake/log")
 dataset.write_arrow_reader(reader, "file")        # -> /lake/log/date=2026-08-14/part-....parquet
 dataset.write_arrow_reader(reader, "file", partitioning=False)   # flat
 ```
@@ -413,7 +415,7 @@ dataset.read_arrow_reader("file", row_filter=pyarrow.compute.field("hash64") > 0
 ## Branches: write-audit-publish
 
 ```python
-dev = Dataset(schema="rekep.models.ParsedMessage", protocols={"iceberg": {"branch": "dev"}})
+dev = Dataset(schema="rekep:///records/parsed_message", protocols={"iceberg": {"branch": "dev"}})
 dev.write_arrow_reader(reader, "iceberg", table=t)   # main untouched
 dev.read_arrow_reader("iceberg", table=t)            # reads the branch back
 dev.iceberg_publish(table=t)                         # fast-forward main onto it

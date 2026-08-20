@@ -2,7 +2,7 @@
 # key=value, FIX-shaped). The identity picks up the branch suffix here --
 # each branch gets its own working copy of the structured output while it
 # iterates on the parser, unlike files_to_logs.yaml's stable one.
-job: rekep.jobs.LogsToRecords
+job: logs_to_records
 uri: "rekep:///jobs/pipeline{{ git_branch_suffix }}/logs_to_records{{ git_branch_suffix }}"
 description: Structure Log.message into ParsedMessage (pipe key=value, FIX-shaped).
 schedule: "@daily"
@@ -12,9 +12,9 @@ tags:
   domain: pipeline
   stage: structuring
 consumes:
-  - rekep.models.Log
+  - rekep:///records/log
 produces:
-  - rekep.models.ParsedMessage
+  - rekep:///records/parsed_message
 env:
   REKEP_ICEBERG_ROOT: stacks/iceberg
 properties:

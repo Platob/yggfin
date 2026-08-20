@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import pyarrow
 
-from rekep.imports import locate
 from rekep.records import registry
 from rekep.records.annotations import docstring_summary
 from rekep.records.arrow import ArrowFieldBuilder, partition_keys, primary_keys
@@ -251,7 +250,7 @@ class IcebergTable(Record):
     """
 
     record: str
-    """Dotted path of the Record class this table stores."""
+    """The record this table stores: `rekep:///records/<name>`."""
 
     name: str | None = None
     """Table name; defaults to the record's snake_case name."""
@@ -275,10 +274,7 @@ class IcebergTable(Record):
     """The partition spec in Iceberg terms; generated, verified on use."""
 
     def record_class(self) -> type[Record]:
-        cls = locate(self.record)
-        if not (isinstance(cls, type) and issubclass(cls, Record)):
-            raise TypeError(f"{self.record} is not a Record class")
-        return cls
+        return Record.locate(self.record)
 
     def materialized(self) -> IcebergTable:
         """This entry with `fields` and `partition` freshly derived."""
@@ -379,7 +375,7 @@ class IcebergDeployment(Record):
         cls = table.record_class()
         space = self.namespace(kwargs.pop("namespace", None) or table.namespace)
         catalog = self.catalog(space.catalog)
-        name = table.name or cls.doris_table_name()
+        name = table.name or cls.record_name()
         root = space.location or f"{catalog.warehouse.rstrip('/')}/{space.name}"
         return cls.into_iceberg_ddl(
             table_name=f"{catalog.name}.{space.name}.{name}",
@@ -398,7 +394,7 @@ class IcebergDeployment(Record):
     def ddl_for(self, record_class: type[Record], **kwargs: Any) -> str:
         """CREATE TABLE for a record: its table entry when declared, else defaults."""
         table = self.table(record_class) or IcebergTable(
-            record=f"{record_class.__module__}.{record_class.__qualname__}",
+            record=str(record_class.record_uri()),
             namespace=self.namespaces[0].name,
         )
         if kwargs.get("table_name"):

@@ -190,8 +190,8 @@ def test_a_failing_task_stops_the_run() -> None:
 
 
 def test_a_dag_adds_up_its_tasks_lineage() -> None:
-    declare("rekep:///jobs/pipeline/extract", produces=["rekep.models.Log"])
-    declare("rekep:///jobs/pipeline/count", consumes=["rekep.models.Log"])
+    declare("rekep:///jobs/pipeline/extract", produces=["rekep:///records/log"])
+    declare("rekep:///jobs/pipeline/count", consumes=["rekep:///records/log"])
     dag = Dag(
         uri="rekep:///dags/pipeline/demo",
         tasks=["rekep:///jobs/pipeline/extract", "rekep:///jobs/pipeline/count"],
@@ -202,8 +202,8 @@ def test_a_dag_adds_up_its_tasks_lineage() -> None:
 
 
 def test_a_record_two_tasks_read_is_listed_once() -> None:
-    declare("rekep:///jobs/pipeline/a", consumes=["rekep.models.Log"])
-    declare("rekep:///jobs/pipeline/b", consumes=["rekep.models.Log"])
+    declare("rekep:///jobs/pipeline/a", consumes=["rekep:///records/log"])
+    declare("rekep:///jobs/pipeline/b", consumes=["rekep:///records/log"])
     dag = Dag(
         uri="rekep:///dags/pipeline/demo",
         tasks=["rekep:///jobs/pipeline/a", "rekep:///jobs/pipeline/b"],
@@ -241,14 +241,14 @@ def test_load_needs_no_class_declared(tmp_path: pathlib.Path) -> None:
 
 def test_load_builds_a_declared_subclass(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "d.yaml"
-    path.write_text("dag: rekep.dag.Dag\nuri: rekep:///dags/pipeline/demo\n")
+    path.write_text("dag: dag\nuri: rekep:///dags/pipeline/demo\n")
     assert type(load(path)) is Dag
 
 
-def test_load_refuses_a_non_dag_class(tmp_path: pathlib.Path) -> None:
+def test_load_refuses_a_class_that_is_not_a_dag(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "d.yaml"
-    path.write_text("dag: rekep.models.Log\nuri: rekep:///dags/x\n")
-    with pytest.raises(TypeError, match="not a Dag subclass"):
+    path.write_text("dag: log\nuri: rekep:///dags/x\n")
+    with pytest.raises(TypeError, match="is Log, not a Dag"):
         load(path)
 
 

@@ -6,11 +6,11 @@ import yaml
 from rekep.cli import main
 from rekep.models import Log
 
-NAMESPACE = "rekep.models.Log"
+RECORD = "rekep:///records/log"
 
 
 def dump(*extra: str) -> int:
-    return main(["ddl", "dump", "--namespace", NAMESPACE, *extra])
+    return main(["ddl", "dump", "--record", RECORD, *extra])
 
 
 def test_ddl_dump_writes_the_file(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
@@ -46,11 +46,11 @@ def test_jinja_renders_from_vars_and_args(tmp_path: pathlib.Path) -> None:
         "--var",
         "zone=eu",
         "--property",
-        "comment={{ zone }}:{{ namespace }}",
+        "comment={{ zone }}:{{ record }}",
         "--out",
         str(tmp_path),
     )
-    assert "'comment' = 'eu:rekep.models.Log'" in (tmp_path / "log.sql").read_text()
+    assert "'comment' = 'eu:rekep:///records/log'" in (tmp_path / "log.sql").read_text()
 
 
 def test_partition_by_flows_through(tmp_path: pathlib.Path) -> None:
@@ -58,9 +58,9 @@ def test_partition_by_flows_through(tmp_path: pathlib.Path) -> None:
     assert "PARTITIONED BY (driver)" in (tmp_path / "log.sql").read_text()
 
 
-def test_a_non_record_namespace_is_refused() -> None:
-    with pytest.raises(SystemExit, match="not a Record"):
-        main(["ddl", "dump", "--namespace", "pathlib.Path", "--out", "-"])
+def test_an_undeclared_record_is_refused() -> None:
+    with pytest.raises(SystemExit, match="no record named 'nowhere'"):
+        main(["ddl", "dump", "--record", "nowhere", "--out", "-"])
 
 
 def test_a_malformed_property_is_refused() -> None:
@@ -74,7 +74,7 @@ def test_a_malformed_property_is_refused() -> None:
 def test_records_dump_goes_to_stdout_by_default(capsys: pytest.CaptureFixture) -> None:
     """No shipped folder of its own: a product's declaration lives in its
     dataset side file, and this is the same view for a bare class."""
-    assert main(["records", "dump", "--pyclass", NAMESPACE]) == 0
+    assert main(["records", "dump", "--record", RECORD]) == 0
     out = capsys.readouterr().out
     assert out.startswith("name: Log")
     assert "fields:" in out
@@ -82,12 +82,12 @@ def test_records_dump_goes_to_stdout_by_default(capsys: pytest.CaptureFixture) -
 
 
 def test_records_dump_writes_a_file_when_asked(tmp_path: pathlib.Path) -> None:
-    assert main(["records", "dump", "--pyclass", NAMESPACE, "--out", str(tmp_path)]) == 0
+    assert main(["records", "dump", "--record", RECORD, "--out", str(tmp_path)]) == 0
     assert (tmp_path / "log.yaml").read_bytes().startswith(b"name: Log")
 
 
 def test_records_dump_other_formats(tmp_path: pathlib.Path) -> None:
-    main(["records", "dump", "--pyclass", NAMESPACE, "--format", "json", "--out", str(tmp_path)])
+    main(["records", "dump", "--record", RECORD, "--format", "json", "--out", str(tmp_path)])
     assert (tmp_path / "log.json").read_bytes().startswith(b"{")
 
 
@@ -102,7 +102,7 @@ def test_dataset_sync_writes_the_records_schema_into_the_side_file(
     datasets = tmp_path / "datasets"
     datasets.mkdir()
     path = datasets / "logs.yaml"
-    path.write_text("schema: rekep.models.Log\nuri: rekep:///datasets/logs\n")
+    path.write_text("schema: rekep:///records/log\nuri: rekep:///datasets/logs\n")
 
     assert main(["dataset", "sync", "--config", str(datasets)]) == 0
     written = yaml.safe_load(path.read_bytes())
@@ -115,7 +115,9 @@ def test_dataset_sync_writes_the_records_schema_into_the_side_file(
 def test_dataset_sync_dry_run_reports_drift_and_exits_one(tmp_path: pathlib.Path) -> None:
     datasets = tmp_path / "datasets"
     datasets.mkdir()
-    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: rekep:///datasets/logs\n")
+    (datasets / "logs.yaml").write_text(
+        "schema: rekep:///records/log\nuri: rekep:///datasets/logs\n"
+    )
     assert main(["dataset", "sync", "--config", str(datasets), "--dry-run"]) == 1
 
     main(["dataset", "sync", "--config", str(datasets)])
@@ -128,7 +130,7 @@ def test_dataset_sync_leaves_a_templated_file_alone(
     """Rewriting it would resolve the template against this machine."""
     datasets = tmp_path / "datasets"
     datasets.mkdir()
-    declared = 'schema: rekep.models.Log\nuri: "rekep:///datasets/{{ git_branch_slug }}/logs"\n'
+    declared = 'schema: rekep:///records/log\nuri: "rekep:///datasets/{{ git_branch_slug }}/logs"\n'
     (datasets / "logs.yaml").write_text(declared)
     assert main(["dataset", "sync", "--config", str(datasets)]) == 0
     assert "skipped" in capsys.readouterr().out
@@ -140,7 +142,7 @@ def test_a_dataset_whose_side_file_drifted_is_refused(tmp_path: pathlib.Path) ->
     from rekep.dataset import Dataset
 
     stale = Dataset(
-        schema="rekep.models.Log",
+        schema="rekep:///records/log",
         uri="rekep:///datasets/logs",
         fields=[{"name": "gone", "type": "string"}],
     )
@@ -219,8 +221,8 @@ def test_records_deploy_converges_one_record(
             [
                 "records",
                 "deploy",
-                "--pyclass",
-                NAMESPACE,
+                "--record",
+                RECORD,
                 "--target",
                 "iceberg",
                 "--config",
@@ -244,8 +246,8 @@ def test_records_deploy_dry_run_touches_nothing(tmp_path: pathlib.Path) -> None:
             [
                 "records",
                 "deploy",
-                "--pyclass",
-                NAMESPACE,
+                "--record",
+                RECORD,
                 "--config",
                 str(root),
                 "--dry-run",
@@ -262,8 +264,8 @@ def test_records_deploy_doris_emits_the_plan(capsys: pytest.CaptureFixture) -> N
             [
                 "records",
                 "deploy",
-                "--pyclass",
-                NAMESPACE,
+                "--record",
+                RECORD,
                 "--target",
                 "doris",
                 "--dry-run",
@@ -274,9 +276,9 @@ def test_records_deploy_doris_emits_the_plan(capsys: pytest.CaptureFixture) -> N
     assert "CREATE TABLE IF NOT EXISTS iceberg.default.log (" in capsys.readouterr().out
 
 
-def test_records_deploy_refuses_a_non_record() -> None:
-    with pytest.raises(SystemExit, match="not a Record"):
-        main(["records", "deploy", "--pyclass", "pathlib.Path", "--dry-run"])
+def test_records_deploy_refuses_an_undeclared_record() -> None:
+    with pytest.raises(SystemExit, match="no record named 'nowhere'"):
+        main(["records", "deploy", "--record", "nowhere", "--dry-run"])
 
 
 # -- registry sync ----------------------------------------------------------
@@ -342,7 +344,9 @@ def dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     )
     datasets = tmp_path / "datasets"
     datasets.mkdir()
-    (datasets / "logs.yaml").write_text("schema: rekep.models.Log\nuri: rekep:///datasets/logs\n")
+    (datasets / "logs.yaml").write_text(
+        "schema: rekep:///records/log\nuri: rekep:///datasets/logs\n"
+    )
     return tmp_path
 
 
@@ -399,7 +403,7 @@ def test_dataset_list_prints_declared_datasets(
     assert main(["dataset", "list", "--config", str(root / "datasets")]) == 0
     out = capsys.readouterr().out
     assert "rekep:///datasets/logs" in out
-    assert "schema=rekep.models.Log" in out
+    assert "schema=rekep:///records/log" in out
 
 
 # -- dataset optimize --------------------------------------------------------
@@ -418,7 +422,7 @@ def crowded_dataset_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     root = dataset_workspace(tmp_path)
     (root / "datasets" / "logs.yaml").unlink()
     (root / "datasets" / "messages.yaml").write_text(
-        "schema: rekep.models.ParsedMessage\n"
+        "schema: rekep:///records/parsed_message\n"
         "uri: rekep:///datasets/messages\n"
         "protocols:\n"
         "  iceberg:\n"
@@ -529,9 +533,7 @@ def dag_workspace(tmp_path: pathlib.Path) -> pathlib.Path:
     dags.mkdir()
     for task in ("parse", "count"):
         (jobs / f"{task}.yaml").write_text(
-            f"job: rekep.job.Passthrough\n"
-            f"uri: rekep:///jobs/pipeline/{task}\n"
-            f"source: {sample.as_uri()}\n"
+            f"job: passthrough\nuri: rekep:///jobs/pipeline/{task}\nsource: {sample.as_uri()}\n"
         )
     (dags / "demo.yaml").write_text(
         "uri: rekep:///dags/pipeline/demo\n"

@@ -10,7 +10,7 @@ from rekep.records.ddl import IcebergDdlBuilder
 
 
 @record
-class Fill(Record):
+class DdlFill(Record):
     """One fill."""
 
     day: Annotated[datetime.date, Arrow(partition=True)]
@@ -27,18 +27,18 @@ class Fill(Record):
 
 @pytest.fixture(scope="module")
 def ddl() -> str:
-    return Fill.into_iceberg_ddl()
+    return DdlFill.into_iceberg_ddl()
 
 
 def test_statement_shape(ddl: str) -> None:
-    assert ddl.startswith("CREATE TABLE IF NOT EXISTS fill (")
+    assert ddl.startswith("CREATE TABLE IF NOT EXISTS ddl_fill (")
     assert "USING iceberg" in ddl
     assert ddl.rstrip().endswith(";")
 
 
 def test_default_table_name_is_snake_case() -> None:
     assert "log (" in Log.into_iceberg_ddl()
-    assert "my_fills (" in Fill.into_iceberg_ddl("my_fills")
+    assert "my_fills (" in DdlFill.into_iceberg_ddl("my_fills")
 
 
 def test_types_map_from_arrow(ddl: str) -> None:
@@ -68,11 +68,11 @@ def test_partition_comes_from_field_metadata(ddl: str) -> None:
 
 
 def test_partition_argument_overrides_metadata() -> None:
-    assert "PARTITIONED BY (symbol)" in Fill.into_iceberg_ddl(partitioned_by=["symbol"])
+    assert "PARTITIONED BY (symbol)" in DdlFill.into_iceberg_ddl(partitioned_by=["symbol"])
 
 
 def test_location_and_properties() -> None:
-    ddl = Fill.into_iceberg_ddl(
+    ddl = DdlFill.into_iceberg_ddl(
         location="s3://bucket/fills", properties={"write.format.default": "parquet"}
     )
     assert "LOCATION 's3://bucket/fills'" in ddl
@@ -80,7 +80,7 @@ def test_location_and_properties() -> None:
 
 
 def test_if_not_exists_can_be_dropped() -> None:
-    assert "CREATE TABLE fill (" in Fill.into_iceberg_ddl(if_not_exists=False)
+    assert "CREATE TABLE ddl_fill (" in DdlFill.into_iceberg_ddl(if_not_exists=False)
 
 
 def test_unmappable_type_is_refused() -> None:

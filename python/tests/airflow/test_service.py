@@ -8,7 +8,7 @@ import pytest
 from rekep import config
 from rekep.airflow.service import Airflow, Dags
 
-JOB = "job: rekep.job.Passthrough\nschedule: '@daily'\nuri: rekep:///jobs/demo\n"
+JOB = "job: passthrough\nschedule: '@daily'\nuri: rekep:///jobs/demo\n"
 DAG = "uri: rekep:///dags/demo\nschedule: '@daily'\ntasks: [rekep:///jobs/demo]\n"
 
 

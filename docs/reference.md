@@ -60,6 +60,10 @@
 
 ## Configuration
 
+::: rekep.classes.find
+
+::: rekep.classes.declare
+
 ::: rekep.config.folder
 
 ::: rekep.config.register

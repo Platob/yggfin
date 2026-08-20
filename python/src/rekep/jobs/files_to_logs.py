@@ -23,7 +23,7 @@ from rekep.records import record
 class FilesToLogs(Job):
     """Parse raw log files at `source` into `Log` records, unchanged."""
 
-    produces: list[str] = dataclasses.field(default_factory=lambda: ["rekep.models.Log"])
+    produces: list[str] = dataclasses.field(default_factory=lambda: ["rekep:///records/log"])
     """Defaults to `Log` -- `extract` parses nothing else."""
 
     def arrow_transform(

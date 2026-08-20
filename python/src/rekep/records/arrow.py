@@ -358,7 +358,10 @@ class ArrowRecordBuilder:
             namespace["__module__"] = module.decode()
         named = name or (metadata.get(b"name") or b"").decode() or "ArrowRecord"
         cls = type(named, (base or self.BASE or _base(),), namespace)
-        return record(kw_only=True)(cls)
+        # declare=False: this is a *copy of* an identity, rebuilt from a schema.
+        # Answering to the original's name would make that name ambiguous for
+        # everyone who looks it up.
+        return record(kw_only=True, declare=False)(cls)
 
     def annotation(self, field: pyarrow.Field) -> Any:
         """The Python annotation that projects back to exactly `field`."""

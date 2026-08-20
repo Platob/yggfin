@@ -9,15 +9,14 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from rekep.namespace import SCHEME, ResourceUri
+from rekep.namespace import SCHEME
 from rekep.records.annotations import docstring_summary
 from rekep.records.record import Record
 
-#: The service an asset's URI names. Airflow treats a URI as opaque, so the
-#: only requirement is that it is stable -- rename a record and you have
-#: renamed the asset, which is exactly the lineage break it represents -- but
-#: it is spelled through `ResourceUri` anyway: a string that looks like one of
-#: ours and is not would be worse than either.
+#: The service an asset's URI names -- the record's own. Airflow treats a URI
+#: as opaque, so the only requirement is that it is stable; it is still the
+#: record's real identity, because a string that looked like one of ours and
+#: was not would be worse than either.
 ASSET_SERVICE = "records"
 
 #: Tag key marking a dag as generated from rekep declarations, whatever else
@@ -31,12 +30,11 @@ Records = Sequence[type[Record]]
 def asset_uri(record: type[Record]) -> str:
     """Stable URI for the data product `record` describes.
 
-    `rekep:///records/<module>.<Class>` -- the same three-slash form every
-    other identity here has, built by the same formatter. A record is a
-    schema rather than a declared resource, so it names itself by the one
-    thing that does identify it: where the class lives.
+    The record's own identity (`rekep:///records/log`), not a second name
+    invented for Airflow: rename the record and you have renamed the asset,
+    which is exactly the lineage break it represents.
     """
-    return str(ResourceUri.of(ASSET_SERVICE, f"{record.__module__}.{record.__qualname__}"))
+    return str(record.record_uri())
 
 
 def asset_name(record: type[Record]) -> str:
@@ -61,7 +59,7 @@ def metadata_of(record: type[Record]) -> dict[str, str]:
     from rekep import __version__
 
     return {
-        "record": f"{record.__module__}.{record.__qualname__}",
+        "record": str(record.record_uri()),
         "description": docstring_summary(record),
         "fields": ", ".join(f"{f.name}: {f.type}" for f in record.into_arrow_schema()),
         "rekep_version": __version__,

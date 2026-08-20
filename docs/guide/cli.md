@@ -24,7 +24,7 @@ Emit `CREATE TABLE` from a record declaration:
 
 ```bash
 rekep ddl dump \
-    --namespace rekep.models.Log \
+    --record rekep:///records/log \
     --table-name log_records \
     --property "write.format.default=parquet" \
     --out stacks/ddl/iceberg
@@ -56,10 +56,10 @@ Any string option may be a template, rendered with the other arguments,
 
 ```bash
 DATA_BUCKET=s3://lake rekep ddl dump \
-    --namespace rekep.models.Log \
+    --record rekep:///records/log \
     --location "{{ env.DATA_BUCKET }}/logs" \
     --var zone=eu \
-    --property "comment={{ zone }}:{{ namespace }}" \
+    --property "comment={{ zone }}:{{ record }}" \
     --out -
 ```
 
@@ -69,7 +69,7 @@ one. Templating needs the `jinja` extra; untemplated values never touch it.
 ## Dump a record's declaration
 
 ```console
-$ rekep records dump --pyclass rekep.models.Log
+$ rekep records dump --record log
 name: Log
 description: One parsed line of a trading log.
 fields:
@@ -82,6 +82,8 @@ fields:
 ```
 
 Stdout by default, `--format yaml|json|toml`, `--out <dir>` to write a file.
+`--record` takes the record's URI or, since a call site already knows it is
+naming a record, just its name (`log`).
 There is no shipped folder for these: a data product's declaration belongs in
 its **dataset side file**, which `rekep dataset sync` writes (below). This is
 the same view for a class nobody has declared a dataset for yet.
@@ -93,8 +95,8 @@ deploy` converges a single record class into one or more of them, stack
 defaults filling in namespace and properties:
 
 ```bash
-rekep records deploy --pyclass rekep.models.Log --target iceberg
-rekep records deploy --pyclass rekep.models.Log     --target iceberg --target doris --dry-run
+rekep records deploy --record rekep:///records/log --target iceberg
+rekep records deploy --record log                     --target iceberg --target doris --dry-run
 ```
 
 Iceberg converges live (catalog checked, namespace and table

@@ -32,7 +32,7 @@ class Tables:
         return list(self.catalogs.deployment.tables)
 
     def identifier(self, table: IcebergTable) -> str:
-        name = table.name or table.record_class().doris_table_name()
+        name = table.name or table.record_class().record_name()
         return f"{table.namespace}.{name}"
 
     def exists(self, table: IcebergTable) -> bool:

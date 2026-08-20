@@ -128,7 +128,12 @@ block fails CI when it lags the record (`rekep dataset sync --dry-run` exits
 rekep/
 ├── convert.py     Convertible: generic from_/into_ dispatch
 ├── require.py     optional deps at the point of use
-├── imports.py     dotted-path resolution
+├── classes.py     the declared classes, by name: `@record` declares one,
+│                  `find(name, base)` looks it back up, `$REKEP_MODULES`
+│                  imports a deployment's own before giving up. **Nothing
+│                  points at a module**: a side file names a class
+│                  (`job: files_to_logs`) or a record's URI
+│                  (`schema: rekep:///records/log`), never `module.Class`
 ├── render.py      Jinja + env + git context
 ├── filesystems.py FileSystem.from_uri, cached per URL
 ├── namespace.py   Namespace (recursive parent levels building a path) and
@@ -172,8 +177,8 @@ rekep/
 │                  it has one, else ~/.config/rekep/<service>; REGISTRY, one
 │                  process-wide dict of loaded resources keyed by URI
 ├── dataset.py     Dataset: the OpenLineage resource for a data product, and
-│                  the **whole** description of one -- `schema:` (a dotted
-│                  Record path; arrow_schema() is the Arrow view) + `uri:`
+│                  the **whole** description of one -- `schema:` (the
+│                  record's URI; arrow_schema() is the Arrow view) + `uri:`
 │                  (identity as one path) + cross-platform location (shared
 │                  `properties`/`direct`, per-protocol `protocols`) +
 │                  `description:`/`fields:`, that record's contract written
@@ -247,10 +252,14 @@ model is a new module in `models/`. `tests/` mirrors `src/` folder for
 folder.
 
 **Records are the schema helper.** `Record` (`records/record.py`) carries no
-resource identity of its own -- it is the dataclass-is-its-own-schema
-machinery every data-carrying model and every OpenLineage resource's `record:`
-field project through (`Dataset.schema_facet()`, `IcebergTable`/`DorisTable`'s
-own `record:`). The resources are `Namespace`/`ResourceUri`, `Job` (one
+*deployment* identity -- where it lands is a `Dataset`'s business -- but it
+does answer to one name (`record_name()`, its snake-cased class name, which
+is also every protocol's default table name) and one URI
+(`record_uri()` -> `rekep:///records/log`), because a config has to be able
+to point at it. It is the dataclass-is-its-own-schema machinery every
+data-carrying model and every OpenLineage resource's `record:` field project
+through (`Dataset.schema_facet()`, `IcebergTable`/`DorisTable`'s own
+`record:`). The resources are `Namespace`/`ResourceUri`, `Job` (one
 task), `Dag` (the graph of tasks), `Dataset`, `Run`/`RunEvent`.
 
 **A resource is identified by one `uri:`.** A dataset, a task and a dag each
@@ -262,6 +271,18 @@ itself two different ways. Accessors read the levels back out
 (`task_id()`/`task_namespace()`/`task_name()`, `dag_id()`, `dataset_name()`),
 so nothing reads a `name` field directly. Nothing else may take the word
 `uri`: an Iceberg catalog's connection string is `endpoint:`.
+
+**Nothing points at a module.** A class is named by *what it is called* --
+`@record` declares it under its snake name, `rekep.classes.find` looks it
+back up -- so a side file carries `job: files_to_logs` and
+`schema: rekep:///records/log`, never `rekep.jobs.FilesToLogs`. A dotted
+import path named a class by where it happened to live: a file move rewrote
+every reference, a re-export looked like a second class, and a data product's
+identity in a config was an import statement in disguise. Importing is what
+declares, so rekep imports its own `models`/`jobs` and a deployment names its
+modules once in `$REKEP_MODULES` -- never in a reference. Two classes of one
+name are refused when someone looks that name up, both named, rather than one
+being picked silently.
 
 **A tag is a mapping, never a list.** `stage: ingestion` names the dimension
 and the value; a bare `ingestion` names neither, and two lists of tags cannot
@@ -317,9 +338,9 @@ mutating verb takes `dry_run`. Installers (`rekep install`) follow
 the same contract: honest `installed()` check, exact `plan()`, converge.
 Never call pyiceberg raw at a call site — extend the resource service.
 
-`rekep records dump --pyclass <dotted>` prints one record's whole
+`rekep records dump --record <uri or name>` prints one record's whole
 declaration and has **no shipped folder** -- a data product's declaration
-belongs in its dataset side file. `rekep records deploy --pyclass <dotted>
+belongs in its dataset side file. `rekep records deploy --record <uri or name>
 --target iceberg|doris` converges one bare record, stack defaults filling in
 namespace and properties. `rekep dataset deploy --target iceberg|doris` converges
 every `Dataset` under `stacks/datasets/` instead -- each carries its own

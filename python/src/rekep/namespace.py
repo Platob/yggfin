@@ -102,9 +102,9 @@ class Namespace(Record):
 
 #: Every service a URI may name: one entry per resource that names *itself*,
 #: a dataset, a task, a dag -- plus `records`, whose members are classes named
-#: by their dotted path (`rekep:///records/rekep.models.log.Log`) rather than
-#: declared in a side file: an orchestrator's asset graph has to point at the
-#: schema itself, and a URI that looks like ours must be one of ours.
+#: by what they are called (`rekep:///records/log`) rather than declared in a
+#: side file: a config that points at a schema, and an orchestrator's asset
+#: graph, both need a name for one, and every name here is a URI.
 #: A stack's catalogs and namespaces are not here -- their identity is the
 #: registry folder they sit in and the stem of their file, which is why they
 #: are addressed by name and not by URI.
@@ -132,7 +132,7 @@ class ResourceUri:
         rekep:///datasets/warehouse/trading/orders#dev
         rekep:///jobs/pipeline/logs_to_records
         rekep:///dags/pipeline/trading_logs
-        rekep:///records/rekep.models.log.Log
+        rekep:///records/log
 
     A path because that is what the thing is: a catalog contains namespaces,
     a namespace contains tables, and `/` is how every filesystem, URL and

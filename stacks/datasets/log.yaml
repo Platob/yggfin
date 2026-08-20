@@ -1,4 +1,4 @@
-schema: rekep.models.Log
+schema: rekep:///records/log
 uri: rekep:///datasets/default/log
 description: One parsed line of a trading log.
 properties: {}

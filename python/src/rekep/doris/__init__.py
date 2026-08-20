@@ -83,7 +83,7 @@ class Tables(Resource):
         return list(self.deployment.tables)
 
     def identifier(self, table: DorisTable) -> str:
-        return table.name or table.record_class().doris_table_name()
+        return table.name or table.record_class().record_name()
 
     def get_or_create(self, table: DorisTable, dry_run: bool = False) -> str | None:
         """Verified against the record first, so stale side files stop here."""

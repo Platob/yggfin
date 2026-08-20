@@ -43,7 +43,9 @@ Everything else is derived, never hand-written beside it:
 ## Where things live
 
 - **`rekep.records`** — the machinery: `@record`, `Record`, the Arrow, Iceberg
-  and DDL builders.
+  and DDL builders. Writing `@record` also *declares* the class under its own
+  name, which is how a side file points at it (`rekep:///records/log`)
+  without naming a module.
 - **`rekep.models`** — the concrete records this package reads and writes.
 - **`rekep.logs`** — `LogFile`: lazy, streaming, compression-transparent log
   access over any `pyarrow.fs` filesystem.

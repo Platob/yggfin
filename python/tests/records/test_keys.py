@@ -10,7 +10,7 @@ from rekep import Arrow, Record, record
 
 
 @record
-class Fill(Record):
+class KeyedFill(Record):
     """One fill."""
 
     day: Annotated[datetime.date, Arrow(partition="day", key=True)]
@@ -33,7 +33,7 @@ class Fill(Record):
 
 
 def test_flags_land_as_protocol_metadata() -> None:
-    schema = Fill.into_arrow_schema()
+    schema = KeyedFill.into_arrow_schema()
     assert schema.field("day").metadata[b"iceberg:partition_key"] == b"day"
     assert schema.field("day").metadata[b"iceberg:primary_key"] == b"true"
     assert schema.field("venue").metadata[b"iceberg:partition_key"] == b"identity"
@@ -61,14 +61,14 @@ def test_a_nullable_primary_key_is_refused() -> None:
 
 
 def test_keys_become_identifier_fields() -> None:
-    assert Fill.into_iceberg_schema().identifier_field_names() == {"day", "order_id"}
+    assert KeyedFill.into_iceberg_schema().identifier_field_names() == {"day", "order_id"}
 
 
 def test_partition_spec_carries_transforms_and_spec_ids() -> None:
     """A computed transform takes Iceberg's `<column>_<transform>` name --
     a partition field may not shadow a column while holding another value;
     an identity one keeps the column's name, since the value *is* it."""
-    spec = Fill.into_iceberg_partition_spec()
+    spec = KeyedFill.into_iceberg_partition_spec()
     by_name = {field.name: field for field in spec.fields}
     assert set(by_name) == {"day_day", "account_bucket_16", "venue"}
     assert str(by_name["day_day"].transform) == "day"
@@ -78,9 +78,9 @@ def test_partition_spec_carries_transforms_and_spec_ids() -> None:
 
 
 def test_partition_sources_are_schema_field_ids() -> None:
-    schema = Fill.into_iceberg_schema()
+    schema = KeyedFill.into_iceberg_schema()
     ids = {field.name: field.field_id for field in schema.fields}
-    spec = Fill.into_iceberg_partition_spec()
+    spec = KeyedFill.into_iceberg_partition_spec()
     assert {field.name: field.source_id for field in spec.fields} == {
         "day_day": ids["day"],
         "account_bucket_16": ids["account"],
@@ -101,17 +101,17 @@ def test_a_record_without_declarations_has_empty_spec_and_keys() -> None:
 
 
 def test_ddl_partitions_spell_transforms() -> None:
-    ddl = Fill.into_iceberg_ddl()
+    ddl = KeyedFill.into_iceberg_ddl()
     assert "PARTITIONED BY (days(day), bucket(16, account), venue)" in ddl
 
 
 def test_ddl_sets_identifier_fields() -> None:
-    ddl = Fill.into_iceberg_ddl("fills")
+    ddl = KeyedFill.into_iceberg_ddl("fills")
     assert ddl.rstrip().endswith("ALTER TABLE fills SET IDENTIFIER FIELDS day, order_id;")
 
 
 def test_explicit_partition_by_still_overrides() -> None:
-    ddl = Fill.into_iceberg_ddl(partitioned_by=["venue"])
+    ddl = KeyedFill.into_iceberg_ddl(partitioned_by=["venue"])
     assert "PARTITIONED BY (venue)" in ddl
     assert "days(day)" not in ddl
 
@@ -120,7 +120,7 @@ def test_explicit_partition_by_still_overrides() -> None:
 
 
 def test_dump_groups_protocol_keys_under_iceberg() -> None:
-    fields = {entry["name"]: entry for entry in yaml.safe_load(Fill.into_yaml())["fields"]}
+    fields = {entry["name"]: entry for entry in yaml.safe_load(KeyedFill.into_yaml())["fields"]}
     assert fields["day"]["iceberg"]["partition_key"] == "day"
     assert fields["day"]["iceberg"]["primary_key"] is True
     assert fields["venue"]["iceberg"]["partition_key"] is True
@@ -134,7 +134,7 @@ def test_dump_groups_protocol_keys_under_iceberg() -> None:
 
 
 def test_flags_survive_the_reverse_projection() -> None:
-    clone = Record.from_arrow_schema(Fill.into_arrow_schema(), name="Clone")
+    clone = Record.from_arrow_schema(KeyedFill.into_arrow_schema(), name="Clone")
     schema = clone.into_arrow_schema()
     assert schema.field("day").metadata[b"iceberg:partition_key"] == b"day"
     assert schema.field("day").metadata[b"iceberg:primary_key"] == b"true"
@@ -145,11 +145,11 @@ def test_flags_survive_the_reverse_projection() -> None:
 
 
 def test_primary_keys_are_read_off_the_arrow_schema() -> None:
-    assert Fill.primary_keys() == ["day", "order_id"], "declaration order"
+    assert KeyedFill.primary_keys() == ["day", "order_id"], "declaration order"
 
 
 def test_partition_keys_carry_their_transform() -> None:
-    assert Fill.partition_keys() == {
+    assert KeyedFill.partition_keys() == {
         "day": "day",
         "account": "bucket[16]",
         "venue": "identity",
@@ -172,10 +172,10 @@ def test_a_record_declaring_nothing_has_neither() -> None:
 
 
 def test_a_composite_key_survives_every_projection() -> None:
-    """`Fill` declares two: the projections must all carry both, in order."""
-    assert Fill.primary_keys() == ["day", "order_id"]
-    assert Fill.into_iceberg_schema().identifier_field_names() == {"day", "order_id"}
-    assert "`day`, `order_id`" in Fill.into_doris_ddl()
+    """`KeyedFill` declares two: the projections must all carry both, in order."""
+    assert KeyedFill.primary_keys() == ["day", "order_id"]
+    assert KeyedFill.into_iceberg_schema().identifier_field_names() == {"day", "order_id"}
+    assert "`day`, `order_id`" in KeyedFill.into_doris_ddl()
 
 
 def test_doris_orders_every_key_column_first() -> None:
@@ -183,13 +183,13 @@ def test_doris_orders_every_key_column_first() -> None:
     from rekep.records.doris import DorisDdlBuilder
 
     builder = DorisDdlBuilder()
-    schema = builder.ARROW_BUILDER().schema(Fill)
-    ordered = [field.name for field in builder.ordered_fields(schema, Fill.primary_keys())]
+    schema = builder.ARROW_BUILDER().schema(KeyedFill)
+    ordered = [field.name for field in builder.ordered_fields(schema, KeyedFill.primary_keys())]
     assert ordered[:2] == ["day", "order_id"]
 
 
 def test_a_merge_joins_on_every_key_column() -> None:
     from rekep.dataset import Dataset
 
-    dataset = Dataset(schema="rekep.models.Log")
+    dataset = Dataset(schema="rekep:///records/log")
     assert dataset.merge_columns(True) == ["unix", "hash64"]

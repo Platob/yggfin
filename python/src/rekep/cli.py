@@ -19,7 +19,6 @@ from collections.abc import Sequence
 from typing import Any
 
 from rekep import config
-from rekep.imports import locate
 from rekep.records import Record
 from rekep.render import render
 
@@ -47,7 +46,7 @@ class DdlService:
 
         dump = commands.add_parser("dump", help="write CREATE TABLE for a record")
         dump.add_argument(
-            "--namespace", required=True, help="dotted record class, e.g. rekep.models.Log"
+            "--record", required=True, help="record uri or name, e.g. rekep:///records/log"
         )
         dump.add_argument(
             "--dialect",
@@ -92,9 +91,9 @@ class DdlService:
         dump.set_defaults(run=self.dump)
 
     def dump(self, arguments: argparse.Namespace) -> int:
-        cls = _record_class(arguments.namespace)
+        cls = _record_class(arguments.record)
         context = {
-            "namespace": arguments.namespace,
+            "record": str(cls.record_uri()),
             "table_name": arguments.table_name,
             **_pairs(arguments.variables),
         }
@@ -132,7 +131,7 @@ class DdlService:
         if out == DDL_ROOT:
             out = out.parent / arguments.dialect  # each dialect its own folder
         out.mkdir(parents=True, exist_ok=True)
-        table = table or _default_table(cls)
+        table = table or cls.record_name()
         path = out / f"{table.rpartition('.')[2]}.sql"
         path.write_text(ddl, encoding="utf-8", newline="\n")
         print(path)
@@ -186,7 +185,7 @@ class DocsService:
             "",
             f"## {described['name']}",
             "",
-            f"`{cls.__module__}.{described['name']}`",
+            f"`{cls.record_uri()}`",
             "",
         ]
         if described.get("description"):
@@ -360,7 +359,7 @@ class RecordsService:
 
         dump = commands.add_parser("dump", help="write a record's whole declaration")
         dump.add_argument(
-            "--pyclass", required=True, help="dotted record class, e.g. rekep.models.Log"
+            "--record", required=True, help="record uri or name, e.g. rekep:///records/log"
         )
         dump.add_argument(
             "--format",
@@ -373,7 +372,7 @@ class RecordsService:
 
         deploy = commands.add_parser("deploy", help="converge one record into its targets")
         deploy.add_argument(
-            "--pyclass", required=True, help="dotted record class, e.g. rekep.models.Log"
+            "--record", required=True, help="record uri or name, e.g. rekep:///records/log"
         )
         deploy.add_argument(
             "--target",
@@ -409,14 +408,14 @@ class RecordsService:
         `rekep dataset sync` writes and CI drift-tests. This is the same view
         for a class nobody has declared a dataset for yet.
         """
-        cls = _record_class(arguments.pyclass)
+        cls = _record_class(arguments.record)
         payload: bytes = getattr(cls, f"into_{arguments.format}")()
         if arguments.out == "-":
             sys.stdout.write(payload.decode())
             return 0
         out = pathlib.Path(arguments.out)
         out.mkdir(parents=True, exist_ok=True)
-        path = out / f"{_default_table(cls)}.{arguments.format}"
+        path = out / f"{cls.record_name()}.{arguments.format}"
         path.write_bytes(payload)
         print(path)
         return 0
@@ -430,9 +429,9 @@ class RecordsService:
         """
         level = logging.DEBUG if arguments.verbose else logging.INFO
         logging.basicConfig(level=level, format="%(asctime)s %(name)s %(message)s")
-        cls = _record_class(arguments.pyclass)
+        cls = _record_class(arguments.record)
         context = _pairs(arguments.variables)
-        dotted = f"{cls.__module__}.{cls.__qualname__}"
+        reference = str(cls.record_uri())
 
         for target in arguments.targets or ["iceberg"]:
             if target == "iceberg":
@@ -441,7 +440,7 @@ class RecordsService:
 
                 stack = Iceberg.load(arguments.config or ICEBERG_ROOT, **context)
                 table = stack.deployment.table(cls) or IcebergTable(
-                    record=dotted, namespace=stack.deployment.namespaces[0].name
+                    record=reference, namespace=stack.deployment.namespaces[0].name
                 )
                 stack.deploy_one(table, dry_run=arguments.dry_run)
                 print(f"iceberg: {stack.tables.identifier(table)}")
@@ -451,7 +450,7 @@ class RecordsService:
 
                 stack = Doris.load(arguments.config or DORIS_ROOT, **context)
                 table = stack.deployment.table(cls) or DorisTable(
-                    record=dotted, namespace=stack.deployment.namespaces[0].name
+                    record=reference, namespace=stack.deployment.namespaces[0].name
                 )
                 statement = stack.deploy_one(table, dry_run=arguments.dry_run)
                 sys.stdout.write(statement or "")
@@ -861,17 +860,20 @@ def _sync_folder(
     return drifted
 
 
-def _record_class(dotted: str) -> type[Record]:
-    cls = locate(dotted)
-    if not (isinstance(cls, type) and issubclass(cls, Record)):
-        raise SystemExit(f"{dotted} is not a Record class")
-    return cls
+def _record_class(reference: str) -> type[Record]:
+    """The record `reference` names, or a refusal the shell can print.
 
-
-def _default_table(cls: type[Record]) -> str:
-    from rekep.records.record import _snake
-
-    return _snake(cls.__name__)
+    Every failure `Record.locate` raises is a user error here -- a name
+    nobody declared, a name two records answer to, a class of the wrong kind
+    -- so they arrive as `SystemExit` with the message intact rather than as
+    a traceback.
+    """
+    try:
+        return Record.locate(reference)
+    except (KeyError, TypeError, ValueError) as error:
+        # `str(KeyError)` is the *repr* of its argument, quotes and all; the
+        # message itself is what a shell should print.
+        raise SystemExit(error.args[0] if error.args else str(error)) from error
 
 
 def _pairs(items: Sequence[str]) -> dict[str, str]:

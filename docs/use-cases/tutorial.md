@@ -76,11 +76,12 @@ Trade.into_doris_ddl()        # Doris: UNIQUE KEY leading, AUTO PARTITION
 Trade.into_yaml()             # the declaration itself, reviewable YAML
 ```
 
-Or from the shell, for any record on the import path:
+Or from the shell, for any record a module has declared (rekep's own, plus
+whatever `$REKEP_MODULES` names):
 
 ```bash
-rekep records dump --pyclass models.Trade
-rekep ddl dump --namespace models.Trade --dialect doris --out -
+rekep records dump --record trade
+rekep ddl dump --record trade --dialect doris --out -
 ```
 
 ## 4 · Declare the deployment

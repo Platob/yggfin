@@ -39,7 +39,7 @@ def stack(tmp_path: pathlib.Path) -> Iceberg:
                 IcebergCatalog(endpoint=f"sqlite:///{root}/cat.db", warehouse=f"file://{root}/wh")
             ],
             namespaces=[IcebergNamespace(name="yggfin", catalog="iceberg")],
-            tables=[IcebergTable(record="rekep.models.Log", name="logs", namespace="yggfin")],
+            tables=[IcebergTable(record="rekep:///records/log", name="logs", namespace="yggfin")],
         )
     )
 
@@ -129,7 +129,7 @@ def test_doris_external_catalog_leads_the_plan() -> None:
     deployment = DorisDeployment(
         catalogs=[DorisCatalog(name="lake", type="iceberg", properties={"uri": "http://r"})],
         namespaces=[DorisNamespace(name="prod", catalog="lake")],
-        tables=[DorisTable(record="rekep.models.Log", namespace="prod")],
+        tables=[DorisTable(record="rekep:///records/log", namespace="prod")],
     )
     plan = Doris(deployment).deploy()
     assert plan[0].startswith("CREATE CATALOG IF NOT EXISTS `lake`")
@@ -216,7 +216,7 @@ def test_dataset_deploys_autonomously_one_call(
     )
 
     stack = Iceberg.load(tmp_path)
-    dataset = Dataset(schema="rekep.models.Log", uri="rekep:///datasets/logs")
+    dataset = Dataset(schema="rekep:///records/log", uri="rekep:///datasets/logs")
     dataset.deploy_iceberg(stack)
     assert stack.catalogs.connect("iceberg").table_exists("default.logs")
 

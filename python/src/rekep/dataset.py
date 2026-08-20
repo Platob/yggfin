@@ -76,7 +76,6 @@ import pyarrow.fs
 
 from rekep import config
 from rekep.filesystems import resolve as resolve_filesystem
-from rekep.imports import locate
 from rekep.namespace import ResourceUri
 from rekep.records import registry
 from rekep.records.arrow import FIELD_ID_KEY, cast_reader
@@ -174,13 +173,15 @@ class Dataset(Record):
     """
 
     schema: str
-    """Dotted path of the `Record` class whose Arrow projection is this schema.
+    """The record this dataset's schema is: `rekep:///records/<name>`.
 
-    A path rather than an inline field list because a declaration has to
+    A reference rather than an inline field list because a declaration has to
     survive a round trip through a file, and only a name can: the class is
     the schema, and pointing at it keeps one definition instead of two that
-    can disagree. `arrow_schema()` is the Arrow view of it, which is what
-    everything downstream actually uses."""
+    can disagree. A URI rather than a dotted import path because the record
+    is a resource like any other here -- named by what it is called, not by
+    which module happens to hold it. `arrow_schema()` is the Arrow view of
+    it, which is what everything downstream actually uses."""
 
     uri: str | None = None
     """This dataset's identity, as a path: `rekep:///datasets/catalog/namespace/name#branch`.
@@ -293,10 +294,7 @@ class Dataset(Record):
 
     def record_class(self) -> type[Record]:
         """The `Record` class `schema` names."""
-        cls = locate(self.schema)
-        if not (isinstance(cls, type) and issubclass(cls, Record)):
-            raise TypeError(f"{self.schema} is not a Record class")
-        return cls
+        return Record.locate(self.schema)
 
     def arrow_schema(self) -> pyarrow.Schema:
         """This dataset's schema, as Arrow -- the view everything else uses."""
@@ -306,7 +304,7 @@ class Dataset(Record):
         """This dataset's name: the URI's last level, else the record's own."""
         if self.uri:
             return self.resource_uri().name()
-        return self.record_class().doris_table_name()
+        return self.record_class().record_name()
 
     def dataset_namespace(self) -> str:
         """The namespace this dataset is identified under."""
@@ -326,7 +324,7 @@ class Dataset(Record):
             parsed = ResourceUri.parse(self.uri, service="datasets")
             return parsed if parsed.branch else parsed.at(self.iceberg_branch())
         return ResourceUri.of(
-            "datasets", self.record_class().doris_table_name(), branch=self.iceberg_branch()
+            "datasets", self.record_class().record_name(), branch=self.iceberg_branch()
         )
 
     def schema_facet(self) -> dict[str, Any]:

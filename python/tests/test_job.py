@@ -45,19 +45,19 @@ def test_passthrough_is_the_identity() -> None:
 
 
 def test_job_is_a_record() -> None:
-    job = Passthrough(uri="rekep:///jobs/p", schedule="@daily", consumes=["rekep.models.Log"])
+    job = Passthrough(uri="rekep:///jobs/p", schedule="@daily", consumes=["rekep:///records/log"])
     assert Passthrough.from_json(job.into_json()) == job
 
 
 def test_lineage_paths_resolve_to_record_classes() -> None:
-    job = Passthrough(uri="rekep:///jobs/p", produces=["rekep.models.Log"])
+    job = Passthrough(uri="rekep:///jobs/p", produces=["rekep:///records/log"])
     assert job.produced_records() == [Log]
     assert job.consumed_records() == []
 
 
-def test_a_non_record_lineage_path_is_refused() -> None:
-    job = Passthrough(uri="rekep:///jobs/p", consumes=["pathlib.Path"])
-    with pytest.raises(TypeError, match="not a Record"):
+def test_an_undeclared_lineage_record_is_refused() -> None:
+    job = Passthrough(uri="rekep:///jobs/p", consumes=["rekep:///records/nowhere"])
+    with pytest.raises(KeyError, match="no record named 'nowhere'"):
         job.consumed_records()
 
 
@@ -147,7 +147,7 @@ def test_calling_an_arrow_task_runs_it() -> None:
 
 def test_into_run_event_describes_the_task_and_what_it_moves() -> None:
     """rekep represents a run; it does not emit one. There is no client."""
-    job = Passthrough(uri="rekep:///jobs/trading/p", consumes=["rekep.models.Log"])
+    job = Passthrough(uri="rekep:///jobs/trading/p", consumes=["rekep:///records/log"])
     event = job.into_run_event(RunState.START)
     assert event.event_type is RunState.START
     assert event.job is job
@@ -191,7 +191,7 @@ def test_run_without_a_source_says_what_to_override() -> None:
 
 def test_load_builds_the_declared_class(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "job.json"
-    path.write_text(json.dumps({"job": "rekep.job.Passthrough", "uri": "rekep:///jobs/j"}))
+    path.write_text(json.dumps({"job": "passthrough", "uri": "rekep:///jobs/j"}))
     job = load(path)
     assert isinstance(job, Passthrough)
     assert job.task_id() == "j"
@@ -202,15 +202,13 @@ def test_load_renders_jinja_with_the_environment(
 ) -> None:
     monkeypatch.setenv("BUCKET", "s3://lake")
     path = tmp_path / "job.yaml"
-    path.write_text(
-        'job: rekep.job.Passthrough\nuri: rekep:///jobs/y\nsource: "{{ env.BUCKET }}/app.txt"\n'
-    )
+    path.write_text('job: passthrough\nuri: rekep:///jobs/y\nsource: "{{ env.BUCKET }}/app.txt"\n')
     assert load(path).source == "s3://lake/app.txt"
 
 
 def test_load_passes_extra_context(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "job.yaml"
-    path.write_text('job: rekep.job.Passthrough\nuri: "rekep:///jobs/{{ suffix }}"\n')
+    path.write_text('job: passthrough\nuri: "rekep:///jobs/{{ suffix }}"\n')
     assert load(path, suffix="rendered").task_id() == "rendered"
 
 
@@ -221,17 +219,17 @@ def test_load_requires_a_job_key(tmp_path: pathlib.Path) -> None:
         load(path)
 
 
-def test_load_refuses_a_non_job_class(tmp_path: pathlib.Path) -> None:
+def test_load_refuses_a_class_that_is_not_a_job(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "job.yaml"
-    path.write_text("job: rekep.models.Log\nuri: rekep:///jobs/x\n")
-    with pytest.raises(TypeError, match="not a Job subclass"):
+    path.write_text("job: log\nuri: rekep:///jobs/x\n")
+    with pytest.raises(TypeError, match="is Log, not a Job"):
         load(path)
 
 
 def test_load_allows_the_bare_job_class(tmp_path: pathlib.Path) -> None:
     """Concrete, not abstract: a purely descriptive job is a valid side file."""
     path = tmp_path / "job.yaml"
-    path.write_text("job: rekep.job.Job\nuri: rekep:///jobs/x\n")
+    path.write_text("job: job\nuri: rekep:///jobs/x\n")
     job = load(path)
     assert type(job) is Job
     with pytest.raises(NotImplementedError, match="arrow_transform"):
@@ -239,10 +237,8 @@ def test_load_allows_the_bare_job_class(tmp_path: pathlib.Path) -> None:
 
 
 def test_load_all_reads_a_directory(tmp_path: pathlib.Path) -> None:
-    (tmp_path / "b.yaml").write_text("job: rekep.job.Passthrough\nuri: rekep:///jobs/b\n")
-    (tmp_path / "a.json").write_text(
-        json.dumps({"job": "rekep.job.Passthrough", "uri": "rekep:///jobs/a"})
-    )
+    (tmp_path / "b.yaml").write_text("job: passthrough\nuri: rekep:///jobs/b\n")
+    (tmp_path / "a.json").write_text(json.dumps({"job": "passthrough", "uri": "rekep:///jobs/a"}))
     (tmp_path / "notes.txt").write_text("not a job")
     jobs = load_all(tmp_path)
     assert [job.task_id() for job in jobs] == ["a", "b"], "sorted, and .txt ignored"
@@ -250,7 +246,7 @@ def test_load_all_reads_a_directory(tmp_path: pathlib.Path) -> None:
 
 def test_find_resolves_a_uri_through_the_registry(tmp_path: pathlib.Path) -> None:
     """Any spelling of the identity finds the one loaded object, not a copy."""
-    (tmp_path / "a.yaml").write_text("job: rekep.job.Passthrough\nuri: rekep:///jobs/trading/a\n")
+    (tmp_path / "a.yaml").write_text("job: passthrough\nuri: rekep:///jobs/trading/a\n")
     (declared,) = load_all(tmp_path)
     assert find("rekep:///jobs/trading/a", tmp_path) is declared
     assert find("rekep:///jobs/trading/a", tmp_path) is declared

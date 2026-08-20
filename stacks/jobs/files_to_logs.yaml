@@ -3,7 +3,7 @@
 # ingestion task, whichever branch is developing it; see logs_to_records.yaml
 # for a stage that *does* pick up the branch, and stacks/datasets for the
 # same choice made at the storage layer (Iceberg branch vs. a plain table).
-job: rekep.jobs.FilesToLogs
+job: files_to_logs
 uri: rekep:///jobs/pipeline/files_to_logs
 description: Parse raw trading-log files into Log records.
 schedule: "@daily"
@@ -21,7 +21,7 @@ tags:
   domain: pipeline
   stage: ingestion
 produces:
-  - rekep.models.Log
+  - rekep:///records/log
 env:
   REKEP_ICEBERG_ROOT: stacks/iceberg
   LOG_LEVEL: INFO
