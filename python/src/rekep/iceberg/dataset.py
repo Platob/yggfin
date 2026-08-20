@@ -485,9 +485,15 @@ class IcebergDataset(Dataset):
           would write nulls over whatever is stored there.
 
         And two are deliberately more forgiving, because refusing costs data
-        and accepting cannot: a `-0.0` key matches the `0.0` it equals (Arrow
-        hashes them apart, so the library inserts a duplicate key), and a chunk
-        whose columns are in another order is merged rather than rejected.
+        and accepting cannot: a `-0.0` key is **written as** the `0.0` it
+        equals, and a chunk whose columns are in another order is merged rather
+        than rejected. The signed zero is the one place a merge changes a value
+        the caller passed, and it is the only way the three things that have to
+        agree about a key can: IEEE 754 and Iceberg call them the same number,
+        an Arrow join hashes them apart, and `pc.is_in` -- which is what
+        pyiceberg's delete filter becomes -- does too. Store one of them and a
+        later merge finds the row; store both and the table has two rows with
+        the same key, which is what the library does.
 
         `Table.upsert` builds its scan filter as one equality term per incoming
         row (`Or(And(k1 = .., k2 = ..), ...)` for a composite key), then binds
@@ -564,6 +570,7 @@ class IcebergDataset(Dataset):
         # hands back, and converting what was *read* costs less than converting
         # what is being written -- a streaming merge reads far fewer rows than
         # it writes.
+        chunk = _normalised_keys(chunk, join)
         shape = field_of(chunk.schema)
         reference = branch or self.branch or MAIN
         scan = table.scan(row_filter=_key_ranges(chunk, join))
@@ -601,7 +608,7 @@ class IcebergDataset(Dataset):
                 transaction.overwrite(
                     updates,
                     overwrite_filter=And(
-                        upsert_util.create_match_filter(updates, join),
+                        _match_filter(updates, join),
                         _key_ranges(updates, join),
                     ),
                     branch=reference,
@@ -1155,7 +1162,7 @@ def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
     file bounds happen to exclude. A chunk of entirely new keys plans to no
     files at all, which is what turns a merge into an append.
     """
-    from pyiceberg.expressions import And, GreaterThanOrEqual, In, LessThanOrEqual
+    from pyiceberg.expressions import And, GreaterThanOrEqual, In, LessThanOrEqual, Or
 
     terms = []
     for column in join:
@@ -1185,7 +1192,17 @@ def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
         if distinct is not None:
             if len(distinct) == 0:
                 continue
-            terms.append(In(column, distinct.to_pylist()))
+            named = In(column, distinct.to_pylist())
+            if _has_zero(values):
+                # `In` of more than one literal reaches Arrow as `pc.is_in`,
+                # which hashes `-0.0` apart from the `0.0` it equals -- so a
+                # row stored as `-0.0` would not come back and would be
+                # inserted a second time. This filter is a superset anyway;
+                # widening it costs a few rows the semi-join then drops.
+                named = Or(
+                    named, And(GreaterThanOrEqual(column, 0.0), LessThanOrEqual(column, 0.0))
+                )
+            terms.append(named)
             continue
         # Neither bound can be null here: the column has rows, no nulls and no
         # NaN, which is everything `min_max` would have skipped.
@@ -1270,6 +1287,75 @@ SOURCE_INDEX = "__source_index"
 TARGET_INDEX = "__target_index"
 
 
+def _has_zero(values: Any) -> bool:
+    """Whether a float column holds a zero of either sign; False for any other type."""
+    if not pyarrow.types.is_floating(values.type):
+        return False
+    zero = pyarrow.scalar(0.0, values.type)
+    return bool(pyarrow.compute.any(pyarrow.compute.equal(values, zero), min_count=0).as_py())
+
+
+def _match_filter(updates: pyarrow.Table, join: Sequence[str]) -> Any:
+    """pyiceberg's exact per-row delete filter, widened where `In` cannot see a zero.
+
+    A single-column key becomes one `In`, and an `In` of more than one literal
+    reaches Arrow as `pc.is_in`, which hashes `-0.0` apart from the `0.0` it
+    equals. So a row stored as `-0.0` -- before this package normalised keys,
+    or by another engine -- is written again and never deleted, leaving two
+    rows under one key. Exactly one literal is not affected (`In` collapses to
+    `EqualTo`, which compares numerically), and neither is a composite key
+    (per-row `EqualTo` again): this one shape is the whole of it.
+
+    What the widening adds is every row whose key is `+/-0.0`, which for a
+    single-column key are exactly the rows the chunk's zero identifies. The
+    filter stays exact.
+    """
+    from pyiceberg.expressions import And, GreaterThanOrEqual, LessThanOrEqual, Or
+    from pyiceberg.table import upsert_util
+
+    exact = upsert_util.create_match_filter(updates, join)
+    if len(join) != 1:
+        return exact
+    if not _has_zero(updates.column(join[0])):
+        return exact
+    return Or(
+        exact,
+        And(GreaterThanOrEqual(join[0], 0.0), LessThanOrEqual(join[0], 0.0)),
+    )
+
+
+def _normalised_keys(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """`table` with `-0.0` in a float merge key replaced by the `0.0` it equals.
+
+    On the values that are *written*, not only on the join, because three
+    things have to agree about a key and only two of them can be talked round:
+    Iceberg's comparison says they are the same number, an Arrow join hashes
+    them apart, and `pc.is_in` -- what pyiceberg's exact delete filter becomes
+    once it reaches Arrow -- hashes them apart too. Normalising the join alone
+    left the update finding the stored row and the delete failing to name it,
+    so the merge wrote the new value beside the old one: 221 rows for 220 keys,
+    and only above the `In` limit, where the filter changes shape.
+
+    Nothing else is touched: not a float that is not a key, not a key that is
+    not a float, and not the sign of anything that is not zero.
+    """
+    columns = list(table.columns)
+    changed = False
+    for name in join:
+        index = table.schema.get_field_index(name)
+        if index < 0:
+            continue
+        column = table.column(index)
+        if not pyarrow.types.is_floating(column.type):
+            continue
+        # Applied whether or not a negative zero is in there: telling requires
+        # a pass of its own, and the kernel is the same pass either way.
+        zero = pyarrow.scalar(0.0, column.type)
+        columns[index] = pyarrow.compute.if_else(pyarrow.compute.equal(column, zero), zero, column)
+        changed = True
+    return pyarrow.Table.from_arrays(columns, schema=table.schema) if changed else table
+
+
 def _keys_of(table: pyarrow.Table, join: Sequence[str], marker: str) -> pyarrow.Table:
     """Just the key columns, numbered, and normalised for Arrow's equality.
 
@@ -1283,7 +1369,9 @@ def _keys_of(table: pyarrow.Table, join: Sequence[str], marker: str) -> pyarrow.
     the same number to IEEE 754 and to Python, and pyiceberg compares them as
     equal -- but they hash apart in a join, which would insert a duplicate key.
     Normalising the sign of zero on float key columns keeps the two agreeing.
-    The *values written* are never touched: this table is only the join.
+    `merge_arrow_table` has normalised the chunk itself by the time this runs,
+    so here it is what keeps a *stored* `-0.0` -- written before that, or by
+    another engine -- joinable to the `0.0` a chunk carries.
     """
     columns = []
     for name in join:

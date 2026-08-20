@@ -148,7 +148,7 @@ what is missing and commits nothing when there is nothing to add, and
 `optimize` is the three in the order that makes them cheap. Every one of them
 reports what it did.
 
-Nine things that were learned the expensive way, all of them measured:
+Ten things that were learned the expensive way, all of them measured:
 
 - **A maintenance verb must settle.** `compact` marks its own snapshots and
   skips a part nothing has landed in since; without that it replans forever,
@@ -174,6 +174,15 @@ Nine things that were learned the expensive way, all of them measured:
   `NotInstalledError` on the first write. Building the spec was tested;
   *writing* one was not. The extra now pulls the core in, and a merge through a
   transformed partition is compared with pyiceberg's own upsert.
+- **Find every branch first, then test the guard on each.** The NaN key was
+  refused below the 200-literal ceiling and silently duplicated above it,
+  because `min_max` skips NaN where `In` refuses it. Crossing that one ceiling
+  then found a *second* boundary nobody had named: an `In` of one literal
+  collapses to `EqualTo`, which compares numerically and matches `-0.0`, while
+  an `In` of two or more becomes `pc.is_in`, which hashes it apart -- so a
+  stored `-0.0` was updated and never deleted, at two keys and not at one.
+  A guard is only as wide as the branch it is on, and the branches are not
+  always the ones the constant names.
 - **A guard is only as wide as the branch it is on.** A merge key that is
   null was refused; one that is NaN was refused *only* under the 200-literal
   ceiling, because the other branch of the same filter builds a range and

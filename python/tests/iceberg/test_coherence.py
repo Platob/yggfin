@@ -459,6 +459,22 @@ def test_a_duplicate_outside_the_chunks_keys_does_not_abort_the_merge(pair) -> N
     assert sorted_rows(ours.read_arrow_table()) == sorted_rows(theirs.read_arrow_table())
 
 
+@pytest.mark.parametrize("keys", [1, MERGE_IN_LIMIT + 20])
+def test_a_stored_duplicate_is_refused_either_side_of_the_limit(pair, keys: int) -> None:
+    """The duplicate check runs on what the scan returned, which the limit decides.
+
+    Below the limit the filter names the keys; above it, it is a range that
+    brings back rows the chunk never mentions. Both have to reach the same
+    verdict about a key the chunk *does* match.
+    """
+    ours, _ = pair
+    doubled = quotes(0, keys)
+    ours.write_arrow(doubled, commit_row_size=0)
+    ours.write_arrow(doubled, commit_row_size=0)  # every key now stored twice
+    with pytest.raises(ValueError, match="[Dd]uplicate"):
+        ours.write_arrow(quotes(0, keys, "XETR"), merge_by=True, commit_row_size=0)
+
+
 def test_a_duplicate_the_chunk_does_match_is_still_refused(pair) -> None:
     """Being lenient about the rest does not make this one safe.
 
@@ -552,8 +568,25 @@ def test_a_nested_column_does_not_stop_a_merge(tmp_path: Path) -> None:
     )
 
 
-def test_a_signed_zero_key_matches_the_zero_it_equals(tmp_path: Path) -> None:
-    """`-0.0 == 0.0` in Python and in Iceberg; they hash apart in Arrow."""
+@pytest.mark.parametrize("keys", [1, 2, MERGE_IN_LIMIT, MERGE_IN_LIMIT + 20])
+@pytest.mark.parametrize("stored_sign", [1.0, -1.0])
+def test_a_signed_zero_key_matches_the_zero_it_equals(
+    tmp_path: Path, keys: int, stored_sign: float
+) -> None:
+    """`-0.0 == 0.0` in Python and in Iceberg; they hash apart in Arrow.
+
+    Across the `In` limit, because the scan filter is a different thing either
+    side of it -- values named one by one below, a range above -- and a guard
+    is only as wide as the branch it is on. That is exactly how the NaN key
+    got through: refused under the limit, silently duplicating above it.
+
+    And at **two** keys as well as one, because that is where the other
+    boundary is: an `In` of one literal collapses to `EqualTo`, which compares
+    numerically and matches `-0.0`, while an `In` of two or more reaches Arrow
+    as `pc.is_in`, which hashes them apart. Both directions too -- the zero may
+    already be stored with the other sign, written by an older version of this
+    code or by another engine, and nothing can normalise that afterwards.
+    """
 
     @field
     class Level(Convertible):
@@ -565,17 +598,21 @@ def test_a_signed_zero_key_matches_the_zero_it_equals(tmp_path: Path) -> None:
         size: int
         """Quantity."""
 
+    schema = Level.FIELD.into_arrow_schema()
+    filler = [float(index + 1) for index in range(keys - 1)]
     stored = pyarrow.Table.from_pydict(
-        {"price": [0.0], "size": [1]}, schema=Level.FIELD.into_arrow_schema()
+        {"price": [0.0 * stored_sign, *filler], "size": [1] * keys}, schema=schema
     )
     incoming = pyarrow.Table.from_pydict(
-        {"price": [-0.0], "size": [2]}, schema=Level.FIELD.into_arrow_schema()
+        {"price": [0.0 * -stored_sign, *filler], "size": [2] * keys}, schema=schema
     )
     catalog = IcebergCatalog(name="zero", properties=properties(tmp_path, "zero"))
     dataset = catalog.dataset("trading.levels", struct=Level.FIELD)
     dataset.write_arrow(stored, commit_row_size=0)
     dataset.write_arrow(incoming, merge_by=["price"], commit_row_size=0)
-    assert dataset.refresh().read_arrow_table().num_rows == 1, "one price, not two"
+    rows = dataset.refresh().read_arrow_table()
+    assert rows.num_rows == keys, "one row per price, not two for the zero"
+    assert set(rows.column("size").to_pylist()) == {2}, "and every one of them updated"
 
 
 def test_a_null_merge_key_is_refused(stored) -> None:
