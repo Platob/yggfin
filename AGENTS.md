@@ -12,10 +12,10 @@ never `read_log_as_table(log)`. Justified free functions stay private
 
 ## 2. `from_*` builds, `into_*` converts
 
-- `from_<thing>`: classmethod, builds an instance (`LogFile.from_path`).
+- `from_<thing>`: classmethod, builds an instance (`TextFile.from_path`).
 - `into_<thing>`: instance method, converts or emits (`Field.into_json`).
 - Never a `format=` argument; never a module-level factory beside a class --
-  `LogFile.from_path(...)` is the whole API.
+  `TextFile.from_path(...)` is the whole API.
 
 ## 3. `from_` and `into_` infer and redirect
 

@@ -163,7 +163,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         The whole of the common case: `TextFiles.from_folder("/var/log/app")`,
         `TextFiles.from_folder("s3://bucket/logs/2026-08-14")`. Anything else
         the set declares -- `pattern`, `recursive`, `reverse`, `timezone`,
-        `ulbridge_name` -- is a keyword here, so a call reads as one shape.
+        `static_values` -- is a keyword here, so a call reads as one shape.
         """
         return cls.from_folders([source], filesystem, **declared)
 
