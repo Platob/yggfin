@@ -1116,6 +1116,41 @@ def test_a_bare_limit_opens_only_the_files_it_needs(
     assert opened.get("data", 0) == 1, "one file already held the two rows"
 
 
+def test_a_reader_opens_no_more_files_than_it_reads_ahead(
+    dataset: IcebergDataset, opened: dict[str, int], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`ArrowScan` submits every planned file to its pool at once, and each
+    finished one holds a whole file's decoded batches until the consumer gets
+    there -- so a reader over a big table was a `read_arrow_table` that took
+    longer. Measured on 24 files and 99 MiB: one batch of 20,000 rows opened
+    all 24 and left Arrow holding 97 of those MiB."""
+    from rekep.iceberg import dataset as module
+
+    monkeypatch.setattr(module, "_read_ahead", lambda: 2)
+    for index in range(6):
+        dataset.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+    opened.clear()
+    reader = dataset.read_arrow_reader()
+    assert reader.read_next_batch().num_rows > 0
+    assert opened.get("data", 0) == 2, "one group, not the whole plan"
+    assert sum(batch.num_rows for batch in reader) + 2 == 12, "and the rest still comes"
+    assert opened.get("data", 0) == 6
+
+
+def test_a_limit_is_the_readers_and_not_each_groups(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Handing every group the whole limit would answer `limit=3` with three
+    rows per group, which on four groups is twelve."""
+    from rekep.iceberg import dataset as module
+
+    monkeypatch.setattr(module, "_read_ahead", lambda: 1)
+    for index in range(4):
+        dataset.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+    found = dataset.read_arrow_reader(row_filter="size >= 0", limit=3).read_all()
+    assert found.num_rows == 3
+
+
 def test_a_limit_under_a_partition_filter_opens_only_the_files_it_needs(
     dataset: IcebergDataset, opened: dict[str, int]
 ) -> None:
@@ -1237,6 +1272,105 @@ def test_maybe_optimize_runs_once_the_table_frays(
     report = dataset.maybe_optimize()
     assert report is not None and report["rewritten"] >= 2
     assert dataset.maybe_optimize() is None, "and once run, the table is quiet again"
+
+
+@pytest.fixture
+def planned(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Every walk of every manifest a call makes, by the question it asked."""
+    from pyiceberg.manifest import ManifestFile
+    from pyiceberg.table.inspect import InspectTable
+
+    walks: list[str] = []
+    partitions, entries = InspectTable.partitions, ManifestFile.fetch_manifest_entry
+
+    def counted(self: InspectTable, snapshot_id: int | None = None) -> object:
+        walks.append("partitions")
+        return partitions(self, snapshot_id)
+
+    def fetched(self: ManifestFile, io: object, discard_deleted: bool = True) -> object:
+        walks.append("entries")
+        return entries(self, io, discard_deleted)
+
+    monkeypatch.setattr(InspectTable, "partitions", counted)
+    monkeypatch.setattr(ManifestFile, "fetch_manifest_entry", fetched)
+    return walks
+
+
+def test_maybe_optimize_asks_the_planner_nothing_on_a_quiet_table(
+    dataset: IcebergDataset, planned: list[str]
+) -> None:
+    """A plan cannot rewrite more files than the branch has, and the head
+    snapshot already says how many that is. Asking anyway cost a full
+    `inspect.partitions()` -- every manifest walked -- on every call of a
+    stream that had converged: 13.2 ms and six manifest reads, measured, for an
+    answer the summary in memory already ruled out."""
+    dataset.write_arrow_table(quotes(3))
+    planned.clear()
+    assert dataset.maybe_optimize() is None
+    assert planned == [], "not one manifest walked to decide there was nothing to do"
+
+
+def test_one_optimize_reads_the_partitions_once_per_version(
+    dataset: IcebergDataset, planned: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`maybe_optimize` plans to decide and `compact` plans to act, over the
+    same metadata version with nothing committing in between. The read after
+    the rewrite is a different version and has to happen."""
+    from rekep.iceberg import dataset as module
+
+    monkeypatch.setattr(module, "AUTO_OPTIMIZE_FILES", 3)
+    monkeypatch.setattr(module, "AUTO_OPTIMIZE_SNAPSHOTS", 99)
+    monkeypatch.setattr(module, "AUTO_OPTIMIZE_MANIFESTS", 99)
+    for index in range(4):
+        dataset.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+    planned.clear()
+    assert dataset.maybe_optimize() is not None, "the file signal is what fired"
+    assert planned.count("partitions") == 2, "one to decide and plan, one to settle"
+
+
+def test_a_cleanup_does_not_reload_the_table_it_just_expired(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Expiry commits on the table object this holds and updates it in place.
+    `refresh()` is for seeing *other* writers, and on a REST or Glue catalog it
+    is a network hop."""
+    for _ in range(4):
+        dataset.write_arrow_table(quotes(1))
+    loads: list[str] = []
+    original = IcebergCatalog.load_table
+    monkeypatch.setattr(
+        IcebergCatalog,
+        "load_table",
+        lambda self, name: (loads.append(str(name)), original(self, name))[1],
+    )
+    report = dataset.cleanup(retain=1, remove_orphans=False)
+    assert report["expired"] == 3
+    assert dataset.snapshots().num_rows == 1, "the object already knows what it expired"
+    assert len(loads) == 1, (
+        "and that took one load: the refresh cleanup opens with, which is there "
+        "because a live set built from a stale table deletes another writer's files"
+    )
+
+
+def test_optimize_can_skip_the_sweep(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The sweep lists the whole store, which is the expensive half of a
+    routine a stream may want to run often. It used to be unreachable: every
+    keyword went to `compact`, which raised on it."""
+    from rekep.iceberg import dataset as module
+
+    listed: list[str] = []
+    original = module.resolve
+    monkeypatch.setattr(module, "resolve", lambda url: (listed.append(url), original(url))[1])
+    for index in range(4):
+        dataset.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+    report = dataset.optimize(min_files=2, remove_orphans=False)
+    assert report["rewritten"] > 0 and report["deleted"] == 0
+    assert listed == [], "not one directory resolved, so not one listed"
+    assert dataset.refresh().read_arrow_table().num_rows == 8
+    assert dataset.optimize(min_files=2, orphan_age=datetime.timedelta(seconds=0))["deleted"] > 0
+    assert listed, "and asking for the sweep still sweeps"
 
 
 def test_a_stream_ends_by_asking_maybe_optimize_only_when_asked(

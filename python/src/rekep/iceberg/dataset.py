@@ -6,6 +6,7 @@ import dataclasses
 import datetime
 import functools
 import json
+import sys
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 from typing import Any
@@ -987,11 +988,26 @@ class IcebergDataset(Dataset):
         return plan
 
     def _partition_rows(self, reference: str) -> list[dict]:
-        """One row per partition of that branch's head, as Iceberg reports them."""
+        """One row per partition of that branch's head, as Iceberg reports them.
+
+        Held against the metadata version it was read from, because that is
+        what it is a function of: `inspect.partitions()` walks every manifest
+        of the head, and one `auto_optimize` write stream asks for it twice
+        over the same version -- `maybe_optimize` to decide, `compact` to plan,
+        with nothing committing in between. Any commit, ours or another
+        writer's seen through `refresh()`, moves `metadata_location`, so the
+        key invalidates itself and there is nothing to remember to clear.
+        """
         table = self.iceberg_table
+        key = (reference, table.metadata_location)
+        held = self.__dict__.get("_partitions")
+        if held is not None and held[0] == key:
+            return held[1]
         head = table.refs().get(reference)
-        rows = table.inspect.partitions(snapshot_id=head.snapshot_id if head is not None else None)
-        return rows.to_pylist() if rows.num_rows else []
+        found = table.inspect.partitions(snapshot_id=head.snapshot_id if head is not None else None)
+        rows = found.to_pylist() if found.num_rows else []
+        self.__dict__["_partitions"] = (key, rows)
+        return rows
 
     def compaction_marks(self) -> dict[str, list[int]]:
         """What compaction settled: `{"<branch>/<partition>": [files, rows]}`."""
@@ -1128,7 +1144,10 @@ class IcebergDataset(Dataset):
         if expired and not dry_run:
             with self.iceberg_table.maintenance.expire_snapshots() as expire:
                 expire.by_ids(expired)
-            self.refresh()
+            # No `refresh()`: expiry commits on the table object this holds and
+            # updates it in place -- the snapshots are gone and
+            # `metadata_location` has moved before this line. Reloading would
+            # be a catalog round trip to learn what we just did.
         if not remove_orphans:
             return report
         orphans = self._orphans(orphan_age, metadata=metadata)
@@ -1350,8 +1369,17 @@ class IcebergDataset(Dataset):
         The signals cost no store round trips a write has not already paid
         for: snapshot count is in the metadata this object holds, manifest
         count is one manifest-list read the FileIO cache is already holding,
-        and the compaction planner -- the expensive question -- is only asked
-        when the first two stay quiet, over manifests that same cache serves.
+        and the compaction planner -- the expensive question, a walk of every
+        manifest -- is only asked when the cheap ones leave it open.
+
+        Which is what the file count is for. A plan cannot rewrite more files
+        than the branch has, and how many that is the head snapshot already
+        says (`total-data-files`, in metadata this object holds): below the
+        threshold the planner cannot possibly cross it, so it is never asked.
+        That is the quiet table, which is every call on a stream that has
+        converged -- and it was paying a full `inspect.partitions()` for the
+        privilege.
+
         Returns `optimize`'s report, or None when nothing crossed an
         `AUTO_OPTIMIZE_*` threshold -- which is also the answer right after an
         optimize ran, so `auto_optimize=True` on a stream converges instead of
@@ -1367,20 +1395,40 @@ class IcebergDataset(Dataset):
         fragmented = (
             len(table.metadata.snapshots) >= AUTO_OPTIMIZE_SNAPSHOTS
             or manifests >= AUTO_OPTIMIZE_MANIFESTS
-            or sum(count for _, _, count in self._plan_rows(min_files, branch))
-            >= AUTO_OPTIMIZE_FILES
+            or (
+                _stored_files(snapshot) >= AUTO_OPTIMIZE_FILES
+                and sum(count for _, _, count in self._plan_rows(min_files, branch))
+                >= AUTO_OPTIMIZE_FILES
+            )
         )
         if not fragmented:
             return None
         return self.optimize(min_files=min_files, branch=branch, **kwargs)
 
-    def optimize(self, *, min_files: int = 2, retain: int = 1, **kwargs: Any) -> dict[str, int]:
+    def optimize(
+        self,
+        *,
+        min_files: int = 2,
+        retain: int = 1,
+        older_than: datetime.datetime | datetime.timedelta | None = None,
+        remove_orphans: bool = True,
+        orphan_age: datetime.timedelta = ORPHAN_AGE,
+        metadata: bool = True,
+        **kwargs: Any,
+    ) -> dict[str, int]:
         """Merge manifests, compact files, then expire and sweep -- in that order.
 
         The order is the point: compacting first makes the snapshots that
         cleanup then expires, and merging manifests first means the compaction
         commits land in fewer of them. One call is the whole routine a table
         written by a streaming job needs.
+
+        `cleanup`'s arguments are named here rather than swept into `kwargs`,
+        which sent every one of them to `compact` and raised. The sweep is the
+        expensive half -- a recursive listing of the whole store, on every call
+        -- so `remove_orphans=False` is what an `auto_optimize` stream that
+        wants the compaction and not the listing asks for. Everything else goes
+        through to `compact`.
         """
         if self.iceberg_table.properties.get(MERGE_MANIFESTS) != "true":
             # Only when it is not already on: a no-op commit is still a metadata
@@ -1388,7 +1436,13 @@ class IcebergDataset(Dataset):
             # every time.
             self.set_properties({MERGE_MANIFESTS: "true"})
         rewritten = self.compact(min_files=min_files, **kwargs)
-        report = self.cleanup(retain=retain)
+        report = self.cleanup(
+            retain=retain,
+            older_than=older_than,
+            remove_orphans=remove_orphans,
+            orphan_age=orphan_age,
+            metadata=metadata,
+        )
         return {"rewritten": rewritten, **report}
 
     def set_properties(self, properties: dict[str, str]) -> IcebergDataset:
@@ -1419,7 +1473,8 @@ class IcebergDataset(Dataset):
 
 
 def _planned_reader(scan: Any, tasks: Sequence[Any]) -> pyarrow.RecordBatchReader:
-    """The scan's own batch reader, over files it has already planned.
+    """The scan's own batch reader, over files it has already planned -- and
+    over no more of them at a time than the consumer is keeping up with.
 
     `DataScan.to_arrow_batch_reader` calls `plan_files` again -- and pyiceberg
     re-reads the manifest list per plan, on purpose -- so a caller that has
@@ -1427,19 +1482,74 @@ def _planned_reader(scan: Any, tasks: Sequence[Any]) -> pyarrow.RecordBatchReade
     there is, would pay planning twice per chunk. This is that method's own
     construction, handed the tasks in hand; the rows are the rows it would
     return.
+
+    **In groups**, which is the part that makes it a stream. `ArrowScan`
+    submits *every* planned file to its thread pool at once and each finished
+    one holds a whole file's decoded batches until the consumer reaches it, so
+    a reader over a big table is a `read_arrow_table` that takes longer:
+    measured on 24 files and 99 MiB, one batch of 20,000 rows left every file
+    opened and Arrow holding 97 of those MiB. Handing the plan over a group at
+    a time bounds that to the group. The group is the pool's own width, since
+    that is how many files it can decode at once anyway -- past it there is a
+    queue, not parallelism.
+
+    A plan carrying delete files is handed over whole: `_read_all_delete_files`
+    runs per `ArrowScan`, so a delete file two groups both reference would be
+    read once per group. Those tables keep the behaviour they had.
     """
     from pyiceberg.io.pyarrow import ArrowScan, schema_to_pyarrow
 
     target = schema_to_pyarrow(scan.projection())
-    batches = ArrowScan(
-        scan.table_metadata,
-        scan.io,
-        scan.projection(),
-        scan.row_filter,
-        scan.case_sensitive,
-        scan.limit,
-    ).to_record_batches(tasks)
-    return pyarrow.RecordBatchReader.from_batches(target, batches).cast(target)
+
+    def arrow(limit: int | None) -> Any:
+        return ArrowScan(
+            scan.table_metadata,
+            scan.io,
+            scan.projection(),
+            scan.row_filter,
+            scan.case_sensitive,
+            limit,
+        )
+
+    if any(task.delete_files for task in tasks):
+        batches = arrow(scan.limit).to_record_batches(tasks)
+        return pyarrow.RecordBatchReader.from_batches(target, batches).cast(target)
+
+    def generate() -> Iterator[pyarrow.RecordBatch]:
+        taken = 0
+        for group in _grouped(tasks, _read_ahead()):
+            # The limit is what is *left* of it: handing each group the whole
+            # of it would cap every group instead of the read, and three
+            # groups would answer `limit=100` with three hundred rows.
+            for batch in arrow(
+                None if scan.limit is None else scan.limit - taken
+            ).to_record_batches(group):
+                yield batch
+                taken += batch.num_rows
+            if scan.limit is not None and taken >= scan.limit:
+                break
+
+    return pyarrow.RecordBatchReader.from_batches(target, generate()).cast(target)
+
+
+def _grouped(tasks: Sequence[Any], size: int) -> Iterator[Sequence[Any]]:
+    """`tasks` in slices of `size`, in plan order."""
+    for start in range(0, len(tasks), size):
+        yield tasks[start : start + size]
+
+
+def _read_ahead() -> int:
+    """How many planned files a read has in flight, from the pool's own width.
+
+    pyiceberg's shared executor decides how many files can be decoded at once;
+    reading further ahead than that fills memory without filling the pool. Its
+    width is not exposed, so it is read off the `ThreadPoolExecutor` -- and if
+    a future one stops saying, one file at a time is the answer that cannot be
+    wrong about memory.
+    """
+    from pyiceberg.utils.concurrent import ExecutorFactory
+
+    return max(int(getattr(ExecutorFactory.get_or_create(), "_max_workers", 0) or 0), 1)
 
 
 def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
@@ -1466,9 +1576,9 @@ def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
     A limit already satisfied stops the walk, so a task past it is never even
     inspected -- which is also what makes `limit=0` open nothing.
     """
-    if limit is None:
-        return scan.to_arrow_batch_reader()
     tasks = list(scan.plan_files())
+    if limit is None:
+        return _planned_reader(scan, tasks)
     exact = _always_true()
     taken, rows = [], 0
     for task in tasks:
@@ -1773,6 +1883,22 @@ def _mark_key(branch: str, partition: Any) -> str:
         return f"{branch}/"
     values = ",".join(f"{name}={partition[name]!r}" for name in sorted(partition))
     return f"{branch}/{values}"
+
+
+def _stored_files(snapshot: Any) -> int:
+    """How many data files the branch that snapshot heads holds.
+
+    Iceberg records it in the snapshot summary, so it is already in the
+    metadata this process loaded -- no manifest is walked to answer it. Absent
+    on a snapshot another engine wrote without summaries, and the answer there
+    has to be "ask the planner", which is what a very large number says.
+    """
+    if snapshot is None:
+        return 0
+    try:
+        return int(snapshot.summary["total-data-files"])
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return sys.maxsize
 
 
 def _totals(rows: Sequence[Any]) -> list[int]:
