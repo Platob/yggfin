@@ -631,8 +631,13 @@ chunk's scan plans from.
 | read everything | 18 | 10 — the data files |
 | read one partition | 5 | 2 |
 | read `limit=100` | 9 | **1** |
-| `scan_plan` | 11 | **0** |
-| optimize (compact + sweep) | 71 | 10 |
+| `scan_plan` one partition | 11 → **3** | **0** |
+| optimize (compact + sweep) | 71 → **69** | 10 |
+
+The two uncached counts that moved are not the cache's doing: `scan_plan` under
+a filter stopped planning the table a second time to count what an unfiltered
+scan would touch, and the sweep stopped walking the manifests once per half of
+its live set.
 
 With the cache on, the only GETs left are data files a read genuinely needs;
 every manifest, manifest list and `metadata.json` fetch is served from memory

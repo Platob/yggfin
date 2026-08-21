@@ -387,12 +387,18 @@ def semi_join(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str])
     """The rows of `matched` whose key the chunk references."""
     if matched.num_rows == 0:
         return matched
-    kept = keys_of(matched, join, TARGET_INDEX).join(
-        keys_of(chunk, join, SOURCE_INDEX).select(list(join)),
-        keys=list(join),
-        join_type="left semi",
-    )
-    return matched.take(kept.column(TARGET_INDEX))
+    if chunk.num_rows > matched.num_rows:
+        kept = normalised_keys(chunk, join).select(list(join)).join(
+            keys_of(matched, join, TARGET_INDEX), keys=list(join), join_type="right semi"
+        )
+    else:
+        kept = keys_of(matched, join, TARGET_INDEX).join(
+            normalised_keys(chunk, join).select(list(join)),
+            keys=list(join),
+            join_type="left semi",
+        )
+    index = kept.column(TARGET_INDEX).combine_chunks()
+    return matched.take(index.take(pyarrow.compute.sort_indices(index)))
 
 
 def anti_join(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
@@ -404,12 +410,18 @@ def anti_join(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str])
     """
     if matched.num_rows == 0:
         return chunk
-    fresh = keys_of(chunk, join, SOURCE_INDEX).join(
-        keys_of(matched, join, TARGET_INDEX).select(list(join)),
-        keys=list(join),
-        join_type="left anti",
-    )
-    return chunk.take(fresh.column(SOURCE_INDEX))
+    if matched.num_rows > chunk.num_rows:
+        fresh = normalised_keys(matched, join).select(list(join)).join(
+            keys_of(chunk, join, SOURCE_INDEX), keys=list(join), join_type="right anti"
+        )
+    else:
+        fresh = keys_of(chunk, join, SOURCE_INDEX).join(
+            normalised_keys(matched, join).select(list(join)),
+            keys=list(join),
+            join_type="left anti",
+        )
+    index = fresh.column(SOURCE_INDEX).combine_chunks()
+    return chunk.take(index.take(pyarrow.compute.sort_indices(index)))
 
 
 def first_rows(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:

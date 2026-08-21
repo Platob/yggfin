@@ -181,10 +181,15 @@ measured twice with identical counts:
 | read everything | 18 | 10 |
 | read one partition | 5 | 2 |
 | read `limit=100` | 9 | **1** |
-| `scan_plan` one partition | 11 | **0** |
-| optimize (compact + sweep) | 71 | 10 |
+| `scan_plan` one partition | 11 → **3** | **0** |
+| optimize (compact + sweep) | 71 → **69** | 10 |
 
-Three separate changes produce that column, and they compose:
+Two of the uncached counts moved since, without the cache being involved at
+all: `scan_plan` under a filter planned the table a second time purely to count
+what an unfiltered scan would touch (11 → 3), and the sweep stopped walking the
+manifests once per half of its live set (71 → 69).
+
+Three separate changes produce the cached column, and they compose:
 
 - **The content cache** ([what the store is asked](iceberg.md#what-the-store-is-asked)):
   manifests, manifest lists and `metadata.json` are immutable, so `ArrowFileIO`
