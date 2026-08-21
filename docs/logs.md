@@ -488,7 +488,9 @@ default is chosen for.
 
 `bench_text_file.py --only folders`. The same million rows every time, cut into
 a different number of files, so the column that moves is fragmentation and
-nothing else. Best of three, both runs quoted.
+nothing else. Every file holds its *own* rows — 500 copies of one file would
+tell a compressor something about the fixture rather than about the data. Best
+of three, both runs quoted.
 
 !!! note "Its own machine"
 
@@ -497,11 +499,11 @@ nothing else. Best of three, both runs quoted.
 
 | case | files | rows/s | batches | peak MiB |
 | --- | --- | --- | --- | --- |
-| one file | 1 | 416k–425k | 16 | 11.7 |
-| 20 files | 20 | 416k–418k | 10 | 35.8 |
-| 500 files | 500 | 411k–425k | 16 | 23.7 |
-| 500 files, chained by hand | 500 | 421k–447k | **500** | 0.4 |
-| 500 files, gzipped | 500 | 379k–390k | 16 | 25.5 |
+| one file | 1 | 387k–398k | 16 | 11.5 |
+| 20 files | 20 | 404k–413k | 10 | 35.2 |
+| 500 files | 500 | 400k–408k | 16 | 23.5 |
+| 500 files, chained by hand | 500 | 387k–416k | **500** | 0.4 |
+| 500 files, gzipped | 500 | 366k–385k | 16 | 25.3 |
 
 **Fragmentation costs nothing measurable.** Five hundred files parse at the
 rate one does, because the per-line regex is the bottleneck either way and an
@@ -510,46 +512,46 @@ one GET per file instead, which is why the walk lists lazily and reads one file
 at a time.
 
 **Combining short batches is the one thing a set does that a chain of readers
-does not**, and the row above says what it costs: `chained by hand` is the same
-files with every per-file batch handed straight downstream, and it is 500
-batches instead of 16, at 421k–447k rows/s against 411k–425k and 0.4 MiB held
-against 23.7. So the copy is worth a few per cent of the parse and one batch of
-memory, and it buys a consumer thirty times fewer units of work — a store that
-commits per call, or a writer that lands a row group per batch, pays that back
-immediately.
+does not**, and the row above is what it costs: `chained by hand` is the same
+files with every per-file batch handed straight downstream. Its 387k–416k and
+the combined 400k–408k overlap — the copy is inside the noise of this machine —
+and what it buys is **16 batches instead of 500**, which is thirty times fewer
+units of work for a store that commits per call or a writer that lands a row
+group per batch. What it costs is memory: one combined batch instead of one
+short one, 23.5 MiB against 0.4.
 
-The 20-file row holds the most (35.8 MiB) for a reason worth knowing:
+The 20-file row holds the most (35.2 MiB) for a reason worth knowing:
 `batch_row_size` is a **lower** bound, and a batch is never cut to hit it. Two
 50,000-row files combine into one 100,000-row batch when 65,536 was asked for.
 
-**Gzip costs about 8%** of the rows/s (379k–390k against 411k–425k) and is
-decoded in Arrow's C++ layer while the row loop is the bottleneck — the same
-result the single-file sweep gets from the other direction.
+**Gzip costs about 8%** of the rows/s (366k–385k against 400k–408k) and is
+decoded in Arrow's C++ layer while the row loop is the bottleneck.
 
 ### Shipping the bytes
 
-The byte flow, on the same 500-file capture: 133.5 MiB of log text, best of
+The byte flow, on the same 500-file capture: 136.3 MiB of log text, best of
 three, both runs quoted. `held` is Python's own peak allocation
 (`tracemalloc`), because these chunks are `bytes` and never reach Arrow's
-allocator.
+allocator. Every flow is decoded and compared against the raw stream before it
+is timed — a codec stream that lost its trailer would otherwise print as a
+*better* ratio rather than as a failure.
 
 | flow | MB/s | out | held |
 | --- | --- | --- | --- |
-| `into_byte_chunks()` | 2,346–2,655 | 133.5 MiB | **4.4 MiB** |
-| `into_byte_chunks(compression="gzip")` | 77.3–78.6 | 10.9 MiB | **4.4 MiB** |
-| `into_byte_chunks(compression="zstd")` | 1,526–1,564 | 0.02 MiB | **4.4 MiB** |
-| `into_bytes()` (materialised) | 714–716 | 133.5 MiB | **267.1 MiB** |
+| `into_byte_chunks()` | 2,596–2,835 | 136.3 MiB | **4.3 MiB** |
+| `into_byte_chunks(compression="gzip")` | 76.6–77.7 | 11.0 MiB | **4.4 MiB** |
+| `into_byte_chunks(compression="zstd")` | 737–773 | 2.3 MiB | **4.4 MiB** |
+| `into_bytes()` (materialised) | 701–752 | 136.3 MiB | **272.6 MiB** |
 
 The last row is the configuration expected to be bad, and it is here to be
-quoted: the same stream with nothing bounding it holds 267 MiB for a 133.5 MiB
-capture — twice the payload, because joining copies — against 4.4 MiB for the
-generator. That is the whole reason the flow is a generator, and why
+quoted: the same stream with nothing bounding it holds 272.6 MiB for a 136.3
+MiB capture — twice the payload, because joining copies — against 4.3 MiB for
+the generator. That is the whole reason the flow is a generator, and why
 `compression=` encodes as it goes instead of calling `Codec.compress` on the
 lot.
 
-Compressing is the codec's cost, not this package's: gzip runs at 77–79 MB/s
-and zstd at 1.5 GB/s on the same bytes. (The synthetic log compresses
-absurdly well — 0.02 MiB out of 133.5 — so read the *rate*, not the ratio.)
+Compressing is the codec's cost, not this package's: gzip runs at 77 MB/s and
+zstd at 737–773 MB/s on the same bytes, for 11.0 MiB and 2.3 MiB out of 136.3.
 
-Walking the 500 paths costs **3.5–4.0 ms** on a local disk, one listing per
-directory.
+Walking the 500 paths costs **2.6–2.8 ms** on a local disk, one listing per
+directory, keyed on base names rather than whole paths.
