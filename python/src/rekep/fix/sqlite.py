@@ -124,6 +124,7 @@ class SqliteFixRegistry(FixRegistry):
     | `tags()`, every version | ~79 ms | ~4.4 ms |
     | `search("reject")` | ~82 ms | ~3.9 ms |
     | `fields("4.4")`, a whole version | ~10 ms | ~9.4 ms |
+    | `load()`, verifying every version | ~68 ms | ~0.8 ms |
 
     and 6.4 MB of resident objects against 0.09 MB. The last row is the
     honest one: handing back a whole version is `Field` construction, which
@@ -293,6 +294,11 @@ class SqliteFixRegistry(FixRegistry):
         rows = self._rows(f"SELECT {COLUMNS} FROM field WHERE version = ? ORDER BY tag", (version,))
         if rows:
             return [self._field_of(row) for row in rows]
+        if version in self.indexed():
+            # Stored, and stored empty. Rare enough to be worth one extra
+            # query on the miss: without it a version that legitimately holds
+            # nothing would be scraped again on every single call.
+            return []
         return self._import(version)
 
     def _store_fields(self, version: str, fields: list[Field]) -> None:
@@ -336,6 +342,26 @@ class SqliteFixRegistry(FixRegistry):
             return None
         self._store_fields(version, dumped)
         return dumped
+
+    def load(self, *versions: str, refresh: bool = False) -> dict[str, int]:
+        """Index (or verify) whole versions: `{version: fields}`.
+
+        Counted in SQL where the index already holds the version, because
+        verifying a whole dictionary is nine `count(*)`s and not 6,479 objects
+        built to be thrown away. What is missing is still imported or scraped,
+        and `refresh` still scrapes over what is there.
+        """
+        counted: dict[str, int] = {}
+        indexed = self.indexed()
+        for named in versions or self.versions:
+            spelled = self._spelling(named)
+            if refresh or spelled not in indexed:
+                counted[named] = len(self.fields(named, refresh=refresh))
+                continue
+            counted[named] = self._rows("SELECT count(*) FROM field WHERE version = ?", (spelled,))[
+                0
+            ][0]
+        return counted
 
     # -- the questions ---------------------------------------------------------
 

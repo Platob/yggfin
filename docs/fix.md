@@ -253,6 +253,7 @@ uv run python benchmarks/bench_fix_registry.py
 | `tags()`, every version | ~79 ms | ~4.4 ms |
 | `search("reject")` | ~82 ms | ~3.9 ms |
 | `fields("4.4")`, a whole version | ~10 ms | ~9.4 ms |
+| `load()`, verifying every version | ~68 ms | ~0.8 ms |
 
 Resident objects after `tags()`: 6.4 MB against 0.09 MB. The file is 2.78 MB
 against the dump's 2.86 MB, built in ~150 ms.

@@ -66,6 +66,7 @@ QUESTIONS: dict[str, Callable[[FixRegistry], object]] = {
     "search('reject')": lambda registry: registry.search("reject"),
     "search('Sied')  levenshtein": lambda registry: registry.search("Sied"),
     "fields('4.4')  whole version": lambda registry: registry.fields("4.4"),
+    "load()  verify every version": lambda registry: registry.load(),
 }
 
 

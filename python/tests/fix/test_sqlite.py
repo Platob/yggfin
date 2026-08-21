@@ -376,6 +376,38 @@ def test_a_refresh_replaces_the_version_rather_than_merging_into_it(
     assert indexed.lookup(103, "4.4") == [], "the dropped field is gone, not stale"
 
 
+def test_verifying_a_whole_index_builds_no_fields_at_all(dumped: Path, tmp_path: Path) -> None:
+    """`load()` over an index that is already whole is counting, not reading.
+
+    Counted structurally rather than timed: a `Field` built here is a field
+    built to be discarded, and the count of them is what the change was for.
+    """
+
+    class Counting(OfflineSqliteRegistry):
+        built = 0
+
+        def _field_of(self, row: tuple[object, ...]) -> Field:
+            type(self).built += 1
+            return super()._field_of(row)
+
+    indexed = Counting(cache_dir=dumped, database=tmp_path / "fix.db")
+    assert indexed.load("4.4") == {"4.4": 4}
+    assert list(indexed.indexed()) == ["4.4"], "the first call imported the version"
+    Counting.built = 0
+    assert indexed.load("4.4") == {"4.4": 4}
+    assert Counting.built == 0, "verifying it built nothing"
+    assert len(indexed.fields("4.4")) == 4
+    assert Counting.built == 4, "and reading it does -- so the counter counts"
+
+
+def test_a_version_stored_with_no_fields_is_not_fetched_again(dumped: Path, tmp_path: Path) -> None:
+    """Stored-and-empty is an answer; "no rows" alone would look like a miss."""
+    indexed = OfflineSqliteRegistry(cache_dir=dumped, database=tmp_path / "fix.db")
+    indexed._store_fields("9.9", [])
+    assert indexed.fields("9.9") == [], "and not a scrape of a version with no pages"
+    assert "9.9" in indexed.indexed()
+
+
 def test_the_index_survives_being_reopened(dumped: Path, tmp_path: Path) -> None:
     """What the file is for: a second process asks and nothing is rebuilt."""
     database = tmp_path / "fix.db"
