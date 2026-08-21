@@ -147,6 +147,60 @@ APIs surprise: a library default that is inert until a second one is set, a
 deleting what they kept alive. Each of those cost a rewrite here, and each one
 is now a measured number on the page that owns it.
 
+## A location is parsed once, in one place
+
+A path is not a string. `file:///C:/warehouse`, `C:\warehouse`,
+`s3://bucket/key`, `s3://key:secret@minio:9000/bucket/key` and `logs/app.txt`
+all name a file, and each is read differently — so everything that compares two
+locations, or hands one to a filesystem, reduces both through the same parser.
+That parser is `Url`.
+
+```python
+from rekep import Url
+
+url = Url.from_string("s3://AKIA:sec:ret@minio:9000/logs/2026-08-14/app.txt")
+url.endpoint      # 'minio:9000'  -- a port means a store, not a bucket
+url.bucket        # 'logs'        -- so the bucket is the first path segment
+url.password      # 'sec:ret'     -- userinfo splits on the *first* colon
+url.into_filesystem()             # (S3FileSystem, 'logs/2026-08-14/app.txt')
+repr(url)         # Url('s3://AKIA:***@minio:9000/logs/2026-08-14/app.txt')
+```
+
+A location is a value a job walks, so `Url` is a mutable dataclass and the walk
+is in place; `copy()` is where a walk branches.
+
+```python
+root = Url.from_string("s3://key:secret@minio:9000/warehouse")
+table = root.copy().join("trading", "quotes")   # returns the same object, moved
+table.parent().path                             # 'warehouse/trading'
+```
+
+Three readings this fixes, each of which was a silent wrong answer before:
+
+| spelling | read elsewhere as | read here as |
+| --- | --- | --- |
+| `s3://key:sec:ret@bucket/k` | a malformed URL, or the secret `sec` | the secret `sec:ret` |
+| `s3://key:secret@minio:9000/wh` | a bucket named `minio`, port dropped | the endpoint `minio:9000`, bucket `wh` |
+| `C:/warehouse` | a URI with scheme `c` | a local path on drive `C:` |
+
+The middle row is the dangerous one: a bucket called `minio` is a legal name,
+so nothing raises — the write simply lands where nobody looks.
+
+Because the parts are known, a location can also say what a *catalog* needs to
+be told, rather than the caller repeating it as three settings:
+
+```python
+from rekep.urls import properties_of
+
+properties_of(Url.from_string("s3://key:secret@minio:9000/wh"))
+# {'s3.endpoint': 'http://minio:9000',
+#  's3.access-key-id': 'key',
+#  's3.secret-access-key': 'secret'}
+```
+
+That is what [`ArrowFileIO`](iceberg.md#a-catalog) fills in for a warehouse URL,
+and what a caller sets explicitly always wins over it.
+
 ## Push the work to whoever holds the statistics
 
 Filters, projections and limits go to the engine that can prune with them, and

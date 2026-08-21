@@ -5,7 +5,6 @@ from __future__ import annotations
 import fnmatch
 import io
 import os
-import pathlib
 import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
@@ -16,7 +15,6 @@ from typing import Any, ClassVar
 import pyarrow
 import pyarrow.fs
 
-from rekep.convert import URI_SCHEME
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
@@ -28,6 +26,7 @@ from rekep.logs.text_file import (
     parsed_field_of,
     static_columns_of,
 )
+from rekep.urls import Url
 
 #: Cuts a path into its digit runs and everything between them, so ordering
 #: can compare a run as a number: `app.9.txt` before `app.10.txt`, which a
@@ -631,15 +630,16 @@ def _natural(info: pyarrow.fs.FileInfo) -> tuple[tuple[int, int | str, str], ...
 
 
 def _root(source: str | os.PathLike[str], filesystem: pyarrow.fs.FileSystem | None) -> str:
-    """A source as this set addresses it: a URI, or a local path made one.
+    """A source as this set addresses it: a URI, whatever it arrived as.
 
     A path on a filesystem the caller handed over is already what that
-    filesystem understands, so it is left alone. Anything else without a
-    scheme is resolved against the working directory and written as a
-    `file://` URI, the way `TextFile.from_path` does -- and a Windows drive
-    letter is not a scheme, which is why `URI_SCHEME` demands the `://`.
+    filesystem understands, so it is left alone. Anything else goes through
+    `Url`, which is where this package decides what a location is -- a bare
+    path becomes a `file://` URI against the working directory, a Windows
+    drive letter stays a drive letter, and a URI keeps its endpoint and its
+    credentials.
     """
     text = os.fspath(source)
-    if filesystem is not None or URI_SCHEME.match(text):
+    if filesystem is not None:
         return text
-    return pathlib.Path(text).resolve().as_uri()
+    return Url.from_string(text).into_string()

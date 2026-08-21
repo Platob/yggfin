@@ -31,6 +31,31 @@ value when a write lands on a table partitioned by a transform.
     )
     ```
 
+=== "On MinIO or S3"
+
+    ```python
+    catalog = IcebergCatalog(
+        name="prod",
+        properties={
+            "type": "sql",
+            "uri": "postgresql://...",
+            "warehouse": "s3://AKIA:sec:ret@minio:9000/warehouse",
+        },
+    )
+    ```
+
+    The warehouse URL already says where the store is, which key reaches it
+    and which secret, so it is not said again: `ArrowFileIO` reads
+    `s3.endpoint`, `s3.access-key-id` and `s3.secret-access-key` out of it
+    (through [`Url`](design.md#a-location-is-parsed-once-in-one-place), which is
+    why a secret may contain a colon). Setting any of them explicitly wins —
+    an explicit property is a decision, a URL is a default.
+
+    The port is what says `minio:9000` is the *store* and `warehouse` the
+    bucket. Without this, every parser in the stack reads `minio` as the
+    bucket and drops the port — a legal bucket name, so nothing raises and the
+    write lands nowhere anybody looks.
+
 === "REST / Glue / anything"
 
     ```python
@@ -40,9 +65,10 @@ value when a write lands on a table partitioned by a transform.
     Whatever pyiceberg loads, loads. The one default added here is
     `py-io-impl` → this package's `ArrowFileIO`, so Iceberg reads, writes and
     maintenance all go through the same `pyarrow.fs` handles as everything else
-    — one credential chain, one set of URI rules — plus the two things it adds:
-    Windows drive letters parse, and immutable metadata is
-    [fetched once](#what-the-store-is-asked). Naming another wins.
+    — one credential chain, one set of URI rules — plus the three things it
+    adds: Windows drive letters parse, an S3 endpoint is told from a bucket,
+    and immutable metadata is [fetched once](#what-the-store-is-asked). Naming
+    another wins.
 
 === "Namespaces"
 
@@ -317,7 +343,7 @@ goes.
     holding a zero, because the inner half becomes an `In` and `pc.is_in`
     hashes `-0.0` apart from the `0.0` it equals; and a key that repeats
     nothing, where one group per row is the tree it already builds. The second
-    is measured too — `(at, hash64)` at 0.51–11.94 s for the same 500 to 5,000
+    is measured too — `(at, h64)` at 0.51–11.94 s for the same 500 to 5,000
     rows — because an exact filter over *n* arbitrary key pairs is *n* terms
     and there is no smaller way to say it.
 
@@ -1006,7 +1032,7 @@ distinct values says the repeated half once. The filter stays exact, and
 [the tests](https://github.com/Platob/yggfin/blob/main/python/tests/iceberg/test_coherence.py)
 compare it against pyiceberg's own row for row rather than against itself.
 
-**A key that repeats nothing** — `(at, hash64)`, where every value of both
+**A key that repeats nothing** — `(at, h64)`, where every value of both
 halves is distinct — is left alone, because one group per row is the tree
 `create_match_filter` already builds. Its numbers are what a merge of many
 updates costs when nothing can be factored out of it, and they are here because

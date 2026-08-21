@@ -22,7 +22,7 @@ class Log(Convertible):
 
     # An integer rather than a timestamp type, so the column survives any
     # downstream that is picky about time units. Part of the key beside
-    # `hash64`: the hash alone identifies a line, but a key that leads with
+    # `h64`: the hash alone identifies a line, but a key that leads with
     # time is one an engine can prune on, since it correlates with the
     # partition.
     recorded_at_unix: Annotated[
@@ -56,5 +56,5 @@ class Log(Convertible):
     message: str
     """Payload with the header and level stripped, continuation lines folded in."""
 
-    hash64: Annotated[int, Field.primary_key()]
+    h64: Annotated[int, Field.primary_key()]
     """Signed xxh3-64 of the raw line, for matching lines across captures."""

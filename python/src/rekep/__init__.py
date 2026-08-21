@@ -17,6 +17,7 @@ from rekep.fields import (
 )
 from rekep.fix import FixMessage, FixRegistry
 from rekep.logs import Log, TextFile, TextFiles
+from rekep.urls import Url
 
 __version__ = "0.1.0"
 
@@ -38,6 +39,7 @@ __all__ = [
     "StructField",
     "TextFile",
     "TextFiles",
+    "Url",
     "__version__",
     "field",
 ]

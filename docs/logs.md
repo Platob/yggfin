@@ -209,7 +209,7 @@ so a consumer that does not import this package still knows what a row is.
 | column | type | what it is |
 | --- | --- | --- |
 | `url` | `string` | the log the line came from |
-| `recorded_at_unix` | `int64` | nanoseconds since the epoch — **primary key** with `hash64` |
+| `recorded_at_unix` | `int64` | nanoseconds since the epoch — **primary key** with `h64` |
 | `recorded_at_date` | `date32` | the local calendar day — **partition** |
 | `recorded_at_time` | `time64[us]` | the local time of day |
 | `thread_name` | `string` | the first bracketed field |
@@ -217,7 +217,7 @@ so a consumer that does not import this package still knows what a row is.
 | `category_id` | `int32` | categorisation placeholder — `0` until assigned, never null |
 | `category_name` | `string` | categorisation placeholder — empty until assigned, never null |
 | `message` | `string` | payload, continuations folded in |
-| `hash64` | `int64` | xxh3-64 of the raw line — **primary key** with `recorded_at_unix` |
+| `h64` | `int64` | xxh3-64 of the raw line — **primary key** with `recorded_at_unix` |
 
 …and then whatever `static_values` declares, in the order it declares them.
 
@@ -228,7 +228,7 @@ so a consumer that does not import this package still knows what a row is.
 
     Log.FIELD.names                                   # the columns above
     Log.FIELD.field("recorded_at_unix").metadata      # {'unit': 'nanosecond', ...}
-    Log.FIELD.primary_keys()                          # ['recorded_at_unix', 'hash64']
+    Log.FIELD.primary_keys()                          # ['recorded_at_unix', 'h64']
     Log.FIELD.partition_keys()                        # {'recorded_at_date': 'identity'}
     ```
 
@@ -354,7 +354,7 @@ a read and a write, with nothing in between.
     with TextFile.from_path("app.txt.gz", static_values={"bridge": "bridge-1"}) as log:
         logs.append_arrow(
             log.read_arrow_reader(),   # streamed, never materialised
-            merge_by=True,             # insert only new (recorded_at_unix, hash64)
+            merge_by=True,             # insert only new (recorded_at_unix, h64)
             commit_row_size=1_000_000, # one snapshot per million rows
         )
     ```
@@ -473,7 +473,7 @@ turning folding off does not reliably move it either, and only a trace every
 not a regex match.
 
 And **the hash is worth a quarter of the parser**. That row is the reason
-`xxhash` is a hard dependency rather than an extra: `hash64` is half of the
+`xxhash` is a hard dependency rather than an extra: `h64` is half of the
 primary key, so which hash produced it is data — under a fallback the same line
 would be keyed differently in two environments — and the fallback would cost
 26% of the parse as well.

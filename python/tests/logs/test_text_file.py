@@ -206,10 +206,10 @@ def test_schema(plain: Path) -> None:
         "category_id",
         "category_name",
         "message",
-        "hash64",
+        "h64",
     ]
     assert schema.field("recorded_at_unix").type == pyarrow.int64()
-    assert schema.field("hash64").type == pyarrow.int64()
+    assert schema.field("h64").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
 
 
@@ -280,15 +280,15 @@ def test_url_column_identifies_the_source(plain: Path) -> None:
 
 def test_hash64_is_per_line_and_fits_int64(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
-        hashes = log.into_arrow_table().column("hash64").to_pylist()
+        hashes = log.into_arrow_table().column("h64").to_pylist()
     assert len(set(hashes)) == EXPECTED_RECORDS, "distinct lines hash distinctly"
     assert all(-(2**63) <= h < 2**63 for h in hashes)
 
 
 def test_hash64_is_stable_across_reads(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as first, TextFile(url=plain.as_uri()) as second:
-        assert first.into_arrow_table().column("hash64").to_pylist() == (
-            second.into_arrow_table().column("hash64").to_pylist()
+        assert first.into_arrow_table().column("h64").to_pylist() == (
+            second.into_arrow_table().column("h64").to_pylist()
         )
 
 

@@ -150,5 +150,10 @@ Where two systems have to agree without sharing code, the declaration becomes a
 [contract](contracts.md) — a file in the repository that reads back as the same
 Arrow schema, keys, comments and nested types included.
 
+Wherever the data actually is, it is named the same way: one
+[`Url`](design.md#a-location-is-parsed-once-in-one-place) parses every location,
+so a local path, a Windows drive and `s3://key:secret@minio:9000/bucket/key`
+reach a filesystem — and configure a catalog — through the same reading.
+
 Every page ends with the measurements behind its claims; how those are produced
 is on [Benchmarks](benchmarks.md).

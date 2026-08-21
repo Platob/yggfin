@@ -110,7 +110,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     assert "Log: 10 columns, builds" in printed
     assert "recorded_at_unix: int64  [primary key]" in printed
     assert "recorded_at_date: date32[day]  [partition identity]" in printed
-    assert "primary keys: ['recorded_at_unix', 'hash64']" in printed
+    assert "primary keys: ['recorded_at_unix', 'h64']" in printed
 
 
 @pytest.mark.parametrize(

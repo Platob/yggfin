@@ -38,7 +38,7 @@ fields:
   type: string
   description: Payload with the header and level stripped, continuation lines folded
     in.
-- name: hash64
+- name: h64
   type: int64
   description: Signed xxh3-64 of the raw line, for matching lines across captures.
   metadata:

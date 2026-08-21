@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime
 import io
 import os
-import pathlib
 import re
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
@@ -22,6 +21,7 @@ from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField
 from rekep.filesystems import resolve
 from rekep.logs.log import Log
+from rekep.urls import Url
 
 #: Matches the fixed header every log row opens with, leaving the free-form
 #: payload to `message`::
@@ -52,7 +52,7 @@ STAMP_WIDTH = 27
 #: together as digits instead of as more separators.
 _FRACTION = re.compile(r"^([^.,]*)([.,])?(.*)$")
 
-#: Seed every line hash is taken under. Fixed and module-level: `hash64` is
+#: Seed every line hash is taken under. Fixed and module-level: `h64` is
 #: half of the primary key, so a seed that moved between runs -- Python's own
 #: salted `hash()`, a per-process random -- would store the same line twice.
 HASH_SEED = 0x9E3779B185EBCA87
@@ -186,7 +186,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         """
         if filesystem is not None:
             return cls(url=os.fspath(path), filesystem=filesystem, timezone=timezone, **declared)
-        return cls(url=pathlib.Path(path).resolve().as_uri(), timezone=timezone, **declared)
+        return cls(url=Url.from_path(path).into_string(), timezone=timezone, **declared)
 
     # -- the dataset ---------------------------------------------------------
 
@@ -748,7 +748,7 @@ def _hash64(raw: bytes) -> int:
 
     xxh3 under a fixed seed, and only that. It is half of the primary key, so
     it is data rather than an implementation detail: a fallback hash -- which
-    is what this used to have -- made `hash64` stable within an environment and
+    is what this used to have -- made `h64` stable within an environment and
     not across two that disagreed about whether `xxhash` was installed, and a
     row keyed on it could be stored twice. `xxhash` is a dependency of this
     package for that reason, imported at module top with no guard.

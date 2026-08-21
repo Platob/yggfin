@@ -60,7 +60,7 @@ def test_the_log_contract_is_the_declaration() -> None:
     published = Field.from_yaml(str(SCHEMAS / "rekep" / "log.yaml"))
     assert published == Log.FIELD
     assert published.into_arrow_schema().equals(Log.FIELD.into_arrow_schema(), check_metadata=True)
-    assert published.primary_keys() == ["recorded_at_unix", "hash64"]
+    assert published.primary_keys() == ["recorded_at_unix", "h64"]
     assert published.partition_keys() == {"recorded_at_date": "identity"}
 
 

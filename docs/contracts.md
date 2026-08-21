@@ -388,7 +388,7 @@ and a pre-commit hook need without writing Python, so they are a command.
       recorded_at_unix: int64  [primary key]
       recorded_at_date: date32[day]  [partition identity]
       ...
-      primary keys: ['recorded_at_unix', 'hash64']
+      primary keys: ['recorded_at_unix', 'h64']
       partition keys: {'recorded_at_date': 'identity'}
     ```
 

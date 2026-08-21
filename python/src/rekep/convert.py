@@ -28,6 +28,7 @@ from rekep.annotations import (
     item_annotation,
     unwrap_annotated,
 )
+from rekep.filesystems import resolve
 from rekep.require import require
 
 #: Splits a path or URI on either separator, whatever platform wrote it.
@@ -36,10 +37,6 @@ SEPARATORS = re.compile(r"[\\/]")
 #: A destination or source: an open file, a path, a URI, or -- to be handed the
 #: bytes back instead of writing them -- None, `str` or `bytes`.
 Target = typing.Union[str, os.PathLike[str], typing.IO[bytes], typing.IO[str], type, None]  # noqa: UP007
-
-#: A path is treated as a URI only with an explicit scheme, so a Windows drive
-#: letter (`C:\...`) is never mistaken for one.
-URI_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*://")
 
 
 class Convertible:
@@ -414,13 +411,15 @@ def _decode_scalar(value: Any, annotation: type) -> Any:
 
 
 def _resolve(target: Any, filesystem: pyarrow.fs.FileSystem | None) -> tuple[Any, str]:
-    """Pair `target` with the filesystem that can open it."""
+    """Pair `target` with the filesystem that can open it.
+
+    Through the one parser, so a document is read from wherever data is --
+    a path, a URI, an object store with an endpoint and a secret in it.
+    """
     path = os.fspath(target)
     if filesystem is not None:
         return filesystem, path
-    if URI_SCHEME.match(path):
-        return pyarrow.fs.FileSystem.from_uri(path)
-    return pyarrow.fs.LocalFileSystem(), os.path.abspath(path)
+    return resolve(path)
 
 
 def _write(

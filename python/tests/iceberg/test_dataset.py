@@ -336,7 +336,7 @@ def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None
         category_id=0,
         category_name="",
         message="m",
-        hash64=2,
+        h64=2,
     )
     table = pyarrow.Table.from_pylist([dataclass_row(row)], Log.FIELD.into_arrow_schema())
     logs.write_arrow_table(table, merge_by=True)

@@ -356,7 +356,13 @@ rekep/
 │                  document, `fields load` reads one back and builds it -- both
 │                  thin over `field_of`, `Field.from_file` and the `into_*`
 ├── require.py     optional deps at the point of use
-├── filesystems.py FileSystem.from_uri, cached per URL
+├── urls.py        Url: the one parser for a location -- parts, percent
+│                  decoding, a secret that may contain a colon, an S3
+│                  endpoint told from a bucket, a Windows drive told from a
+│                  scheme, `join`/`parent` as a mutable walk, and
+│                  `into_filesystem()`/`properties_of()` as what a store and
+│                  a catalog are configured from
+├── filesystems.py resolve(): a location as (FileSystem, path), cached per URL
 ├── fields/        a dataclass is its own Arrow schema:
 │                  field.py (Field, its container subclasses, the `field`
 │                  decorator, every cast), arrays.py (the kernel-only array
@@ -394,7 +400,9 @@ namespace, one file per shape) and `docs/` the site.
 
 Dependencies point one way: `logs`/`iceberg` -> `dataset` -> `fields` ->
 `convert` -> `annotations`, and `fix` sits beside `dataset` on the same
-`fields` base. The one loop back is deliberate and lazy: a
+`fields` base. `urls` is a leaf below all of it: `filesystems`, `convert`,
+`logs` and `iceberg/fileio` all reach a store through it, so there is one
+answer to "what is this location" rather than one per caller. The one loop back is deliberate and lazy: a
 `Field`'s `into_iceberg_*` imports `rekep.iceberg.fields` at the point of use,
 so the API stays on the class that owns the data without `fields/` depending
 on an extra. `tests/` mirrors `src/` folder for folder.
