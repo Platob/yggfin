@@ -596,8 +596,7 @@ class Book(MarketEvent):
         # The lifecycle only, and not `identify`: the content hash is derived
         # at the end of `with_previous` below, once the sides are on the row,
         # and computing it here as well hashed every book twice.
-        parts = book.life_parts()
-        book.xhash = book.hash_of(*parts) if parts else NIL
+        book.xhash = book.life_hash()
         for name, resting in (("bid", bid), ("ask", ask)):
             side = resting.into_side(unix, BookSide.hash_of(book.xhash, name))
             for column in ("hash", "px", "qty", "depth", "total_qty"):

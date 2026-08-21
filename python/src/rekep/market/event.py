@@ -252,9 +252,7 @@ class Event(Convertible):
         "only when unset" rule stay here. A producer that already knows an
         identity keeps it -- this fills gaps, it does not overwrite.
         """
-        if not self.xhash:
-            parts = self.life_parts()
-            self.xhash = self.hash_of(*parts) if parts else NIL
+        self.xhash = self.xhash or self.life_hash()
         if not self.hash:
             self.hash = self.hash_of(*self.version_parts())
         return self
@@ -292,7 +290,16 @@ class Event(Convertible):
             return self.identify()
         self.complete_from(previous)
         self.derive()
-        if self.same_life_as(previous):
+        # Read **after** every layer has completed, and that is not
+        # incidental: an order version that arrived carrying only its
+        # `OrderID <37>` does not know its own instrument or venue until the
+        # previous version has given them to it, and those are part of what
+        # its lifecycle is. Asked before, it would identify as something else
+        # and start its own version count. An event with nothing to be
+        # identified by inherits the lifecycle it is completed from, which is
+        # the only one available to it.
+        self.xhash = self.xhash or self.life_hash() or previous.xhash
+        if self.xhash and self.xhash == previous.xhash:
             self.version = previous.version + 1
             # NIL means the previous version was never hashed, and a null says
             # "no previous version" -- which is the truth about it either way.
@@ -311,28 +318,6 @@ class Event(Convertible):
         # what makes clearing it the way to ask for a new one.
         self.hash = NIL
         return self.identify()
-
-    def same_life_as(self, previous: Event) -> bool:
-        """Whether `previous` is the version before this one, or a different thing.
-
-        Read from the identities rather than from the classes, because both
-        answers happen between the same two classes: an `ExecutionReport <8>`
-        yields an order *and* a fill, and the next order version follows the
-        fill. So the question is which lifecycle each of them is in, and
-        `life_parts` already answers it.
-
-        Asked **after** every layer has completed, and that is not incidental:
-        an order version that arrived carrying only its `OrderID <37>` does not
-        know its own instrument or venue until the previous version has given
-        them to it, and those are part of what its lifecycle is. Asked before,
-        it would identify as something else and start its own version count.
-
-        An event with nothing to be identified by inherits the lifecycle it is
-        completed from, which is the only one available to it.
-        """
-        parts = self.life_parts()
-        self.xhash = self.xhash or (self.hash_of(*parts) if parts else previous.xhash)
-        return bool(self.xhash) and self.xhash == previous.xhash
 
     def complete_from(self, previous: Event) -> None:
         """Fill what this version left absent, from the version before it.
@@ -376,12 +361,22 @@ class Event(Convertible):
         `super().derive()` without knowing that.
         """
 
+    def life_hash(self) -> int:
+        """The identifier of this event's lifecycle, from what it carries now.
+
+        `NIL` when it carries nothing to be identified by, which is honest:
+        hashing emptiness would give every unidentified event one lifecycle.
+        Whether that is what the event *ends up* with is `with_previous`'s
+        answer, because a version completed from another inherits its.
+        """
+        parts = self.life_parts()
+        return self.hash_of(*parts) if parts else NIL
+
     def life_parts(self) -> tuple[Any, ...]:
         """What makes this event's lifecycle the one it is, across every version.
 
-        Empty when nothing does, which `identify` reads as `NIL`: an event
-        that names no persistent thing is honestly unidentified, and hashing
-        emptiness would give every one of them the same lifecycle.
+        Empty when nothing does, which `life_hash` reads as `NIL`: an event
+        that names no persistent thing is honestly unidentified.
         """
         return (self.symbol,) if self.symbol else ()
 

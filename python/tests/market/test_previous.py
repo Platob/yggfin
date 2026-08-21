@@ -331,20 +331,55 @@ def test_a_fill_is_not_a_version_of_the_order_it_happened_to() -> None:
     assert done.parent_hash == [order.hash], "but it was built from the order"
 
 
+def test_a_code_is_never_carried_from_a_shape_that_spells_it_differently() -> None:
+    """`kind` is a different enum per shape -- an order's is `OrderKind`, a fill's
+    is `ExecKind` -- and a version chain crosses shapes, because one
+    `ExecutionReport <8>` yields both. Carried by name alone, an order following a
+    fill took `ExecKind.TRADED`, which is `310`, which reads back as
+    `OrderKind.STOP_ORDER`; and a fill following an order took an `OrderKind` and
+    raised on the first `moves_shares`."""
+    order = resting()
+    done = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(order)
+    after = Order(unix=25, order_id="ORD-1", state=State.PARTIALLY_FILLED).with_previous(done)
+    assert after.kind is OrderKind.UNKNOWN, "and never an ExecKind wearing an int"
+    crossed = Execution(unix=30, exec_id="EX-2", px=1.0, qty=1.0).with_previous(order)
+    assert crossed.kind is ExecKind.UNKNOWN
+    assert crossed.kind.moves_shares is False, "which is a question only an ExecKind answers"
+
+
+def test_a_code_is_carried_between_versions_of_the_same_shape() -> None:
+    """Which is the whole point of carrying it -- a venue stops repeating it."""
+    order = resting()
+    later = Order(unix=20, order_id="ORD-1", state=State.OPEN).with_previous(order)
+    assert later.kind is OrderKind.LIMIT_ORDER and later.tif is TimeInForce.DAY
+    one = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(order)
+    two = fill(100.5, 1.0, 30, exec_id="EX-1").with_previous(one)
+    assert two.kind is ExecKind.TRADED
+
+
 def test_a_lifecycle_is_read_after_completing_and_not_before() -> None:
     """An order version that arrived carrying only its `OrderID <37>` does not know
     its own instrument or venue until the version before it has given them to it --
     and those are part of what its lifecycle is."""
     first = resting()
     bare = Order(unix=20, order_id="ORD-1", state=State.OPEN)
-    assert bare.life_parts() != first.life_parts(), "before completing, it looks like another"
+    assert bare.life_hash() != first.life_hash(), "before completing, it looks like another"
     assert bare.with_previous(first).xhash == first.xhash
+
+
+def test_asking_what_a_lifecycle_is_does_not_change_it() -> None:
+    """`life_hash` reads; `identify` and `with_previous` are what write."""
+    bare = Order(unix=20, order_id="ORD-1")
+    assert bare.life_hash() != NIL
+    assert bare.xhash == NIL, "asking left it exactly as it was"
 
 
 def test_an_event_with_nothing_to_identify_it_inherits_the_lifecycle() -> None:
     """The only one available to it."""
     first = resting()
-    anonymous = Order(unix=20, state=State.OPEN).with_previous(first)
+    nameless = Order(unix=20, state=State.OPEN)
+    assert nameless.life_hash() == NIL, "on its own it can identify nothing"
+    anonymous = nameless.with_previous(first)
     assert anonymous.xhash == first.xhash and anonymous.version == 1
 
 

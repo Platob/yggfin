@@ -646,13 +646,18 @@ class FixEvents(Convertible):
 
     @property
     def extras(self) -> dict[str, str]:
-        """Every pair the shapes have no column for, under the key it arrived as.
+        """Every field the shapes have no column for, under the key it arrived as.
 
         What makes this usable on a real venue: the fields no dictionary has,
         the ones a bridge renamed, and the ones a later FIX version added all
         land here instead of being dropped. The keys are the message's own, so
         a value put in by `from_pairs` under a custom name comes back out
         under it.
+
+        One value per key, the first, because `metadata` is a `map` a row
+        holds as a Python dict and a dict has no room for a second. A tag that
+        really does repeat -- a group's -- is still whole on
+        `message.pairs`, where `values` reads it.
         """
         claimed = _claimed_tags()
         return {key: value for key, value in self.by_tag.items() if key not in claimed}

@@ -110,10 +110,7 @@ class Order(MarketEvent):
             # keep reporting the quantity that was left before this version's
             # own `CumQty <14>` said otherwise.
             self.leaves_qty = getattr(previous, "leaves_qty", None)
-        if self.kind is OrderKind.UNKNOWN:
-            self.kind = getattr(previous, "kind", self.kind) or self.kind
-        if self.tif is TimeInForce.UNKNOWN:
-            self.tif = getattr(previous, "tif", self.tif) or self.tif
+        _carry_code(self, previous, "kind", "tif")
         named = getattr(previous, "client_order_id", None)
         if self.client_order_id is None:
             self.client_order_id = named
@@ -265,8 +262,7 @@ class Execution(MarketEvent):
         # By name, for the reason `Order.complete_from` gives: the version
         # before a fill is as often an order as another fill.
         _carry(self, previous, "order_xhash", "order_id", "client_order_id", "aggressor")
-        if self.kind is ExecKind.UNKNOWN:
-            self.kind = getattr(previous, "kind", None) or self.kind
+        _carry_code(self, previous, "kind")
         if self.order_xhash is None and previous.is_order():
             self.order_xhash = previous.xhash
         done, left, average = _totals_of(previous)
@@ -312,6 +308,32 @@ def _carry(into: Event, previous: Event, *names: str) -> None:
             carried = getattr(previous, name, None)
             if carried is not None:
                 setattr(into, name, carried)
+
+
+def _carry_code(into: Event, previous: Event, *names: str) -> None:
+    """Fill each banded code in `names` from `previous`, where the codes agree.
+
+    Separate from `_carry` for one reason, and it was a live bug: `kind` is a
+    *different enum on every shape* -- an order's is `OrderKind`, an
+    execution's is `ExecKind` -- and a version chain crosses shapes, because
+    one `ExecutionReport <8>` yields both and the next order version follows
+    the fill. Carried by name alone, an order that followed a fill took
+    `ExecKind.TRADED` for its `kind`, which is `310`, which reads back as
+    `OrderKind.STOP_ORDER`; and a fill that followed an order took an
+    `OrderKind` and raised on the first `moves_shares`.
+
+    So the carried value has to be a member of the enum the target already
+    holds. Every code here defaults to its own `UNKNOWN`, which is zero, so
+    the target's current value is both the test for "unset" and the right
+    class to ask.
+    """
+    for name in names:
+        current = getattr(into, name)
+        if current != 0:
+            continue
+        carried = getattr(previous, name, None)
+        if isinstance(carried, type(current)):
+            setattr(into, name, carried)
 
 
 def _totals_of(previous: MarketEvent) -> tuple[float | None, float | None, float | None]:
