@@ -10,6 +10,7 @@ import pytest
 
 from rekep import Convertible, Field, ListField, MapField, StructField, field
 from rekep.fields import FixedSizeListField, LargeListField, LargeListViewField, ListViewField
+from rekep.fields.field import arrow_type_for
 
 
 @field
@@ -251,12 +252,67 @@ def test_a_dump_round_trips_through_plain_containers() -> None:
         pyarrow.time64("us"),
         pyarrow.large_binary(),
         pyarrow.list_(pyarrow.field("item", pyarrow.string(), nullable=False)),
+        # Every list flavour, because a dump that named them all "list"
+        # narrowed the offsets of one and dropped the width of another --
+        # and both of those still cast, so nothing downstream raised.
+        pyarrow.large_list(pyarrow.int32()),
+        pyarrow.list_view(pyarrow.int32()),
+        pyarrow.large_list_view(pyarrow.int32()),
+        pyarrow.list_(pyarrow.int32(), 3),
+        pyarrow.large_list(pyarrow.struct([("bid", pyarrow.float64())])),
+        pyarrow.map_(pyarrow.string(), pyarrow.list_(pyarrow.int64())),
     ],
 )
 def test_every_type_survives_a_dump(arrow_type: pyarrow.DataType) -> None:
     """The spellings Arrow has no alias for are rebuilt, not lost."""
     original = Field(name="value", arrow_type=arrow_type, nullable=False)
     assert Field.from_dict(original.into_dict()).arrow_type == arrow_type
+
+
+@pytest.mark.parametrize(
+    ("arrow_type", "named"),
+    [
+        (pyarrow.list_(pyarrow.int32()), "list"),
+        (pyarrow.large_list(pyarrow.int32()), "large_list"),
+        (pyarrow.list_view(pyarrow.int32()), "list_view"),
+        (pyarrow.large_list_view(pyarrow.int32()), "large_list_view"),
+        (pyarrow.list_(pyarrow.int32(), 3), "fixed_size_list"),
+    ],
+)
+def test_a_dump_names_the_list_flavour(arrow_type: pyarrow.DataType, named: str) -> None:
+    """A contract file says which flavour it is, so a reader rebuilds that one."""
+    assert Field(name="value", arrow_type=arrow_type).into_dict()["type"] == named
+
+
+def test_a_map_dumps_whether_its_keys_are_sorted() -> None:
+    """Arrow compares two maps that disagree on it as different types."""
+    sorted_keys = pyarrow.map_(pyarrow.string(), pyarrow.int32(), keys_sorted=True)
+    dumped = Field(name="value", arrow_type=sorted_keys).into_dict()
+    assert dumped["keys_sorted"] is True
+    assert Field.from_dict(dumped).arrow_type == sorted_keys
+    plain = Field(name="value", arrow_type=pyarrow.map_(pyarrow.string(), pyarrow.int32()))
+    assert "keys_sorted" not in plain.into_dict()
+
+
+def test_a_fixed_width_binary_survives_the_spelling_arrow_prints() -> None:
+    """`fixed_size_binary[16]` is what `str(type)` writes and what Arrow cannot read back."""
+    assert arrow_type_for("fixed_size_binary[16]") == pyarrow.binary(16)
+    original = Field(name="uuid", arrow_type=pyarrow.binary(16))
+    assert Field.from_dict(original.into_dict()).arrow_type == pyarrow.binary(16)
+
+
+def test_a_field_with_no_type_is_refused_by_name() -> None:
+    """A hand-written contract that forgot one gets told which field it was."""
+    with pytest.raises(ValueError, match="'venue' has no type"):
+        Field.from_dict({"name": "venue"})
+
+
+def test_a_fixed_size_list_dumps_the_width_it_needs_back() -> None:
+    dumped = Field(name="value", arrow_type=pyarrow.list_(pyarrow.int32(), 3)).into_dict()
+    assert dumped["list_size"] == 3
+    del dumped["list_size"]
+    with pytest.raises(ValueError, match="list_size"):
+        Field.from_dict(dumped)
 
 
 def test_a_field_serialises_itself(tmp_path) -> None:
