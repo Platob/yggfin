@@ -1296,13 +1296,28 @@ class IcebergDataset(Dataset):
             # another directory comparable at all: a metadata location under a
             # data directory that contains it comes back as `metadata/x.avro`,
             # and so does the listing's own path for it.
-            relative = {_relative(path, bases) for path in live}
+            relative = set()
+            #: Live files this directory's spellings cannot reduce -- a
+            #: location recorded as `file:/w/x` under a `file:///w` directory,
+            #: which `add_files` produces and an `s3a://` file under an `s3://`
+            #: table does too. They are held by base name instead, which is
+            #: weaker and is the right way to be wrong: every name Iceberg
+            #: mints carries a UUID, so a false match is a file left behind
+            #: rather than a live one deleted.
+            by_name = set()
+            for path in live:
+                reduced = _relative(path, bases)
+                (relative if reduced is not None else by_name).add(
+                    reduced if reduced is not None else path.rsplit("/", 1)[-1]
+                )
             selector = pyarrow.fs.FileSelector(base, recursive=True, allow_not_found=True)
             for info in filesystem.get_file_info(selector):
                 if info.type != pyarrow.fs.FileType.File:
                     continue
                 name = _relative(info.path, bases)
-                if name in relative:
+                # None cannot happen for a path this listing returned -- it came
+                # from `base` -- and if it ever did, not deleting is the answer.
+                if name is None or name in relative or info.base_name in by_name:
                     continue
                 # A Hadoop-style catalog keeps its pointer beside the metadata
                 # and nothing inside the metadata names it: reading the table
@@ -1784,9 +1799,22 @@ def _banded(column: str, values: Any) -> Any | None:
         return whole
     slices = MERGE_RANGE_BANDS * 8
     try:
-        numeric = compute.cast(
-            values if pyarrow.types.is_floating(kind) else compute.cast(values, "int64"), "double"
-        )
+        if (
+            pyarrow.types.is_floating(kind)
+            or pyarrow.types.is_decimal(kind)
+            or pyarrow.types.is_unsigned_integer(kind)
+        ):
+            # Straight across: a decimal has no integer cast, and a `uint64`
+            # past 2**63 has one that raises rather than one that is wrong.
+            numeric = compute.cast(values, "double")
+        else:
+            # Through the width the type actually stores. Arrow has no
+            # `date32 -> int64` cast at all ("Unsupported cast from date32[day]
+            # to int64"), and `date32` is what an Iceberg `date` column is --
+            # so asking for int64 made every date key fall out of the banding
+            # and keep the single range it was supposed to replace.
+            physical = "int32" if getattr(kind, "bit_width", 64) == 32 else "int64"
+            numeric = compute.cast(compute.cast(values, physical), "double")
         span = compute.min_max(numeric).as_py()
         low, high = span["min"], span["max"]
         if low is None or high is None or not low < high:
@@ -2245,18 +2273,27 @@ def _path_of(location: str) -> str:
     return location.split("://", 1)[-1]
 
 
-def _relative(path: str, bases: Sequence[str]) -> str:
+def _relative(path: str, bases: Sequence[str]) -> str | None:
     """`path` under whichever of `bases` it is spelled against, tail only.
 
     The one comparison that survives a store naming its files differently from
     the URI the metadata records: both sides are reduced to what follows the
     directory they are in, so how the directory itself is spelled stops
     mattering.
+
+    **None when it is spelled against none of them**, which is a real answer
+    and not a missing one. This used to hand back the whole unreduced path, and
+    an unreduced path can never equal a reduced one -- so a live file recorded
+    under a spelling its own directory does not produce fell out of the live
+    set and was swept. `file:` with one slash is enough to do it: `add_files`
+    records what it is given, and the bases for `file:///w/t/data` are that and
+    `/w/t/data`. Measured, `cleanup` deleted a data file the *current* snapshot
+    referenced and the table stopped reading.
     """
     for base in sorted(bases, key=len, reverse=True):
         if base and path.startswith(base):
             return path[len(base) :].lstrip("/")
-    return path.lstrip("/")
+    return None
 
 
 def _cutoff_ms(older_than: datetime.datetime | datetime.timedelta | None) -> int | None:

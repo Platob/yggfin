@@ -1587,6 +1587,29 @@ def test_a_key_range_names_the_bands_the_values_are_in(values: list[int], banded
     assert (type(ranges).__name__ == "Or") is banded
 
 
+@pytest.mark.parametrize(
+    "kind",
+    [pyarrow.date32(), pyarrow.date64(), pyarrow.timestamp("us"), pyarrow.timestamp("ms")],
+)
+def test_a_temporal_key_bands_whatever_width_it_stores(kind: pyarrow.DataType) -> None:
+    """`date32` is what an Iceberg `date` column is, and Arrow has no
+    `date32 -> int64` cast at all -- so asking for one made every date key fall
+    out of the banding and silently keep the range it was meant to replace."""
+    from rekep.iceberg.dataset import _banded
+
+    start = datetime.date(2026, 1, 1)
+    days = [start + datetime.timedelta(days=i) for i in range(110)]
+    days += [start + datetime.timedelta(days=900 + i) for i in range(110)]
+    values = (
+        days
+        if pyarrow.types.is_date32(kind)
+        else [datetime.datetime(day.year, day.month, day.day) for day in days]
+    )
+    column = pyarrow.chunked_array([pyarrow.array(values, kind)])
+    banded = _banded("at", column)
+    assert type(banded).__name__ == "Or", "two clusters 900 days apart, and one range spans both"
+
+
 def test_a_key_range_covers_a_column_it_cannot_band(dataset: IcebergDataset) -> None:
     """A string key has no arithmetic to find gaps with, and a nanosecond
     timestamp has no bound pyarrow will hand back as a `datetime` at all. One
@@ -1813,6 +1836,60 @@ def test_a_sweep_finishes_when_an_orphan_is_already_gone(dataset: IcebergDataset
     remaining = [path for _, path, _, _ in orphans if Path(path).exists()]
     assert remaining == [], "every one of them went, the vanished one included"
     assert dataset.refresh().read_arrow_table().num_rows == 8
+
+
+def test_a_sweep_keeps_a_live_file_spelled_against_another_base(dataset: IcebergDataset) -> None:
+    """`add_files` records the location it is handed, and `file:` with one
+    slash is a location `file:///w/t/data` does not reduce. Answering the
+    unreduced path made it match no listing, so the file looked orphaned:
+    measured, `cleanup` deleted a data file the *current* snapshot referenced
+    and the table stopped reading.
+    """
+    import pyarrow.parquet
+
+    dataset.write_arrow_table(quotes(3))
+    table = dataset.iceberg_table
+    root = local(table.location())
+    extra = root / "data" / f"day={datetime.date(2026, 8, 14)}" / "added-0000.parquet"
+    pyarrow.parquet.write_table(quotes(4, "XETR"), extra)
+    table.add_files([f"file:{extra.as_posix()}"])  # one slash, not three
+    dataset.refresh()
+    assert dataset.read_arrow_table().num_rows == 7
+
+    stored = {path for path in dataset._live(dataset.iceberg_table)[0]}
+    assert any(path.startswith("file:/") and not path.startswith("file://") for path in stored), (
+        "the fixture only means something if the odd spelling really is recorded"
+    )
+    assert dataset.orphan_files(datetime.timedelta(seconds=0)) == []
+    report = dataset.cleanup(retain=10, orphan_age=datetime.timedelta(seconds=0))
+    assert report["deleted"] == 0
+    assert extra.exists(), "the file a live snapshot references is still there"
+    assert dataset.refresh().read_arrow_table().num_rows == 7, "and the table still reads"
+
+
+def test_a_sweep_still_finds_an_orphan_beside_an_unreducible_live_file(
+    dataset: IcebergDataset,
+) -> None:
+    """Holding those by base name is weaker than by path, and the weakness has
+    to stop at names Iceberg minted -- a real orphan must still go."""
+    import pyarrow.parquet
+
+    dataset.write_arrow_table(quotes(3))
+    table = dataset.iceberg_table
+    root = local(table.location())
+    partition = root / "data" / f"day={datetime.date(2026, 8, 14)}"
+    live = partition / "added-0000.parquet"
+    pyarrow.parquet.write_table(quotes(4, "XETR"), live)
+    table.add_files([f"file:{live.as_posix()}"])
+    dataset.refresh()
+    junk = partition / "left-behind-0000.parquet"
+    pyarrow.parquet.write_table(quotes(1), junk)
+
+    swept = {Path(path).name for path, _ in dataset.orphan_files(datetime.timedelta(seconds=0))}
+    assert swept == {"left-behind-0000.parquet"}
+    assert dataset.cleanup(retain=10, orphan_age=datetime.timedelta(seconds=0))["deleted"] == 1
+    assert not junk.exists() and live.exists()
+    assert dataset.refresh().read_arrow_table().num_rows == 7
 
 
 def test_a_sweep_does_not_delete_another_writers_files(tmp_path: Path) -> None:
