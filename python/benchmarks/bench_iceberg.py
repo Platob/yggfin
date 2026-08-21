@@ -6,7 +6,7 @@ Run from `python/`::
     uv run python benchmarks/bench_iceberg.py             # the full sweep
     uv run python benchmarks/bench_iceberg.py --only read
 
-Four questions, measured rather than assumed:
+Five questions, measured rather than assumed:
 
 1. **How fast does a stream land?** Append, upsert, and upsert on a stream that
    cannot match anything already stored -- at several commit sizes, partitioned
@@ -25,6 +25,13 @@ Four questions, measured rather than assumed:
    one `create` a PUT. Once with the immutable-content cache off, once on,
    because seconds on a local disk cannot show what a scan-per-chunk flow does
    to S3.
+
+5. **What does the maintenance cost, and does it settle?** (`--only maintain`)
+   How much of a table a *reader* holds before its consumer asks for a second
+   batch, how much metadata `maybe_optimize` walks to decide a quiet table
+   needs nothing, and whether `compact` converges on every partition shape --
+   including the transformed one, where a plan that never settles reads and
+   rewrites the whole table on every run.
 
 Everything runs against a local SQLite catalog and a file warehouse, so the
 numbers are storage-latency-free: they measure planning, commit and Arrow work,
@@ -530,6 +537,137 @@ def sweep_fs(rows: int, days: int) -> None:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def sweep_maintain(rows: int, days: int) -> None:
+    """The maintenance a streaming table needs, and what a reader holds.
+
+    Three questions seconds on a local disk answer badly and counts answer
+    exactly: how much of a table a *reader* materialises before its consumer
+    asks, how much of the metadata `maybe_optimize` walks to decide there is
+    nothing to do, and whether compaction settles -- which is the difference
+    between a routine that costs nothing on a quiet table and one that reads
+    and rewrites the whole table every time it runs.
+    """
+    import gc
+
+    from pyiceberg.io.pyarrow import PyArrowFile
+    from pyiceberg.manifest import ManifestFile
+    from pyiceberg.table.inspect import InspectTable
+
+    walks: list[str] = []
+    partitions, entries = InspectTable.partitions, ManifestFile.fetch_manifest_entry
+
+    def counted(self: Any, snapshot_id: int | None = None) -> Any:
+        walks.append("partitions")
+        return partitions(self, snapshot_id)
+
+    def fetched(self: Any, io: Any, discard_deleted: bool = True) -> Any:
+        walks.append("manifest")
+        return entries(self, io, discard_deleted)
+
+    InspectTable.partitions, ManifestFile.fetch_manifest_entry = counted, fetched
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-maint-"))
+    try:
+        path = tmp / "bench.txt"
+        generate(path, rows, days)
+        table = parsed(path)
+
+        # -- what a reader holds ------------------------------------------
+        print(f"\n== reading as a stream: {table.num_rows:,} rows ==")
+        header(("case", "files opened", "MiB held", "MiB total"), (30, 13, 10, 10))
+        target = dataset(tmp / "read", partitioned=True, properties=OPTIMISED)
+        # Small batches on purpose: a commit closes at the first batch boundary
+        # at or beyond its size, so a big batch makes the commit size inert and
+        # the table comes out in two files instead of the many this measures.
+        target.write_arrow(batches(table, 2_048), commit_row_size=max(table.num_rows // 24, 1))
+        target.read_arrow_table()  # warm the page cache, so this measures memory
+        planned = target.scan_plan()["files"]
+        opened: list[str] = []
+        original = PyArrowFile.open
+
+        def watched(self: Any, *args: Any, **kwargs: Any) -> Any:
+            if self.location.endswith(".parquet"):
+                opened.append(self.location)
+            return original(self, *args, **kwargs)
+
+        PyArrowFile.open = watched
+        try:
+            gc.collect()
+            base = pyarrow.total_allocated_bytes()
+            reader = target.read_arrow_reader()
+            reader.read_next_batch()
+            # A consumer that is not instantaneous, which is the only kind this
+            # is about: the pool goes on decoding whether or not anyone is
+            # asking, and what it has finished is what is being held.
+            time.sleep(0.25)
+            held = pyarrow.total_allocated_bytes() - base
+            after = len(opened)
+            del reader
+            whole = target.read_arrow_table()
+            print(
+                f"{'one batch, ' + str(planned) + ' files planned':>30} {after:>13} "
+                f"{held / 2**20:>10.1f} {whole.nbytes / 2**20:>10.1f}"
+            )
+        finally:
+            PyArrowFile.open = original
+
+        # -- deciding, and settling ---------------------------------------
+        print("\n== maintenance ==")
+        header(("case", "partitions", "manifests", "seconds", "result"), (30, 11, 10, 9, 26))
+
+        def maintenance(label: str, call: Callable[[], Any]) -> None:
+            walks.clear()
+            seconds, out = timed(call)
+            print(
+                f"{label:>30} {walks.count('partitions'):>11} {walks.count('manifest'):>10} "
+                f"{seconds:>9.3f}  {out!s:.26}"
+            )
+
+        quiet = dataset(tmp / "quiet", partitioned=True, properties=OPTIMISED)
+        quiet.write_arrow(table.slice(0, 2_000), commit_row_size=0)
+        maintenance("maybe_optimize, quiet table", quiet.maybe_optimize)
+
+        frayed = dataset(tmp / "frayed", partitioned=True, properties=OPTIMISED)
+        frayed.write_arrow(batches(table, 2_048), commit_row_size=max(table.num_rows // 24, 1))
+        maintenance("maybe_optimize, frayed", frayed.maybe_optimize)
+        maintenance("maybe_optimize, settled", frayed.maybe_optimize)
+
+        # -- does a rewrite settle, on every partition shape? -------------
+        print("\n== compaction settles: files rewritten per run ==")
+        header(("partitioning", "run 1", "run 2", "run 3", "rows"), (30, 8, 8, 8, 10))
+        for label, built in (
+            (
+                "identity (recorded_at_date)",
+                lambda root: dataset(root, partitioned=True, properties=OPTIMISED),
+            ),
+            ("none", lambda root: dataset(root, partitioned=False, properties=OPTIMISED)),
+            ("transform (day)", lambda root: daily(root)),
+        ):
+            target = built(tmp / f"settle-{label[:8]}")
+            target.write_arrow(batches(table, 2_048), commit_row_size=max(rows // 12, 1))
+            runs = [target.compact(min_files=2) for _ in range(3)]
+            print(
+                f"{label:>30} {runs[0]:>8,} {runs[1]:>8,} {runs[2]:>8,} "
+                f"{target.refresh().read_arrow_table().num_rows:>10,}"
+            )
+    finally:
+        InspectTable.partitions, ManifestFile.fetch_manifest_entry = partitions, entries
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def daily(root: pathlib.Path) -> IcebergDataset:
+    """The log shape again, partitioned by a *transform* of the same column.
+
+    Every partition transform but `identity` hides which rows a partition
+    holds, so the table is only addressable as a whole -- and a plan that
+    cannot address parts of it has to settle as a whole too. When it did not,
+    every run read the table back and wrote it out again, forever.
+    """
+    field = Log.FIELD.into_dataclass("Daily").FIELD
+    field.field("recorded_at_date").is_partition_key = "day"
+    built = catalog(root).dataset("bench.daily", struct=field, table_properties=OPTIMISED)
+    return built.create_with()
+
+
 def stored_narrow(target: IcebergDataset) -> Any:
     """The same three columns, declared with the widths the store reads back.
 
@@ -567,7 +705,9 @@ def main() -> int:
     parser.add_argument("--days", type=int, default=8)
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--quick", action="store_true")
-    parser.add_argument("--only", choices=["parse", "write", "read", "fs"], default=None)
+    parser.add_argument(
+        "--only", choices=["parse", "write", "read", "fs", "maintain"], default=None
+    )
     arguments = parser.parse_args()
     rows = 100_000 if arguments.quick else arguments.rows
     days = 4 if arguments.quick else arguments.days
@@ -580,6 +720,8 @@ def main() -> int:
         sweep_read(rows, days, 2 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "fs"):
         sweep_fs(min(rows, 100_000), days)
+    if arguments.only in (None, "maintain"):
+        sweep_maintain(min(rows, 100_000), days)
     return 0
 
 
