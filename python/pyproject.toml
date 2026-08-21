@@ -10,13 +10,11 @@ requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
     "pyarrow>=17.0",
-    # The row id is xxh3, and it is an identity: a fallback hash would mint a
-    # different id for the same row, so this is a hard dependency and never an
-    # extra. It is also worth a third of the parser (benchmarks/bench_text_file.py).
+    # `hash64` is half of a parsed log's primary key, so the hash is data and
+    # not an implementation detail: a fallback would key the same line
+    # differently in two environments. A hard dependency, never an extra -- and
+    # it is worth a quarter of the parser (benchmarks/bench_text_file.py).
     "xxhash>=3.4",
-    # The id packing is uint64 shifts over whole columns. pyarrow stopped
-    # requiring numpy, so it is named here rather than inherited.
-    "numpy>=1.26",
     # Windows ships no IANA time zone database, so `zoneinfo` -- and through
     # it every pyarrow conversion that names a zone, "UTC" included -- needs
     # the package there. Everywhere else the system database serves.

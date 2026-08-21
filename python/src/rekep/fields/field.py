@@ -451,15 +451,12 @@ class Field(Convertible):
         if kind == "map":
             key = cls._member(mapping, "key").into_arrow_field()
             value = cls._member(mapping, "value").into_arrow_field()
-            return pyarrow.map_(key, value, keys_sorted=bool(mapping.get("keys_sorted", False)))
+            return pyarrow.map_(key, value, keys_sorted=_flag(mapping, "keys_sorted"))
         if kind == "fixed_size_list":
-            size = mapping.get("list_size")
-            if size is None:
-                raise ValueError(
-                    f"fixed_size_list {mapping.get(NAME, '')!r} has no list_size, and the width "
-                    "is part of the type; dump it with into_dict() rather than writing it by hand"
-                )
-            return pyarrow.list_(cls._member(mapping, "item").into_arrow_field(), int(size))
+            return pyarrow.list_(
+                cls._member(mapping, "item").into_arrow_field(),
+                _list_size(mapping),
+            )
         build = _LIST_KINDS.get(kind)
         if build is not None:
             return build(cls._member(mapping, "item").into_arrow_field())
@@ -1306,9 +1303,9 @@ def arrow_type_for(text: str) -> pyarrow.DataType:
     timestamp = re.fullmatch(r"timestamp\[(\w+),\s*tz=(.+)\]", text)
     if timestamp:
         return pyarrow.timestamp(timestamp[1], tz=timestamp[2])
-    fixed_binary = re.fullmatch(r"fixed_size_binary[\[(](\d+)[\])]", text)
+    fixed_binary = re.fullmatch(r"fixed_size_binary(?:\[(\d+)\]|\((\d+)\))", text)
     if fixed_binary:
-        return pyarrow.binary(int(fixed_binary[1]))
+        return pyarrow.binary(int(fixed_binary[1] or fixed_binary[2]))
     return pyarrow.type_for_alias(text)
 
 
@@ -1394,6 +1391,46 @@ def _column_of(batch: pyarrow.RecordBatch) -> Callable[[str], Any]:
         return batch.column(index) if index >= 0 else None
 
     return column_of
+
+
+def _list_size(mapping: Mapping[str, Any]) -> int:
+    """The width a `fixed_size_list` document states, checked rather than coerced.
+
+    `int(size)` took a float, a bool and a string, and a negative width built a
+    plain `list` -- a contract that says one thing and loads as another, which
+    is the one failure a contract cannot have.
+    """
+    name = mapping.get(NAME, "")
+    size = mapping.get("list_size")
+    if size is None:
+        raise ValueError(
+            f"fixed_size_list {name!r} has no list_size, and the width is part of the type; "
+            "dump it with into_dict() rather than writing it by hand"
+        )
+    if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+        raise ValueError(
+            f"fixed_size_list {name!r} has list_size {size!r}: it is the number of elements in "
+            "every row, so it has to be a whole number and not negative"
+        )
+    return size
+
+
+def _flag(mapping: Mapping[str, Any], key: str) -> bool:
+    """A boolean a document states, read strictly.
+
+    `bool("false")` is True, so a hand-written `keys_sorted: 'false'` used to
+    turn the flag *on* -- and `keys_sorted` is part of a map's Arrow type, so
+    that is a different type read back from the same file.
+    """
+    value = mapping.get(key, False)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str) and value.lower() in {"true", "false"}:
+        return value.lower() == "true"
+    raise ValueError(
+        f"field {mapping.get(NAME, '')!r} has {key}={value!r}: write true or false, since it is "
+        "part of the type and not a value to be coerced"
+    )
 
 
 def _anonymous(member: Field) -> dict[str, Any]:

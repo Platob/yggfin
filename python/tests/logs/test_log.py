@@ -4,10 +4,9 @@ import datetime
 
 import pyarrow
 
-from rekep import Field, Log, ids
+from rekep import Field, Log
 
 EXPECTED_COLUMNS = [
-    "id",
     "url",
     "recorded_at_unix",
     "recorded_at_date",
@@ -35,22 +34,10 @@ def test_every_column_is_documented() -> None:
         assert "\n" not in member.description, f"{member.name} description is not one line"
 
 
-def test_the_id_is_the_only_key() -> None:
-    """One column identifies a row: the dedup key, the join key, the watermark."""
-    assert Log.FIELD.primary_keys() == ["id"]
+def test_the_key_is_the_moment_and_the_line() -> None:
+    """Two columns: a hash identifies the line, the time is what an engine prunes on."""
+    assert Log.FIELD.primary_keys() == ["recorded_at_unix", "hash64"]
     assert Log.FIELD.partition_keys() == {"recorded_at_date": "identity"}
-
-
-def test_the_id_declares_its_layout() -> None:
-    """A consumer that has the column can unpack it without reading our code."""
-    metadata = Log.FIELD.field("id").metadata
-    assert metadata["unit"] == "millisecond"
-    assert metadata["epoch"] == "1970-01-01"
-    assert (int(metadata["time_bits"]), int(metadata["hash_bits"])) == (
-        ids.TIME_BITS,
-        ids.HASH_BITS,
-    )
-    assert int(metadata["time_bits"]) + int(metadata["hash_bits"]) == 63, "the sign bit stays clear"
 
 
 def test_recorded_at_unix_declares_its_unit() -> None:
@@ -60,7 +47,7 @@ def test_recorded_at_unix_declares_its_unit() -> None:
 
 
 def test_wide_columns_are_int64_not_smaller() -> None:
-    for name in ("id", "recorded_at_unix", "hash64"):
+    for name in ("recorded_at_unix", "hash64"):
         assert Log.FIELD.field(name).arrow_type == pyarrow.int64()
 
 
@@ -72,7 +59,6 @@ def test_the_schema_says_which_class_it_came_from() -> None:
 
 def test_a_row_round_trips_as_a_document() -> None:
     row = Log(
-        id=ids.pack(2, 3),
         url="a.txt",
         recorded_at_unix=2,
         recorded_at_date=datetime.date(2026, 8, 14),

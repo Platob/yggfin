@@ -7,7 +7,7 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, Log, ids
+from rekep import Dataset, Field, Log
 from rekep.logs import HEADER_PATTERN, TextFile
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
@@ -197,7 +197,6 @@ def test_compressed_log_is_decoded_not_raw(gzipped: Path) -> None:
 def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
     assert schema.names == [
-        "id",
         "url",
         "recorded_at_unix",
         "recorded_at_date",
@@ -209,7 +208,6 @@ def test_schema(plain: Path) -> None:
         "message",
         "hash64",
     ]
-    assert schema.field("id").type == pyarrow.int64()
     assert schema.field("recorded_at_unix").type == pyarrow.int64()
     assert schema.field("hash64").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
@@ -656,69 +654,6 @@ def test_a_pre_epoch_timestamp_lands_on_the_right_day() -> None:
     date, time = _date_and_time(before)
     assert date[0].as_py() == datetime.date(1969, 12, 31)
     assert time[0].as_py() == datetime.time(23, 59, 59)
-
-
-# -- the row id -------------------------------------------------------------
-
-
-def test_the_id_packs_the_millisecond_and_the_line_hash(plain: Path) -> None:
-    """One column that is the row's identity and its order at the same time."""
-    table = TextFile.from_path(plain).read_arrow_table()
-    row = table.slice(0, 1).to_pylist()[0]
-    assert row["id"] == ids.pack(row["recorded_at_unix"] // 1_000_000, row["hash64"])
-    assert ids.unpack(row["id"]) == (
-        row["recorded_at_unix"] // 1_000_000,
-        ids.fold(row["hash64"]),
-    )
-    assert all(value > 0 for value in table.column("id").to_pylist()), "the sign bit stays clear"
-
-
-def test_the_id_is_the_hash_of_the_raw_line(plain: Path) -> None:
-    """xxh3 of the bytes on disk, so another reader of the same file agrees."""
-    table = TextFile.from_path(plain).read_arrow_table()
-    assert table.column("hash64").to_pylist()[0] == ids.signed(ids.hash_payload(RECORDS[0]))
-    assert table.column("id").to_pylist()[0] == ids.row_id(FIRST_UNIX // 1_000_000, RECORDS[0])
-
-
-def test_ids_order_the_rows_by_time(plain: Path) -> None:
-    """What the layout buys: sorting by id is sorting by the clock."""
-    table = TextFile.from_path(plain).read_arrow_table()
-    times = table.column("recorded_at_unix").to_pylist()
-    order = pyarrow.compute.array_sort_indices(table.column("id")).to_pylist()
-    millis = [times[index] // 1_000_000 for index in order]
-    assert millis == sorted(millis)
-
-
-def test_the_same_line_at_the_same_moment_is_the_same_id(plain: Path, tmp_path: Path) -> None:
-    """The dedup key: a rotated log replayed inserts nothing, whatever it is called."""
-    copy = tmp_path / "rotated.txt"
-    copy.write_bytes(plain.read_bytes())
-    first = TextFile.from_path(plain).read_arrow_table().column("id").to_pylist()
-    second = TextFile.from_path(copy).read_arrow_table().column("id").to_pylist()
-    assert first == second
-
-
-def test_a_line_outside_the_time_bits_is_refused(tmp_path: Path) -> None:
-    """An id that wrapped would sort before rows from years earlier."""
-    path = tmp_path / "old.txt"
-    path.write_bytes(b"1969-07-20 20:17:40.000_000 [t] [d] (INFO) one small step\n")
-    with pytest.raises(ValueError, match="time bits of a row id"):
-        TextFile.from_path(path).read_arrow_table()
-
-
-def test_moving_the_epoch_back_is_how_an_old_capture_gets_ids(tmp_path: Path) -> None:
-    """The knob the refusal points at: bits are spent from the epoch."""
-    path = tmp_path / "old.txt"
-    path.write_bytes(b"1969-07-20 20:17:40.000_000 [t] [d] (INFO) one small step\n")
-    moon = -86_400_000 * 365 * 10  # ten years before the unix epoch, near enough
-    table = TextFile.from_path(path, id_epoch_ms=moon).read_arrow_table()
-    assert table.num_rows == 1
-    packed = table.column("id").to_pylist()[0]
-    assert packed > 0
-    assert (
-        ids.unpack(packed, epoch_ms=moon)[0]
-        == table.column("recorded_at_unix").to_pylist()[0] // 1_000_000
-    )
 
 
 # -- static values ----------------------------------------------------------

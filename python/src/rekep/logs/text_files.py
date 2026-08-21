@@ -20,7 +20,6 @@ from rekep.convert import URI_SCHEME
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
-from rekep.ids import HASH_BITS
 from rekep.logs.text_file import (
     DEFAULT_BATCH_ROW_SIZE,
     DEFAULT_READ_BYTE_SIZE,
@@ -108,9 +107,13 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: Whether a directory root is walked to the bottom or only one level deep.
     recursive: bool = True
 
-    #: Read the path order backwards -- the tail of a capture first, or a
+    #: Read each root's contents backwards -- the tail of a capture first, or a
     #: rotation whose numbering runs the other way. Which direction is
     #: chronological is the writer's convention, so the class states neither.
+    #:
+    #: The **roots** keep the order they were given, reversed or not: that
+    #: order is the caller's statement about time, and this flag is about what
+    #: the store decides.
     reverse: bool = False
 
     header_pattern: re.Pattern[bytes] = HEADER_PATTERN
@@ -126,13 +129,6 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: passed to every file the walk opens, so a set is one shape and not one
     #: per file.
     static_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
-
-    #: Epoch the row ids count their milliseconds from, and how many bits the
-    #: line hash is folded into. Passed through to every file, because two
-    #: files of one capture whose ids were packed differently could not be
-    #: compared, let alone merged.
-    id_epoch_ms: int = 0
-    id_hash_bits: int = HASH_BITS
 
     def __post_init__(self) -> None:
         """Resolve one filesystem for every root, and rewrite the roots as paths on it."""
@@ -178,32 +174,21 @@ class TextFiles(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         **declared: Any,
     ) -> TextFiles:
-        """Build from several folders, read in the order given.
+        """Build from several roots, read in the order given.
 
         The order is the caller's and is kept: a set that reads an archive
         directory before a live one is saying which rows come first, and
         sorting the roots would throw that away.
+
+        A root that is a **file** is taken as it is, so a caller holding the
+        paths of the logs it wants hands them over here rather than to a second
+        builder that would only do the same thing under another name.
         """
         return cls(
             roots=tuple(_root(source, filesystem) for source in sources),
             filesystem=filesystem,
             **declared,
         )
-
-    @classmethod
-    def from_urls(
-        cls,
-        sources: Iterable[str | os.PathLike[str]],
-        filesystem: pyarrow.fs.FileSystem | None = None,
-        **declared: Any,
-    ) -> TextFiles:
-        """Build from roots exactly as given -- folders, files, or both.
-
-        The general form `from_folder` is a shorthand for. A root that names a
-        file is read as that file, `pattern` and all, because naming it *is*
-        the selection.
-        """
-        return cls.from_folders(sources, filesystem, **declared)
 
     # -- the dataset ---------------------------------------------------------
 
@@ -243,7 +228,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         """
         try:
             return next(self.into_file_infos(), None) is not None
-        except FileNotFoundError:
+        except (FileNotFoundError, NotADirectoryError):
             return False
 
     def create_with_field(self, field: StructField, **kwargs: Any) -> TextFiles:
@@ -268,6 +253,15 @@ class TextFiles(Dataset, io.BufferedIOBase):
         if target.arrow_schema.equals(reader.schema):
             return reader
         return target.cast_arrow_reader(reader)
+
+    def append_arrow_reader(self, source: Any, *args: Any, **kwargs: Any) -> None:
+        """Refused, for the reason a write is -- and before reading anything.
+
+        The generic append reads the stored key columns first so it can
+        anti-join against them, which here means parsing the whole capture
+        before failing on the write it cannot do.
+        """
+        self.write_arrow_reader(source, *args, **kwargs)
 
     def write_arrow_reader(
         self,
@@ -334,8 +328,6 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 row=self.row,
                 timezone=self.timezone,
                 static_values=self.static_values,
-                id_epoch_ms=self.id_epoch_ms,
-                id_hash_bits=self.id_hash_bits,
             )
 
     def _walk(self, directory: str, seen: set[str] | None = None) -> Iterator[pyarrow.fs.FileInfo]:
@@ -418,6 +410,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         that ends mid-stack-trace ends there, because the next file in a
         rotation was written earlier or later, not in the middle of that trace.
         """
+        self._check_open()
         pending: list[pyarrow.RecordBatch] = []
         rows = 0
         for log in self.into_files():
@@ -446,17 +439,20 @@ class TextFiles(Dataset, io.BufferedIOBase):
         whatever the folder mixes, and what is held is one `read_byte_size`
         read.
 
-        `compression` re-encodes that stream through one of Arrow's codecs --
-        `"gzip"`, `"zstd"`, `"lz4"`, anything `pyarrow.Codec` has -- and it is
-        encoded **as it goes**: `Codec.compress` would need the whole capture
-        in memory first, which is the one thing a stream of logs cannot
-        afford. The result is one member a plain `gzip.decompress` reads back.
+        `compression` re-encodes that stream through one of the codecs Arrow
+        can **stream** -- `"gzip"`, `"zstd"`, `"lz4"`, `"bz2"`, `"brotli"`; not
+        `"snappy"` or `"lz4_raw"`, which Arrow refuses to compress
+        incrementally -- and it is encoded as it goes: `Codec.compress` would
+        need the whole capture in memory first, which is the one thing a stream
+        of logs cannot afford. The result is one member a plain
+        `gzip.decompress` reads back.
 
         A file that does not end in a newline is separated from the next by
         one, here rather than in the parser: without it the last line of one
         log and the first of the next are glued into a single row, and the
         parser never sees a file boundary to blame it on.
         """
+        self._check_open()
         raw = self._raw_chunks(read_byte_size)
         if compression is None:
             yield from raw
@@ -475,15 +471,24 @@ class TextFiles(Dataset, io.BufferedIOBase):
         return b"".join(self.into_byte_chunks(**kwargs))
 
     def _raw_chunks(self, read_byte_size: int) -> Iterator[bytes]:
-        """Decoded bytes of every log in order, one open file at a time."""
+        """Decoded bytes of every log in order, one open file at a time.
+
+        A separator is held rather than emitted: it belongs *between* two
+        files, so a capture whose last log has no trailing newline comes out as
+        those bytes and not as those bytes plus one.
+        """
+        pending = b""
         for log in self.into_files():
             trailing = b""
             with log:
                 while chunk := log.read(read_byte_size):
+                    if pending:
+                        yield pending
+                        pending = b""
                     trailing = chunk[-1:]
                     yield chunk
             if trailing and trailing != b"\n":
-                yield b"\n"
+                pending = b"\n"
 
     # -- io.BufferedIOBase --------------------------------------------------
 
@@ -498,8 +503,13 @@ class TextFiles(Dataset, io.BufferedIOBase):
         """Up to `size` bytes of the concatenated, decoded logs.
 
         The buffered face of `into_byte_chunks`, so a whole capture can be
-        handed to anything that reads a binary stream -- and still only one
-        file is open and only one read is held.
+        handed to anything that reads a binary stream, with one file open and
+        one read held at a time.
+
+        `read()` with no size is the exception, and it is the exception every
+        `read()` has: it returns the whole capture, so it holds the whole
+        capture -- about twice it, in fact, while the buffer becomes bytes.
+        Ask for a size, or take `into_byte_chunks`.
         """
         self._check_open()
         want = None if size is None or size < 0 else size
@@ -592,20 +602,30 @@ def _one(batches: list[pyarrow.RecordBatch], schema: pyarrow.Schema) -> pyarrow.
     return pyarrow.Table.from_batches(batches, schema).combine_chunks().to_batches()[0]
 
 
-def _natural(info: pyarrow.fs.FileInfo) -> tuple[tuple[int, int | str], ...]:
-    """Sort key for a path, with digit runs compared as numbers.
+def _natural(info: pyarrow.fs.FileInfo) -> tuple[tuple[int, int | str, str], ...]:
+    """Sort key for one directory entry, with digit runs compared as numbers.
 
     `app.10.txt.gz` sorts after `app.9.txt.gz` rather than before it, which is
     what makes a rotated family read in the order it was written. Digits sort
     after text at the same position -- the leading `(0, ...)` / `(1, ...)`
     tags -- so two parts are never compared as a string against an int.
+
+    The third element is the digit run as it was written, and it is what makes
+    the order *total*: `app01.txt` and `app1.txt` are the same number, so
+    without it their keys are equal, `sorted` is stable, and the two come back
+    in whatever order the store listed them -- which is the one thing this key
+    exists to rule out.
     """
     return tuple(
         # `isdecimal`, not `isdigit`: the two disagree on characters like "²",
         # which `\d` does not match but `isdigit` accepts -- and one such name
         # anywhere under a root took the whole walk down with a ValueError.
-        (1, int(part)) if part.isdecimal() else (0, part)
-        for part in _DIGITS.split(info.path)
+        (1, int(part), part) if part.isdecimal() else (0, part, "")
+        # The base name, not the path: sorting happens inside one directory, so
+        # every entry shares the prefix and the order is the same either way --
+        # measured, keying the whole path is twice the work and holds the
+        # difference in memory as well.
+        for part in _DIGITS.split(info.base_name)
         if part != ""
     )
 

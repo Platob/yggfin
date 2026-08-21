@@ -5,7 +5,6 @@ tables you can read and write without learning Iceberg first.
 
 **[Documentation](https://platob.github.io/yggfin/)** —
 [Design rules](https://platob.github.io/yggfin/design/) ·
-[Row ids](https://platob.github.io/yggfin/ids/) ·
 [Schema contracts](https://platob.github.io/yggfin/contracts/) ·
 [Types](https://platob.github.io/yggfin/types/) ·
 [Logs](https://platob.github.io/yggfin/logs/) ·
@@ -65,10 +64,6 @@ logs.optimize()                      # compact, expire, sweep
   turns a class into one; `StructField`, `ListField`, `MapField` and the list
   flavours make what is inside reachable as what it is; the casts take real data
   onto the shape, recursively, in Arrow kernels only.
-- **`ids`** — one sortable 64-bit row id: the millisecond in the high 42 bits,
-  an xxh3 hash of the canonical payload folded into the low 21, sign bit clear.
-  A plain integer comparison orders by time, so the same column is the dedup
-  key, the join key, the incremental watermark and the sort column.
 - **`logs`** — `TextFile` parses a trading log into Arrow batches and writes
   batches back out as lines. `TextFiles` is the same over a folder of them: a
   lazy, `pyarrow.fs`-based walk in path order, one file open at a time, and a

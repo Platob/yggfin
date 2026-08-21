@@ -16,11 +16,11 @@ from typing import Any, ClassVar
 import pyarrow
 import pyarrow.compute
 import pyarrow.fs
+import xxhash
 
 from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField
 from rekep.filesystems import resolve
-from rekep.ids import HASH_BITS, hash_payload, pack_arrow, signed
 from rekep.logs.log import Log
 
 #: Matches the fixed header every log row opens with, leaving the free-form
@@ -51,6 +51,11 @@ STAMP_WIDTH = 27
 #: separator", so a fraction written `167_520` or `167,520` can be put back
 #: together as digits instead of as more separators.
 _FRACTION = re.compile(r"^([^.,]*)([.,])?(.*)$")
+
+#: Seed every line hash is taken under. Fixed and module-level: `hash64` is
+#: half of the primary key, so a seed that moved between runs -- Python's own
+#: salted `hash()`, a per-process random -- would store the same line twice.
+HASH_SEED = 0x9E3779B185EBCA87
 
 #: Rows per record batch: memory is bounded by it, per-batch Arrow overhead is
 #: amortised over it.
@@ -139,16 +144,6 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: states it (`pyarrow.scalar("bridge-1", pyarrow.large_string())`), which
     #: is also the only way to say "null, of this type".
     static_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
-
-    #: Epoch the row id counts its milliseconds from. 0 is the unix epoch,
-    #: which is what makes an id readable against `recorded_at_unix`; moving it
-    #: forward buys years at the far end and refuses everything before it
-    #: (`rekep.ids.EPOCH_MS`), and moving it back is how a pre-1970 capture
-    #: gets ids at all.
-    id_epoch_ms: int = 0
-
-    #: Bits of the id the line hash is folded into; the time gets the rest.
-    id_hash_bits: int = HASH_BITS
 
     def __post_init__(self) -> None:
         """Resolve the filesystem, and rewrite `url` as a path on it."""
@@ -399,19 +394,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         local = _local_micros(timestamps)
         unix = _unix_nanos(local, self.timezone)
         date, time = _date_and_time(local)
-        digests = pyarrow.array(hashes, type=pyarrow.int64())
         return pyarrow.RecordBatch.from_arrays(
             [
-                # The id is packed from the two columns beside it, per batch in
-                # uint64 kernels rather than per row: the millisecond of the
-                # instant, and the hash of the raw line folded into the low bits.
-                pack_arrow(
-                    unix,
-                    digests,
-                    unit="ns",
-                    hash_bits=self.id_hash_bits,
-                    epoch_ms=self.id_epoch_ms,
-                ),
                 pyarrow.repeat(self.url, len(rows)),
                 unix,
                 date,
@@ -423,7 +407,7 @@ class TextFile(Dataset, io.BufferedIOBase):
                 pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(rows)),
                 pyarrow.repeat("", len(rows)),
                 _utf8(messages),
-                digests,
+                pyarrow.array(hashes, type=pyarrow.int64()),
                 *(pyarrow.repeat(scalar, len(rows)) for _, scalar in self.static_columns),
             ],
             schema=self.schema,
@@ -760,11 +744,14 @@ def _epoch_nanos_slow(timestamp: bytes) -> int:
 
 
 def _hash64(raw: bytes) -> int:
-    """The line's identity, signed so an Arrow `int64` column holds it.
+    """The line's hash, signed so an Arrow `int64` column holds it.
 
-    xxh3 through `rekep.ids`, and only that: the digest is folded into the low
-    bits of every row id, so a second hash function -- or the same one under
-    another seed -- would mint a second id for a line that is already stored.
-    That is why `xxhash` is a dependency of this package rather than an extra.
+    xxh3 under a fixed seed, and only that. It is half of the primary key, so
+    it is data rather than an implementation detail: a fallback hash -- which
+    is what this used to have -- made `hash64` stable within an environment and
+    not across two that disagreed about whether `xxhash` was installed, and a
+    row keyed on it could be stored twice. `xxhash` is a dependency of this
+    package for that reason, imported at module top with no guard.
     """
-    return signed(hash_payload(raw))
+    value = xxhash.xxh3_64_intdigest(raw, seed=HASH_SEED)
+    return value - (1 << 64) if value >= (1 << 63) else value

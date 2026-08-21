@@ -72,10 +72,6 @@ class Quote(Convertible):
 - **Keys and partitions are part of the shape**, not of the job that writes it:
   `Field.primary_key()` is what makes `merge_by=True` mean something, wherever
   the data lands.
-- **One column is the identity**, where the data has a natural one: a
-  [row id](ids.md) that packs the row's millisecond above a hash of its
-  payload is the dedup key, the join key, the watermark and the sort column at
-  once, and a plain integer comparison orders it by the clock.
 
 The same statement lives in a file when the two sides of an exchange do not
 share code — see [Schema contracts](contracts.md).
@@ -172,7 +168,6 @@ that names the way out. The refusals in this package are all of that kind:
 | refused | because |
 | --- | --- |
 | a nullable primary key | an identifier that may be missing identifies nothing |
-| a timestamp outside a row id's time bits | a wrapped id is a *smaller* number and sorts before rows from years earlier |
 | a null or NaN merge key | no predicate can find that row again, so a replay inserts it twice |
 | `merge_by` on a text file | there is nothing in a flat file to match a row against |
 | writing a set of log files | nothing says which file a row belongs in |
@@ -220,17 +215,13 @@ processes agree, and the process for that is deliberately small.
 4. **The transport carries the schema.** Arrow IPC, parquet and Iceberg all
    carry it; a log file does not, which is why the shape that reads one is
    declared in code and published beside it.
-5. **The row carries its identity.** Where a producer can mint a
-   [row id](ids.md) — a deterministic hash of the canonical row, under a fixed
-   seed, packed below its timestamp — the consumer dedupes, joins and resumes
-   on that one integer instead of agreeing on a composite key.
-6. **The consumer loads the contract and casts on receipt**, with
+5. **The consumer loads the contract and casts on receipt**, with
    `merge_schema=True` when it wants to keep columns it does not know about
    yet.
-7. **Evolution is additive.** A new column is added nullable, at any depth
+6. **Evolution is additive.** A new column is added nullable, at any depth
    (`Field.merge_with`, `IcebergDataset.add_fields`). Retyping or dropping is a
    migration and gets a new version of the contract, announced.
-8. **CI pins the agreement.** The contract files are tested against the
+7. **CI pins the agreement.** The contract files are tested against the
    declarations they came from, so a column that exists in code and not in the
    contract fails the build rather than surprising a consumer.
 

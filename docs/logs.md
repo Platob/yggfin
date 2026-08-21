@@ -12,11 +12,6 @@ A trading log is a text file with a fixed header and a free-form payload:
 whatever consumes them. `TextFiles` is the same for a whole folder of them,
 because a capture is never one file.
 
-Every parsed row carries a [sortable id](ids.md): the millisecond it was
-written in, and a hash of the line itself. That one integer is the row's
-identity everywhere downstream — the dedup key, the join key, the incremental
-watermark and the sort column.
-
 ## Reading one
 
 === "Whole file"
@@ -59,8 +54,6 @@ watermark and the sort column.
         read_byte_size=1 << 22,     # bytes per read: one ranged GET on a store
         fold_continuations=True,    # a wrapped stack trace stays one row
     )
-
-    TextFile.from_path("app.txt", id_epoch_ms=ids.EPOCH_MS)   # the id's epoch
     ```
 
     The 4 MiB default read is a request size as much as a buffer: on an object
@@ -97,8 +90,8 @@ stream — in path order, one file open at a time, over any filesystem
     # the order given is kept: the archive is older, so it is read first
     files = TextFiles.from_folders(["/archive/app", "/var/log/app"], pattern="*.txt*")
 
-    # or name the files themselves -- folders and files can be mixed
-    files = TextFiles.from_urls(["s3://b/logs/app.1.txt.gz", "s3://b/logs/app.txt"])
+    # a root may be a file: folders and files can be mixed, in one call
+    files = TextFiles.from_folders(["s3://b/logs/app.1.txt.gz", "s3://b/logs/app.txt"])
     ```
 
     A stated order is a statement about time, so nothing re-sorts it. A root
@@ -125,7 +118,9 @@ stream — in path order, one file open at a time, over any filesystem
     Which direction is *chronological* is the writer's convention, and a path
     cannot be asked: `app.txt` sorts after `app.1.txt.gz` while `app.log` sorts
     before `app.log.1.gz`. Where the order has to be exact, state it with
-    `from_folders`.
+    `from_folders` — whose roots keep the order you gave them, `reverse` or
+    not, because that order is your statement and the flag is about what the
+    store decides.
 
 === "The paths themselves"
 
@@ -162,9 +157,11 @@ stream — in path order, one file open at a time, over any filesystem
     The other half of what a set is for: shipping a capture rather than parsing
     it. Each file is decoded by Arrow as it is read — `.gz`, `.zst`, plain, by
     extension — so what comes out is log text whatever the folder mixes, and
-    what is held is one read. `compression=` re-encodes that stream through one
-    of Arrow's codecs **as it goes**, because `Codec.compress` would need the
-    whole capture in memory first ([measured](#shipping-the-bytes)).
+    what is held is one read. `compression=` re-encodes that stream through a
+    codec Arrow can **stream** — `gzip`, `zstd`, `lz4`, `bz2`, `brotli`, but
+    not `snappy` or `lz4_raw` — and it does so **as it goes**, because
+    `Codec.compress` would need the whole capture in memory first
+    ([measured](#shipping-the-bytes)).
 
     A file that does not end in a newline is separated from the next by one,
     here rather than in the parser: without it the last line of one log and the
@@ -197,8 +194,11 @@ stream — in path order, one file open at a time, over any filesystem
 
     `write_arrow` is refused rather than guessing: nothing says which file a
     row belongs in, and the answer — when it was captured — is not something a
-    writer can decide afterwards. Write one file with `TextFile`, or a dataset
-    that owns its own files ([Iceberg](iceberg.md)).
+    writer can decide afterwards. `append_arrow` is refused with it, and
+    refused *first*: the generic append reads a key column before it writes,
+    which here would parse the whole capture on its way to the same error.
+    Write one file with `TextFile`, or a dataset that owns its own files
+    ([Iceberg](iceberg.md)).
 
 ## What comes out
 
@@ -208,9 +208,8 @@ so a consumer that does not import this package still knows what a row is.
 
 | column | type | what it is |
 | --- | --- | --- |
-| `id` | `int64` | the [row id](ids.md): millisecond, then line hash — **primary key** |
 | `url` | `string` | the log the line came from |
-| `recorded_at_unix` | `int64` | nanoseconds since the epoch |
+| `recorded_at_unix` | `int64` | nanoseconds since the epoch — **primary key** with `hash64` |
 | `recorded_at_date` | `date32` | the local calendar day — **partition** |
 | `recorded_at_time` | `time64[us]` | the local time of day |
 | `thread_name` | `string` | the first bracketed field |
@@ -218,7 +217,7 @@ so a consumer that does not import this package still knows what a row is.
 | `category_id` | `int32` | categorisation placeholder — `0` until assigned, never null |
 | `category_name` | `string` | categorisation placeholder — empty until assigned, never null |
 | `message` | `string` | payload, continuations folded in |
-| `hash64` | `int64` | xxh3-64 of the raw line, the whole digest the id folds |
+| `hash64` | `int64` | xxh3-64 of the raw line — **primary key** with `recorded_at_unix` |
 
 …and then whatever `static_values` declares, in the order it declares them.
 
@@ -228,8 +227,8 @@ so a consumer that does not import this package still knows what a row is.
     from rekep import Log
 
     Log.FIELD.names                                   # the columns above
-    Log.FIELD.field("id").metadata                    # {'unit': 'millisecond', 'time_bits': '42', ...}
-    Log.FIELD.primary_keys()                          # ['id']
+    Log.FIELD.field("recorded_at_unix").metadata      # {'unit': 'nanosecond', ...}
+    Log.FIELD.primary_keys()                          # ['recorded_at_unix', 'hash64']
     Log.FIELD.partition_keys()                        # {'recorded_at_date': 'identity'}
     ```
 
@@ -350,7 +349,6 @@ a read and a write, with nothing in between.
         catalog="local",
         properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file:///wh"},
         struct=Log.FIELD,          # the table is created from this, once
-        sort_by=["id"],            # each commit sorted on the clock
     )
 
     with TextFile.from_path("app.txt.gz", static_values={"bridge": "bridge-1"}) as log:
@@ -394,15 +392,10 @@ a read and a write, with nothing in between.
 !!! tip "Re-running the same file is free"
 
     `append_arrow(..., merge_by=True)` inserts only the rows whose primary key —
-    the [row id](ids.md), which is the line's millisecond and the hash of its
-    bytes — is not stored yet, and never rewrites what is: a log line is
-    immutable, so re-ingesting a rotated log or replaying a day appends
-    nothing, commits nothing, and touches no stored row. A `write_arrow` with
-    `merge_by` is the upsert, for rows that do change.
-
-    The same property makes the id a watermark: `row_filter=f"id > {latest}"`
-    reads only what arrived since the last run, and prunes on file statistics
-    because time is in the id's high bits.
+    the timestamp and the hash of the raw line — is not stored yet, and never
+    rewrites what is: a log line is immutable, so re-ingesting a rotated log or
+    replaying a day appends nothing, commits nothing, and touches no stored row.
+    A `write_arrow` with `merge_by` is the upsert, for rows that do change.
 
 ## Benchmarks
 
@@ -480,9 +473,10 @@ turning folding off does not reliably move it either, and only a trace every
 not a regex match.
 
 And **the hash is worth a quarter of the parser**. That row is the reason
-`xxhash` is a hard dependency rather than an extra: the digest is the low half
-of every [row id](ids.md), so it cannot be swapped for a fallback at install
-time — and it would cost 26% of the parse if it were.
+`xxhash` is a hard dependency rather than an extra: `hash64` is half of the
+primary key, so which hash produced it is data — under a fallback the same line
+would be keyed differently in two environments — and the fallback would cost
+26% of the parse as well.
 
 Read size has a ceiling but, on a local disk, no floor worth naming: 64 MiB
 spends more time waiting for a read than parsing it, while 64 KiB costs nothing

@@ -9,30 +9,11 @@ import pyarrow
 
 from rekep.convert import Convertible
 from rekep.fields import Field, field
-from rekep.ids import HASH_BITS, TIME_BITS
 
 
 @field
 class Log(Convertible):
     """One parsed line of a trading log."""
-
-    # The row's identity, and the only key anything downstream needs: the
-    # millisecond in the high 42 bits, the hash of the raw line folded into the
-    # low 21, sign bit clear. One integer that sorts by time, so it is also the
-    # sort column a range predicate prunes on and the watermark an incremental
-    # load carries -- see `rekep.ids`.
-    id: Annotated[
-        int,
-        Field.primary_key(
-            metadata={
-                "unit": "millisecond",
-                "epoch": "1970-01-01",
-                "time_bits": str(TIME_BITS),
-                "hash_bits": str(HASH_BITS),
-            }
-        ),
-    ]
-    """Sortable row id: the millisecond, then the hash of the raw line."""
 
     # Repeated per row rather than held once per batch, so batches from many
     # logs can be concatenated and still say where each row came from.
@@ -40,10 +21,13 @@ class Log(Convertible):
     """Path of the log the line came from, as its filesystem addresses it."""
 
     # An integer rather than a timestamp type, so the column survives any
-    # downstream that is picky about time units. Not a key: `id` carries the
-    # same millisecond in its high bits and a tiebreak below it, so a key on
-    # this column would only be the same order, one column wider.
-    recorded_at_unix: Annotated[int, Field(metadata={"unit": "nanosecond", "epoch": "1970-01-01"})]
+    # downstream that is picky about time units. Part of the key beside
+    # `hash64`: the hash alone identifies a line, but a key that leads with
+    # time is one an engine can prune on, since it correlates with the
+    # partition.
+    recorded_at_unix: Annotated[
+        int, Field.primary_key(metadata={"unit": "nanosecond", "epoch": "1970-01-01"})
+    ]
     """Timestamp as whole nanoseconds since the epoch, in the log's own zone."""
 
     # Derived from `recorded_at_unix`, denormalised so a store partitions on a
@@ -72,8 +56,5 @@ class Log(Convertible):
     message: str
     """Payload with the header and level stripped, continuation lines folded in."""
 
-    # The whole digest, kept beside the id: the id holds 21 folded bits of it,
-    # which is enough to order and to dedup, and not enough to prove two lines
-    # from two captures are the same line. This column is what proves it.
-    hash64: int
-    """Signed xxh3-64 of the raw line, the hash the id folds into its low bits."""
+    hash64: Annotated[int, Field.primary_key()]
+    """Signed xxh3-64 of the raw line, for matching lines across captures."""

@@ -5,7 +5,7 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, Log, TextFile, TextFiles, ids
+from rekep import Dataset, Field, Log, TextFile, TextFiles
 from rekep.logs import HEADER_PATTERN
 from rekep.logs.text_files import _natural
 
@@ -82,9 +82,29 @@ def test_a_digit_run_sorts_as_a_number_not_as_text() -> None:
     assert sorted(info.path for info in scrambled) == ["a/app.10.txt", "a/app.2.txt", "a/app.9.txt"]
 
 
+def test_zero_padded_siblings_have_an_order_of_their_own(tmp_path: Path) -> None:
+    """`app01` and `app1` are one number: without a tiebreak the store decides."""
+    for name in ("app1.txt", "app01.txt", "app001.txt"):
+        (tmp_path / name).write_bytes(SAMPLE_BYTES)
+    files = TextFiles.from_folder(tmp_path, pattern="*.txt")
+    assert relative(files, tmp_path) == ["app001.txt", "app01.txt", "app1.txt"]
+    keys = [_natural(pyarrow.fs.FileInfo(name)) for name in ("app1.txt", "app01.txt")]
+    assert keys[0] != keys[1]
+
+
 def test_reverse_reads_the_same_order_backwards(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*", reverse=True)
     assert tuple(relative(files, capture)) == tuple(reversed(CAPTURE_ORDER))
+
+
+def test_reverse_turns_each_root_and_not_their_order(capture: Path) -> None:
+    """The roots are the caller's statement about time; the flag is about the store."""
+    roots = [capture / "archive", capture]
+    forward = relative(TextFiles.from_folders(roots, pattern="*.txt*"), capture)
+    backward = relative(TextFiles.from_folders(roots, pattern="*.txt*", reverse=True), capture)
+    assert forward[0] == "archive/old.txt"
+    assert backward[0] == "archive/old.txt", "the archive is still read first"
+    assert backward[1:] == list(reversed(forward[1:]))
 
 
 def test_roots_are_read_in_the_order_given(capture: Path) -> None:
@@ -134,8 +154,12 @@ def test_the_pattern_is_case_sensitive_on_every_platform(capture: Path) -> None:
 
 
 def test_a_file_root_is_taken_as_it_is(capture: Path) -> None:
-    """Naming a file *is* the selection, so the pattern does not second-guess it."""
-    files = TextFiles.from_urls([capture / "notes.json"], pattern="*.txt")
+    """Naming a file *is* the selection, so the pattern does not second-guess it.
+
+    And it is the same builder: a second one taking files rather than folders
+    would be one name for the behaviour this already has.
+    """
+    files = TextFiles.from_folders([capture / "notes.json"], pattern="*.txt")
     assert relative(files, capture) == ["notes.json"]
 
 
@@ -248,20 +272,6 @@ def test_static_values_are_the_sets_and_reach_every_file(capture: Path) -> None:
     assert table.num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
 
 
-def test_every_file_of_a_capture_packs_its_ids_the_same_way(capture: Path) -> None:
-    """Two files whose ids were packed differently could not be compared."""
-    files = TextFiles.from_folder(capture, pattern="*.txt*", id_epoch_ms=1_000)
-    for log in files.into_files():
-        assert log.id_epoch_ms == 1_000
-        assert log.id_hash_bits == files.id_hash_bits
-    table = files.read_arrow_table()
-    assert table.column("id").to_pylist()[0] == ids.pack(
-        table.column("recorded_at_unix").to_pylist()[0] // 1_000_000,
-        table.column("hash64").to_pylist()[0],
-        epoch_ms=1_000,
-    )
-
-
 # -- parsing ----------------------------------------------------------------
 
 
@@ -273,18 +283,22 @@ def test_every_record_of_every_file_is_parsed(capture: Path) -> None:
 
 def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
-    urls = TextFiles.from_folder(capture, pattern="*.txt*").into_urls()
-    read = table_urls = files.into_arrow_table().column("url").to_pylist()
-    assert read[::EXPECTED_RECORDS] == list(urls)
-    # Every file's rows are contiguous: a set never interleaves two logs.
-    assert [url for index, url in enumerate(table_urls) if index % EXPECTED_RECORDS == 0] == read[
-        ::EXPECTED_RECORDS
+    walked = list(TextFiles.from_folder(capture, pattern="*.txt*").into_urls())
+    read = files.into_arrow_table().column("url").to_pylist()
+    assert read[::EXPECTED_RECORDS] == walked
+
+    # Every file's rows are contiguous: a set never interleaves two logs. Cut
+    # the column into runs of equal url and compare those, rather than
+    # sampling it every 24 rows -- which is true of any list of any order.
+    runs = [
+        read[start : start + EXPECTED_RECORDS] for start in range(0, len(read), EXPECTED_RECORDS)
     ]
+    assert [set(run) for run in runs] == [{url} for url in walked]
 
 
 def test_a_compressed_file_and_a_plain_one_read_the_same(capture: Path) -> None:
-    plain = TextFiles.from_urls([capture / "app.txt"]).into_arrow_table()
-    zipped = TextFiles.from_urls([capture / "app.1.txt.gz"]).into_arrow_table()
+    plain = TextFiles.from_folders([capture / "app.txt"]).into_arrow_table()
+    zipped = TextFiles.from_folders([capture / "app.1.txt.gz"]).into_arrow_table()
     assert plain.column("message").to_pylist() == zipped.column("message").to_pylist()
 
 
@@ -315,9 +329,20 @@ def test_short_files_are_combined_into_batches_of_the_size_asked_for(capture: Pa
 
 
 def test_a_full_batch_is_handed_over_untouched(capture: Path) -> None:
-    """A big log pays no copy: what `TextFile` produced is what comes out."""
-    files = TextFiles.from_urls([capture / "app.txt"])
-    assert [batch.num_rows for batch in files.into_arrow_reader(batch_row_size=10)] == [10, 10, 4]
+    """A big log pays no copy: what `TextFile` produced is what comes out.
+
+    Asserted on the buffer address, because the row counts are the same
+    whether the batch was passed through or copied through `combine_chunks`.
+    """
+    files = TextFiles.from_folders([capture / "app.txt"])
+    batches = list(files.into_arrow_batches(batch_row_size=10))
+    assert [batch.num_rows for batch in batches] == [10, 10, 4]
+
+    with TextFile.from_path(capture / "app.txt") as log:
+        alone = list(log.into_arrow_batches(10))
+    addresses = [batch.column("hash64").buffers()[1].address for batch in batches]
+    assert len(set(addresses)) == len(addresses), "no batch shares another's buffer"
+    assert [batch.num_rows for batch in alone] == [10, 10, 4]
 
 
 def test_continuations_do_not_fold_across_two_files(capture: Path) -> None:
@@ -377,6 +402,13 @@ def test_one_file_is_open_at_a_time(capture: Path) -> None:
 def test_byte_chunks_are_every_file_in_order(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert files.into_bytes() == SAMPLE_BYTES * len(CAPTURE_ORDER)
+
+
+def test_the_last_file_is_not_given_a_newline_it_did_not_have(tmp_path: Path) -> None:
+    """A separator goes *between* two files; there is nothing after the last."""
+    (tmp_path / "a.txt").write_bytes(RECORDS[0])
+    files = TextFiles.from_folder(tmp_path)
+    assert files.into_bytes() == RECORDS[0]
 
 
 def test_a_file_without_a_trailing_newline_is_separated_from_the_next(tmp_path: Path) -> None:
@@ -491,6 +523,24 @@ def test_use_after_close_raises(capture: Path) -> None:
         files.read(1)
 
 
+@pytest.mark.parametrize(
+    "operation",
+    [
+        lambda files: files.read(1),
+        lambda files: files.into_bytes(),
+        lambda files: files.into_arrow_table(),
+        lambda files: list(files.into_arrow_batches()),
+        lambda files: list(files.into_byte_chunks()),
+    ],
+)
+def test_both_faces_of_a_closed_set_refuse(capture: Path, operation) -> None:
+    """Rows and bytes are two faces of one stream, and it is closed."""
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
+    files.close()
+    with pytest.raises(ValueError, match="closed file"):
+        operation(files)
+
+
 def test_a_set_reads_twice(capture: Path) -> None:
     """Each read walks the store again, so a folder that grew is read again."""
     files = TextFiles.from_folder(capture, pattern="*.txt*")
@@ -500,6 +550,14 @@ def test_a_set_reads_twice(capture: Path) -> None:
 
 
 # -- writing ----------------------------------------------------------------
+
+
+def test_appending_to_a_set_is_refused_too(capture: Path) -> None:
+    """And before the capture is parsed to build a key column nobody can use."""
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
+    batch = files.into_arrow_table().to_batches()[0]
+    with pytest.raises(NotImplementedError, match="TextFile"):
+        files.append_arrow(batch, merge_by=True)
 
 
 def test_writing_a_set_is_refused(capture: Path) -> None:

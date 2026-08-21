@@ -34,15 +34,21 @@ LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
 TRACE = b"java.lang.IllegalStateException: synthetic\n\tat com.example.A.b(A.java:1)\n"
 
 
-def generate(path: pathlib.Path, rows: int, trace_every: int = 200) -> int:
+def generate(path: pathlib.Path, rows: int, trace_every: int = 200, start: int = 0) -> int:
     """Write a synthetic log of `rows` records; returns its size in bytes.
 
     `trace_every` is how often a multi-line stack trace appears. Folding those
     into the row above is the one piece of per-line work that is not a regex
     match, so a log full of them is the parser's bad case.
+
+    `start` offsets the row numbers, which is what makes a *folder* of these
+    files a capture rather than 500 copies of one file: without it every file
+    holds the same bytes, and a compressor with a long-range matcher reports a
+    ratio that says more about the fixture than about the data.
     """
     with path.open("wb") as out:
-        for i in range(rows):
+        for index in range(rows):
+            i = start + index
             second, micro = divmod(i, 1_000_000)
             out.write(
                 b"2026-08-14 %02d:%02d:%02d.%03d_%03d [250-e7256476:9effef3e6a:%05d] [%s] %s"
@@ -60,7 +66,7 @@ def generate(path: pathlib.Path, rows: int, trace_every: int = 200) -> int:
             out.write(
                 b"payload %d: ACCOUNT=ACCT-%06d routed XPAR qty=%d\n" % (i, i % 500, i % 10_000)
             )
-            if trace_every and i % trace_every == trace_every - 1:
+            if trace_every and index % trace_every == trace_every - 1:
                 out.write(TRACE)
     return path.stat().st_size
 
@@ -178,8 +184,10 @@ def folders(rows: int, repeat: int) -> None:
         for name, count in shapes:
             folder = root / name
             folder.mkdir()
+            per = rows // count
             for index in range(count):
-                generate(folder / f"app.{index}.txt", rows // count)
+                # Each file holds its own rows, not a copy of the first file's.
+                generate(folder / f"app.{index}.txt", per, start=index * per)
         gzipped = root / "many-gz"
         gzipped.mkdir()
         for source in sorted((root / "many").iterdir()):
@@ -255,12 +263,14 @@ def _byte_flows(folder: pathlib.Path, repeat: int) -> None:
     print(" ".join(f"{c:>{w}}" for c, w in zip(columns, widths, strict=True)))
 
     flows = (
-        ("streamed raw", lambda files: _consume(files.into_byte_chunks())),
-        ("streamed gzip", lambda files: _consume(files.into_byte_chunks(compression="gzip"))),
-        ("streamed zstd", lambda files: _consume(files.into_byte_chunks(compression="zstd"))),
-        ("into_bytes (materialised)", lambda files: (len(files.into_bytes()), 0)),
+        ("streamed raw", None, lambda files: _consume(files.into_byte_chunks())),
+        ("streamed gzip", "gzip", lambda f: _consume(f.into_byte_chunks(compression="gzip"))),
+        ("streamed zstd", "zstd", lambda f: _consume(f.into_byte_chunks(compression="zstd"))),
+        ("into_bytes (materialised)", None, lambda files: (len(files.into_bytes()), 0)),
     )
-    for label, flow in flows:
+    raw = TextFiles.from_folder(folder).into_bytes()
+    for label, codec, flow in flows:
+        _verify(folder, codec, raw)  # a truncated stream is a better ratio, not a failure
         flow(TextFiles.from_folder(folder))  # warm
         fastest, produced, peak = float("inf"), 0, 0
         for _ in range(repeat):
@@ -275,6 +285,22 @@ def _byte_flows(folder: pathlib.Path, repeat: int) -> None:
             f"{label:>26} {fastest:>9.3f} {nbytes / 2**20 / fastest:>8.1f} "
             f"{produced / 2**20:>8.2f} {peak / 2**20:>9.1f}"
         )
+
+
+def _verify(folder: pathlib.Path, codec: str | None, raw: bytes) -> None:
+    """Check a flow's answer before it is timed, outside the timed region.
+
+    A codec stream that lost its trailer decodes short -- and would print as a
+    *better* ratio rather than as a failure, which is the one way a benchmark
+    can flatter the code it measures.
+    """
+    files = TextFiles.from_folder(folder)
+    if codec is None:
+        assert files.into_bytes() == raw, "the raw flow changed the bytes"
+        return
+    blob = files.into_bytes(compression=codec)
+    with pyarrow.CompressedInputStream(pyarrow.BufferReader(blob), codec) as stream:
+        assert stream.read() == raw, f"the {codec} flow does not decode back"
 
 
 def _consume(chunks) -> tuple[int, int]:

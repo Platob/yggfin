@@ -301,6 +301,49 @@ def test_a_fixed_width_binary_survives_the_spelling_arrow_prints() -> None:
     assert Field.from_dict(original.into_dict()).arrow_type == pyarrow.binary(16)
 
 
+@pytest.mark.parametrize("size", [-1, 2.7, True, "3", None])
+def test_a_fixed_size_list_width_is_checked_not_coerced(size: object) -> None:
+    """`int(size)` took all of these, and a negative width built a plain list."""
+    dumped = {"name": "value", "type": "fixed_size_list", "item": {"type": "int32"}}
+    with pytest.raises(ValueError, match="list_size"):
+        Field.from_dict({**dumped, "list_size": size} if size is not None else dumped)
+
+
+@pytest.mark.parametrize(
+    ("written", "sorted_keys"), [(True, True), (False, False), ("true", True), ("false", False)]
+)
+def test_keys_sorted_is_read_strictly(written: object, sorted_keys: bool) -> None:
+    """`bool("false")` is True, and `keys_sorted` is part of the map's type."""
+    dumped = {
+        "name": "value",
+        "type": "map",
+        "keys_sorted": written,
+        "key": {"type": "string"},
+        "value": {"type": "int32"},
+    }
+    assert Field.from_dict(dumped).arrow_type.keys_sorted is sorted_keys
+
+
+def test_a_flag_that_is_neither_true_nor_false_is_refused() -> None:
+    with pytest.raises(ValueError, match="keys_sorted"):
+        Field.from_dict(
+            {
+                "name": "value",
+                "type": "map",
+                "keys_sorted": "no",
+                "key": {"type": "string"},
+                "value": {"type": "int32"},
+            }
+        )
+
+
+def test_a_fixed_width_binary_is_refused_where_it_is_misspelled() -> None:
+    """`fixed_size_binary[16)` is not a spelling Arrow ever writes."""
+    assert arrow_type_for("fixed_size_binary(16)") == pyarrow.binary(16)
+    with pytest.raises(ValueError, match="No type alias"):
+        arrow_type_for("fixed_size_binary[16)")
+
+
 def test_a_field_with_no_type_is_refused_by_name() -> None:
     """A hand-written contract that forgot one gets told which field it was."""
     with pytest.raises(ValueError, match="'venue' has no type"):
