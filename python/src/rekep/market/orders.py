@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, ClassVar
+from typing import Annotated, Any, ClassVar
 
 import pyarrow
 
@@ -76,6 +76,28 @@ class Order(MarketEvent):
     reason: Annotated[str | None, fix_tag("Text", 58)] = None
     """Free text the venue sent with the refusal or the restatement."""
 
+    def life_parts(self) -> tuple[Any, ...]:
+        """An order's lifecycle is the identifier that survives its amendments.
+
+        `OrderID <37>` first, because the venue assigns it once and keeps it
+        across a cancel/replace -- which is the definition of the lifecycle.
+        `ClOrdID <11>` does *not* survive one: the standard requires a new
+        one per version. So when only client identifiers are there,
+        `OrigClOrdID <41>` is preferred, which puts a replacement on the same
+        lifecycle as the version it replaced. One hop is exact; a chain of
+        replacements walks back one link per version, which is why
+        `with_previous` carries the lifecycle forward instead of re-deriving
+        it, and why a venue that sends `OrderID` never needs any of this.
+        """
+        named = self.order_id or self.prev_client_order_id or self.client_order_id
+        if not named:
+            return super().life_parts()
+        return (self.instrument_hash, self.venue or "", named)
+
+    def version_parts(self) -> tuple[Any, ...]:
+        """An order's version moves with what it asked for, and how far it got."""
+        return (*super().version_parts(), self.client_order_id, self.filled_qty)
+
 
 @field
 class Execution(MarketEvent):
@@ -95,6 +117,19 @@ class Execution(MarketEvent):
     """
 
     EVENT_TYPE: ClassVar[EventType] = EventType.EXECUTION
+
+    # The abstract slots, re-declared for the one thing a subclass owns about
+    # them: which FIX field they actually hold. `MarketEvent` tags them
+    # `Price <44>` and `OrderQty <38>` because that is what an order's are,
+    # and a report's are `LastPx` and `LastQty` -- the *last fill*, not the
+    # order. Re-declaring keeps the column exactly where it was (a dataclass
+    # field re-annotated keeps its position) and stops the schema naming a
+    # field it does not carry.
+    px: Annotated[float | None, fix_tag("LastPx", 31)] = None
+    """What traded on this report -- the fill's price, not the order's limit."""
+
+    qty: Annotated[float | None, fix_tag("LastQty", 32)] = None
+    """What traded on this report -- the fill's quantity, not the order's."""
 
     kind: Annotated[ExecKind, fix_tag("ExecType", 150)] = ExecKind.UNKNOWN
     """What this report says happened; `>= ExecKind.TRADE` means shares moved."""
@@ -133,3 +168,22 @@ class Execution(MarketEvent):
 
     reason: Annotated[str | None, fix_tag("Text", 58)] = None
     """Free text the venue sent with the report."""
+
+    def life_parts(self) -> tuple[Any, ...]:
+        """An execution's lifecycle is the report the venue identified it by.
+
+        `ExecID <17>` first, which the standard makes unique per report;
+        `TradeID <1003>` after it, which both sides of a trade share and which
+        is what a trade-capture report carries instead. A fill amended later
+        (`ExecType` `G`/`H`) carries the *same* identifier, which is exactly
+        right: a correction is another version of one execution, not a
+        second one.
+        """
+        named = self.exec_id or self.trade_id
+        if not named:
+            return super().life_parts()
+        return (self.instrument_hash, self.venue or "", named)
+
+    def version_parts(self) -> tuple[Any, ...]:
+        """An execution's version moves when what it says about the trade does."""
+        return (*super().version_parts(), self.kind, self.exec_id, self.filled_qty)

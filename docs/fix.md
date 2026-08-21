@@ -208,6 +208,69 @@ committing: "nothing changed" looks like nothing changed.
     Reading through deflate costs 12–17% of a question, and the archive is
     6.1× smaller than the directory ([measured](#benchmarks)).
 
+## Building from pairs
+
+The other way in. `from_text` reads a line; `from_pairs` takes what a bridge, a
+decoder or a test already has and normalises it into the same message — keys
+resolved to tag numbers, values spelled the way the wire spells them, order and
+repetition kept because that is what a message *is*.
+
+```python
+from rekep.fix import FixMessage
+from rekep.market import market_tags
+
+FixMessage.from_pairs(
+    [
+        ("MsgType", "D"),          # a name, any casing
+        ("side", 1),               # ... and any separator convention
+        ("Price", 100.5),
+        ("NoPartyIDs[0].PartyID", "ACME"),
+        ("VenueOwnField", "kept"), # nothing resolves it, so it stays as it is
+        ("Text", None),            # dropped: `58=` is malformed, not empty
+    ],
+    market_tags(),
+).into_text("|")
+# '35=D|54=1|44=100.5|NoPartyIDs[0].448=ACME|VenueOwnField=kept'
+```
+
+Three rules make that work:
+
+- **A key is a tag, a name, or a decorated name.** Digits are already a tag. A
+  name resolves through the mapping you pass, after a fold that lowercases it
+  and drops the separators a renderer's convention adds — so one entry answers
+  for `MsgType`, `msgtype`, `msg_type`, `msg-type` and `Msg Type`. A component
+  path (`Instrument.Symbol`) or an entry index (`PartyID[1]`) says *where* the
+  field sits, not what it is, so the name resolves without it and the
+  decoration is kept on the stored key — exactly what `from_text` stores, so
+  both ways in agree.
+- **An unresolved key is kept as it arrived.** Every venue sends fields no
+  dictionary has, and dropping them loses data the map, the round trip and
+  `get` all handle. With no mapping at all every name stays a name, and
+  `get("Side")` still finds it through the rendered-spelling fallback.
+- **A value is rendered as the wire spells it.** A boolean is `Y`/`N`, not
+  `True`. A float is positional — FIX `Price` is digits with an optional point,
+  and `1e-07` is a number Python prints and no venue parses. A datetime is
+  `YYYYMMDD-HH:MM:SS.ssssss`. A value that knows its own FIX spelling is asked
+  for it, which is how a [banded code](market.md#codes) renders as the
+  character it was read from.
+
+!!! note "The regex is for the shape, the fold is for the name"
+
+    Resolving a key looks like a job for one case-insensitive regex over every
+    known name. It is not, and the benchmark is why: an alternation still has
+    to be probed for the *tag* afterwards, so it is a scan added in front of
+    the lookup it cannot replace — and its cost scales with the dictionary
+    while a hash probe's does not. Measured on mixed keys: **4.2M keys/s at
+    nine names, 89k at fifteen hundred**, against **3.4–3.8M/s flat** for the
+    probe-then-fold that ships. Nine names is exactly the size at which "just
+    use a regex" looks right.
+
+    So the regex does the part that really is regex work — splitting a
+    decorated key into the name and the decoration — and the fold does the
+    part that really is a lookup. The lowercase spelling is probed *first*,
+    because a name with no separator in it folds to its own lowercase and
+    never has to pay for the `sub`.
+
 ## Reading values
 
 The projection is deliberately forgiving where the wire is:

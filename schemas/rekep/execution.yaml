@@ -128,11 +128,10 @@ fields:
 - name: px
   type: double
   nullable: true
-  description: The price on this row, in `px_unit`; what it means is the subclass's
-    to say.
+  description: What traded on this report -- the fill's price, not the order's limit.
   metadata:
-    fix:name: Price
-    fix:tag: '44'
+    fix:name: LastPx
+    fix:tag: '31'
 - name: px_unit
   type: string
   description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when
@@ -140,11 +139,10 @@ fields:
 - name: qty
   type: double
   nullable: true
-  description: The quantity on this row, in `qty_unit`; what it means is the subclass's
-    to say.
+  description: What traded on this report -- the fill's quantity, not the order's.
   metadata:
-    fix:name: OrderQty
-    fix:tag: '38'
+    fix:name: LastQty
+    fix:tag: '32'
 - name: qty_unit
   type: string
   description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'

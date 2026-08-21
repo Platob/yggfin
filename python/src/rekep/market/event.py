@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
-from typing import Annotated, Any, ClassVar
+from typing import Annotated, Any, ClassVar, Self
 
 import pyarrow
 
@@ -237,6 +237,46 @@ class Event(Convertible):
         """`hash_of` over whole columns: one identifier per row, in kernels."""
         return hash_arrow(cls.__name__, *columns)
 
+    def identify(self) -> Self:
+        """Give the event the identity its own content earns, where it has none.
+
+        Two identities and one rule each. `xhash` is the **lifecycle** -- the
+        thing that persists across every version of this event -- so it is
+        hashed from what does not change: which instrument, which side, which
+        identifier the venue gave it. `hash` is **this version** -- so it is
+        hashed from the lifecycle plus what makes this version different from
+        the last one.
+
+        Both are computed by layer: `life_parts` and `version_parts` are what
+        a subclass overrides, and the hashing, the class-name prefix and the
+        "only when unset" rule stay here. A producer that already knows an
+        identity keeps it -- this fills gaps, it does not overwrite.
+        """
+        if not self.xhash:
+            parts = self.life_parts()
+            self.xhash = self.hash_of(*parts) if parts else NIL
+        if not self.hash:
+            self.hash = self.hash_of(*self.version_parts())
+        return self
+
+    def life_parts(self) -> tuple[Any, ...]:
+        """What makes this event's lifecycle the one it is, across every version.
+
+        Empty when nothing does, which `identify` reads as `NIL`: an event
+        that names no persistent thing is honestly unidentified, and hashing
+        emptiness would give every one of them the same lifecycle.
+        """
+        return (self.symbol,) if self.symbol else ()
+
+    def version_parts(self) -> tuple[Any, ...]:
+        """What makes this version different from the one before it.
+
+        The lifecycle leads, so two lifecycles cannot collide however alike
+        their versions are, and then the counter, the instant and the state --
+        the three things every event has that a new version moves.
+        """
+        return (self.xhash, self.version, self.unix, self.state)
+
 
 @field
 class MarketEvent(Event):
@@ -320,3 +360,19 @@ class MarketEvent(Event):
         super().__post_init__()
         if self.instrument.xhash:
             self.instrument_hash = self.instrument.xhash
+
+    def life_parts(self) -> tuple[Any, ...]:
+        """A market lifecycle is an instrument and a direction, at least.
+
+        Both, because the same identifier means different things on the two
+        sides of a book and on two instruments -- and because an event that
+        names neither has no lifecycle worth hashing, which is what the empty
+        tuple says.
+        """
+        if not self.instrument_hash and not self.symbol:
+            return ()
+        return (self.instrument_hash, self.symbol, self.side)
+
+    def version_parts(self) -> tuple[Any, ...]:
+        """A market version moves when its price or its quantity moves."""
+        return (*super().version_parts(), self.side, self.px, self.qty)

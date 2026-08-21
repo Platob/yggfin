@@ -469,6 +469,129 @@ None of the awkward Doris type mappings apply any more, which is the point of
 the change: an `int64` is a `bigint` there, with no catalog property to set and
 nothing to `hex()` before a human can read it.
 
+## Reading a venue
+
+`FixEvents` is the way in: a FIX message, or the pairs one was rendered as,
+read as the orders and executions it carries.
+
+=== "From a log line"
+
+    ```python
+    from rekep.market import FixEvents
+
+    for event in FixEvents.from_text(line, venue="XCME", runix=recorded):
+        ...   # Order, Execution, Order, ...
+    ```
+
+=== "From pairs"
+
+    ```python
+    FixEvents.from_pairs(
+        [
+            ("MsgType", "D"),
+            ("Symbol", "BTC-USD"),
+            ("ClOrdID", "CL-1"),
+            ("Side", Side.BUY),
+            ("OrderQty", 100.0),
+            ("Price", 10.5),
+            ("TransactTime", datetime.datetime(2026, 8, 21, 10, 0)),
+            ("MyOwnField", "kept"),
+        ]
+    )
+    ```
+
+    The tag mapping defaults to `market_tags()` — every `fix_tag(...)` these
+    shapes declare, plus the header and market-data tags the translation reads.
+    Built from the declarations, so it cannot drift from them, and offline: no
+    scrape, no network, no dictionary file.
+
+### Which timestamp is the event's own
+
+The decision the module exists to make, and FIX answers it directly.
+`TransactTime <60>` is defined as *"timestamp when the business transaction
+represented by the message occurred"*; `SendingTime <52>` is *"time of message
+transmission"*. They are not the same instant, and reading them as
+interchangeable is how a latency measurement comes out as zero and how two
+venues' events interleave wrongly.
+
+So `MarketEvent.unix` is the transaction and `Event.runix` is the recording,
+and `unix` is taken from the first of these the message actually carries:
+
+| # | Field | Why it is where it is |
+|---|---|---|
+| 1 | `TransactTime <60>` | When the business transaction occurred. The thing being asked for. |
+| 2 | `MDEntryDate <272>` + `MDEntryTime <273>` | A market-data entry's own instant, split across two fields because that is how FIX carries it. Read **per entry**, so two entries of one refresh keep their own times. |
+| 3 | `OrigTime <42>` | Time of message origination — for a relayed or republished message, nearer the transaction than the relay's own transmission. |
+| 4 | `OrigSendingTime <122>` | On a `PossDupFlag <43>` resend, when the message first went out. Still transmission, but the original one. |
+| 5 | `SendingTime <52>` | Transmission. Last, and only because a row with no time at all sorts nowhere. |
+
+A message carrying none of them gets `unix = 0`, which says it does not know
+rather than claiming the epoch. The order is `TRANSACTED`, and it is pinned by
+a test: a reordering here silently changes which clock every downstream row is
+stamped with.
+
+### What a message becomes
+
+| MsgType | Yields | Rule |
+|---|---|---|
+| `D`, `F`, `G` | one `Order` | A request is not an acknowledgement, so the state is `PENDING_NEW` / `PENDING_CANCEL` / `PENDING_REPLACE` rather than `NEW`. |
+| `8` ExecutionReport | an `Order`, **then** an `Execution` when shares moved | FIX uses one message for "your order is now partially filled" and "here is the fill that did it". |
+| `9` OrderCancelReject | one `Order` | With `CxlRejReason <102>` as the reason code. |
+| `AE` TradeCaptureReport | one `Execution` | A trade with no order state to report. |
+| `W`, `X` MarketData | one event **per entry** | Bid/Offer entries are `Order`s, a Trade entry is an `Execution`, and everything else it enumerates is a statistic about the market rather than an order in it. |
+| anything else | nothing | A heartbeat, a logon. An empty iterator, not an error — a feed is mostly made of them. |
+
+An ExecutionReport becoming two rows is the one worth dwelling on. The `Order`
+carries `OrderQty <38>` and `Price <44>` — what was asked for — and the
+`Execution` carries `LastQty <32>` and `LastPx <31>` — what moved. Storing only
+one loses the other; storing them in one row makes `sum(qty)` mean two things.
+The order is yielded first because the fill points at it.
+
+An execution's own `state` is about the *fill*, not the order: a fill is
+`FILLED` the instant it exists, whatever the order it belongs to is doing.
+`ExecType <150>` and `OrdStatus <39>` share their lifecycle codes, so only the
+four that are about a trade — `F`, `G`, `H` and the legacy partial/full fill —
+need saying at all.
+
+A message with no `MsgType <35>` is read from the fields it has: an
+`MDEntryType <269>` means a refresh, an `ExecType <150>` or `ExecID <17>` means
+a report, an order's own identifiers mean an order. A decoder that only worked
+on complete headers would be no use on a log.
+
+### Identity, by layer
+
+Every event `FixEvents` produces is identified, because a row with no identity
+cannot be deduplicated, joined or folded into a book. `identify()` fills what
+the producer did not, and each layer says what it is made of:
+
+```python
+Order.life_parts()      # instrument, venue, OrderID | OrigClOrdID | ClOrdID
+Execution.life_parts()  # instrument, venue, ExecID | TradeID
+MarketEvent.version_parts()  # ... the lifecycle, version, unix, state, side, px, qty
+```
+
+`OrderID <37>` leads an order's lifecycle because the venue assigns it once and
+keeps it across a cancel/replace, which is the definition of a lifecycle.
+`ClOrdID <11>` does not survive one — the standard requires a new one per
+version — so where only client identifiers exist, `OrigClOrdID <41>` is
+preferred and a replacement lands on the same lifecycle as the version it
+replaced.
+
+A market-data entry with no `MDEntryID <278>` is a *level*, not an order, so
+its price is what persists: that is what `MDUpdateAction <279>` addresses when
+it says Change or Delete, and it is what makes a level findable across its own
+updates.
+
+### What has no column
+
+Everything else lands in `metadata`, under the key it arrived as — the fields
+no dictionary has, the ones a bridge renamed, the ones a later FIX version
+added. What does *not* land there is what a column already holds, and the two
+fields that frame the message rather than describe the event: `BodyLength <9>`
+and `CheckSum <10>` are properties of the encoding, recomputed by anything that
+re-emits the message. `BeginString <8>` stays, because which protocol a venue
+speaks is a real fact about what arrived.
+
 ## Layout
 
 A declaration says where its rows go, so nothing downstream has to be told

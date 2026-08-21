@@ -120,6 +120,16 @@ class BookSide(MarketEvent):
 
     EVENT_TYPE: ClassVar[EventType] = EventType.BOOK_SIDE
 
+    # Re-declared for their real FIX field, and for nothing else: a dataclass
+    # member re-annotated keeps its position, so the column does not move.
+    # `MarketEvent` tags them `Price <44>`/`OrderQty <38>`, which is an
+    # *order's* price and quantity; a book level's are a market-data entry's.
+    px: Annotated[float | None, fix_tag("MDEntryPx", 270)] = None
+    """The best level's price on this side -- the top of the book, this way up."""
+
+    qty: Annotated[float | None, fix_tag("MDEntrySize", 271)] = None
+    """The size at that best level; `total_qty` is every level's."""
+
     #: What `summarise_arrow` redirects to, keyed by what it was handed.
     SUMMARIES: ClassVar[dict[Any, str]] = {
         pyarrow.RecordBatch: "arrow_batch",
@@ -327,6 +337,16 @@ class Book(MarketEvent):
     """
 
     EVENT_TYPE: ClassVar[EventType] = EventType.BOOK
+
+    # Re-declared to carry **no** FIX tag, which is the honest thing to say:
+    # a mid and a touch size are computed from two sides, and FIX has no field
+    # for either. The inherited `Price <44>` would label them as an order's
+    # limit, which is a schema claiming a provenance it does not have.
+    px: float | None = None
+    """The mid, `(bid_px + ask_px) / 2`; null until both sides have a price."""
+
+    qty: float | None = None
+    """The size at the touch, `bid_qty + ask_qty`; null until both sides have one."""
 
     #: What `summarise_arrow` redirects to, keyed by what it was handed.
     SUMMARIES: ClassVar[dict[Any, str]] = {

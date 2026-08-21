@@ -5,7 +5,7 @@ Run from `python/`::
     uv run python benchmarks/bench_market.py            # full sweep
     uv run python benchmarks/bench_market.py --quick    # fewer rows, fewer repeats
 
-Three questions, answered on columns shaped like a real feed:
+Four questions, answered on columns shaped like a real feed:
 
 1. **What does `hash_arrow` buy over `hash_of` per row?** Both build the same
    identifiers, and the vectorised result is asserted equal to the scalar one
@@ -21,6 +21,12 @@ Three questions, answered on columns shaped like a real feed:
    column it fills, and, separately, against reading a price out of a side
    that is *already* derived: the nested access is not the cost, the walk over
    the levels is, and the two lines say so.
+4. **What does reading a venue's FIX cost per message?** `FixEvents` is the
+   way in, so its throughput is the ceiling on everything downstream. Timed
+   on the three shapes a feed is actually made of -- an order request, a
+   filled execution report, and a market-data refresh whose entries fan out
+   to several events each -- because they cost very different amounts and one
+   averaged number would hide that.
 
 Every case is warmed once and reported as the best of `--repeat` runs; run the
 script twice before quoting a number anywhere.
@@ -39,7 +45,7 @@ import pyarrow.compute
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep.market import Book, BookSide  # noqa: E402
+from rekep.market import Book, BookSide, FixEvents  # noqa: E402
 from rekep.market.fields import dictionary_arrow  # noqa: E402
 from rekep.market.identity import (  # noqa: E402
     _binary,
@@ -164,6 +170,7 @@ def envelope(rows: int) -> dict[str, object]:
         "state": [210] * rows,
         "symbol": [f"S{index % 5000}" for index in range(rows)],
         "prev_state": [0] * rows,
+        "instrument_hash": [index % 5000 + 1 for index in range(rows)],
         "side": [0] * rows,
         "px_unit": ["USD"] * rows,
         "qty_unit": ["SHARES"] * rows,
@@ -246,6 +253,52 @@ def bench_codes(rows: int, repeat: int) -> None:
     )
 
 
+#: The three message shapes a feed is made of, in the spelling a log prints.
+FEED = {
+    "NewOrderSingle <D>": (
+        "8=FIX.4.4|9=140|35=D|49=BRK|56=CLI|34=7|52=20260814-00:05:01.147|"
+        "11=CL-7|55=BTC-USD|207=XCME|15=USD|54=1|38=100|44=100.5|40=2|59=1|"
+        "60=20260814-00:05:01.140|10=001"
+    ),
+    "ExecutionReport <8>, filled": (
+        "8=FIX.4.4|9=212|35=8|49=BRK|56=CLI|34=8|52=20260814-00:05:01.148|"
+        "37=ORD-9|11=CL-7|17=EX-3|150=F|39=1|55=BTC-USD|207=XCME|15=USD|54=1|"
+        "38=100|44=100.5|32=40|31=100.25|14=40|151=60|6=100.25|"
+        "60=20260814-00:05:01.141|1057=Y|10=002"
+    ),
+    "MarketData <X>, 5 entries": (
+        "8=FIX.4.4|9=260|35=X|49=XCME|52=20260814-00:05:01.149|55=BTC-USD|"
+        "207=XCME|15=USD|268=5|"
+        "279=0|269=0|270=100.0|271=5|272=20260814|273=00:05:01.100|"
+        "279=1|269=1|270=100.5|271=7|273=00:05:01.110|"
+        "279=0|269=0|270=99.5|271=3|273=00:05:01.120|"
+        "279=2|269=1|270=101.0|271=1|273=00:05:01.130|"
+        "279=0|269=2|270=100.2|271=1|273=00:05:01.140|10=003"
+    ),
+}
+
+
+def bench_fix(rows: int, repeat: int) -> None:
+    """What one message costs, from the wire line to identified market events."""
+    print(f"\nFixEvents -- {rows:,} messages of each shape")
+    for label, line in FEED.items():
+        lines = [line] * rows
+        produced = len(list(FixEvents.from_text(line)))
+        assert produced, label
+        assert all(one.unix and one.xhash for one in FixEvents.from_text(line)), (
+            f"{label} produced an event with no time or no identity"
+        )
+        # Parsing and translating, together, because that is what a task does:
+        # a line off a log becomes rows in a table, and splitting the two here
+        # would report a number no caller can have.
+        seconds, _ = timed(
+            lambda lines=lines: [one for line in lines for one in FixEvents.from_text(line)],
+            repeat,
+        )
+        report(f"{label} -> {produced} event(s)", seconds, rows)
+        print(f"  {'events/s':<44} {rows * produced / seconds:>12,.0f}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--quick", action="store_true")
@@ -265,6 +318,7 @@ def main() -> None:
     for depth in (1, 10) if parsed.quick else (1, 10, 50):
         bench_book(rows // 10, depth, repeat)
     bench_codes(rows, repeat)
+    bench_fix(rows // 20, repeat)
 
 
 if __name__ == "__main__":

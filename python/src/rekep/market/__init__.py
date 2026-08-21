@@ -6,9 +6,11 @@ the events it was built from. `MarketEvent` adds the four slots a market needs
 (a side, a price, a quantity, an instrument), and `Order`, `Execution`,
 `BookSide` and `Book` say what those slots mean for them.
 
-Protocol notions are banded `int32` codes (`enums.py`), identifiers are
-`fixed_size_binary[16]` (`identity.py`), and the derived prices a reader would
-otherwise recompute are columns that `Book.summarise_arrow` fills in kernels.
+Protocol notions are banded `int32` codes (`enums.py`), identifiers are signed
+`int64` digests of a byte frame (`identity.py`), and the derived prices a
+reader would otherwise recompute are columns that `Book.summarise_arrow` fills
+in kernels. `fix.py` is the way in from a venue: a FIX message, or the pairs
+one was rendered as, read as the orders and executions it carries.
 """
 
 from rekep.market.book import Book, BookSide, Level, LevelExecution, LevelUpdate
@@ -26,6 +28,7 @@ from rekep.market.enums import (
 )
 from rekep.market.event import DAY, EPOCH, UNIX, Event, MarketEvent
 from rekep.market.fields import MarketFieldBuilder, fix_tag, unkeyed
+from rekep.market.fix import TRANSACTED, FixEvents, market_tags, unix_of
 from rekep.market.identity import (
     HASH,
     NIL,
@@ -44,6 +47,7 @@ __all__ = [
     "EPOCH",
     "HASH",
     "NIL",
+    "TRANSACTED",
     "UNIX",
     "AssetKind",
     "Book",
@@ -52,6 +56,7 @@ __all__ = [
     "EventType",
     "ExecKind",
     "Execution",
+    "FixEvents",
     "Instrument",
     "Level",
     "LevelExecution",
@@ -72,6 +77,8 @@ __all__ = [
     "hash_arrow",
     "hash_bytes",
     "hash_of",
+    "market_tags",
     "part_bytes",
+    "unix_of",
     "unkeyed",
 ]
