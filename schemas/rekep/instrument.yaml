@@ -6,7 +6,7 @@ metadata:
   namespace: rekep.market.instrument
 fields:
 - name: xhash
-  type: fixed_size_binary[16]
+  type: int64
   description: Stable identity of the instrument, which outlives every symbol it has
     had.
   metadata:

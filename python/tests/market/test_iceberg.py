@@ -15,7 +15,6 @@ import pytest
 
 from rekep.fields import StructField
 from rekep.market import Book, BookSide, Execution, Instrument, MarketEvent, Order
-from rekep.market.identity import uuids_of
 
 from .conftest import batch
 
@@ -55,13 +54,16 @@ def test_every_column_comment_travels(shape: type) -> None:
         assert schema.find_field(member.name).doc == member.description, member.name
 
 
-def test_the_sixteen_bytes_stay_sixteen_bytes() -> None:
-    """`fixed[16]`, not `uuid`: the reason the Python type is a UUID and the column is not."""
+def test_an_identifier_is_a_long_in_every_engine() -> None:
+    """The whole reason it is not `fixed[16]`: Doris reads that as `char(16)` of
+    raw bytes, Spark cannot create one, and Iceberg's `uuid` reaches Spark as a
+    string. A `long` is the same column everywhere, and a join and sort key in
+    all of them."""
     schema = MarketEvent.FIELD.into_iceberg_schema()
-    assert str(schema.find_field("hash").field_type) == "fixed[16]"
-    assert str(schema.find_field("xhash").field_type) == "fixed[16]"
+    assert str(schema.find_field("hash").field_type) == "long"
+    assert str(schema.find_field("xhash").field_type) == "long"
     back = StructField.from_iceberg_schema(schema)
-    assert back.field("hash").arrow_type == pyarrow.binary(16)
+    assert back.field("hash").arrow_type == pyarrow.int64()
 
 
 def test_a_ranged_code_is_an_iceberg_int() -> None:
@@ -103,9 +105,9 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
     read = dataset.read_arrow_table()
 
     assert read.num_rows == 3
-    assert uuids_of(read.column("hash").combine_chunks()) == uuids_of(given.column("hash"))
+    assert read.column("hash").to_pylist() == given.column("hash").to_pylist()
     assert read.column("state").type == pyarrow.int32(), "the code stayed narrow"
-    assert read.column("hash").type == pyarrow.binary(16), "and the identifier stayed fixed"
+    assert read.column("hash").type == pyarrow.int64(), "and the identifier stayed a long"
 
 
 def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Path) -> None:

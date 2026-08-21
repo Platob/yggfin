@@ -1,30 +1,59 @@
-"""The sixteen fixed bytes an event is identified by, and how a column of them is built.
+"""What an event is identified by, and the exact bytes that identity is computed from.
 
-Every identifier here is **16 bytes wide, exactly** -- `fixed_size_binary[16]`
-in Arrow, `fixed[16]` in Iceberg -- and that width is the design, not a
-detail:
+Every identifier here is a signed **`int64`**, and every one of them is
+`xxh3-64` over a frame this module specifies down to the byte. Both halves are
+deliberate.
 
-- **It is wide enough to be an identifier and not a hash.** A 64-bit hash
-  collides once in a few billion rows by birthday, which a day of ticks
-  reaches; at 128 bits the same argument needs more rows than the venue will
-  ever print. An identifier that collides silently merges two lifecycles, and
-  nothing downstream can tell that it happened.
-- **It is fixed, so it costs no offsets.** A `fixed_size_binary[16]` column is
-  one flat buffer -- no offsets array, no indirection per row -- which is what
-  makes a join or a group-by on it a memcmp over contiguous memory. The same
-  identifier as text is 32 or 36 bytes plus a 4-byte offset each, and every
-  comparison chases a pointer.
-- **It survives the whole chain.** Arrow `fixed_size_binary[16]` maps to
-  Iceberg `fixed[16]` and back with the bytes unchanged, which was checked
-  rather than assumed. Iceberg's `uuid` type does not: pyiceberg reads it back
-  as `extension<arrow.uuid>`, an Arrow *extension* type that an engine which
-  does not know the extension sees as something else -- so the same sixteen
-  bytes are spelled as `fixed[16]` here and read as a `uuid.UUID` in Python,
-  which is the half of the trade with no cost.
+**`int64`, not sixteen fixed bytes.** `fixed_size_binary[16]` is the better
+identifier on paper -- 128 bits collide at a scale nothing reaches -- and it is
+the worse one in practice, because half the ecosystem below Arrow reads it as
+something else: Doris surfaces it as `char(16)` of raw bytes that render as
+mojibake, Spark cannot *create* one (only write into one), and Iceberg's own
+`uuid` reaches Spark as a string. An `int64` is the same column in every engine
+there is, and is a join key, a sort key and a bucket source in all of them.
 
-The Python type is `uuid.UUID` because it is the standard 16-byte value with a
-canonical text form: an identifier printed in a log or a URL is
-`str(event.hash)`, and it is the same bytes.
+What that costs is collision margin, and the cost is smaller than it looks: the
+primary key is `(unix, hash)`, so two identifiers only collide *in the table*
+if they also fall on the same nanosecond. The birthday bound applies per
+instant rather than across the capture, and a nanosecond holding enough
+distinct events to matter is not a nanosecond.
+
+**The frame is a specification, not an implementation detail.** An identifier
+that a Java or a Rust producer computes has to be the same number, so the bytes
+that go into the digest are written here rather than left to whatever
+`str.join` happened to do::
+
+    frame := part*
+    part  := int64 length, little-endian, then that many bytes
+           | int64 -1,     little-endian, and nothing        (an absent part)
+
+    a part's bytes:
+        text          UTF-8
+        bytes         themselves
+        bool          one byte, 0x01 or 0x00
+        int           int64,   little-endian
+        float         float64, little-endian (IEEE-754)
+        anything else Arrow's rendering of it, UTF-8
+
+    digest := xxh3-64 of the frame, seed 0, read as a signed int64
+              (two's complement -- the unsigned value reinterpreted, not clamped)
+
+Length-prefixing rather than a separator is what makes it injective: a
+separator alone stops `("AB", "C")` and `("A", "BC")` colliding, but not a part
+that contains the separator -- and a number's own bytes contain any given byte
+about six times in a hundred. `-1` for an absent part is why a missing client
+order id and an empty one are different facts.
+
+A number is its own bytes and never its text, because text needs a *formatter*
+and there are two here -- a scalar builder and a vectorised one. They
+disagreed: Python writes `10.0`, `1e-07` and `38983288990.155754` where Arrow
+writes `10`, `1e-7` and `3.8983288990155754e+10`.
+
+The frame records what a part *is* and not what type it arrived as, so two
+parts with the same bytes are one part: `0` and `0.0` are eight zero bytes
+either way. A type tag would remove that and cost a kernel pass per part in the
+vectorised builder, for a case a call site never has -- a position holds a
+price or a version, never one and then the other.
 """
 
 from __future__ import annotations
@@ -37,211 +66,95 @@ import pyarrow
 import pyarrow.compute
 import xxhash
 
-#: What the parts of an identifier are joined with, between each part and the
-#: byte length that precedes it.
-SEPARATOR = b":"
-
-#: What a null part, and its length, are joined as. Not the empty string: a
-#: missing client order id and an empty one are different facts about an order,
-#: and joining both to `b""` would give them one lifecycle. Not a digit either,
-#: so it can never be read as a length.
-ABSENT = b"\x00"
-
 #: The Arrow type every identifier in this package is.
-HASH = pyarrow.binary(16)
+HASH = pyarrow.int64()
 
-#: Sixteen zero bytes: an identifier that has not been computed yet. It is what
-#: an unsaved event carries, and it is deliberately a *value* rather than a
-#: null, because `hash` and `xhash` are NOT NULL columns -- a row that reaches a
-#: store still holding it is one nobody hashed, which is a bug worth seeing as
-#: a repeated key rather than as a constraint violation at the very end.
-NIL = uuid.UUID(bytes=bytes(16))
+#: An identifier nothing has computed yet. Zero rather than null, because
+#: `hash` and `xhash` are NOT NULL columns: a row that reaches a store still
+#: holding it is one nobody hashed, which is a bug worth seeing as a repeated
+#: key rather than as a constraint violation at the very end.
+NIL = 0
+
+#: The length an absent part is framed with. Not zero -- that is an empty part,
+#: which is a different fact.
+ABSENT_LENGTH = -1
+
+#: How a part's length is written: eight bytes, little-endian, signed.
+LENGTH = struct.Struct("<q")
+
+#: The framed length of an absent part, precomputed because it is the one
+#: constant the framing writes over and over.
+ABSENT_FRAME = LENGTH.pack(ABSENT_LENGTH)
 
 
-def hash_of(*parts: Any) -> uuid.UUID:
-    """The sixteen bytes identifying `parts`, as a `uuid.UUID`.
+def hash_of(*parts: Any) -> int:
+    """The identifier `parts` name, as a signed `int64`.
 
-    xxh3-128, which is the 128-bit half of the hash this package already
-    depends on for log lines -- so there is one hash in the build, not two,
-    and the identifier is reproducible in any process rather than being
-    whatever `hash()` was seeded with.
-
-    **Each part is hashed behind its own byte length**, as `4:AAPL:4:cl-1`,
-    and that is what makes the encoding injective rather than merely tidy. A
-    plain separator does not: it stops `("AB", "C")` and `("A", "BC")` landing
-    on one digest, but not a part that contains the separator itself -- and a
-    raw sixteen-byte identifier used as a part contains any given byte about
-    six times in a hundred. Length-prefixed, the split is recoverable from the
-    bytes, so no two different tuples of parts can produce one identifier.
-
-    A `None` part joins as `ABSENT`, which is not a digit and so can never be
-    read as a length::
+    Each part is framed behind its own byte length, and the frame is hashed --
+    the layout is in this module's docstring, and it is a specification another
+    language implements rather than a detail of this one::
 
         hash_of("Order", "XNAS", "AAPL", "cl-1")
     """
-    return uuid.UUID(bytes=xxhash.xxh3_128_digest(SEPARATOR.join(_encoded(parts))))
+    return hash_bytes(frame(parts))
 
 
-def hash_bytes(raw: bytes) -> uuid.UUID:
-    """The sixteen bytes identifying one blob -- a log line, a wire message.
+def hash_bytes(raw: bytes) -> int:
+    """The identifier one blob has: xxh3-64, signed.
 
-    Not `hash_of`: that composes several parts and length-prefixes each so the
-    split cannot be forged. One blob has no split to forge, so it is hashed as
-    it stands, and a caller who wants the composed form asks for it by name.
-    Same hash and same (absent) seed as everything else here, so an identifier
-    is reproducible in any process.
+    Not `hash_of`: that frames several parts so their split cannot be forged.
+    One blob -- a log line, a wire message -- has no split to forge, so it is
+    hashed as it stands, and a caller who wants the framed form asks for it by
+    name.
+
+    Signed because Arrow's `int64` is, and by reinterpretation rather than by
+    clamping: the same sixty-four bits, read as two's complement, which is what
+    every other language will do with them too.
     """
-    return uuid.UUID(bytes=xxhash.xxh3_128_digest(raw))
+    value = xxhash.xxh3_64_intdigest(raw)
+    return value - (1 << 64) if value >= (1 << 63) else value
 
 
-def hash_arrow(*columns: Any) -> pyarrow.Array:
-    """One identifier per row, from whole columns -- the vectorised `hash_of`.
-
-    The same length-prefixed encoding, built with kernels: one length per
-    column, one join over every column and length at once, and then one digest
-    per row read straight out of the joined buffer rather than out of Python
-    strings. Both are measured in `benchmarks/bench_market.py`.
-
-    Everything is joined as **binary**, not as text. That is what lets an
-    identifier column be a part of another identifier -- raw bytes are not
-    valid UTF-8, and casting them to a string raises -- and it is also what
-    stops a `large_string` column, which is what pyiceberg hands back, from
-    failing to find a kernel beside a plain `string` one.
-
-    A scalar argument broadcasts, which is how a shape name or a venue is put
-    in front of the columns that vary::
-
-        hash_arrow("Order", batch.column("symbol"), batch.column("client_order_id"))
-    """
-    if not columns:
-        raise TypeError("an identifier needs at least one part to hash")
-    arrays = [_binary(column) for column in columns]
-    rows = next((len(array) for array in arrays if isinstance(array, pyarrow.Array)), 1)
-    parts: list[Any] = []
-    for array in arrays:
-        parts.append(_length(array))
-        parts.append(array)
-    joined = pyarrow.compute.binary_join_element_wise(
-        *parts,
-        pyarrow.scalar(SEPARATOR, type=pyarrow.binary()),
-        null_handling="replace",
-        null_replacement=ABSENT,
-    )
-    if isinstance(joined, pyarrow.Scalar):
-        joined = pyarrow.array([joined.as_py()] * rows, type=pyarrow.binary())
-    return _digested(joined)
-
-
-def arrow_of(values: Any) -> pyarrow.Array:
-    """Identifiers as a `fixed_size_binary[16]` column, whatever they are spelled as.
-
-    A `uuid.UUID`, sixteen raw bytes and the canonical text form all arrive as
-    the same sixteen bytes, because all three are how one identifier gets
-    written down between here and a store -- and that holds whether they come
-    as a Python sequence or as an Arrow column of any of the three.
-
-    A column is converted **as a column**: bytes are cast, text is parsed, and
-    anything else is refused by its own type. Iterating an Arrow array instead
-    handed the per-value path `pyarrow.Scalar` objects it did not recognise,
-    which came out as `badly formed hexadecimal UUID string` -- a message that
-    names neither the column nor the way out.
-    """
-    if isinstance(values, pyarrow.ChunkedArray):
-        return pyarrow.chunked_array([arrow_of(chunk) for chunk in values.chunks], type=HASH)
-    if isinstance(values, pyarrow.Array):
-        return _arrow_column(values)
-    return pyarrow.array([_bytes_of(value) for value in values], type=HASH)
-
-
-def _arrow_column(values: pyarrow.Array) -> pyarrow.Array:
-    """One Arrow column of identifiers as `fixed_size_binary[16]`."""
-    kinds = pyarrow.types
-    if values.type == HASH:
-        return values
-    if kinds.is_fixed_size_binary(values.type):
-        raise ValueError(
-            f"an identifier is 16 bytes, and this column is {values.type.byte_width}: {values.type}"
-        )
-    if kinds.is_binary(values.type) or kinds.is_large_binary(values.type):
-        # `cast` checks every width for us and names the row that is not 16.
-        return values.cast(HASH)
-    if kinds.is_string(values.type) or kinds.is_large_string(values.type):
-        return pyarrow.array([_bytes_of(value) for value in values.to_pylist()], type=HASH)
-    raise TypeError(
-        f"a column of identifiers is 16 fixed bytes or their text, not {values.type}; "
-        "hash it first, or cast it"
-    )
-
-
-def uuids_of(array: Any) -> list[uuid.UUID | None]:
-    """A `fixed_size_binary[16]` column read back as identifiers."""
-    return [None if value is None else uuid.UUID(bytes=value) for value in array.to_pylist()]
-
-
-# -- helpers ----------------------------------------------------------------
-
-
-def _encoded(parts: tuple[Any, ...]) -> list[bytes]:
-    """`parts` as the length-prefixed byte parts the digest is taken over."""
-    encoded: list[bytes] = []
+def frame(parts: tuple[Any, ...]) -> bytes:
+    """`parts` as the bytes the digest is taken over -- the layout, in one place."""
+    out = bytearray()
     for part in parts:
         raw = part_bytes(part)
         if raw is None:
-            encoded += [ABSENT, ABSENT]
+            out += ABSENT_FRAME
             continue
-        encoded += [str(len(raw)).encode(), raw]
-    return encoded
+        out += LENGTH.pack(len(raw))
+        out += raw
+    return bytes(out)
 
 
 def part_bytes(part: Any) -> bytes | None:
-    """One part as the bytes both builders hash it as; None is a missing part.
+    """One part as the bytes both builders hash it as; None is an absent part.
 
-    **A number is its own bytes**, little-endian: an `int` is the eight bytes
-    of an `int64`, a `float` the eight of a `float64`, a `bool` one byte. Not
-    its text -- and that is the whole point. Text needs a *formatter*, there
-    are two of them here, and they disagree: Python writes `10.0`, `1e-07` and
-    `38983288990.155754` where Arrow writes `10`, `1e-7` and
-    `3.8983288990155754e+10`. A scalar builder spelling a price one way and the
-    vectorised one spelling it another gave the same event two identifiers, and
-    no test caught it because they only ever compared the two over strings.
-
-    Reproducing Arrow's formatter in Python would be the same duplication that
-    caused it. The bytes have no formatter to disagree about, they are exact
-    where a rendering is lossy, and they are faster on both sides -- the
-    vectorised path reinterprets the column's own buffer and does no work at
-    all.
-
-    Little-endian is pinned rather than native because an identifier has to
-    mean the same thing on the machine that reads it back; Arrow's in-memory
-    layout is little-endian on every platform this runs on, so the two agree.
-
-    A `uuid.UUID` is its sixteen bytes, matching the `fixed_size_binary[16]`
-    column the same identifier arrives in, and not its thirty-six characters.
-    Anything else -- a date, a timestamp, a decimal -- is spelled by asking
-    Arrow to spell it, which is the one renderer the vectorised path can use.
-
-    Because a number is its bytes, `10` and `10.0` are now *different* parts,
-    where a text encoding made them one. That is the safer direction, and a
-    call site keeps one type per position anyway.
+    A number is its own bytes, little-endian, and never its text: text needs a
+    formatter, a scalar builder and a vectorised one are two of them, and they
+    disagree. The bytes have nothing to disagree about, they are exact where a
+    rendering is lossy, and the vectorised path reinterprets the column's own
+    buffer rather than rendering anything at all.
     """
     if part is None:
         return None
     if isinstance(part, bytes | bytearray | memoryview):
         return bytes(part)
-    if isinstance(part, uuid.UUID):
-        return part.bytes
     if isinstance(part, str):
         return part.encode()
     if isinstance(part, bool):  # before int: a bool is one
         return b"\x01" if part else b"\x00"
     if isinstance(part, int):
         try:
-            return struct.pack("<q", part)
+            return LENGTH.pack(part)
         except struct.error:
             # Wider than an int64, which Arrow has no scalar for either.
             return str(part).encode()
     if isinstance(part, float):
         return struct.pack("<d", part)
+    if isinstance(part, uuid.UUID):
+        return part.bytes
     try:
         rendered = pyarrow.scalar(part).cast(pyarrow.string()).as_py()
     except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, TypeError):
@@ -251,20 +164,53 @@ def part_bytes(part: Any) -> bytes | None:
     return b"" if rendered is None else rendered.encode()
 
 
-def _bytes_of(value: Any) -> bytes | None:
-    """One identifier as its sixteen bytes, refusing anything that is not."""
-    if isinstance(value, pyarrow.Scalar):  # before None: a null scalar is not None
-        value = value.as_py()
-    if value is None:
-        return None
-    if isinstance(value, uuid.UUID):
-        return value.bytes
-    if isinstance(value, bytes | bytearray | memoryview):
-        raw = bytes(value)
-        if len(raw) != 16:
-            raise ValueError(f"an identifier is 16 bytes, not {len(raw)}: {raw!r}")
-        return raw
-    return uuid.UUID(str(value)).bytes
+def hash_arrow(*columns: Any) -> pyarrow.Array:
+    """One identifier per row, from whole columns -- the vectorised `hash_of`.
+
+    The same frame, built with kernels: one length per column, one join over
+    every length and column at once, and then one digest per row taken straight
+    out of the joined buffer rather than out of Python objects.
+
+    Everything is joined as **binary** with an empty separator, because the
+    lengths are the framing -- there is no separator in the layout at all. A
+    length is the column's own `binary_length` reinterpreted as its eight
+    bytes, so it costs offsets arithmetic and no formatting.
+
+    A scalar argument broadcasts, which is how a shape name or a venue is put
+    in front of the columns that vary::
+
+        hash_arrow("Order", batch.column("symbol"), batch.column("client_order_id"))
+    """
+    if not columns:
+        raise TypeError("an identifier needs at least one part to hash")
+    framed: list[Any] = []
+    rows = 1
+    for column in columns:
+        binary = _binary(column)
+        if isinstance(binary, pyarrow.Array):
+            rows = len(binary)
+        framed += [_length(binary), binary]
+    joined = pyarrow.compute.binary_join_element_wise(
+        *framed,
+        pyarrow.scalar(b"", type=pyarrow.binary()),
+        null_handling="replace",
+        null_replacement=b"",
+    )
+    if isinstance(joined, pyarrow.Scalar):
+        joined = pyarrow.array([joined.as_py()] * rows, type=pyarrow.binary())
+    return _digested(joined)
+
+
+def arrow_of(values: Any) -> pyarrow.Array:
+    """Identifiers as an `int64` column, whatever they are spelled as."""
+    if isinstance(values, pyarrow.ChunkedArray):
+        return pyarrow.chunked_array([arrow_of(chunk) for chunk in values.chunks], type=HASH)
+    if isinstance(values, pyarrow.Array):
+        return values if values.type == HASH else values.cast(HASH, safe=False)
+    return pyarrow.array(list(values), type=HASH)
+
+
+# -- helpers ----------------------------------------------------------------
 
 
 def _binary(column: Any) -> Any:
@@ -296,24 +242,35 @@ def _binary(column: Any) -> Any:
     if isinstance(column, pyarrow.Scalar):
         if pyarrow.types.is_binary(column.type):
             return column
-        if pyarrow.types.is_fixed_size_binary(column.type) or pyarrow.types.is_large_binary(
-            column.type
-        ):
-            return column.cast(pyarrow.binary())
-        return column.cast(pyarrow.string()).cast(pyarrow.binary())
+        return pyarrow.scalar(part_bytes(column.as_py()), type=pyarrow.binary())
     # A plain Python value broadcasts, and is spelled by `part_bytes` -- the
     # same one `hash_of` uses -- so one value cannot get two spellings by
     # arriving as a scalar here and as a part there.
     return pyarrow.scalar(part_bytes(column), type=pyarrow.binary())
 
 
+def _length(part: Any) -> Any:
+    """Each value's byte length, as the eight bytes the frame writes it as.
+
+    `binary_length` is offsets arithmetic and costs no pass over the data; an
+    absent value is filled with `-1` *before* the reinterpret, so a null frames
+    as a length and not as a null the join would then have to replace.
+    """
+    compute = pyarrow.compute
+    length = compute.binary_length(part)
+    if isinstance(length, pyarrow.Scalar):
+        length = pyarrow.array([length.as_py()], type=pyarrow.int64())
+        filled = compute.fill_null(length, ABSENT_LENGTH).cast(pyarrow.int64())
+        return _reinterpreted(filled, 8)[0]
+    filled = compute.fill_null(length, ABSENT_LENGTH).cast(pyarrow.int64())
+    return _reinterpreted(filled, 8)
+
+
 def _reinterpreted(column: pyarrow.Array, width: int) -> pyarrow.Array:
     """A fixed-width numeric column read as its own bytes, without copying them.
 
     The buffer already holds exactly what `part_bytes` packs, so this is a view
-    over it: no kernel runs and no bytes move. The validity buffer comes along,
-    so a null stays null and the join replaces it with `ABSENT` like any other
-    missing part -- the undefined bytes under a null are never read.
+    over it: no kernel runs and no bytes move.
     """
     validity, data = column.buffers()[:2]
     fixed = pyarrow.FixedSizeBinaryArray.from_buffers(
@@ -322,35 +279,28 @@ def _reinterpreted(column: pyarrow.Array, width: int) -> pyarrow.Array:
     return fixed.cast(pyarrow.binary(), safe=False)
 
 
-def _length(part: Any) -> Any:
-    """The byte length of each value of `part`, as the binary text of a number.
-
-    `binary_length` is offsets arithmetic and costs no pass over the
-    characters; the cast to text is what the join needs, and it is the only
-    reason a length is spelled in digits rather than in bytes.
-    """
-    length = pyarrow.compute.binary_length(part)
-    return length.cast(pyarrow.string()).cast(pyarrow.binary())
-
-
 def _digested(joined: pyarrow.Array) -> pyarrow.Array:
-    """One xxh3-128 per row of a binary column, straight out of its buffers.
+    """One xxh3-64 per row of a binary column, straight out of its buffers.
 
     The offsets and the data are read as memory rather than as Python objects:
-    `to_pylist()` would allocate a `bytes` per row from data the buffer
-    already holds, which measured as most of the cost of building an
-    identifier column.
+    `to_pylist()` would allocate a `bytes` per row from data the buffer already
+    holds, which measured as most of the cost of building an identifier column.
+
+    The digests are packed as unsigned and the buffer is typed `int64`, so the
+    signed reading is the reinterpretation itself -- no branch per row, and the
+    same two's complement any other language would get.
     """
-    digest = xxhash.xxh3_128_digest
+    digest = xxhash.xxh3_64_intdigest
     rows = len(joined)
-    out = bytearray(16 * rows)
+    out = bytearray(8 * rows)
     if rows:
         _, offset_buffer, data_buffer = joined.buffers()[:3]
         wide = pyarrow.types.is_large_binary(joined.type)
         offsets = memoryview(offset_buffer).cast("q" if wide else "i")
         data = memoryview(data_buffer).cast("B")
         start = joined.offset
+        pack_into = struct.pack_into
         for row in range(rows):
             begin, end = offsets[start + row], offsets[start + row + 1]
-            out[row * 16 : row * 16 + 16] = digest(data[begin:end])
-    return pyarrow.FixedSizeBinaryArray.from_buffers(HASH, rows, [None, pyarrow.py_buffer(out)])
+            pack_into("<Q", out, row * 8, digest(data[begin:end]))
+    return pyarrow.Int64Array.from_buffers(HASH, rows, [None, pyarrow.py_buffer(out)])

@@ -216,8 +216,8 @@ own:
 | `unix` | `int64` | nanoseconds since the epoch — **primary key** with `hash` |
 | `hunix` | `int64` | `unix` floored to the hour — **partition** |
 | `etype` | `int32` | which kind of event the line is, decided by `LogRules` |
-| `hash` | `fixed_size_binary[16]` | xxh3-128 of the raw line — **primary key** with `unix` |
-| `xhash` | `fixed_size_binary[16]` | the same digest: a line is its own lifecycle |
+| `hash` | `int64` | xxh3-64 of the raw line — **primary key** with `unix` |
+| `xhash` | `int64` | the same digest: a line is its own lifecycle |
 | `url` | `string` | the log the line came from |
 | `thread_name` | `string` | the first bracketed field |
 | `driver_name` | `string` | the second bracketed field |

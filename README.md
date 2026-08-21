@@ -85,7 +85,7 @@ logs.optimize()                      # compact, expire, sweep
   is a directory of JSON or a zip of the same, and the extension says which.
 - **`market`** — `Order`, `Execution`, `BookSide` and `Book` as a *history*:
   every version of every thing is its own immutable row, keyed by the sixteen
-  fixed bytes of its own content (`fixed_size_binary[16]`, which is Iceberg
+  fixed bytes of its own content (`int64`, which is Iceberg
   `fixed[16]` and Spark `BinaryType`) and linked to the version before it. A
   state, a side and a kind are banded `int32` codes, so "is it over" is one
   range predicate an engine can prune on rather than a set of literals it

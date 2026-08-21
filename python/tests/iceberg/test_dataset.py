@@ -4,7 +4,6 @@ import datetime
 import os
 import subprocess
 import sys
-import uuid
 from pathlib import Path
 from typing import Annotated
 
@@ -331,8 +330,8 @@ def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None
     row = Log(
         url="a.txt",
         unix=1_786_665_901_167_520_000,
-        hash=uuid.UUID(int=2),
-        xhash=uuid.UUID(int=2),
+        hash=2,
+        xhash=2,
         etype=EventType.EXECUTION,
         thread_name="t",
         driver_name="d",
@@ -345,12 +344,8 @@ def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None
 
 
 def dataclass_row(row: Log) -> dict:
-    """A `Log` as the plain values Arrow wants -- the identifiers as their bytes."""
-    return {
-        **row.into_dict(),
-        "hash": row.hash.bytes,
-        "xhash": row.xhash.bytes,
-    }
+    """A `Log` as the plain values Arrow wants."""
+    return row.into_dict()
 
 
 def test_the_module_imports_without_pyiceberg() -> None:

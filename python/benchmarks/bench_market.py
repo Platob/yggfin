@@ -42,13 +42,10 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 from rekep.market import Book, BookSide  # noqa: E402
 from rekep.market.fields import dictionary_arrow  # noqa: E402
 from rekep.market.identity import (  # noqa: E402
-    ABSENT,
-    SEPARATOR,
     _binary,
     _length,
     hash_arrow,
     hash_of,
-    uuids_of,
 )
 
 #: On an hour boundary, so `unix` and `hunix` agree without the fixture
@@ -94,7 +91,7 @@ def identifier_columns(rows: int) -> tuple[pyarrow.Array, ...]:
 
 
 def plain_join(*columns: pyarrow.Array) -> pyarrow.Array:
-    """The join without the length prefix, for the cost of injectivity alone.
+    """The join with no framing at all, for the cost of injectivity alone.
 
     Through the module's own `_binary`, not a cast written here: a benchmark
     that re-implements the step it is measuring drifts away from it, and this
@@ -103,13 +100,13 @@ def plain_join(*columns: pyarrow.Array) -> pyarrow.Array:
     """
     return pyarrow.compute.binary_join_element_wise(
         *[_binary(column) for column in columns],
-        pyarrow.scalar(SEPARATOR, type=pyarrow.binary()),
+        pyarrow.scalar(b"", type=pyarrow.binary()),
         null_handling="replace",
-        null_replacement=ABSENT,
+        null_replacement=b"",
     )
 
 
-def prefixed_join(*columns: pyarrow.Array) -> pyarrow.Array:
+def framed_join(*columns: pyarrow.Array) -> pyarrow.Array:
     """The join `hash_arrow` actually does: each part behind its own length."""
     parts = []
     for column in columns:
@@ -117,9 +114,9 @@ def prefixed_join(*columns: pyarrow.Array) -> pyarrow.Array:
         parts += [_length(binary), binary]
     return pyarrow.compute.binary_join_element_wise(
         *parts,
-        pyarrow.scalar(SEPARATOR, type=pyarrow.binary()),
+        pyarrow.scalar(b"", type=pyarrow.binary()),
         null_handling="replace",
-        null_replacement=ABSENT,
+        null_replacement=b"",
     )
 
 
@@ -134,15 +131,15 @@ def bench_identifiers(rows: int, repeat: int) -> None:
         lambda: [hash_of("Order", *values) for values in zip(*parts, strict=True)], repeat
     )
     # Verified before it is timed: the two must be the same identifiers.
-    assert uuids_of(built)[:scalar_rows] == one_at_a_time, "the two builders disagree"
+    assert built.to_pylist()[:scalar_rows] == one_at_a_time, "the two builders disagree"
 
     joined, _ = timed(lambda: plain_join(*columns), repeat)
-    prefixed, _ = timed(lambda: prefixed_join(*columns), repeat)
+    framed, _ = timed(lambda: framed_join(*columns), repeat)
 
     report("hash_of, one row at a time", scalar, scalar_rows)
     report("hash_arrow, whole column", vector, rows, against=scalar / scalar_rows * rows)
-    report("  of which: the join, no length prefix", joined, rows)
-    report("  of which: the join, length prefixed", prefixed, rows)
+    report("  of which: the join, unframed", joined, rows)
+    report("  of which: the join, length framed", framed, rows)
 
 
 # -- 3: the book ------------------------------------------------------------
@@ -161,8 +158,8 @@ def envelope(rows: int) -> dict[str, object]:
         "etype": [0] * rows,
         "cunix": [UNIX] * rows,
         "runix": [UNIX] * rows,
-        "hash": [(index + 1).to_bytes(16, "big") for index in range(rows)],
-        "xhash": [(index + 1).to_bytes(16, "big") for index in range(rows)],
+        "hash": [index + 1 for index in range(rows)],
+        "xhash": [index + 1 for index in range(rows)],
         "version": [1] * rows,
         "state": [210] * rows,
         "symbol": [f"S{index % 5000}" for index in range(rows)],
@@ -171,7 +168,7 @@ def envelope(rows: int) -> dict[str, object]:
         "px_unit": ["USD"] * rows,
         "qty_unit": ["SHARES"] * rows,
         "instrument": [
-            {"xhash": bytes(16), "symbol": "S", "kind": 110, "option_kind": 0} for _ in range(rows)
+            {"xhash": 0, "symbol": "S", "kind": 110, "option_kind": 0} for _ in range(rows)
         ],
     }
 

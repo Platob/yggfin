@@ -3,7 +3,7 @@
 `rekep.market` is a set of declarations for what happens in a market — an
 order, an execution, a side of a book, a book — written as a **history rather
 than a state**. Nothing is ever updated in place: every version of every thing
-is its own immutable row, keyed by the sixteen bytes of its own content and
+is its own immutable row, keyed by a digest of its own content and
 linked to the version before it.
 
 ```python
@@ -205,9 +205,8 @@ states.
 
 ## Identifiers
 
-Every identifier is sixteen fixed bytes — `fixed_size_binary[16]` in Arrow,
-`fixed[16]` in Iceberg — and a `uuid.UUID` in Python, which is the standard
-16-byte value with a canonical text form.
+Every identifier is a signed **`int64`** — the one column every engine below
+Arrow reads the same way.
 
 === "Building one"
 
@@ -232,18 +231,23 @@ Every identifier is sixteen fixed bytes — `fixed_size_binary[16]` in Arrow,
     Python strings. About [six times faster](#benchmarks) per row than building
     them one at a time. A scalar argument broadcasts.
 
-=== "Why sixteen, and why fixed"
+=== "Why an int64"
 
-    - **Wide enough to be an identifier and not a hash.** A 64-bit digest
-      collides once in a few billion rows by birthday, which a day of ticks
-      reaches. An identifier that collides silently merges two lifecycles, and
-      nothing downstream can tell that it happened.
-    - **Fixed, so it costs no offsets.** One flat buffer, no indirection per
-      row, so a join or a group-by on it is a memcmp over contiguous memory.
-      The same identifier as text is 32–36 bytes plus a 4-byte offset each.
-    - **`fixed[16]`, not Iceberg's `uuid`.** pyiceberg reads `uuid` back as
-      `extension<arrow.uuid>`, and Iceberg's Spark runtime surfaces it as a
-      *string*; `fixed[16]` comes back as the same sixteen bytes in both.
+    `fixed_size_binary[16]` is the better identifier on paper — 128 bits
+    collide at a scale nothing reaches — and the worse one in practice,
+    because half the ecosystem below Arrow reads it as something else. Doris
+    surfaces it as `char(16)` of raw bytes that render as mojibake; Spark
+    cannot *create* one, only write into one; Iceberg's own `uuid` reaches
+    Spark as a string.
+
+    An `int64` is the same column in every engine there is, and is a join key,
+    a sort key and a bucket source in all of them.
+
+    What that costs is collision margin, and it is smaller than it looks: the
+    primary key is `(unix, hash)`, so two identifiers only collide **in the
+    table** if they also fall on the same nanosecond. The birthday bound
+    applies per instant rather than across the capture, and a nanosecond
+    holding enough distinct events to matter is not a nanosecond.
 
 Parts are hashed **behind their own byte lengths** — `4:AAPL:4:cl-1` — which is
 what makes the encoding injective. A separator alone stops `("AB", "C")` and
@@ -259,8 +263,12 @@ formatter, there are two here, and they disagree — Python writes `10.0`,
 in Python would have been the same duplication that caused it. The bytes have
 no formatter to disagree about, they are exact where a rendering is lossy, and
 the vectorised path reinterprets the column's own buffer rather than rendering
-anything. A `uuid.UUID` is likewise its sixteen bytes, matching the column the
-same identifier arrives in.
+anything.
+
+The frame records what a part *is* and not what type it arrived as, so two
+parts with the same bytes are one part: `0` and `0.0` are eight zero bytes
+either way. A type tag would remove that and cost a kernel pass per part, for a
+case a call site never has.
 
 ## Orders and executions
 
@@ -413,7 +421,7 @@ The types here are chosen so the same table reads the same way in all three.
 
 | declared | Arrow | Iceberg | Spark | Doris |
 | --- | --- | --- | --- | --- |
-| `uuid.UUID` | `fixed_size_binary[16]` | `fixed[16]` | `BinaryType` | `char(16)`, raw bytes |
+| an identifier | `int64` | `long` | `LongType` | `bigint` |
 | a `Ranged` code | `int32` | `int` | `IntegerType` | `int` |
 | `int` (a `*unix`) | `int64` | `long` | `LongType` | `bigint` |
 | `datetime.date` | `date32` | `date` | `DateType` | `date` |
@@ -432,15 +440,14 @@ type* over the member's own storage instead. The class name rides in
 column of the three engines above — sees the storage type and reads it
 correctly.
 
-Six things worth knowing before pointing an engine at one of these tables:
+Five things worth knowing before pointing an engine at one of these tables:
 
-- **Create the table from here, not from Spark.** Iceberg's Spark type mapping
-  has no inbound row that produces `fixed` or `uuid` — `CREATE TABLE` with a
-  Spark `binary` column gives you Iceberg `binary`. Spark *writes into* an
-  existing `fixed[16]` from a `BinaryType` column happily, and asserts the
-  length while it does.
-- **`fixed[16]` round-trips byte-exact through Spark**; Iceberg's own `uuid`
-  becomes a 36-character string there, and writing bytes into one is
+- **An identifier is a `long` everywhere**, so a table created here is one
+  Spark and Doris can both create, join and sort on. That is the whole reason
+  it is not `fixed[16]`: Iceberg's Spark type mapping has no inbound row
+  producing `fixed` or `uuid`, so Spark can only write *into* one; Doris reads
+  `fixed(N)` as `char(N)` of raw bytes; and Iceberg's `uuid` becomes a
+  36-character string in Spark, where writing bytes into one is
   [still an open issue](https://github.com/apache/iceberg/issues/10635).
 - **Nothing inside a list or a map ever prunes.** Iceberg's Parquet metrics
   writer discards bounds for repeated fields outright. That is the whole
@@ -452,17 +459,15 @@ Six things worth knowing before pointing an engine at one of these tables:
   it was not pushed.
 - **Doris cannot group or join on a struct or a map.** Which is why `symbol` is
   a flat column on `Event` as well as a member of `instrument`.
-- **`identity` and `bucket[N]` are legal on `fixed[16]`; `truncate[W]` is
-  not.** The partition here is `date` with an `identity` transform — a real
-  date column rather than a `day` transform on the timestamp, because identity
-  is the one form every engine reads alike and the transformed alternative
-  needs Iceberg's Rust core on the writer for no gain a reader can see.
+- **`identity`, `bucket[N]` and `truncate[W]` are all legal on a `long`** —
+  where `fixed[16]` allowed the first two and not the third. The partition here
+  is `hunix` with an `identity` transform, because identity is the one form
+  every engine reads alike and a transform needs Iceberg's Rust core on the
+  writer for no gain a reader can see.
 
-Doris surfaces `fixed[16]` as `char(16)` holding the raw bytes, which is
-queryable and comparable but renders as mojibake in a client — select `hex()`
-of it. From Doris 4.0.2 a catalog property maps it to `varbinary` instead,
-which reads better but cannot be used in a group-by, a join key or a comparison
-there; `char(16)` is the more useful of the two.
+None of the awkward Doris type mappings apply any more, which is the point of
+the change: an `int64` is a `bigint` there, with no catalog property to set and
+nothing to `hex()` before a human can read it.
 
 ## Contracts
 

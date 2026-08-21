@@ -15,14 +15,13 @@ from typing import Any, ClassVar
 import pyarrow
 import pyarrow.compute
 import pyarrow.fs
-import xxhash
 
 from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField
 from rekep.filesystems import resolve
 from rekep.logs.log import Log, LogRules
 from rekep.market.event import HOUR
-from rekep.market.identity import HASH
+from rekep.market.identity import HASH, hash_bytes
 from rekep.urls import Url
 
 #: Matches the fixed header every log row opens with, leaving the free-form
@@ -372,7 +371,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             groups[name] for name in ("timestamp", "thread_name", "driver_name", "message")
         )
         rows: list[tuple[bytes, bytes | None, bytes | None, bytes | None]] = []
-        hashes: list[bytes] = []
+        hashes: list[int] = []
         match_header = self.header_pattern.match
 
         for line in self._iter_lines(read_byte_size):
@@ -395,7 +394,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         if rows:
             yield self._batch(rows, hashes)
 
-    def _batch(self, rows: list[tuple], hashes: list[bytes]) -> pyarrow.RecordBatch:
+    def _batch(self, rows: list[tuple], hashes: list[int]) -> pyarrow.RecordBatch:
         """One batch of parsed lines, as the `Event` columns a `Log` is.
 
         Assembled **by name** and then ordered by the schema, rather than as a
@@ -795,20 +794,17 @@ def _epoch_nanos_slow(timestamp: bytes) -> int:
     return (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000
 
 
-def _digest(raw: bytes) -> bytes:
-    """The line's hash: sixteen bytes, which is what every identifier here is.
+def _digest(raw: bytes) -> int:
+    """The line's hash: a signed `int64`, which is what every identifier here is.
 
-    xxh3-128 and only that. It is half of the primary key, so it is data rather
-    than an implementation detail: a fallback hash -- which is what this used
-    to have -- made the digest stable within an environment and not across two
-    that disagreed about whether `xxhash` was installed, and a row keyed on it
-    could be stored twice. `xxhash` is a dependency of this package for that
-    reason, imported at module top with no guard.
+    `hash_bytes` and only that, so a line and an event are hashed by one
+    function: a fallback hash -- which is what this used to have -- made the
+    digest stable within an environment and not across two that disagreed
+    about whether `xxhash` was installed, and a row keyed on it could be
+    stored twice. `xxhash` is a dependency of this package for that reason.
 
-    **128 bits, not 64.** A capture is exactly the scale at which the birthday
-    argument bites: a few billion lines is a week of a busy feed, and two lines
-    that collide are merged into one row that nothing downstream can tell apart
-    from a genuine duplicate. The same width, and the same function, as every
-    other identifier in this package (`rekep.market.identity`).
+    A whole line is one blob with no split to forge, so it is hashed as it
+    stands rather than framed; the framing is for composed identifiers
+    (`rekep.market.identity`).
     """
-    return xxhash.xxh3_128_digest(raw)
+    return hash_bytes(raw)

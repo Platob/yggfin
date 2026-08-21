@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
-import uuid
 from typing import Annotated, Any, ClassVar
 
 import pyarrow
@@ -117,10 +116,10 @@ class Event(Convertible):
     sunix: Annotated[int | None, Field(metadata=UNIX)] = None
     """`unix` of the event this is a snapshot of; null when it is not one."""
 
-    hash: Annotated[uuid.UUID, Field.primary_key()] = NIL
+    hash: Annotated[int, Field.primary_key()] = NIL
     """Digest of this version's content: the same version, twice, is one row."""
 
-    xhash: uuid.UUID = NIL
+    xhash: int = NIL
     """Identity of the thing across every version of it -- the lifecycle."""
 
     version: int = 0
@@ -135,7 +134,7 @@ class Event(Convertible):
     seq: Annotated[int | None, fix_tag("MsgSeqNum", 34)] = None
     """Sequence the venue gave the message, which orders what a clock cannot."""
 
-    prev_hash: uuid.UUID | None = None
+    prev_hash: int | None = None
     """The version this one replaced; null on the first."""
 
     prev_state: State = State.UNKNOWN
@@ -149,7 +148,7 @@ class Event(Convertible):
     # property of the shape. What a join actually uses is the one flat parent a
     # subclass declares -- an execution's `order_xhash` -- because no engine
     # here joins on a list without exploding it first.
-    parent_hash: list[uuid.UUID] | None = None
+    parent_hash: list[int] | None = None
     """Every event this one was built from, in the order they were combined."""
 
     def __post_init__(self) -> None:
@@ -217,7 +216,7 @@ class Event(Convertible):
     # -- identity -----------------------------------------------------------
 
     @classmethod
-    def hash_of(cls, *parts: Any) -> uuid.UUID:
+    def hash_of(cls, *parts: Any) -> int:
         """The identifier `parts` name, for this shape.
 
         The class name goes in front of the parts, so an `Order` and a `Book`

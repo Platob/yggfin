@@ -260,10 +260,15 @@ imported this package has nothing else to decode `410` with. The **value type
 is read off the members**, never guessed from the base class: `class K(str,
 Enum)` and `class K(IntEnum)` both subclass something.
 
-An identifier is sixteen fixed bytes (`fixed_size_binary[16]` here, `fixed[16]`
-in Iceberg, `BinaryType` in Spark), because 64 bits collide inside a day of
-ticks and because Iceberg's own `uuid` comes back as an Arrow *extension* type
-and reaches Spark as a string. Parts of an identifier are hashed **behind their
+An identifier is a signed `int64` -- the one column every engine below Arrow
+reads alike. `fixed_size_binary[16]` is better on paper and worse in practice:
+Doris reads it as `char(16)` of raw bytes, Spark cannot create one, and
+Iceberg's `uuid` reaches Spark as a string. The margin that costs is smaller
+than it looks, because the key is `(unix, hash)`: two digests only meet if they
+also share a nanosecond. **The frame is a specification**, written in
+`identity.py` down to the byte, because a Java or Rust producer has to compute
+the same number -- an `int64` little-endian length per part (`-1` when absent),
+then the part's bytes, then xxh3-64 read as two's complement. Parts of an identifier are hashed **behind their
 own byte lengths**: a separator alone does not stop a part that contains the
 separator, and a raw identifier used as a part contains any given byte about
 six times in a hundred. **A number is its own bytes, never its text** -- text
@@ -309,9 +314,8 @@ encoded as values point every row at the wrong member.
 here dispatches, and it **returns what it did** rather than printing it -- like
 every maintenance verb. A parsed log carries the same `Event` envelope as an
 order or a book, so a capture is read beside what it describes; its `hash` is
-the digest of the raw line, sixteen bytes because a capture is exactly the
-scale where sixty-four bits collide, and `xhash` is the same digest because a
-line is one version of one thing. What a line is *about* is an ordered list of
+the digest of the raw line, and `xhash` is the same digest because a line is
+one version of one thing. What a line is *about* is an ordered list of
 regexes (`LogRules`), first match winning, no match `UNKNOWN` -- and a line
 nothing matches still lands, because dropping it makes a job lossy exactly when
 a log format changes.
@@ -470,10 +474,10 @@ rekep/
 ├── market/        what happened, as a history: enums.py (the banded int32
 │                  codes -- EventType, State, Side, TimeInForce, OrderKind,
 │                  ExecKind, UpdateAction, AssetKind, OptionKind -- and the FIX
-│                  character on each member), identity.py (the sixteen fixed
-│                  bytes: xxh3-128 over length-prefixed parts, scalar and
+│                  character on each member), identity.py (the int64
+│                  identifier: the byte frame it is specified by, scalar and
 │                  vectorised), fields.py (MarketFieldBuilder: a UUID is
-│                  fixed_size_binary[16], a ranged code is int32 carrying its
+│                  int64, a ranged code is int32 carrying its
 │                  member table, a nested shape loses its keys, a shape of one
 │                  member is that member; plus fix_tag and dictionary_arrow),
 │                  instrument.py, event.py (Event and MarketEvent), orders.py

@@ -202,7 +202,7 @@ def test_schema(plain: Path) -> None:
     assert schema.names[-4:] == ["url", "thread_name", "driver_name", "message"]
     assert schema.field("unix").type == pyarrow.int64()
     assert schema.field("hunix").type == pyarrow.int64()
-    assert schema.field("hash").type == pyarrow.binary(16)
+    assert schema.field("hash").type == pyarrow.int64()
     assert schema.field("etype").type == pyarrow.int32()
     assert schema.field("message").type == pyarrow.string()
 
@@ -269,12 +269,12 @@ def test_url_column_identifies_the_source(plain: Path) -> None:
         assert set(table.column("url").to_pylist()) == {log.url}
 
 
-def test_the_digest_is_per_line_and_sixteen_bytes(plain: Path) -> None:
+def test_the_digest_is_per_line_and_a_signed_int64(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_table()
     hashes = table.column("hash").to_pylist()
     assert len(set(hashes)) == EXPECTED_RECORDS, "distinct lines hash distinctly"
-    assert all(len(digest) == 16 for digest in hashes)
+    assert all(-(2**63) <= digest < 2**63 for digest in hashes)
     assert table.column("xhash").to_pylist() == hashes, "a line is its own lifecycle"
 
 

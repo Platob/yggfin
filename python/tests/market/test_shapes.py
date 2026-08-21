@@ -124,9 +124,9 @@ def test_an_order_carries_what_it_asked_for_and_how_far_it_got() -> None:
 def test_an_execution_links_to_its_order_with_a_flat_typed_column() -> None:
     """A list cannot be a join key without an explode, so the one parent is flat."""
     link = Execution.FIELD.field("order_xhash")
-    assert link.arrow_type == pyarrow.binary(16) and link.nullable
+    assert link.arrow_type == pyarrow.int64() and link.nullable
     assert Execution.FIELD.field("parent_hash").arrow_type.equals(
-        pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False))
+        pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False))
     )
 
 
@@ -145,7 +145,7 @@ def test_a_book_keeps_the_sides_flat_and_still_says_which_versions_it_used() -> 
     for side in ("bid", "ask"):
         assert {f"{side}_hash", f"{side}_px", f"{side}_qty", f"{side}_depth"} <= names
         assert {f"{side}_alive", f"{side}_updates", f"{side}_executions"} <= names
-        assert Book.FIELD.field(f"{side}_hash").arrow_type == pyarrow.binary(16)
+        assert Book.FIELD.field(f"{side}_hash").arrow_type == pyarrow.int64()
     assert Book.FIELD.field("bid_alive").item.arrow_type == Level.FIELD.arrow_type
 
 

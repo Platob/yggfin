@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Annotated, Any, ClassVar, Self
 
 import pyarrow
@@ -88,7 +87,7 @@ class LevelExecution(Convertible):
     qty: Annotated[float, fix_tag("LastQty", 32)] = 0.0
     """How much traded."""
 
-    xhash: uuid.UUID | None = None
+    xhash: int | None = None
     """Lifecycle of the execution this came from -- the join into that table."""
 
     aggressor: Annotated[bool | None, fix_tag("AggressorIndicator", 1057)] = None
@@ -351,7 +350,7 @@ class Book(MarketEvent):
     imbalance: float | None = None
     """`(bid_qty - ask_qty) / (bid_qty + ask_qty)`, in `[-1, 1]`; positive is bid-heavy."""
 
-    bid_hash: uuid.UUID | None = None
+    bid_hash: int | None = None
     """Which version of the buy side this book was built from."""
 
     bid_px: float | None = None
@@ -366,7 +365,7 @@ class Book(MarketEvent):
     bid_total_qty: float | None = None
     """Sum of `qty` over every live buy level."""
 
-    ask_hash: uuid.UUID | None = None
+    ask_hash: int | None = None
     """Which version of the sell side this book was built from."""
 
     ask_px: float | None = None

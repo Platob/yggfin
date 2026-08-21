@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import uuid
 from typing import Annotated, ClassVar
 
 from rekep.convert import Convertible
@@ -32,7 +31,7 @@ class Instrument(Convertible):
 
     FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
 
-    xhash: Annotated[uuid.UUID, Field.primary_key()] = NIL
+    xhash: Annotated[int, Field.primary_key()] = NIL
     """Stable identity of the instrument, which outlives every symbol it has had."""
 
     symbol: Annotated[str, fix_tag("Symbol", 55)] = ""

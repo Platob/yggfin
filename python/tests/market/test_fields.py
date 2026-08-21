@@ -78,10 +78,13 @@ class Keyed:
     """Its own partition."""
 
 
-def test_an_identifier_is_sixteen_fixed_bytes_and_not_text() -> None:
-    """The base builder spells a UUID as a string; here it is the column width."""
-    assert MarketFieldBuilder().data_type(uuid.UUID) == pyarrow.binary(16)
-    assert FieldBuilder().data_type(uuid.UUID) == pyarrow.string()
+def test_an_identifier_is_a_plain_int64() -> None:
+    """Not `fixed_size_binary[16]`: half the ecosystem below Arrow reads that as
+    something else, and a `long` is the same column in every engine there is."""
+    for shape in SHAPES:
+        for name in ("hash", "xhash"):
+            if name in shape.FIELD.names:
+                assert shape.FIELD.field(name).arrow_type == pyarrow.int64(), shape.__name__
 
 
 def test_a_ranged_code_is_int32_and_not_int64() -> None:

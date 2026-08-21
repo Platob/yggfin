@@ -1,7 +1,5 @@
 """`Log`'s own contract; the parser that fills it is tested beside it."""
 
-import uuid
-
 import pyarrow
 
 from rekep import Field, Log
@@ -72,10 +70,12 @@ def test_every_unix_column_declares_its_unit() -> None:
         assert metadata["epoch"] == "1970-01-01", name
 
 
-def test_the_line_digest_is_sixteen_bytes_like_every_other_identifier() -> None:
-    """64 bits collide inside a capture, and a collision merges two lines into one."""
+def test_the_line_digest_is_an_int64_like_every_other_identifier() -> None:
+    """The one column every engine below Arrow reads the same way, and the key
+    is `(unix, hash)` -- so two digests only meet if they also share a
+    nanosecond."""
     for name in ("hash", "xhash"):
-        assert Log.FIELD.field(name).arrow_type == pyarrow.binary(16), name
+        assert Log.FIELD.field(name).arrow_type == pyarrow.int64(), name
     assert Log.FIELD.field("unix").arrow_type == pyarrow.int64()
 
 
@@ -101,8 +101,8 @@ def test_a_row_round_trips_as_a_document() -> None:
     row = Log(
         url="a.txt",
         unix=2,
-        hash=uuid.UUID(int=3),
-        xhash=uuid.UUID(int=3),
+        hash=3,
+        xhash=3,
         etype=EventType.ORDER,
         thread_name="t",
         driver_name="d",

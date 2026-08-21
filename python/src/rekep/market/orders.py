@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Annotated, ClassVar
 
 import pyarrow
@@ -106,7 +105,7 @@ class Execution(MarketEvent):
     trade_id: Annotated[str | None, fix_tag("TradeID", 1003)] = None
     """Identifier the venue gave the trade, which both sides of it share."""
 
-    order_xhash: uuid.UUID | None = None
+    order_xhash: int | None = None
     """Lifecycle of the order this happened to -- the join key, single-valued."""
 
     order_id: Annotated[str | None, fix_tag("OrderID", 37)] = None

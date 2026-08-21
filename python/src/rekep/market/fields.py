@@ -1,32 +1,28 @@
-"""What a market declaration means: the five rules this package's shapes add.
+"""What a market declaration means: the four rules this package's shapes add.
 
-`FieldBuilder` already turns type hints into fields. Three things it cannot
+`FieldBuilder` already turns type hints into fields. Four things it cannot
 know are decided once here, in a subclass wired onto every market shape
 through `FIELD_BUILDER`, rather than repeated on the hundred members that
 would otherwise each have to state them:
 
-1. **An identifier is sixteen fixed bytes.** `uuid.UUID` is the Python type
-   and `fixed_size_binary[16]` is the column; the reasoning is in
-   `identity.py`. The base builder spells a UUID as a string, which is 36
-   bytes and a pointer chase per comparison.
-2. **A ranged code is `int32`.** Every enum in `enums.py` is a banded integer,
+1. **A ranged code is `int32`.** Every enum in `enums.py` is a banded integer,
    and the band arithmetic only ever needs four bytes. The base builder would
    widen it to `int64`, doubling every state, side and kind column in the
    package for nothing -- and a narrower width is also what lets an engine
    keep the column's statistics in cache.
-3. **A key belongs to a table, not to a struct.** A shape nested inside
+2. **A key belongs to a table, not to a struct.** A shape nested inside
    another -- an `Instrument` inside a `MarketEvent` -- keeps its
    documentation and loses its primary and partition keys, because
    `primary_keys()` and `partition_keys()` read the top level and nothing
    reads a nested one. Left in, they would publish a contract that says a
    column identifies a row when nothing treats it that way, which is the one
    thing a contract may not do.
-4. **An enum says what its codes mean, in the schema.** The column is a number
+3. **An enum says what its codes mean, in the schema.** The column is a number
    and the enum is ours, so a consumer that never imports this package has
    nothing to decode `410` with. The name, the value type and the whole member
    table ride under `enum:` keys, next to the `fix:` ones -- which is what
    makes a contract file readable by the people it is *for*.
-5. **A shape with one member is that member.** A `struct` of one is a nesting
+4. **A shape with one member is that member.** A `struct` of one is a nesting
    level that carries no information and costs a filter its pushdown on every
    engine below. It becomes an Arrow extension type over the member's own
    storage instead: one column, the class name still on it, and a store that
@@ -38,14 +34,12 @@ from __future__ import annotations
 import dataclasses
 import enum
 import json
-import uuid
-from typing import Any, ClassVar
+from typing import Any
 
 import pyarrow
 
 from rekep.fields import PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
 from rekep.market.enums import Ranged
-from rekep.market.identity import HASH
 
 #: The prefix the enum keys ride under, like `fix:` and `iceberg:`.
 ENUM = "enum"
@@ -53,11 +47,6 @@ ENUM = "enum"
 
 class MarketFieldBuilder(FieldBuilder):
     """`FieldBuilder` with the three rules above, wired on with `FIELD_BUILDER`."""
-
-    SCALARS: ClassVar[dict[type, pyarrow.DataType]] = {
-        **FieldBuilder.SCALARS,
-        uuid.UUID: HASH,
-    }
 
     def scalar(self, annotation: Any) -> pyarrow.DataType | None:
         """A ranged code is `int32`; everything else is the base builder's answer.
