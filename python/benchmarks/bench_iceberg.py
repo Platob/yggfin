@@ -6,7 +6,7 @@ Run from `python/`::
     uv run python benchmarks/bench_iceberg.py             # the full sweep
     uv run python benchmarks/bench_iceberg.py --only read
 
-Six questions, measured rather than assumed:
+Seven questions, measured rather than assumed:
 
 1. **How fast does a stream land?** Append, upsert, and upsert on a stream that
    cannot match anything already stored -- at several commit sizes, partitioned
@@ -39,6 +39,10 @@ Six questions, measured rather than assumed:
    key, and pyiceberg binds that tree once per manifest it plans. Swept against
    a key whose halves repeat, with the term count beside the seconds.
 
+7. **Does a replay reach only the files it lands in?** (`--only backfill`) A
+   chunk of keys clustered in a few bands of a wide table, planned rather than
+   read: the number that matters is files, never rows.
+
 Everything runs against a local SQLite catalog and a file warehouse, so the
 numbers are storage-latency-free: they measure planning, commit and Arrow work,
 which is what this package is responsible for. On an object store every commit
@@ -52,6 +56,7 @@ import argparse
 import datetime
 import functools
 import pathlib
+import random
 import shutil
 import sys
 import tempfile
@@ -65,7 +70,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
 from rekep import Convertible, Field, Log, TextFile, field  # noqa: E402
 from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
-from rekep.iceberg.dataset import _match_filter  # noqa: E402
+from rekep.iceberg.dataset import _key_ranges, _match_filter  # noqa: E402
 
 
 @field
@@ -83,6 +88,20 @@ class Quote(Convertible):
 
     venue: str
     """Where it traded."""
+
+
+@field
+class Tick(Convertible):
+    """A row under a wide composite key, clustered per commit."""
+
+    at: Annotated[int, Field.primary_key()]
+    """A timestamp that advances with the commits."""
+
+    hash64: Annotated[int, Field.primary_key()]
+    """A hash spread over the whole 62-bit range."""
+
+    payload: str
+    """Payload."""
 
 
 DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
@@ -729,6 +748,56 @@ def sweep_update(rows: int, days: int) -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
+def sweep_backfill(rows: int, days: int) -> None:
+    """Replaying keys that sit in a few bands of a wide table.
+
+    The shape a backfill makes, and the one a single min/max range cannot prune
+    at all: past `MERGE_IN_LIMIT` distinct values a key column used to become
+    one range spanning everything between the bands. What a scan *plans* is the
+    number here -- rows returned say nothing about files opened.
+    """
+    root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-backfill-"))
+    try:
+        target = catalog(root).dataset("bench.ticks", struct=Tick.FIELD).create_with()
+        per = max(rows // 20, 1_000)
+        # The hash is drawn per *row*, not derived from the band: a real line
+        # hash spreads over the whole range, so every file's bounds on it span
+        # nearly everything and it prunes nothing. Deriving it from the band
+        # instead gave each file a narrow hash band that pruned the table by
+        # itself -- the fixture doing the work the code is supposed to.
+        source = random.Random(20_260_821)
+        commits = [
+            pyarrow.Table.from_pydict(
+                {
+                    "at": [band * 10**12 + i for i in range(per)],
+                    "hash64": [source.getrandbits(62) for _ in range(per)],
+                    "payload": ["x" * 40] * per,
+                },
+                schema=Tick.FIELD.into_arrow_schema(),
+            )
+            for band in range(20)
+        ]
+        for commit in commits:
+            target.write_arrow(commit, commit_row_size=0)
+        stored = target.refresh().data_files().num_rows
+        print(f"\n== backfill: {stored} files of {per:,} rows, keys clustered per file ==")
+        header(("case", "planned", "skipped", "seconds", "inserted"), (30, 8, 8, 9, 9))
+        for label, replay in (
+            ("two distant bands", pyarrow.concat_tables([commits[1], commits[18]])),
+            ("one band", commits[7]),
+            ("half the table", pyarrow.concat_tables(commits[:10])),
+        ):
+            ranges = _key_ranges(replay, ["at", "hash64"])
+            plan = target.scan_plan(ranges)
+            seconds, inserted = timed(functools.partial(target.insert_arrow_table, replay, True))
+            print(
+                f"{label:>30} {plan['files']:>8} {plan['skipped']:>8} "
+                f"{seconds:>9.2f} {inserted:>9,}"
+            )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def quote_rows(symbols: int, days: int) -> pyarrow.Table:
     """`symbols` instruments on each of `days` days: a key whose halves repeat."""
     day = datetime.date(2026, 8, 14)
@@ -807,7 +876,7 @@ def main() -> int:
     parser.add_argument("--quick", action="store_true")
     parser.add_argument(
         "--only",
-        choices=["parse", "write", "read", "fs", "maintain", "update"],
+        choices=["parse", "write", "read", "fs", "maintain", "update", "backfill"],
         default=None,
     )
     arguments = parser.parse_args()
@@ -826,6 +895,8 @@ def main() -> int:
         sweep_maintain(min(rows, 100_000), days)
     if arguments.only in (None, "update"):
         sweep_update(min(rows, 100_000), days)
+    if arguments.only in (None, "backfill"):
+        sweep_backfill(min(rows, 100_000), days)
     return 0
 
 

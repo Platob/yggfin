@@ -260,11 +260,23 @@ goes.
 
 === "The fix"
 
-    The scan is filtered by the chunk's **key values or ranges** — a couple of
+    The scan is filtered by the chunk's **key values or ranges** — a handful of
     terms per key column, whatever the chunk's size — which every matching row
     satisfies, so the scan returns a superset and nothing can be missed. Rows to
     insert then come from one Arrow anti-join, and rows to update from a
     vectorised comparison instead of pyiceberg's per-row Python loop.
+
+    Past `MERGE_IN_LIMIT` distinct values a key column cannot be named one
+    value at a time, and one min/max range there prunes nothing on keys that
+    sit in a **few bands of a wide span** — a backfill, or a replay of two days
+    into a month. So the column is described by up to `MERGE_RANGE_BANDS`
+    ranges instead, found by placing every value in one of 64 equal slices of
+    `[min, max]` and merging the occupied ones back: a slice reports the exact
+    min and max of what landed in it, so the union covers every value however
+    the arithmetic rounded. Measured on 20 files of clustered keys, replaying
+    two distant ones planned **18 files before and 2 after**; a replay of one
+    contiguous band plans 1 either way and pays 0.02 s against 0.04 for the
+    banding pass.
 
     | scenario (4,000-row chunk, 20k-row table) | planned | pyiceberg |
     | --- | --- | --- |

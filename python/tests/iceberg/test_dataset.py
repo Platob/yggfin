@@ -1534,6 +1534,103 @@ def test_a_key_column_is_named_only_when_it_can_be(values: list[int], named: boo
         assert sorted(distinct.to_pylist()) == sorted(set(values))
 
 
+def _covers(expression: object, table: pyarrow.Table, field: object) -> bool:
+    """Whether every row of `table` satisfies an Iceberg expression, through Arrow.
+
+    A merge's scan filter is a superset or it is a bug: a row it does not
+    match is a stored row the merge never sees and inserts a second copy of.
+    """
+    from pyiceberg.expressions.visitors import bind, rewrite_not
+    from pyiceberg.io.pyarrow import expression_to_pyarrow
+
+    bound = bind(field.into_iceberg_schema(), rewrite_not(expression), case_sensitive=True)
+    return table.filter(expression_to_pyarrow(bound)).num_rows == table.num_rows
+
+
+@field
+class Tick(Convertible):
+    """A row under a wide integer key."""
+
+    at: Annotated[int, Field.primary_key()]
+    """A clustered timestamp."""
+
+    payload: str
+    """Payload."""
+
+
+@pytest.mark.parametrize(
+    ("values", "banded"),
+    [
+        # Two clusters a decade apart: the shape a backfill or a replay makes,
+        # and the one a single min/max range cannot prune at all.
+        (list(range(300)) + list(range(10**7, 10**7 + 300)), True),
+        # Dense, and shuffled over the whole range: no gap to cut out, so the
+        # bands would be a longer way of saying `min <= x <= max`.
+        (list(range(600)), False),
+        ([(index * 7919) % 600_000 for index in range(600)], False),
+        # One value repeated past the naming limit, which has no range at all.
+        ([5] * 300 + [9] * 300, False),
+    ],
+)
+def test_a_key_range_names_the_bands_the_values_are_in(values: list[int], banded: bool) -> None:
+    """Past the naming limit a key column was one min/max range, which prunes
+    nothing on keys that sit in a few bands of a wide span. Whatever it
+    becomes, every value has to still satisfy it."""
+    from rekep.iceberg.dataset import _key_ranges
+
+    chunk = pyarrow.Table.from_pydict(
+        {"at": values, "payload": ["x"] * len(values)},
+        schema=Tick.FIELD.into_arrow_schema(),
+    )
+    ranges = _key_ranges(chunk, ["at"])
+    assert _covers(ranges, chunk, Tick.FIELD), "a scan filter that misses a key duplicates it"
+    assert (type(ranges).__name__ == "Or") is banded
+
+
+def test_a_key_range_covers_a_column_it_cannot_band(dataset: IcebergDataset) -> None:
+    """A string key has no arithmetic to find gaps with, and a nanosecond
+    timestamp has no bound pyarrow will hand back as a `datetime` at all. One
+    keeps its single range; the other contributes no term, which widens the
+    filter -- the only direction it may be wrong in."""
+    from rekep.iceberg.dataset import _always_true, _banded, _key_ranges
+
+    text = pyarrow.chunked_array([pyarrow.array([f"S{i:06d}" for i in range(600)])])
+    assert type(_banded("symbol", text)).__name__ == "And", "one range, as before"
+
+    nanos = pyarrow.chunked_array(
+        [pyarrow.array([1_700_000_000_000_000_000 + i for i in range(600)], pyarrow.int64())]
+    ).cast(pyarrow.timestamp("ns"))
+    assert _banded("at", nanos) is None
+    chunk = pyarrow.Table.from_arrays([nanos], names=["at"])
+    assert _key_ranges(chunk, ["at"]) == _always_true(), "no term at all, not a wrong one"
+
+
+def test_a_backfill_plans_the_files_it_lands_in(tmp_path: Path) -> None:
+    """The whole point: a replay of two distant bands of keys used to plan 26
+    files of 30 to find the two that held them."""
+    catalog = IcebergCatalog(name="bands", properties=catalog_properties(tmp_path))
+    ticks = catalog.dataset("trading.ticks", struct=Tick.FIELD)
+    schema = Tick.FIELD.into_arrow_schema()
+    commits = [
+        pyarrow.Table.from_pydict(
+            {"at": [band * 10**9 + i for i in range(400)], "payload": ["x"] * 400},
+            schema=schema,
+        )
+        for band in range(10)
+    ]
+    for commit in commits:
+        ticks.write_arrow(commit, commit_row_size=0)
+    assert ticks.refresh().data_files().num_rows == 10
+
+    replay = pyarrow.concat_tables([commits[1], commits[8]])
+    from rekep.iceberg.dataset import _key_ranges
+
+    plan = ticks.scan_plan(_key_ranges(replay, ["at"]))
+    assert plan["files"] == 2, "the two bands, and not the eight between them"
+    assert plan["skipped"] == 8
+    assert ticks.insert_arrow_table(replay, True) == 0, "and every key is already stored"
+
+
 def test_a_merge_past_the_limit_still_finds_every_stored_row(dataset: IcebergDataset) -> None:
     """A range is a superset, so what it plans must still hold every match."""
     rows = quotes(400)

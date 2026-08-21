@@ -66,6 +66,14 @@ DELETE_OLD_METADATA = "write.metadata.delete-after-commit.enabled"
 #: twenty. So this is that limit, not a number of our own.
 MERGE_IN_LIMIT = 200
 
+#: How many ranges a key column past `MERGE_IN_LIMIT` is described by. One was
+#: the answer before, and one prunes nothing on a chunk whose keys sit in a few
+#: bands of a wide range -- a backfill, or a replay of two days into a month.
+#: Eight because the predicate stays trivial next to the exact filter it is
+#: ANDed with, and because the gaps past the eighth widest are the ones that
+#: were not going to skip a file anyway.
+MERGE_RANGE_BANDS = 8
+
 #: Rows a commit carries when nothing says otherwise. A stream that commits per
 #: batch lands a file and a snapshot per batch, and every later scan pays for
 #: both; one that never commits until the end holds the whole stream in memory.
@@ -1685,14 +1693,157 @@ def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
             terms.append(named)
             continue
         # Neither bound can be null here: the column has rows, no nulls and no
-        # NaN, which is everything `min_max` would have skipped.
-        bounds = pyarrow.compute.min_max(values).as_py()
-        terms.append(
-            And(GreaterThanOrEqual(column, bounds["min"]), LessThanOrEqual(column, bounds["max"]))
-        )
+        # NaN, which is everything `min_max` would have skipped. None means the
+        # bounds cannot be expressed, and a missing term is a wider filter --
+        # which is the direction this one is allowed to be wrong in.
+        banded = _banded(column, values)
+        if banded is not None:
+            terms.append(banded)
     if not terms:
         return _always_true()
     return And(*terms) if len(terms) > 1 else terms[0]
+
+
+def _banded(column: str, values: Any) -> Any | None:
+    """The narrowest union of ranges that still covers every value in `values`.
+
+    One min/max range is what a key column past `MERGE_IN_LIMIT` distinct
+    values became, and it prunes nothing on a chunk whose keys sit in a few
+    bands of a wide range -- a backfill, or a replay of two days into a month.
+    Measured on 30 files of clustered timestamps, replaying the keys of two of
+    them planned **26** files to find the two that held them, reading 520,000
+    rows for 40,000 keys.
+
+    The bands are found without sorting the column. Every value is placed in
+    one of `MERGE_RANGE_BANDS * 8` equal slices of `[min, max]` by arithmetic,
+    each occupied slice reports its own exact min and max, and adjacent ones
+    are merged back until at most `MERGE_RANGE_BANDS` remain. Sorting would be
+    the obvious way and is the expensive one: on a 400k-row integer column
+    `unique` alone runs 31-420 ms against 7.8 ms for this, and
+    `_distinct_under` exists precisely to not pay it.
+
+    **Any placement is a correct one.** A slice reports the exact min and max
+    of the rows that landed in it, and every row lands in exactly one, so the
+    union covers every value however the index arithmetic rounded -- which
+    matters, because a nanosecond timestamp does not fit a float64 mantissa.
+    Rounding costs pruning quality, never correctness, and a merge's scan
+    filter has to be a superset and never less.
+
+    Two shapes keep the single range. A column arithmetic means nothing on --
+    a string, a boolean, anything Arrow will not subtract -- and one whose
+    values occupy nearly every slice, where there is no gap to cut out and the
+    bands would only be a longer way of saying `min <= x <= max`. That question
+    is asked before the bands are built: `unique` over the slice indices is
+    1.1 ms where grouping the values by them is 5.5, so a 400k-row column with
+    no gap in it costs 7.8 ms rather than 8.7, and one with gaps 13.8.
+
+    Which is the price, and it is paid on every chunk past the naming limit
+    whether or not there is a gap to find. Measured on the sweep: a replay of
+    two distant bands went from 18 files planned to **2**, while a replay of
+    one contiguous band planned 1 either way and took 0.02 s against 0.04.
+
+    None when the column has bounds that cannot be *said*: a nanosecond
+    timestamp, which pyarrow will not hand back as a `datetime` at all.
+    `_key_ranges` then leaves the column out, which widens the filter -- the
+    only direction it is allowed to be wrong in.
+    """
+    compute = pyarrow.compute
+    try:
+        bounds = compute.min_max(values).as_py()
+        whole = _between(column, bounds["min"], bounds["max"])
+    except (ValueError, pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, OverflowError):
+        # A bound this column cannot be *said* in -- a nanosecond timestamp,
+        # which pyarrow refuses to hand back as a `datetime` at all. No term is
+        # the honest answer: it widens the filter, and a merge's filter may
+        # only ever be wider than the rows it has to find.
+        return None
+    kind = values.type
+    if not (
+        pyarrow.types.is_integer(kind)
+        or pyarrow.types.is_floating(kind)
+        or pyarrow.types.is_temporal(kind)
+        or pyarrow.types.is_decimal(kind)
+    ):
+        # Asked before it is attempted, because a failed cast is not free:
+        # `cast(string, int64)` walks the column to find out, and on 400k
+        # strings that raise took 115 ms to arrive at "no".
+        return whole
+    slices = MERGE_RANGE_BANDS * 8
+    try:
+        numeric = compute.cast(
+            values if pyarrow.types.is_floating(kind) else compute.cast(values, "int64"), "double"
+        )
+        span = compute.min_max(numeric).as_py()
+        low, high = span["min"], span["max"]
+        if low is None or high is None or not low < high:
+            return whole
+        index = compute.max_element_wise(
+            compute.min_element_wise(
+                compute.cast(
+                    compute.floor(
+                        compute.divide(compute.subtract(numeric, low), (high - low) / slices)
+                    ),
+                    "int64",
+                ),
+                slices - 1,
+            ),
+            0,
+        )
+        # Which slices are occupied is asked before what is *in* them: on a
+        # 400k-row column that is 1.1 ms against 5.5 for the grouping, and a
+        # column with no gap in it -- which is most of them -- is answered
+        # without ever paying the second.
+        if len(compute.unique(index)) * 10 >= slices * 9:
+            return whole
+        occupied = (
+            pyarrow.table({"value": values, "band": index})
+            .group_by("band")
+            .aggregate([("value", "min"), ("value", "max")])
+            .sort_by([("value_min", "ascending")])
+        )
+    except (
+        pyarrow.ArrowInvalid,
+        pyarrow.ArrowNotImplementedError,
+        pyarrow.ArrowTypeError,
+        ZeroDivisionError,
+        OverflowError,
+    ):
+        return whole
+    bands = _fewest(
+        list(
+            zip(
+                occupied.column("value_min").to_pylist(),
+                occupied.column("value_max").to_pylist(),
+                strict=True,
+            )
+        ),
+        MERGE_RANGE_BANDS,
+    )
+    if len(bands) < 2:
+        return whole
+    from pyiceberg.expressions import Or
+
+    return Or(*[_between(column, low, high) for low, high in bands])
+
+
+def _fewest(bands: list[tuple[Any, Any]], keep: int) -> list[tuple[Any, Any]]:
+    """`bands` reduced to at most `keep`, always by closing the smallest gap.
+
+    Merging two adjacent bands into one range only ever *widens* what the
+    filter matches, so no value can fall out of it; which gaps survive is a
+    quality choice, and the widest are the ones worth keeping.
+    """
+    while len(bands) > keep:
+        gap = min(range(len(bands) - 1), key=lambda i: bands[i + 1][0] - bands[i][1])
+        bands[gap : gap + 2] = [(bands[gap][0], bands[gap + 1][1])]
+    return bands
+
+
+def _between(column: str, low: Any, high: Any) -> Any:
+    """`low <= column <= high`, as one Iceberg expression."""
+    from pyiceberg.expressions import And, GreaterThanOrEqual, LessThanOrEqual
+
+    return And(GreaterThanOrEqual(column, low), LessThanOrEqual(column, high))
 
 
 def _downcasts_ns() -> bool:

@@ -10,6 +10,7 @@ uv run python benchmarks/bench_text_file.py     # parsing a log
 uv run python benchmarks/bench_iceberg.py       # parse, stream into Iceberg, read back
 uv run python benchmarks/bench_iceberg.py --only maintain   # the maintenance
 uv run python benchmarks/bench_iceberg.py --only update     # the half that rewrites
+uv run python benchmarks/bench_iceberg.py --only backfill   # replaying clustered keys
 uv run python benchmarks/bench_cast.py          # casting data onto a shape
 ```
 
@@ -301,6 +302,31 @@ is held scales with the pool, not with the table. Draining the whole reader took
 The four-files-forever is what made every `optimize` on a `day`- or
 `bucket[16]`-partitioned table a full read and a full rewrite, while the rows
 never changed.
+
+## Backfilling
+
+`bench_iceberg.py --only backfill`. A replay of keys that sit in a few bands of
+a wide table — 20 files of 5,000 rows, the key clustered per file, the hash half
+of it drawn per row so file bounds on it span everything and prune nothing.
+`planned` is what the scan opens; the rows it returns say nothing about that.
+
+| case | planned | seconds |
+| --- | --- | --- |
+| two distant bands | 18 → **2** | 0.14–0.19 → 0.09 |
+| one contiguous band | 1 → 1 | 0.02 → 0.04 |
+| half the table | 10 → 10 | 0.14–0.16 → 0.18–0.21 |
+
+Past 200 distinct values a key column cannot be named one value at a time, and
+the single min/max range it became spans everything between the bands. It is
+described by up to eight ranges now, found by placing every value in one of 64
+equal slices of `[min, max]` and merging the occupied ones back — no sort, and
+a slice reports the exact min and max of what landed in it, so the union covers
+every value however the index arithmetic rounded.
+
+The last two rows are the cost, quoted because they are real: a chunk with no
+gap to find pays the banding pass and prunes exactly what it did before. On a
+400k-row integer column that is 7.8 ms, against 31–420 ms for the `unique` that
+sorting would need.
 
 ## Updating what is stored
 
