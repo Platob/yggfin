@@ -78,10 +78,15 @@ def opens(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
 
 
 def test_only_what_iceberg_never_rewrites_is_cacheable() -> None:
+    version = "00001-2f1a4c6e-8b3d-4a5f-9c7e-1d2b3a4c5d6e.metadata.json"
     assert fileio._immutable("wh/metadata/snap-1-abc.avro"), "a manifest list"
     assert fileio._immutable("wh/metadata/abc-m0.avro"), "a manifest"
-    assert fileio._immutable("wh/metadata/00001-abc.metadata.json"), "a metadata version"
+    assert fileio._immutable(f"wh/metadata/{version}"), "a metadata version Iceberg minted"
+    assert fileio._immutable(f"C:\\wh\\metadata\\{version}"), "however the path is spelled"
     assert not fileio._immutable("wh/metadata/version-hint.text"), "the one mutable file"
+    assert not fileio._immutable("wh/metadata/v3.metadata.json"), (
+        "no UUID, so two racing writers can both produce it with different bytes"
+    )
     assert not fileio._immutable("wh/data/day=1/abc.parquet"), "data is read once, not repeatedly"
 
 
@@ -140,6 +145,23 @@ def test_a_data_file_is_never_cached(tmp_path: Path, opens: dict[str, int]) -> N
         with io.new_input(location).open() as stream:
             stream.read()
     assert opens["opens"] == 2, "data is the store's to stream, every time"
+
+
+def test_a_write_past_the_cap_stops_copying_itself(tmp_path: Path) -> None:
+    """`put` refuses anything over an eighth of the budget, so accumulating the
+    rest of it buys a second copy of a file that is dropped on arrival."""
+    io = ArrowFileIO({"rekep.io.cache-bytes": "1024"})
+    location = (tmp_path / "big.avro").as_posix()
+    out = io.new_output(location)
+    stream = out.create()
+    stream.write(b"x" * 100)
+    assert stream._buffer is not None, "still worth keeping at 100 bytes of a 128 cap"
+    stream.write(b"x" * 100)
+    assert stream._buffer is None, "and dropped the moment it cannot be"
+    stream.close()
+    assert CONTENT_CACHE.peek(location) is None
+    assert (tmp_path / "big.avro").read_bytes() == b"x" * 200, "the store still got all of it"
+    ArrowFileIO({"rekep.io.cache-bytes": str(DEFAULT_CACHE_BYTES)})
 
 
 def test_an_abandoned_write_never_reaches_the_cache(tmp_path: Path) -> None:

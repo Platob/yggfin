@@ -6,7 +6,6 @@ import dataclasses
 import datetime
 import functools
 import json
-import sys
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 from typing import Any
@@ -749,11 +748,27 @@ class IcebergDataset(Dataset):
             return 0
         chunk = first_rows(normalised_keys(chunk, join), join)
         reference = branch or self.branch or MAIN
-        # Keys only: `_key_ranges` raises on a null or NaN key before the scan
-        # is even built, which is the same refusal a merge makes.
-        scan = table.scan(row_filter=_key_ranges(chunk, join), selected_fields=tuple(join))
+        # `_key_ranges` raises on a null or NaN key before the scan is even
+        # built, which is the same refusal a merge makes.
+        scan = table.scan(row_filter=_key_ranges(chunk, join))
         if reference in table.refs():
             scan = scan.use_ref(reference)
+        # Keys only -- an append never compares a non-key column, so it never
+        # reads one -- but chosen by field **id** and not by name. A scan
+        # pinned to a branch reads under *that* snapshot's schema, so a key
+        # renamed on main since the branch was cut is not a name it answers
+        # to: naming it raised `Could not find column`, on a branch every other
+        # verb here reads and writes happily. `_under_current_names` puts the
+        # names back on the way out.
+        keys = field_of(pyarrow.schema([chunk.schema.field(name) for name in join]))
+        wanted = self._selected(keys, scan)
+        if set(wanted.values()) != set(join):
+            # That snapshot does not carry every key column -- one added since
+            # the branch was cut -- so no row on it can match a key, and every
+            # row of the chunk is new.
+            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            return chunk.num_rows
+        scan = scan.select(*wanted)
         # Planned once, like a merge: no overlapping file, or overlapping files
         # with none of the keys, means every row is new and nothing needs the
         # anti-join -- the replayed stream pays a plan, the fresh one an append.
@@ -766,7 +781,6 @@ class IcebergDataset(Dataset):
             return chunk.num_rows
         # Onto the chunk's own key columns, so the anti-join can run: a scan
         # hands back `large_string` where the chunk carries `string`.
-        keys = field_of(pyarrow.schema([chunk.schema.field(name) for name in join]))
         fresh = anti_join(chunk, keys.cast_arrow_table(matched), join)
         if fresh.num_rows:
             table.append(fresh, snapshot_properties=properties or {}, branch=reference)
@@ -867,18 +881,38 @@ class IcebergDataset(Dataset):
         planned = self._planned(table, row_filter, columns, snapshot_id, branch)
         # With no filter the two plans *are* the same plan, and planning is what
         # this call costs: on 40 files, doing it twice took 17.1 ms against 8.6,
-        # for a `skipped` that is zero by construction. `compact` asks for one
-        # partition at a time through here, so the doubling was per partition.
-        whole = (
-            planned
-            if row_filter is None
-            else self._planned(table, None, columns, snapshot_id, branch)
-        )
-        return {
-            **planned,
-            "total_files": whole["files"],
-            "skipped": whole["files"] - planned["files"],
-        }
+        # for a `skipped` that is zero by construction.
+        #
+        # With one, the second plan is only there for the *count* of files the
+        # unfiltered scan would touch -- and Iceberg records that per snapshot,
+        # so it is already in the metadata this object holds. Measured on 17
+        # files: 15.6 ms for the pair against 3.7 ms for the filtered plan
+        # alone. A snapshot whose summary does not say sends it back to the
+        # planner, which is what the number cost before.
+        total = planned["files"]
+        if row_filter is not None:
+            stored = _stored_files(self._snapshot(table, snapshot_id, branch))
+            total = (
+                stored
+                if stored is not None
+                else self._planned(table, None, columns, snapshot_id, branch)["files"]
+            )
+        return {**planned, "total_files": total, "skipped": total - planned["files"]}
+
+    def _snapshot(self, table: Any, snapshot_id: int | None, branch: str | None) -> Any:
+        """The snapshot a read of that state would be answered from.
+
+        The same choice `_planned` makes with `use_ref`: a snapshot id names one
+        exactly, a branch names its head, and neither means whatever the table
+        currently points at.
+        """
+        if snapshot_id is not None:
+            return table.metadata.snapshot_by_id(snapshot_id)
+        reference = self._reference(branch, None)
+        if not reference:
+            return table.current_snapshot()
+        head = table.refs().get(reference)
+        return table.metadata.snapshot_by_id(head.snapshot_id) if head is not None else None
 
     def _planned(
         self,
@@ -1396,7 +1430,9 @@ class IcebergDataset(Dataset):
             len(table.metadata.snapshots) >= AUTO_OPTIMIZE_SNAPSHOTS
             or manifests >= AUTO_OPTIMIZE_MANIFESTS
             or (
-                _stored_files(snapshot) >= AUTO_OPTIMIZE_FILES
+                # None is "the summary does not say", and the only safe reading
+                # of that is to ask the planner after all.
+                (_stored_files(snapshot) or AUTO_OPTIMIZE_FILES) >= AUTO_OPTIMIZE_FILES
                 and sum(count for _, _, count in self._plan_rows(min_files, branch))
                 >= AUTO_OPTIMIZE_FILES
             )
@@ -1885,20 +1921,25 @@ def _mark_key(branch: str, partition: Any) -> str:
     return f"{branch}/{values}"
 
 
-def _stored_files(snapshot: Any) -> int:
-    """How many data files the branch that snapshot heads holds.
+def _stored_files(snapshot: Any) -> int | None:
+    """How many data files the state that snapshot heads holds, or None.
 
     Iceberg records it in the snapshot summary, so it is already in the
-    metadata this process loaded -- no manifest is walked to answer it. Absent
-    on a snapshot another engine wrote without summaries, and the answer there
-    has to be "ask the planner", which is what a very large number says.
+    metadata this process loaded -- no manifest is walked to answer it, and it
+    is the same number the planner would count: checked against `plan_files()`
+    on a partitioned table plain, after a compaction and after a delete, 36/36
+    and 4/4 and 4/4.
+
+    None when the snapshot does not say -- another engine's summary, or none at
+    all -- because the two answers a caller wants for that are opposite ones:
+    plan it, or assume the worst.
     """
     if snapshot is None:
         return 0
     try:
         return int(snapshot.summary["total-data-files"])
     except (AttributeError, KeyError, TypeError, ValueError):
-        return sys.maxsize
+        return None
 
 
 def _totals(rows: Sequence[Any]) -> list[int]:

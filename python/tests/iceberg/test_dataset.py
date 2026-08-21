@@ -981,6 +981,43 @@ def test_a_snapshot_id_and_a_branch_together_are_refused(dataset: IcebergDataset
     assert dataset.read_arrow_table(snapshot_id=first).num_rows == 2, "a default is not a conflict"
 
 
+def test_scan_plan_does_not_plan_the_table_twice(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The second plan was only ever there for the *count* of files, and
+    Iceberg records that per snapshot. Measured on 17 files: 15.6 ms for the
+    pair against 3.7 ms for the filtered plan alone."""
+    for index in range(4):
+        dataset.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+    dataset.write_arrow(other_day(2), commit_row_size=0)
+    plans: list[object] = []
+    original = IcebergDataset._planned
+    monkeypatch.setattr(
+        IcebergDataset,
+        "_planned",
+        lambda self, table, row_filter, columns, snapshot_id, branch: (
+            plans.append(row_filter),
+            original(self, table, row_filter, columns, snapshot_id, branch),
+        )[1],
+    )
+    plan = dataset.scan_plan("day = '2026-08-14'")
+    assert len(plans) == 1, "one plan, and the total came off the snapshot summary"
+    assert plan["files"] == 4 and plan["total_files"] == 5 and plan["skipped"] == 1
+
+
+def test_scan_plan_counts_the_state_it_was_asked_about(dataset: IcebergDataset) -> None:
+    """A snapshot id and a branch each name a state of their own, and the total
+    a filter is measured against has to be that state's, not the table's now."""
+    dataset.write_arrow(quotes(2), commit_row_size=0)
+    early = dataset.iceberg_table.current_snapshot().snapshot_id
+    dataset.create_branch("dev")
+    for index in range(3):
+        dataset.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+    assert dataset.scan_plan("day = '2026-08-14'")["total_files"] == 4
+    assert dataset.scan_plan("day = '2026-08-14'", snapshot_id=early)["total_files"] == 1
+    assert dataset.scan_plan("day = '2026-08-14'", branch="dev")["total_files"] == 1
+
+
 def test_a_streamed_merge_loads_the_table_once(dataset: IcebergDataset) -> None:
     """A commit updates the table it was made on, so no chunk reloads it.
 
@@ -1102,6 +1139,50 @@ def test_an_insert_of_disjoint_keys_appends_without_reading(
     opened.clear()
     assert dataset.insert_arrow_table(keyed("T", 2)) == 2
     assert opened.get("data", 0) == 0
+
+
+def test_an_insert_reaches_a_branch_cut_before_a_key_was_renamed(
+    dataset: IcebergDataset,
+) -> None:
+    """A rename is metadata-only, so the branch head still answers to the old
+    name -- and this was the one verb that asked for the new one by name.
+    `Could not find column: 'key'`, on a branch every other verb reads and
+    writes happily."""
+    dataset.write_arrow(quotes(3), commit_row_size=0)
+    dataset.create_branch("dev")
+    with dataset.iceberg_table.update_schema() as update:
+        update.rename_column("symbol", "ticker")
+    dataset.refresh()
+    dataset.struct = dataset.table_field
+
+    # Under the *declared* shape, which is what names the column `ticker`:
+    # a bare read of that branch hands back the branch's own name for it.
+    replayed = dataset.read_arrow_table(dataset.struct, branch="dev")
+    assert dataset.insert_arrow_table(replayed, ["ticker"], branch="dev") == 0, (
+        "every key is stored on that branch already, whatever it calls the column"
+    )
+    fresh = replayed.slice(0, 1).set_column(
+        replayed.schema.get_field_index("ticker"),
+        replayed.schema.field("ticker"),
+        pyarrow.array(["NEW"], replayed.schema.field("ticker").type),
+    )
+    assert dataset.insert_arrow_table(fresh, ["ticker"], branch="dev") == 1
+    assert dataset.read_arrow_table(branch="dev").num_rows == 4
+    assert dataset.read_arrow_table().num_rows == 3, "and main is untouched"
+
+
+def test_an_insert_onto_a_branch_without_the_key_column_is_all_new(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A key column added since the branch was cut: nothing on that branch can
+    match one, so every row is new -- rather than a projection of whatever
+    column the scan fell back to."""
+    from rekep.iceberg import dataset as module
+
+    dataset.write_arrow(quotes(3), commit_row_size=0)
+    monkeypatch.setattr(module.IcebergDataset, "_selected", lambda self, target, scan: {})
+    assert dataset.insert_arrow_table(quotes(3), ["symbol"]) == 3
+    assert dataset.read_arrow_table().num_rows == 6
 
 
 def test_a_bare_limit_opens_only_the_files_it_needs(
