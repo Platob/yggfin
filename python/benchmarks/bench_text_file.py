@@ -2,8 +2,9 @@
 
 Run from `python/`::
 
-    uv run python benchmarks/bench_text_file.py            # full sweep
+    uv run python benchmarks/bench_text_file.py            # every sweep
     uv run python benchmarks/bench_text_file.py --quick    # one config, small file
+    uv run python benchmarks/bench_text_file.py --only folders   # a capture of many files
 
 The generated log matches the parser's target layout, with a stack trace folded
 in every ~200 lines so continuation handling is part of what is measured.
@@ -20,12 +21,13 @@ import pathlib
 import sys
 import tempfile
 import time
+import tracemalloc
 
 import pyarrow
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep.logs import TextFile  # noqa: E402
+from rekep.logs import LogFiles, TextFile  # noqa: E402
 
 DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
 LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
@@ -156,6 +158,147 @@ def variants(rows: int, repeat: int) -> None:
             )
 
 
+def folders(rows: int, repeat: int) -> None:
+    """A capture is a folder, not a file: rotations, an archive, some gzipped.
+
+    The same rows every time, cut into a different number of files, so the
+    column that moves is fragmentation and nothing else. `chained by hand` is
+    the configuration expected to be bad: the per-file readers concatenated
+    with no batch combining, which is what a set of small files costs if the
+    short batches are handed downstream as they come.
+    """
+    print(f"\n{rows:,} rows through a folder, best of {repeat}")
+    columns = ("case", "files", "seconds", "rows/s", "batches", "peakMiB")
+    widths = (26, 6, 9, 12, 9, 8)
+    print(" ".join(f"{c:>{w}}" for c, w in zip(columns, widths, strict=True)))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        shapes = (("one", 1), ("few", 20), ("many", 500))
+        for name, count in shapes:
+            folder = root / name
+            folder.mkdir()
+            for index in range(count):
+                generate(folder / f"app.{index}.txt", rows // count)
+        gzipped = root / "many-gz"
+        gzipped.mkdir()
+        for source in sorted((root / "many").iterdir()):
+            (gzipped / f"{source.name}.gz").write_bytes(
+                gzip.compress(source.read_bytes(), compresslevel=1)
+            )
+
+        def parse(folder: pathlib.Path, chained: bool = False) -> tuple[int, int, int]:
+            """Rows, batches and peak Arrow bytes out of one pass.
+
+            Peak is sampled *inside* the loop: by the time a pass is over the
+            batches are released, and a reading taken then says nothing about
+            what a consumer had to hold.
+            """
+            files = LogFiles.from_folder(folder)
+            if chained:
+                batches = (batch for log in files.into_files() for batch in _drained(log))
+            else:
+                batches = files.into_arrow_batches()
+            base = pyarrow.total_allocated_bytes()
+            counted = 0
+            seen = 0
+            peak = 0
+            for batch in batches:
+                counted += batch.num_rows
+                seen += 1
+                peak = max(peak, pyarrow.total_allocated_bytes() - base)
+            return counted, seen, peak
+
+        cases = (
+            ("one file", root / "one", 1, False),
+            ("20 files", root / "few", 20, False),
+            ("500 files", root / "many", 500, False),
+            ("500 files, chained by hand", root / "many", 500, True),
+            ("500 files, gzipped", gzipped, 500, False),
+        )
+        for label, folder, count, chained in cases:
+            parse(folder, chained)  # warm: the first pass in a process pays for the rest
+            fastest, batches, peak = float("inf"), 0, 0
+            for _ in range(repeat):
+                started = time.perf_counter()
+                counted, batches, held = parse(folder, chained)
+                elapsed = time.perf_counter() - started
+                peak = max(peak, held)
+                assert counted == rows, f"{label} parsed {counted:,} of {rows:,}"
+                fastest = min(fastest, elapsed)
+            print(
+                f"{label:>26} {count:>6,} {fastest:>9.3f} {rows / fastest:>12,.0f} "
+                f"{batches:>9,} {peak / 2**20:>8.1f}"
+            )
+
+        _byte_flows(root / "many", repeat)
+        _listing(root / "many", repeat)
+
+
+def _drained(log: TextFile) -> list[pyarrow.RecordBatch]:
+    """One file's batches, read and closed, with nothing combined across files."""
+    with log:
+        return list(log.into_arrow_batches())
+
+
+def _byte_flows(folder: pathlib.Path, repeat: int) -> None:
+    """The other half of a set: shipping the bytes rather than parsing them.
+
+    Peak is Python's own allocation (`tracemalloc`), because these chunks are
+    `bytes` and never reach Arrow's allocator. `into_bytes()` is here to be
+    bad: it is the same stream with nothing bounding it.
+    """
+    nbytes = sum(path.stat().st_size for path in folder.iterdir())
+    print(f"\n{nbytes / 2**20:.1f} MiB of log bytes, best of {repeat}")
+    columns = ("flow", "seconds", "MB/s", "outMiB", "peakMiB")
+    widths = (26, 9, 8, 8, 9)
+    print(" ".join(f"{c:>{w}}" for c, w in zip(columns, widths, strict=True)))
+
+    flows = (
+        ("streamed raw", lambda files: _consume(files.into_byte_chunks())),
+        ("streamed gzip", lambda files: _consume(files.into_byte_chunks(compression="gzip"))),
+        ("streamed zstd", lambda files: _consume(files.into_byte_chunks(compression="zstd"))),
+        ("into_bytes (materialised)", lambda files: (len(files.into_bytes()), 0)),
+    )
+    for label, flow in flows:
+        flow(LogFiles.from_folder(folder))  # warm
+        fastest, produced, peak = float("inf"), 0, 0
+        for _ in range(repeat):
+            tracemalloc.start()
+            started = time.perf_counter()
+            produced, _ = flow(LogFiles.from_folder(folder))
+            elapsed = time.perf_counter() - started
+            peak = max(peak, tracemalloc.get_traced_memory()[1])
+            tracemalloc.stop()
+            fastest = min(fastest, elapsed)
+        print(
+            f"{label:>26} {fastest:>9.3f} {nbytes / 2**20 / fastest:>8.1f} "
+            f"{produced / 2**20:>8.2f} {peak / 2**20:>9.1f}"
+        )
+
+
+def _consume(chunks) -> tuple[int, int]:
+    """Bytes and chunks out of a flow, holding neither."""
+    produced = 0
+    seen = 0
+    for chunk in chunks:
+        produced += len(chunk)
+        seen += 1
+    return produced, seen
+
+
+def _listing(folder: pathlib.Path, repeat: int) -> None:
+    """What the walk itself costs, since a scan of a store is not free."""
+    files = LogFiles.from_folder(folder)
+    fastest = float("inf")
+    counted = 0
+    for _ in range(repeat):
+        started = time.perf_counter()
+        counted = sum(1 for _ in files.into_urls())
+        fastest = min(fastest, time.perf_counter() - started)
+    print(f"\nwalking {counted:,} paths: {fastest * 1000:.1f} ms")
+
+
 @contextlib.contextmanager
 def _hashing(blake: bool):
     """Run the body with the fallback line hash, or with whatever is installed.
@@ -189,10 +332,16 @@ def main() -> int:
     parser.add_argument("--rows", type=int, default=1_000_000)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--repeat", type=int, default=3)
+    parser.add_argument("--only", choices=("sweep", "variants", "folders"), default=None)
     arguments = parser.parse_args()
     rows = 200_000 if arguments.quick else arguments.rows
-    sweep(rows, arguments.quick)
-    variants(rows, 1 if arguments.quick else arguments.repeat)
+    repeat = 1 if arguments.quick else arguments.repeat
+    if arguments.only in (None, "sweep"):
+        sweep(rows, arguments.quick)
+    if arguments.only in (None, "variants"):
+        variants(rows, repeat)
+    if arguments.only in (None, "folders"):
+        folders(rows, repeat)
     return 0
 
 
