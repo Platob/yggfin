@@ -6,7 +6,7 @@ Run from `python/`::
     uv run python benchmarks/bench_iceberg.py             # the full sweep
     uv run python benchmarks/bench_iceberg.py --only read
 
-Five questions, measured rather than assumed:
+Six questions, measured rather than assumed:
 
 1. **How fast does a stream land?** Append, upsert, and upsert on a stream that
    cannot match anything already stored -- at several commit sizes, partitioned
@@ -33,6 +33,11 @@ Five questions, measured rather than assumed:
    including the transformed one, where a plan that never settles reads and
    rewrites the whole table on every run.
 
+6. **What does the *update* half of a merge cost?** (`--only update`) The
+   filter naming the rows a merge deletes is one term per row for a composite
+   key, and pyiceberg binds that tree once per manifest it plans. Swept against
+   a key whose halves repeat, with the term count beside the seconds.
+
 Everything runs against a local SQLite catalog and a file warehouse, so the
 numbers are storage-latency-free: they measure planning, commit and Arrow work,
 which is what this package is responsible for. On an object store every commit
@@ -44,20 +49,40 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import functools
 import pathlib
 import shutil
 import sys
 import tempfile
 import time
 from collections.abc import Callable, Iterator
-from typing import Any
+from typing import Annotated, Any
 
 import pyarrow
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep import Log, TextFile  # noqa: E402
+from rekep import Convertible, Field, Log, TextFile, field  # noqa: E402
 from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
+from rekep.iceberg.dataset import _match_filter  # noqa: E402
+
+
+@field
+class Quote(Convertible):
+    """One quote, under a composite key whose halves both repeat."""
+
+    symbol: Annotated[str, Field.primary_key()]
+    """Instrument."""
+
+    day: Annotated[datetime.date, Field.primary_key(), Field.partition_key()]
+    """Trading day, and the partition."""
+
+    size: int
+    """Quantity."""
+
+    venue: str
+    """Where it traded."""
+
 
 DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
 LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
@@ -654,6 +679,70 @@ def sweep_maintain(rows: int, days: int) -> None:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def sweep_update(rows: int, days: int) -> None:
+    """The half of a merge that *rewrites*, on the key shape it costs most on.
+
+    A merge that inserts is cheap and measured everywhere else here. A merge
+    that updates pays for the filter naming the rows it deletes, and that
+    filter is one `And(EqualTo, EqualTo)` per row for a composite key --
+    a tree pyiceberg binds once per manifest it plans. Factoring out whatever
+    the key repeats is what this sweeps: the same rows, through a filter with
+    one term per distinct value of the repeated column instead of one per row.
+    """
+    root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-update-"))
+    try:
+        target = catalog(root).dataset("bench.quotes", struct=Quote.FIELD).create_with()
+        # Sized off `rows` so the update counts below are a slice of it, not
+        # the whole table: a merge that touches everything measures a rewrite.
+        stored = quote_rows(max(rows // (10 * max(days, 1)), 250), days)
+        target.write_arrow(stored, commit_row_size=stored.num_rows // max(days, 1))
+        print(f"\n== updating a stored table: {stored.num_rows:,} rows, {days} days ==")
+        header(("rows updated", "seconds", "rows/s", "terms", "files"), (14, 9, 11, 8, 7))
+        index = stored.schema.get_field_index("venue")
+        for count in (500, 2_000, 5_000):
+            if count * 2 > stored.num_rows:
+                continue
+            changed = stored.slice(0, count)
+            changed = changed.set_column(
+                index,
+                changed.schema.field("venue"),
+                pyarrow.array([f"V{i}" for i in range(count)]),
+            )
+            terms = _terms(_match_filter(changed, ["symbol", "day"]))
+            seconds, report = timed(functools.partial(target.merge_arrow_table, changed, True))
+            files = target.refresh().iceberg_table.inspect.data_files().num_rows
+            print(f"{count:>14,} {seconds:>9.2f} {count / seconds:>11,.0f} {terms:>8,} {files:>7,}")
+            assert report == (count, 0), report
+            target.merge_arrow_table(stored.slice(0, count), True)  # put them back
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def quote_rows(symbols: int, days: int) -> pyarrow.Table:
+    """`symbols` instruments on each of `days` days: a key whose halves repeat."""
+    day = datetime.date(2026, 8, 14)
+    pairs = [
+        (f"S{s}", day + datetime.timedelta(days=d)) for d in range(days) for s in range(symbols)
+    ]
+    return pyarrow.Table.from_pydict(
+        {
+            "symbol": [pair[0] for pair in pairs],
+            "day": [pair[1] for pair in pairs],
+            "size": list(range(len(pairs))),
+            "venue": ["XPAR"] * len(pairs),
+        },
+        schema=Quote.FIELD.into_arrow_schema(),
+    )
+
+
+def _terms(expression: Any) -> int:
+    """Leaf predicates in a filter -- what pyiceberg binds, once per manifest."""
+    left, right = getattr(expression, "left", None), getattr(expression, "right", None)
+    if left is None and right is None:
+        return 1
+    return _terms(left) + _terms(right)
+
+
 def daily(root: pathlib.Path) -> IcebergDataset:
     """The log shape again, partitioned by a *transform* of the same column.
 
@@ -706,7 +795,9 @@ def main() -> int:
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument(
-        "--only", choices=["parse", "write", "read", "fs", "maintain"], default=None
+        "--only",
+        choices=["parse", "write", "read", "fs", "maintain", "update"],
+        default=None,
     )
     arguments = parser.parse_args()
     rows = 100_000 if arguments.quick else arguments.rows
@@ -722,6 +813,8 @@ def main() -> int:
         sweep_fs(min(rows, 100_000), days)
     if arguments.only in (None, "maintain"):
         sweep_maintain(min(rows, 100_000), days)
+    if arguments.only in (None, "update"):
+        sweep_update(min(rows, 100_000), days)
     return 0
 
 

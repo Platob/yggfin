@@ -24,7 +24,7 @@ from rekep.dataset import (
     normalised_keys,
     semi_join,
 )
-from rekep.fields import StructField, field_of
+from rekep.fields import StructField, arrays, field_of
 from rekep.filesystems import resolve
 from rekep.iceberg.catalog import IcebergCatalog
 
@@ -1785,15 +1785,86 @@ def _match_filter(updates: pyarrow.Table, join: Sequence[str]) -> Any:
     from pyiceberg.expressions import And, GreaterThanOrEqual, LessThanOrEqual, Or
     from pyiceberg.table import upsert_util
 
-    exact = upsert_util.create_match_filter(updates, join)
     if len(join) != 1:
-        return exact
+        return _factored(updates, join)
+    exact = upsert_util.create_match_filter(updates, join)
     if not _has_zero(updates.column(join[0])):
         return exact
     return Or(
         exact,
         And(GreaterThanOrEqual(join[0], 0.0), LessThanOrEqual(join[0], 0.0)),
     )
+
+
+def _factored(updates: pyarrow.Table, join: Sequence[str]) -> Any:
+    """The same filter, with whatever a key column repeats said once.
+
+    `create_match_filter` spells a composite key as one `And(EqualTo, EqualTo)`
+    per row, and the size of that tree is most of what a merge's *commit*
+    costs: pyiceberg builds an `_InclusiveMetricsEvaluator` over it per
+    manifest it plans, and each one binds the whole tree. Measured on a
+    5,000-row update of an 8-file table, 15.8 of the 18.1 seconds went on
+    nineteen of those, at 770 ms each -- against 0.4 ms for the ranges beside
+    it.
+
+    Anything a key column repeats is a branch that need not repeat with it. The
+    rows are grouped on whichever key column has the fewest distinct values and
+    each group becomes one term: a `(symbol, day)` key over one day collapses
+    500 terms into one `And(EqualTo(day, ...), In(symbol, [...]))`. A key whose
+    columns repeat nothing groups one row per term, which is the tree
+    `create_match_filter` already builds -- so this is never the larger of the
+    two.
+
+    **Still exact.** A group names `outer = v` and the rest of the key in
+    exactly the combinations that appear with `v`, which is that group's rows
+    and nothing else; the union over the groups is the row set. The inner half
+    is `create_match_filter`'s own answer for the remaining columns, so what a
+    group matches is decided by the library either way.
+
+    Two shapes go back to it whole. A **float key column holding a zero**,
+    because the inner half becomes an `In` and `pc.is_in` hashes `-0.0` apart
+    from the `0.0` it equals -- a row another engine stored as `-0.0` would
+    survive its own delete, which is the same trap the single-column case is
+    widened against. And anything Arrow or pyiceberg **refuses**, because a key
+    type that cannot be grouped or named in an `In` is one the library's own
+    per-row form still handles.
+    """
+    from pyiceberg.expressions import And, EqualTo, Or
+    from pyiceberg.table import upsert_util
+
+    whole = functools.partial(upsert_util.create_match_filter, updates, join)
+    if any(_has_zero(updates.column(name)) for name in join):
+        return whole()
+    keys = updates.select(list(join))
+    try:
+        counts = {
+            name: len(pyarrow.compute.unique(keys.column(name).combine_chunks())) for name in join
+        }
+        outer = min(join, key=lambda name: counts[name])
+        if counts[outer] == keys.num_rows:
+            # Every row its own group: the terms would be the ones
+            # `create_match_filter` builds, so let it build them.
+            return whole()
+        rest = [name for name in join if name != outer]
+        marked = keys.append_column(SOURCE_INDEX, arrays.sequence(keys.num_rows))
+        groups = marked.group_by([outer]).aggregate([(SOURCE_INDEX, "list")])
+        terms = [
+            And(EqualTo(outer, value), upsert_util.create_match_filter(keys.take(rows), rest))
+            for value, rows in zip(
+                groups.column(outer).to_pylist(),
+                groups.column(f"{SOURCE_INDEX}_list").to_pylist(),
+                strict=True,
+            )
+        ]
+    except (
+        pyarrow.ArrowInvalid,
+        pyarrow.ArrowNotImplementedError,
+        pyarrow.ArrowTypeError,
+        ValueError,
+        TypeError,
+    ):
+        return whole()
+    return Or(*terms) if len(terms) > 1 else terms[0]
 
 
 def _align_keys(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
