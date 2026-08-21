@@ -5,18 +5,34 @@ one by-tag page, one field page per tag -- so no test touches the network:
 `FixtureRegistry` serves files where the real one fetches URLs, and
 `OfflineRegistry` refuses the network outright to prove the cache carries
 everything.
+
+Those pages are written by hand, which is how the scrape came to read values
+out of `<li>` items and prose out of whatever followed the type line: the live
+site carries neither. So the parsing is pinned a second time, by
+`CaptureRegistry`, against pages captured from the site unedited.
 """
 
+import email.message
 import json
+import re
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 import pyarrow
 import pytest
 
+from rekep.fields import Field
 from rekep.fix import FixRegistry
-from rekep.fix.registry import _levenshtein, _version_key
+from rekep.fix.registry import _is_transient, _levenshtein, _version_key, _wait_for
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+#: Pages captured from `onixs.biz/fix-dictionary/4.0/` on 2026-08-21, byte for
+#: byte (`.gitattributes` keeps them out of the line-ending normalisation):
+#: the by-tag page and three field pages -- an enumerated one, one with no
+#: enumeration, and MsgType, whose values *are* message links.
+CAPTURE = FIXTURES / "capture"
 
 #: Derived from the by-tag fixture, then pinned: four fields are listed, and a
 #: broken link regex cannot move both sides of the assertion together.
@@ -44,6 +60,55 @@ class FixtureRegistry(FixRegistry):
         return path.read_text()
 
 
+class CaptureRegistry(FixRegistry):
+    """The real registry over captured pages, and nothing else.
+
+    Only `4.0` was captured, and only three of its field pages: every other
+    fetch raises, which is the same path a page the site cannot serve takes.
+    The index is not captured either, so these tests name their version and
+    never walk `versions`.
+    """
+
+    def _fetch(self, url: str) -> str:
+        version, _, name = url.rpartition("/")
+        path = CAPTURE / version.rsplit("/", 1)[-1] / name
+        if not path.exists():
+            raise OSError(f"404 {url}")
+        return path.read_bytes().decode("utf-8", "replace")
+
+
+def _refused(url: str, code: int = 429) -> urllib.error.HTTPError:
+    """The site's "later": a `429`, with no `Retry-After` unless one is set."""
+    return urllib.error.HTTPError(url, code, "Too Many Requests", email.message.Message(), None)
+
+
+class RefusingRegistry(FixRegistry):
+    """A registry the site refuses `refusals` times, then serves.
+
+    `_read` is the seam and not `_fetch`, so what runs is the retrying itself.
+    """
+
+    #: How many answers are a refusal, and what every attempt was asked for.
+    refusals: int = 2
+    asked: list[str]
+
+    def _read(self, request: urllib.request.Request) -> str:
+        asked = self.__dict__.setdefault("asked", [])
+        asked.append(request.full_url)
+        if len(asked) <= self.refusals:
+            raise _refused(request.full_url)
+        return (FIXTURES / "tagNum_54.html").read_text()
+
+
+class ThrottledRegistry(FixtureRegistry):
+    """Fixture pages, except the field pages: those are refused, always."""
+
+    def _fetch(self, url: str) -> str:
+        if "tagNum_" in url:
+            raise _refused(url)
+        return super()._fetch(url)
+
+
 class OfflineRegistry(FixRegistry):
     """A registry that must answer from the cache alone."""
 
@@ -54,6 +119,13 @@ class OfflineRegistry(FixRegistry):
 @pytest.fixture
 def registry(tmp_path: Path) -> FixtureRegistry:
     return FixtureRegistry(cache_dir=tmp_path / "fix")
+
+
+@pytest.fixture
+def captured(tmp_path: Path) -> dict[int, Field]:
+    """Every field of the captured version, by tag."""
+    registry = CaptureRegistry(cache_dir=tmp_path / "capture")
+    return {int(member.fix["tag"]): member for member in registry.fields("4.0")}
 
 
 # -- versions ----------------------------------------------------------------
@@ -102,6 +174,117 @@ def test_a_missing_field_page_still_yields_the_field(registry: FixtureRegistry) 
     assert maturity.name == "MaturityDay"
     assert maturity.arrow_type == pyarrow.string()
     assert maturity.fix["note"] == "no longer used", "the parenthetical is annotation, not name"
+
+
+# -- the live layout ---------------------------------------------------------
+
+
+def test_the_capture_lists_every_field_its_by_tag_page_links(tmp_path: Path) -> None:
+    """Derived from the captured page, then pinned: 4.0 lists 139 fields."""
+    page = (CAPTURE / "4.0" / "fields_by_tag.html").read_bytes().decode()
+    linked = {int(tag) for tag in re.findall(r'href="tagNum_(\d+)\.html"', page)}
+    assert len(linked) == 139
+    registry = CaptureRegistry(cache_dir=tmp_path / "capture")
+    assert {int(member.fix["tag"]) for member in registry.fields("4.0")} == linked
+
+
+def test_a_captured_page_fills_description_and_paragraph_values(
+    captured: dict[int, Field],
+) -> None:
+    """The live pages spell an enumeration as paragraphs, not as a list."""
+    side = captured[54]
+    assert side.name == "Side"
+    assert side.description == "Side of order."
+    assert json.loads(side.fix["values"]) == {
+        "1": "Buy",
+        "2": "Sell",
+        "3": "Buy minus",
+        "4": "Sell plus",
+        "5": "Sell short",
+        "6": "Sell short exempt",
+    }
+    assert json.loads(side.fix["used_in"])[:2] == ["Indication of Interest", "Execution Report"]
+
+
+def test_a_captured_page_with_no_enumeration_still_has_its_prose(
+    captured: dict[int, Field],
+) -> None:
+    """The prose sits under a `Description` heading, not beside the type."""
+    account = captured[1]
+    assert account.description == "Account mnemonic as agreed between broker and institution."
+    assert "values" not in account.fix
+    assert "Order Cancel/Replace Request" in json.loads(account.fix["used_in"])
+
+
+def test_message_links_that_are_values_are_not_read_as_messages(
+    captured: dict[int, Field],
+) -> None:
+    """MsgType lists its messages *as values*, and its own Used In is empty."""
+    msg_type = captured[35]
+    values = json.loads(msg_type.fix["values"])
+    assert values["0"] == "Heartbeat <0>"
+    assert values["D"] == "New Order - Single <D>"
+    assert "used_in" not in msg_type.fix, "the value links belong to the enumeration"
+
+
+def test_every_captured_page_that_was_read_carries_a_description(
+    captured: dict[int, Field],
+) -> None:
+    """The three captured pages are read; the 136 that were not are still fields."""
+    described = [member for member in captured.values() if member.description]
+    assert len(described) == 3
+    assert sorted(member.name for member in described) == ["Account", "MsgType", "Side"]
+
+
+# -- being throttled ---------------------------------------------------------
+
+
+def test_a_refused_page_is_asked_for_again(tmp_path: Path) -> None:
+    """Two `429`s and the third answer is the page: the scrape rides it out."""
+    registry = RefusingRegistry(cache_dir=tmp_path / "fix", backoff=0.0)
+    assert "Side of order." in registry._fetch("https://example.test/tagNum_54.html")
+    assert len(registry.asked) == 3
+
+
+def test_a_page_refused_past_the_retries_raises(tmp_path: Path) -> None:
+    """The last attempt is the caller's, so a site that stays shut is reported."""
+    registry = RefusingRegistry(cache_dir=tmp_path / "fix", backoff=0.0, retries=2)
+    registry.refusals = 99
+    with pytest.raises(urllib.error.HTTPError, match="429"):
+        registry._fetch("https://example.test/tagNum_54.html")
+    assert len(registry.asked) == 3, "the retries, and then the attempt that raises"
+
+
+def test_a_throttled_field_page_fails_the_version(tmp_path: Path) -> None:
+    """A refusal is not an absent page.
+
+    Swallowed, it caches a field with no type and no description and answers
+    every later call from it -- which is how a whole scrape came back a fifth
+    empty with nothing to say so.
+    """
+    registry = ThrottledRegistry(cache_dir=tmp_path / "fix", backoff=0.0, retries=0)
+    with pytest.raises(urllib.error.HTTPError, match="429"):
+        registry.fields("4.4")
+    assert not (Path(registry.cache_dir) / "4.4.json").exists(), "nothing half-scraped is kept"
+
+
+def test_the_pause_is_what_the_site_asked_for(tmp_path: Path) -> None:
+    """`Retry-After` wins over the backoff, up to the ceiling; a date does not."""
+    refused = _refused("https://example.test/x")
+    assert _wait_for(refused, 2.0) == 2.0, "no header: the caller's pause"
+    refused.headers["Retry-After"] = "5"
+    assert _wait_for(refused, 2.0) == 5.0
+    refused.headers.replace_header("Retry-After", "9999")
+    assert _wait_for(refused, 2.0) == 60.0, "an absurd pause is capped, not obeyed"
+    refused.headers.replace_header("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT")
+    assert _wait_for(refused, 2.0) == 2.0, "a date is the site's clock, not ours"
+
+
+def test_only_the_answers_that_mean_later_are_retried() -> None:
+    assert _is_transient(_refused("u", 503))
+    assert _is_transient(TimeoutError())
+    assert not _is_transient(_refused("u", 404)), "a page that is not there is not coming"
+    assert not _is_transient(OSError("404 u")), "and neither is anything else"
 
 
 # -- the cache ---------------------------------------------------------------

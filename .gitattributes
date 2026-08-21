@@ -1,3 +1,7 @@
 # Normalise line endings: source stays LF everywhere, including Windows
 * text=auto eol=lf
 *.png binary
+
+# Captured pages are evidence: kept byte for byte, CRLF included, so the
+# parsing they pin is asserted against what the site actually served.
+python/tests/fix/fixtures/capture/** -text

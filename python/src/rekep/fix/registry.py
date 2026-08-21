@@ -9,6 +9,8 @@ import json
 import os
 import pathlib
 import re
+import time
+import urllib.error
 import urllib.request
 from functools import cached_property
 from typing import Any, ClassVar
@@ -39,9 +41,28 @@ _TYPE = re.compile(r"Type:\s*(?:<[^>]*>\s*)*([A-Za-z][A-Za-z0-9]*)")
 #: The field page title: `FIX 4.4 : TimeInForce <59> field`, entities or not.
 _TITLE = re.compile(r"<h\d[^>]*>(?:[^<]*:)?\s*([^<>&]+?)\s*(?:&lt;|<)\s*(\d+)\s*(?:&gt;|>)")
 
-#: One enumerated value: `0 = Day (or session)` -- inside a list item.
-_VALUE_ITEM = re.compile(r"<li[^>]*>\s*(.*?)\s*</li>", re.DOTALL)
+#: One enumerated value: `0 = Day (or session)`. Some versions spell an
+#: enumeration as a list and others as one paragraph per value, so an item is
+#: either -- a scrape that only read `<li>` came back from the live pages with
+#: every field's values empty and no error to say so.
+_VALUE_ITEM = re.compile(r"<(li|p)[^>]*>\s*(.*?)\s*</\1\s*>", re.DOTALL | re.IGNORECASE)
 _VALUE = re.compile(r"^\s*(\S+)\s*=\s*(.+?)\s*$", re.DOTALL)
+
+#: What opens each part of a field page. The prose, the enumeration and the
+#: messages are markers in one flat run of paragraphs, not containers, so each
+#: part runs from its own opener to the next one. The `Description` heading is
+#: preferred over the anchor that precedes it: cutting at the anchor leaves the
+#: heading's own text in front of the prose.
+_DESCRIPTION_HEADING = re.compile(r"<h\d[^>]*>\s*Description\s*</h\d\s*>", re.IGNORECASE)
+_DESCRIPTION_ANCHOR = re.compile(r"<a[^>]+name=[\"']Description[\"'][^>]*>", re.IGNORECASE)
+_VALID_VALUES = re.compile(r"Valid values[^<]*", re.IGNORECASE)
+
+#: The messages section: the anchor the page links to, or the heading itself.
+#: Never the `<a href="#UsedIn">` link that sits *above* the description -- it
+#: is navigation, and cutting there would take the description with it.
+_USED_IN = re.compile(
+    r"<a[^>]+name=[\"']UsedIn[\"'][^>]*>|<h\d[^>]*>\s*Used\s+in\s*</h\d\s*>", re.IGNORECASE
+)
 
 #: A parenthetical note beside a name on the by-tag page -- `(no longer
 #: used)`, `(replaced)` -- which is the one deprecation signal the site has.
@@ -80,6 +101,16 @@ class FixRegistry(Convertible):
     #: leaning on it.
     timeout: float = 30.0
     max_workers: int = 8
+
+    #: How many times a fetch that was refused *for now* is asked again, and
+    #: the first pause before it is. The pause doubles per attempt (capped at
+    #: a minute each), so six retries wait about two minutes in total: the
+    #: dictionary is seven thousand pages, the site throttles harder the
+    #: further in a scrape gets, and half a minute of patience was measured
+    #: to be too little to finish one. Still short enough that a site which is
+    #: really down is reported as down rather than waited on.
+    retries: int = 6
+    backoff: float = 2.0
 
     #: Sent with every request, so the traffic says what it is.
     user_agent: ClassVar[str] = "rekep-fix-registry (+https://github.com/Platob/yggfin)"
@@ -407,7 +438,14 @@ class FixRegistry(Convertible):
         """
         try:
             page = self._fetch(f"{self.base_url}/{version}/tagNum_{tag}.html")
-        except OSError:
+        except OSError as error:
+            # A page that is *not there* is a field the site never wrote up,
+            # and the by-tag row alone is still a field. A page that was
+            # refused -- throttled, or a server that stayed broken past the
+            # retries -- is not: swallowing it writes a typeless, commentless
+            # field into the cache, where it then answers every later call.
+            if _is_transient(error):
+                raise
             return {}
         detail: dict[str, Any] = {}
         title = _TITLE.search(page)
@@ -416,13 +454,14 @@ class FixRegistry(Convertible):
         typed = _TYPE.search(page)
         if typed:
             detail["type"] = typed[1]
-        description = _description(page, typed.end() if typed else 0)
+        prose, listed, carried = _sections(page, typed.end() if typed else 0)
+        description = _description(prose)
         if description:
             detail["description"] = description
-        values = _values(page)
+        values = _values(listed)
         if values:
             detail["values"] = values
-        used = _used_in(page)
+        used = _used_in(carried)
         if used:
             detail["used_in"] = used
         return detail
@@ -451,10 +490,62 @@ class FixRegistry(Convertible):
         scratch.replace(path)
 
     def _fetch(self, url: str) -> str:
-        """One page, as text. The single place the network is touched."""
+        """One page, as text, retried while the site says "later".
+
+        A whole-version scrape is thousands of pages and the site paces it:
+        `429 Too Many Requests` arrives partway through, and every page
+        refused while it lasts used to become a field with no type and no
+        description, cached with nothing to say it was ever refused. So a
+        transient answer waits and is asked again -- `Retry-After` when the
+        site sends one, a doubling pause when it does not -- and only the last
+        attempt raises.
+        """
         request = urllib.request.Request(url, headers={"User-Agent": self.user_agent})
+        pause = self.backoff
+        for _ in range(self.retries):
+            try:
+                return self._read(request)
+            except OSError as error:
+                if not _is_transient(error):
+                    raise
+                time.sleep(_wait_for(error, pause))
+                pause *= 2
+        # The last attempt is the one whose failure is the caller's.
+        return self._read(request)
+
+    def _read(self, request: urllib.request.Request) -> str:
+        """One page fetch, once. The single place the network is touched."""
         with urllib.request.urlopen(request, timeout=self.timeout) as response:  # noqa: S310
             return response.read().decode("utf-8", "replace")
+
+
+# -- the wire ----------------------------------------------------------------
+
+#: Answers that mean "later" rather than "no": a scrape waits these out.
+_RETRIED = frozenset({408, 425, 429, 500, 502, 503, 504})
+
+#: A pause the site asked for is honoured up to this, so one absurd
+#: `Retry-After` cannot park a whole scrape for an afternoon.
+_MAX_WAIT = 60.0
+
+
+def _is_transient(error: Exception) -> bool:
+    """Whether an error means "ask again later" rather than "there is none"."""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in _RETRIED
+    return isinstance(error, urllib.error.URLError | TimeoutError | ConnectionError)
+
+
+def _wait_for(error: Exception, pause: float) -> float:
+    """How long to wait: what the site asked for, else the caller's pause.
+
+    `Retry-After` is seconds or an HTTP date, and only the seconds spelling is
+    read -- a date is the site's clock, and the two clocks are not the same.
+    """
+    headers = getattr(error, "headers", None)
+    asked = headers.get("Retry-After", "") if headers is not None else ""
+    seconds = float(asked) if str(asked).strip().isdigit() else pause
+    return min(seconds, _MAX_WAIT)
 
 
 # -- page parsing ------------------------------------------------------------
@@ -473,25 +564,59 @@ def _split_note(label: str) -> tuple[str, str]:
     return label[: note.start()].strip(), note[1].strip()
 
 
-def _description(page: str, start: int) -> str:
-    """The prose after the type line, up to the next section of the page.
+def _sections(page: str, start: int) -> tuple[str, str, str]:
+    """A field page cut into its three parts: prose, values, messages.
 
-    The pages put the field's own paragraph right after `Type:` and before
-    the value list or the "Used in" heading, so the description is the text
-    between those markers -- whatever markup it wears in a given version.
+    Cut back to front, each part running from its own marker to the next: the
+    messages off the `Used In` heading, the enumeration off the `Valid values`
+    line, and the prose off the `Description` heading. Cutting first is what
+    keeps the parts out of each other -- MsgType lists its own messages *as
+    values*, so a `msgType_` link is only a message when it is below `Used In`,
+    and a `k = v` line of prose is only a value when it is below `Valid
+    values`.
+
+    A page that opens no `Description` is the older layout: its prose starts at
+    the type line, and the first heading, list or table after it is the only
+    end the page gives.
     """
-    window = page[start : start + 8000]
-    for marker in ("Valid values", "Used in", "Used In", "<h3", "<ul", "<table"):
+    body = page[start:]
+    used_in = ""
+    carried = _USED_IN.search(body)
+    if carried is not None:
+        body, used_in = body[: carried.start()], body[carried.end() :]
+    values = ""
+    valid = _VALID_VALUES.search(body)
+    if valid is not None:
+        body, values = body[: valid.start()], body[valid.end() :]
+    described = _DESCRIPTION_HEADING.search(body) or _DESCRIPTION_ANCHOR.search(body)
+    prose = body[described.end() :] if described is not None else _until_section(body)
+    return prose, values, used_in
+
+
+def _until_section(markup: str) -> str:
+    """The prose of a page that never says `Description`, up to what follows it.
+
+    The markers are what the older pages put after the field's own paragraph;
+    the length cap is what stops a page carrying *none* of them from making
+    its whole body one description.
+    """
+    window = markup[:8000]
+    for marker in ("Used in", "Used In", "<h3", "<ul", "<table"):
         cut = window.find(marker)
         if cut >= 0:
             window = window[:cut]
-    return _text(window)
+    return window
 
 
-def _values(page: str) -> dict[str, str]:
+def _description(prose: str) -> str:
+    """The field's own paragraphs, as one line of text."""
+    return _text(prose[:8000])
+
+
+def _values(markup: str) -> dict[str, str]:
     """The enumerated values a field page lists: `{"1": "Buy", ...}`."""
     found: dict[str, str] = {}
-    for item in _VALUE_ITEM.findall(page):
+    for _, item in _VALUE_ITEM.findall(markup):
         text = _text(item)
         value = _VALUE.match(text)
         if value:
@@ -499,10 +624,10 @@ def _values(page: str) -> dict[str, str]:
     return found
 
 
-def _used_in(page: str) -> list[str]:
+def _used_in(markup: str) -> list[str]:
     """The messages a field page says carry it, names only."""
     names = []
-    for match in re.finditer(r"<a[^>]+href=\"msgType_[^\"]+\"[^>]*>(.*?)</a>", page, re.DOTALL):
+    for match in re.finditer(r"<a[^>]+href=\"msgType_[^\"]+\"[^>]*>(.*?)</a>", markup, re.DOTALL):
         name, _ = _split_note(_text(match[1]))
         name = re.sub(r"\s*<\s*\w+\s*>$", "", name).strip()
         if name and name not in names:
