@@ -29,6 +29,7 @@ canonical text form: an identifier printed in a log or a URL is
 
 from __future__ import annotations
 
+import struct
 import uuid
 from typing import Any
 
@@ -157,14 +158,70 @@ def _encoded(parts: tuple[Any, ...]) -> list[bytes]:
     """`parts` as the length-prefixed byte parts the digest is taken over."""
     encoded: list[bytes] = []
     for part in parts:
-        if part is None:
+        raw = part_bytes(part)
+        if raw is None:
             encoded += [ABSENT, ABSENT]
             continue
-        raw = (
-            bytes(part) if isinstance(part, bytes | bytearray | memoryview) else str(part).encode()
-        )
         encoded += [str(len(raw)).encode(), raw]
     return encoded
+
+
+def part_bytes(part: Any) -> bytes | None:
+    """One part as the bytes both builders hash it as; None is a missing part.
+
+    **A number is its own bytes**, little-endian: an `int` is the eight bytes
+    of an `int64`, a `float` the eight of a `float64`, a `bool` one byte. Not
+    its text -- and that is the whole point. Text needs a *formatter*, there
+    are two of them here, and they disagree: Python writes `10.0`, `1e-07` and
+    `38983288990.155754` where Arrow writes `10`, `1e-7` and
+    `3.8983288990155754e+10`. A scalar builder spelling a price one way and the
+    vectorised one spelling it another gave the same event two identifiers, and
+    no test caught it because they only ever compared the two over strings.
+
+    Reproducing Arrow's formatter in Python would be the same duplication that
+    caused it. The bytes have no formatter to disagree about, they are exact
+    where a rendering is lossy, and they are faster on both sides -- the
+    vectorised path reinterprets the column's own buffer and does no work at
+    all.
+
+    Little-endian is pinned rather than native because an identifier has to
+    mean the same thing on the machine that reads it back; Arrow's in-memory
+    layout is little-endian on every platform this runs on, so the two agree.
+
+    A `uuid.UUID` is its sixteen bytes, matching the `fixed_size_binary[16]`
+    column the same identifier arrives in, and not its thirty-six characters.
+    Anything else -- a date, a timestamp, a decimal -- is spelled by asking
+    Arrow to spell it, which is the one renderer the vectorised path can use.
+
+    Because a number is its bytes, `10` and `10.0` are now *different* parts,
+    where a text encoding made them one. That is the safer direction, and a
+    call site keeps one type per position anyway.
+    """
+    if part is None:
+        return None
+    if isinstance(part, bytes | bytearray | memoryview):
+        return bytes(part)
+    if isinstance(part, uuid.UUID):
+        return part.bytes
+    if isinstance(part, str):
+        return part.encode()
+    if isinstance(part, bool):  # before int: a bool is one
+        return b"\x01" if part else b"\x00"
+    if isinstance(part, int):
+        try:
+            return struct.pack("<q", part)
+        except struct.error:
+            # Wider than an int64, which Arrow has no scalar for either.
+            return str(part).encode()
+    if isinstance(part, float):
+        return struct.pack("<d", part)
+    try:
+        rendered = pyarrow.scalar(part).cast(pyarrow.string()).as_py()
+    except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, TypeError):
+        # Something Arrow has no scalar for. `str` is then the only spelling
+        # there is, and a column of it would have to be built as text anyway.
+        return str(part).encode()
+    return b"" if rendered is None else rendered.encode()
 
 
 def _bytes_of(value: Any) -> bytes | None:
@@ -190,20 +247,50 @@ def _binary(column: Any) -> Any:
     if isinstance(column, pyarrow.ChunkedArray):
         column = column.combine_chunks()
     if isinstance(column, pyarrow.Array):
+        kinds = pyarrow.types
+        if kinds.is_binary(column.type):
+            return column
+        if kinds.is_fixed_size_binary(column.type) or kinds.is_large_binary(column.type):
+            return column.cast(pyarrow.binary(), safe=False)
+        if kinds.is_string(column.type) or kinds.is_large_string(column.type):
+            return column.cast(pyarrow.binary(), safe=False)
+        # A number is its own bytes, and the column already holds them -- see
+        # `part_bytes`. Cast to the canonical width first, so an `int32` and a
+        # Python `int` are one part, then reinterpret rather than render.
+        if kinds.is_boolean(column.type):
+            return _reinterpreted(column.cast(pyarrow.uint8()), 1)
+        if kinds.is_integer(column.type):
+            return _reinterpreted(column.cast(pyarrow.int64()), 8)
+        if kinds.is_floating(column.type):
+            return _reinterpreted(column.cast(pyarrow.float64()), 8)
+        return column.cast(pyarrow.string(), safe=False).cast(pyarrow.binary(), safe=False)
+    if isinstance(column, pyarrow.Scalar):
         if pyarrow.types.is_binary(column.type):
             return column
         if pyarrow.types.is_fixed_size_binary(column.type) or pyarrow.types.is_large_binary(
             column.type
         ):
-            return column.cast(pyarrow.binary(), safe=False)
-        if pyarrow.types.is_string(column.type) or pyarrow.types.is_large_string(column.type):
-            return column.cast(pyarrow.binary(), safe=False)
-        return column.cast(pyarrow.string(), safe=False).cast(pyarrow.binary(), safe=False)
-    if isinstance(column, pyarrow.Scalar):
+            return column.cast(pyarrow.binary())
         return column.cast(pyarrow.string()).cast(pyarrow.binary())
-    if column is None:
-        return pyarrow.scalar(None, type=pyarrow.binary())
-    return pyarrow.scalar(str(column).encode(), type=pyarrow.binary())
+    # A plain Python value broadcasts, and is spelled by `part_bytes` -- the
+    # same one `hash_of` uses -- so one value cannot get two spellings by
+    # arriving as a scalar here and as a part there.
+    return pyarrow.scalar(part_bytes(column), type=pyarrow.binary())
+
+
+def _reinterpreted(column: pyarrow.Array, width: int) -> pyarrow.Array:
+    """A fixed-width numeric column read as its own bytes, without copying them.
+
+    The buffer already holds exactly what `part_bytes` packs, so this is a view
+    over it: no kernel runs and no bytes move. The validity buffer comes along,
+    so a null stays null and the join replaces it with `ABSENT` like any other
+    missing part -- the undefined bytes under a null are never read.
+    """
+    validity, data = column.buffers()[:2]
+    fixed = pyarrow.FixedSizeBinaryArray.from_buffers(
+        pyarrow.binary(width), len(column), [validity, data], offset=column.offset
+    )
+    return fixed.cast(pyarrow.binary(), safe=False)
 
 
 def _length(part: Any) -> Any:

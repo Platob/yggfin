@@ -250,6 +250,18 @@ what makes the encoding injective. A separator alone stops `("AB", "C")` and
 `("A", "BC")` colliding, but not a part that contains the separator; and a raw
 identifier used as a part contains any given byte about six times in a hundred.
 
+And **a number is its own bytes**, not its text: an `int` is the eight of an
+`int64`, a `float` the eight of a `float64`, a `bool` one. Text needs a
+formatter, there are two here, and they disagree — Python writes `10.0`,
+`1e-07` and `38983288990.155754` where Arrow writes `10`, `1e-7` and
+`3.8983288990155754e+10`. Spelling a price one way in `hash_of` and another in
+`hash_arrow` gave the same event two identifiers; reproducing Arrow's formatter
+in Python would have been the same duplication that caused it. The bytes have
+no formatter to disagree about, they are exact where a rendering is lossy, and
+the vectorised path reinterprets the column's own buffer rather than rendering
+anything. A `uuid.UUID` is likewise its sixteen bytes, matching the column the
+same identifier arrives in.
+
 ## Orders and executions
 
 `MarketEvent` adds four deliberately abstract slots — a side, a price, a
@@ -499,14 +511,19 @@ milliseconds.
 
 | case | measured |
 | --- | --- |
-| `hash_of`, one row at a time | ~3.44–3.49 µs/row |
-| `hash_arrow`, whole column | ~541–563 ns/row, **6.2–6.4×** |
-| — of which the join, no length prefix | ~43–46 ns/row |
-| — of which the join, length prefixed | ~110–116 ns/row |
+| `hash_of`, one row at a time | ~5.8 µs/row |
+| `hash_arrow`, whole column | ~730 ns/row, **8×** |
+| — of which the join, no length prefix | ~71 ns/row |
+| — of which the join, length prefixed | ~310 ns/row |
 
-So injectivity costs about 70 ns a row, roughly 12% of building an identifier
-column, and it is the difference between an identifier that cannot collide by
-construction and one that merely usually does not.
+The parts here are a shape name, a symbol, a venue, a client order id, a price
+and a sequence number — the last two on purpose, because the two builders
+diverged on exactly the non-text ones and a guard fed only strings agreed with
+itself.
+
+So injectivity costs about 240 ns a row, and it is the difference between an
+identifier that cannot collide by construction and one that merely usually
+does not.
 
 **Books**, 100,000 rows:
 

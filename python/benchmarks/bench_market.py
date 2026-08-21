@@ -29,7 +29,6 @@ script twice before quoting a number anywhere.
 from __future__ import annotations
 
 import argparse
-import datetime
 import pathlib
 import sys
 import time
@@ -42,9 +41,18 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
 from rekep.market import Book, BookSide  # noqa: E402
 from rekep.market.fields import dictionary_arrow  # noqa: E402
-from rekep.market.identity import ABSENT, SEPARATOR, hash_arrow, hash_of, uuids_of  # noqa: E402
+from rekep.market.identity import (  # noqa: E402
+    ABSENT,
+    SEPARATOR,
+    _binary,
+    _length,
+    hash_arrow,
+    hash_of,
+    uuids_of,
+)
 
-DAY = datetime.date(2024, 3, 14)
+#: On an hour boundary, so `unix` and `hunix` agree without the fixture
+#: having to derive one from the other.
 UNIX = 1710374400_000000000
 
 #: The states a day of orders actually visits, which is what makes the column
@@ -74,17 +82,41 @@ def report(label: str, seconds: float, rows: int, against: float | None = None) 
 
 def identifier_columns(rows: int) -> tuple[pyarrow.Array, ...]:
     """The parts a real order identifier is built from."""
+    # A float and an integer among them on purpose: the two builders diverged
+    # on exactly those, and a guard fed only text agreed with itself.
     return (
         pyarrow.array([f"S{index % 5000}" for index in range(rows)]),
         pyarrow.array(["XNAS", "XLON", "XPAR"][index % 3] for index in range(rows)),
         pyarrow.array([f"cl-{index}" for index in range(rows)]),
+        pyarrow.array([10.0 + index % 97 * 0.01 for index in range(rows)], pyarrow.float64()),
+        pyarrow.array([index % 1000 for index in range(rows)], pyarrow.int64()),
     )
 
 
 def plain_join(*columns: pyarrow.Array) -> pyarrow.Array:
-    """The join without the length prefix, for the cost of injectivity alone."""
+    """The join without the length prefix, for the cost of injectivity alone.
+
+    Through the module's own `_binary`, not a cast written here: a benchmark
+    that re-implements the step it is measuring drifts away from it, and this
+    one did -- a direct `cast(binary)` works on the text columns it used to be
+    fed and raises on the float one added since.
+    """
     return pyarrow.compute.binary_join_element_wise(
-        *[column.cast(pyarrow.binary(), safe=False) for column in columns],
+        *[_binary(column) for column in columns],
+        pyarrow.scalar(SEPARATOR, type=pyarrow.binary()),
+        null_handling="replace",
+        null_replacement=ABSENT,
+    )
+
+
+def prefixed_join(*columns: pyarrow.Array) -> pyarrow.Array:
+    """The join `hash_arrow` actually does: each part behind its own length."""
+    parts = []
+    for column in columns:
+        binary = _binary(column)
+        parts += [_length(binary), binary]
+    return pyarrow.compute.binary_join_element_wise(
+        *parts,
         pyarrow.scalar(SEPARATOR, type=pyarrow.binary()),
         null_handling="replace",
         null_replacement=ABSENT,
@@ -105,24 +137,7 @@ def bench_identifiers(rows: int, repeat: int) -> None:
     assert uuids_of(built)[:scalar_rows] == one_at_a_time, "the two builders disagree"
 
     joined, _ = timed(lambda: plain_join(*columns), repeat)
-    prefixed, _ = timed(
-        lambda: pyarrow.compute.binary_join_element_wise(
-            *[
-                value
-                for column in columns
-                for value in (
-                    pyarrow.compute.binary_length(column)
-                    .cast(pyarrow.string())
-                    .cast(pyarrow.binary()),
-                    column.cast(pyarrow.binary(), safe=False),
-                )
-            ],
-            pyarrow.scalar(SEPARATOR, type=pyarrow.binary()),
-            null_handling="replace",
-            null_replacement=ABSENT,
-        ),
-        repeat,
-    )
+    prefixed, _ = timed(lambda: prefixed_join(*columns), repeat)
 
     report("hash_of, one row at a time", scalar, scalar_rows)
     report("hash_arrow, whole column", vector, rows, against=scalar / scalar_rows * rows)
@@ -142,7 +157,7 @@ def envelope(rows: int) -> dict[str, object]:
     """The NOT NULL half of any market event, one column per row."""
     return {
         "unix": [UNIX] * rows,
-        "date": [DAY] * rows,
+        "hunix": [UNIX] * rows,
         "etype": [0] * rows,
         "cunix": [UNIX] * rows,
         "runix": [UNIX] * rows,

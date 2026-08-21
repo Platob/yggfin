@@ -266,7 +266,12 @@ ticks and because Iceberg's own `uuid` comes back as an Arrow *extension* type
 and reaches Spark as a string. Parts of an identifier are hashed **behind their
 own byte lengths**: a separator alone does not stop a part that contains the
 separator, and a raw identifier used as a part contains any given byte about
-six times in a hundred.
+six times in a hundred. **A number is its own bytes, never its text** -- text
+needs a formatter, a scalar builder and a vectorised one are two of them, and
+they disagree (`10.0` against `10`, `1e-07` against `1e-7`). That shipped, and
+the tests missed it by only ever comparing the two builders over strings: when
+one path is a faster version of another, the test that compares them has to
+cross every *type* they branch on, not only every value.
 
 A key is a table's and not a struct's, so a nested shape keeps its comments and
 loses its keys -- nothing reads a nested key, and publishing one is a contract
