@@ -12,6 +12,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+import zipfile
 from functools import cached_property
 from typing import Any, ClassVar
 
@@ -92,8 +93,12 @@ class FixRegistry(Convertible):
     #: Where the dictionary lives; override to scrape a mirror.
     base_url: str = BASE_URL
 
-    #: Where scrapes persist. One file per version, `versions.json` beside
-    #: them, all plain JSON -- inspectable, diffable, copyable.
+    #: Where scrapes persist: a directory of JSON, or a `.zip` of the same
+    #: files. The extension is what says which -- like every other inference
+    #: here -- so one path names either, and a dictionary that travels as one
+    #: file and a dictionary that travels as a directory are the same
+    #: dictionary. One member per version, `versions.json` beside them, all
+    #: plain JSON.
     cache_dir: str | os.PathLike[str] = CACHE_DIRECTORY
 
     #: Seconds one page fetch may take, and how many fetch at once. The site
@@ -132,9 +137,8 @@ class FixRegistry(Convertible):
         subsumes the others.
 
         The store is asked first, the site second, and the store again when
-        the site cannot be had -- the three steps a subclass keeping its
-        dictionary somewhere else (`SqliteFixRegistry`) redirects, rather than
-        rewriting this walk.
+        the site cannot be had -- three steps that are the same whether the
+        store is a directory or an archive.
         """
         stored = self._stored_versions()
         if stored:
@@ -454,10 +458,10 @@ class FixRegistry(Convertible):
 
     # -- the store -----------------------------------------------------------
     #
-    # Five methods, and they are the whole of where the dictionary is kept: a
-    # directory of JSON here, a `SqliteFixRegistry` elsewhere. Everything above
-    # -- the scraping, the version rules, the ordering, the searching -- is
-    # written against these and is the same wherever the fields live.
+    # Five methods, and they are the whole of where the dictionary is kept.
+    # Everything above -- the scraping, the version rules, the ordering, the
+    # searching -- is written against these and is the same wherever the
+    # fields live: a directory of JSON, or a zip of the same files.
 
     def _stored_versions(self) -> tuple[str, ...]:
         """The version list this store already holds; empty when it holds none."""
@@ -485,13 +489,11 @@ class FixRegistry(Convertible):
 
     def _stored_spellings(self) -> tuple[str, ...]:
         """Every version this store has fields for, spelled as it stored them."""
-        return tuple(
-            sorted(
-                path.stem
-                for path in pathlib.Path(self.cache_dir).glob("*.json")
-                if path.stem != "versions"
-            )
-        )
+        if self.archived:
+            names = _archived_names(self.cache_dir)
+        else:
+            names = {path.name: path.name for path in pathlib.Path(self.cache_dir).glob("*.json")}
+        return tuple(sorted(name[: -len(".json")] for name in names if name != "versions.json"))
 
     def _stored_fields(self, version: str) -> list[Field] | None:
         """One version's fields as this store holds them; None when it does not."""
@@ -513,7 +515,46 @@ class FixRegistry(Convertible):
 
     # -- the cache files and the wire -----------------------------------------
 
+    @property
+    def archived(self) -> bool:
+        """Whether this registry keeps its dictionary in a zip rather than a directory.
+
+        Read off the extension, and only off the extension: a path that does
+        not exist yet has to say what it will be before anything is written
+        to it, and `data/fix.zip` says it.
+        """
+        return pathlib.Path(self.cache_dir).suffix.lower() == ".zip"
+
+    def into_zip(self, target: str | os.PathLike[str]) -> pathlib.Path:
+        """Write everything this registry holds into one archive, and name it.
+
+        The counterpart of pointing a registry at a `.zip`: a directory that
+        was scraped becomes one file to publish or copy, and reading it back
+        is `FixRegistry(cache_dir=that_file)`.
+
+        Deflated, because a FIX dictionary is text that repeats itself: the
+        published one goes from 2.86 MB to 0.47 MB. At zlib's own level,
+        which is what the measurement says to use: level 9 is 2% smaller for
+        twice the time, and level 1 is 26% bigger
+        (`benchmarks/bench_fix_registry.py`).
+        """
+        path = pathlib.Path(target)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        scratch = path.with_name(f"{path.name}.tmp")
+        with zipfile.ZipFile(scratch, "w", zipfile.ZIP_DEFLATED) as archive:
+            listed = self._stored_versions()
+            if listed:
+                archive.writestr(_member("versions.json"), _document({"versions": list(listed)}))
+            for version in self._stored_spellings():
+                stored = self._read_cache(f"{version}.json")
+                if stored is not None:
+                    archive.writestr(_member(f"{version}.json"), _document(stored))
+        scratch.replace(path)
+        return path
+
     def _read_cache(self, name: str) -> dict[str, Any] | None:
+        if self.archived:
+            return _read_archived(self.cache_dir, name)
         path = pathlib.Path(self.cache_dir) / name
         try:
             return json.loads(path.read_text("utf-8"))
@@ -525,13 +566,16 @@ class FixRegistry(Convertible):
             return None
 
     def _write_cache(self, name: str, payload: dict[str, Any]) -> None:
+        if self.archived:
+            _write_archived(self.cache_dir, name, _document(payload))
+            return
         directory = pathlib.Path(self.cache_dir)
         directory.mkdir(parents=True, exist_ok=True)
         path = directory / name
         # Written beside then renamed, so a reader never sees half a file and
         # a crash never costs the cache that was already there.
         scratch = path.with_suffix(".tmp")
-        scratch.write_text(json.dumps(payload, indent=1), "utf-8")
+        scratch.write_text(_document(payload), "utf-8")
         scratch.replace(path)
 
     def _fetch(self, url: str) -> str:
@@ -562,6 +606,102 @@ class FixRegistry(Convertible):
         """One page fetch, once. The single place the network is touched."""
         with urllib.request.urlopen(request, timeout=self.timeout) as response:  # noqa: S310
             return response.read().decode("utf-8", "replace")
+
+
+# -- the store, as a directory or as a zip ------------------------------------
+
+
+def _document(payload: dict[str, Any]) -> str:
+    """One cache file's text. The one place the on-disk spelling is decided."""
+    return json.dumps(payload, indent=1)
+
+
+def _member(name: str) -> zipfile.ZipInfo:
+    """One archive member, stamped at the start of zip time.
+
+    A zip records a modification time per member, so an archive built twice
+    from the same dictionary is two different files unless the stamp is
+    fixed. This one is published in a repository, where "nothing changed"
+    has to look like nothing changed.
+    """
+    entry = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+    entry.compress_type = zipfile.ZIP_DEFLATED
+    entry.external_attr = 0o644 << 16
+    return entry
+
+
+def _archived_names(archive: str | os.PathLike[str]) -> dict[str, str]:
+    """`{file name: member name}` for the JSON in an archive, or nothing.
+
+    Keyed by the file's own name so a zip made of a *folder* -- `zip -r
+    fix.zip fix/`, which prefixes every member with `fix/` -- reads the same
+    as one made of the files. The shallowest member wins where two share a
+    name, because that is the one a person unzipping and looking would find.
+    A file that is not a zip, or is not there, holds no versions rather than
+    raising: the caller's next step is to scrape, exactly as for an empty
+    directory.
+    """
+    try:
+        with zipfile.ZipFile(archive) as opened:
+            members = opened.namelist()
+    except (OSError, zipfile.BadZipFile):
+        return {}
+    found: dict[str, str] = {}
+    for member in sorted(members, key=lambda name: (name.count("/"), name)):
+        name = member.rsplit("/", 1)[-1]
+        if name.endswith(".json"):
+            found.setdefault(name, member)
+    return found
+
+
+def _read_archived(archive: str | os.PathLike[str], name: str) -> dict[str, Any] | None:
+    """One member of an archive, as the document it holds; None when absent."""
+    member = _archived_names(archive).get(name)
+    if member is None:
+        return None
+    try:
+        with zipfile.ZipFile(archive) as opened:
+            return json.loads(opened.read(member).decode("utf-8"))
+    except (OSError, ValueError, zipfile.BadZipFile):
+        # A torn archive is a cold cache, not a dead registry -- the same
+        # reading a torn file gets.
+        return None
+
+
+def _write_archived(archive: str | os.PathLike[str], name: str, document: str) -> None:
+    """Put one member into an archive, replacing what was there.
+
+    Rewritten whole rather than appended to: a zip will happily hold two
+    members of one name, and the reader that then picks between them is
+    picking between a stale version and a fresh one. The archive is built
+    beside and renamed over, so a reader never sees half of it -- the same
+    rule the directory store writes by.
+    """
+    path = pathlib.Path(archive)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    existing = _archived_names(path)
+    # A zip of a folder keeps its folder: a member written into one goes in
+    # beside its neighbours rather than at the root, where nothing else is.
+    prefix = ""
+    for member in existing.values():
+        if "/" in member:
+            prefix = member.rsplit("/", 1)[0] + "/"
+        break
+    scratch = path.with_name(f"{path.name}.tmp")
+    with zipfile.ZipFile(scratch, "w", zipfile.ZIP_DEFLATED) as fresh:
+        try:
+            with zipfile.ZipFile(path) as opened:
+                for member in opened.infolist():
+                    if member.filename != existing.get(name):
+                        fresh.writestr(member, opened.read(member))
+        except (OSError, zipfile.BadZipFile):
+            # Nothing there, or nothing readable there. A torn archive is
+            # written over rather than mourned -- the same reading the
+            # directory store gives a torn file -- and what could not be read
+            # was not being served anyway.
+            pass
+        fresh.writestr(_member(existing.get(name, f"{prefix}{name}")), document)
+    scratch.replace(path)
 
 
 # -- the wire ----------------------------------------------------------------

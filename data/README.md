@@ -7,43 +7,33 @@ this says what the protocols it names already agreed on.
 
 ```text
 data/
-└── fix/        the OnixS FIX dictionary, one file per FIX version
-    ├── versions.json
-    ├── 5.0.SP2.json
-    ├── ...
-    └── FIXT1.1.json
+└── fix.zip     the OnixS FIX dictionary: one JSON document per FIX version
 ```
 
 ## The FIX dictionary
 
-`data/fix/` is exactly what `FixRegistry` writes into `~/.config/fix/`, so it
-*is* a warm cache: point a registry at it and every version answers without a
-network call, on a machine that was never online.
+`data/fix.zip` is exactly what `FixRegistry` writes into `~/.config/fix/`,
+packed into one archive — so it *is* a warm cache: point a registry at it and
+every version answers without a network call, on a machine that was never
+online.
 
 ```python
 from rekep.fix import FixRegistry
 
-registry = FixRegistry(cache_dir="data/fix")
+registry = FixRegistry(cache_dir="data/fix.zip")
 registry.field("Side").fix["values"]     # '{"1":"Buy","2":"Sell",...}'
 registry.tags()                          # every name to its tag, for tag_arrow_array
 ```
 
-For a job that asks the dictionary many questions, index it once:
+A directory of the same documents works the same way, and **the extension is
+what decides which is which**: `cache_dir="data/fix"` is a directory,
+`cache_dir="data/fix.zip"` is an archive. Unpacking one is `unzip fix.zip -d
+fix/`, and packing one is `FixRegistry(cache_dir="fix").into_zip("fix.zip")`
+— the archive is 6.1× smaller than the directory (2.86 MB of JSON in 0.47 MB)
+and one file to copy, and the directory is what a line-by-line diff wants.
 
-```python
-from rekep.fix import SqliteFixRegistry
-
-registry = SqliteFixRegistry(cache_dir="data/fix")   # builds data/fix/fix.db
-registry.load()                                      # every version, ~150 ms
-registry.field("Side")                               # ~0.4 ms, not ~75 ms
-```
-
-The database is built *from these files*, in about a tenth of a second, and is
-gitignored: the JSON is what this directory publishes, and a binary nobody can
-diff is not. `docs/fix.md` has the measurements.
-
-One file per version, plus `versions.json` listing them newest first. A version
-file is plain JSON — inspectable, diffable, copyable:
+One member per version, plus `versions.json` listing them newest first. Each
+is plain JSON — inspectable, diffable once unpacked, copyable:
 
 | key | meaning |
 | --- | --- |
@@ -76,20 +66,25 @@ prefix: `fix:tag`, `fix:type` (`char`, `Price`, `UTCTimestamp`), `fix:values`
 
 ## Refreshing it
 
-The dump is the registry's own, so refreshing it is one scrape — thousands of
-pages, and the site throttles partway through, which the registry waits out:
+The archive is the registry's own store, so refreshing it is one scrape —
+thousands of pages, and the site throttles partway through, which the registry
+waits out:
 
 ```bash
 cd python
-uv run python -c "from rekep.fix import FixRegistry; print(FixRegistry(cache_dir='../data/fix').load(refresh=True))"
+uv run python -c "from rekep.fix import FixRegistry; print(FixRegistry(cache_dir='../data/fix.zip').load(refresh=True))"
 ```
 
-Name versions (`load('4.4', refresh=True)`) to refresh only those. Without
-`refresh` the call is a check: it reports the field count of every version and
-scrapes only what is missing.
+Name versions (`load('4.4', refresh=True)`) to refresh only those; each lands
+as one member, replacing the one that was there. Without `refresh` the call is
+a check: it reports the field count of every version and scrapes only what is
+missing. Rebuilding the archive from a directory is
+`FixRegistry(cache_dir='../data/fix').into_zip('../data/fix.zip')`, and it is
+byte-for-byte reproducible — every member is stamped at the start of zip time,
+so a rebuild that changes nothing changes no bytes.
 
 `python/tests/test_data.py` is what keeps a bad scrape from shipping. It reads
-every file back through `Field`, and asserts the parts a page carries are
-there — because the first scrape of this directory came back a fifth empty,
-every throttled page a field with no type and no description, and every file
-still parsed.
+every member back through `Field`, asserts the parts a page carries are there
+— because the first scrape of this dictionary came back a fifth empty, every
+throttled page a field with no type and no description, and every file still
+parsed — and rebuilds the archive to check it is what publishing it produces.

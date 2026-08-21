@@ -1,8 +1,8 @@
 """The fixture pages, served in one place.
 
-`test_registry.py` and `test_sqlite.py` both need a registry that fetches from
-`fixtures/` instead of the network, and there is one rule for which file a URL
-means -- so it lives here rather than in each of them.
+The registry tests need doubles that fetch from `fixtures/` instead of the
+network, and there is one rule for which file a URL means -- so it lives here
+rather than being copied into each of them.
 """
 
 from pathlib import Path

@@ -12,8 +12,8 @@ joined by SOH — which every log prints as something visible instead:
 kernels — and carries a dictionary of every FIX version's fields, scraped once
 from the [OnixS FIX Dictionary](https://www.onixs.biz/fix-dictionary.html) and
 cached under `~/.config/fix/` so everything after works offline. That scrape is
-[committed here](#the-dump-in-this-repository) as well, under `data/fix/`, so a
-machine that was never online has the dictionary too.
+[committed here](#the-dump-in-this-repository) as well, as `data/fix.zip`, so
+a machine that was never online has the dictionary too.
 
 ## Parsing lines
 
@@ -142,55 +142,71 @@ registry.search("Sied")              # nothing matches -> Levenshtein fallback
 
 ### The dump in this repository
 
-`data/fix/` is that scrape, committed: one JSON per version, exactly what the
-registry writes into `~/.config/fix/`. Point a registry at it and the whole
-dictionary answers on a machine that has never been online.
+`data/fix.zip` is that scrape, committed: one JSON document per version —
+exactly what the registry writes into `~/.config/fix/` — packed into one
+archive. Point a registry at it and the whole dictionary answers on a machine
+that has never been online.
 
 ```python
-registry = FixRegistry(cache_dir="data/fix")
+registry = FixRegistry(cache_dir="data/fix.zip")
 registry.tags()                      # every name to its tag, nothing fetched
 ```
 
-What each file says, and how to refresh one, is in
+What each document says, and how to refresh one, is in
 [`data/README.md`](https://github.com/Platob/yggfin/blob/main/data/README.md);
 `python/tests/test_data.py` is what keeps a throttled scrape from shipping as
 one.
 
-### The indexed registry
+### A directory, or a zip of it
 
-Reading a dictionary out of JSON means parsing every version and building a
-`Field` for every field in it — 6,479 of them — to answer a question about
-one. `SqliteFixRegistry` keeps the same fields in one indexed file and asks
-for the rows the question is about:
+`cache_dir` names either, and **the extension is what decides** — the same
+inference `Field.from_("quote.yaml")` makes. A path ending in `.zip` is an
+archive of the same JSON documents; anything else is a directory of them.
+
+=== "A directory"
+
+    ```python
+    registry = FixRegistry(cache_dir="~/.config/fix")   # the default
+    registry.load("4.4")                                # writes 4.4.json
+    ```
+
+    One file per version, so a diff shows a field that changed and a single
+    version can be refreshed on its own.
+
+=== "An archive"
+
+    ```python
+    registry = FixRegistry(cache_dir="data/fix.zip")
+    registry.load("4.4")     # writes the member 4.4.json, replacing it
+    registry.archived        # True -- read off the extension, nothing else
+    ```
+
+    One file to publish, copy or attach, six times smaller. Scrapes land in
+    it the same way: a member is written whole, and never twice.
+
+Both are the same store to everything above them — the scraping, the version
+rules, the ordering, the search — so a dictionary can be moved between them
+without anything downstream noticing:
 
 ```python
-from rekep.fix import SqliteFixRegistry
-
-registry = SqliteFixRegistry(cache_dir="data/fix")   # fix.db beside the dump
-registry.field("Side")               # one indexed query, one Field built
-registry.tags()                      # one GROUP BY, no objects at all
-registry.load()                      # index every version now, ~150 ms
+FixRegistry(cache_dir="~/.config/fix").into_zip("fix.zip")   # publish it
+FixRegistry(cache_dir="fix.zip").fields("4.4")               # read it back
 ```
 
-It is the same class of thing as `FixRegistry` — same scrape, same versions,
-same `Field`s, same case-insensitivity, same offline rules — and every answer
-is [pinned against the JSON registry's](https://github.com/Platob/yggfin/blob/main/python/tests/fix/test_sqlite.py),
-because the four search ranks and the newest-version-first walk are spelled
-twice: in Python there and in SQL here.
+`into_zip` stamps every member at the start of zip time, so building the same
+dictionary twice gives the same bytes — which is what makes an archive worth
+committing: "nothing changed" looks like nothing changed.
 
-Where it is pointed decides where the fields come from, in this order: the
-index, then a JSON dump beside it (imported once, no network), then the site.
-So a fresh checkout answers offline, and a fresh `~/.config/fix` scrapes as
-`FixRegistry` would.
+!!! note "What an archive costs, and what it saves"
 
-!!! note "One file, and a `Field` only for what came back"
+    A zip made of the *folder* (`zip -r fix.zip fix/`) reads too: members are
+    found by their file name, whatever directory they sit in, and a member
+    written into such an archive joins its neighbours rather than landing at
+    the root. A torn archive is treated as a cold cache — scraped over, not
+    mourned — exactly as a torn file is.
 
-    The index is `fix.db` inside `cache_dir` unless `database` says
-    otherwise, and it is a cache, not a publication: `data/fix/*.json` stays
-    the diffable dump, `data/fix/fix.db` is gitignored and rebuilt in about a
-    tenth of a second. Connections are per thread — Python's `sqlite3` keeps
-    a statement cache on the connection, and two threads reading through one
-    is API misuse — and `close()` closes every one it handed out.
+    Reading through deflate costs 12–17% of a question, and the archive is
+    6.1× smaller than the directory ([measured](#benchmarks)).
 
 ## Reading values
 
@@ -237,76 +253,33 @@ twice.
 | rendered messages | ~140–260k rows/s, depending on group density |
 | all-numeric keys, `tag_arrow_array` | ~140M keys/s |
 
-**The registry.** `benchmarks/bench_fix_registry.py` is the other sweep: both
-registries over the published dump, every answer asserted equal before
-anything is timed.
+**The registry's two stores.** `benchmarks/bench_fix_registry.py` is the other
+sweep: the same published dictionary as a directory and as an archive, every
+answer asserted equal before anything is timed.
 
 ```bash
 cd python
 uv run python benchmarks/bench_fix_registry.py
 ```
 
-| question, from cold | JSON | indexed |
+| question, from cold | directory | zip |
 | --- | --- | --- |
-| `lookup("Side")`, every version | ~75 ms | ~0.45 ms |
-| `field(54, "4.4")`, one version | ~10.6 ms | ~0.31 ms |
-| `tags()`, every version | ~79 ms | ~4.4 ms |
-| `search("reject")` | ~82 ms | ~3.9 ms |
-| `fields("4.4")`, a whole version | ~10 ms | ~9.4 ms |
-| `load()`, verifying every version | ~68 ms | ~0.8 ms |
+| `field("Side")`, every version | ~71 ms | ~80 ms |
+| `field(54, "4.4")`, one version | ~10.4 ms | ~11.9 ms |
+| `tags()`, every version | ~78 ms | ~89 ms |
+| `search("reject")` | ~81 ms | ~88 ms |
+| `fields("4.4")`, one version | ~9.8 ms | ~11.4 ms |
 
-Resident objects after `tags()`: 6.4 MB against 0.09 MB. The file is 2.78 MB
-against the dump's 2.86 MB, built in ~150 ms.
+So deflate costs 12–17% of a question, and never changes an answer.
 
-**Where the index buys nothing.** Handing back a whole version is `Field`
-construction, and both registries pay it in full — 9.4 ms against 10 ms. Every
-other row is a question the JSON registry answers by building thousands of
-fields in order to look at a handful.
+**What the archive saves.** 2.86 MB of JSON becomes 0.47 MB, 6.1× smaller, in
+~62 ms. The deflate level is zlib's own: level 9 is 2% smaller for twice the
+time, level 1 is 26% bigger, and level 0 — stored rather than deflated, the
+case in the sweep expected to be bad — is the whole 2.86 MB back.
 
-**What was measured and left out.** A trigram FTS5 index answers
-`search("reject")` in 0.04 ms against the LIKE scan's 2.4 ms — and returns
-*nothing* for a two-letter query, because a trigram tokenizer cannot match
-terms shorter than three characters, while nearly tripling the file
-(7.6 MB). Pooling the three big text columns — `description`, `fix:values`
-and `fix:used_in` are 6,479 slots holding 3,516 distinct bodies — takes the
-file from 2.79 MB to 1.42 MB and takes `search` from 2.4 ms to 3.2 ms,
-because the join costs more than the smaller corpus saves; a cache that is
-already smaller than the JSON it came from does not need the half. A window
-function for `tags()` is 7.4 ms against the folded `min()`'s 2.2 ms. Parsing
-the Arrow type per row rather than per distinct spelling costs 7.0 ms a
-version against 0.1 ms. All four are cases in the sweep, because the reason
-a thing was not done is worth keeping.
-
-**Fields per row.** The work is per token, not per row, so a rows/s at one
-message shape says nothing about another: the wire fixture is twelve fields
-and a CheckSum per line, and a wider message pays for every field it adds.
-That is why the sweep prints a fields/s column beside rows/s — it is the
-column to compare across cases.
-
-**Group density.** Repeating groups are extra tokens, and in a rendered line
-they are the *expensive* tokens: the inner `member=` regex only runs on
-`Group[i]=Member=Value`, so a column with no group entries skips it entirely
-while one with them sends a third of its tokens through it. The sweep runs
-both, and that bracket is the ~140–260k spread.
-
-**Wire against rendered.** A wire line cuts at the first `=` with a numeric
-tag on the left; a rendered line has to read a name, an optional index and an
-optional member out of the same grammar. Rendered parsing therefore sits
-below wire on the same rows. The sweep also runs wire lines separated by SOH,
-by `|`, with log noise wrapped around the message, and with repeating groups
-— those cases are measured by the script and no number for them is quoted
-here.
-
-**Numeric against rendered keys.** `tag_arrow_array` over all-numeric keys is
-one cast kernel over the map's key array, which is why it is quoted in keys/s
-and not in rows/s. Rendered keys instead resolve through `names` once per
-distinct spelling, dictionary-encoded, so their cost follows the number of
-distinct names in the column rather than its length. The script measures the
-`int64` key type and the rendered resolution as their own cases; neither is
-quoted as a number on this page.
-
-**The tag/value cut.** The script also races the cut itself — one
-`split_pattern` plus `list_element` against one `extract_regex`, trimming and
-greedy — on ten tokens per row of the sweep. That race is what
-`parse_arrow_array`'s choice was decided by, and it is measured, not quoted:
-the loser looked entirely plausible.
+**Where the time actually goes.** Both stores spend most of a question
+building `Field` objects: `fields("4.4")` is 953 of them, and a `lookup`
+across versions builds all 6,479 to return one. That is why the two stores
+sit within a fifth of each other however the bytes are packed — and why the
+one number that moves either of them is how many fields a question has to
+build.

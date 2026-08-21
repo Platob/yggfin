@@ -17,6 +17,7 @@ import json
 import re
 import urllib.error
 import urllib.request
+import zipfile
 from pathlib import Path
 
 import pyarrow
@@ -24,6 +25,7 @@ import pytest
 
 from rekep.fields import Field
 from rekep.fix import FixRegistry
+from rekep.fix.fields import fix_field
 from rekep.fix.registry import _is_transient, _levenshtein, _version_key, _wait_for
 
 from .conftest import FIXTURES, fixture_page
@@ -274,6 +276,116 @@ def test_only_the_answers_that_mean_later_are_retried() -> None:
     assert _is_transient(TimeoutError())
     assert not _is_transient(_refused("u", 404)), "a page that is not there is not coming"
     assert not _is_transient(OSError("404 u")), "and neither is anything else"
+
+
+# -- a directory or a zip -----------------------------------------------------
+
+
+@pytest.fixture
+def dumped(registry: FixtureRegistry) -> Path:
+    """The fixture dictionary as a directory of JSON, ready to be read either way."""
+    assert registry.versions
+    registry.load("4.4")
+    return Path(registry.cache_dir)
+
+
+def test_the_extension_says_which_store_this_is(tmp_path: Path) -> None:
+    """Read off the path, and only off the path: a store says what it is
+    before anything has been written to it."""
+    assert not FixRegistry(cache_dir=tmp_path / "fix").archived
+    assert FixRegistry(cache_dir=tmp_path / "fix.zip").archived
+    assert FixRegistry(cache_dir=tmp_path / "FIX.ZIP").archived, "the extension, in any case"
+    assert not FixRegistry(cache_dir=tmp_path / "fix.zipped").archived
+
+
+def test_a_zip_answers_everything_the_directory_answers(dumped: Path, tmp_path: Path) -> None:
+    """The reference is the directory the archive was made from."""
+    folder = OfflineRegistry(cache_dir=dumped)
+    archive = OfflineRegistry(cache_dir=folder.into_zip(tmp_path / "fix.zip"))
+    assert archive.versions == folder.versions
+    assert archive.fields("4.4") == folder.fields("4.4")
+    assert archive.field("Side") == folder.field("Side")
+    assert archive.tags() == folder.tags()
+    assert archive.search("reject") == folder.search("reject")
+    assert archive.lookup(54) == folder.lookup(54)
+
+
+def test_the_archive_holds_one_member_per_file(dumped: Path, tmp_path: Path) -> None:
+    """Derived from the directory, then pinned: five files, five members."""
+    archive = FixRegistry(cache_dir=dumped).into_zip(tmp_path / "fix.zip")
+    with zipfile.ZipFile(archive) as opened:
+        names = opened.namelist()
+    assert sorted(names) == sorted(path.name for path in dumped.glob("*.json"))
+    assert len(names) == 2, "the 4.4 dump and the version list"
+    assert archive.stat().st_size < sum(path.stat().st_size for path in dumped.glob("*.json"))
+
+
+def test_a_zip_made_of_the_folder_reads_the_same(dumped: Path, tmp_path: Path) -> None:
+    """`zip -r fix.zip fix/` prefixes every member, and is what people type."""
+    rooted = tmp_path / "rooted.zip"
+    with zipfile.ZipFile(rooted, "w", zipfile.ZIP_DEFLATED) as out:
+        for path in sorted(dumped.glob("*.json")):
+            out.write(path, f"fix/{path.name}")
+    prefixed = OfflineRegistry(cache_dir=rooted)
+    assert prefixed.versions == OfflineRegistry(cache_dir=dumped).versions
+    assert prefixed.field("Side").fix["tag"] == "54"
+
+
+def test_a_scrape_lands_in_the_archive_it_was_pointed_at(tmp_path: Path) -> None:
+    """A zip is a store, not only a way to publish one: it is written to."""
+    archived = FixtureRegistry(cache_dir=tmp_path / "fix.zip")
+    assert len(archived.fields("4.4")) == EXPECTED_FIELDS
+    with zipfile.ZipFile(tmp_path / "fix.zip") as opened:
+        assert "4.4.json" in opened.namelist()
+    reopened = OfflineRegistry(cache_dir=tmp_path / "fix.zip")
+    assert len(reopened.fields("4.4")) == EXPECTED_FIELDS, "and read back without a fetch"
+
+
+def test_writing_a_member_twice_replaces_it(dumped: Path, tmp_path: Path) -> None:
+    """A zip will hold two members of one name, and then a reader has to guess."""
+    archive = FixRegistry(cache_dir=dumped).into_zip(tmp_path / "fix.zip")
+    registry = OfflineRegistry(cache_dir=archive)
+    registry._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])
+    with zipfile.ZipFile(archive) as opened:
+        names = opened.namelist()
+    assert names.count("4.4.json") == 1
+    assert len(names) == len(set(names))
+    assert [member.name for member in OfflineRegistry(cache_dir=archive).fields("4.4")] == ["Side"]
+
+
+def test_a_member_written_into_a_prefixed_zip_joins_its_neighbours(
+    dumped: Path, tmp_path: Path
+) -> None:
+    """A member written at the root of a `zip -r` archive would be an orphan."""
+    rooted = tmp_path / "rooted.zip"
+    with zipfile.ZipFile(rooted, "w", zipfile.ZIP_DEFLATED) as out:
+        for path in sorted(dumped.glob("*.json")):
+            out.write(path, f"fix/{path.name}")
+    registry = OfflineRegistry(cache_dir=rooted)
+    registry._store_fields("9.9", [fix_field("Side", 54, "char", version="9.9")])
+    with zipfile.ZipFile(rooted) as opened:
+        assert "fix/9.9.json" in opened.namelist()
+    assert [member.name for member in OfflineRegistry(cache_dir=rooted).fields("9.9")] == ["Side"]
+
+
+def test_a_torn_archive_is_a_cold_cache_and_not_a_dead_registry(tmp_path: Path) -> None:
+    """The same reading a torn file gets: scrape over it rather than refuse."""
+    torn = tmp_path / "fix.zip"
+    torn.write_bytes(b"PK\x03\x04 and then nothing that follows a zip's rules")
+    registry = FixtureRegistry(cache_dir=torn)
+    assert registry.versions
+    assert len(registry.fields("4.4")) == EXPECTED_FIELDS, "scraped over the wreck"
+    with zipfile.ZipFile(torn) as opened:
+        assert "4.4.json" in opened.namelist(), "and left a readable archive behind"
+
+
+def test_an_archive_that_holds_nothing_yet_is_not_an_error(tmp_path: Path) -> None:
+    """A path that does not exist is a cold store, whichever kind it names."""
+    for cache in (tmp_path / "fix", tmp_path / "fix.zip"):
+        registry = OfflineRegistry(cache_dir=cache)
+        assert registry._stored_versions() == ()
+        assert registry._stored_spellings() == ()
+        assert registry._stored_fields("4.4") is None
 
 
 # -- the cache ---------------------------------------------------------------

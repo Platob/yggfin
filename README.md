@@ -81,9 +81,8 @@ logs.optimize()                      # compact, expire, sweep
   turns the maps' text keys into integer FIX tags, and `FixRegistry` scrapes
   every FIX version's fields from the OnixS dictionary into `~/.config/fix/` —
   name, datatype, comment, values — to work offline after. That scrape is also
-  committed here, under `data/fix/`, so there is nothing to wait for, and
-  `SqliteFixRegistry` is the same dictionary indexed into one file: a lookup
-  is a query rather than a parse of every version (~0.45 ms against ~75 ms).
+  committed here, as `data/fix.zip`, so there is nothing to wait for: a cache
+  is a directory of JSON or a zip of the same, and the extension says which.
 - **`convert`** — `Convertible`: paired `from_*`/`into_*` methods that serialise
   any dataclass to dict, JSON, YAML or TOML and back.
 
@@ -112,17 +111,16 @@ rekep fields load --target schemas/rekep/log.yaml     # does it still build?
 ## Published data
 
 `data/` at the repo root is what this repository publishes that is the same for
-everyone: `data/fix/` is the whole OnixS FIX dictionary, one file per version,
-scraped once and checked by the build.
+everyone: `data/fix.zip` is the whole OnixS FIX dictionary, one JSON document
+per version, scraped once and checked by the build.
 
 ```python
-from rekep.fix import FixRegistry, SqliteFixRegistry
+from rekep.fix import FixRegistry
 
-registry = FixRegistry(cache_dir="data/fix")   # a warm cache, nothing fetched
-registry.field("Side").fix["values"]           # '{"1":"Buy","2":"Sell",...}'
+registry = FixRegistry(cache_dir="data/fix.zip")   # a warm cache, nothing fetched
+registry.field("Side").fix["values"]               # '{"1":"Buy","2":"Sell",...}'
 
-indexed = SqliteFixRegistry(cache_dir="data/fix")  # the same, in one indexed file
-indexed.tags()                                     # every name to its tag, in one query
+FixRegistry(cache_dir="~/.config/fix").into_zip("fix.zip")   # a directory, published
 ```
 
 ## Development

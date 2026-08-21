@@ -1,4 +1,4 @@
-"""The FIX dictionary under `data/` is checked here, so a bad scrape cannot ship.
+"""The FIX dictionary in `data/fix.zip` is checked here, so a bad scrape cannot ship.
 
 A dump nobody verifies is a directory of files that merely *look* like a
 dictionary. The first scrape of this one came back a fifth empty -- the site
@@ -11,19 +11,32 @@ tags are its own, and the parts the pages carry are carried through.
 
 import json
 import urllib.request
+import zipfile
 from pathlib import Path
 
 import pyarrow
 import pytest
 
 from rekep import Field
-from rekep.fix import FIX_SCALARS, FixRegistry, SqliteFixRegistry
+from rekep.fix import FIX_SCALARS, FixRegistry
 
 #: The dictionary is at the repo root, beside `python/` -- published data,
-#: not something shipped in the wheel.
-DATA = Path(__file__).resolve().parents[2] / "data" / "fix"
+#: not something shipped in the wheel. One archive: a registry pointed at it
+#: reads the JSON inside, and the extension is what tells it to.
+DATA = Path(__file__).resolve().parents[2] / "data" / "fix.zip"
 
-VERSIONS: list[str] = json.loads((DATA / "versions.json").read_text("utf-8"))["versions"]
+
+def member(name: str) -> dict[str, object]:
+    """One document out of the published archive, read without a registry.
+
+    The tests below have to be able to fail when the registry is wrong, so
+    what they read the archive with is `zipfile`, not the code under test.
+    """
+    with zipfile.ZipFile(DATA) as archive:
+        return json.loads(archive.read(name).decode("utf-8"))
+
+
+VERSIONS: list[str] = member("versions.json")["versions"]
 
 #: Pinned so a moved or half-written directory fails here rather than passing
 #: every test below by iterating over nothing.
@@ -46,17 +59,19 @@ def registry() -> OfflineRegistry:
     return OfflineRegistry(cache_dir=DATA)
 
 
-def test_the_directory_holds_the_versions_it_lists() -> None:
+def test_the_archive_holds_the_versions_it_lists() -> None:
     assert len(VERSIONS) == EXPECTED_VERSIONS
-    dumped = {path.stem for path in DATA.glob("*.json")} - {"versions"}
-    assert dumped == set(VERSIONS)
+    with zipfile.ZipFile(DATA) as archive:
+        names = archive.namelist()
+    assert len(names) == len(set(names)), "one member per name, never a shadowed one"
+    assert {name[: -len(".json")] for name in names} - {"versions"} == set(VERSIONS)
     assert VERSIONS[0] == "5.0.SP2", "newest first"
     assert VERSIONS[-1] == "FIXT1.1", "and the transport last"
 
 
 @pytest.mark.parametrize("version", VERSIONS)
 def test_a_version_file_holds_the_fields_it_says(version: str) -> None:
-    dumped = json.loads((DATA / f"{version}.json").read_text("utf-8"))
+    dumped = member(f"{version}.json")
     assert dumped["version"] == version
     assert dumped["url"].endswith(f"/{version}/")
     fields = [Field.from_dict(member) for member in dumped["fields"]]
@@ -108,37 +123,34 @@ def test_the_dump_is_the_name_to_tag_mapping_a_rendered_log_needs(
     assert len(tags) > 1500, "every distinct name of every version, newest winning"
 
 
-def test_the_dump_indexes_into_sqlite_and_answers_the_same(
-    registry: FixRegistry, tmp_path: Path
-) -> None:
-    """The other way to read this directory, over the whole of it.
+def test_the_archive_is_what_publishing_it_produces(tmp_path: Path) -> None:
+    """Byte for byte, so "nothing changed" looks like nothing changed.
 
-    `tests/fix/test_sqlite.py` pins the two registries against each other on
-    four fixture fields; this is the same comparison over 6,479 real ones,
-    where a name declared in nine versions, a description with a `%` in it and
-    a tag that is four digits all exist for real.
+    `into_zip` stamps every member at the start of zip time and deflates it
+    the same way each run, so rebuilding the published archive from its own
+    contents has to give the published archive back. A refresh that changes
+    one field then shows up as a change, and a rebuild that changes nothing
+    shows up as nothing.
     """
-    with SqliteFixRegistry(cache_dir=DATA, database=tmp_path / "fix.db", retries=0) as indexed:
-        assert indexed.load() == {version: len(registry.fields(version)) for version in VERSIONS}
-        assert indexed.versions == registry.versions
-        assert indexed.tags() == registry.tags()
-        assert indexed.lookup("Side") == registry.lookup("Side")
-        assert indexed.field(35) == registry.field(35)
-        for text in ("reject", "side", 54, "Sied", "100%", "px", "time"):
-            assert indexed.search(text) == registry.search(text), text
-        for version in VERSIONS:
-            assert indexed.fields(version) == registry.fields(version), version
+    rebuilt = FixRegistry(cache_dir=DATA, retries=0).into_zip(tmp_path / "fix.zip")
+    assert rebuilt.read_bytes() == DATA.read_bytes()
 
 
-def test_no_description_needs_more_case_folding_than_sqlite_does(
-    registry: FixRegistry,
-) -> None:
-    """The one assumption the indexed search rests on, checked rather than hoped.
+def test_the_archive_is_worth_being_an_archive() -> None:
+    """Derived, then pinned: the dictionary compresses to about a sixth."""
+    with zipfile.ZipFile(DATA) as archive:
+        stored = sum(entry.file_size for entry in archive.infolist())
+    assert stored > 2_500_000, "the JSON inside is the whole dictionary"
+    assert DATA.stat().st_size < stored // 4
 
-    A search matches descriptions with SQL `LIKE`, which folds case for ASCII
-    and nothing else, where Python's `lower()` folds everything. The dump
-    carries no cased character outside ASCII -- so the two agree -- and this
-    is what says so if a refresh ever brings one in.
+
+def test_the_dictionary_is_ascii_where_it_matters(registry: FixRegistry) -> None:
+    """Names and descriptions carry no cased character outside ASCII.
+
+    Derived, then pinned: a search folds case, and a store that folds it any
+    other way than Python does would answer differently. Nothing here needs
+    more than ASCII folding today, and this is what says so if a refresh ever
+    brings a character that does.
     """
     cased = {
         character

@@ -9,17 +9,14 @@ from rekep.fix.message import (
     tag_arrow_array,
 )
 from rekep.fix.registry import BASE_URL, CACHE_DIRECTORY, FixRegistry
-from rekep.fix.sqlite import DATABASE_NAME, SqliteFixRegistry
 
 __all__ = [
     "BASE_URL",
     "CACHE_DIRECTORY",
-    "DATABASE_NAME",
     "FIX_SCALARS",
     "SOH",
     "FixMessage",
     "FixRegistry",
-    "SqliteFixRegistry",
     "arrow_type_of",
     "cast_arrow_bool",
     "detect_separator",
