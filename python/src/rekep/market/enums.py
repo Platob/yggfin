@@ -64,10 +64,19 @@ class Ranged(enum.IntEnum):
     PRIVATE = enum.nonmember(9000)
 
     def __new__(cls, value: int, fix_code: str = "") -> Self:
-        """Build the member as its integer, carrying the FIX character beside it."""
+        """Build the member as its integer, carrying the FIX character beside it.
+
+        The band is computed here too, once per member, rather than on every
+        read: a member is a singleton and its band is arithmetic on a constant,
+        so recomputing it was a division and a multiplication per comparison --
+        and `sign`, `moves_shares` and `is_a` are all comparisons. It was the
+        single hottest call in the book fold, at 1.1M evaluations per four
+        thousand events (`benchmarks/bench_market.py`).
+        """
         member = int.__new__(cls, value)
         member._value_ = value
         member._fix_code = fix_code
+        member._band = value // cls.WIDTH * cls.WIDTH
         return member
 
     # -- reading ------------------------------------------------------------
@@ -75,7 +84,7 @@ class Ranged(enum.IntEnum):
     @property
     def band(self) -> int:
         """This member's band floor -- the value a range predicate compares against."""
-        return int(self) // self.WIDTH * self.WIDTH
+        return self._band
 
     @classmethod
     def band_of(cls, value: int) -> int:
@@ -328,21 +337,28 @@ class Side(Ranged):
     @property
     def sign(self) -> int:
         """`+1` buying, `-1` selling, `0` for anything two-sided or unstated."""
-        band = self.band
-        if band == Side.BUY.band:
+        band = self._band
+        if band == _BUY_BAND:
             return 1
-        if band == Side.SELL.band:
+        if band == _SELL_BAND:
             return -1
         return 0
 
     @property
     def opposite(self) -> Side:
         """The plain other side; a cross or an unstated side is its own opposite."""
-        if self.band == Side.BUY.band:
+        if self._band == _BUY_BAND:
             return Side.SELL
-        if self.band == Side.SELL.band:
+        if self._band == _SELL_BAND:
             return Side.BUY
         return self
+
+
+#: The two band floors `Side.sign` compares against, read once. Inside the
+#: class they would be members of it, and reaching for them through
+#: `Side.BUY.band` on every comparison was two extra attribute walks per sign.
+_BUY_BAND = Side.BUY.band
+_SELL_BAND = Side.SELL.band
 
 
 class TimeInForce(Ranged):

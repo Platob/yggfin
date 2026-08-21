@@ -469,6 +469,87 @@ None of the awkward Doris type mappings apply any more, which is the point of
 the change: an `int64` is a `bigint` there, with no catalog property to set and
 nothing to `hex()` before a human can read it.
 
+## Folding a book
+
+`Book.from_events` is the other end of the pipeline: one instrument's orders
+and executions in time order, and the book after each instant that moved it.
+
+```python
+from rekep.market import Book, FixEvents
+
+events = (one for line in lines for one in FixEvents.from_text(line, venue="XCME"))
+for book in Book.from_events(events):
+    book.bid_px, book.ask_px, book.spread, book.micro_px, book.imbalance
+```
+
+**One row per instant, never one per message.** Several events at the same
+nanosecond are one state of the book, and writing three rows with the same
+`unix` is writing the feed rather than the book. An instant that moved nothing
+— an acknowledgement, a cancel of a level that was never there — yields
+nothing at all.
+
+**One instrument, sorted, and both are checked.** A stream carrying two
+instruments folds into a book that is neither, silently and forever; an event
+out of order asks the book to un-happen something. That is what
+`instrument_hash`'s `bucket[16]` partition and the `unix` sort order are for —
+read a partition and hand it straight here.
+
+### What is kept between events
+
+The **live orders**, not the levels. A venue that restates an order has to
+replace what that order was resting for, and a level cannot say which order
+contributed what. `Resting` holds them per side, and it is the piece that makes
+`BookSide.append_order`'s aggregated model — which moves a level by a delta and
+keeps no idea which order contributed it — usable on a feed that publishes
+orders rather than levels.
+
+Sorted **by price, then by descending quantity**, which is what makes the best
+bid and offer a read rather than a scan. Price first because that is what a
+book is; size second because at one price the larger interest is the one a
+taker meets first on most venues, and any stable second key beats an arbitrary
+one.
+
+```python
+side = Resting(side=Side.BID)
+side.apply(order)          # completed from the version this side already holds
+side.best                  # the order at the touch
+side.sorted_orders         # every live order, best first
+side.into_levels()         # aggregated to prices, with the order count per level
+```
+
+A restatement finds what it continues by lifecycle *or* by the identifier the
+venue gave it. That is not redundant: a lifecycle is hashed from the
+instrument, the venue and the identifier, so a report that carries the
+identifier and omits the venue — which venues do, because they know which one
+they are — hashes to a different lifecycle than the order it continues.
+
+### Which side a trade hit
+
+Three readings, strongest first, because a feed gives different ones:
+
+1. **The report's own side.** An execution's `side` is the side of the order it
+   reports, and a filled buy order was resting on the bid — so its liquidity
+   leaves the bid.
+2. **The order it names.** A report with no side but an `order_xhash` that is
+   live on one side names that side.
+3. **Its price against the touch.** A market-data trade print carries neither,
+   which is most prints: at or below the mid it took from the bid, above it
+   from the ask. That is the tick rule, and it is the honest answer when the
+   venue has not given a better one.
+
+A print against liquidity the fold never saw takes nothing out, because there
+is nothing to take it out of.
+
+### The prices that only exist across the sides
+
+`px` is the mid, `qty` is the size at the touch, and `spread`, `micro_px` and
+`imbalance` are the three a reader would otherwise recompute. They are
+**derived on every version and never carried**: `px` and `qty` are abstract
+slots that a version inherits from the one before, which is right for an
+order's limit and wrong for a mid — a book whose ask has just emptied has *no*
+mid, and inheriting the last one makes a one-sided market look two-sided for as
+long as it lasts.
+
 ## Completing a version
 
 A venue restates only what changed. A report that says *"partially filled, 4

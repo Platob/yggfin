@@ -128,6 +128,27 @@ def frame(parts: tuple[Any, ...]) -> bytes:
     return bytes(out)
 
 
+def _int_bytes(part: int) -> bytes:
+    """An `int` exactly: eight little-endian bytes, or its text past int64."""
+    try:
+        return LENGTH.pack(part)
+    except struct.error:
+        # Wider than an int64, which Arrow has no scalar for either.
+        return str(part).encode()
+
+
+#: The exact types `part_bytes` settles without a subclass walk, spelled the
+#: same way the walk below spells them -- this is a fast path and never a
+#: second definition of the layout.
+_EXACT: dict[type, Any] = {
+    str: str.encode,
+    int: _int_bytes,
+    float: struct.Struct("<d").pack,
+    bool: lambda part: b"\x01" if part else b"\x00",
+    bytes: lambda part: part,
+}
+
+
 def part_bytes(part: Any) -> bytes | None:
     """One part as the bytes both builders hash it as; None is an absent part.
 
@@ -139,6 +160,15 @@ def part_bytes(part: Any) -> bytes | None:
     """
     if part is None:
         return None
+    # Exact type first, and only then the `isinstance` walk below. The four
+    # types that are almost every part -- a string, an int, a float, a bool --
+    # are settled in one dict probe instead of up to five subclass checks,
+    # which is a third of the cost of hashing in the book fold. Keyed on the
+    # exact type, so a subclass (a `Ranged` code, which *is* an int) still
+    # takes the walk and still means what it meant.
+    exact = _EXACT.get(type(part))
+    if exact is not None:
+        return exact(part)
     if isinstance(part, bytes | bytearray | memoryview):
         return bytes(part)
     if isinstance(part, str):

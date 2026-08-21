@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+from collections.abc import Iterable, Iterator
 from typing import Annotated, Any, ClassVar, Self
 
 import pyarrow
@@ -9,7 +11,7 @@ import pyarrow.compute
 
 from rekep.convert import Convertible
 from rekep.fields import Field, FieldBuilder, field
-from rekep.market.enums import EventType, Side, UpdateAction
+from rekep.market.enums import EventType, Side, State, UpdateAction
 from rekep.market.event import UNIX, MarketEvent
 from rekep.market.fields import MarketFieldBuilder, fix_tag
 from rekep.market.identity import NIL
@@ -439,6 +441,177 @@ class Book(MarketEvent):
 
     # -- building a book out of events ---------------------------------------
 
+    @classmethod
+    def from_events(cls, events: Iterable[MarketEvent]) -> Iterator[Self]:
+        """One book per instant that changed it, folded from **one instrument's** stream.
+
+        The input is orders and executions in time order, for a single
+        instrument, and the output is the book after each instant that moved
+        it -- one row per instant, never one per message, because several
+        events at the same nanosecond are one state of the book and writing
+        three rows with the same `unix` is writing the feed rather than the
+        book.
+
+        **One instrument, and it is checked.** A stream carrying two of them
+        folds into a book that is neither, silently and forever; that is the
+        kind of wrong that a partition exists to prevent, and
+        `instrument_hash` is `bucket[16]` for exactly this reason. Read a
+        partition and hand it here.
+
+        **Sorted, and that is checked too.** A fold is a fold: an event out of
+        order asks the book to un-happen something, and there is no honest
+        answer. Iceberg keeps these tables sorted by `unix` for the same
+        reason, so a partition read back is already in the order this wants.
+
+        What is kept between events is the **live orders**, not the levels: a
+        venue that restates an order has to replace what that order was
+        resting for, and a level cannot say which order contributed what.
+        `Resting` holds them, sorted by price then by descending quantity,
+        which is what makes the best bid and offer a read rather than a scan.
+        """
+        bid, ask = Resting(side=Side.BID), Resting(side=Side.ASK)
+        instrument, unix, previous, about = None, None, None, None
+        moved = False
+        for event in events:
+            if instrument is None:
+                instrument = event.instrument_hash
+            elif event.instrument_hash != instrument:
+                raise ValueError(
+                    f"a book is one instrument's: got {event.instrument_hash} after "
+                    f"{instrument}. Partition the stream on `instrument_hash` first"
+                )
+            if unix is not None and event.unix < unix:
+                raise ValueError(
+                    f"a book is folded in time order: {event.unix} came after {unix}. "
+                    "Sort the stream on `unix` first"
+                )
+            if unix is not None and event.unix != unix and moved:
+                previous = cls._settled(bid, ask, unix, about, previous)
+                yield previous
+                moved = False
+            unix = event.unix
+            moved = cls._folded(bid, ask, event) or moved
+            # After folding, never before: a book is described by the events
+            # it holds, and reading the event that *triggered* the yield gave
+            # every row the units of the instant after it.
+            about = event
+        if moved and unix is not None and about is not None:
+            yield cls._settled(bid, ask, unix, about, previous)
+
+    @classmethod
+    def _folded(cls, bid: Resting, ask: Resting, event: MarketEvent) -> bool:
+        """One event applied to the side it belongs on. True when the book moved.
+
+        A shape that is itself a book is skipped rather than refused: a stream
+        read off a table may carry the book rows this produced beside the
+        orders that produced them, and folding a book into a book is not a
+        thing that means anything.
+        """
+        if event.is_order():
+            side = bid if event.side.sign > 0 else ask if event.side.sign < 0 else None
+            # The price is *not* checked here: a cancellation carries none, and
+            # gets one from the version it cancels. `Resting.apply` decides,
+            # after completing.
+            return False if side is None else side.apply(event)
+        if event.is_execution():
+            return cls._traded(bid, ask, event)
+        return False
+
+    @classmethod
+    def _traded(cls, bid: Resting, ask: Resting, execution: Execution) -> bool:
+        """A fill taken out of the side it hit, if this report moved shares at all."""
+        if not execution.kind.moves_shares or execution.px is None or execution.qty is None:
+            return False
+        side = cls._hit(bid, ask, execution)
+        if side is None:
+            return False
+        side.take(execution, abs(execution.qty))
+        return True
+
+    @classmethod
+    def _hit(cls, bid: Resting, ask: Resting, execution: Execution) -> Resting | None:
+        """Which side a fill took liquidity out of, by what the report actually says.
+
+        Three readings, strongest first, because a feed gives different ones:
+
+        1. **The report's own side.** An execution's `side` is the side of the
+           order it reports, and a filled buy order was resting on the bid --
+           so its liquidity leaves the bid. Exact whenever a venue sends it.
+        2. **The order it names.** A report with no side but an
+           `order_xhash` that is live on one side names that side.
+        3. **Its price against the touch.** A market-data trade print carries
+           neither, which is most prints: a trade at or below the mid took
+           from the bid, above it from the ask. That is the tick rule, and it
+           is the honest answer when the venue has not given a better one.
+
+        None when the book is empty, which is a print against liquidity this
+        fold never saw -- there is nothing to take it out of.
+        """
+        if execution.side.sign > 0:
+            return bid
+        if execution.side.sign < 0:
+            return ask
+        named = execution.order_xhash
+        if named:
+            if named in bid.orders:
+                return bid
+            if named in ask.orders:
+                return ask
+        best_bid, best_ask = bid.best, ask.best
+        if best_bid is None and best_ask is None:
+            return None
+        if best_bid is None:
+            return ask
+        if best_ask is None:
+            return bid
+        mid = ((best_bid.px or 0.0) + (best_ask.px or 0.0)) / 2
+        return bid if (execution.px or 0.0) <= mid else ask
+
+    @classmethod
+    def _settled(
+        cls, bid: Resting, ask: Resting, unix: int, about: MarketEvent, previous: Self | None
+    ) -> Self:
+        """The book as it stands, as a new row -- and the delta handed over with it.
+
+        A **new** `Book` per instant and never the same one mutated: these are
+        versions, and a caller collecting them into a batch would otherwise
+        get one object repeated. `with_previous` does the versioning, so a
+        book folded here carries the same `prev_hash`/`prev_state` chain as
+        one assembled by `append_event`.
+
+        `about` is the last event folded in, and it is where the book learns
+        what it is a book *of*: the instrument, the symbol and the units are
+        the stream's, not something a book row could work out for itself.
+        """
+        book = cls(
+            unix=unix,
+            instrument=about.instrument,
+            instrument_hash=about.instrument_hash,
+            symbol=about.symbol,
+            px_unit=about.px_unit,
+            qty_unit=about.qty_unit,
+            venue=about.venue,
+            state=State.OPEN if (bid.orders or ask.orders) else State.CLOSED,
+        )
+        # The lifecycle only, and not `identify`: the content hash is derived
+        # at the end of `with_previous` below, once the sides are on the row,
+        # and computing it here as well hashed every book twice.
+        parts = book.life_parts()
+        book.xhash = book.hash_of(*parts) if parts else NIL
+        for name, resting in (("bid", bid), ("ask", ask)):
+            side = resting.into_side(unix, BookSide.hash_of(book.xhash, name))
+            for column in ("hash", "px", "qty", "depth", "total_qty"):
+                setattr(book, f"{name}_{column}", getattr(side.identify(), column))
+            for column in ("alive", "updates", "executions"):
+                setattr(book, f"{name}_{column}", getattr(side, column))
+            book.parent_hash = [*(book.parent_hash or ()), side.hash]
+            resting.cleared()
+        book._priced()
+        # Cleared so `with_previous` re-derives it over the prices just set;
+        # `identify` above hashed a book that had no sides yet.
+        book.hash = NIL
+        return book.with_previous(previous)
+
     def append_event(self, event: Any) -> Self | None:
         """`append_order` or `append_execution`, inferred from what it was handed."""
         return getattr(self, f"append_{self.redirect_of(event, self.APPENDS)}")(event)
@@ -522,6 +695,19 @@ class Book(MarketEvent):
         self._priced()
         self.hash = self.hash_of(self.xhash, self.version, self.unix, self.px, self.spread)
         return self
+
+    def derive(self) -> None:
+        """A book's prices are computed across its sides, and never carried.
+
+        The one place a book has to override the completion rules: `px` and
+        `qty` are abstract slots that `MarketEvent.complete_from` fills from
+        the previous version of the same shape, which is right for an order
+        whose limit the venue stopped repeating and wrong for a mid. A book
+        whose ask has just emptied has *no* mid, and inheriting the last one
+        makes a one-sided market look two-sided for as long as it lasts.
+        """
+        self._priced()
+        super().derive()
 
     def _priced(self) -> None:
         """The five prices across the sides, for one book rather than a column of them."""
@@ -712,3 +898,287 @@ def _list_sums(alive: Any, name: str, lengths: Any) -> Any:
     where = compute.index_in(identifiers, value_set=totals.column("row").combine_chunks())
     summed = compute.take(totals.column("value_sum").combine_chunks(), where)
     return compute.if_else(compute.equal(lengths, 0), pyarrow.scalar(0.0), summed)
+
+
+# -- folding a book out of one instrument's events ---------------------------
+
+
+@dataclasses.dataclass
+class Resting:
+    """Every order standing on one side of a book, and what they aggregate to.
+
+    The state a fold needs and a `BookSide` row does not carry: which orders
+    are live, so that a restatement replaces what that order was resting for
+    rather than adding to it. `BookSide.append_order` is aggregated by design
+    -- it moves a level by a delta and keeps no idea which order contributed
+    what -- which is right for a venue that publishes levels and wrong for one
+    that publishes orders. This is the other half.
+
+    Sorted **by price, then by descending quantity**, which is what makes the
+    best bid and offer a read of `orders[0]` rather than a scan. Price first
+    because that is what a book is; size second because at one price the
+    larger interest is the one a taker meets first on most venues, and any
+    stable second key beats an arbitrary one.
+    """
+
+    side: Side
+    """Which side this is; its sign is what turns the sort around."""
+
+    orders: dict[int, Order] = dataclasses.field(default_factory=dict)
+    """Every live order, by lifecycle, in no particular order."""
+
+    named: dict[str, int] = dataclasses.field(default_factory=dict)
+    """Which lifecycle each venue or client identifier belongs to."""
+
+    levels: dict[float, list[float]] = dataclasses.field(default_factory=dict)
+    """Running `[quantity, orders]` per price, kept as the orders move.
+
+    Derived state, and derived *incrementally* on purpose: a book is snapshotted
+    after every instant that changed it, and re-aggregating two hundred orders
+    per snapshot is the same arithmetic over and over for one order's worth of
+    change.
+    """
+
+    updates: list[LevelUpdate] = dataclasses.field(default_factory=list)
+    """What has changed since the last book was yielded."""
+
+    executions: list[LevelExecution] = dataclasses.field(default_factory=list)
+    """What has traded against this side since the last book was yielded."""
+
+    # -- what the orders come to --------------------------------------------
+
+    @property
+    def sign(self) -> int:
+        """`+1` on a bid and `-1` on an ask -- what turns the sort around."""
+        return self.side.sign
+
+    @property
+    def sorted_orders(self) -> list[Order]:
+        """Every live order, best first: by price, then by descending quantity.
+
+        Multiplying the price by the *negation* of the side's sign sorts a bid
+        down and an ask up -- one expression, and no branch that could be
+        wrong on one side only. Read once into a local, because a key function
+        runs per element and an attribute walk per element is the cost of the
+        sort on a deep book.
+        """
+        facing = -self.sign
+        return sorted(
+            self.orders.values(),
+            key=lambda order: ((order.px or 0.0) * facing, -_resting(order)),
+        )
+
+    @property
+    def best(self) -> Order | None:
+        """The order at the touch, or None when nothing is resting.
+
+        Off the live orders and not off the levels: at one price the largest
+        interest sorts first, and *which order* is at the touch is a question
+        only an order-by-order fold can answer.
+        """
+        facing = -self.sign
+        return min(
+            self.orders.values(),
+            key=lambda order: ((order.px or 0.0) * facing, -_resting(order)),
+            default=None,
+        )
+
+    def into_levels(self) -> list[Level]:
+        """The live orders aggregated to price levels, best first.
+
+        Which is what a book row publishes: a level is every order at one
+        price, and `orders` is how many of them there are -- the one number an
+        aggregated feed cannot give you and an order-by-order fold can.
+
+        Built from the running `levels` totals rather than by walking the
+        orders, so a snapshot sorts the handful of distinct **prices** instead
+        of every order standing at them. On a two hundred order book across
+        forty prices that is the difference the fold's throughput is made of.
+        """
+        facing = -self.sign
+        return [
+            Level(px=px, qty=totals[0], orders=int(totals[1]))
+            for px, totals in sorted(self.levels.items(), key=lambda item: item[0] * facing)
+        ]
+
+    def into_side(self, unix: int, xhash: int) -> BookSide:
+        """This side as the `BookSide` a book row carries flat."""
+        levels = self.into_levels()
+        best = levels[0] if levels else None
+        return BookSide(
+            unix=unix,
+            xhash=xhash,
+            side=self.side,
+            state=State.OPEN if levels else State.CLOSED,
+            px=best.px if best else None,
+            qty=best.qty if best else None,
+            depth=len(levels),
+            total_qty=sum(level.qty for level in levels),
+            alive=levels,
+            updates=list(self.updates),
+            executions=list(self.executions),
+        )
+
+    def cleared(self) -> None:
+        """Forget the delta, keeping the state. Called once a book has been yielded."""
+        self.updates.clear()
+        self.executions.clear()
+
+    # -- moving it ----------------------------------------------------------
+
+    def apply(self, order: Order) -> bool:
+        """One order's latest version, put where it belongs. True if the side moved.
+
+        The order is completed from the version this side already holds, which
+        is what makes a venue's restatement usable: a report that says only
+        "partially filled, 4 done" arrives here with no price, and leaves with
+        the price the order has had all along.
+
+        An order that ends up resting for nothing is removed rather than kept
+        at zero -- a level of zero is not a level, and `alive` is what is
+        alive. False when nothing about the side changed.
+        """
+        standing = self.standing(order)
+        # A copy, because what is stored here outlives the call and is
+        # mutated by it -- `_reduce` writes a new `leaves_qty` onto a resting
+        # order when a trade takes part of it. Folding the caller's own object
+        # would edit an event it still holds, and replaying one stream twice
+        # would give two different books.
+        settled = dataclasses.replace(order).with_previous(standing)
+        if settled.px is None:
+            # No price even after completing: a market order, which rests
+            # nowhere -- it is an execution against a side, not a level on
+            # it. Skipped rather than refused, because an order stream really
+            # does carry them and one of them is not a reason to abandon the
+            # book. `BookSide.append_order` raises instead, because there a
+            # caller named the side and meant it.
+            return False
+        before = _resting(standing) if standing else 0.0
+        after = 0.0 if settled.state.is_terminal else _resting(settled)
+        if standing is not None:
+            self._level(standing.px, -before, -1)
+        if after <= 0:
+            self.remove(settled.xhash, aggregated=False)
+        else:
+            self.orders[settled.xhash] = settled
+            self._level(settled.px, after, 1)
+            for spelling in (settled.order_id, settled.client_order_id):
+                if spelling:
+                    self.named[spelling] = settled.xhash
+        moved = after - before
+        if not moved and (standing is None or standing.px == settled.px):
+            return False
+        self.updates.append(
+            LevelUpdate(
+                action=_action_of(before, after),
+                px=settled.px,
+                qty=None if after <= 0 else after,
+                orders=None,
+                position=None,
+            )
+        )
+        return True
+
+    def standing(self, order: Order) -> Order | None:
+        """The live version of `order`, by lifecycle or by the name the venue gave it.
+
+        By name as well, and that is not redundant: a lifecycle is hashed from
+        the instrument, the venue and the identifier, so a report that carries
+        the identifier and omits the venue -- which venues do, because they
+        know which one they are -- hashes to a different lifecycle than the
+        order it continues. The identifier is the venue's own and unique to
+        it, so it settles the question the hash cannot.
+        """
+        found = self.orders.get(order.xhash) if order.xhash else None
+        if found is not None:
+            return found
+        for spelling in (order.order_id, order.client_order_id):
+            if spelling and spelling in self.named:
+                return self.orders.get(self.named[spelling])
+        return None
+
+    def remove(self, xhash: int, aggregated: bool = True) -> None:
+        """Take one order out, and every name that pointed at it.
+
+        `aggregated=False` is for the one caller that has already taken the
+        order out of the running level totals -- `apply`, which takes the
+        standing version out before it knows whether a new one is going in.
+        """
+        gone = self.orders.pop(xhash, None)
+        if gone is None:
+            return
+        if aggregated:
+            self._level(gone.px, -_resting(gone), -1)
+        for spelling in (gone.order_id, gone.client_order_id):
+            if spelling and self.named.get(spelling) == xhash:
+                del self.named[spelling]
+
+    def _level(self, px: float | None, quantity: float, orders: int) -> None:
+        """Move the running total at `px` by `quantity` and `orders`.
+
+        A level that reaches zero is dropped rather than kept at zero: a level
+        of nothing is not a level, and leaving it would put an empty price in
+        every `alive` list from then on.
+        """
+        if px is None:
+            return
+        totals = self.levels.get(px)
+        if totals is None:
+            self.levels[px] = [quantity, float(orders)]
+            return
+        totals[0] += quantity
+        totals[1] += orders
+        if totals[1] <= 0 or totals[0] <= 0:
+            del self.levels[px]
+
+    def take(self, execution: Execution, traded: float) -> None:
+        """Record a trade against this side, and take `traded` out of it.
+
+        The order the fill names is reduced first, because that is exact.
+        Where the report names no order -- a market-data trade print, which is
+        most of them -- the quantity comes off the resting orders in the order
+        they are sorted in, which is the same order a venue would have filled
+        them in.
+        """
+        self.executions.append(
+            LevelExecution(
+                unix=execution.unix,
+                px=execution.px or 0.0,
+                qty=execution.qty or 0.0,
+                xhash=execution.xhash,
+                aggressor=execution.aggressor,
+            )
+        )
+        hit = self.orders.get(execution.order_xhash or 0)
+        for order in [hit] if hit is not None else self.sorted_orders:
+            if traded <= 0:
+                break
+            traded = self._reduce(order, traded)
+
+    def _reduce(self, order: Order, traded: float) -> float:
+        """Take what `traded` can from one order; the rest is returned for the next."""
+        standing = _resting(order)
+        taken = min(standing, traded)
+        left = standing - taken
+        if left <= 0:
+            self.remove(order.xhash)
+        else:
+            order.leaves_qty = left
+            self._level(order.px, -taken, 0)
+        self.updates.append(
+            LevelUpdate(
+                action=_action_of(standing, left),
+                px=order.px,
+                qty=None if left <= 0 else left,
+                orders=None,
+                position=None,
+            )
+        )
+        return traded - taken
+
+
+def _action_of(before: float, after: float) -> UpdateAction:
+    """What moving a level from `before` to `after` did to it."""
+    if after <= 0:
+        return UpdateAction.DELETE
+    return UpdateAction.CHANGE if before > 0 else UpdateAction.NEW

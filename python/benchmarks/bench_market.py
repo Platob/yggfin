@@ -5,7 +5,7 @@ Run from `python/`::
     uv run python benchmarks/bench_market.py            # full sweep
     uv run python benchmarks/bench_market.py --quick    # fewer rows, fewer repeats
 
-Four questions, answered on columns shaped like a real feed:
+Five questions, answered on columns shaped like a real feed:
 
 1. **What does `hash_arrow` buy over `hash_of` per row?** Both build the same
    identifiers, and the vectorised result is asserted equal to the scalar one
@@ -21,7 +21,11 @@ Four questions, answered on columns shaped like a real feed:
    column it fills, and, separately, against reading a price out of a side
    that is *already* derived: the nested access is not the cost, the walk over
    the levels is, and the two lines say so.
-4. **What does reading a venue's FIX cost per message?** `FixEvents` is the
+4. **What does folding a stream into books cost?** `Book.from_events` keeps
+   every live order, so its cost is not the number of books but the number of
+   events and how deep the book gets -- timed on a stream shaped like a feed,
+   a quarter of whose events replace an order already resting.
+5. **What does reading a venue's FIX cost per message?** `FixEvents` is the
    way in, so its throughput is the ceiling on everything downstream. Timed
    on the three shapes a feed is actually made of -- an order request, a
    filled execution report, and a market-data refresh whose entries fan out
@@ -36,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import random
 import sys
 import time
 from collections.abc import Callable
@@ -299,6 +304,62 @@ def bench_fix(rows: int, repeat: int) -> None:
         print(f"  {'events/s':<44} {rows * produced / seconds:>12,.0f}")
 
 
+def stream(events: int) -> list[object]:
+    """One instrument's order flow: a fresh order, a restatement, a cancel, a print.
+
+    Shaped like a feed rather than like a best case -- a quarter of the events
+    replace an order already resting, which is the case the fold exists for and
+    the only one that has to find what it replaces.
+    """
+    from rekep.market import ExecKind, Execution, Instrument, Order, Side, State
+
+    instrument = Instrument(symbol="BTC-USD", exchange="XCME")
+    generate = random.Random(5)
+    built: list[object] = []
+    for index in range(events):
+        unix = 1_787_308_200_000_000_000 + index * 1_000_000
+        side = Side.BID if index % 2 else Side.ASK
+        named = f"O{index % 200}"
+        shape = index % 4
+        if shape == 3:
+            built.append(
+                Execution(
+                    unix=unix,
+                    instrument=instrument,
+                    symbol="BTC-USD",
+                    px=100.0 + generate.randrange(-20, 20) * 0.01,
+                    qty=1.0,
+                    kind=ExecKind.TRADED,
+                    exec_id=f"E{index}",
+                ).with_previous(None)
+            )
+            continue
+        built.append(
+            Order(
+                unix=unix,
+                instrument=instrument,
+                symbol="BTC-USD",
+                side=side,
+                px=100.0 + side.sign * -1 * generate.randrange(1, 20) * 0.01,
+                qty=float(generate.randrange(1, 50)),
+                order_id=named,
+                state=State.CANCELLED if shape == 2 else State.NEW,
+            ).with_previous(None)
+        )
+    return built
+
+
+def bench_fold(events: int, repeat: int) -> None:
+    """What folding one instrument's stream into books costs, per event and per book."""
+    print(f"\nBook.from_events -- {events:,} events, one instrument")
+    given = stream(events)
+    produced = len(list(Book.from_events(given)))
+    assert produced, "the fold produced no books at all"
+    seconds, _ = timed(lambda: list(Book.from_events(given)), repeat)
+    report("fold", seconds, events)
+    print(f"  {'books/s':<44} {produced / seconds:>12,.0f}   ({produced:,} books)")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--quick", action="store_true")
@@ -319,6 +380,7 @@ def main() -> None:
         bench_book(rows // 10, depth, repeat)
     bench_codes(rows, repeat)
     bench_fix(rows // 20, repeat)
+    bench_fold(rows // 10, repeat)
 
 
 if __name__ == "__main__":
