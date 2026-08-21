@@ -71,6 +71,35 @@ def test_a_location_that_names_no_endpoint_is_the_parents_answer(posix: None) ->
     assert ArrowFileIO.parse_location("s3://key:secret@bucket/t") == ("s3", "bucket", "bucket/t")
 
 
+def test_an_endpoint_hostname_keeps_the_bucket_below_it_too(posix: None) -> None:
+    """The endpoint most warehouses actually name carries no port at all.
+
+    `s3.eu-west-1.amazonaws.com` answers on 443, so a port-only reading takes
+    the whole hostname for the bucket -- and every location under the
+    warehouse is then addressed in a bucket nobody created.
+    """
+    assert ArrowFileIO.parse_location("s3://s3.eu-west-1.amazonaws.com/wh/t") == (
+        "s3",
+        "wh",
+        "wh/t",
+    )
+    assert ArrowFileIO.parse_location("s3://wh.s3.eu-west-1.amazonaws.com/t") == (
+        "s3",
+        "wh",
+        "wh/t",
+    )
+
+
+def test_a_warehouse_url_on_a_hosted_store_configures_it_from_the_hostname() -> None:
+    """A MinIO behind a certificate says where it is without saying a port."""
+    assert inferred_properties({"warehouse": "s3://key:secret@minio.corp.com/wh"}) == {
+        "warehouse": "s3://key:secret@minio.corp.com/wh",
+        "s3.endpoint": "https://minio.corp.com",
+        "s3.access-key-id": "key",
+        "s3.secret-access-key": "secret",
+    }
+
+
 def test_a_warehouse_url_configures_the_filesystem_it_names() -> None:
     """Said once as a location, rather than again as three settings."""
     assert inferred_properties({"warehouse": "s3://key:sec:ret@minio:9000/wh"}) == {

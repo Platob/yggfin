@@ -632,14 +632,22 @@ def _natural(info: pyarrow.fs.FileInfo) -> tuple[tuple[int, int | str, str], ...
 def _root(source: str | os.PathLike[str], filesystem: pyarrow.fs.FileSystem | None) -> str:
     """A source as this set addresses it: a URI, whatever it arrived as.
 
-    A path on a filesystem the caller handed over is already what that
-    filesystem understands, so it is left alone. Anything else goes through
-    `Url`, which is where this package decides what a location is -- a bare
-    path becomes a `file://` URI against the working directory, a Windows
-    drive letter stays a drive letter, and a URI keeps its endpoint and its
-    credentials.
+    Without a filesystem it goes through `Url`, which is where this package
+    decides what a location is -- a bare path becomes a `file://` URI against
+    the working directory, a Windows drive letter stays a drive letter, and a
+    URI keeps its endpoint and its credentials.
+
+    With one, the caller has already said which store this is and the path is
+    theirs: a key under a prefix is left exactly as it was written, because
+    only that store knows what its own separators mean. A **local** path is
+    still *spelled* through `Url` -- resolved against nothing, just spelled --
+    because `pyarrow.fs` answers every local listing with forward slashes, and
+    a root spelled `C:\\logs` is a prefix of none of the paths this set is
+    then holding beside it.
     """
     text = os.fspath(source)
-    if filesystem is not None:
-        return text
-    return Url.from_string(text).into_string()
+    if filesystem is None:
+        return Url.from_string(text).into_string()
+    if isinstance(filesystem, pyarrow.fs.LocalFileSystem):
+        return Url.from_string(text).path
+    return text
