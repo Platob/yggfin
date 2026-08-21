@@ -14,8 +14,9 @@ from rekep.require import require
 #: hub here, so the store's reads and writes go through the same filesystem
 #: implementations everything else does -- one credential chain, one set of
 #: URI rules, and `pyarrow.fs` handles for anything that has to be listed or
-#: deleted during maintenance.
-PYARROW_FILE_IO = "pyiceberg.io.pyarrow.PyArrowFileIO"
+#: deleted during maintenance. Ours rather than pyiceberg's own, for the one
+#: parsing fix `rekep.iceberg.fileio` explains: Windows drive letters.
+PYARROW_FILE_IO = "rekep.iceberg.fileio.ArrowFileIO"
 
 
 @dataclasses.dataclass(eq=False)

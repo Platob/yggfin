@@ -1,12 +1,14 @@
 """`IcebergDataset` against a real, fully local catalog: SQLite and a file warehouse."""
 
 import datetime
+import os
 import subprocess
 import sys
 from pathlib import Path
 from typing import Annotated
 
 import pyarrow
+import pyarrow.fs
 import pytest
 from pyiceberg.expressions import EqualTo
 
@@ -29,6 +31,16 @@ class Quote(Convertible):
 
     venue: str | None = None
     """Where it traded, when known."""
+
+
+def local(location: str) -> Path:
+    """The directory behind a `file:` location, on any OS.
+
+    Stripping `file://` by hand leaves `/C:/...` on Windows, which is not a
+    path anything opens. `pyarrow.fs` owns the URI rules the store writes
+    with, so it decides here too.
+    """
+    return Path(pyarrow.fs.FileSystem.from_uri(location)[1])
 
 
 def catalog_properties(tmp_path: Path) -> dict[str, str]:
@@ -979,7 +991,7 @@ def test_cleanup_sweeps_metadata_as_well_as_data(dataset: IcebergDataset) -> Non
     for index in range(8):
         dataset.write_arrow(quotes(2, f"venue{index}"), commit_row_size=0)
     dataset.compact(min_files=2)
-    location = Path(dataset.iceberg_table.location().replace("file://", ""))
+    location = local(dataset.iceberg_table.location())
     before = len(list((location / "metadata").rglob("*")))
     stored = dataset.read_arrow_table().num_rows
     report = dataset.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0))
@@ -1002,7 +1014,7 @@ def test_every_retained_snapshot_still_reads_after_a_sweep(dataset: IcebergDatas
 def test_a_sweep_can_leave_metadata_alone(dataset: IcebergDataset) -> None:
     for index in range(4):
         dataset.write_arrow(quotes(2, f"venue{index}"), commit_row_size=0)
-    location = Path(dataset.iceberg_table.location().replace("file://", ""))
+    location = local(dataset.iceberg_table.location())
     before = {path for path in (location / "metadata").rglob("*")}
     dataset.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0), metadata=False)
     # Expiry writes a metadata version of its own, so the directory may grow --
@@ -1015,24 +1027,29 @@ def test_a_sweep_finds_the_files_however_the_warehouse_is_spelled(tmp_path: Path
 
     Stripping the scheme by hand leaves `file:/x`, which matches nothing the
     listing returns -- so every live file looked orphaned and the sweep deleted
-    the table. The same shape as `abfss://container@account.../x` and a Windows
-    drive letter, neither of which can be exercised here.
+    the table. The same shape as `abfss://container@account.../x`, which cannot
+    be exercised here. On Windows the odd spelling is a different one: `file:`
+    plus a drive letter is a URI nothing resolves, and the trap is the bare
+    `C:/x` path itself, which is not a URI at all.
     """
     warehouse = tmp_path / "warehouse"
     warehouse.mkdir()
+    posix = os.name != "nt"
     catalog = IcebergCatalog(
         name="single",
         properties={
             "type": "sql",
             "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
-            "warehouse": f"file:{warehouse.as_posix()}",  # one slash, not three
+            # One slash, not three -- or on Windows, no scheme at all.
+            "warehouse": f"file:{warehouse.as_posix()}" if posix else warehouse.as_posix(),
         },
     )
     quotes_ = catalog.dataset("trading.quotes", struct=Quote.FIELD)
     for _ in range(3):
         quotes_.write_arrow(quotes(2), commit_row_size=0)
     stored = quotes_.read_arrow_table().num_rows
-    assert quotes_.get_or_create_table().location().startswith("file:/"), "one slash"
+    location = quotes_.get_or_create_table().location()
+    assert not location.startswith("file://"), "the odd spelling survived into the location"
     quotes_.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0))
     assert quotes_.refresh().read_arrow_table().num_rows == stored, "the table still reads"
 
@@ -1115,7 +1132,7 @@ def test_a_sweep_keeps_the_files_only_the_metadata_names(dataset: IcebergDataset
 
     dataset.write_arrow(quotes(2), commit_row_size=0)
     table = dataset.get_or_create_table()
-    metadata = Path(table.location().replace("file://", "")) / "metadata"
+    metadata = local(table.location()) / "metadata"
     puffin = metadata / "stats.puffin"
     puffin.write_bytes(b"PFA1" + bytes(64))
     pointer = metadata / "version-hint.text"
