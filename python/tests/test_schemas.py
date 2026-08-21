@@ -13,6 +13,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, Log
+from rekep.market import Book, BookSide, Execution, Instrument, Order
 
 #: The contract directory is at the repo root, beside `python/` -- it is
 #: published to whoever exchanges data with this repo, not shipped in the wheel.
@@ -24,12 +25,28 @@ CONTRACTS = sorted(
 
 #: Pinned so an empty or moved directory fails here rather than passing every
 #: test below by iterating over nothing.
-EXPECTED_CONTRACTS = 3
+EXPECTED_CONTRACTS = 8
+
+#: The market shapes are tables, so each is published; `Event`, `MarketEvent`,
+#: `Level` and `LevelUpdate` are not, so they are not -- an abstract base is
+#: nothing two sides exchange, and a level travels inside the side that holds it.
+PUBLISHED = {
+    "instrument.yaml": Instrument,
+    "order.yaml": Order,
+    "execution.yaml": Execution,
+    "bookside.yaml": BookSide,
+    "book.yaml": Book,
+}
 
 
 def test_the_directory_holds_the_contracts_the_tests_assume() -> None:
     assert len(CONTRACTS) == EXPECTED_CONTRACTS
-    assert {path.name for path in CONTRACTS} == {"log.yaml", "quote.yaml", "venue.json"}
+    assert {path.name for path in CONTRACTS} == {
+        "log.yaml",
+        "quote.yaml",
+        "venue.json",
+        *PUBLISHED,
+    }
 
 
 @pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
@@ -62,6 +79,44 @@ def test_the_log_contract_is_the_declaration() -> None:
     assert published.into_arrow_schema().equals(Log.FIELD.into_arrow_schema(), check_metadata=True)
     assert published.primary_keys() == ["recorded_at_unix", "h64"]
     assert published.partition_keys() == {"recorded_at_date": "identity"}
+
+
+@pytest.mark.parametrize(
+    "name,shape", sorted(PUBLISHED.items()), ids=lambda value: getattr(value, "__name__", value)
+)
+def test_a_market_contract_is_the_declaration(name: str, shape: type) -> None:
+    """A column added in Python and not published here fails the build.
+
+    Regenerate them all from `python/` with:
+        uv run python -c "import rekep.market as m; \
+[getattr(m, n).FIELD.into_yaml(f'../schemas/rekep/{n.lower()}.yaml') \
+ for n in ('Instrument', 'Order', 'Execution', 'BookSide', 'Book')]"
+    """
+    published = Field.from_yaml(str(SCHEMAS / "rekep" / name))
+    assert published == shape.FIELD
+    assert published.into_arrow_schema().equals(
+        shape.FIELD.into_arrow_schema(), check_metadata=True
+    )
+    assert published.primary_keys() == shape.FIELD.primary_keys()
+    assert published.partition_keys() == shape.FIELD.partition_keys()
+
+
+def test_a_market_contract_publishes_the_fix_tags_a_consumer_needs() -> None:
+    """The `fix:` keys are half of what makes the contract readable without our code."""
+    order = Field.from_yaml(str(SCHEMAS / "rekep" / "order.yaml"))
+    assert order.field("tif").fix["tag"] == "59"
+    assert order.field("px").fix["name"] == "Price"
+    assert order.field("instrument").field("symbol").fix["tag"] == "55"
+
+
+def test_a_published_market_contract_declares_no_nested_key() -> None:
+    """A key nothing reads would tell a consumer a nested column identifies a row."""
+    for name in PUBLISHED:
+        contract = Field.from_yaml(str(SCHEMAS / "rekep" / name))
+        for member in contract.fields:
+            for inner in member.fields:
+                assert not inner.is_primary_key, f"{name}: {member.name}.{inner.name}"
+                assert not inner.is_partition_key, f"{name}: {member.name}.{inner.name}"
 
 
 def test_the_quote_contract_carries_every_nested_kind() -> None:

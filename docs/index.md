@@ -20,6 +20,11 @@ Three ideas, and everything else is built from them:
   a table through pyiceberg, creates it from your declaration, and keeps it fast
   (compact, expire, sweep) without a maintenance job of your own.
 
+- :material-chart-line: **[Market](market.md)** — orders, executions and books
+  as a history rather than a state: every version its own row, keyed by sixteen
+  fixed bytes, protocol notions as banded `int32` codes a range predicate can
+  prune on, and a book's derived prices computed once in kernels.
+
 </div>
 
 And two pages about how they fit together, and how to build on them:

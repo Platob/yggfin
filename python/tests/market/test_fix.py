@@ -1,0 +1,139 @@
+"""Every FIX tag the market shapes declare, checked against the published dictionary.
+
+A tag is a number typed from memory, and a transposed one does not look wrong:
+`ClOrdID <11>` written as `<14>` labels the column `CumQty` and nothing in the
+code, the schema or the contract ever says so. So the names are the source and
+the tags are checked against `data/fix.zip` -- read here with `zipfile`, not
+with the registry, so the test does not depend on the code it is checking.
+"""
+
+from __future__ import annotations
+
+import json
+import zipfile
+from pathlib import Path
+from typing import Any
+
+import pyarrow
+import pytest
+
+from rekep.fields import Field
+from rekep.fix.fields import arrow_type_of
+from rekep.market import Book, BookSide, Execution, Instrument, MarketEvent, Order
+from rekep.market.book import Level, LevelUpdate
+
+#: The archive this repository publishes, from the repository and not the wheel.
+DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
+
+SHAPES = (MarketEvent, Order, Execution, BookSide, Book, Instrument, Level, LevelUpdate)
+
+#: FIX datatypes this package deliberately stores as a narrower or different
+#: Arrow type. A `char` enumeration becomes a banded `int32` code, and a FIX
+#: `int` that is a code or a count becomes `int32` -- neither of which any FIX
+#: dictionary puts a ceiling on, and neither of which needs 64 bits here.
+NARROWED = {"char": pyarrow.int32(), "int": pyarrow.int32()}
+
+
+def dictionary() -> dict[str, dict[str, Any]]:
+    """Every field of every version, by name, the **newest** definition winning.
+
+    Newest matters and was got wrong once: FIX 4.0 typed `OrderQty` as `int`
+    and `ExecID` as `int`, and both became `Qty` and `String` in 4.2. A lookup
+    that took the oldest definition called every quantity column in this
+    package mistyped. Versions descend, and the transport dictionary
+    (`FIXT1.1`) is read last because it only carries session fields.
+
+    Read straight out of the archive: a test that went through `FixRegistry`
+    would pass whenever the registry and the declaration were wrong together.
+    """
+    by_name: dict[str, dict[str, Any]] = {}
+    with zipfile.ZipFile(DATA) as archive:
+        versions = [name for name in archive.namelist() if name != "versions.json"]
+        application = sorted((v for v in versions if not v.startswith("FIXT")), reverse=True)
+        for name in [*application, *sorted(v for v in versions if v.startswith("FIXT"))]:
+            for member in json.loads(archive.read(name).decode("utf-8"))["fields"]:
+                by_name.setdefault(member["name"], member)
+    return by_name
+
+
+def tagged(shape: type) -> list[tuple[str, Field]]:
+    """Every member of `shape`, at any depth, that names a FIX field."""
+    found: list[tuple[str, Field]] = []
+
+    def walk(prefix: str, members: tuple[Field, ...]) -> None:
+        for member in members:
+            path = f"{prefix}{member.name}"
+            if "name" in member.fix:
+                found.append((path, member))
+            walk(f"{path}.", member.fields)
+
+    walk(f"{shape.__name__}.", shape.FIELD.fields)
+    return found
+
+
+FIELDS = dictionary()
+DECLARED = [(path, member) for shape in SHAPES for path, member in tagged(shape)]
+
+
+def test_the_dictionary_is_read_newest_first() -> None:
+    """The lookup this file depends on, pinned against the change that broke it."""
+    assert FIELDS["OrderQty"]["metadata"]["fix:type"] == "Qty", "4.0 said int"
+    assert FIELDS["ExecID"]["metadata"]["fix:type"] == "String", "4.0 said int"
+    assert FIELDS["MsgSeqNum"]["metadata"]["fix:type"] == "SeqNum", "4.0 said int"
+
+
+def test_the_shapes_declare_fix_fields_at_all() -> None:
+    """A walk that found nothing would make every test below pass vacuously."""
+    assert len(DECLARED) > 40, len(DECLARED)
+    assert any(path.count(".") > 1 for path, _ in DECLARED), "and it reached a nested one"
+
+
+@pytest.mark.parametrize("path,member", DECLARED, ids=[path for path, _ in DECLARED])
+def test_every_declared_tag_is_the_one_the_dictionary_gives_that_name(
+    path: str, member: Field
+) -> None:
+    name = member.fix["name"]
+    assert name in FIELDS, f"{path} names {name!r}, which is in no FIX version"
+    assert member.fix["tag"] == FIELDS[name]["metadata"]["fix:tag"], path
+
+
+@pytest.mark.parametrize("path,member", DECLARED, ids=[path for path, _ in DECLARED])
+def test_every_declared_type_is_the_fix_one_or_a_deliberate_narrowing(
+    path: str, member: Field
+) -> None:
+    """The other half of a mislabel: the right tag on a column of the wrong type."""
+    datatype = FIELDS[member.fix["name"]]["metadata"].get("fix:type", "")
+    expected = arrow_type_of(datatype)
+    if member.arrow_type == expected:
+        return
+    narrowed = NARROWED.get(datatype.lower())
+    assert narrowed is not None and member.arrow_type == narrowed, (
+        f"{path} is {member.arrow_type} where FIX {datatype!r} is {expected}"
+    )
+
+
+def test_a_ranged_code_is_only_ever_read_from_a_fix_character_field() -> None:
+    """`int32` is the narrowing; it has to come from something enumerable."""
+    for path, member in DECLARED:
+        if member.arrow_type != pyarrow.int32():
+            continue
+        datatype = FIELDS[member.fix["name"]]["metadata"].get("fix:type", "").lower()
+        assert datatype in NARROWED, f"{path} narrowed a FIX {datatype!r}"
+
+
+def test_the_tags_that_only_a_late_version_defines_are_still_found() -> None:
+    """Several columns here are FIX 5.0 fields; a 4.4-only lookup would miss them."""
+    late = {"TradeID": "1003", "AggressorIndicator": "1057", "MinPriceIncrement": "969"}
+    for name, tag in late.items():
+        assert FIELDS[name]["metadata"]["fix:tag"] == tag
+    declared = {member.fix["name"] for _, member in DECLARED}
+    assert late.keys() & declared, "and the shapes actually use one of them"
+
+
+def test_one_fix_field_is_spelled_the_same_wherever_it_appears() -> None:
+    """`ClOrdID` on an order and on an execution must be one column, not two."""
+    by_name: dict[str, set[tuple[str, Any]]] = {}
+    for _, member in DECLARED:
+        by_name.setdefault(member.fix["name"], set()).add((member.name, member.arrow_type))
+    for name, spellings in by_name.items():
+        assert len(spellings) == 1, f"{name} is spelled {sorted(map(str, spellings))}"

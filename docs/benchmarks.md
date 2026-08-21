@@ -2,8 +2,9 @@
 
 Every number on this site was measured, and it lives on the page it is about:
 casting is on [Types](types.md#benchmarks), parsing on
-[Logs](logs.md#benchmarks), FIX on [FIX](fix.md#benchmarks), and everything
-about tables on [Iceberg](iceberg.md#benchmarks). This page is the method —
+[Logs](logs.md#benchmarks), FIX on [FIX](fix.md#benchmarks), identifiers and
+books on [Market](market.md#benchmarks), and everything about tables on
+[Iceberg](iceberg.md#benchmarks). This page is the method —
 what the scripts do, and how to read what they print.
 
 The scripts are in `python/benchmarks/`, they ship with the package, and they
@@ -18,6 +19,7 @@ uv run python benchmarks/bench_text_file.py --only variants  # what moves the pa
 uv run python benchmarks/bench_text_file.py --only folders   # a capture of many files
 uv run python benchmarks/bench_cast.py                       # casting data onto a shape
 uv run python benchmarks/bench_fix.py                        # FIX, scalar and vectorised
+uv run python benchmarks/bench_market.py                     # identifiers, and a book's prices
 uv run python benchmarks/bench_iceberg.py                    # parse, stream in, read back
 uv run python benchmarks/bench_iceberg.py --only maintain    # the maintenance
 uv run python benchmarks/bench_iceberg.py --only update      # the half that rewrites
@@ -35,6 +37,7 @@ you are changing a benchmark rather than reading one.
 | [Types](types.md#benchmarks) | casting a batch, a nested column, a stream onto a shape — against `Array.cast` on the same data | `bench_cast.py` |
 | [Logs](logs.md#benchmarks) | parsing one log; parsing a folder of them; shipping the bytes | `bench_text_file.py` |
 | [FIX](fix.md#benchmarks) | the scalar parser, the vectorised one, and turning keys into tags | `bench_fix.py` |
+| [Market](market.md#benchmarks) | building identifier columns, and deriving a book's flat prices | `bench_market.py` |
 | [Iceberg](iceberg.md#benchmarks) | commits, merges, reads, maintenance, backfills, and store calls | `bench_iceberg.py` |
 
 ## How to read a number
@@ -45,7 +48,8 @@ decide whether a number is worth writing down at all.
 **Verify the answer, then time it.** A benchmark that measures the wrong answer
 measures nothing. `bench_cast.py` asserts its result equals pyarrow's own cast
 before it starts a clock; `bench_fix.py` asserts the vectorised parse *is* the
-scalar one; the Iceberg sweeps assert the row counts they wrote.
+scalar one; `bench_market.py` asserts the vectorised identifiers are the scalar
+ones and that a book actually derived; the Iceberg sweeps assert the row counts they wrote.
 
 **Measure twice.** Every number quoted is a number that reproduced. Where two
 runs agree, one figure is quoted; where they do not, **the range is quoted** —

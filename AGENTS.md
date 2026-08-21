@@ -247,6 +247,29 @@ Ten things that were learned the expensive way, all of them measured:
   seeing *other* writers, and calling it per chunk is a catalog round trip per
   commit -- free on SQLite, a network hop on REST or Glue.
 
+**The market module's own rules.** A market notion is stored as an integer and
+read through an enum, never stored as the enum: the column survives a code this
+build has never seen, and `from_code` degrades it to its band rather than
+raising. The bands are ordered by how done the thing is, so the questions a
+query asks -- terminal, live, moved shares, removed liquidity -- are each **one
+range predicate**, which prunes where a set of `IN` literals cannot; the floor
+of every band is itself a member, so the degradation lands on something true.
+A value, once given, is never reused. An identifier is sixteen fixed bytes
+(`fixed_size_binary[16]` here, `fixed[16]` in Iceberg, `BinaryType` in Spark),
+because 64 bits collide inside a day of ticks and because Iceberg's own `uuid`
+comes back as an Arrow *extension* type and reaches Spark as a string. Parts of
+an identifier are hashed **behind their own byte lengths**: a separator alone
+does not stop a part that contains the separator, and a raw identifier used as
+a part contains any given byte about six times in a hundred. A key is a table's
+and not a struct's, so a nested shape keeps its comments and loses its keys --
+nothing reads a nested key, and publishing one is a contract that lies. What a
+reader would otherwise recompute is a **flat column**, derived once in kernels
+(`summarise_arrow`): a filter on `px` skips files, a filter on `alive[0].px`
+reads them all and throws the rows away, and the derivation costs 260-1050
+ns/row against 0.4 ns to read the column back (`benchmarks/bench_market.py`).
+Where two flat columns already determine a third, the third is not stored:
+`(px, spread)` *is* the best bid and offer, and `spread < 0` is crossed.
+
 ## 9. A dataset is a stream in and a stream out
 
 `Dataset` is three methods -- `into_struct_field`, `read_arrow_reader`,
@@ -389,6 +412,16 @@ rekep/
 │                  and dataset.py (IcebergDataset: scan pushdown out, cast +
 │                  append/upsert in, one commit per chunk, and the
 │                  maintenance -- add_fields, compact, cleanup, optimize)
+├── market/        what happened, as a history: enums.py (the banded int32
+│                  codes -- State, Side, TimeInForce, OrderKind, ExecKind,
+│                  UpdateAction, AssetKind, OptionKind -- and the FIX character
+│                  on each member), identity.py (the sixteen fixed bytes:
+│                  xxh3-128 over length-prefixed parts, scalar and vectorised),
+│                  fields.py (MarketFieldBuilder: a UUID is fixed_size_binary[16],
+│                  a ranged code is int32, a nested shape loses its keys; and
+│                  fix_tag), instrument.py, event.py (Event and MarketEvent),
+│                  orders.py (Order, Execution) and book.py (Level, LevelUpdate,
+│                  BookSide, Book, and the derived prices computed in kernels)
 ├── fix/           message.py (FixMessage and the vectorised line parsing:
 │                  separator detection, tag=value and rendered
 │                  Name[i]=Member=value cutting, repeating groups, and
@@ -412,8 +445,9 @@ publishes -- the FIX one as `data/fix.zip`, which is a `FixRegistry` cache
 and nothing else -- and `docs/` the site.
 
 Dependencies point one way: `logs`/`iceberg` -> `dataset` -> `fields` ->
-`convert` -> `annotations`, and `fix` sits beside `dataset` on the same
-`fields` base. `urls` is a leaf below all of it: `filesystems`, `convert`,
+`convert` -> `annotations`, and `fix`/`market` sit beside `dataset` on the same
+`fields` base -- `market` reaching into `fix` only for the datatype table its
+tests check the tags against. `urls` is a leaf below all of it: `filesystems`, `convert`,
 `logs` and `iceberg/fileio` all reach a store through it, so there is one
 answer to "what is this location" rather than one per caller. The one loop back is deliberate and lazy: a
 `Field`'s `into_iceberg_*` imports `rekep.iceberg.fields` at the point of use,

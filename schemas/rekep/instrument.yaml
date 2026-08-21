@@ -1,0 +1,107 @@
+name: Instrument
+type: struct
+description: One tradable instrument, identified by sixteen bytes rather than by a
+  symbol.
+metadata:
+  namespace: rekep.market.instrument
+fields:
+- name: xh128
+  type: fixed_size_binary[16]
+  description: Stable identity of the instrument, which outlives every symbol it has
+    had.
+  metadata:
+    iceberg:primary_key: 'true'
+- name: symbol
+  type: string
+  description: Identifier as the venue spells it -- readable, and never an identity.
+  metadata:
+    fix:name: Symbol
+    fix:tag: '55'
+- name: kind
+  type: int32
+  description: What it settles as, read from the first character of the CFI code.
+- name: security_id
+  type: string
+  nullable: true
+  description: Identifier in the scheme `security_id_source` names -- an ISIN, a CUSIP,
+    a FIGI.
+  metadata:
+    fix:name: SecurityID
+    fix:tag: '48'
+- name: security_id_source
+  type: string
+  nullable: true
+  description: Which scheme `security_id` is in, as FIX numbers them (`4` is ISIN).
+  metadata:
+    fix:name: SecurityIDSource
+    fix:tag: '22'
+- name: cfi
+  type: string
+  nullable: true
+  description: Full ISO 10962 classification; `kind` is its first character, decoded.
+  metadata:
+    fix:name: CFICode
+    fix:tag: '461'
+- name: exchange
+  type: string
+  nullable: true
+  description: ISO 10383 market identifier the instrument is listed on.
+  metadata:
+    fix:name: SecurityExchange
+    fix:tag: '207'
+- name: currency
+  type: string
+  nullable: true
+  description: ISO 4217 currency the instrument is priced in.
+  metadata:
+    fix:name: Currency
+    fix:tag: '15'
+- name: multiplier
+  type: double
+  nullable: true
+  description: Units of the underlying one contract represents; 1 for cash instruments.
+  metadata:
+    fix:name: ContractMultiplier
+    fix:tag: '231'
+- name: tick
+  type: double
+  nullable: true
+  description: Smallest price change the venue accepts, which is what makes a spread
+    countable.
+  metadata:
+    fix:name: MinPriceIncrement
+    fix:tag: '969'
+- name: lot
+  type: double
+  nullable: true
+  description: Quantity increment the venue trades in.
+  metadata:
+    fix:name: RoundLot
+    fix:tag: '561'
+- name: maturity
+  type: date32[day]
+  nullable: true
+  description: When the contract expires; null for anything that does not.
+  metadata:
+    fix:name: MaturityDate
+    fix:tag: '541'
+- name: strike
+  type: double
+  nullable: true
+  description: Exercise price of an option.
+  metadata:
+    fix:name: StrikePrice
+    fix:tag: '202'
+- name: option_kind
+  type: int32
+  description: Which way the option points; `UNKNOWN` for everything that is not one.
+  metadata:
+    fix:name: PutOrCall
+    fix:tag: '201'
+- name: label
+  type: string
+  nullable: true
+  description: Human description, as reference data publishes it.
+  metadata:
+    fix:name: SecurityDesc
+    fix:tag: '107'

@@ -24,11 +24,23 @@ published to an object store is read the same way:
 ```text
 schemas/
 ├── rekep/      shapes this package itself produces
-│   └── log.yaml
+│   ├── log.yaml
+│   ├── instrument.yaml
+│   ├── order.yaml
+│   ├── execution.yaml
+│   ├── bookside.yaml
+│   └── book.yaml
 └── trading/    an example exchange: one YAML contract, one JSON
     ├── quote.yaml
     └── venue.json
 ```
+
+The five market files are `rekep.market`'s tables, published. `Event` and
+`MarketEvent` are not here because an abstract base is nothing two sides
+exchange, and `Level` and `LevelUpdate` are not because a level travels inside
+the side that holds it. They also carry the `fix:` keys naming the wire field
+each column came from, so a consumer that has never imported this package can
+still tell that `tif` is FIX `TimeInForce <59>`.
 
 One directory per namespace, one file per shape, named after it in lower case.
 YAML or JSON — the extension picks the reader, and the two spell the same

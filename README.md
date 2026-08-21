@@ -83,6 +83,16 @@ logs.optimize()                      # compact, expire, sweep
   name, datatype, comment, values — to work offline after. That scrape is also
   committed here, as `data/fix.zip`, so there is nothing to wait for: a cache
   is a directory of JSON or a zip of the same, and the extension says which.
+- **`market`** — `Order`, `Execution`, `BookSide` and `Book` as a *history*:
+  every version of every thing is its own immutable row, keyed by the sixteen
+  fixed bytes of its own content (`fixed_size_binary[16]`, which is Iceberg
+  `fixed[16]` and Spark `BinaryType`) and linked to the version before it. A
+  state, a side and a kind are banded `int32` codes, so "is it over" is one
+  range predicate an engine can prune on rather than a set of literals it
+  cannot; around forty columns carry the FIX field they came from, checked
+  against `data/fix.zip` by CI. `Book.summarise_arrow` derives the mid, the
+  spread, the microprice and the imbalance in kernels, once, so no reader has
+  to reach into a nested list that no engine below prunes on.
 - **`convert`** — `Convertible`: paired `from_*`/`into_*` methods that serialise
   any dataclass to dict, JSON, YAML or TOML and back.
 

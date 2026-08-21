@@ -36,6 +36,7 @@ nav:
       - Types: types.md
       - Logs: logs.md
       - FIX: fix.md
+      - Market: market.md
       - Iceberg: iceberg.md
   - Benchmarks: benchmarks.md
 

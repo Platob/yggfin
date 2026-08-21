@@ -1,0 +1,325 @@
+name: Order
+type: struct
+description: 'One version of one order: what was asked for, and how far it has got.'
+metadata:
+  namespace: rekep.market.orders
+fields:
+- name: unix
+  type: int64
+  description: When the event happened, in whole nanoseconds since the epoch.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+    iceberg:primary_key: 'true'
+- name: date
+  type: date32[day]
+  description: Calendar day of `unix`, naive UTC -- what the data is partitioned on.
+  metadata:
+    iceberg:partition_key: identity
+- name: cunix
+  type: int64
+  description: When the event was created, upstream of anything that carried it.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: runix
+  type: int64
+  description: When the event was written down here; deliberately not part of `h128`.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: eunix
+  type: int64
+  nullable: true
+  description: When the event stops being true -- an order's expiry, a quote's staleness.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: h128
+  type: fixed_size_binary[16]
+  description: 'Digest of this version''s content: the same version, twice, is one
+    row.'
+  metadata:
+    iceberg:primary_key: 'true'
+- name: xh128
+  type: fixed_size_binary[16]
+  description: Identity of the thing across every version of it -- the lifecycle.
+- name: version
+  type: int64
+  description: Which version of `xh128` this is, counting up from the first.
+- name: state
+  type: int32
+  description: 'Where the lifecycle stands, as a banded code: `>= State.TERMINAL`
+    is over.'
+- name: symbol
+  type: string
+  description: Main readable identifier of the subject, as the venue spells it.
+  metadata:
+    fix:name: Symbol
+    fix:tag: '55'
+- name: seq
+  type: int64
+  nullable: true
+  description: Sequence the venue gave the message, which orders what a clock cannot.
+  metadata:
+    fix:name: MsgSeqNum
+    fix:tag: '34'
+- name: prev_h128
+  type: fixed_size_binary[16]
+  nullable: true
+  description: The version this one replaced; null on the first.
+- name: prev_state
+  type: int32
+  description: The state this version moved out of -- a transition, without the self-join.
+- name: prev_unix
+  type: int64
+  nullable: true
+  description: When the previous version happened, so dwell time is a subtraction.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: parent_h128
+  type: list
+  nullable: true
+  description: Every event this one was built from, in the order they were combined.
+  item:
+    type: fixed_size_binary[16]
+- name: side
+  type: int32
+  description: Which way the interest points; `side.sign` turns it into `+1` or `-1`.
+  metadata:
+    fix:name: Side
+    fix:tag: '54'
+- name: px
+  type: double
+  nullable: true
+  description: The price on this row, in `px_unit`; what it means is the subclass's
+    to say.
+  metadata:
+    fix:name: Price
+    fix:tag: '44'
+- name: px_unit
+  type: string
+  description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when
+    unstated.'
+- name: qty
+  type: double
+  nullable: true
+  description: The quantity on this row, in `qty_unit`; what it means is the subclass's
+    to say.
+  metadata:
+    fix:name: OrderQty
+    fix:tag: '38'
+- name: qty_unit
+  type: string
+  description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
+- name: notional
+  type: double
+  nullable: true
+  description: '`px * qty * multiplier` in the instrument''s currency, as the producer
+    computed it.'
+- name: venue
+  type: string
+  nullable: true
+  description: Where this event happened, which is not always where the instrument
+    is listed.
+  metadata:
+    fix:name: LastMkt
+    fix:tag: '30'
+- name: instrument
+  type: struct
+  description: What was traded. The flat `symbol` above is what a filter uses; this
+    is the rest.
+  fields:
+  - name: xh128
+    type: fixed_size_binary[16]
+    description: Stable identity of the instrument, which outlives every symbol it
+      has had.
+  - name: symbol
+    type: string
+    description: Identifier as the venue spells it -- readable, and never an identity.
+    metadata:
+      fix:name: Symbol
+      fix:tag: '55'
+  - name: kind
+    type: int32
+    description: What it settles as, read from the first character of the CFI code.
+  - name: security_id
+    type: string
+    nullable: true
+    description: Identifier in the scheme `security_id_source` names -- an ISIN, a
+      CUSIP, a FIGI.
+    metadata:
+      fix:name: SecurityID
+      fix:tag: '48'
+  - name: security_id_source
+    type: string
+    nullable: true
+    description: Which scheme `security_id` is in, as FIX numbers them (`4` is ISIN).
+    metadata:
+      fix:name: SecurityIDSource
+      fix:tag: '22'
+  - name: cfi
+    type: string
+    nullable: true
+    description: Full ISO 10962 classification; `kind` is its first character, decoded.
+    metadata:
+      fix:name: CFICode
+      fix:tag: '461'
+  - name: exchange
+    type: string
+    nullable: true
+    description: ISO 10383 market identifier the instrument is listed on.
+    metadata:
+      fix:name: SecurityExchange
+      fix:tag: '207'
+  - name: currency
+    type: string
+    nullable: true
+    description: ISO 4217 currency the instrument is priced in.
+    metadata:
+      fix:name: Currency
+      fix:tag: '15'
+  - name: multiplier
+    type: double
+    nullable: true
+    description: Units of the underlying one contract represents; 1 for cash instruments.
+    metadata:
+      fix:name: ContractMultiplier
+      fix:tag: '231'
+  - name: tick
+    type: double
+    nullable: true
+    description: Smallest price change the venue accepts, which is what makes a spread
+      countable.
+    metadata:
+      fix:name: MinPriceIncrement
+      fix:tag: '969'
+  - name: lot
+    type: double
+    nullable: true
+    description: Quantity increment the venue trades in.
+    metadata:
+      fix:name: RoundLot
+      fix:tag: '561'
+  - name: maturity
+    type: date32[day]
+    nullable: true
+    description: When the contract expires; null for anything that does not.
+    metadata:
+      fix:name: MaturityDate
+      fix:tag: '541'
+  - name: strike
+    type: double
+    nullable: true
+    description: Exercise price of an option.
+    metadata:
+      fix:name: StrikePrice
+      fix:tag: '202'
+  - name: option_kind
+    type: int32
+    description: Which way the option points; `UNKNOWN` for everything that is not
+      one.
+    metadata:
+      fix:name: PutOrCall
+      fix:tag: '201'
+  - name: label
+    type: string
+    nullable: true
+    description: Human description, as reference data publishes it.
+    metadata:
+      fix:name: SecurityDesc
+      fix:tag: '107'
+- name: metadata
+  type: map
+  nullable: true
+  description: Protocol fields carried verbatim, exactly as the venue sent them.
+  key:
+    type: string
+  value:
+    type: string
+- name: kind
+  type: int32
+  description: How the order is priced; the band says whether `px` and `stop_px` mean
+    anything.
+  metadata:
+    fix:name: OrdType
+    fix:tag: '40'
+- name: tif
+  type: int32
+  description: How long it lives. `GTD` expires at `eunix`, where every expiry here
+    lives.
+  metadata:
+    fix:name: TimeInForce
+    fix:tag: '59'
+- name: stop_px
+  type: double
+  nullable: true
+  description: Trigger price of a stop order; `px` is the limit that applies once
+    triggered.
+  metadata:
+    fix:name: StopPx
+    fix:tag: '99'
+- name: display_qty
+  type: double
+  nullable: true
+  description: How much of `qty` the book shows; the rest is hidden.
+  metadata:
+    fix:name: MaxFloor
+    fix:tag: '111'
+- name: filled_qty
+  type: double
+  nullable: true
+  description: Quantity done so far, as the venue counts it.
+  metadata:
+    fix:name: CumQty
+    fix:tag: '14'
+- name: leaves_qty
+  type: double
+  nullable: true
+  description: Quantity still working; zero on anything terminal.
+  metadata:
+    fix:name: LeavesQty
+    fix:tag: '151'
+- name: avg_px
+  type: double
+  nullable: true
+  description: Average price of what has been done, weighted by quantity.
+  metadata:
+    fix:name: AvgPx
+    fix:tag: '6'
+- name: order_id
+  type: string
+  nullable: true
+  description: Identifier the venue gave the order.
+  metadata:
+    fix:name: OrderID
+    fix:tag: '37'
+- name: client_order_id
+  type: string
+  nullable: true
+  description: Identifier the sender gave this version of the order.
+  metadata:
+    fix:name: ClOrdID
+    fix:tag: '11'
+- name: prev_client_order_id
+  type: string
+  nullable: true
+  description: Identifier the sender gave the version this one replaced.
+  metadata:
+    fix:name: OrigClOrdID
+    fix:tag: '41'
+- name: reason_code
+  type: int32
+  nullable: true
+  description: Why the order was refused or restated, as the venue numbers it.
+  metadata:
+    fix:name: OrdRejReason
+    fix:tag: '103'
+- name: reason
+  type: string
+  nullable: true
+  description: Free text the venue sent with the refusal or the restatement.
+  metadata:
+    fix:name: Text
+    fix:tag: '58'
