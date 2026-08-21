@@ -1,14 +1,24 @@
-"""`ArrowFileIO.parse_location`, both hosts' answers on either host.
+"""`ArrowFileIO`: location parsing on both hosts, and the content cache.
 
 The Windows branch is data (`_WINDOWS`), so a POSIX runner can pin what a
 Windows one would do and the other way round -- the whole point of the class
-is behaviour CI's two legs do not share.
+is behaviour CI's two legs do not share. The cache tests count real opens
+below it, because "served from memory" is the whole claim.
 """
 
+from pathlib import Path
+
 import pytest
+from pyiceberg.io.pyarrow import PyArrowFile
 
 from rekep.iceberg import fileio
-from rekep.iceberg.fileio import ArrowFileIO
+from rekep.iceberg.fileio import (
+    CONTENT_CACHE,
+    DEFAULT_CACHE_BYTES,
+    ArrowFileIO,
+    CachedInputFile,
+    ContentCache,
+)
 
 
 @pytest.fixture
@@ -38,3 +48,133 @@ def test_everything_without_a_drive_is_the_parents_answer(windows: None) -> None
 
 def test_a_posix_directory_named_like_a_drive_keeps_meaning_what_it_says(posix: None) -> None:
     assert ArrowFileIO.parse_location("file:///C:/warehouse/t") == ("file", "", "/C:/warehouse/t")
+
+
+# -- the immutable-content cache --------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def pristine_cache() -> None:
+    """The cache is process-wide on purpose; tests must not share through it."""
+    CONTENT_CACHE.clear()
+    CONTENT_CACHE.resize(DEFAULT_CACHE_BYTES)
+    yield
+    CONTENT_CACHE.clear()
+    CONTENT_CACHE.resize(DEFAULT_CACHE_BYTES)
+
+
+@pytest.fixture
+def opens(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
+    """Opens the store actually serves, counted below the cache."""
+    counted = {"opens": 0}
+    original = PyArrowFile.open
+
+    def watched(self: PyArrowFile, *args: object, **kwargs: object) -> object:
+        counted["opens"] += 1
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(PyArrowFile, "open", watched)
+    return counted
+
+
+def test_only_what_iceberg_never_rewrites_is_cacheable() -> None:
+    assert fileio._immutable("wh/metadata/snap-1-abc.avro"), "a manifest list"
+    assert fileio._immutable("wh/metadata/abc-m0.avro"), "a manifest"
+    assert fileio._immutable("wh/metadata/00001-abc.metadata.json"), "a metadata version"
+    assert not fileio._immutable("wh/metadata/version-hint.text"), "the one mutable file"
+    assert not fileio._immutable("wh/data/day=1/abc.parquet"), "data is read once, not repeatedly"
+
+
+def test_the_cache_holds_bounded_bytes_and_forgets_the_coldest_first() -> None:
+    cache = ContentCache(limit=40)
+    for i in range(10):
+        cache.put(f"e{i}", b"abcd")  # 40 bytes: exactly at the limit
+    assert cache.get("e0") == b"abcd", "e0 is now the warmest"
+    cache.put("new", b"abcd")  # 44 > 40: e1, now the coldest, goes
+    assert cache.get("e1") is None
+    assert cache.get("e0") == b"abcd"
+    assert cache.get("new") == b"abcd"
+    report = cache.stats()
+    assert report["entries"] == 10
+    assert report["bytes"] == 40
+
+
+def test_a_file_past_the_per_file_cap_is_never_held() -> None:
+    cache = ContentCache(limit=80)
+    cache.put("big", b"x" * 11)  # over limit // 8, would evict everything else
+    assert cache.get("big") is None
+
+
+def test_a_written_manifest_reads_back_without_the_store(tmp_path: Path) -> None:
+    """Write-through: the file a commit just wrote is the file the next scan plans."""
+    io = ArrowFileIO()
+    location = (tmp_path / "m.avro").as_posix()
+    with io.new_output(location).create() as out:
+        out.write(b"avro bytes")
+    (tmp_path / "m.avro").unlink()  # the store forgets it; the cache must not
+    source = io.new_input(location)
+    assert isinstance(source, CachedInputFile)
+    assert source.exists()
+    assert len(source) == len(b"avro bytes")
+    with source.open() as stream:
+        assert stream.read() == b"avro bytes"
+
+
+def test_a_read_fills_the_cache_for_every_later_reader(
+    tmp_path: Path, opens: dict[str, int]
+) -> None:
+    location = (tmp_path / "m.avro").as_posix()
+    (tmp_path / "m.avro").write_bytes(b"cold")
+    io = ArrowFileIO()
+    for _ in range(3):
+        with io.new_input(location).open() as stream:
+            assert stream.read() == b"cold"
+    assert opens["opens"] == 1, "one fetch, then memory"
+
+
+def test_a_data_file_is_never_cached(tmp_path: Path, opens: dict[str, int]) -> None:
+    location = (tmp_path / "d.parquet").as_posix()
+    (tmp_path / "d.parquet").write_bytes(b"rows")
+    io = ArrowFileIO()
+    for _ in range(2):
+        with io.new_input(location).open() as stream:
+            stream.read()
+    assert opens["opens"] == 2, "data is the store's to stream, every time"
+
+
+def test_an_abandoned_write_never_reaches_the_cache(tmp_path: Path) -> None:
+    io = ArrowFileIO()
+    location = (tmp_path / "broken.avro").as_posix()
+    with pytest.raises(RuntimeError, match="mid-write"):
+        with io.new_output(location).create() as out:
+            out.write(b"half")
+            raise RuntimeError("died mid-write")
+    assert CONTENT_CACHE.peek(location) is None, "half a file must not read as a whole one"
+
+
+def test_a_deleted_file_is_forgotten_with_the_store(tmp_path: Path) -> None:
+    io = ArrowFileIO()
+    location = (tmp_path / "old.avro").as_posix()
+    with io.new_output(location).create() as out:
+        out.write(b"expired")
+    io.delete(location)
+    assert CONTENT_CACHE.peek(location) is None
+    with pytest.raises(FileNotFoundError):
+        io.new_input(location).open()
+
+
+def test_a_catalog_can_opt_out(tmp_path: Path, opens: dict[str, int]) -> None:
+    location = (tmp_path / "m.avro").as_posix()
+    (tmp_path / "m.avro").write_bytes(b"cold")
+    plain = ArrowFileIO({"rekep.io.cache-bytes": "0"})
+    assert isinstance(plain.new_input(location), PyArrowFile), "no wrapper at all"
+    for _ in range(2):
+        with plain.new_input(location).open() as stream:
+            stream.read()
+    assert opens["opens"] == 2
+    assert CONTENT_CACHE.peek(location) is None
+
+
+def test_a_catalog_can_resize_the_shared_budget() -> None:
+    ArrowFileIO({"rekep.io.cache-bytes": "4096"})
+    assert CONTENT_CACHE.limit == 4096
