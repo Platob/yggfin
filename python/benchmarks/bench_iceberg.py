@@ -16,7 +16,8 @@ Six questions, measured rather than assumed:
 2. **Does a read prune?** A filter on a partition column, on a column that
    correlates with one, and on one that does not -- with the planned file count
    beside the wall time, because a fast scan that read every file is a scan that
-   got lucky.
+   got lucky. Warmed twice before anything is timed, once for the process and
+   once per case: a sweep of single calls in order is a story about warm-up.
 3. **What do the table properties buy?** The same stream written with Iceberg's
    commit knobs at their defaults and at the ones this package sets.
 4. **How often is the store asked?** (`--only fs`) Every flow again, counted in
@@ -389,9 +390,19 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
             ("narrow shape (pushdown)", None, None, narrow_field()),
             ("narrow shape, store widths", None, None, "stored"),
         ]
+        # Warm the process before the first case is timed. An Acero join, the
+        # Arrow parquet reader and the page cache all cost their setup once,
+        # and a sweep of single calls in order charges the whole of it to
+        # whichever case happens to run first: measured over three
+        # back-to-back `--only read` runs, "everything" came out 0.057, 0.031
+        # and 0.027 -- a 2.1x spread that is nothing but warm-up.
+        read_case(target, row_filter=None, columns=None, schema=None)
         for name, row_filter, columns, schema in cases:
             if schema == "stored":
                 schema = stored_narrow(target)
+            # And once per case, discarded: the first read of a configuration
+            # touches files and builds a projection the repeats then reuse.
+            read_case(target, row_filter=row_filter, columns=columns, schema=schema)
             report = min(
                 (
                     read_case(target, row_filter=row_filter, columns=columns, schema=schema)
