@@ -9,8 +9,13 @@ A trading log is a text file with a fixed header and a free-form payload:
 
 `TextFile` reads that into Arrow batches, writes batches back out as lines, and
 **is a dataset** — so a log and an Iceberg table are the same kind of thing to
-whatever consumes them. `LogFiles` is the same for a whole folder of them,
+whatever consumes them. `TextFiles` is the same for a whole folder of them,
 because a capture is never one file.
+
+Every parsed row carries a [sortable id](ids.md): the millisecond it was
+written in, and a hash of the line itself. That one integer is the row's
+identity everywhere downstream — the dedup key, the join key, the incremental
+watermark and the sort column.
 
 ## Reading one
 
@@ -54,31 +59,35 @@ because a capture is never one file.
         read_byte_size=1 << 22,     # bytes per read: one ranged GET on a store
         fold_continuations=True,    # a wrapped stack trace stays one row
     )
+
+    TextFile.from_path("app.txt", id_epoch_ms=ids.EPOCH_MS)   # the id's epoch
     ```
 
-    The 4 MiB default read sits where both ends are flat: 64 KiB is
-    syscall-bound and 64 MiB spends more time waiting for a read than parsing
-    it ([measured](#reading-one-file)).
+    The 4 MiB default read is a request size as much as a buffer: on an object
+    store it is one ranged GET, so 64 KiB would mean a GET per 64 KiB. On a
+    local disk the floor costs nothing measurable and only the ceiling shows —
+    64 MiB spends more time waiting for a read than parsing it
+    ([measured](#what-moves-the-parser)).
 
 ## Reading a folder of them
 
 A capture is a live log, the rotations behind it, yesterday's gzipped in an
-archive, and often a directory per host. `LogFiles` reads all of it as one
+archive, and often a directory per host. `TextFiles` reads all of it as one
 stream — in path order, one file open at a time, over any filesystem
 `pyarrow.fs` reaches.
 
 === "A folder"
 
     ```python
-    from rekep import LogFiles
+    from rekep import TextFiles
 
-    files = LogFiles.from_folder("/var/log/app", pattern="*.txt*")
+    files = TextFiles.from_folder("/var/log/app", pattern="*.txt*")
     files.read_arrow_table()                       # every log, one table
     files.read_arrow_reader(batch_row_size=65_536) # or streamed, which is the point
     ```
 
     `from_folder` takes a local path or a URI, so an object store is the same
-    call: `LogFiles.from_folder("s3://bucket/logs/2026-08-14")`. Every listing,
+    call: `TextFiles.from_folder("s3://bucket/logs/2026-08-14")`. Every listing,
     every open and every read goes through `pyarrow.fs` — one credential chain,
     one set of URI rules, the same handles `TextFile` uses.
 
@@ -86,10 +95,10 @@ stream — in path order, one file open at a time, over any filesystem
 
     ```python
     # the order given is kept: the archive is older, so it is read first
-    files = LogFiles.from_folders(["/archive/app", "/var/log/app"], pattern="*.txt*")
+    files = TextFiles.from_folders(["/archive/app", "/var/log/app"], pattern="*.txt*")
 
     # or name the files themselves -- folders and files can be mixed
-    files = LogFiles.from_urls(["s3://b/logs/app.1.txt.gz", "s3://b/logs/app.txt"])
+    files = TextFiles.from_urls(["s3://b/logs/app.1.txt.gz", "s3://b/logs/app.txt"])
     ```
 
     A stated order is a statement about time, so nothing re-sorts it. A root
@@ -102,9 +111,9 @@ stream — in path order, one file open at a time, over any filesystem
     list(files.into_urls())
     # ['/var/log/app/app.1.txt.gz', '.../app.2.txt.gz', '.../app.10.txt.gz', '.../app.txt']
 
-    LogFiles.from_folder("/var/log/app", reverse=True)       # the same order, backwards
-    LogFiles.from_folder("/var/log/app", recursive=False)    # this folder only
-    LogFiles.from_folder("/var/log/app", pattern="*.txt.gz") # base-name glob
+    TextFiles.from_folder("/var/log/app", reverse=True)       # the same order, backwards
+    TextFiles.from_folder("/var/log/app", recursive=False)    # this folder only
+    TextFiles.from_folder("/var/log/app", pattern="*.txt.gz") # base-name glob
     ```
 
     Order is decided here, not by the store: `pyarrow.fs` lists a directory in
@@ -164,7 +173,7 @@ stream — in path order, one file open at a time, over any filesystem
 === "Into a table"
 
     ```python
-    from rekep import Log, LogFiles
+    from rekep import Log, TextFiles
     from rekep.iceberg import IcebergDataset
 
     logs = IcebergDataset(
@@ -174,7 +183,9 @@ stream — in path order, one file open at a time, over any filesystem
         struct=Log.FIELD,
     )
 
-    files = LogFiles.from_folder("/var/log/app", pattern="*.txt*", ulbridge_name="bridge-1")
+    files = TextFiles.from_folder(
+        "/var/log/app", pattern="*.txt*", static_values={"bridge": "bridge-1"}
+    )
     logs.append_arrow(files.read_arrow_reader(), merge_by=True, commit_row_size=1_000_000)
     ```
 
@@ -197,9 +208,9 @@ so a consumer that does not import this package still knows what a row is.
 
 | column | type | what it is |
 | --- | --- | --- |
+| `id` | `int64` | the [row id](ids.md): millisecond, then line hash — **primary key** |
 | `url` | `string` | the log the line came from |
-| `ulbridge_name` | `string` | the bridge that wrote it — static, from `TextFile(ulbridge_name=...)` |
-| `recorded_at_unix` | `int64` | nanoseconds since the epoch — **primary key** with `hash64` |
+| `recorded_at_unix` | `int64` | nanoseconds since the epoch |
 | `recorded_at_date` | `date32` | the local calendar day — **partition** |
 | `recorded_at_time` | `time64[us]` | the local time of day |
 | `thread_name` | `string` | the first bracketed field |
@@ -207,7 +218,9 @@ so a consumer that does not import this package still knows what a row is.
 | `category_id` | `int32` | categorisation placeholder — `0` until assigned, never null |
 | `category_name` | `string` | categorisation placeholder — empty until assigned, never null |
 | `message` | `string` | payload, continuations folded in |
-| `hash64` | `int64` | hash of the raw line — **primary key** with `recorded_at_unix` |
+| `hash64` | `int64` | xxh3-64 of the raw line, the whole digest the id folds |
+
+…and then whatever `static_values` declares, in the order it declares them.
 
 === "Inspect it"
 
@@ -215,8 +228,8 @@ so a consumer that does not import this package still knows what a row is.
     from rekep import Log
 
     Log.FIELD.names                                   # the columns above
-    Log.FIELD.field("recorded_at_unix").metadata      # {'unit': 'nanosecond', ...}
-    Log.FIELD.primary_keys()                          # ['recorded_at_unix', 'hash64']
+    Log.FIELD.field("id").metadata                    # {'unit': 'millisecond', 'time_bits': '42', ...}
+    Log.FIELD.primary_keys()                          # ['id']
     Log.FIELD.partition_keys()                        # {'recorded_at_date': 'identity'}
     ```
 
@@ -224,7 +237,7 @@ so a consumer that does not import this package still knows what a row is.
 
     ```python
     log = TextFile.from_path("app.txt", timezone="Europe/Paris")
-    files = LogFiles.from_folder("/var/log/app", timezone="Europe/Paris")
+    files = TextFiles.from_folder("/var/log/app", timezone="Europe/Paris")
     ```
 
     A log writes a wall clock and says nothing about which one. Naming the zone
@@ -237,6 +250,32 @@ so a consumer that does not import this package still knows what a row is.
     ```python
     log.read_arrow_table(MyRow.FIELD)     # cast on the way out
     ```
+
+=== "Columns the file never says"
+
+    ```python
+    log = TextFile.from_path(
+        "app.txt",
+        static_values={
+            "bridge": "bridge-1",                              # type inferred
+            "desk": pyarrow.scalar("EU", pyarrow.large_string()),  # or stated
+            "region": pyarrow.scalar(None, pyarrow.string()),      # a typed null
+        },
+    )
+    log.read_arrow_table().schema.names[-3:]   # ['bridge', 'desk', 'region']
+    ```
+
+    A capture knows things the file does not: which bridge wrote it, which
+    desk it belongs to, which environment it came from. `static_values` is
+    where they go — **nothing here is hardcoded**, so a source names its own
+    columns.
+
+    Each entry becomes a constant column, appended **after** the data columns
+    in the order given, so adding one never moves a column a reader is already
+    selecting. A plain Python value has its Arrow type inferred; a
+    `pyarrow.Scalar` states it, which is also the only way to say "null, of
+    this type". A bare `None` is refused: Arrow's `null` type is a column no
+    store can widen later.
 
 ## Writing one
 
@@ -311,9 +350,10 @@ a read and a write, with nothing in between.
         catalog="local",
         properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file:///wh"},
         struct=Log.FIELD,          # the table is created from this, once
+        sort_by=["id"],            # each commit sorted on the clock
     )
 
-    with TextFile.from_path("app.txt.gz", ulbridge_name="bridge-1") as log:
+    with TextFile.from_path("app.txt.gz", static_values={"bridge": "bridge-1"}) as log:
         logs.append_arrow(
             log.read_arrow_reader(),   # streamed, never materialised
             merge_by=True,             # insert only new (recorded_at_unix, hash64)
@@ -324,10 +364,10 @@ a read and a write, with nothing in between.
 === "3. Or push the whole capture"
 
     ```python
-    from rekep import LogFiles
+    from rekep import TextFiles
 
-    files = LogFiles.from_folder(
-        "s3://bucket/logs/2026-08-14", pattern="*.txt*", ulbridge_name="bridge-1"
+    files = TextFiles.from_folder(
+        "s3://bucket/logs/2026-08-14", pattern="*.txt*", static_values={"bridge": "bridge-1"}
     )
     logs.append_arrow(files.read_arrow_reader(), merge_by=True, commit_row_size=1_000_000)
     ```
@@ -354,10 +394,15 @@ a read and a write, with nothing in between.
 !!! tip "Re-running the same file is free"
 
     `append_arrow(..., merge_by=True)` inserts only the rows whose primary key —
-    the timestamp and the hash of the raw line — is not stored yet, and never
-    rewrites what is: a log line is immutable, so re-ingesting a rotated log or
-    replaying a day appends nothing, commits nothing, and touches no stored row.
-    A `write_arrow` with `merge_by` is the upsert, for rows that do change.
+    the [row id](ids.md), which is the line's millisecond and the hash of its
+    bytes — is not stored yet, and never rewrites what is: a log line is
+    immutable, so re-ingesting a rotated log or replaying a day appends
+    nothing, commits nothing, and touches no stored row. A `write_arrow` with
+    `merge_by` is the upsert, for rows that do change.
+
+    The same property makes the id a watermark: `row_filter=f"id > {latest}"`
+    reads only what arrived since the last run, and prunes on file statistics
+    because time is in the id's high bits.
 
 ## Benchmarks
 
@@ -370,6 +415,7 @@ numbers are produced, and how to read a range, is on
 cd python
 uv run python benchmarks/bench_text_file.py                  # every sweep
 uv run python benchmarks/bench_text_file.py --quick          # 200k rows, one config
+uv run python benchmarks/bench_text_file.py --only variants  # what moves the parser
 uv run python benchmarks/bench_text_file.py --only folders   # a capture of many files
 ```
 
@@ -380,48 +426,69 @@ line shape and hashing, and barely with anything else.
 
 ### Reading one file
 
-400,000 rows, 54.4 MiB of synthetic log, best of three.
+`bench_text_file.py --only sweep`. 400,000 rows, 54.4 MiB plain and 5.0 MiB
+gzipped, best of three, both runs quoted. `peak` is Arrow's own allocator,
+which is where the batches live.
 
-| case | seconds | rows/s |
-| --- | --- | --- |
-| `read_arrow_table` | 0.99–1.12 | 358k–402k |
-| reader, 16k batches | 0.94–1.10 | 364k–425k |
-| reader, 256k batches | 1.00–1.31 | 306k–399k |
-| with `timezone="Europe/Paris"` | 1.00–1.05 | 380k–399k |
-| no continuation folding | 0.97–1.01 | 396k–412k |
+| file | batch rows | read size | rows/s | peak |
+| --- | --- | --- | --- | --- |
+| plain | 16,384 | 64 KiB | 351k–366k | 2.8 MiB |
+| plain | 65,536 | 64 KiB | 296k–300k | 11.2 MiB |
+| plain | 65,536 | 1 MiB | 354k–360k | 11.2 MiB |
+| plain | 65,536 | 4 MiB (the default) | 342k–357k | 11.2 MiB |
+| plain | 65,536 | 8 MiB | 328k–334k | 11.2 MiB |
+| plain | 262,144 | 4 MiB | 260k–265k | 44.8 MiB |
+| gzip | 16,384 | 64 KiB | 351k–370k | 3.9 MiB |
+| gzip | 65,536 | 64 KiB | 330k–337k | 12.5 MiB |
+| gzip | 65,536 | 1 MiB | 331k–335k | 12.5 MiB |
+| gzip | 65,536 | 4 MiB | 328k–331k | 12.5 MiB |
+| gzip | 65,536 | 8 MiB | 318k–342k | 12.5 MiB |
+| gzip | 262,144 | 4 MiB | 249k–253k | 46.6 MiB |
 
-Every configuration lands between 306k and 425k rows/s: naming a timezone
-(one `assume_timezone` kernel per batch) and folding wrapped lines both cost
-less than the spread between two runs of the same configuration, and batch size
-does not separate them either. The parser is bound by the per-line regex, not
-by any of these.
+**Batch size is the memory knob, not a speed one.** Every configuration lands
+between 249k and 370k rows/s, and the fastest rows are the *smallest* batches:
+a 262,144-row batch costs 45 MiB to hold and parses no faster than a 16,384-row
+one that costs 2.8. The 65,536 default sits where a batch is large enough to
+amortise the per-batch Arrow work and small enough to stay under about 12 MiB.
 
-What *does* move it, on a million rows, best of three:
+**Compression is close to free in rows/s** — Arrow decodes in its C++ layer
+while the row loop is the bottleneck — so a gzipped log parses at nearly the
+rate of a plain one from a tenth of the bytes.
+
+### What moves the parser
+
+`bench_text_file.py --only variants`. A million rows, best of three, both runs
+quoted, each case on its own file so the comparison is like for like. The
+throughputs are per *parsed row*, not per byte: a log stuffed with stack traces
+carries more bytes for the same number of rows.
 
 | case | rows/s | vs the baseline |
 | --- | --- | --- |
-| a stack trace every 200 lines (the baseline) | 393k | — |
-| no stack traces at all | 393k | none |
-| a trace every other line | 322k | −18% |
-| no continuation folding | 410k | +4% |
-| 64 KiB reads | 375k | −5% |
-| 64 MiB reads | 291k | −26% |
-| **blake2b line hash** (no `xxhash` installed) | 264k | **−33%** |
-| gzip (12.5 MiB instead of 136 MiB) | 379k | −4% |
+| a stack trace every 200 lines (the baseline) | 362k | — |
+| no stack traces at all | 339k–369k | inside the spread |
+| a trace every other line | 261k–291k | −20% to −28% |
+| no continuation folding | 320k–348k | inside the spread |
+| 64 KiB reads | 344k–364k | 0 to −5% |
+| 64 MiB reads | 287k–321k | −11% to −21% |
+| **blake2b line hash** (what xxh3 replaced) | **264k–268k** | **−26%** |
+| gzip (12.5 MiB instead of 136 MiB) | 306k–323k | −11% to −15% |
 
-Two things to take from that. Folding is cheap until continuations dominate:
-a trace every 200 lines costs nothing measurable, one every other line costs
-18%, because folding is the only per-line work that is not a regex match.
-And the `fast` extra is worth a third of the parser -- `pip install
-"rekep[fast]"` swaps blake2b for xxhash. (The two hashes are not
-interchangeable: `hash64` is stable within an environment, not across
-environments that differ in whether xxhash is installed.)
+Two things to take from that. **Folding is cheap until continuations
+dominate**: a trace every 200 lines and no traces at all are the same number,
+turning folding off does not reliably move it either, and only a trace every
+*other* line costs anything — because folding is the only per-line work that is
+not a regex match.
 
-Read size has a floor and a ceiling: 64 KiB is syscall-bound, 64 MiB spends
-more time waiting for a whole read than parsing it. The 4 MiB default sits
-where both are flat. Compression is close to free in rows/s -- Arrow decodes in
-its C++ layer while the row loop is the bottleneck -- so a gzipped log parses
-at nearly the same rate from a tenth of the bytes.
+And **the hash is worth a quarter of the parser**. That row is the reason
+`xxhash` is a hard dependency rather than an extra: the digest is the low half
+of every [row id](ids.md), so it cannot be swapped for a fallback at install
+time — and it would cost 26% of the parse if it were.
+
+Read size has a ceiling but, on a local disk, no floor worth naming: 64 MiB
+spends more time waiting for a read than parsing it, while 64 KiB costs nothing
+measurable here. It is not free on an object store, where the read size *is*
+the request size and 64 KiB means a GET per 64 KiB — which is what the 4 MiB
+default is chosen for.
 
 ### A folder of them
 

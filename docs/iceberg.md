@@ -219,7 +219,9 @@ updated, inserted = quotes.merge_arrow_table(chunk, True)   # one chunk, reporte
 ```
 
 Declaring the key once — `Annotated[str, Field.primary_key()]` — is what makes
-`merge_by=True` mean something.
+`merge_by=True` mean something. For a parsed log that key is one column, the
+[row id](ids.md): the same line at the same millisecond has the same id in
+every capture that holds it, so a replay merges onto itself.
 
 ### Appending without rewriting
 
@@ -426,6 +428,7 @@ calls are the whole routine.
 
     ```python
     quotes = IcebergDataset(..., sort_by=["unix"])
+    logs = IcebergDataset(..., struct=Log.FIELD, sort_by=["id"])   # the row id is a clock
     ```
 
     Off by default, because it costs a sort per commit. What it buys is inside
@@ -433,6 +436,11 @@ calls are the whole routine.
     it cannot match without decoding it. Measured on one 600k-row commit, a
     top-5% filter took **214 ms unsorted and 22 ms sorted** — the same single
     file either way ([measured](#reading-it-back)).
+
+    Sorting on a [row id](ids.md) is the same thing done once: time is in its
+    high bits, so one column orders the commit by the clock, brackets each
+    file's statistics around a real time range, and answers a watermark
+    predicate (`id > …`) from those statistics rather than from rows.
 
     It does *not* narrow file bounds for a stream that arrives shuffled: a
     chunk of shuffled rows spans the whole key range whatever order it is

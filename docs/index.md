@@ -12,7 +12,7 @@ Three ideas, and everything else is built from them:
   data onto the shape it declares.
 
 - :material-file-document-outline: **[Logs](logs.md)** — `TextFile` parses a
-  trading log into Arrow batches, and writes them back out as lines. `LogFiles`
+  trading log into Arrow batches, and writes them back out as lines. `TextFiles`
   does the same for a whole folder, in path order. Both are datasets, so
   pushing a capture into a table is one call.
 
@@ -22,7 +22,7 @@ Three ideas, and everything else is built from them:
 
 </div>
 
-And two pages about how they fit together, and how to build on them:
+And three pages about how they fit together, and how to build on them:
 
 <div class="grid cards" markdown>
 
@@ -30,6 +30,10 @@ And two pages about how they fit together, and how to build on them:
   shape is declared before the data, data is cast onto the declaration, and
   everything is a stream. The rules, and the process for exchanging Arrow data
   between two systems that do not share code.
+
+- :material-identifier: **[Row ids](ids.md)** — one sortable 64-bit integer per
+  row: the millisecond in the high bits, a hash of the payload in the low. The
+  dedup key, the join key, the watermark and the sort column, all at once.
 
 - :material-file-sign: **[Schema contracts](contracts.md)** — the `schemas/`
   directory: one Arrow schema per file, in YAML or JSON, nested types included,
@@ -54,7 +58,7 @@ And two pages about how they fit together, and how to build on them:
 === "Everything"
 
     ```bash
-    pip install "rekep[all]"        # + yaml, toml writing, faster line hashing
+    pip install "rekep[all]"        # + yaml and toml writing
     ```
 
 ## In one screen
@@ -107,11 +111,13 @@ And two pages about how they fit together, and how to build on them:
 === "Capture"
 
     ```python
-    from rekep import LogFiles, TextFile
+    from rekep import TextFile, TextFiles
 
     TextFile.from_path("app.txt.gz").read_arrow_table()      # one log
 
-    files = LogFiles.from_folder("s3://bucket/logs", pattern="*.txt*")
+    files = TextFiles.from_folder(
+        "s3://bucket/logs", pattern="*.txt*", static_values={"bridge": "bridge-1"}
+    )
     files.read_arrow_reader()          # every log, in path order, one open at a time
     files.into_byte_chunks(compression="gzip")   # or just ship the bytes
     ```
@@ -143,6 +149,10 @@ instead of failing a schema comparison.
 Everything is a stream unless you say otherwise: a log is read batch by batch, a
 folder of logs one file at a time, a write commits once per chunk of rows, and
 nothing here needs a dataset to fit in memory.
+
+Every row carries one [sortable id](ids.md) — its millisecond and a hash of what
+it says — so identity, order, dedup and the incremental watermark are the same
+integer.
 
 Where two systems have to agree without sharing code, the declaration becomes a
 [contract](contracts.md) — a file in the repository that reads back as the same

@@ -16,7 +16,7 @@ from rekep.fields import (
     field,
 )
 from rekep.fix import FixMessage, FixRegistry
-from rekep.logs import Log, LogFiles, TextFile
+from rekep.logs import Log, TextFile, TextFiles
 
 __version__ = "0.1.0"
 
@@ -33,11 +33,11 @@ __all__ = [
     "ListField",
     "ListViewField",
     "Log",
-    "LogFiles",
     "MapField",
     "ProtocolMetadata",
     "StructField",
     "TextFile",
+    "TextFiles",
     "__version__",
     "field",
 ]

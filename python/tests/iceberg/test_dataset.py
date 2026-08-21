@@ -12,7 +12,7 @@ import pyarrow.fs
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from rekep import Convertible, Field, Log, StructField, field
+from rekep import Convertible, Field, Log, StructField, field, ids
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 
 
@@ -327,8 +327,8 @@ def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None
         struct=Log.FIELD,
     )
     row = Log(
+        id=ids.pack(1, 2),
         url="a.txt",
-        ulbridge_name="bridge-1",
         recorded_at_unix=1,
         recorded_at_date=datetime.date(2026, 8, 14),
         recorded_at_time=datetime.time(0, 5, 1),
@@ -343,6 +343,53 @@ def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None
     logs.write_arrow_table(table, merge_by=True)
     logs.write_arrow_table(table, merge_by=True)
     assert logs.read_arrow_table().num_rows == 1, "the same line upserts onto itself"
+    assert logs.into_struct_field().primary_keys() == ["id"], "one key, and it is the id"
+
+
+def test_the_id_is_the_dedup_key_and_the_watermark(dataset: IcebergDataset, tmp_path: Path) -> None:
+    """What a packed id buys downstream: dedup, and a range that prunes.
+
+    An incremental load carries one integer -- the largest id it has seen --
+    and asks for what is above it. Because time is in the high bits, that is a
+    range on a sorted column, which Iceberg answers from per-file statistics
+    rather than by reading rows.
+    """
+    logs = IcebergDataset(
+        name="trading.watermark",
+        catalog="test",
+        properties=catalog_properties(tmp_path),
+        struct=Log.FIELD,
+        sort_by=["id"],
+    )
+    day = datetime.date(2026, 8, 14)
+    rows = [
+        dataclass_row(
+            Log(
+                id=ids.pack(millis, millis),
+                url="a.txt",
+                recorded_at_unix=millis * 1_000_000,
+                recorded_at_date=day,
+                recorded_at_time=datetime.time(0, 0, 0),
+                thread_name="t",
+                driver_name="d",
+                category_id=0,
+                category_name="",
+                message=f"row {millis}",
+                hash64=millis,
+            )
+        )
+        for millis in (1_786_665_901_000, 1_786_665_902_000, 1_786_665_903_000)
+    ]
+    schema = Log.FIELD.into_arrow_schema()
+    logs.append_arrow_table(pyarrow.Table.from_pylist(rows, schema), merge_by=True)
+    logs.append_arrow_table(pyarrow.Table.from_pylist(rows, schema), merge_by=True)
+    assert logs.read_arrow_table().num_rows == 3, "a replay of the same ids inserts nothing"
+
+    watermark = max(row["id"] for row in rows)
+    assert logs.read_arrow_table(row_filter=f"id > {watermark}").num_rows == 0
+    behind = ids.pack(1_786_665_901_500, 0)
+    assert logs.read_arrow_table(row_filter=f"id > {behind}").num_rows == 2
+    assert logs.scan_plan(f"id > {watermark}")["files"] == 0, "the range prunes on statistics"
 
 
 def dataclass_row(row: Log) -> dict:

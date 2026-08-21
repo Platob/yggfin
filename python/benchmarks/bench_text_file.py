@@ -27,7 +27,7 @@ import pyarrow
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep.logs import LogFiles, TextFile  # noqa: E402
+from rekep.logs import TextFile, TextFiles  # noqa: E402
 
 DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
 LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
@@ -138,7 +138,7 @@ def variants(rows: int, repeat: int) -> None:
         cases.append(("no folding", plain, {"fold_continuations": False}, False))
         cases.append(("64 KiB reads", plain, {"read_byte_size": 1 << 16}, False))
         cases.append(("64 MiB reads", plain, {"read_byte_size": 1 << 26}, False))
-        cases.append(("blake2b line hash", plain, {}, True))
+        cases.append(("blake2b line hash", plain, {}, True))  # what xxh3 replaced
 
         gz = root / "traces-200.txt.gz"
         gz.write_bytes(gzip.compress(plain.read_bytes(), compresslevel=1))
@@ -194,7 +194,7 @@ def folders(rows: int, repeat: int) -> None:
             batches are released, and a reading taken then says nothing about
             what a consumer had to hold.
             """
-            files = LogFiles.from_folder(folder)
+            files = TextFiles.from_folder(folder)
             if chained:
                 batches = (batch for log in files.into_files() for batch in _drained(log))
             else:
@@ -261,12 +261,12 @@ def _byte_flows(folder: pathlib.Path, repeat: int) -> None:
         ("into_bytes (materialised)", lambda files: (len(files.into_bytes()), 0)),
     )
     for label, flow in flows:
-        flow(LogFiles.from_folder(folder))  # warm
+        flow(TextFiles.from_folder(folder))  # warm
         fastest, produced, peak = float("inf"), 0, 0
         for _ in range(repeat):
             tracemalloc.start()
             started = time.perf_counter()
-            produced, _ = flow(LogFiles.from_folder(folder))
+            produced, _ = flow(TextFiles.from_folder(folder))
             elapsed = time.perf_counter() - started
             peak = max(peak, tracemalloc.get_traced_memory()[1])
             tracemalloc.stop()
@@ -289,7 +289,7 @@ def _consume(chunks) -> tuple[int, int]:
 
 def _listing(folder: pathlib.Path, repeat: int) -> None:
     """What the walk itself costs, since a scan of a store is not free."""
-    files = LogFiles.from_folder(folder)
+    files = TextFiles.from_folder(folder)
     fastest = float("inf")
     counted = 0
     for _ in range(repeat):
@@ -301,11 +301,12 @@ def _listing(folder: pathlib.Path, repeat: int) -> None:
 
 @contextlib.contextmanager
 def _hashing(blake: bool):
-    """Run the body with the fallback line hash, or with whatever is installed.
+    """Run the body with blake2b as the line hash instead of xxh3.
 
-    `xxhash` is picked at import when it is there; the two hashes are not
-    interchangeable (a `hash64` is stable within an environment, not across
-    them), so this measures the cost of the choice, not a switch to flip.
+    Not a switch anyone can flip: the digest is the low half of every row id,
+    so `xxhash` is a hard dependency and the hash is part of the data's
+    identity. This is here to price that decision -- what the parser would cost
+    if the id's hash were the one this package used before it had ids.
     """
     import hashlib
 

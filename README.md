@@ -5,6 +5,7 @@ tables you can read and write without learning Iceberg first.
 
 **[Documentation](https://platob.github.io/yggfin/)** —
 [Design rules](https://platob.github.io/yggfin/design/) ·
+[Row ids](https://platob.github.io/yggfin/ids/) ·
 [Schema contracts](https://platob.github.io/yggfin/contracts/) ·
 [Types](https://platob.github.io/yggfin/types/) ·
 [Logs](https://platob.github.io/yggfin/logs/) ·
@@ -18,7 +19,7 @@ pip install "rekep[all]"
 import datetime
 from typing import Annotated
 
-from rekep import Convertible, Field, Log, LogFiles, TextFile, field
+from rekep import Convertible, Field, Log, TextFile, TextFiles, field
 from rekep.iceberg import IcebergDataset
 
 
@@ -49,7 +50,9 @@ with TextFile.from_path("app.txt.gz") as log:
     logs.append_arrow(log.read_arrow_reader(), merge_by=True, commit_row_size=1_000_000)
 
 # or a whole capture: every log under the folder, in path order, one open at a time
-capture = LogFiles.from_folder("s3://bucket/logs/2026-08-14", pattern="*.txt*")
+capture = TextFiles.from_folder(
+    "s3://bucket/logs/2026-08-14", pattern="*.txt*", static_values={"bridge": "bridge-1"}
+)
 logs.append_arrow(capture.read_arrow_reader(), merge_by=True, commit_row_size=1_000_000)
 
 logs.read_arrow_table(row_filter="recorded_at_date = '2026-08-14'")
@@ -62,11 +65,16 @@ logs.optimize()                      # compact, expire, sweep
   turns a class into one; `StructField`, `ListField`, `MapField` and the list
   flavours make what is inside reachable as what it is; the casts take real data
   onto the shape, recursively, in Arrow kernels only.
+- **`ids`** — one sortable 64-bit row id: the millisecond in the high 42 bits,
+  an xxh3 hash of the canonical payload folded into the low 21, sign bit clear.
+  A plain integer comparison orders by time, so the same column is the dedup
+  key, the join key, the incremental watermark and the sort column.
 - **`logs`** — `TextFile` parses a trading log into Arrow batches and writes
-  batches back out as lines. `LogFiles` is the same over a folder of them: a
+  batches back out as lines. `TextFiles` is the same over a folder of them: a
   lazy, `pyarrow.fs`-based walk in path order, one file open at a time, and a
   streamed byte flow (raw or compressed as it goes) for shipping a capture
-  rather than parsing it. Both are a `Dataset`.
+  rather than parsing it. Both are a `Dataset`, and both take `static_values`
+  for the constant columns a file never states itself.
 - **`dataset` / `iceberg`** — `Dataset` is a stream in and a stream out;
   `IcebergDataset` is that over an Iceberg table, with catalog and namespace
   CRUD and the maintenance (compact, expire, sweep) a streaming table needs.

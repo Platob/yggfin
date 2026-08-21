@@ -260,7 +260,7 @@ Ten things that were learned the expensive way, all of them measured:
   accumulates `commit_row_size` rows first (`dataset.arrow_chunks`).
 - Push filters, columns and limits down to the engine that holds the
   statistics; never read rows to throw them away here.
-- **A set of files is a dataset too, and its order is ours.** `LogFiles` walks
+- **A set of files is a dataset too, and its order is ours.** `TextFiles` walks
   `pyarrow.fs` one directory at a time (a generator, so the first path arrives
   before the tree is listed) and sorts every listing itself with digit runs
   compared as numbers -- no filesystem promises an order, so a set that did not
@@ -272,6 +272,28 @@ Ten things that were learned the expensive way, all of them measured:
   a row belongs in. The bytes have their own flow beside the rows -- streamed,
   and compressed *as it goes* through Arrow's codecs, since `Codec.compress`
   would need the whole capture in memory.
+
+**A row's identity is one column.** `rekep.ids` packs a millisecond above a
+folded xxh3 hash into a signed 64-bit integer with the sign bit clear, so a
+plain comparison orders by time and the same column is the dedup key, the join
+key, the watermark and the sort column. Three rules hold it together: the hash
+is xxh3 under a fixed module seed and `xxhash` is therefore a **dependency, not
+an extra** -- an id is an identity, and a fallback hash would mint a second one
+for a row already stored; the payload is canonicalised first (sorted keys,
+fixed encodings, an explicit null sentinel, framed values) so two producers
+agree; and a timestamp that does not fit its bits is refused rather than
+wrapped, because a wrapped id sorts *before* rows from years earlier. Whole
+columns go through `pack_arrow`, in `numpy.uint64` -- a shift against a Python
+`int` promotes to float64 on numpy 1.x, and float64 would round away the whole
+hash half while still looking plausible. The layout (unit, epoch, bit widths)
+rides in the column's own metadata, so a consumer unpacks it without reading
+this code.
+
+**Nothing names a source but the caller.** A column that says which bridge,
+desk or environment a capture came from is `static_values` on the reader --
+inferred from the value or stated with a `pyarrow.Scalar` -- appended after the
+data columns in insertion order, so adding one never moves a column a reader
+selects. No source name is ever hardcoded in a shape.
 
 ## 10. Stream; never materialise
 
@@ -342,6 +364,9 @@ rekep/
 │                  serialisation it dispatches to -- any dataclass to and
 │                  from dict/JSON/YAML/TOML, nested classes included, over
 │                  files, paths, URIs or raw bytes
+├── ids.py         the sortable row id: pack/unpack, the xor-shift fold, the
+│                  canonical bytes a hash is taken of, and the uint64 column
+│                  path -- xxh3 through `xxhash`, which is a hard dependency
 ├── require.py     optional deps at the point of use
 ├── filesystems.py FileSystem.from_uri, cached per URL
 ├── fields/        a dataclass is its own Arrow schema:
@@ -371,7 +396,7 @@ rekep/
 │                  lookup and fuzzy search, all names case-insensitive)
 └── logs/          log.py (the Log shape), text_file.py (TextFile: a log read
                    into Arrow batches and written back out as lines, itself a
-                   Dataset) and log_files.py (LogFiles: a folder of them as one
+                   Dataset) and text_files.py (TextFiles: a folder of them as one
                    ordered stream -- the lazy pyarrow.fs walk, the batch
                    combining, and the raw/compressed byte flow)
 ```
@@ -389,7 +414,8 @@ on an extra. `tests/` mirrors `src/` folder for folder.
 **Documentation is a site, not a README.** `docs/` is mkdocs-material at the
 repo root, in two groups: *Architecture* (design.md, contracts.md -- the rules
 and the schema contracts, which is where anyone building on this starts) and
-*Guides* (types.md, logs.md, fix.md, iceberg.md). Content tabs carry the
+*Guides* (types.md, logs.md, fix.md, iceberg.md); ids.md sits in the first,
+because a row id is a design rule with an implementation. Content tabs carry the
 examples so a page reads as one narrative instead of a wall of code.
 
 **Every page has the same shape**: a short description of what the thing is,

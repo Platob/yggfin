@@ -7,7 +7,7 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, Log
+from rekep import Dataset, Field, Log, ids
 from rekep.logs import HEADER_PATTERN, TextFile
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
@@ -197,8 +197,8 @@ def test_compressed_log_is_decoded_not_raw(gzipped: Path) -> None:
 def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
     assert schema.names == [
+        "id",
         "url",
-        "ulbridge_name",
         "recorded_at_unix",
         "recorded_at_date",
         "recorded_at_time",
@@ -209,6 +209,7 @@ def test_schema(plain: Path) -> None:
         "message",
         "hash64",
     ]
+    assert schema.field("id").type == pyarrow.int64()
     assert schema.field("recorded_at_unix").type == pyarrow.int64()
     assert schema.field("hash64").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
@@ -655,6 +656,138 @@ def test_a_pre_epoch_timestamp_lands_on_the_right_day() -> None:
     date, time = _date_and_time(before)
     assert date[0].as_py() == datetime.date(1969, 12, 31)
     assert time[0].as_py() == datetime.time(23, 59, 59)
+
+
+# -- the row id -------------------------------------------------------------
+
+
+def test_the_id_packs_the_millisecond_and_the_line_hash(plain: Path) -> None:
+    """One column that is the row's identity and its order at the same time."""
+    table = TextFile.from_path(plain).read_arrow_table()
+    row = table.slice(0, 1).to_pylist()[0]
+    assert row["id"] == ids.pack(row["recorded_at_unix"] // 1_000_000, row["hash64"])
+    assert ids.unpack(row["id"]) == (
+        row["recorded_at_unix"] // 1_000_000,
+        ids.fold(row["hash64"]),
+    )
+    assert all(value > 0 for value in table.column("id").to_pylist()), "the sign bit stays clear"
+
+
+def test_the_id_is_the_hash_of_the_raw_line(plain: Path) -> None:
+    """xxh3 of the bytes on disk, so another reader of the same file agrees."""
+    table = TextFile.from_path(plain).read_arrow_table()
+    assert table.column("hash64").to_pylist()[0] == ids.signed(ids.hash_payload(RECORDS[0]))
+    assert table.column("id").to_pylist()[0] == ids.row_id(FIRST_UNIX // 1_000_000, RECORDS[0])
+
+
+def test_ids_order_the_rows_by_time(plain: Path) -> None:
+    """What the layout buys: sorting by id is sorting by the clock."""
+    table = TextFile.from_path(plain).read_arrow_table()
+    times = table.column("recorded_at_unix").to_pylist()
+    order = pyarrow.compute.array_sort_indices(table.column("id")).to_pylist()
+    millis = [times[index] // 1_000_000 for index in order]
+    assert millis == sorted(millis)
+
+
+def test_the_same_line_at_the_same_moment_is_the_same_id(plain: Path, tmp_path: Path) -> None:
+    """The dedup key: a rotated log replayed inserts nothing, whatever it is called."""
+    copy = tmp_path / "rotated.txt"
+    copy.write_bytes(plain.read_bytes())
+    first = TextFile.from_path(plain).read_arrow_table().column("id").to_pylist()
+    second = TextFile.from_path(copy).read_arrow_table().column("id").to_pylist()
+    assert first == second
+
+
+def test_a_line_outside_the_time_bits_is_refused(tmp_path: Path) -> None:
+    """An id that wrapped would sort before rows from years earlier."""
+    path = tmp_path / "old.txt"
+    path.write_bytes(b"1969-07-20 20:17:40.000_000 [t] [d] (INFO) one small step\n")
+    with pytest.raises(ValueError, match="time bits of a row id"):
+        TextFile.from_path(path).read_arrow_table()
+
+
+def test_moving_the_epoch_back_is_how_an_old_capture_gets_ids(tmp_path: Path) -> None:
+    """The knob the refusal points at: bits are spent from the epoch."""
+    path = tmp_path / "old.txt"
+    path.write_bytes(b"1969-07-20 20:17:40.000_000 [t] [d] (INFO) one small step\n")
+    moon = -86_400_000 * 365 * 10  # ten years before the unix epoch, near enough
+    table = TextFile.from_path(path, id_epoch_ms=moon).read_arrow_table()
+    assert table.num_rows == 1
+    packed = table.column("id").to_pylist()[0]
+    assert packed > 0
+    assert (
+        ids.unpack(packed, epoch_ms=moon)[0]
+        == table.column("recorded_at_unix").to_pylist()[0] // 1_000_000
+    )
+
+
+# -- static values ----------------------------------------------------------
+
+
+def test_static_values_land_at_the_end_in_insertion_order(plain: Path) -> None:
+    """After the data columns, so adding one moves nothing a reader selects."""
+    log = TextFile.from_path(plain, static_values={"bridge": "bridge-1", "shard": 7})
+    table = log.read_arrow_table()
+    assert table.schema.names[-2:] == ["bridge", "shard"]
+    assert table.schema.names[:-2] == Log.FIELD.into_arrow_schema().names
+    assert table.column("bridge").to_pylist() == ["bridge-1"] * table.num_rows
+    assert table.column("shard").to_pylist() == [7] * table.num_rows
+
+
+def test_nothing_names_the_source_but_the_caller(plain: Path) -> None:
+    """No column is hardcoded: a capture says what it is, or says nothing."""
+    assert TextFile.from_path(plain).read_arrow_table().schema.names == (
+        Log.FIELD.into_arrow_schema().names
+    )
+
+
+def test_a_static_value_infers_its_arrow_type(plain: Path) -> None:
+    log = TextFile.from_path(
+        plain, static_values={"text": "a", "count": 2, "ratio": 0.5, "flag": True}
+    )
+    schema = log.schema
+    assert schema.field("text").type == pyarrow.string()
+    assert schema.field("count").type == pyarrow.int64()
+    assert schema.field("ratio").type == pyarrow.float64()
+    assert schema.field("flag").type == pyarrow.bool_()
+
+
+def test_a_static_value_can_state_its_type(plain: Path) -> None:
+    """A scalar is the explicit form -- and the only way to say a typed null."""
+    log = TextFile.from_path(
+        plain,
+        static_values={
+            "desk": pyarrow.scalar("EU", pyarrow.large_string()),
+            "region": pyarrow.scalar(None, pyarrow.string()),
+        },
+    )
+    assert log.schema.field("desk").type == pyarrow.large_string()
+    assert log.schema.field("region").type == pyarrow.string()
+    assert log.schema.field("region").nullable is True
+    assert log.schema.field("desk").nullable is False
+    table = log.read_arrow_table()
+    assert table.column("region").to_pylist() == [None] * table.num_rows
+
+
+def test_a_static_value_of_none_is_refused(plain: Path) -> None:
+    """Arrow's `null` type is a column no store can widen later."""
+    log = TextFile.from_path(plain, static_values={"region": None})
+    with pytest.raises(ValueError, match="has no Arrow type"):
+        log.read_arrow_table()
+
+
+def test_a_static_column_is_part_of_the_declared_shape(plain: Path) -> None:
+    log = TextFile.from_path(plain, static_values={"bridge": "bridge-1"})
+    assert log.into_struct_field().names[-1] == "bridge"
+    assert log.into_struct_field().field("bridge").arrow_type == pyarrow.string()
+
+
+def test_static_columns_are_not_written_back_into_a_line(plain: Path, tmp_path: Path) -> None:
+    """A line is what the header says; a constant column is not in it."""
+    rows = TextFile.from_path(plain, static_values={"bridge": "bridge-1"}).read_arrow_table()
+    out = TextFile.from_path(tmp_path / "copy.txt")
+    out.write_arrow(rows)
+    assert out.read_arrow_table().num_rows == rows.num_rows
 
 
 # -- the dataset ------------------------------------------------------------

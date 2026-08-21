@@ -7,8 +7,9 @@ import io
 import os
 import pathlib
 import re
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from functools import cached_property
 from typing import Any, ClassVar
 
@@ -19,11 +20,14 @@ from rekep.convert import URI_SCHEME
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
+from rekep.ids import HASH_BITS
 from rekep.logs.text_file import (
     DEFAULT_BATCH_ROW_SIZE,
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,
     TextFile,
+    parsed_field_of,
+    static_columns_of,
 )
 
 #: Cuts a path into its digit runs and everything between them, so ordering
@@ -33,7 +37,7 @@ _DIGITS = re.compile(r"(\d+)")
 
 
 @dataclass(eq=False)
-class LogFiles(Dataset, io.BufferedIOBase):
+class TextFiles(Dataset, io.BufferedIOBase):
     """Every log under a set of roots, read in path order as one Arrow stream.
 
     A capture is never one file: a bridge rotates its log, an operator gzips
@@ -117,8 +121,18 @@ class LogFiles(Dataset, io.BufferedIOBase):
     #: IANA zone the wall clock in the headers belongs to, passed to every file.
     timezone: str | None = None
 
-    #: Name of the ULBridge instance the capture came from, repeated per row.
-    ulbridge_name: str = ""
+    #: Constant columns every row of the capture carries, appended after the
+    #: data columns in insertion order -- the same declaration `TextFile` takes,
+    #: passed to every file the walk opens, so a set is one shape and not one
+    #: per file.
+    static_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
+
+    #: Epoch the row ids count their milliseconds from, and how many bits the
+    #: line hash is folded into. Passed through to every file, because two
+    #: files of one capture whose ids were packed differently could not be
+    #: compared, let alone merged.
+    id_epoch_ms: int = 0
+    id_hash_bits: int = HASH_BITS
 
     def __post_init__(self) -> None:
         """Resolve one filesystem for every root, and rewrite the roots as paths on it."""
@@ -134,7 +148,7 @@ class LogFiles(Dataset, io.BufferedIOBase):
                 raise ValueError(
                     f"{root!r} is on {filesystem.type_name}, and this set is already reading "
                     f"{self.filesystem.type_name}; one set is one stream off one store, so read "
-                    "each store with its own LogFiles"
+                    "each store with its own TextFiles"
                 )
             resolved.append(path)
         self.roots = tuple(resolved)
@@ -147,11 +161,11 @@ class LogFiles(Dataset, io.BufferedIOBase):
         source: str | os.PathLike[str],
         filesystem: pyarrow.fs.FileSystem | None = None,
         **declared: Any,
-    ) -> LogFiles:
+    ) -> TextFiles:
         """Build from one folder, named by URI or by local path.
 
-        The whole of the common case: `LogFiles.from_folder("/var/log/app")`,
-        `LogFiles.from_folder("s3://bucket/logs/2026-08-14")`. Anything else
+        The whole of the common case: `TextFiles.from_folder("/var/log/app")`,
+        `TextFiles.from_folder("s3://bucket/logs/2026-08-14")`. Anything else
         the set declares -- `pattern`, `recursive`, `reverse`, `timezone`,
         `ulbridge_name` -- is a keyword here, so a call reads as one shape.
         """
@@ -163,7 +177,7 @@ class LogFiles(Dataset, io.BufferedIOBase):
         sources: Iterable[str | os.PathLike[str]],
         filesystem: pyarrow.fs.FileSystem | None = None,
         **declared: Any,
-    ) -> LogFiles:
+    ) -> TextFiles:
         """Build from several folders, read in the order given.
 
         The order is the caller's and is kept: a set that reads an archive
@@ -182,7 +196,7 @@ class LogFiles(Dataset, io.BufferedIOBase):
         sources: Iterable[str | os.PathLike[str]],
         filesystem: pyarrow.fs.FileSystem | None = None,
         **declared: Any,
-    ) -> LogFiles:
+    ) -> TextFiles:
         """Build from roots exactly as given -- folders, files, or both.
 
         The general form `from_folder` is a shorthand for. A root that names a
@@ -194,9 +208,19 @@ class LogFiles(Dataset, io.BufferedIOBase):
     # -- the dataset ---------------------------------------------------------
 
     @cached_property
+    def static_columns(self) -> tuple[tuple[str, pyarrow.Scalar], ...]:
+        """Each static value as an Arrow scalar, in the order it was declared."""
+        return static_columns_of(self.static_values)
+
+    @cached_property
     def parsed_field(self) -> StructField:
-        """What the parser produces, whatever shape reads are cast onto."""
-        return self.FILE.ROW.FIELD
+        """What the parser produces: the row shape, then the constant columns.
+
+        Built the same way a file builds its own, because the set's shape *is*
+        the files' -- including the static columns, which the set declares and
+        hands to every file it opens.
+        """
+        return parsed_field_of(self.FILE.ROW.FIELD, self.static_columns)
 
     def into_struct_field(self) -> StructField:
         """The shape this set holds: the declared one, or what the parser fills."""
@@ -222,7 +246,7 @@ class LogFiles(Dataset, io.BufferedIOBase):
         except FileNotFoundError:
             return False
 
-    def create_with_field(self, field: StructField, **kwargs: Any) -> LogFiles:
+    def create_with_field(self, field: StructField, **kwargs: Any) -> TextFiles:
         """Adopt `field` as this set's shape. Nothing is created on the store.
 
         A set of logs is discovered, not deployed: the files are written by
@@ -309,10 +333,12 @@ class LogFiles(Dataset, io.BufferedIOBase):
                 header_pattern=self.header_pattern,
                 row=self.row,
                 timezone=self.timezone,
-                ulbridge_name=self.ulbridge_name,
+                static_values=self.static_values,
+                id_epoch_ms=self.id_epoch_ms,
+                id_hash_bits=self.id_hash_bits,
             )
 
-    def _walk(self, directory: str) -> Iterator[pyarrow.fs.FileInfo]:
+    def _walk(self, directory: str, seen: set[str] | None = None) -> Iterator[pyarrow.fs.FileInfo]:
         """One directory, in path order, descending as the names come up.
 
         Sorted here because no filesystem promises an order: a local listing
@@ -320,17 +346,41 @@ class LogFiles(Dataset, io.BufferedIOBase):
         pagination gives. Files and subdirectories are ordered together, so a
         walk visits `a/nested.txt` before `app.txt` exactly as a sort of the
         full paths would.
+
+        A directory is descended into once, and "once" is decided on what it
+        resolves to rather than on how it was spelled. A symlink pointing back
+        up its own tree is a local-filesystem thing rather than a store one,
+        but where it exists the walk reads the whole capture again at every
+        depth until the operating system refuses the path -- forty copies of
+        every row, and nothing in the error saying which link caused it.
         """
+        seen = set() if seen is None else seen
+        identity = self._identity(directory)
+        if identity in seen:
+            return
+        seen.add(identity)
         selector = pyarrow.fs.FileSelector(directory, recursive=False, allow_not_found=True)
         listing = self.filesystem.get_file_info(selector)
         for info in sorted(listing, key=_natural, reverse=self.reverse):
             if info.type == pyarrow.fs.FileType.Directory:
                 if self.recursive:
-                    yield from self._walk(info.path)
+                    yield from self._walk(info.path, seen)
             elif info.type == pyarrow.fs.FileType.File and fnmatch.fnmatchcase(
                 info.base_name, self.pattern
             ):
                 yield info
+
+    def _identity(self, directory: str) -> str:
+        """What makes two listings the same directory rather than two of them.
+
+        Only a local filesystem has symlinks to resolve; an object store has
+        prefixes, where the path already *is* the identity. Asking `os.path`
+        about a store path would be wrong and slow, so it is asked only about
+        the filesystem that has the question.
+        """
+        if isinstance(self.filesystem, pyarrow.fs.LocalFileSystem):
+            return os.path.realpath(directory)
+        return directory
 
     # -- converting ---------------------------------------------------------
 
@@ -551,7 +601,10 @@ def _natural(info: pyarrow.fs.FileInfo) -> tuple[tuple[int, int | str], ...]:
     tags -- so two parts are never compared as a string against an int.
     """
     return tuple(
-        (1, int(part)) if part.isdigit() else (0, part)
+        # `isdecimal`, not `isdigit`: the two disagree on characters like "²",
+        # which `\d` does not match but `isdigit` accepts -- and one such name
+        # anywhere under a root took the whole walk down with a ValueError.
+        (1, int(part)) if part.isdecimal() else (0, part)
         for part in _DIGITS.split(info.path)
         if part != ""
     )

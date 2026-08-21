@@ -1,10 +1,11 @@
 # Benchmarks
 
 Every number on this site was measured, and it lives on the page it is about:
-casting is on [Types](types.md#benchmarks), parsing on
-[Logs](logs.md#benchmarks), FIX on [FIX](fix.md#benchmarks), and everything
-about tables on [Iceberg](iceberg.md#benchmarks). This page is the method —
-what the scripts do, and how to read what they print.
+row ids are on [Row ids](ids.md#benchmarks), casting on
+[Types](types.md#benchmarks), parsing on [Logs](logs.md#benchmarks), FIX on
+[FIX](fix.md#benchmarks), and everything about tables on
+[Iceberg](iceberg.md#benchmarks). This page is the method — what the scripts
+do, and how to read what they print.
 
 The scripts are in `python/benchmarks/`, they ship with the package, and they
 build their own fixtures, so any of them runs on a clean checkout.
@@ -14,7 +15,9 @@ build their own fixtures, so any of them runs on a clean checkout.
 ```bash
 cd python
 uv run python benchmarks/bench_text_file.py                  # parsing a log
+uv run python benchmarks/bench_text_file.py --only variants  # what moves the parser
 uv run python benchmarks/bench_text_file.py --only folders   # a capture of many files
+uv run python benchmarks/bench_ids.py                        # packing and hashing row ids
 uv run python benchmarks/bench_cast.py                       # casting data onto a shape
 uv run python benchmarks/bench_fix.py                        # FIX, scalar and vectorised
 uv run python benchmarks/bench_iceberg.py                    # parse, stream in, read back
@@ -31,6 +34,7 @@ you are changing a benchmark rather than reading one.
 
 | page | what it measures | script |
 | --- | --- | --- |
+| [Row ids](ids.md#benchmarks) | packing a column of ids, hashing a row, canonicalising one, and the collision bound | `bench_ids.py` |
 | [Types](types.md#benchmarks) | casting a batch, a nested column, a stream onto a shape — against `Array.cast` on the same data | `bench_cast.py` |
 | [Logs](logs.md#benchmarks) | parsing one log; parsing a folder of them; shipping the bytes | `bench_text_file.py` |
 | [FIX](fix.md#benchmarks) | the scalar parser, the vectorised one, and turning keys into tags | `bench_fix.py` |
@@ -51,6 +55,11 @@ runs agree, one figure is quoted; where they do not, **the range is quoted** —
 `0.99–1.12`, `411k–425k` — and the spread is the point rather than an
 inconvenience. A single run is never quoted as if it were a specification.
 
+**Re-measure when the code under a number changes.** Making the row id's hash
+xxh3 changed what the parser does per line, so every parser table was run
+again rather than carried over: a number that describes an older version of
+the code is worse than no number, because it reads as current.
+
 **Measure warm, and in isolation.** An Acero join costs its own initialisation
 on the first call in a process, so a sequence of timed stages charges the whole
 of it to whichever ran first: one reordering looked 5× faster that way and was
@@ -62,7 +71,8 @@ spread that was nothing but warm-up.
 the code is good at is an advertisement. `into_bytes()` is in the byte-flow
 table precisely because it holds the whole capture; `chained by hand` is in the
 folder table because it is what a set costs without its one optimisation;
-`Table.upsert` is in the merge table because it is the alternative.
+`pack` row by row is in the id table because it is what the column path
+replaced; `Table.upsert` is in the merge table because it is the alternative.
 
 **Prefer a count to a second.** Seconds on a local disk say very little about a
 job on an object store, and they move ±30–40% on a shared machine. Counts do

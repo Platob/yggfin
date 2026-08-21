@@ -31,6 +31,7 @@ nav:
   - Home: index.md
   - Architecture:
       - Design rules: design.md
+      - Row ids: ids.md
       - Schema contracts: contracts.md
   - Guides:
       - Types: types.md

@@ -5,9 +5,9 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, Log, LogFiles, TextFile
+from rekep import Dataset, Field, Log, TextFile, TextFiles, ids
 from rekep.logs import HEADER_PATTERN
-from rekep.logs.log_files import _natural
+from rekep.logs.text_files import _natural
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()
@@ -51,7 +51,7 @@ def capture(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def relative(files: LogFiles, root: Path) -> list[str]:
+def relative(files: TextFiles, root: Path) -> list[str]:
     """The set's paths, relative to the folder, so assertions read as names."""
     return [url.split(str(root))[-1].lstrip("/") for url in files.into_urls()]
 
@@ -60,7 +60,7 @@ def relative(files: LogFiles, root: Path) -> list[str]:
 
 
 def test_paths_come_out_in_natural_path_order(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert tuple(relative(files, capture)) == CAPTURE_ORDER
 
 
@@ -83,59 +83,76 @@ def test_a_digit_run_sorts_as_a_number_not_as_text() -> None:
 
 
 def test_reverse_reads_the_same_order_backwards(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*", reverse=True)
+    files = TextFiles.from_folder(capture, pattern="*.txt*", reverse=True)
     assert tuple(relative(files, capture)) == tuple(reversed(CAPTURE_ORDER))
 
 
 def test_roots_are_read_in_the_order_given(capture: Path) -> None:
     """A stated order is a statement about time, so it is never re-sorted."""
-    files = LogFiles.from_folders([capture / "archive", capture], pattern="*.txt*")
+    files = TextFiles.from_folders([capture / "archive", capture], pattern="*.txt*")
     assert relative(files, capture)[0] == "archive/old.txt"
 
 
 def test_recursive_false_stays_in_the_folder(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*", recursive=False)
+    files = TextFiles.from_folder(capture, pattern="*.txt*", recursive=False)
     assert "archive/old.txt" not in relative(files, capture)
     assert len(relative(files, capture)) == 4
+
+
+def test_a_name_with_an_odd_digit_still_sorts(tmp_path: Path) -> None:
+    """`"²".isdigit()` is True and `\\d` does not match it -- one file took the walk down."""
+    (tmp_path / "app.1\u00b22.txt").write_bytes(SAMPLE_BYTES)
+    (tmp_path / "app.2.txt").write_bytes(SAMPLE_BYTES)
+    files = TextFiles.from_folder(tmp_path, pattern="*.txt")
+    assert len(list(files.into_urls())) == 2
+    assert files.exists is True
+
+
+def test_a_directory_is_walked_once(tmp_path: Path) -> None:
+    """A symlink back up the tree costs the whole capture twice, or forever."""
+    (tmp_path / "app.txt").write_bytes(SAMPLE_BYTES)
+    (tmp_path / "loop").symlink_to(tmp_path, target_is_directory=True)
+    files = TextFiles.from_folder(tmp_path, pattern="*.txt")
+    assert len(list(files.into_urls())) == 1
 
 
 # -- what is in the set -----------------------------------------------------
 
 
 def test_the_pattern_filters_on_the_base_name(capture: Path) -> None:
-    assert relative(LogFiles.from_folder(capture, pattern="*.gz"), capture) == [
+    assert relative(TextFiles.from_folder(capture, pattern="*.gz"), capture) == [
         "app.1.txt.gz",
         "app.2.txt.gz",
         "app.10.txt.gz",
     ]
-    assert "notes.json" in relative(LogFiles.from_folder(capture), capture)
+    assert "notes.json" in relative(TextFiles.from_folder(capture), capture)
 
 
 def test_the_pattern_is_case_sensitive_on_every_platform(capture: Path) -> None:
     """`fnmatch` folds case on Windows only, so the set would differ by host."""
-    assert relative(LogFiles.from_folder(capture, pattern="*.TXT"), capture) == []
+    assert relative(TextFiles.from_folder(capture, pattern="*.TXT"), capture) == []
 
 
 def test_a_file_root_is_taken_as_it_is(capture: Path) -> None:
     """Naming a file *is* the selection, so the pattern does not second-guess it."""
-    files = LogFiles.from_urls([capture / "notes.json"], pattern="*.txt")
+    files = TextFiles.from_urls([capture / "notes.json"], pattern="*.txt")
     assert relative(files, capture) == ["notes.json"]
 
 
 def test_a_missing_root_is_refused(capture: Path) -> None:
-    files = LogFiles.from_folders([capture, capture / "nowhere"])
+    files = TextFiles.from_folders([capture, capture / "nowhere"])
     with pytest.raises(FileNotFoundError, match="nowhere"):
         list(files.into_urls())
 
 
 def test_the_walk_is_lazy(capture: Path) -> None:
     """The first path arrives before a later root has even been looked at."""
-    files = LogFiles.from_folders([capture, capture / "nowhere"], pattern="*.txt*")
+    files = TextFiles.from_folders([capture, capture / "nowhere"], pattern="*.txt*")
     assert next(files.into_urls()).endswith("app.1.txt.gz")
 
 
 def test_an_empty_set_reads_as_no_rows() -> None:
-    files = LogFiles()
+    files = TextFiles()
     assert files.exists is False
     table = files.into_arrow_table()
     assert table.num_rows == 0
@@ -143,14 +160,14 @@ def test_an_empty_set_reads_as_no_rows() -> None:
 
 
 def test_a_folder_with_no_logs_does_not_exist_yet(tmp_path: Path) -> None:
-    assert LogFiles.from_folder(tmp_path).exists is False
+    assert TextFiles.from_folder(tmp_path).exists is False
     (tmp_path / "app.txt").write_bytes(SAMPLE_BYTES)
-    assert LogFiles.from_folder(tmp_path).exists is True
+    assert TextFiles.from_folder(tmp_path).exists is True
 
 
 def test_a_missing_folder_does_not_exist_rather_than_raising(tmp_path: Path) -> None:
     """Asking whether it is there is the one question a missing root answers."""
-    files = LogFiles.from_folder(tmp_path / "nowhere")
+    files = TextFiles.from_folder(tmp_path / "nowhere")
     assert files.exists is False
     with pytest.raises(FileNotFoundError):
         files.read_arrow_table()
@@ -161,36 +178,36 @@ def test_a_missing_folder_does_not_exist_rather_than_raising(tmp_path: Path) -> 
 
 def test_from_folder_resolves_a_local_path_through_its_filesystem(capture: Path) -> None:
     """A root is rewritten as the path its filesystem understands, as a url is."""
-    files = LogFiles.from_folder(capture)
+    files = TextFiles.from_folder(capture)
     assert files.roots == (str(capture),)
     assert isinstance(files.filesystem, pyarrow.fs.LocalFileSystem)
 
 
 def test_a_supplied_filesystem_leaves_the_roots_alone(capture: Path) -> None:
-    files = LogFiles.from_folder(str(capture), pyarrow.fs.LocalFileSystem())
+    files = TextFiles.from_folder(str(capture), pyarrow.fs.LocalFileSystem())
     assert files.roots == (str(capture),)
 
 
 def test_the_declaration_reaches_every_file(capture: Path) -> None:
-    files = LogFiles.from_folder(
-        capture, pattern="*.txt", timezone="Europe/Paris", ulbridge_name="bridge-1"
+    files = TextFiles.from_folder(
+        capture, pattern="*.txt", timezone="Europe/Paris", static_values={"bridge": "bridge-1"}
     )
     for log in files.into_files():
         assert isinstance(log, TextFile)
         assert log.timezone == "Europe/Paris"
-        assert log.ulbridge_name == "bridge-1"
+        assert log.static_values == {"bridge": "bridge-1"}
         assert log.filesystem is files.filesystem
 
 
 def test_a_set_is_a_dataset(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert isinstance(files, Dataset)
     assert files.into_struct_field() is Log.FIELD
     assert files.read_arrow_table().num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
 
 
 def test_from_redirects_on_the_source(capture: Path) -> None:
-    assert LogFiles.from_(str(capture)).roots == (str(capture),)
+    assert TextFiles.from_(str(capture)).roots == (str(capture),)
 
 
 @pytest.mark.parametrize(
@@ -202,12 +219,12 @@ def test_from_redirects_on_the_source(capture: Path) -> None:
     ],
 )
 def test_into_redirects_on_the_requested_type(capture: Path, requested: type, stem: str) -> None:
-    assert LogFiles.redirect_of(requested) == stem
-    assert LogFiles.from_folder(capture, pattern="*.txt*").into_(requested) is not None
+    assert TextFiles.redirect_of(requested) == stem
+    assert TextFiles.from_folder(capture, pattern="*.txt*").into_(requested) is not None
 
 
 def test_read_arrow_redirects_on_the_requested_type(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert files.read_arrow(pyarrow.Table).num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
     assert files.read_arrow(pyarrow.RecordBatchReader).read_all().num_rows == (
         len(CAPTURE_ORDER) * EXPECTED_RECORDS
@@ -216,21 +233,47 @@ def test_read_arrow_redirects_on_the_requested_type(capture: Path) -> None:
 
 def test_dispatch_refuses_what_it_cannot_infer(capture: Path) -> None:
     with pytest.raises(TypeError, match="cannot infer"):
-        LogFiles.from_folder(capture).into_(object())
+        TextFiles.from_folder(capture).into_(object())
+
+
+def test_static_values_are_the_sets_and_reach_every_file(capture: Path) -> None:
+    """One capture is one shape: the columns are declared once, not per file."""
+    files = TextFiles.from_folder(
+        capture, pattern="*.txt*", static_values={"bridge": "bridge-1", "shard": 2}
+    )
+    assert files.into_struct_field().names[-2:] == ["bridge", "shard"]
+    table = files.read_arrow_table()
+    assert table.schema.names[-2:] == ["bridge", "shard"]
+    assert set(table.column("bridge").to_pylist()) == {"bridge-1"}
+    assert table.num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
+
+
+def test_every_file_of_a_capture_packs_its_ids_the_same_way(capture: Path) -> None:
+    """Two files whose ids were packed differently could not be compared."""
+    files = TextFiles.from_folder(capture, pattern="*.txt*", id_epoch_ms=1_000)
+    for log in files.into_files():
+        assert log.id_epoch_ms == 1_000
+        assert log.id_hash_bits == files.id_hash_bits
+    table = files.read_arrow_table()
+    assert table.column("id").to_pylist()[0] == ids.pack(
+        table.column("recorded_at_unix").to_pylist()[0] // 1_000_000,
+        table.column("hash64").to_pylist()[0],
+        epoch_ms=1_000,
+    )
 
 
 # -- parsing ----------------------------------------------------------------
 
 
 def test_every_record_of_every_file_is_parsed(capture: Path) -> None:
-    table = LogFiles.from_folder(capture, pattern="*.txt*").into_arrow_table()
+    table = TextFiles.from_folder(capture, pattern="*.txt*").into_arrow_table()
     assert table.num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
     assert table.schema.equals(Log.FIELD.into_arrow_schema())
 
 
 def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
-    urls = LogFiles.from_folder(capture, pattern="*.txt*").into_urls()
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
+    urls = TextFiles.from_folder(capture, pattern="*.txt*").into_urls()
     read = table_urls = files.into_arrow_table().column("url").to_pylist()
     assert read[::EXPECTED_RECORDS] == list(urls)
     # Every file's rows are contiguous: a set never interleaves two logs.
@@ -240,21 +283,21 @@ def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
 
 
 def test_a_compressed_file_and_a_plain_one_read_the_same(capture: Path) -> None:
-    plain = LogFiles.from_urls([capture / "app.txt"]).into_arrow_table()
-    zipped = LogFiles.from_urls([capture / "app.1.txt.gz"]).into_arrow_table()
+    plain = TextFiles.from_urls([capture / "app.txt"]).into_arrow_table()
+    zipped = TextFiles.from_urls([capture / "app.1.txt.gz"]).into_arrow_table()
     assert plain.column("message").to_pylist() == zipped.column("message").to_pylist()
 
 
 @pytest.mark.parametrize("batch_row_size", [1, 7, EXPECTED_RECORDS, 10_000])
 def test_batching_does_not_change_the_result(capture: Path, batch_row_size: int) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     reader = files.into_arrow_reader(batch_row_size=batch_row_size)
     table = reader.read_all()
     assert table.num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
     assert (
         table.column("hash64").to_pylist()
         == (
-            LogFiles.from_folder(capture, pattern="*.txt*").into_arrow_table().column("hash64")
+            TextFiles.from_folder(capture, pattern="*.txt*").into_arrow_table().column("hash64")
         ).to_pylist()
     )
 
@@ -265,7 +308,7 @@ def test_short_files_are_combined_into_batches_of_the_size_asked_for(capture: Pa
     Without the combining, every rotated log costs a batch of its own, and a
     folder of them is mostly rotated logs.
     """
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     sizes = [batch.num_rows for batch in files.into_arrow_reader(batch_row_size=100)]
     assert sizes == [120]
     assert [batch.num_rows for batch in files.into_arrow_reader(batch_row_size=40)] == [48, 48, 24]
@@ -273,13 +316,13 @@ def test_short_files_are_combined_into_batches_of_the_size_asked_for(capture: Pa
 
 def test_a_full_batch_is_handed_over_untouched(capture: Path) -> None:
     """A big log pays no copy: what `TextFile` produced is what comes out."""
-    files = LogFiles.from_urls([capture / "app.txt"])
+    files = TextFiles.from_urls([capture / "app.txt"])
     assert [batch.num_rows for batch in files.into_arrow_reader(batch_row_size=10)] == [10, 10, 4]
 
 
 def test_continuations_do_not_fold_across_two_files(capture: Path) -> None:
     """The next file was written before or after this one, never inside it."""
-    table = LogFiles.from_folder(capture, pattern="*.txt*").into_arrow_table()
+    table = TextFiles.from_folder(capture, pattern="*.txt*").into_arrow_table()
     messages = table.column("message").to_pylist()
     assert len(messages) == len(CAPTURE_ORDER) * EXPECTED_RECORDS
     first_of_each = messages[::EXPECTED_RECORDS]
@@ -287,7 +330,7 @@ def test_continuations_do_not_fold_across_two_files(capture: Path) -> None:
 
 
 def test_reading_casts_only_when_asked(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt")
+    files = TextFiles.from_folder(capture, pattern="*.txt")
     assert files.read_arrow_reader().schema.equals(Log.FIELD.into_arrow_schema())
     narrow = Field.from_arrow_schema(
         pyarrow.schema([("message", pyarrow.large_string())]), "Narrow"
@@ -317,7 +360,7 @@ def test_one_file_is_open_at_a_time(capture: Path) -> None:
                 Counting.listed.append(source.base_dir)
             return super().get_file_info(source)
 
-    files = LogFiles.from_folder(str(capture), Counting(), pattern="*.txt*")
+    files = TextFiles.from_folder(str(capture), Counting(), pattern="*.txt*")
     reader = files.into_arrow_reader(batch_row_size=10)
     next(reader)
     assert Counting.opened == [str(capture / "app.1.txt.gz")]
@@ -332,7 +375,7 @@ def test_one_file_is_open_at_a_time(capture: Path) -> None:
 
 
 def test_byte_chunks_are_every_file_in_order(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert files.into_bytes() == SAMPLE_BYTES * len(CAPTURE_ORDER)
 
 
@@ -340,20 +383,20 @@ def test_a_file_without_a_trailing_newline_is_separated_from_the_next(tmp_path: 
     """Otherwise the last line of one log and the first of the next are one row."""
     (tmp_path / "a.txt").write_bytes(RECORDS[0])
     (tmp_path / "b.txt").write_bytes(RECORDS[1] + b"\n")
-    files = LogFiles.from_folder(tmp_path)
+    files = TextFiles.from_folder(tmp_path)
     assert files.into_bytes() == RECORDS[0] + b"\n" + RECORDS[1] + b"\n"
     assert files.into_arrow_table().num_rows == 2
 
 
 @pytest.mark.parametrize("read_byte_size", [1, 13, 1 << 20])
 def test_the_read_size_does_not_change_the_bytes(capture: Path, read_byte_size: int) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert files.into_bytes(read_byte_size=read_byte_size) == SAMPLE_BYTES * len(CAPTURE_ORDER)
 
 
 @pytest.mark.parametrize("compression", ["gzip", "zstd"])
 def test_a_compressed_flow_decodes_back_to_the_raw_one(capture: Path, compression: str) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     blob = files.into_bytes(compression=compression)
     raw = files.into_bytes()
     assert len(blob) < len(raw)
@@ -363,7 +406,7 @@ def test_a_compressed_flow_decodes_back_to_the_raw_one(capture: Path, compressio
 
 def test_a_gzip_flow_is_one_member_the_stdlib_reads(capture: Path) -> None:
     """A `.gz` written here has to be a `.gz` everywhere, not an Arrow detail."""
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert gzip.decompress(files.into_bytes(compression="gzip")) == files.into_bytes()
 
 
@@ -381,14 +424,14 @@ def test_a_compressed_flow_arrives_in_pieces(tmp_path: Path) -> None:
         for row in range(60_000)
     )
     (tmp_path / "big.txt").write_bytes(payload)
-    files = LogFiles.from_folder(tmp_path)
+    files = TextFiles.from_folder(tmp_path)
     chunks = list(files.into_byte_chunks(read_byte_size=1 << 16, compression="gzip"))
     assert len(chunks) > 1
     assert gzip.decompress(b"".join(chunks)) == payload
 
 
 def test_read_serves_the_same_bytes_as_the_chunks(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     pieces = []
     while piece := files.read(7):
         pieces.append(piece)
@@ -397,20 +440,20 @@ def test_read_serves_the_same_bytes_as_the_chunks(capture: Path) -> None:
 
 
 def test_read_everything(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert files.read() == SAMPLE_BYTES * len(CAPTURE_ORDER)
     assert files.read() == b""
 
 
 def test_readinto(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     buffer = bytearray(27)
     assert files.readinto(buffer) == 27
     assert bytes(buffer) == SAMPLE_BYTES[:27]
 
 
 def test_a_set_is_read_only(capture: Path) -> None:
-    files = LogFiles.from_folder(capture)
+    files = TextFiles.from_folder(capture)
     assert files.readable() is True
     assert files.writable() is False
     assert files.seekable() is False
@@ -420,21 +463,21 @@ def test_a_set_is_read_only(capture: Path) -> None:
 
 
 def test_nothing_is_opened_until_the_first_read(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert "_byte_chunks" not in files.__dict__
     files.read(1)
     assert "_byte_chunks" in files.__dict__
 
 
 def test_close_does_not_open(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     files.close()
     assert "_byte_chunks" not in files.__dict__
     assert files.closed is True
 
 
 def test_close_is_idempotent(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     files.read(1)
     files.close()
     files.close()
@@ -442,7 +485,7 @@ def test_close_is_idempotent(capture: Path) -> None:
 
 
 def test_use_after_close_raises(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     files.close()
     with pytest.raises(ValueError, match="closed file"):
         files.read(1)
@@ -450,7 +493,7 @@ def test_use_after_close_raises(capture: Path) -> None:
 
 def test_a_set_reads_twice(capture: Path) -> None:
     """Each read walks the store again, so a folder that grew is read again."""
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     first = files.into_arrow_table().num_rows
     (capture / "app.11.txt").write_bytes(SAMPLE_BYTES)
     assert files.into_arrow_table().num_rows == first + EXPECTED_RECORDS
@@ -460,14 +503,14 @@ def test_a_set_reads_twice(capture: Path) -> None:
 
 
 def test_writing_a_set_is_refused(capture: Path) -> None:
-    files = LogFiles.from_folder(capture, pattern="*.txt*")
+    files = TextFiles.from_folder(capture, pattern="*.txt*")
     batch = files.into_arrow_table().to_batches()[0]
     with pytest.raises(NotImplementedError, match="TextFile"):
         files.write_arrow(batch)
 
 
 def test_creating_a_set_adopts_the_shape_and_touches_nothing(tmp_path: Path) -> None:
-    files = LogFiles.from_folder(tmp_path / "nothing-here")
+    files = TextFiles.from_folder(tmp_path / "nothing-here")
     narrow = Field.from_arrow_schema(pyarrow.schema([("message", pyarrow.string())]), "Narrow")
     assert files.create_with(narrow) is files
     assert files.into_struct_field() == narrow
