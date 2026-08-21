@@ -130,41 +130,35 @@ class FixRegistry(Convertible):
         transport (`FIXT1.1`) comes last: a lookup that walks versions in this
         order answers with the newest definition, which is the one that
         subsumes the others.
+
+        The store is asked first, the site second, and the store again when
+        the site cannot be had -- the three steps a subclass keeping its
+        dictionary somewhere else (`SqliteFixRegistry`) redirects, rather than
+        rewriting this walk.
         """
-        cached = self._read_cache("versions.json")
-        if cached is not None:
-            return tuple(cached["versions"])
+        stored = self._stored_versions()
+        if stored:
+            return stored
         try:
-            page = self._fetch(f"{self.base_url}.html")
+            versions = self._scrape_versions()
         except OSError:
-            # Offline before the index was ever cached: the versions that
+            # Offline before the index was ever stored: the versions that
             # *were* scraped are the ones this registry can honestly serve.
-            # Deduplicated case-blind, because a copied-in cache can hold two
-            # spellings of one version and they are one version here.
-            stems = sorted(
-                (
-                    path.stem
-                    for path in pathlib.Path(self.cache_dir).glob("*.json")
-                    if path.stem != "versions"
-                ),
-                key=_version_key,
-                reverse=True,
-            )
-            seen: set[str] = set()
-            unique: list[str] = []
-            for stem in stems:
-                if stem.lower() not in seen:
-                    seen.add(stem.lower())
-                    unique.append(stem)
-            if unique:
-                return tuple(unique)
+            known = self._known_versions()
+            if known:
+                return known
             raise
+        self._store_versions(versions)
+        return versions
+
+    def _scrape_versions(self) -> tuple[str, ...]:
+        """The version list off the dictionary's front page, newest first."""
+        page = self._fetch(f"{self.base_url}.html")
         found = dict.fromkeys(_VERSION_LINK.findall(page))
         found.pop("latest", None)
         versions = tuple(sorted(found, key=_version_key, reverse=True))
         if not versions:
             raise ValueError(f"{self.base_url}.html lists no FIX versions; is the layout new?")
-        self._write_cache("versions.json", {"versions": list(versions)})
         return versions
 
     def _versions(self, version: str | None) -> tuple[str, ...]:
@@ -200,20 +194,12 @@ class FixRegistry(Convertible):
         into a second file and leave a stale index serving the old fields.
         """
         version = self._spelling(version)
-        name = f"{version}.json"
         if not refresh:
-            cached = self._read_cache(name)
-            if cached is not None:
-                return [Field.from_dict(member) for member in cached["fields"]]
+            stored = self._stored_fields(version)
+            if stored is not None:
+                return stored
         fields = self._scrape_version(version)
-        self._write_cache(
-            name,
-            {
-                "version": version,
-                "url": f"{self.base_url}/{version}/",
-                "fields": [member.into_dict() for member in fields],
-            },
-        )
+        self._store_fields(version, fields)
         self._indexes.pop(version, None)
         return fields
 
@@ -234,9 +220,9 @@ class FixRegistry(Convertible):
         for candidate in self.__dict__.get("versions") or ():
             if candidate.lower() == lowered:
                 return candidate
-        for path in sorted(pathlib.Path(self.cache_dir).glob("*.json")):
-            if path.stem != "versions" and path.stem.lower() == lowered:
-                return path.stem
+        for candidate in self._stored_spellings():
+            if candidate.lower() == lowered:
+                return candidate
         return wanted
 
     def load(self, *versions: str, refresh: bool = False) -> dict[str, int]:
@@ -466,7 +452,66 @@ class FixRegistry(Convertible):
             detail["used_in"] = used
         return detail
 
-    # -- the cache and the wire ---------------------------------------------
+    # -- the store -----------------------------------------------------------
+    #
+    # Five methods, and they are the whole of where the dictionary is kept: a
+    # directory of JSON here, a `SqliteFixRegistry` elsewhere. Everything above
+    # -- the scraping, the version rules, the ordering, the searching -- is
+    # written against these and is the same wherever the fields live.
+
+    def _stored_versions(self) -> tuple[str, ...]:
+        """The version list this store already holds; empty when it holds none."""
+        cached = self._read_cache("versions.json")
+        return tuple(cached["versions"]) if cached else ()
+
+    def _store_versions(self, versions: tuple[str, ...]) -> None:
+        """Keep the version list, so the front page is fetched once."""
+        self._write_cache("versions.json", {"versions": list(versions)})
+
+    def _known_versions(self) -> tuple[str, ...]:
+        """The versions this store has *fields* for, newest first.
+
+        What an offline registry can honestly serve when it never saw the
+        front page. Deduplicated case-blind, because a copied-in cache can
+        hold two spellings of one version and they are one version here.
+        """
+        seen: set[str] = set()
+        unique: list[str] = []
+        for candidate in sorted(self._stored_spellings(), key=_version_key, reverse=True):
+            if candidate.lower() not in seen:
+                seen.add(candidate.lower())
+                unique.append(candidate)
+        return tuple(unique)
+
+    def _stored_spellings(self) -> tuple[str, ...]:
+        """Every version this store has fields for, spelled as it stored them."""
+        return tuple(
+            sorted(
+                path.stem
+                for path in pathlib.Path(self.cache_dir).glob("*.json")
+                if path.stem != "versions"
+            )
+        )
+
+    def _stored_fields(self, version: str) -> list[Field] | None:
+        """One version's fields as this store holds them; None when it does not."""
+        cached = self._read_cache(f"{version}.json")
+        if cached is None:
+            return None
+        return [Field.from_dict(member) for member in cached["fields"]]
+
+    def _store_fields(self, version: str, fields: list[Field]) -> None:
+        """Keep one whole version, replacing whatever was there."""
+        self._write_cache(
+            f"{version}.json",
+            {
+                "version": version,
+                "url": f"{self.base_url}/{version}/",
+                "fields": [member.into_dict() for member in fields],
+            },
+        )
+
+    # -- the cache files and the wire -----------------------------------------
 
     def _read_cache(self, name: str) -> dict[str, Any] | None:
         path = pathlib.Path(self.cache_dir) / name

@@ -156,6 +156,42 @@ What each file says, and how to refresh one, is in
 `python/tests/test_data.py` is what keeps a throttled scrape from shipping as
 one.
 
+### The indexed registry
+
+Reading a dictionary out of JSON means parsing every version and building a
+`Field` for every field in it — 6,479 of them — to answer a question about
+one. `SqliteFixRegistry` keeps the same fields in one indexed file and asks
+for the rows the question is about:
+
+```python
+from rekep.fix import SqliteFixRegistry
+
+registry = SqliteFixRegistry(cache_dir="data/fix")   # fix.db beside the dump
+registry.field("Side")               # one indexed query, one Field built
+registry.tags()                      # one GROUP BY, no objects at all
+registry.load()                      # index every version now, ~150 ms
+```
+
+It is the same class of thing as `FixRegistry` — same scrape, same versions,
+same `Field`s, same case-insensitivity, same offline rules — and every answer
+is [pinned against the JSON registry's](https://github.com/Platob/yggfin/blob/main/python/tests/fix/test_sqlite.py),
+because the four search ranks and the newest-version-first walk are spelled
+twice: in Python there and in SQL here.
+
+Where it is pointed decides where the fields come from, in this order: the
+index, then a JSON dump beside it (imported once, no network), then the site.
+So a fresh checkout answers offline, and a fresh `~/.config/fix` scrapes as
+`FixRegistry` would.
+
+!!! note "One file, and a `Field` only for what came back"
+
+    The index is `fix.db` inside `cache_dir` unless `database` says
+    otherwise, and it is a cache, not a publication: `data/fix/*.json` stays
+    the diffable dump, `data/fix/fix.db` is gitignored and rebuilt in about a
+    tenth of a second. Connections are per thread — Python's `sqlite3` keeps
+    a statement cache on the connection, and two threads reading through one
+    is API misuse — and `close()` closes every one it handed out.
+
 ## Reading values
 
 The projection is deliberately forgiving where the wire is:
@@ -200,6 +236,40 @@ twice.
 | wire messages, twelve fields per row | ~300k rows/s, ~5× the scalar parser |
 | rendered messages | ~140–260k rows/s, depending on group density |
 | all-numeric keys, `tag_arrow_array` | ~140M keys/s |
+
+**The registry.** `benchmarks/bench_fix_registry.py` is the other sweep: both
+registries over the published dump, every answer asserted equal before
+anything is timed.
+
+```bash
+cd python
+uv run python benchmarks/bench_fix_registry.py
+```
+
+| question, from cold | JSON | indexed |
+| --- | --- | --- |
+| `lookup("Side")`, every version | ~75 ms | ~0.45 ms |
+| `field(54, "4.4")`, one version | ~10.6 ms | ~0.31 ms |
+| `tags()`, every version | ~79 ms | ~4.4 ms |
+| `search("reject")` | ~82 ms | ~3.9 ms |
+| `fields("4.4")`, a whole version | ~10 ms | ~9.4 ms |
+
+Resident objects after `tags()`: 6.4 MB against 0.09 MB. The file is 2.78 MB
+against the dump's 2.86 MB, built in ~150 ms.
+
+**Where the index buys nothing.** Handing back a whole version is `Field`
+construction, and both registries pay it in full — 9.4 ms against 10 ms. Every
+other row is a question the JSON registry answers by building thousands of
+fields in order to look at a handful.
+
+**What was measured and left out.** A trigram FTS5 index answers
+`search("reject")` in 0.04 ms against the LIKE scan's 2.3 ms — and returns
+*nothing* for a two-letter query, because a trigram tokenizer cannot match
+terms shorter than three characters, while nearly tripling the file
+(7.6 MB). A window function for `tags()` is 8.3 ms against the folded
+`min()`'s 2.2 ms. Parsing the Arrow type per row rather than per distinct
+spelling costs 7.3 ms a version against 0.1 ms. All three are cases in the
+sweep, because the reason a thing was not done is worth keeping.
 
 **Fields per row.** The work is per token, not per row, so a rows/s at one
 message shape says nothing about another: the wire fixture is twelve fields

@@ -26,7 +26,7 @@ from rekep.fields import Field
 from rekep.fix import FixRegistry
 from rekep.fix.registry import _is_transient, _levenshtein, _version_key, _wait_for
 
-FIXTURES = Path(__file__).parent / "fixtures"
+from .conftest import FIXTURES, fixture_page
 
 #: Pages captured from `onixs.biz/fix-dictionary/4.0/` on 2026-08-21, byte for
 #: byte (`.gitattributes` keeps them out of the line-ending normalisation):
@@ -46,18 +46,7 @@ class FixtureRegistry(FixRegistry):
 
     def _fetch(self, url: str) -> str:
         self.__dict__.setdefault("fetched", []).append(url)
-        if url.endswith("fix-dictionary.html"):
-            name = "fix-dictionary.html"
-        elif "/4.4/" in url:
-            name = url.rsplit("/", 1)[-1]
-        else:
-            # Only 4.4 has fixture pages, so the other versions behave like a
-            # version the network cannot serve right now.
-            raise OSError(f"404 {url}")
-        path = FIXTURES / name
-        if not path.exists():
-            raise OSError(f"404 {url}")
-        return path.read_text()
+        return fixture_page(url)
 
 
 class CaptureRegistry(FixRegistry):

@@ -217,3 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 site/
+
+# The FIX index is built from data/fix/*.json in about a tenth of a second;
+# the JSON is what is published and diffable, and the database is not.
+data/fix/*.db
+data/fix/*.db-wal
+data/fix/*.db-shm

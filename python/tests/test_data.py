@@ -17,7 +17,7 @@ import pyarrow
 import pytest
 
 from rekep import Field
-from rekep.fix import FIX_SCALARS, FixRegistry
+from rekep.fix import FIX_SCALARS, FixRegistry, SqliteFixRegistry
 
 #: The dictionary is at the repo root, beside `python/` -- published data,
 #: not something shipped in the wheel.
@@ -106,6 +106,48 @@ def test_the_dump_is_the_name_to_tag_mapping_a_rendered_log_needs(
     assert tags["msgtype"] == 35
     assert tags["partyid"] == 448
     assert len(tags) > 1500, "every distinct name of every version, newest winning"
+
+
+def test_the_dump_indexes_into_sqlite_and_answers_the_same(
+    registry: FixRegistry, tmp_path: Path
+) -> None:
+    """The other way to read this directory, over the whole of it.
+
+    `tests/fix/test_sqlite.py` pins the two registries against each other on
+    four fixture fields; this is the same comparison over 6,479 real ones,
+    where a name declared in nine versions, a description with a `%` in it and
+    a tag that is four digits all exist for real.
+    """
+    with SqliteFixRegistry(cache_dir=DATA, database=tmp_path / "fix.db", retries=0) as indexed:
+        assert indexed.load() == {version: len(registry.fields(version)) for version in VERSIONS}
+        assert indexed.versions == registry.versions
+        assert indexed.tags() == registry.tags()
+        assert indexed.lookup("Side") == registry.lookup("Side")
+        assert indexed.field(35) == registry.field(35)
+        for text in ("reject", "side", 54, "Sied", "100%", "px", "time"):
+            assert indexed.search(text) == registry.search(text), text
+        for version in VERSIONS:
+            assert indexed.fields(version) == registry.fields(version), version
+
+
+def test_no_description_needs_more_case_folding_than_sqlite_does(
+    registry: FixRegistry,
+) -> None:
+    """The one assumption the indexed search rests on, checked rather than hoped.
+
+    A search matches descriptions with SQL `LIKE`, which folds case for ASCII
+    and nothing else, where Python's `lower()` folds everything. The dump
+    carries no cased character outside ASCII -- so the two agree -- and this
+    is what says so if a refresh ever brings one in.
+    """
+    cased = {
+        character
+        for version in VERSIONS
+        for member in registry.fields(version)
+        for character in member.description + member.name
+        if ord(character) > 127 and character.lower() != character.upper()
+    }
+    assert cased == set()
 
 
 def test_every_datatype_the_dictionary_names_is_projected(registry: FixRegistry) -> None:

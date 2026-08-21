@@ -28,6 +28,20 @@ registry.field("Side").fix["values"]     # '{"1":"Buy","2":"Sell",...}'
 registry.tags()                          # every name to its tag, for tag_arrow_array
 ```
 
+For a job that asks the dictionary many questions, index it once:
+
+```python
+from rekep.fix import SqliteFixRegistry
+
+registry = SqliteFixRegistry(cache_dir="data/fix")   # builds data/fix/fix.db
+registry.load()                                      # every version, ~150 ms
+registry.field("Side")                               # ~0.4 ms, not ~75 ms
+```
+
+The database is built *from these files*, in about a tenth of a second, and is
+gitignored: the JSON is what this directory publishes, and a binary nobody can
+diff is not. `docs/fix.md` has the measurements.
+
 One file per version, plus `versions.json` listing them newest first. A version
 file is plain JSON — inspectable, diffable, copyable:
 
