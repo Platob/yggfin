@@ -247,7 +247,7 @@ sees a row.
     → a list view), and `RecordBatch.cast` cannot even reorder columns. Where
     Arrow *can* do the work it is used — the layout change of a list flavour is
     one Arrow call — and where it cannot, the walk is done in kernels.
-    `benchmarks/bench_cast.py` measures both.
+    `benchmarks/bench_cast.py` [measures both](#benchmarks).
 
 ## Merging two declarations
 
@@ -307,9 +307,71 @@ sees a row.
     Field.from_dict(dumped)
     ```
 
+    A dump names the type it holds, because a contract read back has to rebuild
+    that type rather than something that resembles it. Every list flavour dumps
+    its own kind — `list`, `large_list`, `list_view`, `large_list_view`,
+    `fixed_size_list`. All five used to dump as `list`, so a document read back
+    narrowed a `large_list`'s 64-bit offsets and turned a view into a list —
+    silently, because both cast.
+
+    ```yaml
+    name: legs
+    type: large_list
+    item:
+      type: fixed_size_list
+      nullable: true
+      list_size: 3
+      item:
+        type: int32
+        nullable: true
+    ```
+
+    A `fixed_size_list` also dumps its `list_size`, because the width is part
+    of the type; one written by hand without it is refused by name. A map dumps
+    `keys_sorted` when its keys are sorted, for the same reason — Arrow
+    compares two maps that disagree on it as different types. And
+    `fixed_size_binary[16]` — the spelling Arrow prints and has no alias
+    for — is read back.
+
+    A field with no `type` at all is refused by name, which is what a
+    hand-written contract needs: the line that is missing is said, not guessed.
+    The contracts this repo publishes are in [schema contracts](contracts.md).
+
 !!! info "A schema knows where it came from"
 
     `into_arrow_schema()` puts the field's name and metadata in the schema's own
     metadata, so a schema that travels still says which class produced it — and
     `from_arrow_schema` reads that identity back, which is what makes the round
     trip an equality rather than a resemblance.
+
+## Benchmarks
+
+The sweep casts one shape onto another — a batch reshaped column by column, a
+struct that grew a member, a narrowed map value, the conversions Arrow refuses
+outright. The method the whole site shares is on the
+[Benchmarks](benchmarks.md) page.
+
+```bash
+cd python
+uv run python benchmarks/bench_cast.py
+```
+
+`benchmarks/bench_cast.py`, 200,000 rows per batch, best of seven, against
+pyarrow's own cast on the same data (it asserts the two agree before timing):
+
+| case | rows/s | vs `Array.cast` |
+| --- | --- | --- |
+| batch, already the right shape | — | returned as-is |
+| batch, full reshape | 431k–542k per column-pass | 1.39–1.58× |
+| struct, member added | 8.5B (zero-copy) | 1.07–1.13× |
+| list of structs | 5.9B–6.9B | 0.98–1.16× |
+| map, narrowed value | 1.6B–2.0B | 1.78–2.13× |
+| stream of 16 batches | 287M–310M | — |
+| map → struct | 3.3M | Arrow refuses |
+| struct → map | 17M | Arrow refuses |
+| struct → list | 21M | Arrow refuses |
+| list → large list | 1.2B | 0.83× |
+
+The last four are conversions `Array.cast` will not do at all. `map → struct` is
+the slowest because it is one `map_lookup` pass per member; the rest are
+`take` with computed indices.

@@ -12,12 +12,28 @@ Three ideas, and everything else is built from them:
   data onto the shape it declares.
 
 - :material-file-document-outline: **[Logs](logs.md)** — `TextFile` parses a
-  trading log into Arrow batches, and writes them back out as lines. It is a
-  dataset, so pushing a log into a table is one call.
+  trading log into Arrow batches, and writes them back out as lines. `LogFiles`
+  does the same for a whole folder, in path order. Both are datasets, so
+  pushing a capture into a table is one call.
 
 - :material-table: **[Iceberg](iceberg.md)** — `IcebergDataset` reads and writes
   a table through pyiceberg, creates it from your declaration, and keeps it fast
   (compact, expire, sweep) without a maintenance job of your own.
+
+</div>
+
+And two pages about how they fit together, and how to build on them:
+
+<div class="grid cards" markdown>
+
+- :material-ruler-square: **[Design rules](design.md)** — Arrow is the hub, the
+  shape is declared before the data, data is cast onto the declaration, and
+  everything is a stream. The rules, and the process for exchanging Arrow data
+  between two systems that do not share code.
+
+- :material-file-sign: **[Schema contracts](contracts.md)** — the `schemas/`
+  directory: one Arrow schema per file, in YAML or JSON, nested types included,
+  pinned by CI so what is agreed and what is stored cannot drift apart.
 
 </div>
 
@@ -76,7 +92,7 @@ Three ideas, and everything else is built from them:
     Quote.FIELD.into_iceberg_schema()    # ids, docs, identifier fields
     Quote.FIELD.primary_keys()           # ['symbol']
     Quote.FIELD.partition_keys()         # {'day': 'identity'}
-    Quote.FIELD.into_json("quote.json")  # the declaration, as a document
+    Quote.FIELD.into_yaml("schemas/trading/quote.yaml")   # the declaration, published
     ```
 
 === "Cast"
@@ -86,6 +102,18 @@ Three ideas, and everything else is built from them:
     Quote.FIELD.cast_arrow(batch)
     Quote.FIELD.cast_arrow(table)
     Quote.FIELD.cast_arrow(batches, merge_schema=True)
+    ```
+
+=== "Capture"
+
+    ```python
+    from rekep import LogFiles, TextFile
+
+    TextFile.from_path("app.txt.gz").read_arrow_table()      # one log
+
+    files = LogFiles.from_folder("s3://bucket/logs", pattern="*.txt*")
+    files.read_arrow_reader()          # every log, in path order, one open at a time
+    files.into_byte_chunks(compression="gzip")   # or just ship the bytes
     ```
 
 === "Store"
@@ -107,11 +135,18 @@ Three ideas, and everything else is built from them:
 ## What holds it together
 
 Arrow is the hub. A declaration projects onto an Arrow schema; every other view
-— Iceberg, documentation, a rebuilt Python class — comes from that one
-projection rather than a second walk of the type system. Data is cast onto the
-declaration, never the other way round, so a nearly-right batch lands instead of
-failing a schema comparison.
+— Iceberg, a contract file, documentation, a rebuilt Python class — comes from
+that one projection rather than a second walk of the type system. Data is cast
+onto the declaration, never the other way round, so a nearly-right batch lands
+instead of failing a schema comparison.
 
 Everything is a stream unless you say otherwise: a log is read batch by batch, a
-write commits once per chunk of rows, and nothing here needs a dataset to fit in
-memory.
+folder of logs one file at a time, a write commits once per chunk of rows, and
+nothing here needs a dataset to fit in memory.
+
+Where two systems have to agree without sharing code, the declaration becomes a
+[contract](contracts.md) — a file in the repository that reads back as the same
+Arrow schema, keys, comments and nested types included.
+
+Every page ends with the measurements behind its claims; how those are produced
+is on [Benchmarks](benchmarks.md).

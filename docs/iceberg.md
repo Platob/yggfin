@@ -179,15 +179,16 @@ keys and partitions intact.
     `ArrowScan` submits every planned file to its thread pool at once, and each
     finished one holds a whole file's decoded batches until the consumer
     reaches it — which makes a reader over a big table a `read_arrow_table`
-    that takes longer. Measured on 24 files and 99 MiB, one batch of 20,000
+    that takes longer. Measured on a 24-file, 99 MiB table, one batch of 20,000
     rows opened all 24 and left Arrow holding 97 of those MiB.
 
     The plan goes over a group at a time instead, the group being the pool's
-    own width: past that there is a queue, not parallelism. On the same
-    fixture: 8 files open, 32.5 MiB held. Draining the whole reader took
-    54.6–56.5 ms against 59.6–72.4 ms before, so the bound costs nothing. A
-    plan carrying delete files still goes over whole — `_read_all_delete_files`
-    runs per scan, and a shared delete file would be read once per group.
+    own width: past that there is a queue, not parallelism. On that same
+    24-file fixture: 8 files open, 32.5 MiB held. Draining the whole reader is
+    no slower for the bound — that leg, and a smaller table's counts, are
+    [measured](#maintenance-and-what-a-reader-holds). A plan carrying delete
+    files still goes over whole — `_read_all_delete_files` runs per scan, and a
+    shared delete file would be read once per group.
 
 === "Delete"
 
@@ -252,14 +253,9 @@ goes.
     `Table.upsert` builds its scan filter with **one equality term per incoming
     row** — for a composite key, `Or(And(k1 = …, k2 = …), …)` — and then binds
     that same expression to Arrow once per matched batch to work out what to
-    insert. Both are quadratic in the chunk. Measured on a two-column key:
-
-    | chunk rows | pyiceberg upsert |
-    | --- | --- |
-    | 500 | 700 rows/s |
-    | 1,000 | 730 rows/s |
-    | 2,000 | 590 rows/s |
-    | 4,000 | 440 rows/s |
+    insert. Both are quadratic in the chunk, so a bigger chunk buys nothing:
+    on a two-column key that is 700 rows/s at 500 rows and **440 at 4,000**
+    ([measured](#appending-merging-and-what-pyicebergs-own-upsert-costs)).
 
     Worse, pyiceberg's evaluators give up on an `In` of more than 200 literals,
     so past that a single-column upsert stops pruning altogether and reads every
@@ -286,11 +282,10 @@ goes.
     files before and 2 after**; a replay of one contiguous band plans 1 either
     way and pays the banding pass for nothing.
 
-    | scenario (4,000-row chunk, 20k-row table) | planned | pyiceberg |
-    | --- | --- | --- |
-    | every key new | 0.09 s | 2.47 s (28×) |
-    | every key stored, values unchanged | 0.20 s | 9.83 s (48×) |
-    | half new, half unchanged | 0.20 s | 8.12 s (42×) |
+    Head to head on a 4,000-row chunk against a 20k-row table, with identical
+    results either way, a replay whose keys are all stored and unchanged took
+    **0.20 s here against pyiceberg's 9.83 s** — 48×
+    ([measured](#appending-merging-and-what-pyicebergs-own-upsert-costs)).
 
     A chunk of entirely new keys prunes to **zero files** and becomes a plain
     append, which is what a log ingest hits every time — the scan is planned
@@ -312,13 +307,8 @@ goes.
     key column with the fewest distinct values and each group becomes one term:
     a `(symbol, day)` key over one day collapses 500 terms into one
     `And(EqualTo(day, …), In(symbol, […]))`. Measured on 10,000 stored rows
-    over four days, both legs run twice:
-
-    | rows updated | terms | seconds | rows/s |
-    | --- | --- | --- | --- |
-    | 500 | 1,000 → **2** | 0.95 → **0.22** | 527 → 2,245 |
-    | 2,000 | 4,000 → **2** | 4.55 → **0.23** | 440 → 8,935 |
-    | 5,000 | 10,000 → **4** | 21.16 → **0.43** | 236 → 11,589 |
+    over four days, a 5,000-row update goes from 10,000 terms and 21.16 s to
+    **4 terms and 0.42–0.43 s** ([measured](#updating-what-is-stored)).
 
     Two shapes keep the library's per-row form whole: a float key column
     holding a zero, because the inner half becomes an `In` and `pc.is_in`
@@ -442,7 +432,7 @@ calls are the whole routine.
     the file: bounds are recorded per row group, and a filter skips a row group
     it cannot match without decoding it. Measured on one 600k-row commit, a
     top-5% filter took **214 ms unsorted and 22 ms sorted** — the same single
-    file either way.
+    file either way ([measured](#reading-it-back)).
 
     It does *not* narrow file bounds for a stream that arrives shuffled: a
     chunk of shuffled rows spans the whole key range whatever order it is
@@ -545,10 +535,12 @@ calls are the whole routine.
     A table the plan can only address *as a whole* — no partitioning, or
     transforms that hide which rows are where — settles as a whole, under a key
     of its own. Asking the per-partition question there recorded nothing a
-    later run could match: measured on four commits over four days, a `day`
-    partition rewrote 16 files, then 4, then 4, forever, with
-    `compaction_marks()` empty throughout and the rows never changing. It is
-    16, then 0, then 0.
+    later run could match: measured on its own fixture of four commits over
+    four days, a `day` partition rewrote 16 files, then 4, then 4, forever,
+    with `compaction_marks()` empty throughout and the rows never changing. On
+    that table it is now 16, then 0, then 0; the sweep's own table starts from
+    13 files and lands the same way
+    ([measured](#maintenance-and-what-a-reader-holds)).
 
     Everything `cleanup` takes is reachable here too. The sweep is the
     expensive half — a recursive listing of the whole store — so
@@ -579,8 +571,9 @@ calls are the whole routine.
     already says how many that is (`total-data-files`). Below the threshold the
     planner is never asked — which is every call on a stream that has
     converged, and used to cost a walk of every manifest to learn nothing:
-    measured, one partitions read and one manifest read at 5–6 ms, now none at
-    all.
+    measured, one partitions read and one manifest read at 5–6 ms — the
+    0.005–0.006 s row [below](#maintenance-and-what-a-reader-holds) — and now
+    none at all.
 
     `auto_optimize=True` asks at the end of every write stream. It is **off by
     default** for one reason: `optimize` expires snapshots, and whether
@@ -628,33 +621,15 @@ bounded, process-wide cache of those files' bytes — filled on first read *and
 on write*, because the manifest list a commit just wrote is the one the next
 chunk's scan plans from.
 
-100,000 rows streamed in 8 commits, a local warehouse, measured twice:
-
-| flow | GETs, cache off | GETs, cache on |
-| --- | --- | --- |
-| append stream | 13 | **0** |
-| merge, every key new | 40 | **0** |
-| merge, half stored | 33 | 5 — the data files that matched |
-| insert-only, full replay | 24 | 10 — key columns only |
-| read everything | 18 | 10 — the data files |
-| read one partition | 5 | 2 |
-| read `limit=100` | 9 | **1** |
-| `scan_plan` one partition | 11 → **3** | **0** |
-| optimize (compact + sweep) | 71 → **69** | 10 |
-
-The two uncached counts that moved are not the cache's doing: `scan_plan` under
-a filter stopped planning the table a second time to count what an unfiltered
-scan would touch, and the sweep stopped walking the manifests once per half of
-its live set.
-
-With the cache on, the only GETs left are data files a read genuinely needs;
+Measured on 100,000 rows streamed in 8 commits, that takes an append stream
+from 13 GETs to **0** and leaves only the data files a read genuinely needs —
 every manifest, manifest list and `metadata.json` fetch is served from memory
-(214 hits, 0 misses over the sweep, ~500 KiB held). A merge-shaped ingest of
-new keys now costs the store exactly what a blind append does.
+([the counts](#store-calls)). A merge-shaped ingest of new keys now costs the
+store exactly what a blind append does.
 
 ```python
 IcebergCatalog(name="prod", properties={
-    ...,
+    # whatever the catalog needs, plus:
     "rekep.io.cache-bytes": "134217728",   # resize the shared budget; "0" opts out
 })
 ```
@@ -694,3 +669,342 @@ quotes.into_struct_field()                    # StructField: docs, keys, partiti
 quotes.into_arrow_schema()                    # the Arrow view of the same thing
 quotes.into_struct_field().into_iceberg_schema()   # and back to Iceberg's
 ```
+
+## Benchmarks
+
+Every number below came out of `bench_iceberg.py` on one machine, measured
+twice — a range where the two runs disagreed, one figure where they did not.
+[Benchmarks](benchmarks.md) is how they are made and why they are quoted that
+way.
+
+```bash
+cd python
+uv run python benchmarks/bench_iceberg.py       # parse, stream into Iceberg, read back
+uv run python benchmarks/bench_iceberg.py --only maintain   # the maintenance
+uv run python benchmarks/bench_iceberg.py --only update     # the half that rewrites
+uv run python benchmarks/bench_iceberg.py --only backfill   # replaying clustered keys
+uv run python benchmarks/bench_iceberg.py --only fs         # store calls, not seconds
+```
+
+The default sweep streams 400,000 parsed rows over 8 days, partitioned by day,
+written from a reader whose batches are 16,384 rows. The sections that use a
+fixture of their own say so.
+
+The Iceberg numbers use a local SQLite catalog and a file warehouse, so they are
+storage-latency-free: they measure planning, commit and Arrow work, which is
+what this package is responsible for. On an object store every commit also pays
+a round trip — which makes the number of commits matter *more*, not less. What
+those round trips add up to is counted rather than timed, in
+[Store calls](#store-calls).
+
+### How much a commit costs
+
+| commit rows | seconds | rows/s | files | manifests | snapshots |
+| --- | --- | --- | --- | --- | --- |
+| 16,384 | 1.9–2.7 | 148k–213k | 32 | 7 | 25 |
+| 65,536 | 0.50–0.64 | 623k–797k | 14 | 7 | 7 |
+| 262,144 | 0.23–0.28 | 1.4M–1.7M | 9 | 2 | 2 |
+| 1,000,000 | 0.26–0.32 | 1.3M–1.6M | 8 | 1 | 1 |
+| the whole stream | 0.27–0.51 | 790k–1.5M | 8 | 1 | 1 |
+
+Twenty-five commits leave **7** manifests rather than 25, because
+`commit.manifest.min-count-to-merge` is set: Iceberg's own default waits for a
+hundred manifests before merging any, which no stream of this size ever
+reaches.
+
+A commit is a file, a manifest and a snapshot, and every later scan pays for all
+three — planning is linear in the number of files. That is why
+`commit_row_size` defaults to a million rows rather than to the batch: below
+about 250k rows the commits, not the data, are the work.
+
+!!! note "A commit cannot be smaller than a batch"
+
+    Chunks close at the first batch boundary at or beyond `commit_row_size`, so
+    16,384 above is "one batch per commit". Asking for less changes nothing.
+
+### Appending, merging, and what pyiceberg's own upsert costs
+
+| case | commit rows | seconds | rows/s |
+| --- | --- | --- | --- |
+| append | 1,000,000 | 0.26–0.32 | 1.3M–1.6M |
+| merge, every key new | 1,000,000 | 0.28–0.71 | 564k–1.4M |
+| merge, half already stored | 1,000,000 | 0.76–0.89 | 449k–527k |
+| **merge through `Table.upsert`** | one commit | 11.3–11.6 (for **4,000** rows) | **344–354** |
+
+The last row is not a typo and not the same amount of work: pyiceberg's own
+upsert was given a hundredth of the data and still took twenty times longer than
+the full merge above it. Its scan filter carries one equality term per incoming
+row, so the cost grows faster than the chunk:
+
+| chunk rows | 1 join column | 2 join columns |
+| --- | --- | --- |
+| 500 | 6,200 rows/s | 700 rows/s |
+| 1,000 | 9,100 rows/s | 730 rows/s |
+| 2,000 | 7,100 rows/s | 590 rows/s |
+| 4,000 | 10,700 rows/s | 440 rows/s |
+
+Head to head on the same table (4,000-row chunk, 20,000-row table), with
+identical results:
+
+| scenario | planned merge | `Table.upsert` |
+| --- | --- | --- |
+| every key new | 0.09 s | 2.47 s (28×) |
+| every key stored, values unchanged | 0.20 s | 9.83 s (48×) |
+| half new, half unchanged | 0.20 s | 8.12 s (42×) |
+
+Those are the streaming shapes: new data, and replays of data that has not
+changed. A merge where most rows genuinely *change* is a different story —
+about 2× — because the delete half still carries pyiceberg's exact per-row
+filter, which it must: a range there would delete rows the chunk never touched.
+Finding the rows is what got fast; rewriting them costs what it costs, and
+[Updating what is stored](#updating-what-is-stored) is that half on its own.
+
+[How a merge is planned](#how-a-merge-is-planned) explains why. The two paths
+are compared row by row in `tests/iceberg/test_coherence.py`; set
+`plan_merges=False` to use the library's own.
+
+Building that scan filter is itself measured, because it runs once per commit
+and it used to hash the whole key column to decide it could not name the values
+in it. Probing a 201-row slice first answers the same question, on a 400k-row
+chunk:
+
+| merge key | before | after |
+| --- | --- | --- |
+| one high-cardinality integer | 27.0 ms | 0.4 ms |
+| an integer and a string | 69.9 ms | 6.3 ms |
+| one eight-value partition column | 1.3 ms | 1.5 ms |
+
+The last row is the tax: where there really are few distinct values, the probe
+is paid on top of the full pass — and that is the case where naming them one by
+one prunes to exactly the right partitions, so it is worth paying.
+
+### Partitioning and properties
+
+| case | commit rows | rows/s | files |
+| --- | --- | --- | --- |
+| append, partitioned by day | 65,536 | 623k–797k | 14 |
+| append, no partition | 50,000 | 1.01M–1.03M | 7 |
+| append, Iceberg's default properties | 50,000 | 802k–852k | 14 |
+| merge, no partition | 50,000 | 506k | 5 |
+
+Partitioning costs about half the write throughput here, because eight days
+means up to eight files per commit instead of one. It buys the read below.
+
+### Reading it back
+
+500,000 rows in 15 files, best of three, **warmed twice** before anything is
+timed — once for the process and once per case. Without that the sweep was a
+story about warm-up: three back-to-back runs put "everything" at 0.057, 0.031
+and 0.027 s, a 2.1× spread that is nothing but an Acero join and a parquet
+reader paying their setup in whichever case ran first.
+
+`planned` is how many files the scan opened; `skipped` is what the filter saved.
+The counts reproduce exactly; the seconds are a shared machine and move ±30%
+between runs, so both runs are quoted.
+
+| case | seconds | rows | planned | skipped |
+| --- | --- | --- | --- | --- |
+| everything | 0.080–0.111 | 500,000 | 15 | 0 |
+| `date = '2026-08-14'` (partition) | 0.024–0.025 | 62,500 | 1 | 14 |
+| partition + 3 of 8 columns | 0.016–0.019 | 62,500 | 1 | 14 |
+| 3 of 8 columns, no filter | 0.055–0.061 | 500,000 | 15 | 0 |
+| `recorded_at_unix < …` (correlates with the partition) | 0.042–0.062 | 125,000 | 3 | 12 |
+| `driver_name = 'ULBridge'` (no useful statistics) | 0.093–0.105 | 125,000 | 15 | **0** |
+| narrow shape, projection from the shape | 0.058–0.064 | 500,000 | 15 | 0 |
+| narrow shape declared with the store's widths | 0.050–0.059 | 500,000 | 15 | 0 |
+
+One more, measured separately because it is a write-side choice: sorting each
+commit on the column a read filters. On a single 600k-row commit, a filter
+matching the top 5% of `recorded_at_unix` values took **214 ms** when the rows
+arrived shuffled and **22 ms** when the commit was sorted
+(`sort_by=["recorded_at_unix"]`), with one file planned in both cases. That is
+row-group skipping inside the file, and it only exists because
+`write.parquet.row-group-limit` is set: Iceberg's default of a million rows per
+group would make the whole file one group with nothing to skip.
+
+Three things worth taking away:
+
+- **A partition filter is worth 14 of 15 files.** A filter on a column that
+  merely *correlates* with the partition still skips 12 — Iceberg prunes on
+  per-file column bounds, not only on partitions.
+- **A filter that cannot prune says nothing about it.** The `driver_name` filter
+  returns exactly the right rows and reads every file. `scan_plan` is how you
+  see that:
+
+    ```python
+    quotes.scan_plan("driver_name = 'ULBridge'")["skipped"]   # 0
+    ```
+
+- **Declaring narrower widths than the store costs a conversion per row —
+  less than these docs used to claim.** Isolated, warm and best-of-nine, twice:
+  three columns into `string` took 60.2–64.4 ms against 55.9–61.6 ms in the
+  store's own `large_string`, with medians 68.6–72.8 against 62.0–67.8. That is
+  7–9%, consistently in the same direction, and not the 25% an unwarmed sweep
+  reported — the difference was warm-up charged to whichever case ran first.
+  Declaring the store's widths (`dataset.table_field`) is still the right
+  answer where a read is hot and the shape is only there to select columns; it
+  is not the difference it looked like.
+
+### Store calls
+
+`bench_iceberg.py --only fs` counts store calls instead of seconds, for the
+reason given under [what the store is asked](#what-the-store-is-asked): the
+count is taken on the file handles themselves, below the cache, so one entry is
+a call the store actually served — one `open` a GET, one `create` a PUT.
+100,000 rows streamed in 8 commits, a local warehouse, measured twice with
+identical counts:
+
+| flow | GETs, cache off | GETs, cache on |
+| --- | --- | --- |
+| append stream | 13 | **0** |
+| merge, every key new | 40 | **0** |
+| merge, half stored | 33 | 5 — the data files that matched |
+| insert-only, full replay | 24 | 10 — key columns only |
+| read everything | 18 | 10 — the data files |
+| read one partition | 5 | 2 |
+| read `limit=100` | 9 | **1** |
+| `scan_plan` one partition | 11 → **3** | **0** |
+| optimize (compact + sweep) | 71 → **69** | 10 |
+
+Two of the uncached counts moved since, without the cache being involved at
+all: `scan_plan` under a filter planned the table a second time purely to count
+what an unfiltered scan would touch (11 → 3), and the sweep stopped walking the
+manifests once per half of its live set (71 → 69).
+
+Three separate changes produce the cached column, and they compose:
+
+- **The content cache** ([what the store is asked](#what-the-store-is-asked)):
+  manifests, manifest lists and `metadata.json` are immutable, so `ArrowFileIO`
+  serves them from memory after the first fetch — and caches them *as they are
+  written*, which is why a pure append stream makes zero GETs: every file the
+  next chunk's plan wants is one this process just wrote. Over the sweep: 214
+  hits, 0 misses, ~500 KiB held.
+- **Plan-once merges**: a merge plans its scan once, and a plan of zero files
+  commits the chunk as an append with no reader built — so `merge, all new`
+  matches `append stream` exactly. (`Table.upsert` reads the table either way.)
+- **Limit-aware planning**: with no filter, `limit` cuts the *plan*, not just
+  the rows — one file opened where pyiceberg submits all eight.
+
+The wall-clock is not the point on a local disk — the counts are exact and
+reproduce to the call, the seconds are noisy — but it moves the same way: the
+cached append stream landed in 0.29–0.32 s against 0.95–1.6 s uncached across
+three runs. On an object store, where every one of those calls is a round
+trip, the counts *are* the seconds.
+
+### Maintenance, and what a reader holds
+
+`bench_iceberg.py --only maintain`. Three things seconds on a local disk answer
+badly and counts answer exactly. Same fixture, both legs run twice, every number
+below reproduced to the digit.
+
+**What a reader holds.** One batch of a 20-file, 21.1 MiB table, with a consumer
+that is not instantaneous:
+
+| | files opened | MiB held |
+| --- | --- | --- |
+| before | 20 | 18.9 |
+| after | **8** | **7.3** |
+
+`ArrowScan` submits every planned file to its thread pool at once and each
+finished one holds a whole file's decoded batches until the consumer reaches it,
+which makes `read_arrow_reader` a `read_arrow_table` that takes longer. The plan
+now goes over a group at a time, the group being the pool's own width — so what
+is held scales with the pool, not with the table. Draining the whole reader took
+54.6–56.5 ms against 59.6–72.4 ms before: the bound costs nothing. The same
+change is quoted under [A dataset](#a-dataset) on a bigger table — 24 files and
+99 MiB, taken to 8 files and 32.5 MiB — which is a second fixture, not a second
+reading of this one.
+
+**What `maybe_optimize` walks to say no**, which is every call of a converged
+`auto_optimize` stream:
+
+| table | partition reads | manifest reads | seconds |
+| --- | --- | --- | --- |
+| quiet, before | 1 | 1 | 0.005–0.006 |
+| quiet, after | **0** | **0** | 0.001–0.002 |
+| settled, before | 1 | 4 | 0.009 |
+| settled, after | **0** | **0** | 0.001 |
+
+**Whether compaction converges**, in files rewritten per run:
+
+| partitioning | run 1 | run 2 | run 3 |
+| --- | --- | --- | --- |
+| identity (`recorded_at_date`) | 13 | 0 | 0 |
+| none | 10 | 0 | 0 |
+| transform (`day`), before | 13 | **4** | **4** |
+| transform (`day`), after | 13 | **0** | **0** |
+
+The four-files-forever is what made every `optimize` on a `day`- or
+`bucket[16]`-partitioned table a full read and a full rewrite, while the rows
+never changed. The [Everything](#maintenance) tab tells the same story on its
+own fixture of four commits over four days, where the counts are 16, then 4,
+then 4.
+
+### Backfilling
+
+`bench_iceberg.py --only backfill`. A replay of keys that sit in a few bands of
+a wide table — 20 files of 5,000 rows, the key clustered per file, the hash half
+of it drawn per row so file bounds on it span everything and prune nothing.
+`planned` is what the scan opens; the rows it returns say nothing about that.
+
+| case | planned | seconds |
+| --- | --- | --- |
+| two distant bands | 18 → **2** | 0.14–0.19 → 0.05–0.09 |
+| one contiguous band | 1 → 1 | 0.02 → 0.04–0.06 |
+| half the table | 10 → 10 | 0.14–0.16 → 0.13–0.21 |
+
+The planned counts are exact and reproduce to the file; the seconds are a
+shared machine and move ±40% between rounds, so both rounds are quoted.
+
+Past 200 distinct values a key column cannot be named one value at a time, and
+the single min/max range it became spans everything between the bands. It is
+described by up to eight ranges now, found by placing every value in one of 64
+equal slices of `[min, max]` and merging the occupied ones back — no sort, and
+a slice reports the exact min and max of what landed in it, so the union covers
+every value however the index arithmetic rounded.
+
+The last two rows are the cost, quoted because they are real: a chunk with no
+gap to find pays the banding pass and prunes exactly what it did before. On a
+400k-row integer column that is 7.8 ms, against 31–420 ms for the `unique` that
+sorting would need.
+
+### Updating what is stored
+
+`bench_iceberg.py --only update`. A merge that *inserts* is measured everywhere
+else here; this is the half that rewrites. The filter naming the rows to delete
+is one term per row for a composite key, and pyiceberg binds that tree once per
+manifest it plans. 10,000 stored rows, both legs run twice — and because both
+runs of the sweep are quoted, the after column is a range.
+
+**A key one half of which repeats** — `(symbol, day)` over four days:
+
+| rows updated | terms | seconds | rows/s |
+| --- | --- | --- | --- |
+| 500 | 1,000 → **2** | 0.95 → **0.12–0.19** | 527 → 2,682–4,256 |
+| 2,000 | 4,000 → **2** | 4.55 → **0.19–0.22** | 440 → 9,105–10,689 |
+| 5,000 | 10,000 → **4** | 21.16 → **0.42–0.43** | 236 → 11,581–11,991 |
+
+`terms` is the leaf count of the delete filter, and it is the whole story:
+profiled at 5,000 rows, 15.8 of the 18.1 seconds went on nineteen
+`_InclusiveMetricsEvaluator` constructions at 770 ms each, against 0.4 ms for
+the key ranges beside it. Grouping the rows on the key column with the fewest
+distinct values says the repeated half once. The filter stays exact, and
+[the tests](https://github.com/Platob/yggfin/blob/main/python/tests/iceberg/test_coherence.py)
+compare it against pyiceberg's own row for row rather than against itself.
+
+**A key that repeats nothing** — `(at, hash64)`, where every value of both
+halves is distinct — is left alone, because one group per row is the tree
+`create_match_filter` already builds. Its numbers are what a merge of many
+updates costs when nothing can be factored out of it, and they are here because
+a sweep that left them out would read as a claim about merges rather than about
+keys:
+
+| rows updated | terms | seconds | rows/s |
+| --- | --- | --- | --- |
+| 500 | 1,000 | 0.51–0.54 | 921–988 |
+| 2,000 | 4,000 | 3.08–3.10 | 645–649 |
+| 5,000 | 10,000 | 11.76–11.94 | 419–425 |
+
+That is roughly linear in the rows updated, and it is pyiceberg's cost: an
+exact filter over *n* arbitrary key pairs is *n* terms, and there is no smaller
+way to say it.

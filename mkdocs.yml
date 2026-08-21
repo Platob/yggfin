@@ -29,11 +29,23 @@ theme:
 
 nav:
   - Home: index.md
-  - Types: types.md
-  - Logs: logs.md
-  - FIX: fix.md
-  - Iceberg: iceberg.md
+  - Architecture:
+      - Design rules: design.md
+      - Schema contracts: contracts.md
+  - Guides:
+      - Types: types.md
+      - Logs: logs.md
+      - FIX: fix.md
+      - Iceberg: iceberg.md
   - Benchmarks: benchmarks.md
+
+# Every page carries its own measurements, so the links into them are anchors
+# rather than page names -- and an anchor mkdocs cannot find is only logged at
+# INFO by default, which is a broken link that ships. Raised to a warning, so
+# --strict fails on it in CI like any other broken link.
+validation:
+  links:
+    anchors: warn
 
 markdown_extensions:
   - admonition
