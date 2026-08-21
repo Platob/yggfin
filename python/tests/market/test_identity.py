@@ -293,3 +293,50 @@ def test_a_book_side_built_twice_gets_one_identifier() -> None:
         return side
 
     assert built().hash == built().hash
+
+
+#: Every way a column of identifiers arrives. Iterating an Arrow array instead
+#: of converting it handed the per-value path `pyarrow.Scalar` objects, which
+#: came out as `badly formed hexadecimal UUID string` -- a message naming
+#: neither the column nor the way out, on inputs the docstring promises.
+COLUMNS = [
+    ("fixed16", lambda u: pyarrow.array([u.bytes, None], type=HASH)),
+    ("binary", lambda u: pyarrow.array([u.bytes, None], type=pyarrow.binary())),
+    ("large_binary", lambda u: pyarrow.array([u.bytes, None], type=pyarrow.large_binary())),
+    ("string", lambda u: pyarrow.array([str(u), None], type=pyarrow.string())),
+    ("large_string", lambda u: pyarrow.array([str(u), None], type=pyarrow.large_string())),
+    ("python list", lambda u: [u, None]),
+    ("bytes list", lambda u: [u.bytes, None]),
+    ("text list", lambda u: [str(u), None]),
+]
+
+
+@pytest.mark.parametrize("label,build", COLUMNS, ids=[row[0] for row in COLUMNS])
+def test_every_spelling_of_a_column_of_identifiers_converts(label: str, build) -> None:
+    identifier = uuid.UUID(int=7)
+    built = arrow_of(build(identifier))
+    assert built.type == HASH, label
+    assert uuids_of(built) == [identifier, None], label
+
+
+def test_a_chunked_column_converts_chunk_by_chunk() -> None:
+    identifier = uuid.UUID(int=7)
+    chunked = pyarrow.chunked_array(
+        [
+            pyarrow.array([identifier.bytes], type=pyarrow.binary()),
+            pyarrow.array([None], type=pyarrow.binary()),
+        ]
+    )
+    built = arrow_of(chunked)
+    assert built.type == HASH
+    assert uuids_of(built.combine_chunks()) == [identifier, None]
+
+
+def test_a_column_of_the_wrong_width_is_refused_by_its_width() -> None:
+    with pytest.raises(ValueError, match="16 bytes"):
+        arrow_of(pyarrow.array([b"12345678"], type=pyarrow.binary(8)))
+
+
+def test_a_column_that_is_not_identifiers_at_all_is_refused_by_its_type() -> None:
+    with pytest.raises(TypeError, match="not int64"):
+        arrow_of(pyarrow.array([1, 2]))

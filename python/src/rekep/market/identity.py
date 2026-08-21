@@ -135,15 +135,42 @@ def hash_arrow(*columns: Any) -> pyarrow.Array:
 def arrow_of(values: Any) -> pyarrow.Array:
     """Identifiers as a `fixed_size_binary[16]` column, whatever they are spelled as.
 
-    A `uuid.UUID`, 16 raw bytes and the canonical text form all arrive as the
-    same sixteen bytes, because all three are how one identifier gets written
-    down between here and a store.
+    A `uuid.UUID`, sixteen raw bytes and the canonical text form all arrive as
+    the same sixteen bytes, because all three are how one identifier gets
+    written down between here and a store -- and that holds whether they come
+    as a Python sequence or as an Arrow column of any of the three.
+
+    A column is converted **as a column**: bytes are cast, text is parsed, and
+    anything else is refused by its own type. Iterating an Arrow array instead
+    handed the per-value path `pyarrow.Scalar` objects it did not recognise,
+    which came out as `badly formed hexadecimal UUID string` -- a message that
+    names neither the column nor the way out.
     """
     if isinstance(values, pyarrow.ChunkedArray):
         return pyarrow.chunked_array([arrow_of(chunk) for chunk in values.chunks], type=HASH)
-    if isinstance(values, pyarrow.Array) and values.type == HASH:
-        return values
+    if isinstance(values, pyarrow.Array):
+        return _arrow_column(values)
     return pyarrow.array([_bytes_of(value) for value in values], type=HASH)
+
+
+def _arrow_column(values: pyarrow.Array) -> pyarrow.Array:
+    """One Arrow column of identifiers as `fixed_size_binary[16]`."""
+    kinds = pyarrow.types
+    if values.type == HASH:
+        return values
+    if kinds.is_fixed_size_binary(values.type):
+        raise ValueError(
+            f"an identifier is 16 bytes, and this column is {values.type.byte_width}: {values.type}"
+        )
+    if kinds.is_binary(values.type) or kinds.is_large_binary(values.type):
+        # `cast` checks every width for us and names the row that is not 16.
+        return values.cast(HASH)
+    if kinds.is_string(values.type) or kinds.is_large_string(values.type):
+        return pyarrow.array([_bytes_of(value) for value in values.to_pylist()], type=HASH)
+    raise TypeError(
+        f"a column of identifiers is 16 fixed bytes or their text, not {values.type}; "
+        "hash it first, or cast it"
+    )
 
 
 def uuids_of(array: Any) -> list[uuid.UUID | None]:
@@ -226,6 +253,8 @@ def part_bytes(part: Any) -> bytes | None:
 
 def _bytes_of(value: Any) -> bytes | None:
     """One identifier as its sixteen bytes, refusing anything that is not."""
+    if isinstance(value, pyarrow.Scalar):  # before None: a null scalar is not None
+        value = value.as_py()
     if value is None:
         return None
     if isinstance(value, uuid.UUID):
