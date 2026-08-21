@@ -1088,6 +1088,20 @@ class IcebergDataset(Dataset):
         caller's filter covered, which may be a fraction of a partition, and
         marking the whole partition settled would leave the rest of it
         unplanned for good.
+
+        **Each part is planned immediately before it is rewritten, and that is
+        not an oversight.** Planning the whole table once and slicing the tasks
+        by partition is the obvious saving -- one plan against one per part,
+        measured at 17 ms against 148 on a 25-file table -- and it drops rows.
+        A plan frozen before the loop cannot see a write that lands in a
+        partition the loop has not reached yet, while the `overwrite` for that
+        partition deletes the file it landed in: measured on four partitions,
+        50 rows appended mid-loop survived the current path and were gone from
+        the frozen-plan one, with no error raised. Another *object* on the same
+        catalog is caught by Iceberg's own commit requirement
+        (`CommitFailedException`); another thread on this one is not. Re-read
+        this before making that saving again -- it needs the ref checked for
+        movement per part, not just a bucketed plan.
         """
         if target_file_size:
             self.set_properties({TARGET_FILE_SIZE: str(target_file_size)})
