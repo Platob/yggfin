@@ -118,7 +118,7 @@ class FixRegistry(Convertible):
     backoff: float = 2.0
 
     #: Sent with every request, so the traffic says what it is.
-    user_agent: ClassVar[str] = "rekep-fix-registry (+https://github.com/Platob/yggfin)"
+    user_agent: ClassVar[str] = "rekep-fix-registry (+https://github.com/Platob/rekep)"
 
     def __post_init__(self) -> None:
         """Normalise the two locations once, so everything downstream agrees."""

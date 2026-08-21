@@ -1,8 +1,8 @@
 site_name: rekep
 site_description: Trading logs, Arrow-native fields, and Iceberg datasets
-site_url: https://platob.github.io/yggfin/
-repo_url: https://github.com/Platob/yggfin
-repo_name: Platob/yggfin
+site_url: https://platob.github.io/rekep/
+repo_url: https://github.com/Platob/rekep
+repo_name: Platob/rekep
 docs_dir: docs
 
 theme:

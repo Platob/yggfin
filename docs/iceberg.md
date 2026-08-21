@@ -1029,7 +1029,7 @@ profiled at 5,000 rows, 15.8 of the 18.1 seconds went on nineteen
 `_InclusiveMetricsEvaluator` constructions at 770 ms each, against 0.4 ms for
 the key ranges beside it. Grouping the rows on the key column with the fewest
 distinct values says the repeated half once. The filter stays exact, and
-[the tests](https://github.com/Platob/yggfin/blob/main/python/tests/iceberg/test_coherence.py)
+[the tests](https://github.com/Platob/rekep/blob/main/python/tests/iceberg/test_coherence.py)
 compare it against pyiceberg's own row for row rather than against itself.
 
 **A key that repeats nothing** — `(at, h64)`, where every value of both

@@ -1,14 +1,14 @@
-# yggfin
+# rekep
 
 `rekep`: trading logs as Arrow, a declaration that *is* a schema, and Iceberg
 tables you can read and write without learning Iceberg first.
 
-**[Documentation](https://platob.github.io/yggfin/)** —
-[Design rules](https://platob.github.io/yggfin/design/) ·
-[Schema contracts](https://platob.github.io/yggfin/contracts/) ·
-[Types](https://platob.github.io/yggfin/types/) ·
-[Logs](https://platob.github.io/yggfin/logs/) ·
-[Iceberg](https://platob.github.io/yggfin/iceberg/)
+**[Documentation](https://platob.github.io/rekep/)** —
+[Design rules](https://platob.github.io/rekep/design/) ·
+[Schema contracts](https://platob.github.io/rekep/contracts/) ·
+[Types](https://platob.github.io/rekep/types/) ·
+[Logs](https://platob.github.io/rekep/logs/) ·
+[Iceberg](https://platob.github.io/rekep/iceberg/)
 
 ```bash
 pip install "rekep[all]"

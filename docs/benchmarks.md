@@ -97,6 +97,6 @@ claim stops matching the benchmark under it.
 
 Where a faster path here replaces a library's own, the two are compared row by
 row in the tests rather than only in a benchmark
-([`tests/iceberg/test_coherence.py`](https://github.com/Platob/yggfin/blob/main/python/tests/iceberg/test_coherence.py)),
+([`tests/iceberg/test_coherence.py`](https://github.com/Platob/rekep/blob/main/python/tests/iceberg/test_coherence.py)),
 and a flag switches back to the library. A benchmark says which is faster; only
 a test says they agree.
