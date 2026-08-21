@@ -1,6 +1,6 @@
 # Coding patterns
 
-House style for `yggfin`. Match these patterns; never add a parallel way to
+House style for `rekep`. Match these patterns; never add a parallel way to
 do the same thing.
 
 ## 1. Object oriented first

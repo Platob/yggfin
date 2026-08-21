@@ -153,7 +153,7 @@ registry.tags()                      # every name to its tag, nothing fetched
 ```
 
 What each document says, and how to refresh one, is in
-[`data/README.md`](https://github.com/Platob/yggfin/blob/main/data/README.md);
+[`data/README.md`](https://github.com/Platob/rekep/blob/main/data/README.md);
 `python/tests/test_data.py` is what keeps a throttled scrape from shipping as
 one.
 
