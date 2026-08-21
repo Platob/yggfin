@@ -52,8 +52,22 @@ def capture(tmp_path: Path) -> Path:
 
 
 def relative(files: TextFiles, root: Path) -> list[str]:
-    """The set's paths, relative to the folder, so assertions read as names."""
-    return [url.split(str(root))[-1].lstrip("/") for url in files.into_urls()]
+    """The set's paths, relative to the folder, so assertions read as names.
+
+    `as_posix()`, not `str()`: `Url` spells every local path with forward
+    slashes on either host, so a Windows `str(root)` is a prefix of none of
+    them. Reducing against it silently handed back whole paths -- which
+    compare against nothing, and turned one spelling difference into fifteen
+    failures on the windows-latest leg. The reduction is asserted here for
+    that reason: a helper that can quietly not reduce cannot be trusted by the
+    assertions built on it.
+    """
+    base = root.as_posix()
+    paths = []
+    for url in files.into_urls():
+        assert url.startswith(base), f"{url!r} is not under {base!r}, so nothing reduces it"
+        paths.append(url[len(base) :].lstrip("/"))
+    return paths
 
 
 # -- ordering ---------------------------------------------------------------
@@ -203,13 +217,23 @@ def test_a_missing_folder_does_not_exist_rather_than_raising(tmp_path: Path) -> 
 def test_from_folder_resolves_a_local_path_through_its_filesystem(capture: Path) -> None:
     """A root is rewritten as the path its filesystem understands, as a url is."""
     files = TextFiles.from_folder(capture)
-    assert files.roots == (str(capture),)
+    assert files.roots == (capture.as_posix(),)
     assert isinstance(files.filesystem, pyarrow.fs.LocalFileSystem)
 
 
-def test_a_supplied_filesystem_leaves_the_roots_alone(capture: Path) -> None:
+def test_a_supplied_filesystem_resolves_nothing_but_still_spells_a_local_root(
+    capture: Path,
+) -> None:
+    """The path stays the caller's; only its separators are this package's.
+
+    `pyarrow.fs` answers a local listing with forward slashes on either host,
+    so a root spelled `C:\\logs` is a prefix of none of the paths the set goes
+    on to hold -- and everything that reduces one against the other silently
+    stops reducing.
+    """
     files = TextFiles.from_folder(str(capture), pyarrow.fs.LocalFileSystem())
-    assert files.roots == (str(capture),)
+    assert files.roots == (capture.as_posix(),)
+    assert all(url.startswith(files.roots[0]) for url in files.into_urls())
 
 
 def test_the_declaration_reaches_every_file(capture: Path) -> None:
@@ -231,7 +255,7 @@ def test_a_set_is_a_dataset(capture: Path) -> None:
 
 
 def test_from_redirects_on_the_source(capture: Path) -> None:
-    assert TextFiles.from_(str(capture)).roots == (str(capture),)
+    assert TextFiles.from_(str(capture)).roots == (capture.as_posix(),)
 
 
 @pytest.mark.parametrize(
@@ -388,12 +412,12 @@ def test_one_file_is_open_at_a_time(capture: Path) -> None:
     files = TextFiles.from_folder(str(capture), Counting(), pattern="*.txt*")
     reader = files.into_arrow_reader(batch_row_size=10)
     next(reader)
-    assert Counting.opened == [str(capture / "app.1.txt.gz")]
+    assert Counting.opened == [(capture / "app.1.txt.gz").as_posix()]
     # And one listing, not a recursive walk of the tree, to get there.
-    assert Counting.listed == [str(capture)]
+    assert Counting.listed == [capture.as_posix()]
     reader.read_all()
     assert len(Counting.opened) == len(CAPTURE_ORDER)
-    assert Counting.listed == [str(capture), str(capture / "archive")]
+    assert Counting.listed == [capture.as_posix(), (capture / "archive").as_posix()]
 
 
 # -- the byte stream --------------------------------------------------------

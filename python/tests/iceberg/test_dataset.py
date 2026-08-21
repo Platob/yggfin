@@ -1965,12 +1965,16 @@ def test_a_sweep_keeps_a_live_file_spelled_against_another_base(dataset: Iceberg
     root = local(table.location())
     extra = root / "data" / f"day={datetime.date(2026, 8, 14)}" / "added-0000.parquet"
     pyarrow.parquet.write_table(quotes(4, "XETR"), extra)
-    table.add_files([f"file:{extra.as_posix()}"])  # one slash, not three
+    added = f"file:{extra.as_posix()}"  # one slash, not three
+    table.add_files([added])
     dataset.refresh()
     assert dataset.read_arrow_table().num_rows == 7
 
-    stored = {path for path in dataset._live(dataset.iceberg_table)[0]}
-    assert any(path.startswith("file:/") and not path.startswith("file://") for path in stored), (
+    # Derived from what was added rather than from a `file:/` prefix: Windows
+    # spells this one `file:C:/...`, which starts with neither, so the shape
+    # test passed the fixture on one host and failed it on the other while the
+    # sweep it guards behaved identically on both.
+    assert added in dataset._live(dataset.iceberg_table)[0], (
         "the fixture only means something if the odd spelling really is recorded"
     )
     assert dataset.orphan_files(datetime.timedelta(seconds=0)) == []

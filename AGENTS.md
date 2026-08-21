@@ -223,13 +223,20 @@ Ten things that were learned the expensive way, all of them measured:
   own schema check and then writing nulls over what was stored, and a scan
   pinned to a ref reading under that snapshot's schema, so a renamed column
   compared against nulls until field ids were used to recover the name.
-- **A path is not a string.** The live set for the sweep was built by
+- **A path is not a string, and neither is a netloc.** The live set for the
+  sweep was built by
   stripping `://` off recorded URIs while the listing resolved its paths
   through `pyarrow.fs`. They agree on `file:///x` and `s3://b/x` and on
   nothing else -- `file:/x`, `abfss://c@acct.dfs.../x`, `hdfs://host:8020/x`,
   a Windows drive letter -- so every live file looked orphaned and `cleanup`
   deleted the table. Two paths are only comparable through the same resolver;
-  reduce both to what follows a directory that was resolved once.
+  reduce both to what follows a directory that was resolved once. The same rule
+  twice more, both found by CI rather than by reading: a local path is spelled
+  POSIX **everywhere**, because `pyarrow.fs` answers a Windows listing with
+  forward slashes and a root spelled `C:\logs` is a prefix of none of them; and
+  a rule written for the shape a fixture happens to have (`s3://host:port/`,
+  `file:/x`) is a rule that was never tested against the shape the world
+  mostly has (`s3://bucket.s3.<region>.amazonaws.com/`, `file:C:/x`).
 - **Ask Iceberg where things are.** `write.data.path` moves the data,
   `list_namespaces` returns one level, and a scan pinned to a ref projects
   under that snapshot's schema. Each of those was assumed instead, and each
@@ -358,8 +365,10 @@ rekep/
 ├── require.py     optional deps at the point of use
 ├── urls.py        Url: the one parser for a location -- parts, percent
 │                  decoding, a secret that may contain a colon, an S3
-│                  endpoint told from a bucket, a Windows drive told from a
-│                  scheme, `join`/`parent` as a mutable walk, and
+│                  endpoint told from a bucket by port *and* by hostname
+│                  (most endpoints answer on 443 and carry no port),
+│                  a Windows drive told from a scheme, every local path
+│                  spelled POSIX, `join`/`parent` as a mutable walk, and
 │                  `into_filesystem()`/`properties_of()` as what a store and
 │                  a catalog are configured from
 ├── filesystems.py resolve(): a location as (FileSystem, path), cached per URL

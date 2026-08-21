@@ -166,6 +166,39 @@ url.into_filesystem()             # (S3FileSystem, 'logs/2026-08-14/app.txt')
 repr(url)         # Url('s3://AKIA:***@minio:9000/logs/2026-08-14/app.txt')
 ```
 
+Most S3 locations carry **no port at all**, because the store answers on 443 —
+so a rule that only reads a port loses the bucket into the key on every one of
+them. What is read is the netloc's shape:
+
+```python
+Url.from_string("s3://logs/app.txt").bucket                        # 'logs'
+Url.from_string("s3://my.logs.2026/app.txt").bucket                # 'my.logs.2026'
+Url.from_string("s3://s3.eu-west-1.amazonaws.com/logs/app.txt").bucket   # 'logs'
+Url.from_string("s3://logs.s3.eu-west-1.amazonaws.com/app.txt").bucket   # 'logs'
+Url.from_string("s3://minio.corp.com/logs/app.txt").bucket         # 'logs'
+```
+
+A bucket may carry dots — `my.logs.2026` is a legal name — so a dot decides
+nothing. The **last label** decides: a name ending in `.com` is a hostname
+somebody registered and pointed at a store, and a name that does not is a
+bucket. Amazon's own hostnames are read further, because AWS publishes which
+labels are the service: the bucket in front of one is taken off it
+(`logs.s3.eu-west-1.amazonaws.com` → the bucket `logs`), and the region in it
+is kept, because SigV4 signs with a region and a location signed for the wrong
+one is refused rather than redirected.
+
+The one location whose bucket really *is* a hostname is the S3 static-website
+pattern, where AWS requires the bucket be named for the domain it serves. It
+says so with `?endpoint_override=`, which is a decision stated in the location
+and beats a shape inferred from it:
+
+```python
+Url.from_string("s3://www.example.com/index.html").bucket   # 'index.html' -- read as a store
+Url.from_string(
+    "s3://www.example.com/index.html?endpoint_override=s3.amazonaws.com"
+).bucket                                                    # 'www.example.com'
+```
+
 A location is a value a job walks, so `Url` is a mutable dataclass and the walk
 is in place; `copy()` is where a walk branches.
 
@@ -181,10 +214,21 @@ Three readings this fixes, each of which was a silent wrong answer before:
 | --- | --- | --- |
 | `s3://key:sec:ret@bucket/k` | a malformed URL, or the secret `sec` | the secret `sec:ret` |
 | `s3://key:secret@minio:9000/wh` | a bucket named `minio`, port dropped | the endpoint `minio:9000`, bucket `wh` |
+| `s3://wh.s3.eu-west-1.amazonaws.com/t` | a bucket named `wh.s3.eu-west-1.amazonaws.com` | the bucket `wh`, in `eu-west-1` |
 | `C:/warehouse` | a URI with scheme `c` | a local path on drive `C:` |
+| `C:\warehouse`, `file:///C:/warehouse` | two locations | one, spelled `C:/warehouse` |
 
-The middle row is the dangerous one: a bucket called `minio` is a legal name,
-so nothing raises — the write simply lands where nobody looks.
+The two middle rows are the dangerous ones: a bucket called `minio` is a legal
+name and so is one called `wh.s3.eu-west-1.amazonaws.com`, so nothing raises —
+the write simply lands where nobody looks.
+
+A local path is spelled **POSIX**, always, on either host: `C:\warehouse`,
+`C:/warehouse` and `file:///C:/warehouse` are one location, so one parser hands
+back one string. A path that is already absolute stays where it is rather than
+going back through `os.path.abspath`, which on Windows answers `/var/log` with
+whichever drive the process happens to be on. Two paths only compare where both
+were spelled the same way, and everything here that reduces one against another
+— the orphan sweep, a folder of logs against its root — rests on that.
 
 Because the parts are known, a location can also say what a *catalog* needs to
 be told, rather than the caller repeating it as three settings:
