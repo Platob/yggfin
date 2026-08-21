@@ -35,8 +35,21 @@ ENVELOPE = [
     "parent_hash",
 ]
 
-#: What `MarketEvent` adds on top, also in order.
-PRICED = ["side", "px", "px_unit", "qty", "qty_unit", "notional", "venue", "instrument", "metadata"]
+#: What `MarketEvent` adds on top, also in order. `instrument_hash` leads because
+#: it is the partition column: an engine that prunes on it reads it first, and a
+#: declaration order is a physical order everywhere the schema travels.
+PRICED = [
+    "instrument_hash",
+    "side",
+    "px",
+    "px_unit",
+    "qty",
+    "qty_unit",
+    "notional",
+    "venue",
+    "instrument",
+    "metadata",
+]
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
@@ -54,7 +67,24 @@ def test_every_event_carries_the_priced_slots_next(shape: type) -> None:
 def test_every_event_is_keyed_by_time_and_content(shape: type) -> None:
     """`hash` identifies the version; leading with time is what an engine prunes on."""
     assert shape.FIELD.primary_keys() == ["unix", "hash"]
-    assert shape.FIELD.partition_keys() == {"hunix": "identity"}
+    assert shape.FIELD.partition_keys() == {
+        "hunix": "identity",
+        "instrument_hash": "bucket[16]",
+    }
+
+
+@pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
+def test_every_event_is_laid_out_in_time_inside_its_partition(shape: type) -> None:
+    """Sorted by `unix` is what makes a time range a few files rather than all of them."""
+    assert shape.FIELD.sort_keys() == {"unix": "asc"}
+
+
+@pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
+def test_a_market_event_lands_in_the_bucket_of_its_instrument(shape: type) -> None:
+    """One instrument's stream has to be one partition, or a book cannot be built."""
+    partition = shape.FIELD.field("instrument_hash")
+    assert partition.partition_transform == "bucket[16]"
+    assert not partition.nullable, "a bucket transform on a null reads every bucket"
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
@@ -180,13 +210,25 @@ METRICS_BUDGET = 100
 #: the budget, which is a statement about **declaration order**: these are
 #: exactly the columns that a nested member declared before them would push out.
 FILTERED = {
-    Order: ("unix", "hunix", "etype", "state", "side", "px", "symbol"),
-    Execution: ("unix", "hunix", "etype", "state", "kind", "px", "symbol"),
-    BookSide: ("unix", "hunix", "etype", "side", "px", "qty", "symbol", "depth", "total_qty"),
+    Order: ("unix", "hunix", "etype", "state", "instrument_hash", "side", "px", "symbol"),
+    Execution: ("unix", "hunix", "etype", "state", "instrument_hash", "kind", "px", "symbol"),
+    BookSide: (
+        "unix",
+        "hunix",
+        "etype",
+        "instrument_hash",
+        "side",
+        "px",
+        "qty",
+        "symbol",
+        "depth",
+        "total_qty",
+    ),
     Book: (
         "unix",
         "hunix",
         "etype",
+        "instrument_hash",
         "px",
         "spread",
         "micro_px",

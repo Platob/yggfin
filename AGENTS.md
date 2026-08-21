@@ -38,9 +38,12 @@ Arrow struct type, and metadata. Rules:
   Rationale goes in a `#` comment above the member. Never an `Attributes:`
   block; never restate a description in metadata.
 - Declarations ride on `Annotated[..., Field(...)]`: exact `arrow_type`,
-  `metadata`, `nullable`, plus `Field.primary_key()` and
-  `Field.partition_key(transform)`. A bare `DataType`/`Mapping`/`str` is a
-  shorthand for the type, the metadata or the description.
+  `metadata`, `nullable`, plus `Field.primary_key()`,
+  `Field.partition_key(transform)` and `Field.sort_key(direction)`. A bare
+  `DataType`/`Mapping`/`str` is a shorthand for the type, the metadata or the
+  description. A partition says which *file* a row lands in; a sort key says
+  where *inside* it -- declaration order is the sort order, because the struct
+  already has one.
 - **The type picks the class.** `Field(...)` returns `StructField`, `MapField`
   or one of the list flavours (`ListField`, `LargeListField`, `ListViewField`,
   `LargeListViewField`, `FixedSizeListField`) through `__new__` -- so `fields`,
@@ -49,12 +52,14 @@ Arrow struct type, and metadata. Rules:
   through `Field(...)`, so none of them repeats the rule. A new Arrow kind is a
   new subclass plus one row in `_KINDS`.
 - A member reached through a container is a **view** of it: setting
-  `is_primary_key`, `is_partition_key` or `description` on it rebuilds the
+  `is_primary_key`, `is_partition_key`, `is_sort_key` or `description` on it
+  rebuilds the
   struct, list or map it came from, to the root. Derived views (the Arrow
   schema, the member list) are cached and dropped whenever the declaration
   changes.
 - Protocol properties live in metadata under a prefixed key
-  (`iceberg:primary_key`, `iceberg:partition_key`, `iceberg:field_id`);
+  (`iceberg:primary_key`, `iceberg:partition_key`, `iceberg:sort_key`,
+  `iceberg:field_id`);
   unprefixed keys are ours. A nullable primary key is refused, at the
   declaration and at the setter. A **column id** is Iceberg's own identity for
   a column, so it is read back into `iceberg:field_id` and published in a

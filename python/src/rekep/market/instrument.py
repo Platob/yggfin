@@ -9,7 +9,7 @@ from rekep.convert import Convertible
 from rekep.fields import Field, FieldBuilder, field
 from rekep.market.enums import AssetKind, OptionKind
 from rekep.market.fields import MarketFieldBuilder, fix_tag
-from rekep.market.identity import NIL
+from rekep.market.identity import NIL, hash_of
 
 
 @field
@@ -79,3 +79,40 @@ class Instrument(Convertible):
 
     label: Annotated[str | None, fix_tag("SecurityDesc", 107)] = None
     """Human description, as reference data publishes it."""
+
+    def __post_init__(self) -> None:
+        """Derive `xhash` from the strongest identifier present, unless given one.
+
+        A caller with a reference-data system already knows the identity, and
+        what it says wins. Everything else is a producer that only has what the
+        venue sent, and it still has to produce rows that join -- so the
+        identity is derived, by `identify`, from what is actually there.
+        """
+        if not self.xhash:
+            self.xhash = self.identify()
+
+    def identify(self) -> int:
+        """The identity `self` is entitled to, from the strongest key it carries.
+
+        In order, because that is the order of how much a key is worth:
+
+        1. a **registered identifier** -- `security_id` in the scheme
+           `security_id_source` names (ISIN, CUSIP, FIGI). It is issued rather
+           than chosen, so two vendors spelling the same instrument differently
+           still land on one identity.
+        2. the **symbol, scoped to its venue** -- `exchange` then `symbol`.
+           A bare symbol is not unique across venues (`BTC-USD` is several
+           different contracts), so the venue is part of the key; a feed that
+           names no exchange gets the empty scope, consistently.
+        3. **nothing** -- an instrument with neither is `NIL`, which is a
+           visible "unidentified" rather than a hash of emptiness that would
+           silently merge every unnamed instrument into one.
+
+        Each branch leads with a constant naming the scheme, so a symbol that
+        happens to read like an ISIN cannot collide with the ISIN.
+        """
+        if self.security_id and self.security_id_source:
+            return hash_of("id", self.security_id_source, self.security_id)
+        if self.symbol:
+            return hash_of("symbol", self.exchange or "", self.symbol)
+        return NIL

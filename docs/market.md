@@ -63,9 +63,11 @@ into a history.
     is a picture *of*, so staleness is `unix - sunix` rather than a join
     against whatever was snapshotted.
 
-    `date` is `unix` as a calendar day and is **derived, never given** — it is
-    denormalised for the partition, so `__post_init__` computes it and one
-    authority stays one authority.
+    `hunix` is `unix` floored to the hour and is **derived, never given** — it
+    is denormalised for the partition, so `__post_init__` computes it and one
+    authority stays one authority. `instrument_hash` is derived the same way,
+    from `instrument.xhash`: a nested member nothing can partition on and a flat
+    column everything does must not be free to disagree.
 
 === "Which kind of event"
 
@@ -460,14 +462,63 @@ Five things worth knowing before pointing an engine at one of these tables:
 - **Doris cannot group or join on a struct or a map.** Which is why `symbol` is
   a flat column on `Event` as well as a member of `instrument`.
 - **`identity`, `bucket[N]` and `truncate[W]` are all legal on a `long`** —
-  where `fixed[16]` allowed the first two and not the third. The partition here
-  is `hunix` with an `identity` transform, because identity is the one form
-  every engine reads alike and a transform needs Iceberg's Rust core on the
-  writer for no gain a reader can see.
+  where `fixed[16]` allowed the first two and not the third. That is what makes
+  the layout below possible at all.
 
 None of the awkward Doris type mappings apply any more, which is the point of
 the change: an `int64` is a `bigint` there, with no catalog property to set and
 nothing to `hex()` before a human can read it.
+
+## Layout
+
+A declaration says where its rows go, so nothing downstream has to be told
+twice. `unix` is `Field.sort_key()`, `hunix` and `instrument_hash` are
+`Field.partition_key(...)`, and `IcebergDataset` reads all three off the
+schema when it creates the table:
+
+```python
+Order.FIELD.partition_keys()   # {'hunix': 'identity', 'instrument_hash': 'bucket[16]'}
+Order.FIELD.sort_keys()        # {'unix': 'asc'}
+```
+
+**The hour, by identity.** `hunix` is `unix` floored to the hour, denormalised
+so the partition is a plain column comparison. Identity is the one transform
+every engine reads alike: a `day` or `hour` transform over a timestamp needs
+Iceberg's Rust core on the writer, and buys a reader nothing it cannot get from
+a column that already holds the value.
+
+**The instrument, by bucket.** A market feed carries tens of thousands of
+instruments. An `identity` partition on `instrument_hash` would be one
+directory per instrument per hour — a hundred thousand partitions a day, each
+holding one small file, which is the metadata explosion Iceberg's own docs warn
+about. `bucket[16]` is sixteen files an hour, and a single-instrument read
+still touches exactly one of them, because a bucket is a function of the value
+and Iceberg pushes an `=` predicate through it. Sixteen is a deployment choice,
+not a law: it is the width in the declaration and nowhere else.
+
+That pairing is what makes `Book.from_events` possible. A book is built by
+folding one instrument's events in time order, so the input has to be *one
+instrument, sorted*. Bucketing on `instrument_hash` is what makes a partition
+hold whole instruments rather than slices of many.
+
+**Time, by sort order.** A sort order is not a partition: it does not decide
+which file a row lands in, it decides where inside the file it lands. What that
+buys is the column's min/max in the manifest — unsorted, every file's `unix`
+range spans the whole hour and a range filter reads all of them; sorted, the
+ranges are disjoint and it reads the few that overlap. Iceberg records the order
+on the table and every engine that writes through it honours it, so nothing
+sorts on read.
+
+`Instrument.xhash` is derived rather than demanded, because a producer that only
+has what the venue sent still has to emit rows that join. In order: a registered
+identifier (`security_id` in the scheme `security_id_source` names) when both
+are there, then the symbol *scoped to its exchange*, then `NIL`. Each branch
+leads with a constant naming the scheme, so a symbol that reads like an ISIN
+cannot collide with the ISIN, and `NIL` is a visible "unidentified" rather than
+a hash of emptiness that would merge every unnamed instrument into one. A field
+learnt later — a tick, a maturity, a label — is deliberately not part of the
+key: an identity that moved when a row was enriched would break every join to
+it.
 
 ## Contracts
 

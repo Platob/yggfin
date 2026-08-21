@@ -75,7 +75,13 @@ class Event(Convertible):
     #: and a row that disagreed with its own table would be unreadable.
     EVENT_TYPE: ClassVar[EventType] = EventType.UNKNOWN
 
-    unix: Annotated[int, Field.primary_key(metadata=UNIX)] = 0
+    # Sorted on, as well as keyed and partitioned by the hour it falls in.
+    # A sort order does not decide which file a row lands in -- the partition
+    # does -- it decides where inside the file, which is what narrows the
+    # column's min/max in a manifest from "everything this file holds" to a
+    # real range. A time filter then reads a few row groups instead of all of
+    # them, and that is the filter every reader of an event stream writes.
+    unix: Annotated[int, Field.primary_key(metadata=UNIX), Field.sort_key()] = 0
     """When the event happened, in whole nanoseconds since the epoch."""
 
     # Denormalised from `unix` rather than partitioned with an `hour`
@@ -253,6 +259,19 @@ class MarketEvent(Event):
     zero" and "not priced".
     """
 
+    # Flat, first, and partitioned on. An event stream is read one instrument
+    # at a time far more often than it is read whole, and `instrument.xhash`
+    # cannot do this job: Doris pushes a predicate down only for a top-level
+    # scalar, and no engine here partitions on a nested member at all.
+    #
+    # `bucket[16]` rather than the value itself, because the value is a hash:
+    # partitioning on it directly is one partition per instrument per hour,
+    # which is a hundred thousand partitions a day and a file in each. Sixteen
+    # buckets is sixteen files an hour, and a single-instrument read still
+    # touches one of them. The count is a deployment choice, not a law.
+    instrument_hash: Annotated[int, Field.partition_key("bucket[16]")] = NIL
+    """Which instrument this is about -- `instrument.xhash`, flat, for the partition."""
+
     side: Annotated[Side, fix_tag("Side", 54)] = Side.UNKNOWN
     """Which way the interest points; `side.sign` turns it into `+1` or `-1`."""
 
@@ -290,3 +309,14 @@ class MarketEvent(Event):
     # written, duplicate keys happen, and order is part of what was sent.
     metadata: dict[str, str] | None = None
     """Protocol fields carried verbatim, exactly as the venue sent them."""
+
+    def __post_init__(self) -> None:
+        """The envelope's own normalisation, then the instrument the row is about.
+
+        `instrument_hash` is `instrument.xhash` flattened, so the two cannot
+        disagree: a nested member nothing partitions on and a flat column
+        everything does have to be the same instrument.
+        """
+        super().__post_init__()
+        if self.instrument.xhash:
+            self.instrument_hash = self.instrument.xhash

@@ -4,7 +4,17 @@ from __future__ import annotations
 
 import pytest
 
-from rekep.market import Book, BookSide, Event, EventType, Execution, MarketEvent, Order, State
+from rekep.market import (
+    Book,
+    BookSide,
+    Event,
+    EventType,
+    Execution,
+    Instrument,
+    MarketEvent,
+    Order,
+    State,
+)
 from rekep.market.event import HOUR
 from rekep.market.identity import NIL
 
@@ -103,3 +113,25 @@ def test_an_unhashed_event_carries_the_nil_identifier_rather_than_a_null() -> No
     assert Order().hash == NIL and Order().xhash == NIL
     assert Order().state is State.UNKNOWN and Order().prev_state is State.UNKNOWN
     assert Order().prev_hash is None, "but the previous version really is absent"
+
+
+@pytest.mark.parametrize("shape", (Order, Execution, BookSide, Book), ids=lambda cls: cls.__name__)
+def test_the_instrument_is_flattened_onto_the_column_the_partition_reads(shape: type) -> None:
+    """A nested member nothing can partition on and a flat column everything does
+    have to be the same instrument, so the flat one is derived and never given."""
+    instrument = Instrument(symbol="BTC-USD")
+    assert instrument.xhash != NIL
+    assert shape(instrument=instrument).instrument_hash == instrument.xhash
+    assert shape(instrument=instrument, instrument_hash=7).instrument_hash == instrument.xhash
+
+
+def test_a_row_that_names_no_instrument_keeps_the_hash_it_was_handed() -> None:
+    """A projection reading back the flat column alone must not lose it to a NIL."""
+    assert Order(instrument_hash=7).instrument_hash == 7
+    assert Order().instrument_hash == NIL, "and unset really is unset"
+
+
+def test_the_instrument_hash_is_not_nullable_because_a_bucket_of_null_is_every_bucket() -> None:
+    partition = Order.FIELD.field("instrument_hash")
+    assert not partition.nullable
+    assert partition.partition_transform == "bucket[16]"

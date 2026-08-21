@@ -46,6 +46,15 @@ FIELD_ID = "iceberg:field_id"
 #: The partition transform that means "the value itself".
 IDENTITY = "identity"
 
+#: Which columns a table is kept sorted by, and which way. Declaration order is
+#: the sort order -- a second key would have to be a number every declaration
+#: then has to keep consistent, and the members are already in an order.
+SORT_KEY = "iceberg:sort_key"
+
+#: The two directions a sort key has, and the default.
+ASCENDING = "asc"
+DESCENDING = "desc"
+
 #: The declaration; everything else a field holds is derived from these.
 DECLARED = ("name", "arrow_type", "nullable", "metadata")
 
@@ -334,6 +343,31 @@ class Field(Convertible):
         """How the data is partitioned on this field, or an empty string."""
         return self.iceberg.get("partition_key", "")
 
+    @property
+    def is_sort_key(self) -> bool:
+        """Whether the data is kept sorted on this field.
+
+        A *sort order*, not a partition: it does not decide which file a row
+        lands in, it decides where in the file it lands. That is what makes a
+        range filter on it read a few row groups instead of all of them, and
+        what makes the column's own min/max in a manifest narrow instead of
+        spanning everything the file holds.
+        """
+        return bool(self.iceberg.get("sort_key"))
+
+    @is_sort_key.setter
+    def is_sort_key(self, value: bool | str) -> None:
+        """Set the direction: True is ascending, a string is itself."""
+        if not value:
+            self.iceberg.pop("sort_key", None)
+            return
+        self.iceberg["sort_key"] = ASCENDING if value is True else str(value)
+
+    @property
+    def sort_direction(self) -> str:
+        """Which way the data is sorted on this field, or an empty string."""
+        return self.iceberg.get("sort_key", "")
+
     def merge(self, other: Field) -> Field:
         """Combine two declarations, letting `other` win where it says anything."""
         return Field(
@@ -387,6 +421,18 @@ class Field(Convertible):
         """A declaration partitioning the data on its member."""
         built = Field(**declared)
         built.is_partition_key = transform
+        return built
+
+    @classmethod
+    def sort_key(cls, direction: bool | str = True, **declared: Any) -> Field:
+        """A declaration keeping the data sorted on its member.
+
+        `True` is ascending; `"desc"` is descending. Several members may
+        declare one, and **the declaration order is the sort order** -- there
+        is no position to keep consistent, because the struct already has one.
+        """
+        built = Field(**declared)
+        built.is_sort_key = direction
         return built
 
     @classmethod
@@ -953,6 +999,10 @@ class StructField(Field):
             if member.is_partition_key
         }
 
+    def sort_keys(self) -> dict[str, str]:
+        """Members the data is sorted on, mapped to their direction, in order."""
+        return {member.name: member.sort_direction for member in self.fields if member.is_sort_key}
+
     def _member_changed(self, member: Field) -> None:
         self.arrow_type = pyarrow.struct(
             [
@@ -992,6 +1042,12 @@ class StructField(Field):
         from rekep.iceberg.fields import iceberg_partition_spec
 
         return iceberg_partition_spec(self, schema)
+
+    def into_iceberg_sort_order(self, schema: Any = None) -> Any:
+        """The `pyiceberg` sort order this struct's members declare."""
+        from rekep.iceberg.fields import iceberg_sort_order
+
+        return iceberg_sort_order(self, schema)
 
     @classmethod
     def from_iceberg_schema(cls, source: Any, name: str = "", spec: Any = None) -> StructField:

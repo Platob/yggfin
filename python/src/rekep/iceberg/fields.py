@@ -67,7 +67,10 @@ def iceberg_partition_spec(source: StructField, schema: Any = None) -> Any:
     The transform is read straight from the metadata that declared it, so
     `identity`, `day` and `bucket[16]` all arrive as pyiceberg parses them.
     An identity partition keeps the column's own name, which is what an
-    operator expects to see in a partition path.
+    operator expects to see in a partition path; any other transform appends
+    its name -- `instrument_hash_bucket` -- which is what Spark itself calls
+    it. The width stays out of the name: it is already in the spec, and a
+    `[` in a partition field is a `[` in a directory path.
     """
     require("pyiceberg", "iceberg")
     from pyiceberg.partitioning import PartitionField, PartitionSpec
@@ -81,10 +84,52 @@ def iceberg_partition_spec(source: StructField, schema: Any = None) -> Any:
                 source_id=schema.find_field(name).field_id,
                 field_id=FIRST_PARTITION_ID + index,
                 transform=parse_transform(transform),
-                name=name if transform == "identity" else f"{name}_{transform}",
+                name=name if transform == "identity" else f"{name}_{_kind(transform)}",
             )
         )
     return PartitionSpec(*partitions)
+
+
+def _kind(transform: str) -> str:
+    """`bucket[16]` is a `bucket`; the width belongs to the spec, not the name."""
+    return transform.split("[", 1)[0]
+
+
+def iceberg_sort_order(source: StructField, schema: Any = None) -> Any:
+    """The `pyiceberg.table.sorting.SortOrder` `source` declares, in declaration order.
+
+    A sort order is not a partition: it does not decide which file a row lands
+    in, it decides where inside the file it lands. That is what narrows a
+    column's min/max in a manifest from "everything this file holds" to a real
+    range, and it is why a filter on a sorted column reads a few row groups
+    rather than all of them.
+
+    Iceberg records it and every engine that writes through the table honours
+    it; nothing here has to sort on read. `SortOrder()` with no fields is
+    Iceberg's own "unsorted", which is what a shape declaring none gets.
+    """
+    require("pyiceberg", "iceberg")
+    from pyiceberg.table.sorting import SortDirection, SortField, SortOrder
+    from pyiceberg.transforms import IdentityTransform
+
+    declared = source.sort_keys()
+    if not declared:
+        return SortOrder()
+    schema = schema if schema is not None else iceberg_schema(source)
+    return SortOrder(
+        *[
+            SortField(
+                source_id=schema.find_field(name).field_id,
+                transform=IdentityTransform(),
+                direction=(
+                    SortDirection.DESC
+                    if str(direction).lower().startswith("desc")
+                    else SortDirection.ASC
+                ),
+            )
+            for name, direction in declared.items()
+        ]
+    )
 
 
 def struct_field_of(schema: Any, name: str = "", spec: Any = None) -> StructField:

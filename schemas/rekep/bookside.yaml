@@ -11,6 +11,7 @@ fields:
     unit: nanosecond
     epoch: '1970-01-01'
     iceberg:primary_key: 'true'
+    iceberg:sort_key: asc
 - name: hunix
   type: int64
   description: '`unix` truncated to the hour -- what the data is partitioned on.'
@@ -109,6 +110,12 @@ fields:
   description: Every event this one was built from, in the order they were combined.
   item:
     type: int64
+- name: instrument_hash
+  type: int64
+  description: Which instrument this is about -- `instrument.xhash`, flat, for the
+    partition.
+  metadata:
+    iceberg:partition_key: bucket[16]
 - name: side
   type: int32
   description: Which way the interest points; `side.sign` turns it into `+1` or `-1`.

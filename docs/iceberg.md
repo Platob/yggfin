@@ -120,9 +120,9 @@ quotes = IcebergDataset(
 ```
 
 `struct` is your [declaration](types.md). With one, the table is created from it
-— schema, column comments, identifier fields and partition spec. Without one,
-the table's own schema is the shape, read back as a `StructField` with its docs,
-keys and partitions intact.
+— schema, column comments, identifier fields, partition spec and sort order.
+Without one, the table's own schema is the shape, read back as a `StructField`
+with its docs, keys and partitions intact.
 
 === "Create"
 
@@ -467,6 +467,18 @@ calls are the whole routine.
     chunk of shuffled rows spans the whole key range whatever order it is
     written in. File bounds come from chunks that are already roughly ordered,
     which is what a log is.
+
+    `sort_by` is what *this* writer does to a batch before it commits it. A
+    declaration's `Field.sort_key()` is a different thing: it writes Iceberg's
+    own **sort order** onto the table, where every engine that writes through
+    it — Spark, Doris, a Rust job — reads the same instruction. A shape that
+    declares one gets it at `create_with` and needs no `sort_by`; `sort_by` is
+    for a table whose schema you did not declare.
+
+    ```python
+    Order.FIELD.sort_keys()                    # {'unix': 'asc'}
+    Order.FIELD.into_iceberg_sort_order()      # what lands on the table
+    ```
 
 === "Compact"
 

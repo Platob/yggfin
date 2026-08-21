@@ -108,7 +108,11 @@ def test_a_transform_is_parsed_as_iceberg_spells_it() -> None:
 
     spec = Bucketed.FIELD.into_iceberg_partition_spec()
     assert [str(f.transform) for f in spec.fields] == ["bucket[16]", "day"]
-    assert [f.name for f in spec.fields] == ["symbol_bucket[16]", "stamp_day"]
+    assert [f.name for f in spec.fields] == ["symbol_bucket", "stamp_day"], (
+        "the width is in the spec already, and a partition name is a directory name"
+    )
+    for partition in spec.fields:
+        assert "[" not in partition.name and "]" not in partition.name
 
 
 def test_nothing_declared_is_an_unpartitioned_spec() -> None:

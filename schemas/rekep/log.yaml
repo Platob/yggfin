@@ -11,6 +11,7 @@ fields:
     unit: nanosecond
     epoch: '1970-01-01'
     iceberg:primary_key: 'true'
+    iceberg:sort_key: asc
 - name: hunix
   type: int64
   description: '`unix` truncated to the hour -- what the data is partitioned on.'

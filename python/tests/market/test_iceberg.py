@@ -80,13 +80,29 @@ def test_a_nested_key_is_not_an_identifier_field(shape: type) -> None:
         assert "." not in (schema.find_column_name(field_id) or "")
 
 
-def test_the_partition_is_the_denormalised_day_with_an_identity_transform() -> None:
-    """An identity partition on a real date column is what every engine reads alike."""
+def test_the_partition_is_the_hour_then_the_instrument() -> None:
+    """The hour is an identity every engine reads alike; the instrument is bucketed,
+    because an identity on a 64-bit hash is one directory per instrument."""
     schema = Order.FIELD.into_iceberg_schema()
     spec = Order.FIELD.into_iceberg_partition_spec(schema)
-    assert [partition.name for partition in spec.fields] == ["hunix"]
+    assert [partition.name for partition in spec.fields] == ["hunix", "instrument_hash_bucket"]
     assert str(spec.fields[0].transform) == "identity"
+    assert str(spec.fields[1].transform) == "bucket[16]"
     assert schema.find_column_name(spec.fields[0].source_id) == "hunix"
+    assert schema.find_column_name(spec.fields[1].source_id) == "instrument_hash"
+    for partition in spec.fields:
+        assert "[" not in partition.name, "a partition name becomes a directory name"
+
+
+def test_the_table_is_laid_out_in_time_inside_the_partition() -> None:
+    """A sort order is what turns a `unix BETWEEN` into a few files, not a full scan."""
+    schema = Order.FIELD.into_iceberg_schema()
+    order = Order.FIELD.into_iceberg_sort_order(schema)
+    assert len(order.fields) == 1
+    sorted_on = order.fields[0]
+    assert schema.find_column_name(sorted_on.source_id) == "unix"
+    assert str(sorted_on.transform) == "identity"
+    assert sorted_on.direction.name.lower() == "asc"
 
 
 @pytest.mark.parametrize("shape", (Order, Book), ids=lambda cls: cls.__name__)

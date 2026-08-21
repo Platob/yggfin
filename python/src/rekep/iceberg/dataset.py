@@ -286,6 +286,10 @@ class IcebergDataset(Dataset):
             schema=schema,
             location=kwargs.pop("location", self.location),
             partition_spec=field.into_iceberg_partition_spec(schema),
+            # Declared at creation, because Iceberg records a sort order on the
+            # table and every writer through it honours it -- a shape that says
+            # how it is read is a shape that says how it should be laid out.
+            sort_order=field.into_iceberg_sort_order(schema),
             properties={**defaults, **self.table_properties, **kwargs.pop("properties", {})},
         )
         self.__dict__["iceberg_table"] = table
