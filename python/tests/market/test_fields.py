@@ -125,7 +125,7 @@ def test_the_shape_that_owns_the_table_keeps_its_own_keys() -> None:
     for shape in SHAPES:
         assert shape.FIELD.primary_keys(), shape.__name__
     assert Book.FIELD.primary_keys() == ["unix", "hash"]
-    assert Book.FIELD.partition_keys() == {"date": "identity"}
+    assert Book.FIELD.partition_keys() == {"hunix": "identity"}
 
 
 @pytest.mark.parametrize("flavour", FLAVOURS, ids=lambda build: build.__name__)

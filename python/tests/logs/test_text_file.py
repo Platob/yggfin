@@ -9,6 +9,7 @@ import pytest
 
 from rekep import Dataset, Field, Log
 from rekep.logs import HEADER_PATTERN, TextFile
+from rekep.market.event import HOUR
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()
@@ -196,20 +197,13 @@ def test_compressed_log_is_decoded_not_raw(gzipped: Path) -> None:
 
 def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
-    assert schema.names == [
-        "url",
-        "recorded_at_unix",
-        "recorded_at_date",
-        "recorded_at_time",
-        "thread_name",
-        "driver_name",
-        "category_id",
-        "category_name",
-        "message",
-        "h64",
-    ]
-    assert schema.field("recorded_at_unix").type == pyarrow.int64()
-    assert schema.field("h64").type == pyarrow.int64()
+    assert schema.names == Log.FIELD.into_arrow_schema().names
+    assert schema.names[:3] == ["unix", "hunix", "etype"], "the envelope leads"
+    assert schema.names[-4:] == ["url", "thread_name", "driver_name", "message"]
+    assert schema.field("unix").type == pyarrow.int64()
+    assert schema.field("hunix").type == pyarrow.int64()
+    assert schema.field("hash").type == pyarrow.binary(16)
+    assert schema.field("etype").type == pyarrow.int32()
     assert schema.field("message").type == pyarrow.string()
 
 
@@ -240,24 +234,21 @@ def test_first_row(plain: Path) -> None:
 
     first = table.slice(0, 1).to_pylist()[0]
     assert first["url"] == url
-    assert first["recorded_at_unix"] == FIRST_UNIX
+    assert first["unix"] == FIRST_UNIX
     assert first["thread_name"] == "250-e7256476:9effef3e6a:72505"
     assert first["driver_name"] == "OMSSales_Enrichment"
     assert first["message"].startswith("-> [5] {trade")
 
 
-def test_date_and_time_are_derived_from_the_timestamp(plain: Path) -> None:
-    """The denormalised columns must agree with the nanosecond column."""
+def test_the_hour_column_is_the_instant_truncated(plain: Path) -> None:
+    """The denormalised partition column must agree with the nanosecond column."""
     with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_table()
+    assert table.num_rows
     for row in table.to_pylist():
-        moment = datetime.datetime.fromtimestamp(row["recorded_at_unix"] / 1e9, tz=datetime.UTC)
-        assert row["recorded_at_date"] == moment.date()
-        assert row["recorded_at_time"].replace(microsecond=0) == moment.time().replace(
-            microsecond=0
-        )
-        micros = (row["recorded_at_unix"] // 1000) % 1_000_000
-        assert row["recorded_at_time"].microsecond == micros
+        assert row["hunix"] == row["unix"] - row["unix"] % HOUR
+        assert row["hunix"] % HOUR == 0
+        assert 0 <= row["unix"] - row["hunix"] < HOUR
 
 
 def test_unix_is_total_nanos_since_epoch(plain: Path) -> None:
@@ -266,7 +257,7 @@ def test_unix_is_total_nanos_since_epoch(plain: Path) -> None:
     assert expected == FIRST_UNIX
 
     with TextFile(url=plain.as_uri()) as log:
-        unix = log.into_arrow_table().column("recorded_at_unix").to_pylist()
+        unix = log.into_arrow_table().column("unix").to_pylist()
 
     assert unix[0] == expected
     assert unix == sorted(unix), "the sample is in chronological order"
@@ -278,23 +269,25 @@ def test_url_column_identifies_the_source(plain: Path) -> None:
         assert set(table.column("url").to_pylist()) == {log.url}
 
 
-def test_hash64_is_per_line_and_fits_int64(plain: Path) -> None:
+def test_the_digest_is_per_line_and_sixteen_bytes(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
-        hashes = log.into_arrow_table().column("h64").to_pylist()
+        table = log.into_arrow_table()
+    hashes = table.column("hash").to_pylist()
     assert len(set(hashes)) == EXPECTED_RECORDS, "distinct lines hash distinctly"
-    assert all(-(2**63) <= h < 2**63 for h in hashes)
+    assert all(len(digest) == 16 for digest in hashes)
+    assert table.column("xhash").to_pylist() == hashes, "a line is its own lifecycle"
 
 
 def test_hash64_is_stable_across_reads(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as first, TextFile(url=plain.as_uri()) as second:
-        assert first.into_arrow_table().column("h64").to_pylist() == (
-            second.into_arrow_table().column("h64").to_pylist()
+        assert first.into_arrow_table().column("hash").to_pylist() == (
+            second.into_arrow_table().column("hash").to_pylist()
         )
 
 
 def test_rows_stay_in_file_order(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
-        unix = log.into_arrow_table().column("recorded_at_unix").to_pylist()
+        unix = log.into_arrow_table().column("unix").to_pylist()
     assert unix[0] == FIRST_UNIX
     assert unix == sorted(unix), "the sample is chronological, so parsing must keep it so"
 
@@ -359,9 +352,7 @@ def test_read_byte_size_does_not_change_the_result(plain: Path, read_byte_size: 
     with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_reader(read_byte_size=read_byte_size).read_all()
     assert table.num_rows == EXPECTED_RECORDS
-    assert table.column("recorded_at_unix").to_pylist()[-1] == max(
-        table.column("recorded_at_unix").to_pylist()
-    )
+    assert table.column("unix").to_pylist()[-1] == max(table.column("unix").to_pylist())
 
 
 def test_reader_is_lazy_until_pulled(plain: Path) -> None:
@@ -392,7 +383,7 @@ def test_custom_header_pattern(tmp_path: Path) -> None:
     with TextFile(url=path.as_uri(), header_pattern=pattern) as log:
         table = log.into_arrow_table()
     assert table.column("message").to_pylist() == ["first", "second"]
-    assert [time.microsecond for time in table.column("recorded_at_time").to_pylist()] == [
+    assert [(unix // 1000) % 1_000_000 for unix in table.column("unix").to_pylist()] == [
         167520,
         1,
     ]
@@ -438,12 +429,11 @@ def test_from_path_takes_the_zone_too(plain: Path) -> None:
     """The documented example: a local log is the one most likely to be local time."""
     naive = TextFile.from_path(plain).read_arrow_table()
     zoned = TextFile.from_path(plain, timezone="Europe/Paris").read_arrow_table()
-    assert (
-        zoned.column("recorded_at_unix").to_pylist() != naive.column("recorded_at_unix").to_pylist()
+    assert zoned.column("unix").to_pylist() != naive.column("unix").to_pylist()
+    assert zoned.column("message").to_pylist() == naive.column("message").to_pylist()
+    assert zoned.column("hash").to_pylist() == naive.column("hash").to_pylist(), (
+        "same lines, so the same digests -- the zone moves the instant, not the text"
     )
-    assert (
-        zoned.column("recorded_at_time").to_pylist() == naive.column("recorded_at_time").to_pylist()
-    ), "same wall clock"
 
 
 def test_reading_the_same_log_twice_reads_it_twice(plain: Path) -> None:
@@ -476,7 +466,11 @@ def test_a_write_renders_the_zone_it_read(tmp_path: Path, plain: Path, zone: str
     written = tmp_path / "written.txt"
     TextFile.from_url(written.as_uri(), timezone=zone).write_arrow(rows)
     back = TextFile.from_url(written.as_uri(), timezone=zone).read_arrow_table()
-    for column in ("recorded_at_unix", "recorded_at_date", "recorded_at_time", "message"):
+    # Not `hash`: it is the digest of the *raw* line, and a rendered line is
+    # the header regex read backwards, not the bytes that were parsed -- the
+    # level marker a log prints is stripped into `message` and never rendered
+    # back. What has to survive is what the columns say.
+    for column in ("unix", "hunix", "message"):
         assert back.column(column).to_pylist() == rows.column(column).to_pylist(), column
 
 
@@ -599,16 +593,14 @@ def test_without_a_timezone_the_clock_is_read_as_utc() -> None:
     with TextFile.from_url(SAMPLE.resolve().as_uri()) as log:
         batch = next(iter(log.into_arrow_batches()))
     instant = FIRST_CLOCK.replace(tzinfo=datetime.UTC)
-    assert (
-        batch.column("recorded_at_unix")[0].as_py() == int(instant.timestamp() * 1_000_000) * 1_000
-    )
+    assert batch.column("unix")[0].as_py() == int(instant.timestamp() * 1_000_000) * 1_000
 
 
 def test_a_timezone_shifts_the_instant_by_its_offset() -> None:
     """Same characters in the file, different moment in time."""
     naive, paris, york = (
         next(iter(TextFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone).into_arrow_batches()))
-        .column("recorded_at_unix")[0]
+        .column("unix")[0]
         .as_py()
         for zone in (None, "Europe/Paris", "America/New_York")
     )
@@ -616,18 +608,22 @@ def test_a_timezone_shifts_the_instant_by_its_offset() -> None:
     assert york == naive + 4 * 3_600 * 1_000_000_000, "EDT is UTC-4 in August"
 
 
-def test_the_date_and_time_columns_stay_on_the_local_clock() -> None:
-    """They are what the line said; `unix` is the column that answers when."""
-    columns = {}
+def test_the_hour_follows_the_instant_and_not_the_wall_clock() -> None:
+    """The reverse of the day and time columns this replaced, and deliberately.
+
+    A partition has to be a function of the column a reader filters on, and
+    that column is `unix`. So two logs written in different zones at the same
+    instant land in the same partition -- which is the only reading under which
+    partitioning on it prunes anything.
+    """
+    hours = {}
     for zone in (None, "Europe/Paris", "Pacific/Auckland"):
         with TextFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone) as log:
             batch = next(iter(log.into_arrow_batches()))
-        columns[zone] = (
-            batch.column("recorded_at_date")[0].as_py(),
-            batch.column("recorded_at_time")[0].as_py(),
-        )
-    assert len(set(columns.values())) == 1, "the wall clock does not move"
-    assert columns[None] == (FIRST_CLOCK.date(), FIRST_CLOCK.time())
+        hours[zone] = (batch.column("unix")[0].as_py(), batch.column("hunix")[0].as_py())
+    assert len({unix for unix, _ in hours.values()}) == 3, "the instants differ by zone"
+    for unix, hunix in hours.values():
+        assert hunix == unix - unix % HOUR, "and the hour follows each of them"
 
 
 def test_a_repeated_hour_resolves_rather_than_raising() -> None:
@@ -643,17 +639,16 @@ def test_a_repeated_hour_resolves_rather_than_raising() -> None:
     assert _unix_nanos(ambiguous, "Europe/Paris")[0].as_py() is not None
 
 
-def test_a_pre_epoch_timestamp_lands_on_the_right_day() -> None:
+def test_a_pre_epoch_timestamp_lands_in_the_hour_that_contains_it() -> None:
+    """Arrow has no modulo and its integer divide rounds toward zero, so this
+    is the branch a two-kernel truncation gets wrong: `-1` would come out in
+    the hour *after* the one containing it."""
     import pyarrow
 
-    from rekep.logs.text_file import _date_and_time
+    from rekep.logs.text_file import _hour_nanos
 
-    before = pyarrow.array(
-        [datetime.datetime(1969, 12, 31, 23, 59, 59)], type=pyarrow.timestamp("us")
-    )
-    date, time = _date_and_time(before)
-    assert date[0].as_py() == datetime.date(1969, 12, 31)
-    assert time[0].as_py() == datetime.time(23, 59, 59)
+    before = pyarrow.array([-1, -HOUR - 1, 0, HOUR, 3 * HOUR + 5], type=pyarrow.int64())
+    assert _hour_nanos(before).to_pylist() == [-HOUR, -2 * HOUR, 0, HOUR, 3 * HOUR]
 
 
 # -- static values ----------------------------------------------------------
@@ -755,14 +750,7 @@ def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> N
 
     again = TextFile.from_path(tmp_path / "written.txt").read_arrow_table()
     assert again.num_rows == source.num_rows
-    for column in (
-        "recorded_at_unix",
-        "recorded_at_date",
-        "recorded_at_time",
-        "thread_name",
-        "driver_name",
-        "message",
-    ):
+    for column in ("unix", "hunix", "thread_name", "driver_name", "message"):
         assert again.column(column).to_pylist() == source.column(column).to_pylist(), column
 
 
@@ -792,7 +780,7 @@ def test_commit_row_size_writes_in_chunks(plain: Path, tmp_path: Path) -> None:
 def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
     batch = pyarrow.RecordBatch.from_pydict(
         {
-            "recorded_at_unix": pyarrow.array([1_786_665_901_147_250_000], pyarrow.int64()),
+            "unix": pyarrow.array([1_786_665_901_147_250_000], pyarrow.int64()),
             "message": ["hello"],
             "thread_name": ["t"],
             "driver_name": ["d"],

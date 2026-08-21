@@ -1,31 +1,51 @@
 """`Log`'s own contract; the parser that fills it is tested beside it."""
 
-import datetime
+import uuid
 
 import pyarrow
 
 from rekep import Field, Log
+from rekep.market import Event, EventType
+from rekep.market.event import HOUR
 
-EXPECTED_COLUMNS = [
-    "url",
-    "recorded_at_unix",
-    "recorded_at_date",
-    "recorded_at_time",
-    "thread_name",
-    "driver_name",
-    "category_id",
-    "category_name",
-    "message",
-    "h64",
+#: The envelope every event carries, then the four columns a log line adds.
+ENVELOPE = [
+    "unix",
+    "hunix",
+    "etype",
+    "cunix",
+    "runix",
+    "eunix",
+    "sunix",
+    "hash",
+    "xhash",
+    "version",
+    "state",
+    "symbol",
+    "seq",
+    "prev_hash",
+    "prev_state",
+    "prev_unix",
+    "parent_hash",
 ]
+LINE = ["url", "thread_name", "driver_name", "message"]
 
 
-def test_columns_in_declaration_order() -> None:
-    assert Log.FIELD.into_arrow_schema().names == EXPECTED_COLUMNS
+def test_a_log_line_is_an_event() -> None:
+    """Which is what lets a parsed log be read beside the orders it describes."""
+    assert issubclass(Log, Event)
+    assert Log.FIELD.into_arrow_schema().names == ENVELOPE + LINE
 
 
-def test_every_column_is_required() -> None:
-    assert all(not member.nullable for member in Log.FIELD.fields)
+def test_the_envelope_is_the_same_one_every_other_event_carries() -> None:
+    """Position included: a reader of the envelope must not need to know the shape."""
+    assert Event.FIELD.names == ENVELOPE
+
+
+def test_every_column_a_line_adds_is_required() -> None:
+    """A line always has a file, a thread, a driver and a payload, even an empty one."""
+    for name in LINE:
+        assert not Log.FIELD.field(name).nullable, name
 
 
 def test_every_column_is_documented() -> None:
@@ -36,19 +56,39 @@ def test_every_column_is_documented() -> None:
 
 def test_the_key_is_the_moment_and_the_line() -> None:
     """Two columns: a hash identifies the line, the time is what an engine prunes on."""
-    assert Log.FIELD.primary_keys() == ["recorded_at_unix", "h64"]
-    assert Log.FIELD.partition_keys() == {"recorded_at_date": "identity"}
+    assert Log.FIELD.primary_keys() == ["unix", "hash"]
 
 
-def test_recorded_at_unix_declares_its_unit() -> None:
-    metadata = Log.FIELD.field("recorded_at_unix").metadata
-    assert metadata["unit"] == "nanosecond"
-    assert metadata["epoch"] == "1970-01-01"
+def test_the_partition_is_the_hour_the_line_falls_in() -> None:
+    """An identity partition on an integer, so every engine below reads it alike."""
+    assert Log.FIELD.partition_keys() == {"hunix": "identity"}
+    assert Log.FIELD.field("hunix").arrow_type == pyarrow.int64()
 
 
-def test_wide_columns_are_int64_not_smaller() -> None:
-    for name in ("recorded_at_unix", "h64"):
-        assert Log.FIELD.field(name).arrow_type == pyarrow.int64()
+def test_every_unix_column_declares_its_unit() -> None:
+    for name in ("unix", "hunix", "cunix", "runix", "eunix", "sunix", "prev_unix"):
+        metadata = Log.FIELD.field(name).metadata
+        assert metadata["unit"] == "nanosecond", name
+        assert metadata["epoch"] == "1970-01-01", name
+
+
+def test_the_line_digest_is_sixteen_bytes_like_every_other_identifier() -> None:
+    """64 bits collide inside a capture, and a collision merges two lines into one."""
+    for name in ("hash", "xhash"):
+        assert Log.FIELD.field(name).arrow_type == pyarrow.binary(16), name
+    assert Log.FIELD.field("unix").arrow_type == pyarrow.int64()
+
+
+def test_a_line_is_unclassified_until_something_classifies_it() -> None:
+    """The fallback the rules fall back to, on the class rather than in the parser."""
+    assert Log.EVENT_TYPE is EventType.UNKNOWN
+    assert Log().etype is EventType.UNKNOWN
+
+
+def test_the_hour_is_derived_from_the_instant() -> None:
+    built = Log(unix=3 * HOUR + 5)
+    assert built.hunix == 3 * HOUR
+    assert Log(unix=-1).hunix == -HOUR, "and it floors, either side of the epoch"
 
 
 def test_the_schema_says_which_class_it_came_from() -> None:
@@ -60,14 +100,12 @@ def test_the_schema_says_which_class_it_came_from() -> None:
 def test_a_row_round_trips_as_a_document() -> None:
     row = Log(
         url="a.txt",
-        recorded_at_unix=2,
-        recorded_at_date=datetime.date(2026, 8, 14),
-        recorded_at_time=datetime.time(0, 5, 1, 147_250),
+        unix=2,
+        hash=uuid.UUID(int=3),
+        xhash=uuid.UUID(int=3),
+        etype=EventType.ORDER,
         thread_name="t",
         driver_name="d",
-        category_id=0,
-        category_name="",
         message="m",
-        h64=3,
     )
     assert Log.from_json(row.into_json()) == row

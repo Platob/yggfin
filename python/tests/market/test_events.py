@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import datetime
-
 import pytest
 
 from rekep.market import Book, BookSide, Event, EventType, Execution, MarketEvent, Order, State
-from rekep.market.event import DAY, EPOCH
+from rekep.market.event import HOUR
 from rekep.market.identity import NIL
 
 SHAPES = {
@@ -68,20 +66,27 @@ def test_the_base_event_claims_to_be_nothing_in_particular() -> None:
     assert MarketEvent.EVENT_TYPE is EventType.UNKNOWN
 
 
-def test_the_day_is_derived_from_the_timestamp_and_never_given() -> None:
+def test_the_hour_is_derived_from_the_timestamp_and_never_given() -> None:
     """Denormalised for the partition, so one authority rather than two columns."""
-    unix = 1710374400_000000000
-    assert Order(unix=unix).date == datetime.date(2024, 3, 14)
-    assert Order(unix=unix).date == datetime.datetime.fromtimestamp(unix / 1e9, datetime.UTC).date()
-    assert Order(unix=unix, date=datetime.date(1999, 1, 1)).date == datetime.date(2024, 3, 14)
+    unix = 1710374400_000000000 + 5
+    assert Order(unix=unix).hunix == 1710374400_000000000
+    assert Order(unix=unix, hunix=999).hunix == 1710374400_000000000, "what is given is ignored"
+    assert 0 <= unix - Order(unix=unix).hunix < HOUR
 
 
-def test_the_day_floors_on_both_sides_of_the_epoch() -> None:
+def test_the_hour_floors_on_both_sides_of_the_epoch() -> None:
     """Integer division truncates towards zero in most languages and floors in Python."""
-    assert Order(unix=0).date == EPOCH
-    assert Order(unix=DAY - 1).date == EPOCH
-    assert Order(unix=DAY).date == EPOCH + datetime.timedelta(days=1)
-    assert Order(unix=-1).date == EPOCH - datetime.timedelta(days=1), "a pre-epoch instant"
+    assert Order(unix=0).hunix == 0
+    assert Order(unix=HOUR - 1).hunix == 0
+    assert Order(unix=HOUR).hunix == HOUR
+    assert Order(unix=-1).hunix == -HOUR, "a pre-epoch instant"
+    assert Order(unix=-HOUR - 1).hunix == -2 * HOUR
+
+
+def test_the_hour_and_the_instant_are_the_same_type() -> None:
+    """So a partition filter and a time filter are one comparison, with no cast."""
+    assert Order.FIELD.field("hunix").arrow_type == Order.FIELD.field("unix").arrow_type
+    assert Order.FIELD.field("hunix").metadata["unit"] == "nanosecond"
 
 
 def test_a_snapshot_keeps_both_when_it_was_taken_and_what_it_is_of() -> None:

@@ -4,6 +4,7 @@ import datetime
 import os
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 from typing import Annotated
 
@@ -14,6 +15,7 @@ from pyiceberg.expressions import EqualTo
 
 from rekep import Convertible, Field, Log, StructField, field
 from rekep.iceberg import IcebergCatalog, IcebergDataset
+from rekep.market import EventType
 
 
 @field
@@ -328,15 +330,13 @@ def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None
     )
     row = Log(
         url="a.txt",
-        recorded_at_unix=1,
-        recorded_at_date=datetime.date(2026, 8, 14),
-        recorded_at_time=datetime.time(0, 5, 1),
+        unix=1_786_665_901_167_520_000,
+        hash=uuid.UUID(int=2),
+        xhash=uuid.UUID(int=2),
+        etype=EventType.EXECUTION,
         thread_name="t",
         driver_name="d",
-        category_id=0,
-        category_name="",
         message="m",
-        h64=2,
     )
     table = pyarrow.Table.from_pylist([dataclass_row(row)], Log.FIELD.into_arrow_schema())
     logs.write_arrow_table(table, merge_by=True)
@@ -345,11 +345,11 @@ def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None
 
 
 def dataclass_row(row: Log) -> dict:
-    """A `Log` as the plain values Arrow wants, dates and times included."""
+    """A `Log` as the plain values Arrow wants -- the identifiers as their bytes."""
     return {
         **row.into_dict(),
-        "recorded_at_date": row.recorded_at_date,
-        "recorded_at_time": row.recorded_at_time,
+        "hash": row.hash.bytes,
+        "xhash": row.xhash.bytes,
     }
 
 

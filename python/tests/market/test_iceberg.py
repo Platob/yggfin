@@ -82,9 +82,9 @@ def test_the_partition_is_the_denormalised_day_with_an_identity_transform() -> N
     """An identity partition on a real date column is what every engine reads alike."""
     schema = Order.FIELD.into_iceberg_schema()
     spec = Order.FIELD.into_iceberg_partition_spec(schema)
-    assert [partition.name for partition in spec.fields] == ["date"]
+    assert [partition.name for partition in spec.fields] == ["hunix"]
     assert str(spec.fields[0].transform) == "identity"
-    assert schema.find_column_name(spec.fields[0].source_id) == "date"
+    assert schema.find_column_name(spec.fields[0].source_id) == "hunix"
 
 
 @pytest.mark.parametrize("shape", (Order, Book), ids=lambda cls: cls.__name__)

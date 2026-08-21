@@ -23,12 +23,15 @@ from rekep.market.instrument import Instrument
 #: them unchanged.
 UNIX: dict[str, str] = {"unit": "nanosecond", "epoch": "1970-01-01"}
 
-#: The day a `unix` of zero falls on, which is what an event that nobody has
-#: timestamped yet carries.
+#: The day a `unix` of zero falls on, kept because a caller reading a `*unix`
+#: back into a calendar still wants somewhere to start.
 EPOCH = datetime.date(1970, 1, 1)
 
-#: Nanoseconds in a day, which is how `date` is derived from `unix`.
+#: Nanoseconds in a day.
 DAY = 86_400_000_000_000
+
+#: Nanoseconds in an hour, which is what `hunix` truncates `unix` to.
+HOUR = 3_600_000_000_000
 
 
 @field
@@ -76,12 +79,19 @@ class Event(Convertible):
     unix: Annotated[int, Field.primary_key(metadata=UNIX)] = 0
     """When the event happened, in whole nanoseconds since the epoch."""
 
-    # Denormalised from `unix` rather than partitioned with a `day` transform:
-    # an identity partition on a real date column is the one form every engine
-    # below reads the same way, and the transformed alternative needs Iceberg's
+    # Denormalised from `unix` rather than partitioned with an `hour`
+    # transform: an identity partition on a real column is the one form every
+    # engine below reads the same way, and a transformed one needs Iceberg's
     # Rust core on the writer for no gain a reader can see.
-    date: Annotated[datetime.date, Field.partition_key()] = EPOCH
-    """Calendar day of `unix`, naive UTC -- what the data is partitioned on."""
+    #
+    # An **hour**, and an `int64` rather than a date. A day of ticks is one
+    # partition at day granularity, which prunes nothing inside a session --
+    # the query everybody actually writes. And the same integer as `unix`
+    # means a filter on the two is one comparison in one type: `WHERE hunix =
+    # X AND unix BETWEEN ...` prunes the partition and then the file, with no
+    # cast between a date and an instant in the middle of it.
+    hunix: Annotated[int, Field.partition_key(metadata=UNIX)] = 0
+    """`unix` truncated to the hour -- what the data is partitioned on."""
 
     # Third, not last: a read that spans the tables filters on it before
     # anything else, and Iceberg's column bounds are collected in pre-order.
@@ -153,15 +163,17 @@ class Event(Convertible):
           something other than `UNKNOWN` is left alone, which is how a shape
           that carries more than one kind (a `Quote` on the order table) still
           says so.
-        - **`date` is `unix`.** It is denormalised for the partition, so
+        - **`hunix` is `unix`.** It is denormalised for the partition, so
           deriving it here is the difference between one authority and two
-          columns that disagree on the row nobody looks at. Floor division
-          rather than a `datetime` round trip: it is exact for every
-          representable instant and costs no object.
+          columns that disagree on the row nobody looks at. A modulo rather
+          than a `datetime` round trip: it is exact for every representable
+          instant, it costs no object, and Python's `%` floors, so an instant
+          before the epoch lands in the hour that contains it rather than in
+          the one after.
         """
         if self.etype is EventType.UNKNOWN:
             self.etype = type(self).EVENT_TYPE
-        self.date = EPOCH + datetime.timedelta(days=self.unix // DAY)
+        self.hunix = self.unix - self.unix % HOUR
 
     # -- what kind of event this is -----------------------------------------
 
@@ -251,7 +263,7 @@ class MarketEvent(Event):
     # Ours, and so carrying no FIX tag: it normalises `PriceType <423>`, which
     # is an enumeration of conventions, together with `Currency <15>`, which is
     # the unit -- and a tag naming either would label the column as a field it
-    # is not. NOT NULL with an empty placeholder, like `Log.category_name`: a
+    # is not. NOT NULL with an empty placeholder: a
     # producer always knows how it quotes, and a column widened later is a
     # column every reader written before the widening has to re-handle.
     px_unit: str = ""

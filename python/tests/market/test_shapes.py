@@ -17,7 +17,7 @@ SHAPES = (*EVENTS, Instrument, Level, LevelUpdate, LevelExecution)
 #: selects by position, or a contract already published, does not move with it.
 ENVELOPE = [
     "unix",
-    "date",
+    "hunix",
     "etype",
     "cunix",
     "runix",
@@ -54,7 +54,7 @@ def test_every_event_carries_the_priced_slots_next(shape: type) -> None:
 def test_every_event_is_keyed_by_time_and_content(shape: type) -> None:
     """`hash` identifies the version; leading with time is what an engine prunes on."""
     assert shape.FIELD.primary_keys() == ["unix", "hash"]
-    assert shape.FIELD.partition_keys() == {"date": "identity"}
+    assert shape.FIELD.partition_keys() == {"hunix": "identity"}
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
@@ -180,12 +180,12 @@ METRICS_BUDGET = 100
 #: the budget, which is a statement about **declaration order**: these are
 #: exactly the columns that a nested member declared before them would push out.
 FILTERED = {
-    Order: ("unix", "date", "etype", "state", "side", "px", "symbol"),
-    Execution: ("unix", "date", "etype", "state", "kind", "px", "symbol"),
-    BookSide: ("unix", "date", "etype", "side", "px", "qty", "symbol", "depth", "total_qty"),
+    Order: ("unix", "hunix", "etype", "state", "side", "px", "symbol"),
+    Execution: ("unix", "hunix", "etype", "state", "kind", "px", "symbol"),
+    BookSide: ("unix", "hunix", "etype", "side", "px", "qty", "symbol", "depth", "total_qty"),
     Book: (
         "unix",
-        "date",
+        "hunix",
         "etype",
         "px",
         "spread",

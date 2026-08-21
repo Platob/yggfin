@@ -81,6 +81,18 @@ def hash_of(*parts: Any) -> uuid.UUID:
     return uuid.UUID(bytes=xxhash.xxh3_128_digest(SEPARATOR.join(_encoded(parts))))
 
 
+def hash_bytes(raw: bytes) -> uuid.UUID:
+    """The sixteen bytes identifying one blob -- a log line, a wire message.
+
+    Not `hash_of`: that composes several parts and length-prefixes each so the
+    split cannot be forged. One blob has no split to forge, so it is hashed as
+    it stands, and a caller who wants the composed form asks for it by name.
+    Same hash and same (absent) seed as everything else here, so an identifier
+    is reproducible in any process.
+    """
+    return uuid.UUID(bytes=xxhash.xxh3_128_digest(raw))
+
+
 def hash_arrow(*columns: Any) -> pyarrow.Array:
     """One identifier per row, from whole columns -- the vectorised `hash_of`.
 

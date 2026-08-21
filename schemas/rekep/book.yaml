@@ -11,10 +11,12 @@ fields:
     unit: nanosecond
     epoch: '1970-01-01'
     iceberg:primary_key: 'true'
-- name: date
-  type: date32[day]
-  description: Calendar day of `unix`, naive UTC -- what the data is partitioned on.
+- name: hunix
+  type: int64
+  description: '`unix` truncated to the hour -- what the data is partitioned on.'
   metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
     iceberg:partition_key: identity
 - name: etype
   type: int32

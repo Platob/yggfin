@@ -26,7 +26,15 @@ from rekep.market.enums import (
 )
 from rekep.market.event import DAY, EPOCH, UNIX, Event, MarketEvent
 from rekep.market.fields import MarketFieldBuilder, fix_tag, unkeyed
-from rekep.market.identity import HASH, NIL, arrow_of, hash_arrow, hash_of, uuids_of
+from rekep.market.identity import (
+    HASH,
+    NIL,
+    arrow_of,
+    hash_arrow,
+    hash_bytes,
+    hash_of,
+    uuids_of,
+)
 from rekep.market.instrument import Instrument
 from rekep.market.orders import Execution, Order
 
@@ -60,6 +68,7 @@ __all__ = [
     "arrow_of",
     "fix_tag",
     "hash_arrow",
+    "hash_bytes",
     "hash_of",
     "unkeyed",
     "uuids_of",

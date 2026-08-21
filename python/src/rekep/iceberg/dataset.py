@@ -1650,7 +1650,7 @@ def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
 
     A residual is what a filter leaves once the file's partition has answered
     what it can, so the rule covers more than a bare limit does --
-    `limit=100` under `recorded_at_date = '2026-08-14'` opens one file of the
+    `limit=100` under `hunix = ...` opens one file of the
     day's several, where this used to hand the whole plan back on sight of a
     filter. It still hands it back the moment a task is not exact: a residual
     over a non-partition column may match any number of that file's rows, and

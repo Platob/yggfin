@@ -381,7 +381,7 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         target = dataset(root, partitioned=True, properties=OPTIMISED)
         target.write_arrow(batches(table, 65_536), commit_row_size=rows // max(days, 1))
         day = datetime.date(2026, 8, 14)
-        # The recorded_at_unix bound of the third day: a filter on a column that is not the
+        # The unix bound of the third day: a filter on a column that is not the
         # partition, but correlates with it, so only file statistics can prune.
         third_day = (
             int(
@@ -400,11 +400,11 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
             (
                 "partition, 3 columns",
                 f"recorded_at_date = '{day}'",
-                ["recorded_at_unix", "driver_name", "message"],
+                ["unix", "driver_name", "message"],
                 None,
             ),
-            ("3 columns, no filter", None, ["recorded_at_unix", "driver_name", "message"], None),
-            ("correlated column", f"recorded_at_unix < {third_day}", None, None),
+            ("3 columns, no filter", None, ["unix", "driver_name", "message"], None),
+            ("correlated column", f"unix < {third_day}", None, None),
             ("no stats to prune on", "driver_name = 'ULBridge'", None, None),
             ("narrow shape (pushdown)", None, None, narrow_field()),
             ("narrow shape, store widths", None, None, "stored"),
@@ -743,7 +743,7 @@ def sweep_update(rows: int, days: int) -> None:
                 "(at, h64) — nothing repeats",
                 Tick.FIELD,
                 tick_rows(wide * days),
-                ["at", "h64"],
+                ["at", "hash"],
                 "payload",
             ),
         )
@@ -781,7 +781,7 @@ def tick_rows(count: int) -> pyarrow.Table:
     return pyarrow.Table.from_pydict(
         {
             "at": list(range(count)),
-            "h64": [source.getrandbits(62) for _ in range(count)],
+            "hash": [source.getrandbits(62) for _ in range(count)],
             "payload": ["XPAR"] * count,
         },
         schema=Tick.FIELD.into_arrow_schema(),
@@ -810,7 +810,7 @@ def sweep_backfill(rows: int, days: int) -> None:
             pyarrow.Table.from_pydict(
                 {
                     "at": [band * 10**12 + i for i in range(per)],
-                    "h64": [source.getrandbits(62) for _ in range(per)],
+                    "hash": [source.getrandbits(62) for _ in range(per)],
                     "payload": ["x" * 40] * per,
                 },
                 schema=Tick.FIELD.into_arrow_schema(),
@@ -827,7 +827,7 @@ def sweep_backfill(rows: int, days: int) -> None:
             ("one band", commits[7]),
             ("half the table", pyarrow.concat_tables(commits[:10])),
         ):
-            ranges = _key_ranges(replay, ["at", "h64"])
+            ranges = _key_ranges(replay, ["at", "hash"])
             plan = target.scan_plan(ranges)
             seconds, inserted = timed(functools.partial(target.insert_arrow_table, replay, True))
             print(
@@ -889,7 +889,7 @@ def stored_narrow(target: IcebergDataset) -> Any:
     schema = target.table_field.into_arrow_schema()
     return Field.from_arrow_schema(
         pyarrow.schema(
-            [schema.field(name) for name in ("recorded_at_unix", "driver_name", "message")]
+            [schema.field(name) for name in ("unix", "driver_name", "message")]
         ),
         "Narrow",
     )
@@ -902,7 +902,7 @@ def narrow_field() -> Any:
     schema = Log.FIELD.into_arrow_schema()
     return Field.from_arrow_schema(
         pyarrow.schema(
-            [schema.field(name) for name in ("recorded_at_unix", "driver_name", "message")]
+            [schema.field(name) for name in ("unix", "driver_name", "message")]
         ),
         "Narrow",
     )

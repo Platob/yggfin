@@ -125,6 +125,20 @@ class Ranged(enum.IntEnum):
         return default if default is not None else cls(0)
 
     @classmethod
+    def _missing_(cls, value: Any) -> Self | None:
+        """Accept a member's **name** as well as its value.
+
+        So a configuration file can say `etype: ORDER` instead of `etype: 110`,
+        and mean the same member -- which is the difference between a rule
+        somebody can read and a number they have to look up. A name that is not
+        a member falls through to the usual `ValueError`, so `from_code` still
+        degrades rather than guessing.
+        """
+        if isinstance(value, str):
+            return cls.__members__.get(value.strip().upper())
+        return None
+
+    @classmethod
     def _fix_codes(cls) -> dict[str, Self]:
         """FIX character -> member, built once per class on first lookup.
 
