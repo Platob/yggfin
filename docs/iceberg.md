@@ -159,13 +159,20 @@ keys and partitions intact.
     are never opened — measured, `limit=100` on an eight-file table opened
     **one** file instead of eight.
 
-    A record count is trusted exactly where pyiceberg's own `count()` trusts
-    one: the file's `residual` is `AlwaysTrue`, meaning its partition already
-    satisfies the whole filter, and no delete file has removed rows from it.
-    So a limit under a **partition** filter is trimmed too — `limit=2` under
+    A record count is trusted where pyiceberg's own `count()` trusts one: the
+    file's `residual` is `AlwaysTrue`, meaning its partition already satisfies
+    the whole filter, and no delete file has removed rows from it. So a limit
+    under a **partition** filter is trimmed too — `limit=2` under
     `day = '2026-08-14'` opens one of the day's three files — while a filter
     the files themselves have to answer hands the whole plan back. The row cap
     is pyiceberg's either way.
+
+    With one thing `count()` gets wrong. A residual is resolved against the
+    partition value in *Python*, so a file in a **null** partition answers
+    `venue != 'XPAR'` with `None != 'XPAR'` — True — and its residual comes
+    back `AlwaysTrue`; Arrow then applies the same filter to the rows in
+    three-valued logic, where `NULL != 'XPAR'` is NULL, and drops all of them.
+    A filtered limit leaves those files to pyiceberg.
 
 !!! note "A reader is a stream, and holds the pool, not the table"
 
@@ -273,10 +280,11 @@ goes.
     ranges instead, found by placing every value in one of 64 equal slices of
     `[min, max]` and merging the occupied ones back: a slice reports the exact
     min and max of what landed in it, so the union covers every value however
-    the arithmetic rounded. Measured on 20 files of clustered keys, replaying
-    two distant ones planned **18 files before and 2 after**; a replay of one
-    contiguous band plans 1 either way and pays 0.02 s against 0.04 for the
-    banding pass.
+    the arithmetic rounded — which it does, since a nanosecond timestamp does
+    not fit a float64 mantissa and the cast is deliberately unchecked. Measured
+    on 20 files of clustered keys, replaying two distant ones planned **18
+    files before and 2 after**; a replay of one contiguous band plans 1 either
+    way and pays the banding pass for nothing.
 
     | scenario (4,000-row chunk, 20k-row table) | planned | pyiceberg |
     | --- | --- | --- |

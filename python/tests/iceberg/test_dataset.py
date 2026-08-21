@@ -1246,6 +1246,55 @@ def test_a_limit_under_a_partition_filter_opens_only_the_files_it_needs(
     assert opened.get("data", 0) == 1, "one of the day's three files held both rows"
 
 
+def test_a_limited_read_over_a_null_partition_returns_its_rows(tmp_path: Path) -> None:
+    """`AlwaysTrue` is not always true. pyiceberg resolves a filter against the
+    partition value in Python, so a null partition answers `venue != 'XPAR'`
+    with `None != 'XPAR'` -- True -- and the residual says the file matches
+    whole. Arrow then applies the same filter in three-valued logic, where
+    `NULL != 'XPAR'` is NULL, and drops every row of it. Trimming there stopped
+    at a file contributing nothing: measured, `limit=5` over a table with ten
+    matching rows returned **zero**.
+    """
+
+    @field
+    class Trade(Convertible):
+        """A trade whose venue may be unknown."""
+
+        venue: Annotated[str | None, Field.partition_key()]
+        """Where it traded, when known -- so a null partition exists."""
+
+        size: int
+        """Quantity."""
+
+    catalog = IcebergCatalog(name="nullpart", properties=catalog_properties(tmp_path))
+    trades = catalog.dataset("trading.trades", struct=Trade.FIELD)
+    schema = Trade.FIELD.into_arrow_schema()
+    trades.write_arrow(
+        pyarrow.Table.from_pydict({"venue": ["XNYS"] * 10, "size": list(range(10))}, schema=schema),
+        commit_row_size=0,
+    )
+    trades.write_arrow(
+        pyarrow.Table.from_pydict({"venue": [None] * 10, "size": list(range(10))}, schema=schema),
+        commit_row_size=0,
+    )
+    table = trades.refresh().iceberg_table
+    row_filter = "venue != 'XPAR'"
+    planned = list(table.scan(row_filter=row_filter).plan_files())
+    assert any(task.file.partition[0] is None for task in planned), (
+        "the fixture needs a file in the null partition to mean anything"
+    )
+    assert all(str(task.residual) == "AlwaysTrue()" for task in planned), (
+        "and every residual claiming the file matches whole, which is the trap"
+    )
+    for limit in (1, 5, 10):
+        theirs = table.scan(row_filter=row_filter, limit=limit).to_arrow_batch_reader()
+        assert (
+            trades.read_arrow_reader(row_filter=row_filter, limit=limit).read_all().num_rows
+            == theirs.read_all().num_rows
+        )
+    assert trades.read_arrow_table(row_filter=row_filter).num_rows == 10
+
+
 def test_a_limit_under_a_filter_the_files_answer_reads_the_whole_plan(
     dataset: IcebergDataset, opened: dict[str, int]
 ) -> None:
@@ -1608,6 +1657,40 @@ def test_a_temporal_key_bands_whatever_width_it_stores(kind: pyarrow.DataType) -
     column = pyarrow.chunked_array([pyarrow.array(values, kind)])
     banded = _banded("at", column)
     assert type(banded).__name__ == "Or", "two clusters 900 days apart, and one range spans both"
+
+
+@pytest.mark.parametrize(
+    ("kind", "base"),
+    [
+        (pyarrow.int64(), 1_700_000_000_000_000_000),  # nanoseconds since the epoch
+        (pyarrow.uint64(), 1 << 62),  # a line hash
+    ],
+)
+def test_a_key_range_bands_values_past_a_double_mantissa(kind: pyarrow.DataType, base: int) -> None:
+    """Arrow's default cast is range-checked, and every key this banding exists
+    for -- a nanosecond timestamp, a 62-bit hash -- is past what a double holds
+    exactly. The checked cast raised, the fallback swallowed it, and the single
+    range came back: inert on precisely the columns it was written for.
+
+    Rounding is what the placement is allowed to do. A slice reports the exact
+    min and max of what landed in it, so two keys rounding together widen a
+    band and cannot drop a value.
+    """
+    from pyiceberg.expressions.visitors import bind, rewrite_not
+    from pyiceberg.io.pyarrow import expression_to_pyarrow
+    from pyiceberg.schema import Schema
+    from pyiceberg.types import LongType, NestedField
+
+    from rekep.iceberg.dataset import _key_ranges
+
+    values = [base + i for i in range(300)] + [base + 10**17 + i for i in range(300)]
+    chunk = pyarrow.table({"at": pyarrow.chunked_array([pyarrow.array(values, kind)])})
+    ranges = _key_ranges(chunk, ["at"])
+    assert type(ranges).__name__ == "Or", "two clusters, and one range spans both"
+
+    schema = Schema(NestedField(1, "at", LongType(), required=True))
+    bound = expression_to_pyarrow(bind(schema, rewrite_not(ranges), case_sensitive=True))
+    assert chunk.filter(bound).num_rows == chunk.num_rows, "and it still covers every value"
 
 
 def test_a_key_range_bands_a_type_that_cannot_be_subtracted() -> None:

@@ -74,6 +74,13 @@ MERGE_IN_LIMIT = 200
 #: were not going to skip a file anyway.
 MERGE_RANGE_BANDS = 8
 
+#: How many rows a group of the merge key must average before the delete
+#: filter is grouped at all. Every group costs a term of its own to build, so
+#: below a few rows each the grouping is slower than the tree it saves --
+#: measured on 5,000 rows, groups of 500 build in 0.09x the library's time,
+#: groups of 50 in 0.23x, and groups of 1.6 in 4.4x.
+MERGE_GROUP_GAIN = 8
+
 #: Rows a commit carries when nothing says otherwise. A stream that commits per
 #: batch lands a file and a snapshot per batch, and every later scan pays for
 #: both; one that never commits until the end holds the whole stream in memory.
@@ -1634,11 +1641,15 @@ def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
     one). A file's `record_count` says how many rows it contributes, so the
     *plan* is cut at the limit instead and the files past it are never opened.
 
-    When that count is **exact** is pyiceberg's own rule, not one invented
-    here: `DataScan.count()` adds `record_count` for a task whose residual is
-    `AlwaysTrue` and which carries no delete files, and reads the file for
-    every other. A residual is what a filter leaves once the file's partition
-    has answered what it can, so the rule covers more than a bare limit does --
+    When that count is **exact** is pyiceberg's own rule, plus the one thing
+    that rule gets wrong: `DataScan.count()` adds `record_count` for a task
+    whose residual is `AlwaysTrue` and which carries no delete files, and reads
+    the file for every other -- but a residual resolved against a *null*
+    partition value is `AlwaysTrue` for rows Arrow then drops (`_null_partition`
+    says why), so a filtered read leaves those files to pyiceberg too.
+
+    A residual is what a filter leaves once the file's partition has answered
+    what it can, so the rule covers more than a bare limit does --
     `limit=100` under `recorded_at_date = '2026-08-14'` opens one file of the
     day's several, where this used to hand the whole plan back on sight of a
     filter. It still hands it back the moment a task is not exact: a residual
@@ -1653,15 +1664,40 @@ def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
     if limit is None:
         return _planned_reader(scan, tasks)
     exact = _always_true()
+    filtered = getattr(scan, "row_filter", exact) != exact
     taken, rows = [], 0
     for task in tasks:
         if rows >= limit:
             break
-        if task.delete_files or task.residual != exact:
+        if (
+            task.delete_files
+            or task.residual != exact
+            or (filtered and _null_partition(task.file.partition))
+        ):
             return _planned_reader(scan, tasks)
         taken.append(task)
         rows += task.file.record_count
     return _planned_reader(scan, taken)
+
+
+def _null_partition(partition: Any) -> bool:
+    """Whether a file's partition record holds a null in any field.
+
+    The one place an `AlwaysTrue` residual does not mean what it says. pyiceberg
+    resolves a filter against the partition value in **Python**, so a file whose
+    partition is null answers `venue != 'XPAR'` with `None != 'XPAR'` -- True --
+    and the residual comes back `AlwaysTrue`. Arrow then applies the same filter
+    to the rows in *three-valued* logic, where `NULL != 'XPAR'` is NULL, and
+    drops every one of them. The file contributes nothing while its record count
+    says ten, so trimming there stops at a file with no matching rows and never
+    opens the ones that have them: measured, a `limit=5` read of a table with
+    ten matching rows returned **zero**.
+
+    `NotIn` has the same shape (`None not in {...}` is True), and any predicate
+    pyiceberg resolves this way can join them, so the test is the null and not
+    the operator.
+    """
+    return any(partition[index] is None for index in range(len(partition)))
 
 
 def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
@@ -1804,9 +1840,9 @@ def _banded(column: str, values: Any) -> Any | None:
             or pyarrow.types.is_decimal(kind)
             or pyarrow.types.is_unsigned_integer(kind)
         ):
-            # Straight across: a decimal has no integer cast, and a `uint64`
-            # past 2**63 has one that raises rather than one that is wrong.
-            numeric = compute.cast(values, "double")
+            # Straight across: a decimal has no integer cast at all, and an
+            # unsigned one past 2**63 has one that raises.
+            numeric = _placed(values)
         else:
             # Through the width the type actually stores. Arrow has no
             # `date32 -> int64` cast at all ("Unsupported cast from date32[day]
@@ -1814,7 +1850,7 @@ def _banded(column: str, values: Any) -> Any | None:
             # so asking for int64 made every date key fall out of the banding
             # and keep the single range it was supposed to replace.
             physical = "int32" if getattr(kind, "bit_width", 64) == 32 else "int64"
-            numeric = compute.cast(compute.cast(values, physical), "double")
+            numeric = _placed(compute.cast(values, physical))
         span = compute.min_max(numeric).as_py()
         low, high = span["min"], span["max"]
         if low is None or high is None or not low < high:
@@ -1873,6 +1909,25 @@ def _banded(column: str, values: Any) -> Any | None:
     from pyiceberg.expressions import Or
 
     return Or(*[_between(column, low, high) for low, high, _, _ in bands])
+
+
+def _placed(values: Any) -> Any:
+    """`values` as doubles, **unsafely** -- the number is a place, not a value.
+
+    Arrow's default cast is range-checked, and an integer past 2**53 is outside
+    what a double can hold exactly: `cast(1_700_000_000_000_000_000, "double")`
+    raises rather than rounding. Every key this banding exists for is such an
+    integer -- a nanosecond timestamp, a 62-bit line hash -- so the checked
+    cast made `_banded` give up on exactly the columns it was written for and
+    quietly hand back the single range.
+
+    Rounding is harmless here and it is the one thing this function is allowed
+    to do. The double decides only which slice a value is *placed* in; the
+    slice then reports the exact min and max of whatever landed in it, out of
+    the original values. Two keys rounding to one place widen a band; they
+    cannot drop a value out of the cover.
+    """
+    return pyarrow.compute.cast(values, "double", safe=False)
 
 
 def _fewest(
@@ -2039,7 +2094,7 @@ def _factored(updates: pyarrow.Table, join: Sequence[str]) -> Any:
     type that cannot be grouped or named in an `In` is one the library's own
     per-row form still handles.
     """
-    from pyiceberg.expressions import And, EqualTo, Or
+    from pyiceberg.expressions import And, EqualTo, In, Or
     from pyiceberg.table import upsert_util
 
     whole = functools.partial(upsert_util.create_match_filter, updates, join)
@@ -2052,20 +2107,44 @@ def _factored(updates: pyarrow.Table, join: Sequence[str]) -> Any:
         }
         outer = min(join, key=lambda name: counts[name])
         if counts[outer] == keys.num_rows:
-            # Every row its own group: the terms would be the ones
+            # One group per row: the terms would be the ones
             # `create_match_filter` builds, so let it build them.
             return whole()
         rest = [name for name in join if name != outer]
-        marked = keys.append_column(SOURCE_INDEX, arrays.sequence(keys.num_rows))
-        groups = marked.group_by([outer]).aggregate([(SOURCE_INDEX, "list")])
-        terms = [
-            And(EqualTo(outer, value), upsert_util.create_match_filter(keys.take(rows), rest))
-            for value, rows in zip(
-                groups.column(outer).to_pylist(),
-                groups.column(f"{SOURCE_INDEX}_list").to_pylist(),
-                strict=True,
-            )
-        ]
+        if len(rest) > 1 and counts[outer] * MERGE_GROUP_GAIN > keys.num_rows:
+            # Groups too small to be worth *this* way of making them. A key of
+            # three columns or more takes each group back through the library
+            # to spell what is left of it, and that per-group round trip is
+            # what needs the rows to pay for it: measured on 5,000 rows and a
+            # two-column key, which does not pay it, groups of 1.6 built in
+            # 4.4x the library's time through this path and 0.42x without it.
+            return whole()
+        if len(rest) == 1:
+            # The whole of a two-column key, and the shape worth doing without
+            # a round trip through the library: the inner values come out of
+            # the same grouping pass, so there is no `take` and no second
+            # `group_by` per group. An `In` of one literal is an `EqualTo`
+            # again, which is what a group of one would have been anyway.
+            grouped = keys.group_by([outer]).aggregate([(rest[0], "list")])
+            terms = [
+                And(EqualTo(outer, value), In(rest[0], inner))
+                for value, inner in zip(
+                    grouped.column(outer).to_pylist(),
+                    grouped.column(f"{rest[0]}_list").to_pylist(),
+                    strict=True,
+                )
+            ]
+        else:
+            marked = keys.append_column(SOURCE_INDEX, arrays.sequence(keys.num_rows))
+            groups = marked.group_by([outer]).aggregate([(SOURCE_INDEX, "list")])
+            terms = [
+                And(EqualTo(outer, value), upsert_util.create_match_filter(keys.take(rows), rest))
+                for value, rows in zip(
+                    groups.column(outer).to_pylist(),
+                    groups.column(f"{SOURCE_INDEX}_list").to_pylist(),
+                    strict=True,
+                )
+            ]
     except (
         pyarrow.ArrowInvalid,
         pyarrow.ArrowNotImplementedError,

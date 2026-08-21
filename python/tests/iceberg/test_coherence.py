@@ -663,6 +663,46 @@ def test_a_key_that_repeats_nothing_is_never_grouped(monkeypatch: pytest.MonkeyP
     assert str(filter_) == str(original(unique, join))
 
 
+@pytest.mark.parametrize("duplicates", [2, 40, 400])
+def test_a_three_column_key_matches_what_pyiceberg_matches(duplicates: int) -> None:
+    """A key of three columns takes each group back through the library to
+    spell what is left of it, which is the per-group cost the grouping is only
+    worth past `MERGE_GROUP_GAIN` rows. Both sides of that threshold have to
+    match the reference exactly -- one of them by *being* it."""
+    from pyiceberg.schema import Schema
+    from pyiceberg.table.upsert_util import create_match_filter
+    from pyiceberg.types import LongType, NestedField, StringType
+
+    from rekep.iceberg.dataset import _match_filter
+
+    schema = Schema(
+        NestedField(1, "book", StringType(), required=True),
+        NestedField(2, "day", LongType(), required=True),
+        NestedField(3, "seq", LongType(), required=True),
+    )
+    rows = 800
+    updates = pyarrow.table(
+        {
+            "book": [f"B{index % duplicates}" for index in range(rows)],
+            "day": [index % 5 for index in range(rows)],
+            "seq": list(range(rows)),
+        }
+    )
+    decoys = pyarrow.table(
+        {
+            "book": [f"B{index % duplicates}" for index in range(rows)],
+            "day": [index % 5 for index in range(rows)],
+            "seq": [index + 10**6 for index in range(rows)],
+        }
+    )
+    haystack = pyarrow.concat_tables([updates, decoys])
+    join = ["book", "day", "seq"]
+    ours = _match_filter(updates, join)
+    theirs = create_match_filter(updates, join)
+    assert _matched_by(theirs, haystack, schema) == sorted_rows(updates)
+    assert _matched_by(ours, haystack, schema) == _matched_by(theirs, haystack, schema)
+
+
 def test_a_merge_of_many_updates_agrees_with_the_library(tmp_path: Path) -> None:
     """The rows, through both paths, on the shape the factoring is for: a
     composite key one half of which repeats. Measured on 8,000 stored rows,

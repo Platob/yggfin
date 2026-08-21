@@ -317,9 +317,12 @@ of it drawn per row so file bounds on it span everything and prune nothing.
 
 | case | planned | seconds |
 | --- | --- | --- |
-| two distant bands | 18 → **2** | 0.14–0.19 → 0.09 |
-| one contiguous band | 1 → 1 | 0.02 → 0.04 |
-| half the table | 10 → 10 | 0.14–0.16 → 0.18–0.21 |
+| two distant bands | 18 → **2** | 0.14–0.19 → 0.05–0.09 |
+| one contiguous band | 1 → 1 | 0.02 → 0.04–0.06 |
+| half the table | 10 → 10 | 0.14–0.16 → 0.13–0.21 |
+
+The planned counts are exact and reproduce to the file; the seconds are a
+shared machine and move ±40% between rounds, so both rounds are quoted.
 
 Past 200 distinct values a key column cannot be named one value at a time, and
 the single min/max range it became spans everything between the bands. It is
