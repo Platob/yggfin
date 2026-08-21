@@ -686,3 +686,59 @@ class OptionKind(Ranged):
 
     CALL = 200, "1"
     """The right to buy at the strike."""
+
+
+class EventType(Ranged):
+    """What kind of thing an event is, banded by what it asserts.
+
+    Every shape here is its own table, so within one table the column is
+    constant and costs nothing -- run-length and dictionary encoding both
+    collapse it to a handful of bytes. It exists for the read that spans them:
+    a union of orders, executions and books is one stream of `Event`s, and
+    `etype` is the only thing that says which row is which without looking at
+    the columns that happen to be null.
+
+    The bands are what a row *asserts*, which is the split a reader actually
+    branches on: an intent is what somebody asked for and may never happen, a
+    fact happened and cannot be taken back except by another fact, and a state
+    is what was true at an instant. `etype >= EventType.STATE` is every row
+    that is a snapshot of something rather than a thing in its own right.
+    """
+
+    UNKNOWN = 0
+    """Nothing stated."""
+
+    INTENT = 100
+    """Band floor: somebody asked for something that may never happen."""
+
+    ORDER = 110
+    """An order, in any version of its life."""
+
+    QUOTE = 120
+    """A two-sided price somebody is willing to trade at."""
+
+    FACT = 200
+    """Band floor: it happened, and only another fact undoes it."""
+
+    EXECUTION = 210
+    """Something traded, or a report about an order that did not."""
+
+    STATE = 300
+    """Band floor: what was true at an instant, assembled from the rest."""
+
+    BOOK_SIDE = 310
+    """One side of one book."""
+
+    BOOK = 320
+    """Both sides of one book."""
+
+    REFERENCE = 400
+    """Band floor: what a thing *is*, rather than anything that happened to it."""
+
+    INSTRUMENT = 410
+    """One tradable instrument."""
+
+    @property
+    def is_snapshot(self) -> bool:
+        """Whether the row is a picture of something rather than a thing itself."""
+        return self >= EventType.STATE

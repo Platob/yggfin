@@ -251,24 +251,53 @@ Ten things that were learned the expensive way, all of them measured:
 read through an enum, never stored as the enum: the column survives a code this
 build has never seen, and `from_code` degrades it to its band rather than
 raising. The bands are ordered by how done the thing is, so the questions a
-query asks -- terminal, live, moved shares, removed liquidity -- are each **one
-range predicate**, which prunes where a set of `IN` literals cannot; the floor
-of every band is itself a member, so the degradation lands on something true.
-A value, once given, is never reused. An identifier is sixteen fixed bytes
-(`fixed_size_binary[16]` here, `fixed[16]` in Iceberg, `BinaryType` in Spark),
-because 64 bits collide inside a day of ticks and because Iceberg's own `uuid`
-comes back as an Arrow *extension* type and reaches Spark as a string. Parts of
-an identifier are hashed **behind their own byte lengths**: a separator alone
-does not stop a part that contains the separator, and a raw identifier used as
-a part contains any given byte about six times in a hundred. A key is a table's
-and not a struct's, so a nested shape keeps its comments and loses its keys --
-nothing reads a nested key, and publishing one is a contract that lies. What a
-reader would otherwise recompute is a **flat column**, derived once in kernels
-(`summarise_arrow`): a filter on `px` skips files, a filter on `alive[0].px`
-reads them all and throws the rows away, and the derivation costs 260-1050
-ns/row against 0.4 ns to read the column back (`benchmarks/bench_market.py`).
-Where two flat columns already determine a third, the third is not stored:
-`(px, spread)` *is* the best bid and offer, and `spread < 0` is crossed.
+query asks -- terminal, live, moved shares, removed liquidity, is this a
+snapshot -- are each **one range predicate**, which prunes where a set of `IN`
+literals cannot; the floor of every band is itself a member, so the degradation
+lands on something true. A value, once given, is never reused, and the schema
+carries the member table under `enum:` keys because a consumer that never
+imported this package has nothing else to decode `410` with. The **value type
+is read off the members**, never guessed from the base class: `class K(str,
+Enum)` and `class K(IntEnum)` both subclass something.
+
+An identifier is sixteen fixed bytes (`fixed_size_binary[16]` here, `fixed[16]`
+in Iceberg, `BinaryType` in Spark), because 64 bits collide inside a day of
+ticks and because Iceberg's own `uuid` comes back as an Arrow *extension* type
+and reaches Spark as a string. Parts of an identifier are hashed **behind their
+own byte lengths**: a separator alone does not stop a part that contains the
+separator, and a raw identifier used as a part contains any given byte about
+six times in a hundred.
+
+A key is a table's and not a struct's, so a nested shape keeps its comments and
+loses its keys -- nothing reads a nested key, and publishing one is a contract
+that lies. **A shape with one member is that member**, as an Arrow extension
+type over the member's own storage: a `struct` of one is a nesting level that
+carries nothing and costs a filter its pushdown, while an extension's storage
+is what every engine that never heard of it reads.
+
+**Nest nothing a filter needs.** What a reader would otherwise recompute is a
+flat column, derived once in kernels (`summarise_arrow`): a filter on `px`
+skips files, a filter on `alive[0].px` reads them all and throws the rows away
+-- Iceberg writes no bounds *at all* under a list or a map, and Doris pushes
+down only top-level scalars. Deriving costs 245-1136 ns/row against 0.4 ns to
+read the column back (`benchmarks/bench_market.py`). Watch the **leaf** budget
+while doing it: Iceberg bounds the first `write.metadata.metrics
+.max-inferred-column-defaults` leaves in pre-order, 100 by default, and nesting
+a whole `BookSide` under `bid` and `ask` put a `Book` at 140 leaves with
+`spread`, `micro_px` and `imbalance` at 138-140 -- past the cutoff, unbounded,
+and indistinguishable from working. Flat sides brought it to 80. Where two flat
+columns already determine a third, the third is not stored: `(px, spread)` *is*
+the best bid and offer, and `spread < 0` is crossed.
+
+**A code column is dictionary-*encoded*, not a map.** Arrow's `dictionary`
+stores each distinct value once with an index per row, which is the shape of a
+column whose point is that it repeats (4x smaller at six distinct states).
+`dictionary_arrow` asks three questions in one order, and the order is the
+rule: same **value** type -> encode as it stands; same **index** type -> take it
+as indices rather than encoding again; neither -> cast to the value type first.
+The middle one must be asked, and asked second: a `dictionary<int32, int32>`
+of ranged codes has an index and a value type of the same width, and indices
+encoded as values point every row at the wrong member.
 
 ## 9. A dataset is a stream in and a stream out
 
@@ -413,15 +442,18 @@ rekep/
 │                  append/upsert in, one commit per chunk, and the
 │                  maintenance -- add_fields, compact, cleanup, optimize)
 ├── market/        what happened, as a history: enums.py (the banded int32
-│                  codes -- State, Side, TimeInForce, OrderKind, ExecKind,
-│                  UpdateAction, AssetKind, OptionKind -- and the FIX character
-│                  on each member), identity.py (the sixteen fixed bytes:
-│                  xxh3-128 over length-prefixed parts, scalar and vectorised),
-│                  fields.py (MarketFieldBuilder: a UUID is fixed_size_binary[16],
-│                  a ranged code is int32, a nested shape loses its keys; and
-│                  fix_tag), instrument.py, event.py (Event and MarketEvent),
-│                  orders.py (Order, Execution) and book.py (Level, LevelUpdate,
-│                  BookSide, Book, and the derived prices computed in kernels)
+│                  codes -- EventType, State, Side, TimeInForce, OrderKind,
+│                  ExecKind, UpdateAction, AssetKind, OptionKind -- and the FIX
+│                  character on each member), identity.py (the sixteen fixed
+│                  bytes: xxh3-128 over length-prefixed parts, scalar and
+│                  vectorised), fields.py (MarketFieldBuilder: a UUID is
+│                  fixed_size_binary[16], a ranged code is int32 carrying its
+│                  member table, a nested shape loses its keys, a shape of one
+│                  member is that member; plus fix_tag and dictionary_arrow),
+│                  instrument.py, event.py (Event and MarketEvent), orders.py
+│                  (Order, Execution) and book.py (Level, LevelUpdate,
+│                  LevelExecution, BookSide, Book -- the append_* builders and
+│                  the derived prices computed in kernels)
 ├── fix/           message.py (FixMessage and the vectorised line parsing:
 │                  separator detection, tag=value and rendered
 │                  Name[i]=Member=value cutting, repeating groups, and

@@ -92,7 +92,9 @@ logs.optimize()                      # compact, expire, sweep
   cannot; around forty columns carry the FIX field they came from, checked
   against `data/fix.zip` by CI. `Book.summarise_arrow` derives the mid, the
   spread, the microprice and the imbalance in kernels, once, so no reader has
-  to reach into a nested list that no engine below prunes on.
+  to reach into a nested list that no engine below prunes on — and
+  `book.append_event(order)` builds one out of events, versioning and linking
+  each step as it goes.
 - **`convert`** — `Convertible`: paired `from_*`/`into_*` methods that serialise
   any dataclass to dict, JSON, YAML or TOML and back.
 

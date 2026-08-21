@@ -16,6 +16,14 @@ fields:
   description: Calendar day of `unix`, naive UTC -- what the data is partitioned on.
   metadata:
     iceberg:partition_key: identity
+- name: etype
+  type: int32
+  description: Which kind of event this is -- the one column a union of the tables
+    needs.
+  metadata:
+    enum:name: EventType
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","310":"BOOK_SIDE","320":"BOOK","400":"REFERENCE","410":"INSTRUMENT"}'
 - name: cunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
@@ -24,7 +32,7 @@ fields:
     epoch: '1970-01-01'
 - name: runix
   type: int64
-  description: When the event was written down here; deliberately not part of `h128`.
+  description: When the event was written down here; deliberately not part of `hash`.
   metadata:
     unit: nanosecond
     epoch: '1970-01-01'
@@ -35,22 +43,33 @@ fields:
   metadata:
     unit: nanosecond
     epoch: '1970-01-01'
-- name: h128
+- name: sunix
+  type: int64
+  nullable: true
+  description: '`unix` of the event this is a snapshot of; null when it is not one.'
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: hash
   type: fixed_size_binary[16]
   description: 'Digest of this version''s content: the same version, twice, is one
     row.'
   metadata:
     iceberg:primary_key: 'true'
-- name: xh128
+- name: xhash
   type: fixed_size_binary[16]
   description: Identity of the thing across every version of it -- the lifecycle.
 - name: version
   type: int64
-  description: Which version of `xh128` this is, counting up from the first.
+  description: Which version of `xhash` this is, counting up from the first.
 - name: state
   type: int32
   description: 'Where the lifecycle stands, as a banded code: `>= State.TERMINAL`
     is over.'
+  metadata:
+    enum:name: State
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","600":"FAILED","610":"REJECTED"}'
 - name: symbol
   type: string
   description: Main readable identifier of the subject, as the venue spells it.
@@ -64,13 +83,17 @@ fields:
   metadata:
     fix:name: MsgSeqNum
     fix:tag: '34'
-- name: prev_h128
+- name: prev_hash
   type: fixed_size_binary[16]
   nullable: true
   description: The version this one replaced; null on the first.
 - name: prev_state
   type: int32
   description: The state this version moved out of -- a transition, without the self-join.
+  metadata:
+    enum:name: State
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","600":"FAILED","610":"REJECTED"}'
 - name: prev_unix
   type: int64
   nullable: true
@@ -78,7 +101,7 @@ fields:
   metadata:
     unit: nanosecond
     epoch: '1970-01-01'
-- name: parent_h128
+- name: parent_hash
   type: list
   nullable: true
   description: Every event this one was built from, in the order they were combined.
@@ -90,6 +113,9 @@ fields:
   metadata:
     fix:name: Side
     fix:tag: '54'
+    enum:name: Side
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"BUY","110":"BUY_MINUS","120":"BORROW","130":"SUBSCRIBE","200":"SELL","210":"SELL_PLUS","220":"SELL_SHORT","230":"SELL_SHORT_EXEMPT","240":"LEND","250":"REDEEM","300":"CROSS","310":"CROSS_SHORT","320":"CROSS_SHORT_EXEMPT","330":"AS_DEFINED","340":"OPPOSITE","350":"UNDISCLOSED"}'
 - name: px
   type: double
   nullable: true
@@ -131,7 +157,7 @@ fields:
   description: What was traded. The flat `symbol` above is what a filter uses; this
     is the rest.
   fields:
-  - name: xh128
+  - name: xhash
     type: fixed_size_binary[16]
     description: Stable identity of the instrument, which outlives every symbol it
       has had.
@@ -144,6 +170,10 @@ fields:
   - name: kind
     type: int32
     description: What it settles as, read from the first character of the CFI code.
+    metadata:
+      enum:name: AssetKind
+      enum:type: int
+      enum:values: '{"0":"UNKNOWN","100":"CASH","110":"EQUITY","120":"DEBT","130":"FUND","140":"CURRENCY","150":"COMMODITY","160":"INDEX","200":"DERIVATIVE","210":"FUTURE","220":"OPTION","230":"SWAP","240":"WARRANT","250":"FORWARD","300":"STRUCTURED","310":"SPREAD","320":"MULTILEG","330":"BASKET","400":"FINANCING","410":"REPO","420":"LOAN"}'
   - name: security_id
     type: string
     nullable: true
@@ -223,6 +253,9 @@ fields:
     metadata:
       fix:name: PutOrCall
       fix:tag: '201'
+      enum:name: OptionKind
+      enum:type: int
+      enum:values: '{"0":"UNKNOWN","100":"PUT","200":"CALL"}'
   - name: label
     type: string
     nullable: true
@@ -244,6 +277,9 @@ fields:
   metadata:
     fix:name: ExecType
     fix:tag: '150'
+    enum:name: ExecKind
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"STATUS","110":"ACK","120":"PENDING_NEW","130":"PENDING_CANCEL","140":"PENDING_REPLACE","150":"ORDER_STATUS","160":"RESTATED","170":"CALCULATED","180":"DONE_FOR_DAY","200":"LIFECYCLE","210":"CANCELLED","220":"REPLACED","230":"REJECTED","240":"EXPIRED","250":"SUSPENDED","260":"STOPPED","300":"TRADE","310":"TRADED","320":"PARTIAL_FILL","330":"FILL","400":"AMEND","410":"TRADE_CORRECT","420":"TRADE_CANCEL"}'
 - name: exec_id
   type: string
   nullable: true
@@ -258,7 +294,7 @@ fields:
   metadata:
     fix:name: TradeID
     fix:tag: '1003'
-- name: order_xh128
+- name: order_xhash
   type: fixed_size_binary[16]
   nullable: true
   description: Lifecycle of the order this happened to -- the join key, single-valued.

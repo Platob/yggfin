@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import datetime
 import uuid
 from typing import Annotated, Any, ClassVar
@@ -10,9 +11,9 @@ import pyarrow
 
 from rekep.convert import Convertible
 from rekep.fields import Field, FieldBuilder, field
-from rekep.market.enums import Side, State
+from rekep.market.enums import EventType, Side, State
 from rekep.market.fields import MarketFieldBuilder, fix_tag
-from rekep.market.identity import h128_arrow, h128_of
+from rekep.market.identity import NIL, hash_arrow, hash_of
 from rekep.market.instrument import Instrument
 
 #: What a `*unix` column holds, said once. Whole nanoseconds since the epoch,
@@ -22,6 +23,13 @@ from rekep.market.instrument import Instrument
 #: them unchanged.
 UNIX: dict[str, str] = {"unit": "nanosecond", "epoch": "1970-01-01"}
 
+#: The day a `unix` of zero falls on, which is what an event that nobody has
+#: timestamped yet carries.
+EPOCH = datetime.date(1970, 1, 1)
+
+#: Nanoseconds in a day, which is how `date` is derived from `unix`.
+DAY = 86_400_000_000_000
+
 
 @field
 class Event(Convertible):
@@ -30,17 +38,17 @@ class Event(Convertible):
     Every shape in this package is an `Event`, and the envelope is what makes a
     stream of them a *history* rather than a pile of rows:
 
-    - **`xh128` is the thing; `h128` is this version of it.** An order amended
-      four times is four rows sharing one `xh128`, each with its own `h128` and
+    - **`xhash` is the thing; `hash` is this version of it.** An order amended
+      four times is four rows sharing one `xhash`, each with its own `hash` and
       an incrementing `version`. Nothing is ever updated in place, so the store
       can be append-only and a reader can ask what was known at any moment
       rather than only what is true now.
-    - **`h128` is content, so a capture read twice deduplicates itself.** It is
+    - **`hash` is content, so a capture read twice deduplicates itself.** It is
       the digest of what the event *says* -- never of when it was recorded --
       so the same version arriving down two feeds is one row with one key, and
       re-reading yesterday's capture writes nothing. That is why `runix` is
       outside the digest and outside the key.
-    - **The previous version is on the row.** `prev_h128`, `prev_state` and
+    - **The previous version is on the row.** `prev_hash`, `prev_state` and
       `prev_unix` make the history a linked list, so "what changed" and "how
       long did it sit there" are read from one row instead of joined out of a
       window function over the whole lifecycle. Three columns bought against a
@@ -52,7 +60,7 @@ class Event(Convertible):
     it was made, `runix` when it was written down, `eunix` when it stops being
     true. Only `unix` is in the key.
 
-    The primary key is `(unix, h128)`: `h128` alone identifies the version, and
+    The primary key is `(unix, hash)`: `hash` alone identifies the version, and
     leading with time gives an engine a key that correlates with the partition,
     so a merge prunes to a day instead of scanning the table. `Log` keys itself
     the same way for the same reason.
@@ -60,62 +68,144 @@ class Event(Convertible):
 
     FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
 
-    unix: Annotated[int, Field.primary_key(metadata=UNIX)]
+    #: What this shape is, as the `etype` column holds it. Declared on the
+    #: class rather than passed per row, because a shape is one kind of event
+    #: and a row that disagreed with its own table would be unreadable.
+    EVENT_TYPE: ClassVar[EventType] = EventType.UNKNOWN
+
+    unix: Annotated[int, Field.primary_key(metadata=UNIX)] = 0
     """When the event happened, in whole nanoseconds since the epoch."""
 
     # Denormalised from `unix` rather than partitioned with a `day` transform:
     # an identity partition on a real date column is the one form every engine
     # below reads the same way, and the transformed alternative needs Iceberg's
     # Rust core on the writer for no gain a reader can see.
-    date: Annotated[datetime.date, Field.partition_key()]
+    date: Annotated[datetime.date, Field.partition_key()] = EPOCH
     """Calendar day of `unix`, naive UTC -- what the data is partitioned on."""
 
-    cunix: Annotated[int, Field(metadata=UNIX)]
+    # Third, not last: a read that spans the tables filters on it before
+    # anything else, and Iceberg's column bounds are collected in pre-order.
+    # Constant within one table, where run-length and dictionary encoding
+    # collapse it to nothing.
+    etype: EventType = EventType.UNKNOWN
+    """Which kind of event this is -- the one column a union of the tables needs."""
+
+    cunix: Annotated[int, Field(metadata=UNIX)] = 0
     """When the event was created, upstream of anything that carried it."""
 
-    runix: Annotated[int, Field(metadata=UNIX)]
-    """When the event was written down here; deliberately not part of `h128`."""
+    runix: Annotated[int, Field(metadata=UNIX)] = 0
+    """When the event was written down here; deliberately not part of `hash`."""
 
-    eunix: Annotated[int | None, Field(metadata=UNIX)]
+    eunix: Annotated[int | None, Field(metadata=UNIX)] = None
     """When the event stops being true -- an order's expiry, a quote's staleness."""
 
-    h128: Annotated[uuid.UUID, Field.primary_key()]
+    # A snapshot's own `unix` is when the picture was taken, because that is
+    # what orders it against everything else in the stream. What it is a
+    # picture *of* would otherwise be lost: `sunix` keeps it, so "as of when"
+    # and "taken when" are both on the row and a stale snapshot is one
+    # subtraction rather than a join against whatever it snapshotted.
+    sunix: Annotated[int | None, Field(metadata=UNIX)] = None
+    """`unix` of the event this is a snapshot of; null when it is not one."""
+
+    hash: Annotated[uuid.UUID, Field.primary_key()] = NIL
     """Digest of this version's content: the same version, twice, is one row."""
 
-    xh128: uuid.UUID
+    xhash: uuid.UUID = NIL
     """Identity of the thing across every version of it -- the lifecycle."""
 
-    version: int
-    """Which version of `xh128` this is, counting up from the first."""
+    version: int = 0
+    """Which version of `xhash` this is, counting up from the first."""
 
-    state: State
+    state: State = State.UNKNOWN
     """Where the lifecycle stands, as a banded code: `>= State.TERMINAL` is over."""
 
-    symbol: Annotated[str, fix_tag("Symbol", 55)]
+    symbol: Annotated[str, fix_tag("Symbol", 55)] = ""
     """Main readable identifier of the subject, as the venue spells it."""
 
-    seq: Annotated[int | None, fix_tag("MsgSeqNum", 34)]
+    seq: Annotated[int | None, fix_tag("MsgSeqNum", 34)] = None
     """Sequence the venue gave the message, which orders what a clock cannot."""
 
-    prev_h128: uuid.UUID | None
+    prev_hash: uuid.UUID | None = None
     """The version this one replaced; null on the first."""
 
-    prev_state: State
+    prev_state: State = State.UNKNOWN
     """The state this version moved out of -- a transition, without the self-join."""
 
-    prev_unix: Annotated[int | None, Field(metadata=UNIX)]
+    prev_unix: Annotated[int | None, Field(metadata=UNIX)] = None
     """When the previous version happened, so dwell time is a subtraction."""
 
     # A list rather than a second parent column: a book is built from two
     # sides, a spread from as many legs as it has, and the count is not a
     # property of the shape. What a join actually uses is the one flat parent a
-    # subclass declares -- an execution's `order_xh128` -- because no engine
+    # subclass declares -- an execution's `order_xhash` -- because no engine
     # here joins on a list without exploding it first.
-    parent_h128: list[uuid.UUID] | None
+    parent_hash: list[uuid.UUID] | None = None
     """Every event this one was built from, in the order they were combined."""
 
+    def __post_init__(self) -> None:
+        """Make the members agree, so everything downstream can assume they do.
+
+        Two of them are not independent facts and are therefore never given:
+
+        - **`etype` is the class.** A row whose type disagreed with the table
+          holding it would be unreadable, so it is taken from `EVENT_TYPE`
+          rather than trusted from a caller. A value explicitly set to
+          something other than `UNKNOWN` is left alone, which is how a shape
+          that carries more than one kind (a `Quote` on the order table) still
+          says so.
+        - **`date` is `unix`.** It is denormalised for the partition, so
+          deriving it here is the difference between one authority and two
+          columns that disagree on the row nobody looks at. Floor division
+          rather than a `datetime` round trip: it is exact for every
+          representable instant and costs no object.
+        """
+        if self.etype is EventType.UNKNOWN:
+            self.etype = type(self).EVENT_TYPE
+        self.date = EPOCH + datetime.timedelta(days=self.unix // DAY)
+
+    # -- what kind of event this is -----------------------------------------
+
     @classmethod
-    def h128_of(cls, *parts: Any) -> uuid.UUID:
+    def is_a(cls, kind: EventType) -> bool:
+        """Whether this shape is `kind`, or anything inside `kind`'s band.
+
+        The one comparison the named questions below are made of, so a band
+        (`EventType.STATE`) and a member (`EventType.BOOK`) are both answerable
+        without a caller knowing which it was handed.
+        """
+        return cls.EVENT_TYPE == kind or (
+            kind == EventType.band_of(kind) and cls.EVENT_TYPE.band == kind
+        )
+
+    @classmethod
+    def is_order(cls) -> bool:
+        """Whether this shape is an order."""
+        return cls.is_a(EventType.ORDER)
+
+    @classmethod
+    def is_execution(cls) -> bool:
+        """Whether this shape is an execution report."""
+        return cls.is_a(EventType.EXECUTION)
+
+    @classmethod
+    def is_book_side(cls) -> bool:
+        """Whether this shape is one side of a book."""
+        return cls.is_a(EventType.BOOK_SIDE)
+
+    @classmethod
+    def is_book(cls) -> bool:
+        """Whether this shape is a whole book."""
+        return cls.is_a(EventType.BOOK)
+
+    @classmethod
+    def is_snapshot(cls) -> bool:
+        """Whether this shape is a picture of something rather than a thing itself."""
+        return cls.EVENT_TYPE.is_snapshot
+
+    # -- identity -----------------------------------------------------------
+
+    @classmethod
+    def hash_of(cls, *parts: Any) -> uuid.UUID:
         """The identifier `parts` name, for this shape.
 
         The class name goes in front of the parts, so an `Order` and a `Book`
@@ -123,12 +213,12 @@ class Event(Convertible):
         which is a collision no amount of hash width prevents, because the
         inputs really are equal.
         """
-        return h128_of(cls.__name__, *parts)
+        return hash_of(cls.__name__, *parts)
 
     @classmethod
-    def h128_arrow(cls, *columns: Any) -> pyarrow.Array:
-        """`h128_of` over whole columns: one identifier per row, in kernels."""
-        return h128_arrow(cls.__name__, *columns)
+    def hash_arrow(cls, *columns: Any) -> pyarrow.Array:
+        """`hash_of` over whole columns: one identifier per row, in kernels."""
+        return hash_arrow(cls.__name__, *columns)
 
 
 @field
@@ -152,10 +242,10 @@ class MarketEvent(Event):
     zero" and "not priced".
     """
 
-    side: Annotated[Side, fix_tag("Side", 54)]
+    side: Annotated[Side, fix_tag("Side", 54)] = Side.UNKNOWN
     """Which way the interest points; `side.sign` turns it into `+1` or `-1`."""
 
-    px: Annotated[float | None, fix_tag("Price", 44)]
+    px: Annotated[float | None, fix_tag("Price", 44)] = None
     """The price on this row, in `px_unit`; what it means is the subclass's to say."""
 
     # Ours, and so carrying no FIX tag: it normalises `PriceType <423>`, which
@@ -164,28 +254,28 @@ class MarketEvent(Event):
     # is not. NOT NULL with an empty placeholder, like `Log.category_name`: a
     # producer always knows how it quotes, and a column widened later is a
     # column every reader written before the widening has to re-handle.
-    px_unit: str
+    px_unit: str = ""
     """How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated."""
 
-    qty: Annotated[float | None, fix_tag("OrderQty", 38)]
+    qty: Annotated[float | None, fix_tag("OrderQty", 38)] = None
     """The quantity on this row, in `qty_unit`; what it means is the subclass's to say."""
 
-    qty_unit: str
+    qty_unit: str = ""
     """How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated."""
 
     # Carried rather than derived, because deriving it needs the instrument's
     # multiplier -- so every consumer that wants money either joins reference
     # data or is quietly wrong on anything but a cash equity.
-    notional: float | None
+    notional: float | None = None
     """`px * qty * multiplier` in the instrument's currency, as the producer computed it."""
 
-    venue: Annotated[str | None, fix_tag("LastMkt", 30)]
+    venue: Annotated[str | None, fix_tag("LastMkt", 30)] = None
     """Where this event happened, which is not always where the instrument is listed."""
 
-    instrument: Instrument
+    instrument: Instrument = dataclasses.field(default_factory=Instrument)
     """What was traded. The flat `symbol` above is what a filter uses; this is the rest."""
 
     # A map and not a struct: what a venue sends is not known when the shape is
     # written, duplicate keys happen, and order is part of what was sent.
-    metadata: dict[str, str] | None
+    metadata: dict[str, str] | None = None
     """Protocol fields carried verbatim, exactly as the venue sent them."""

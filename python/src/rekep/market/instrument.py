@@ -10,6 +10,7 @@ from rekep.convert import Convertible
 from rekep.fields import Field, FieldBuilder, field
 from rekep.market.enums import AssetKind, OptionKind
 from rekep.market.fields import MarketFieldBuilder, fix_tag
+from rekep.market.identity import NIL
 
 
 @field
@@ -17,7 +18,7 @@ class Instrument(Convertible):
     """One tradable instrument, identified by sixteen bytes rather than by a symbol.
 
     A symbol is not an identity: it is reused after a delisting, respelled per
-    venue and per vendor, and changed outright by a corporate action. `xh128`
+    venue and per vendor, and changed outright by a corporate action. `xhash`
     is what an event joins on and what survives all three; the symbol beside
     it is what a human reads and what a venue sent.
 
@@ -31,51 +32,51 @@ class Instrument(Convertible):
 
     FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
 
-    xh128: Annotated[uuid.UUID, Field.primary_key()]
+    xhash: Annotated[uuid.UUID, Field.primary_key()] = NIL
     """Stable identity of the instrument, which outlives every symbol it has had."""
 
-    symbol: Annotated[str, fix_tag("Symbol", 55)]
+    symbol: Annotated[str, fix_tag("Symbol", 55)] = ""
     """Identifier as the venue spells it -- readable, and never an identity."""
 
-    kind: AssetKind
+    kind: AssetKind = AssetKind.UNKNOWN
     """What it settles as, read from the first character of the CFI code."""
 
-    security_id: Annotated[str | None, fix_tag("SecurityID", 48)]
+    security_id: Annotated[str | None, fix_tag("SecurityID", 48)] = None
     """Identifier in the scheme `security_id_source` names -- an ISIN, a CUSIP, a FIGI."""
 
-    security_id_source: Annotated[str | None, fix_tag("SecurityIDSource", 22)]
+    security_id_source: Annotated[str | None, fix_tag("SecurityIDSource", 22)] = None
     """Which scheme `security_id` is in, as FIX numbers them (`4` is ISIN)."""
 
-    cfi: Annotated[str | None, fix_tag("CFICode", 461)]
+    cfi: Annotated[str | None, fix_tag("CFICode", 461)] = None
     """Full ISO 10962 classification; `kind` is its first character, decoded."""
 
-    exchange: Annotated[str | None, fix_tag("SecurityExchange", 207)]
+    exchange: Annotated[str | None, fix_tag("SecurityExchange", 207)] = None
     """ISO 10383 market identifier the instrument is listed on."""
 
-    currency: Annotated[str | None, fix_tag("Currency", 15)]
+    currency: Annotated[str | None, fix_tag("Currency", 15)] = None
     """ISO 4217 currency the instrument is priced in."""
 
     # Persisted rather than joined for it, because it is what turns a price and
     # a quantity into money: without it every consumer of a notional needs the
     # reference table, and the ones that forget are wrong by a factor nobody
     # notices until settlement.
-    multiplier: Annotated[float | None, fix_tag("ContractMultiplier", 231)]
+    multiplier: Annotated[float | None, fix_tag("ContractMultiplier", 231)] = None
     """Units of the underlying one contract represents; 1 for cash instruments."""
 
-    tick: Annotated[float | None, fix_tag("MinPriceIncrement", 969)]
+    tick: Annotated[float | None, fix_tag("MinPriceIncrement", 969)] = None
     """Smallest price change the venue accepts, which is what makes a spread countable."""
 
-    lot: Annotated[float | None, fix_tag("RoundLot", 561)]
+    lot: Annotated[float | None, fix_tag("RoundLot", 561)] = None
     """Quantity increment the venue trades in."""
 
-    maturity: Annotated[datetime.date | None, fix_tag("MaturityDate", 541)]
+    maturity: Annotated[datetime.date | None, fix_tag("MaturityDate", 541)] = None
     """When the contract expires; null for anything that does not."""
 
-    strike: Annotated[float | None, fix_tag("StrikePrice", 202)]
+    strike: Annotated[float | None, fix_tag("StrikePrice", 202)] = None
     """Exercise price of an option."""
 
-    option_kind: Annotated[OptionKind, fix_tag("PutOrCall", 201)]
+    option_kind: Annotated[OptionKind, fix_tag("PutOrCall", 201)] = OptionKind.UNKNOWN
     """Which way the option points; `UNKNOWN` for everything that is not one."""
 
-    label: Annotated[str | None, fix_tag("SecurityDesc", 107)]
+    label: Annotated[str | None, fix_tag("SecurityDesc", 107)] = None
     """Human description, as reference data publishes it."""

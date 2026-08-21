@@ -58,10 +58,10 @@ def test_every_column_comment_travels(shape: type) -> None:
 def test_the_sixteen_bytes_stay_sixteen_bytes() -> None:
     """`fixed[16]`, not `uuid`: the reason the Python type is a UUID and the column is not."""
     schema = MarketEvent.FIELD.into_iceberg_schema()
-    assert str(schema.find_field("h128").field_type) == "fixed[16]"
-    assert str(schema.find_field("xh128").field_type) == "fixed[16]"
+    assert str(schema.find_field("hash").field_type) == "fixed[16]"
+    assert str(schema.find_field("xhash").field_type) == "fixed[16]"
     back = StructField.from_iceberg_schema(schema)
-    assert back.field("h128").arrow_type == pyarrow.binary(16)
+    assert back.field("hash").arrow_type == pyarrow.binary(16)
 
 
 def test_a_ranged_code_is_an_iceberg_int() -> None:
@@ -103,13 +103,13 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
     read = dataset.read_arrow_table()
 
     assert read.num_rows == 3
-    assert uuids_of(read.column("h128").combine_chunks()) == uuids_of(given.column("h128"))
+    assert uuids_of(read.column("hash").combine_chunks()) == uuids_of(given.column("hash"))
     assert read.column("state").type == pyarrow.int32(), "the code stayed narrow"
-    assert read.column("h128").type == pyarrow.binary(16), "and the identifier stayed fixed"
+    assert read.column("hash").type == pyarrow.binary(16), "and the identifier stayed fixed"
 
 
-def test_a_book_keeps_its_nested_sides_through_a_write(tmp_path: Path) -> None:
-    """Two levels of nesting, one of them a list of structs, all of it storable."""
+def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Path) -> None:
+    """A list of structs is storable; the sides beside it stay flat and prunable."""
     from rekep.iceberg import IcebergDataset
 
     dataset = IcebergDataset(
@@ -118,12 +118,27 @@ def test_a_book_keeps_its_nested_sides_through_a_write(tmp_path: Path) -> None:
         properties=catalog_properties(tmp_path),
         struct=Book.FIELD,
     )
-    given = batch(Book, 2)
+    levels = [[{"px": 10.0, "qty": 5.0, "orders": 1}], [{"px": 11.0, "qty": 6.0, "orders": None}]]
+    given = Book.summarise_arrow_batch(batch(Book, 2, bid_alive=levels, ask_alive=levels))
     dataset.write_arrow_table(pyarrow.Table.from_batches([given]))
     read = dataset.read_arrow_table()
+
     assert read.num_rows == 2
-    assert pyarrow.types.is_struct(read.schema.field("bid").type)
-    assert "alive" in [
-        read.schema.field("bid").type.field(index).name
-        for index in range(read.schema.field("bid").type.num_fields)
+    assert read.column("bid_px").to_pylist() == [10.0, 11.0], "derived, written and read back"
+    assert read.column("bid_depth").type == pyarrow.int32()
+    assert pyarrow.types.is_list(
+        read.schema.field("bid_alive").type
+    ) or pyarrow.types.is_large_list(read.schema.field("bid_alive").type)
+    assert read.column("bid_alive")[0][0]["qty"].as_py() == 5.0
+
+
+def test_the_metrics_budget_covers_every_flat_column_of_a_book(tmp_path: Path) -> None:
+    """The reason the sides were unnested, checked against Iceberg's own schema."""
+    schema = Book.FIELD.into_iceberg_schema()
+    flat = [
+        member.name
+        for member in schema.fields
+        if not str(member.field_type).startswith(("list", "map", "struct"))
     ]
+    assert {"spread", "micro_px", "imbalance", "bid_px", "ask_px"} <= set(flat)
+    assert len(schema.fields) < 100, "every top-level field is inside the default budget"

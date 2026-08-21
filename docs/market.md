@@ -11,7 +11,7 @@ from rekep.market import Book, BookSide, Execution, Instrument, Order, State
 
 Order.FIELD.into_arrow_schema()        # what the data is
 Order.FIELD.into_iceberg_schema()      # the same thing, in Iceberg's terms
-Order.FIELD.primary_keys()             # ['unix', 'h128']
+Order.FIELD.primary_keys()             # ['unix', 'hash']
 ```
 
 They are ordinary [`@field` declarations](types.md), so everything the rest of
@@ -27,43 +27,69 @@ into a history.
 === "One thing, many versions"
 
     ```python
-    order.xh128        # the order, across every amendment of it
-    order.h128         # this version of it
+    order.xhash        # the order, across every amendment of it
+    order.hash         # this version of it
     order.version      # 0, 1, 2, ... within the lifecycle
     order.state        # where the lifecycle stands
     ```
 
-    `xh128` is the thing and `h128` is the version. An order amended four
-    times is four rows sharing one `xh128`, each with its own `h128`. That is
+    `xhash` is the thing and `hash` is the version. An order amended four
+    times is four rows sharing one `xhash`, each with its own `hash`. That is
     what lets the store be append-only, and what lets a reader ask what was
     known at any moment instead of only what is true now.
 
-    `h128` is a digest of what the event **says**, never of when it was
+    `hash` is a digest of what the event **says**, never of when it was
     recorded — so the same version arriving down two feeds is one row with one
     key, and re-reading yesterday's capture writes nothing.
 
-=== "Four clocks"
+=== "Five clocks"
 
     ```python
     event.unix         # when it happened          -- and the only one in the key
     event.cunix        # when it was created, upstream
     event.runix        # when it was written down here
     event.eunix        # when it stops being true  -- an expiry, or None
+    event.sunix        # what it is a snapshot of  -- or None
     ```
 
     Separate because they answer different questions and disagree constantly:
     by microseconds on a good day, and by hours when something upstream has
-    gone wrong. All four are whole nanoseconds since the epoch as `int64`, like
+    gone wrong. All five are whole nanoseconds since the epoch as `int64`, like
     [`Log.recorded_at_unix`](logs.md) and for the same reason — a timestamp
     width or zone that a downstream is picky about is a conversion per row.
 
-    `date` is `unix` as a calendar day, denormalised, and it is what the data
-    is partitioned on.
+    A snapshot's own `unix` is when the picture was taken, because that is what
+    orders it against everything else in the stream; `sunix` is the instant it
+    is a picture *of*, so staleness is `unix - sunix` rather than a join
+    against whatever was snapshotted.
+
+    `date` is `unix` as a calendar day and is **derived, never given** — it is
+    denormalised for the partition, so `__post_init__` computes it and one
+    authority stays one authority.
+
+=== "Which kind of event"
+
+    ```python
+    Order.is_order()            # True
+    Book.is_book()              # True
+    Book.is_a(EventType.STATE)  # True -- a band answers for everything in it
+    Book.is_snapshot()          # True
+    order.etype                 # EventType.ORDER, taken from the class
+    ```
+
+    Each shape is its own table, so within one the `etype` column is constant
+    and costs nothing — run-length and dictionary encoding both collapse it.
+    It exists for the read that spans them: a union of orders, executions and
+    books is one stream of `Event`s, and `etype` is the only thing that says
+    which row is which without inspecting the columns that happen to be null.
+
+    It is taken from the class rather than trusted from a caller, because a row
+    whose type disagreed with the table holding it would be unreadable.
 
 === "The version before"
 
     ```python
-    event.prev_h128    # the version this one replaced
+    event.prev_hash    # the version this one replaced
     event.prev_state   # the state it moved out of
     event.prev_unix    # when that was
     ```
@@ -73,7 +99,7 @@ into a history.
     lifecycle — which is a shuffle of the table for a question asked once a
     tick.
 
-    `parent_h128` is the other direction: every event this one was built from,
+    `parent_hash` is the other direction: every event this one was built from,
     as a list. A book has two parents, a spread has as many legs as it has.
 
 ## Codes
@@ -133,10 +159,49 @@ back through a `Ranged` enum. The split is the point.
     as `BUY` and `SELL` — a bid *is* a buy, and two spellings of one direction
     would split every filter in half.
 
+**The schema says what the codes mean.** The column is a number and the enum
+is ours, so a consumer that never imports this package would have nothing to
+decode `410` with. Every enum column carries the member table under `enum:`
+keys, beside the `fix:` ones:
+
+```yaml
+- name: state
+  type: int32
+  metadata:
+    enum:name: State
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN",...,"410":"FILLED",...}'
+```
+
+The value type is read off the *members*, not guessed from the base class:
+`class K(str, Enum)` and `class K(IntEnum)` both subclass something, and only
+the values say which of the two the column holds.
+
 A value, once given, is never reused: `python/tests/market/test_enums.py`
 pins the whole of `State` and `Side` against a literal table, so renumbering a
 member fails the build rather than quietly rewriting what stored rows mean.
 Everything from `Ranged.PRIVATE` (9000) up is left to venues and vendors.
+
+**Storing them compactly** is an encoding question, not a type one:
+
+```python
+from rekep.market.fields import dictionary_arrow
+
+dictionary_arrow(column, pyarrow.dictionary(pyarrow.int8(), pyarrow.int32()))
+dictionary_arrow(encoded, pyarrow.int32())      # and back
+```
+
+Arrow's `dictionary` — **not** a `map`, which is a column of key/value pairs
+per row — stores each distinct value once with an index per row, which is
+exactly the shape of a column whose whole point is that it repeats. Three
+questions, asked in this order because the first two are free and the third is
+a pass over the data: same **value** type → encode as it stands; same **index**
+type → take it as indices rather than encoding it again; neither → cast to the
+value type first. The middle one has to be asked second and has to be asked at
+all — a `dictionary<int32, int32>` of ranged codes has an index type and a
+value type of the same width, and indices encoded as values point every row at
+the wrong member. It is [4× smaller in memory](#benchmarks) at six distinct
+states.
 
 ## Identifiers
 
@@ -149,7 +214,7 @@ Every identifier is sixteen fixed bytes — `fixed_size_binary[16]` in Arrow,
     ```python
     from rekep.market import Order
 
-    Order.h128_of("XNAS", "AAPL", "cl-1")      # namespaced by the shape
+    Order.hash_of("XNAS", "AAPL", "cl-1")      # namespaced by the shape
     ```
 
     The class name goes in front of the parts, so an `Order` and a `Book` built
@@ -159,7 +224,7 @@ Every identifier is sixteen fixed bytes — `fixed_size_binary[16]` in Arrow,
 === "Building a column of them"
 
     ```python
-    Order.h128_arrow("XNAS", batch.column("symbol"), batch.column("client_order_id"))
+    Order.hash_arrow("XNAS", batch.column("symbol"), batch.column("client_order_id"))
     ```
 
     The same identifiers, in kernels: one join over every column at once, then
@@ -206,7 +271,7 @@ Order.FIELD.field("tif").fix["tag"]      # '59'   -- TimeInForce
 Order.FIELD.field("px").fix["name"]      # 'Price'
 ```
 
-Around forty columns carry the FIX field they came from under the `fix:` keys
+Around fifty columns carry the FIX field they came from under the `fix:` keys
 `Field.fix` already reads, and every one of them is checked against the
 published dictionary in `data/fix.zip` by `python/tests/market/test_fix.py` —
 both the tag and the datatype — so a tag typed from memory fails the build
@@ -214,19 +279,22 @@ instead of mislabelling a column forever.
 
 `Order` carries what was asked for (`kind`, `tif`, `stop_px`, `display_qty`)
 and how far it got (`filled_qty`, `leaves_qty`, `avg_px`). `Execution` carries
-`order_xh128`, a flat single-valued link to the order's lifecycle beside the
-generic `parent_h128` list — because no engine below joins on an array without
+`order_xhash`, a flat single-valued link to the order's lifecycle beside the
+generic `parent_hash` list — because no engine below joins on an array without
 exploding it first.
 
 ## Books
 
-A `BookSide` carries **both the state and the delta**: `alive` is every live
-level, `updates` is the changes that produced this version.
+A `BookSide` carries **the state, the delta and the trace**: `alive` is every
+live level, `updates` is the changes that produced this version, `executions`
+is what traded against it.
 
-A feed sends one or the other. Keeping only snapshots loses what moved; keeping
-only increments makes every reader replay from the last snapshot before it can
-answer anything. Carrying both means a consumer reads state without replaying
-and reconstructs causation without a second stream.
+A feed sends one or two of the three. Keeping only snapshots loses what moved;
+keeping only increments makes every reader replay from the last snapshot before
+it can answer anything; keeping neither trades means "was that level filled or
+pulled?" needs a join against another table on a timestamp. Carrying all three
+means a consumer reads state without replaying and reconstructs causation
+without a second stream.
 
 === "Deriving the flat columns"
 
@@ -234,21 +302,49 @@ and reconstructs causation without a second stream.
     from rekep.market import Book, BookSide
 
     sides = BookSide.summarise_arrow(batch)   # px, qty, depth, total_qty
-    books = Book.summarise_arrow(batch)       # both sides, then px, spread, micro_px, imbalance
+    books = Book.summarise_arrow(batch)       # each side, then px, spread, micro_px, imbalance
     ```
 
     Everything in kernels, no row looked at in Python. `Book.summarise_arrow`
-    derives each nested side from its own levels *first* and then the prices
-    across them, because the second needs the first.
+    derives each side from its own levels *first* and then the prices across
+    them, because the second needs the first — and through the same walk a
+    `BookSide` uses on its own, so there is one set of rules about empty lists
+    and null ones rather than two that drift.
 
     A row whose `alive` is null is an increment that was never resolved to a
     state, and is left exactly as it was found rather than derived into nulls.
 
+=== "Building one out of events"
+
+    ```python
+    from rekep.market import Book, Execution, Order, Side, State
+
+    book = Book(symbol="AAPL")
+    book.append_event(Order(side=Side.BUY,  px=10.0, qty=100.0, state=State.NEW))
+    book.append_event(Order(side=Side.SELL, px=10.2, qty=300.0, state=State.NEW))
+    book.px, book.spread, book.micro_px     # 10.1, 0.2, 10.05
+    ```
+
+    `append_event` redirects to `append_order` or `append_execution` by what it
+    is handed, and a `Book` routes each to the side it belongs on by
+    `event.side.sign`. Every append is a **new version of the same `xhash`**:
+    `prev_hash` is the version before, `parent_hash` gains the event that
+    caused this one, and the derived columns follow.
+
+    It is an **aggregated** book, not a per-order one: an order moves the level
+    at its price by what it rests for — `display_qty` if the venue hides part
+    of it, `leaves_qty` if it said how much is left, `qty` otherwise, and
+    nothing at all once the order is terminal. A fill takes its quantity out,
+    and only a report that `moves_shares` does: subtracting an acknowledgement's
+    quantity is how a book empties by lunchtime.
+
+    A market order is refused rather than rested — it has no price to sit at.
+
 === "Why they are columns at all"
 
     ```sql
-    WHERE spread < 0                -- crossed: skips files
-    WHERE bid.alive[0].px > 100     -- reads every file, then throws rows away
+    WHERE spread < 0                 -- crossed: skips files
+    WHERE bid_alive[0].px > 100      -- reads every file, then throws rows away
     ```
 
     Iceberg writes **no lower or upper bounds for any field under a list or a
@@ -270,22 +366,34 @@ and reconstructs causation without a second stream.
     either: `spread < 0` is crossed, `spread == 0` is locked, and both are one
     range predicate on a column an engine already has statistics for.
 
-A `Book` holds two whole `BookSide` events, identity included, so it says
-exactly which version of each side it was built from — `bid.h128` and
-`ask.h128`, which are also what `parent_h128` holds. A snapshot that kept only
-the levels would be a number nobody can reproduce.
+**The two sides are flat**, not nested. Each contributes five scalars and its
+three lists, prefixed `bid_`/`ask_`:
 
-!!! warning "Declaration order is load-bearing here"
+```text
+bid_hash  bid_px  bid_qty  bid_depth  bid_total_qty  bid_alive  bid_updates  bid_executions
+ask_hash  ask_px  ask_qty  ask_depth  ask_total_qty  ask_alive  ask_updates  ask_executions
+```
+
+`bid_hash` and `ask_hash` keep the provenance a nested side would carry —
+exactly which version of each side this book was built from, which is also what
+`parent_hash` holds — so a book is still reproducible without a second copy of
+the fifteen-column event envelope in every row. `Book.into_side("bid")` lifts
+one back out as the `BookSide` its columns describe, which is how routing an
+appended event reuses the side's own rules rather than reimplementing them.
+
+!!! warning "Nesting the sides cost the bounds this shape exists for"
 
     Iceberg collects column bounds for the first
     `write.metadata.metrics.max-inferred-column-defaults` **leaf** columns in
-    pre-order — 100 by default — and a `Book` is 140 leaves. `spread`,
-    `micro_px` and `imbalance` are declared *before* `bid` and `ask` for that
-    reason: behind them they landed at leaves 138–140, past the cutoff, so the
-    columns the shape exists to make prunable would have shipped with no bounds
-    and every filter on them would have read every file while looking like it
-    worked. `test_every_column_a_reader_filters_on_is_inside_the_metrics_budget`
-    pins it.
+    pre-order — 100 by default. With a whole `BookSide` nested under `bid` and
+    `ask` a `Book` was **140 leaves**, and `spread`, `micro_px` and `imbalance`
+    landed at 138–140: past the cutoff, so the columns the shape exists to make
+    prunable would have shipped with no bounds at all and every filter on them
+    would have read every file while looking like it worked. Flattening the
+    sides brings it to **80 leaves** with every scalar inside the budget.
+    `test_every_column_a_reader_filters_on_is_inside_the_metrics_budget` pins
+    it, and `test_the_leaf_walk_finds_the_nesting_it_is_supposed_to` stops that
+    test passing by counting too few columns.
 
 ## Through Iceberg, Spark and Doris
 
@@ -302,6 +410,15 @@ The types here are chosen so the same table reads the same way in all three.
 | `bool` | `bool` | `boolean` | `BooleanType` | `boolean` |
 | `list[Level]` | `list<struct>` | `list<struct>` | `array<struct>` | `array<struct>` |
 | `dict[str, str]` | `map<string, string>` | `map` | `map` | `map` |
+| a shape of one member | its member's type, as an extension | the storage type | the storage type | the storage type |
+
+**A shape with one member is that member.** A `struct` of one is a nesting
+level carrying no information that costs a filter its pushdown on every engine
+in the table, so a one-member `@field` class projects to an Arrow *extension
+type* over the member's own storage instead. The class name rides in
+`ARROW:extension:name`; anything that has never heard of the extension — every
+column of the three engines above — sees the storage type and reads it
+correctly.
 
 Six things worth knowing before pointing an engine at one of these tables:
 
@@ -382,12 +499,12 @@ milliseconds.
 
 | case | measured |
 | --- | --- |
-| `h128_of`, one row at a time | ~3.4 µs/row |
-| `h128_arrow`, whole column | ~530–545 ns/row, **6.3–6.5×** |
-| — of which the join, no length prefix | ~37–43 ns/row |
-| — of which the join, length prefixed | ~100–114 ns/row |
+| `hash_of`, one row at a time | ~3.44–3.49 µs/row |
+| `hash_arrow`, whole column | ~541–563 ns/row, **6.2–6.4×** |
+| — of which the join, no length prefix | ~43–46 ns/row |
+| — of which the join, length prefixed | ~110–116 ns/row |
 
-So injectivity costs about 65 ns a row, roughly 12% of building an identifier
+So injectivity costs about 70 ns a row, roughly 12% of building an identifier
 column, and it is the difference between an identifier that cannot collide by
 construction and one that merely usually does not.
 
@@ -395,12 +512,30 @@ construction and one that merely usually does not.
 
 | case | 1 level a side | 10 levels | 50 levels |
 | --- | --- | --- | --- |
-| `BookSide.summarise`: best, depth, total | ~115 ns/row | ~265 ns/row | ~495 ns/row |
-| `Book.summarise`: both sides, then the prices | ~265 ns/row | ~590 ns/row | ~940–1050 ns/row |
-| read the stored `micro_px` column | ~0.4 ns/row | ~0.4 ns/row | ~0.4 ns/row |
-| read `bid.px`/`ask.px` from derived sides | ~2.9 ns/row | ~2.6–3.1 ns/row | ~2.9–4.0 ns/row |
+| `BookSide.summarise`: best, depth, total | ~118 ns/row | ~268–280 ns/row | ~552–558 ns/row |
+| `Book.summarise`: both sides, then the prices | ~245–272 ns/row | ~619–635 ns/row | ~1113–1136 ns/row |
+| read the stored `micro_px` column | ~0.4–0.6 ns/row | ~0.4 ns/row | ~0.4 ns/row |
+| recompute a mid from stored `bid_px`/`ask_px` | ~2.2–2.7 ns/row | ~2.1–2.2 ns/row | ~2.3–2.4 ns/row |
 
-The last two lines say which half is expensive: reaching into a nested struct
-is a few nanoseconds, and walking the levels is hundreds. Deriving once at
-write time is worth **700–2800×** against re-deriving per query — before
+The last two lines say which half is expensive: reading a flat column, or two,
+is a couple of nanoseconds; walking the levels is hundreds. Deriving once at
+write time is worth **480–3090×** against re-deriving per query — before
 counting the files a flat column lets an engine skip and a nested one does not.
+
+The sweep warms Acero once before it starts, because the first grouped
+aggregate in a process pays its own initialisation: unwarmed, it landed on
+whichever depth ran first and made the *shallowest* book look 1.6× more
+expensive than one ten times deeper.
+
+**Ranged codes**, one million rows over six distinct states:
+
+| case | measured |
+| --- | --- |
+| `dictionary_arrow`: values → encoded | ~4.6–4.7 ns/row |
+| `dictionary_arrow`: indices → encoded | ~0.6 ns/row, **7.3–7.4×** |
+| `dictionary_arrow`: encoded → values | ~1.0 ns/row |
+| in memory | 4.00 MB → 1.00 MB, **4.0×** |
+
+Which is why the index case is asked before the cast: it is the cheapest of the
+three and, on a `dictionary<int32, int32>`, the one that is indistinguishable
+from the value case by width alone.

@@ -24,7 +24,7 @@ detail:
 
 The Python type is `uuid.UUID` because it is the standard 16-byte value with a
 canonical text form: an identifier printed in a log or a URL is
-`str(event.h128)`, and it is the same bytes.
+`str(event.hash)`, and it is the same bytes.
 """
 
 from __future__ import annotations
@@ -47,10 +47,17 @@ SEPARATOR = b":"
 ABSENT = b"\x00"
 
 #: The Arrow type every identifier in this package is.
-H128 = pyarrow.binary(16)
+HASH = pyarrow.binary(16)
+
+#: Sixteen zero bytes: an identifier that has not been computed yet. It is what
+#: an unsaved event carries, and it is deliberately a *value* rather than a
+#: null, because `hash` and `xhash` are NOT NULL columns -- a row that reaches a
+#: store still holding it is one nobody hashed, which is a bug worth seeing as
+#: a repeated key rather than as a constraint violation at the very end.
+NIL = uuid.UUID(bytes=bytes(16))
 
 
-def h128_of(*parts: Any) -> uuid.UUID:
+def hash_of(*parts: Any) -> uuid.UUID:
     """The sixteen bytes identifying `parts`, as a `uuid.UUID`.
 
     xxh3-128, which is the 128-bit half of the hash this package already
@@ -69,13 +76,13 @@ def h128_of(*parts: Any) -> uuid.UUID:
     A `None` part joins as `ABSENT`, which is not a digit and so can never be
     read as a length::
 
-        h128_of("Order", "XNAS", "AAPL", "cl-1")
+        hash_of("Order", "XNAS", "AAPL", "cl-1")
     """
     return uuid.UUID(bytes=xxhash.xxh3_128_digest(SEPARATOR.join(_encoded(parts))))
 
 
-def h128_arrow(*columns: Any) -> pyarrow.Array:
-    """One identifier per row, from whole columns -- the vectorised `h128_of`.
+def hash_arrow(*columns: Any) -> pyarrow.Array:
+    """One identifier per row, from whole columns -- the vectorised `hash_of`.
 
     The same length-prefixed encoding, built with kernels: one length per
     column, one join over every column and length at once, and then one digest
@@ -91,7 +98,7 @@ def h128_arrow(*columns: Any) -> pyarrow.Array:
     A scalar argument broadcasts, which is how a shape name or a venue is put
     in front of the columns that vary::
 
-        h128_arrow("Order", batch.column("symbol"), batch.column("client_order_id"))
+        hash_arrow("Order", batch.column("symbol"), batch.column("client_order_id"))
     """
     if not columns:
         raise TypeError("an identifier needs at least one part to hash")
@@ -120,10 +127,10 @@ def arrow_of(values: Any) -> pyarrow.Array:
     down between here and a store.
     """
     if isinstance(values, pyarrow.ChunkedArray):
-        return pyarrow.chunked_array([arrow_of(chunk) for chunk in values.chunks], type=H128)
-    if isinstance(values, pyarrow.Array) and values.type == H128:
+        return pyarrow.chunked_array([arrow_of(chunk) for chunk in values.chunks], type=HASH)
+    if isinstance(values, pyarrow.Array) and values.type == HASH:
         return values
-    return pyarrow.array([_bytes_of(value) for value in values], type=H128)
+    return pyarrow.array([_bytes_of(value) for value in values], type=HASH)
 
 
 def uuids_of(array: Any) -> list[uuid.UUID | None]:
@@ -218,4 +225,4 @@ def _digested(joined: pyarrow.Array) -> pyarrow.Array:
         for row in range(rows):
             begin, end = offsets[start + row], offsets[start + row + 1]
             out[row * 16 : row * 16 + 16] = digest(data[begin:end])
-    return pyarrow.FixedSizeBinaryArray.from_buffers(H128, rows, [None, pyarrow.py_buffer(out)])
+    return pyarrow.FixedSizeBinaryArray.from_buffers(HASH, rows, [None, pyarrow.py_buffer(out)])

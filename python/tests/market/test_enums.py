@@ -13,6 +13,7 @@ import pytest
 
 from rekep.market.enums import (
     AssetKind,
+    EventType,
     ExecKind,
     OptionKind,
     OrderKind,
@@ -23,7 +24,17 @@ from rekep.market.enums import (
     UpdateAction,
 )
 
-RANGED = (State, Side, TimeInForce, OrderKind, ExecKind, UpdateAction, AssetKind, OptionKind)
+RANGED = (
+    State,
+    Side,
+    TimeInForce,
+    OrderKind,
+    ExecKind,
+    UpdateAction,
+    AssetKind,
+    OptionKind,
+    EventType,
+)
 
 #: What `State` means on disk. Written out rather than derived, so a renumbering
 #: fails here instead of in a year's worth of stored orders.
@@ -96,13 +107,25 @@ def test_no_two_members_share_a_fix_character(ranged: type[Ranged]) -> None:
     assert len(codes) == len(set(codes)), sorted(codes)
 
 
-@pytest.mark.parametrize("ranged", RANGED, ids=lambda cls: cls.__name__)
+#: The enums that are a FIX field read as a code. `EventType` is ours -- no FIX
+#: field says whether a row is an order or a book -- so it is not in here, and
+#: the test below would otherwise pass on it by iterating over nothing.
+FIX_CODED = tuple(ranged for ranged in RANGED if ranged is not EventType)
+
+
+@pytest.mark.parametrize("ranged", FIX_CODED, ids=lambda cls: cls.__name__)
 def test_every_fix_character_round_trips(ranged: type[Ranged]) -> None:
     """`from_fix` is the exact inverse of `into_fix`, for every member that has one."""
     coded = [member for member in ranged if member.into_fix()]
     assert coded, f"{ranged.__name__} declares no FIX characters"
     for member in coded:
         assert ranged.from_fix(member.into_fix()) is member
+
+
+def test_the_one_enum_that_is_ours_claims_no_fix_field() -> None:
+    """No FIX field says whether a row is an order or a book, so none is claimed."""
+    assert not any(member.into_fix() for member in EventType)
+    assert EventType.from_fix("0") is EventType.UNKNOWN
 
 
 @pytest.mark.parametrize("ranged", RANGED, ids=lambda cls: cls.__name__)
@@ -215,3 +238,17 @@ def test_an_option_kind_reads_the_fix_characters_it_is_written_as() -> None:
     assert OptionKind.from_fix("0") is OptionKind.PUT
     assert OptionKind.from_fix("1") is OptionKind.CALL
     assert OptionKind.from_fix("") is OptionKind.UNKNOWN
+
+
+def test_the_event_types_partition_the_shapes_by_what_they_assert() -> None:
+    """An intent may never happen, a fact cannot be undone, a state is a picture."""
+    assert EventType.ORDER.band == EventType.INTENT
+    assert EventType.EXECUTION.band == EventType.FACT
+    assert EventType.BOOK.band == EventType.BOOK_SIDE.band == EventType.STATE
+    assert EventType.INSTRUMENT.band == EventType.REFERENCE
+
+
+def test_only_a_state_is_a_snapshot() -> None:
+    assert EventType.BOOK.is_snapshot and EventType.BOOK_SIDE.is_snapshot
+    assert not EventType.ORDER.is_snapshot and not EventType.EXECUTION.is_snapshot
+    assert EventType.INSTRUMENT.is_snapshot, "reference data is a picture too"

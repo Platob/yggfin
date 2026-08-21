@@ -7,10 +7,10 @@ import pytest
 
 from rekep.fields import Field
 from rekep.market import Book, BookSide, Event, Execution, Instrument, MarketEvent, Order
-from rekep.market.book import Level, LevelUpdate
+from rekep.market.book import Level, LevelExecution, LevelUpdate
 
 EVENTS = (Order, Execution, BookSide, Book)
-SHAPES = (*EVENTS, Instrument, Level, LevelUpdate)
+SHAPES = (*EVENTS, Instrument, Level, LevelUpdate, LevelExecution)
 
 #: The envelope every event carries, in the order it carries it. Pinned, because
 #: a column inserted in the middle moves every one after it -- and a reader that
@@ -18,19 +18,21 @@ SHAPES = (*EVENTS, Instrument, Level, LevelUpdate)
 ENVELOPE = [
     "unix",
     "date",
+    "etype",
     "cunix",
     "runix",
     "eunix",
-    "h128",
-    "xh128",
+    "sunix",
+    "hash",
+    "xhash",
     "version",
     "state",
     "symbol",
     "seq",
-    "prev_h128",
+    "prev_hash",
     "prev_state",
     "prev_unix",
-    "parent_h128",
+    "parent_hash",
 ]
 
 #: What `MarketEvent` adds on top, also in order.
@@ -50,8 +52,8 @@ def test_every_event_carries_the_priced_slots_next(shape: type) -> None:
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
 def test_every_event_is_keyed_by_time_and_content(shape: type) -> None:
-    """`h128` identifies the version; leading with time is what an engine prunes on."""
-    assert shape.FIELD.primary_keys() == ["unix", "h128"]
+    """`hash` identifies the version; leading with time is what an engine prunes on."""
+    assert shape.FIELD.primary_keys() == ["unix", "hash"]
     assert shape.FIELD.partition_keys() == {"date": "identity"}
 
 
@@ -110,7 +112,7 @@ def test_a_subclass_builds_its_own_projection_rather_than_its_bases() -> None:
     """The descriptor is per class; sharing one would give `Order` a `Book`'s columns."""
     assert Order.FIELD is not MarketEvent.FIELD
     assert "tif" in Order.FIELD.names and "tif" not in Execution.FIELD.names
-    assert "bid" in Book.FIELD.names and "bid" not in BookSide.FIELD.names
+    assert "bid_px" in Book.FIELD.names and "bid_px" not in BookSide.FIELD.names
 
 
 def test_an_order_carries_what_it_asked_for_and_how_far_it_got() -> None:
@@ -121,24 +123,30 @@ def test_an_order_carries_what_it_asked_for_and_how_far_it_got() -> None:
 
 def test_an_execution_links_to_its_order_with_a_flat_typed_column() -> None:
     """A list cannot be a join key without an explode, so the one parent is flat."""
-    link = Execution.FIELD.field("order_xh128")
+    link = Execution.FIELD.field("order_xhash")
     assert link.arrow_type == pyarrow.binary(16) and link.nullable
-    assert Execution.FIELD.field("parent_h128").arrow_type.equals(
+    assert Execution.FIELD.field("parent_hash").arrow_type.equals(
         pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False))
     )
 
 
-def test_a_book_side_carries_both_the_state_and_the_delta() -> None:
+def test_a_book_side_carries_the_state_the_delta_and_the_trace() -> None:
     assert BookSide.FIELD.field("alive").item.arrow_type == Level.FIELD.arrow_type
     assert BookSide.FIELD.field("updates").item.arrow_type == LevelUpdate.FIELD.arrow_type
-    assert BookSide.FIELD.field("alive").nullable and BookSide.FIELD.field("updates").nullable
+    assert BookSide.FIELD.field("executions").item.arrow_type == LevelExecution.FIELD.arrow_type
+    for name in ("alive", "updates", "executions"):
+        assert BookSide.FIELD.field(name).nullable, name
 
 
-def test_a_book_holds_two_whole_sides_so_it_can_be_reproduced() -> None:
-    for name in ("bid", "ask"):
-        side = Book.FIELD.field(name)
-        assert not side.nullable
-        assert {"h128", "version", "alive"} <= set(side.names)
+def test_a_book_keeps_the_sides_flat_and_still_says_which_versions_it_used() -> None:
+    """Unnested for the bounds budget; `bid_hash`/`ask_hash` keep the provenance."""
+    names = set(Book.FIELD.names)
+    assert "bid" not in names and "ask" not in names, "the sides are columns, not structs"
+    for side in ("bid", "ask"):
+        assert {f"{side}_hash", f"{side}_px", f"{side}_qty", f"{side}_depth"} <= names
+        assert {f"{side}_alive", f"{side}_updates", f"{side}_executions"} <= names
+        assert Book.FIELD.field(f"{side}_hash").arrow_type == pyarrow.binary(16)
+    assert Book.FIELD.field("bid_alive").item.arrow_type == Level.FIELD.arrow_type
 
 
 def test_a_price_and_a_quantity_may_be_absent_because_zero_is_a_price() -> None:
@@ -148,7 +156,7 @@ def test_a_price_and_a_quantity_may_be_absent_because_zero_is_a_price() -> None:
 
 
 def test_a_level_is_not_an_event_because_it_has_no_life_of_its_own() -> None:
-    assert "h128" not in Level.FIELD.names
+    assert "hash" not in Level.FIELD.names
     assert Level.FIELD.field("px").arrow_type == pyarrow.float64()
     assert not Level.FIELD.field("px").nullable, "a live level has a price"
     assert LevelUpdate.FIELD.field("px").nullable, "a deletion does not"
@@ -172,11 +180,24 @@ METRICS_BUDGET = 100
 #: the budget, which is a statement about **declaration order**: these are
 #: exactly the columns that a nested member declared before them would push out.
 FILTERED = {
-    Order: ("unix", "date", "state", "side", "px", "symbol"),
-    Execution: ("unix", "date", "state", "kind", "px", "symbol"),
-    BookSide: ("unix", "date", "side", "px", "qty", "symbol"),
-    Book: ("unix", "date", "px", "spread", "micro_px", "imbalance", "symbol"),
-    Instrument: ("xh128", "symbol", "kind"),
+    Order: ("unix", "date", "etype", "state", "side", "px", "symbol"),
+    Execution: ("unix", "date", "etype", "state", "kind", "px", "symbol"),
+    BookSide: ("unix", "date", "etype", "side", "px", "qty", "symbol", "depth", "total_qty"),
+    Book: (
+        "unix",
+        "date",
+        "etype",
+        "px",
+        "spread",
+        "micro_px",
+        "imbalance",
+        "symbol",
+        "bid_px",
+        "ask_px",
+        "bid_total_qty",
+        "ask_total_qty",
+    ),
+    Instrument: ("xhash", "symbol", "kind"),
 }
 
 
@@ -199,8 +220,8 @@ def leaves(arrow_type: pyarrow.DataType, prefix: str = "") -> list[str]:
 def test_the_leaf_walk_finds_the_nesting_it_is_supposed_to() -> None:
     """Otherwise the budget test below passes by counting too few columns."""
     counted = leaves(Book.FIELD.arrow_type)
-    assert len(counted) > METRICS_BUDGET, "a book is wider than the budget, or this walk is wrong"
-    assert "bid.alive.item.px" in counted, "the walk reached inside a list of structs"
+    assert len(counted) > 60, "a book is wide, or this walk is wrong"
+    assert "bid_alive.item.px" in counted, "the walk reached inside a list of structs"
     assert "instrument.symbol" in counted and "metadata.key" in counted
 
 

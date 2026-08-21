@@ -5,7 +5,7 @@ description: One tradable instrument, identified by sixteen bytes rather than by
 metadata:
   namespace: rekep.market.instrument
 fields:
-- name: xh128
+- name: xhash
   type: fixed_size_binary[16]
   description: Stable identity of the instrument, which outlives every symbol it has
     had.
@@ -20,6 +20,10 @@ fields:
 - name: kind
   type: int32
   description: What it settles as, read from the first character of the CFI code.
+  metadata:
+    enum:name: AssetKind
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"CASH","110":"EQUITY","120":"DEBT","130":"FUND","140":"CURRENCY","150":"COMMODITY","160":"INDEX","200":"DERIVATIVE","210":"FUTURE","220":"OPTION","230":"SWAP","240":"WARRANT","250":"FORWARD","300":"STRUCTURED","310":"SPREAD","320":"MULTILEG","330":"BASKET","400":"FINANCING","410":"REPO","420":"LOAN"}'
 - name: security_id
   type: string
   nullable: true
@@ -98,6 +102,9 @@ fields:
   metadata:
     fix:name: PutOrCall
     fix:tag: '201'
+    enum:name: OptionKind
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"PUT","200":"CALL"}'
 - name: label
   type: string
   nullable: true

@@ -12,10 +12,20 @@ import math
 import pyarrow
 import pytest
 
-from rekep.market import Book, BookSide, Side
+from rekep.market import (
+    Book,
+    BookSide,
+    ExecKind,
+    Execution,
+    Order,
+    OrderKind,
+    Side,
+    State,
+    UpdateAction,
+)
 from rekep.market.book import Level
 
-from .conftest import batch, value_of
+from .conftest import batch, identifier
 
 #: The rows a book actually produces: two levels, none at all, an increment
 #: with no snapshot, and one level. Each is a branch of the walk.
@@ -27,10 +37,14 @@ ALIVE = [
 ]
 
 
-def sides(shape, rows):
-    """`bid`/`ask` struct values, filled the way the declaration requires."""
-    member = shape.FIELD.field("bid")
-    return [value_of(member, index) | row for index, row in enumerate(rows)]
+def book(rows: int = 1, **columns: object) -> pyarrow.RecordBatch:
+    """A batch of books, the two sides given as flat `bid_*` / `ask_*` columns."""
+    return batch(Book, rows, **columns)
+
+
+def prices(name: str, values: list[tuple[float | None, float | None]]) -> dict[str, list]:
+    """One side's best price and size as the two flat columns that hold them."""
+    return {f"{name}_px": [px for px, _ in values], f"{name}_qty": [qty for _, qty in values]}
 
 
 def test_the_best_level_is_the_first_one_and_the_depth_is_how_many_there_are() -> None:
@@ -80,12 +94,7 @@ def test_no_rows_is_no_rows() -> None:
 
 
 def test_the_book_prices_match_the_formulas_in_the_docstring() -> None:
-    given = batch(
-        Book,
-        1,
-        bid=sides(Book, [{"px": 10.0, "qty": 100.0}]),
-        ask=sides(Book, [{"px": 10.2, "qty": 300.0}]),
-    )
+    given = book(1, **prices("bid", [(10.0, 100.0)]), **prices("ask", [(10.2, 300.0)]))
     out = Book.summarise_arrow_batch(given)
     assert out.column("px")[0].as_py() == pytest.approx((10.0 + 10.2) / 2)
     assert out.column("qty")[0].as_py() == pytest.approx(400.0)
@@ -97,12 +106,7 @@ def test_the_book_prices_match_the_formulas_in_the_docstring() -> None:
 def test_the_flat_pair_reconstructs_the_best_bid_and_offer_exactly() -> None:
     """Which is why neither is duplicated as a column of its own."""
     out = Book.summarise_arrow_batch(
-        batch(
-            Book,
-            1,
-            bid=sides(Book, [{"px": 10.0, "qty": 100.0}]),
-            ask=sides(Book, [{"px": 10.2, "qty": 300.0}]),
-        )
+        book(1, **prices("bid", [(10.0, 100.0)]), **prices("ask", [(10.2, 300.0)]))
     )
     mid, spread = out.column("px")[0].as_py(), out.column("spread")[0].as_py()
     assert mid - spread / 2 == pytest.approx(10.0)
@@ -112,11 +116,10 @@ def test_the_flat_pair_reconstructs_the_best_bid_and_offer_exactly() -> None:
 def test_a_crossed_book_shows_as_a_negative_spread_and_a_locked_one_as_zero() -> None:
     """The range predicate that replaces two boolean flags."""
     out = Book.summarise_arrow_batch(
-        batch(
-            Book,
+        book(
             2,
-            bid=sides(Book, [{"px": 11.0, "qty": 50.0}, {"px": 10.0, "qty": 50.0}]),
-            ask=sides(Book, [{"px": 10.5, "qty": 50.0}, {"px": 10.0, "qty": 50.0}]),
+            **prices("bid", [(11.0, 50.0), (10.0, 50.0)]),
+            **prices("ask", [(10.5, 50.0), (10.0, 50.0)]),
         )
     )
     assert out.column("spread")[0].as_py() < 0, "crossed"
@@ -125,12 +128,7 @@ def test_a_crossed_book_shows_as_a_negative_spread_and_a_locked_one_as_zero() ->
 
 def test_a_one_sided_book_has_no_mid_rather_than_half_of_one() -> None:
     out = Book.summarise_arrow_batch(
-        batch(
-            Book,
-            1,
-            bid=sides(Book, [{"px": 9.0, "qty": 10.0}]),
-            ask=sides(Book, [{"px": None, "qty": None}]),
-        )
+        book(1, **prices("bid", [(9.0, 10.0)]), **prices("ask", [(None, None)]))
     )
     for name in ("px", "spread", "micro_px", "imbalance"):
         assert out.column(name)[0].as_py() is None, name
@@ -139,12 +137,7 @@ def test_a_one_sided_book_has_no_mid_rather_than_half_of_one() -> None:
 def test_an_empty_book_gives_a_null_rather_than_an_infinity() -> None:
     """Dividing by a size of zero is the one place a kernel would return a number."""
     out = Book.summarise_arrow_batch(
-        batch(
-            Book,
-            1,
-            bid=sides(Book, [{"px": 5.0, "qty": 0.0}]),
-            ask=sides(Book, [{"px": 5.5, "qty": 0.0}]),
-        )
+        book(1, **prices("bid", [(5.0, 0.0)]), **prices("ask", [(5.5, 0.0)]))
     )
     micro, imbalance = out.column("micro_px")[0].as_py(), out.column("imbalance")[0].as_py()
     assert micro is None and imbalance is None
@@ -157,7 +150,11 @@ def test_the_imbalance_stays_inside_minus_one_and_one() -> None:
         ({"px": 1.0, "qty": 1_000_000.0}, {"px": 2.0, "qty": 1.0}),
     ]
     out = Book.summarise_arrow_batch(
-        batch(Book, 2, bid=sides(Book, [b for b, _ in rows]), ask=sides(Book, [a for _, a in rows]))
+        book(
+            2,
+            **prices("bid", [(b["px"], b["qty"]) for b, _ in rows]),
+            **prices("ask", [(a["px"], a["qty"]) for _, a in rows]),
+        )
     )
     for value in out.column("imbalance").to_pylist():
         assert -1.0 <= value <= 1.0
@@ -195,51 +192,181 @@ def test_a_level_declares_the_two_fix_fields_a_book_entry_is_made_of() -> None:
     assert Level.FIELD.field("qty").fix["tag"] == "271"
 
 
-def test_a_book_derives_its_sides_from_their_levels_before_pricing_across_them() -> None:
-    """The half the first version left out, and the benchmark found.
+def test_a_book_derives_each_side_from_its_own_levels_before_pricing_across_them() -> None:
+    """The half a first version left out, and the benchmark found.
 
     A book assembled from two feeds carries levels and nothing derived. If
-    `summarise` read `bid.px` before deriving it, every price here would come
+    `summarise` read `bid_px` before deriving it, every price here would come
     back null -- which is what happened, and what no test at the time noticed.
     """
-    levels = [{"px": 10.0, "qty": 100.0, "orders": 1}, {"px": 9.0, "qty": 20.0, "orders": 1}]
-    offers = [{"px": 10.2, "qty": 300.0, "orders": 2}]
-    given = batch(
-        Book,
-        1,
-        bid=sides(Book, [{"alive": levels}]),
-        ask=sides(Book, [{"alive": offers}]),
-    )
-    assert given.column("bid")[0].as_py()["px"] is None, "nothing is derived going in"
+    bids = [{"px": 10.0, "qty": 100.0, "orders": 1}, {"px": 9.0, "qty": 20.0, "orders": 1}]
+    asks = [{"px": 10.2, "qty": 300.0, "orders": 2}]
+    given = book(1, bid_alive=[bids], ask_alive=[asks])
+    assert given.column("bid_px")[0].as_py() is None, "nothing is derived going in"
 
     out = Book.summarise_arrow_batch(given)
-    assert out.column("bid")[0].as_py()["px"] == 10.0, "the side's own best price"
-    assert out.column("bid")[0].as_py()["total_qty"] == 120.0
-    assert out.column("bid")[0].as_py()["depth"] == 2
-    assert out.column("ask")[0].as_py()["px"] == 10.2
+    assert out.column("bid_px")[0].as_py() == 10.0
+    assert out.column("bid_total_qty")[0].as_py() == 120.0
+    assert out.column("bid_depth")[0].as_py() == 2
+    assert out.column("ask_px")[0].as_py() == 10.2
+    assert out.column("ask_depth")[0].as_py() == 1
     assert out.column("px")[0].as_py() == pytest.approx(10.1), "and the mid across them"
     assert out.column("spread")[0].as_py() == pytest.approx(0.2)
 
 
-def test_summarising_a_book_is_the_same_as_summarising_each_side_first() -> None:
-    """The nested half must be the same code, not a second walk of the same levels."""
-    levels = [{"px": 10.0, "qty": 100.0, "orders": 1}]
-    given = batch(
-        Book, 1, bid=sides(Book, [{"alive": levels}]), ask=sides(Book, [{"alive": levels}])
-    )
-    apart = BookSide.summarise_arrow_batch(
-        pyarrow.RecordBatch.from_struct_array(given.column("bid"))
-    ).to_struct_array()
-    assert Book.summarise_arrow_batch(given).column("bid").equals(apart)
+def test_a_book_derives_a_side_exactly_as_a_book_side_does() -> None:
+    """One walk over the levels, whichever shape asked for it."""
+    levels = [{"px": 10.0, "qty": 100.0, "orders": 1}, {"px": 9.5, "qty": 7.0, "orders": None}]
+    apart = BookSide.summarise_arrow_batch(batch(BookSide, 1, alive=[levels]))
+    together = Book.summarise_arrow_batch(book(1, bid_alive=[levels]))
+    for theirs, ours in (("px", "bid_px"), ("qty", "bid_qty"), ("depth", "bid_depth")):
+        assert apart.column(theirs)[0].as_py() == together.column(ours)[0].as_py(), theirs
+    assert apart.column("total_qty")[0].as_py() == together.column("bid_total_qty")[0].as_py()
 
 
 def test_summarising_a_book_twice_changes_nothing_the_second_time() -> None:
     """Idempotent, so a producer and a consumer running it both is not a bug."""
-    given = batch(
-        Book,
+    given = book(
         1,
-        bid=sides(Book, [{"alive": [{"px": 1.0, "qty": 2.0, "orders": 1}]}]),
-        ask=sides(Book, [{"alive": [{"px": 1.5, "qty": 4.0, "orders": 1}]}]),
+        bid_alive=[[{"px": 1.0, "qty": 2.0, "orders": 1}]],
+        ask_alive=[[{"px": 1.5, "qty": 4.0, "orders": 1}]],
     )
     once = Book.summarise_arrow_batch(given)
     assert Book.summarise_arrow_batch(once).equals(once)
+
+
+# -- building a book out of events ------------------------------------------
+
+
+def test_an_order_adds_its_quantity_to_the_level_it_rests_at() -> None:
+    side = BookSide(side=Side.BID, symbol="AAPL")
+    side.append_order(Order(side=Side.BUY, px=10.0, qty=100.0, state=State.NEW))
+    side.append_order(Order(side=Side.BUY, px=9.5, qty=50.0, state=State.NEW))
+    side.append_order(Order(side=Side.BUY, px=10.0, qty=20.0, state=State.NEW))
+    assert [(level.px, level.qty) for level in side.alive] == [(10.0, 120.0), (9.5, 50.0)]
+    assert side.px == 10.0 and side.qty == 120.0
+    assert side.depth == 2 and side.total_qty == 170.0
+    assert len(side.updates) == 3
+
+
+def test_a_bid_sorts_downwards_and_an_ask_upwards() -> None:
+    """Best first on both sides, which is the only order `alive` is allowed to be in."""
+    prices = [10.0, 11.0, 9.0]
+    bid, ask = BookSide(side=Side.BID), BookSide(side=Side.ASK)
+    for px in prices:
+        bid.append_order(Order(side=Side.BUY, px=px, qty=1.0, state=State.NEW))
+        ask.append_order(Order(side=Side.SELL, px=px, qty=1.0, state=State.NEW))
+    assert [level.px for level in bid.alive] == [11.0, 10.0, 9.0]
+    assert [level.px for level in ask.alive] == [9.0, 10.0, 11.0]
+    assert bid.px == 11.0 and ask.px == 9.0
+
+
+def test_a_terminal_order_rests_for_nothing() -> None:
+    """A cancelled order is not liquidity, whatever quantity it still names."""
+    side = BookSide(side=Side.BID)
+    side.append_order(Order(side=Side.BUY, px=10.0, qty=100.0, state=State.NEW))
+    side.append_order(Order(side=Side.BUY, px=10.0, qty=-100.0, state=State.NEW))
+    assert side.alive == [] and side.depth == 0 and side.px is None
+    assert side.updates[-1].action is UpdateAction.DELETE
+
+
+def test_what_an_order_rests_for_is_what_the_venue_last_said() -> None:
+    """Shown, then left, then asked for -- in that order, because that is how a book sees it."""
+    side = BookSide(side=Side.BID)
+    side.append_order(Order(side=Side.BUY, px=10.0, qty=100.0, display_qty=10.0, state=State.NEW))
+    assert side.alive[0].qty == 10.0, "an iceberg rests for what it shows"
+    side.append_order(Order(side=Side.BUY, px=9.0, qty=100.0, leaves_qty=30.0, state=State.NEW))
+    assert side.alive[-1].qty == 30.0, "a partly filled order rests for what is left"
+
+
+def test_a_market_order_is_refused_because_it_never_rests() -> None:
+    with pytest.raises(ValueError, match="never rests"):
+        BookSide(side=Side.BID).append_order(
+            Order(side=Side.BUY, qty=100.0, kind=OrderKind.MARKET_ORDER, state=State.NEW)
+        )
+
+
+def test_a_fill_takes_quantity_out_and_leaves_its_trace() -> None:
+    side = BookSide(side=Side.BID)
+    side.append_order(Order(side=Side.BUY, px=10.0, qty=100.0, state=State.NEW))
+    side.append_execution(Execution(side=Side.BUY, px=10.0, qty=30.0, kind=ExecKind.TRADED))
+    assert side.alive[0].qty == 70.0
+    assert len(side.executions) == 1
+    assert side.executions[0].px == 10.0 and side.executions[0].qty == 30.0
+
+
+def test_a_report_that_moved_no_shares_moves_no_liquidity() -> None:
+    """Subtracting an acknowledgement's quantity is how a book empties by lunchtime."""
+    side = BookSide(side=Side.BID)
+    side.append_order(Order(side=Side.BUY, px=10.0, qty=100.0, state=State.NEW))
+    before = [(level.px, level.qty) for level in side.alive]
+    for kind in (ExecKind.ACK, ExecKind.PENDING_NEW, ExecKind.ORDER_STATUS, ExecKind.REJECTED):
+        side.append_execution(Execution(side=Side.BUY, px=10.0, qty=999.0, kind=kind))
+    assert [(level.px, level.qty) for level in side.alive] == before
+    assert side.executions is None
+
+
+def test_every_append_is_a_new_version_that_remembers_the_one_before() -> None:
+    side = BookSide(side=Side.BID, xhash=identifier(7))
+    first = side.hash
+    side.append_order(Order(side=Side.BUY, px=10.0, qty=1.0, state=State.NEW))
+    second = side.hash
+    side.append_order(Order(side=Side.BUY, px=11.0, qty=1.0, state=State.NEW))
+    assert side.version == 2
+    assert side.prev_hash == second and second != first
+    assert side.hash not in (first, second), "a new version is a new content hash"
+    assert len(side.parent_hash) == 2, "and both events that caused it are on the row"
+    assert side.xhash == identifier(7), "while the lifecycle is the same thing throughout"
+
+
+def test_a_book_routes_each_event_to_the_side_it_belongs_on() -> None:
+    built = Book(symbol="AAPL")
+    built.append_event(Order(side=Side.BUY, px=10.0, qty=100.0, state=State.NEW))
+    built.append_event(Order(side=Side.SELL, px=10.2, qty=300.0, state=State.NEW))
+    assert built.bid_px == 10.0 and built.bid_qty == 100.0
+    assert built.ask_px == 10.2 and built.ask_qty == 300.0
+    assert built.px == pytest.approx(10.1) and built.spread == pytest.approx(0.2)
+    assert built.micro_px == pytest.approx((10.0 * 300 + 10.2 * 100) / 400)
+    assert built.imbalance == pytest.approx(-0.5)
+    assert built.bid_hash is not None and built.ask_hash is not None
+
+
+def test_the_flat_pair_reconstructs_the_best_bid_and_offer_when_built_too() -> None:
+    """The identity holds whether the book was derived in kernels or appended to."""
+    built = Book()
+    built.append_event(Order(side=Side.BUY, px=10.0, qty=100.0, state=State.NEW))
+    built.append_event(Order(side=Side.SELL, px=10.2, qty=300.0, state=State.NEW))
+    assert built.px - built.spread / 2 == pytest.approx(built.bid_px)
+    assert built.px + built.spread / 2 == pytest.approx(built.ask_px)
+
+
+def test_a_fill_against_a_book_clears_the_side_it_hit_and_leaves_the_other() -> None:
+    built = Book()
+    built.append_event(Order(side=Side.BUY, px=10.0, qty=100.0, state=State.NEW))
+    built.append_event(Order(side=Side.SELL, px=10.2, qty=300.0, state=State.NEW))
+    built.append_event(Execution(side=Side.SELL, px=10.2, qty=300.0, kind=ExecKind.TRADED))
+    assert built.ask_px is None and built.ask_depth == 0
+    assert len(built.ask_executions) == 1
+    assert built.bid_px == 10.0 and built.bid_qty == 100.0, "the other side is untouched"
+    assert built.spread is None and built.micro_px is None
+
+
+def test_the_generic_append_infers_what_it_was_handed() -> None:
+    side = BookSide(side=Side.BID)
+    side.append_event(Order(side=Side.BUY, px=10.0, qty=5.0, state=State.NEW))
+    side.append_event(Execution(side=Side.BUY, px=10.0, qty=2.0, kind=ExecKind.TRADED))
+    assert side.alive[0].qty == 3.0
+    with pytest.raises(TypeError):
+        side.append_event("not an event")
+
+
+def test_a_book_lifts_a_side_out_and_puts_it_back_unchanged() -> None:
+    """`into_side`/`from_side` is how routing reuses the side's own rules."""
+    built = Book(symbol="AAPL")
+    built.append_event(Order(side=Side.BUY, px=10.0, qty=100.0, state=State.NEW))
+    side = built.into_side("bid")
+    assert side.is_book_side() and side.side is Side.BID
+    assert side.px == built.bid_px and side.symbol == "AAPL"
+    assert side.alive == built.bid_alive
+    with pytest.raises(ValueError, match="bid and an ask"):
+        built.into_side("middle")

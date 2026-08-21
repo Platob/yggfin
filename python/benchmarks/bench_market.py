@@ -7,7 +7,7 @@ Run from `python/`::
 
 Three questions, answered on columns shaped like a real feed:
 
-1. **What does `h128_arrow` buy over `h128_of` per row?** Both build the same
+1. **What does `hash_arrow` buy over `hash_of` per row?** Both build the same
    identifiers, and the vectorised result is asserted equal to the scalar one
    *before* anything is timed -- a benchmark that measures the wrong answer
    measures nothing.
@@ -41,10 +41,15 @@ import pyarrow.compute
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
 from rekep.market import Book, BookSide  # noqa: E402
-from rekep.market.identity import ABSENT, SEPARATOR, h128_arrow, h128_of, uuids_of  # noqa: E402
+from rekep.market.fields import dictionary_arrow  # noqa: E402
+from rekep.market.identity import ABSENT, SEPARATOR, hash_arrow, hash_of, uuids_of  # noqa: E402
 
 DAY = datetime.date(2024, 3, 14)
 UNIX = 1710374400_000000000
+
+#: The states a day of orders actually visits, which is what makes the column
+#: worth encoding: a handful of distinct values repeated a million times.
+STATES = [210, 310, 410, 510, 610, 240]
 
 
 def timed(work: Callable[[], object], repeat: int) -> tuple[float, object]:
@@ -92,9 +97,9 @@ def bench_identifiers(rows: int, repeat: int) -> None:
     scalar_rows = min(rows, 200_000)
     parts = [column.to_pylist()[:scalar_rows] for column in columns]
 
-    vector, built = timed(lambda: h128_arrow("Order", *columns), repeat)
+    vector, built = timed(lambda: hash_arrow("Order", *columns), repeat)
     scalar, one_at_a_time = timed(
-        lambda: [h128_of("Order", *values) for values in zip(*parts, strict=True)], repeat
+        lambda: [hash_of("Order", *values) for values in zip(*parts, strict=True)], repeat
     )
     # Verified before it is timed: the two must be the same identifiers.
     assert uuids_of(built)[:scalar_rows] == one_at_a_time, "the two builders disagree"
@@ -119,8 +124,8 @@ def bench_identifiers(rows: int, repeat: int) -> None:
         repeat,
     )
 
-    report("h128_of, one row at a time", scalar, scalar_rows)
-    report("h128_arrow, whole column", vector, rows, against=scalar / scalar_rows * rows)
+    report("hash_of, one row at a time", scalar, scalar_rows)
+    report("hash_arrow, whole column", vector, rows, against=scalar / scalar_rows * rows)
     report("  of which: the join, no length prefix", joined, rows)
     report("  of which: the join, length prefixed", prefixed, rows)
 
@@ -128,41 +133,21 @@ def bench_identifiers(rows: int, repeat: int) -> None:
 # -- 3: the book ------------------------------------------------------------
 
 
-def side_rows(rows: int, depth: int, base: float) -> list[dict[str, object]]:
-    """One book side per row, `depth` levels deep, filled as the shape requires."""
-    return [
-        {
-            "unix": UNIX,
-            "date": DAY,
-            "cunix": UNIX,
-            "runix": UNIX,
-            "h128": (index + 1).to_bytes(16, "big"),
-            "xh128": (index + 1).to_bytes(16, "big"),
-            "version": 1,
-            "state": 210,
-            "symbol": f"S{index % 5000}",
-            "prev_state": 0,
-            "side": 100,
-            "px_unit": "USD",
-            "qty_unit": "SHARES",
-            "instrument": {"xh128": bytes(16), "symbol": "S", "kind": 110, "option_kind": 0},
-            "alive": [
-                {"px": base + step * 0.01, "qty": 100.0 + step, "orders": 3}
-                for step in range(depth)
-            ],
-        }
-        for index in range(rows)
-    ]
+def levels(depth: int, base: float) -> list[dict[str, object]]:
+    """One side's live levels, `depth` of them, best first."""
+    return [{"px": base + step * 0.01, "qty": 100.0 + step, "orders": 3} for step in range(depth)]
 
 
-def books(rows: int, depth: int) -> pyarrow.RecordBatch:
-    given = {
+def envelope(rows: int) -> dict[str, object]:
+    """The NOT NULL half of any market event, one column per row."""
+    return {
         "unix": [UNIX] * rows,
         "date": [DAY] * rows,
+        "etype": [0] * rows,
         "cunix": [UNIX] * rows,
         "runix": [UNIX] * rows,
-        "h128": [(index + 1).to_bytes(16, "big") for index in range(rows)],
-        "xh128": [(index + 1).to_bytes(16, "big") for index in range(rows)],
+        "hash": [(index + 1).to_bytes(16, "big") for index in range(rows)],
+        "xhash": [(index + 1).to_bytes(16, "big") for index in range(rows)],
         "version": [1] * rows,
         "state": [210] * rows,
         "symbol": [f"S{index % 5000}" for index in range(rows)],
@@ -171,52 +156,82 @@ def books(rows: int, depth: int) -> pyarrow.RecordBatch:
         "px_unit": ["USD"] * rows,
         "qty_unit": ["SHARES"] * rows,
         "instrument": [
-            {"xh128": bytes(16), "symbol": "S", "kind": 110, "option_kind": 0} for _ in range(rows)
+            {"xhash": bytes(16), "symbol": "S", "kind": 110, "option_kind": 0} for _ in range(rows)
         ],
-        "bid": side_rows(rows, depth, 100.0),
-        "ask": side_rows(rows, depth, 100.5),
+    }
+
+
+def sides(rows: int, depth: int) -> pyarrow.RecordBatch:
+    """A batch of book sides, each carrying its own levels and nothing derived."""
+    given = envelope(rows) | {"alive": [levels(depth, 100.0)] * rows}
+    return BookSide.FIELD.cast_arrow_batch(pyarrow.RecordBatch.from_pydict(given))
+
+
+def books(rows: int, depth: int) -> pyarrow.RecordBatch:
+    """A batch of books, both sides flat and only their levels filled in."""
+    given = envelope(rows) | {
+        "bid_alive": [levels(depth, 100.0)] * rows,
+        "ask_alive": [levels(depth, 100.5)] * rows,
     }
     return Book.FIELD.cast_arrow_batch(pyarrow.RecordBatch.from_pydict(given))
 
 
 def bench_book(rows: int, depth: int, repeat: int) -> None:
     print(f"\nBook -- {rows:,} rows, {depth} levels a side")
-    batch = books(rows, depth)
-    sides = BookSide.FIELD.cast_arrow_batch(
-        pyarrow.RecordBatch.from_pydict(
-            {
-                name: [row[name] for row in side_rows(rows, depth, 100.0)]
-                for name in side_rows(1, 1, 100.0)[0]
-            }
-        )
-    )
+    batch, side_batch = books(rows, depth), sides(rows, depth)
 
     summarised, filled = timed(lambda: Book.summarise_arrow_batch(batch), repeat)
-    side_time, side_filled = timed(lambda: BookSide.summarise_arrow_batch(sides), repeat)
+    side_time, side_filled = timed(lambda: BookSide.summarise_arrow_batch(side_batch), repeat)
 
     # What a reader that trusts the stored columns pays: one flat column read.
     flat, _ = timed(lambda: pyarrow.compute.mean(filled.column("micro_px")), repeat)
 
     # And the cheapest thing a reader could do with sides that are *already*
-    # derived, which is here to say that the nested access is not the cost:
-    # the walk over the levels is, and it is what `summarised` measures.
-    def nested() -> object:
-        bid = pyarrow.compute.struct_field(filled.column("bid"), "px")
-        ask = pyarrow.compute.struct_field(filled.column("ask"), "px")
+    # derived, which is here to say that the flat access is not the cost: the
+    # walk over the levels is, and it is what `summarised` measures.
+    def crossed() -> object:
         return pyarrow.compute.mean(
-            pyarrow.compute.divide(pyarrow.compute.add(bid, ask), pyarrow.scalar(2.0))
+            pyarrow.compute.divide(
+                pyarrow.compute.add(filled.column("bid_px"), filled.column("ask_px")),
+                pyarrow.scalar(2.0),
+            )
         )
 
-    nested_time, _ = timed(nested, repeat)
+    crossed_time, _ = timed(crossed, repeat)
 
     assert filled.column("spread")[0].as_py() is not None, "nothing was derived"
-    assert filled.column("bid")[0].as_py()["depth"] == depth, "the sides were not derived"
+    assert filled.column("bid_depth")[0].as_py() == depth, "the sides were not derived"
     assert side_filled.column("depth")[0].as_py() == depth, "the depth is wrong"
 
     report("BookSide.summarise: best/depth/total, from the levels", side_time, rows)
     report("Book.summarise: both sides, then mid/spread/micro", summarised, rows)
     report("read the stored micro_px column", flat, rows, against=summarised)
-    report("read bid.px/ask.px from the derived sides", nested_time, rows, against=summarised)
+    report("recompute a mid from the stored bid_px/ask_px", crossed_time, rows, against=summarised)
+
+
+# -- 4: enum storage ---------------------------------------------------------
+
+
+def bench_codes(rows: int, repeat: int) -> None:
+    """What dictionary encoding buys a column whose whole point is that it repeats."""
+    print(f"\nRanged codes -- {rows:,} rows, {len(STATES)} distinct")
+    plain = pyarrow.array([STATES[index % len(STATES)] for index in range(rows)], pyarrow.int32())
+    target = pyarrow.dictionary(pyarrow.int8(), pyarrow.int32())
+
+    encode, encoded = timed(lambda: dictionary_arrow(plain, target), repeat)
+    decode, decoded = timed(lambda: dictionary_arrow(encoded, pyarrow.int32()), repeat)
+    indices = encoded.indices
+    reindex, _ = timed(lambda: dictionary_arrow(indices, target), repeat)
+    assert decoded.equals(plain), "the round trip lost values"
+
+    report("dictionary_arrow: values -> encoded (case 1)", encode, rows)
+    report("dictionary_arrow: indices -> encoded (case 2)", reindex, rows, against=encode)
+    report("dictionary_arrow: encoded -> values", decode, rows)
+    print(
+        f"  {'bytes in memory':<44} "
+        f"{plain.nbytes / 1e6:8.2f} MB -> {encoded.nbytes / 1e6:7.2f} MB"
+        f"  {plain.nbytes / max(encoded.nbytes, 1):6.1f}x"
+    )
 
 
 def main() -> None:
@@ -227,9 +242,17 @@ def main() -> None:
     rows = 100_000 if parsed.quick else 1_000_000
     repeat = 2 if parsed.quick else parsed.repeat
 
+    # Acero costs its own initialisation on the first grouped aggregate in a
+    # process, and `_list_sums` is one. Left unwarmed it lands on whichever
+    # sweep runs first and makes the shallowest book look like the slowest --
+    # which it did, at 1.6x the cost of a book ten times deeper.
+    Book.summarise_arrow_batch(books(16, 2))
+    BookSide.summarise_arrow_batch(sides(16, 2))
+
     bench_identifiers(rows, repeat)
     for depth in (1, 10) if parsed.quick else (1, 10, 50):
         bench_book(rows // 10, depth, repeat)
+    bench_codes(rows, repeat)
 
 
 if __name__ == "__main__":
