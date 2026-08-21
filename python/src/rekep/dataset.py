@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Iterator, Sequence
+import importlib
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any, ClassVar, Self
 
 import pyarrow
@@ -45,6 +46,26 @@ class Dataset(Convertible, abc.ABC):
     configuration is also a document: `IcebergDataset.from_yaml("logs.yaml")`.
     """
 
+    #: What a document's `kind` says to reach this class. Subclasses set it.
+    KIND: ClassVar[str] = ""
+
+    #: Every kind that has been declared, filled by `__init_subclass__` so an
+    #: implementation is reachable from a document by existing rather than by
+    #: registering. The same mechanism `Task.KINDS` uses, and for the same
+    #: reason: a job's configuration names the store it reads, and the class
+    #: for it may live in a package the reader has never imported by name.
+    KINDS: ClassVar[dict[str, type[Dataset]]] = {}
+
+    #: Where the implementations this package ships live, so a document naming
+    #: one reaches it without the reader having imported it first. The Iceberg
+    #: one is behind an optional dependency, and this is what keeps it optional:
+    #: it is imported by a document that asks for it, and by nothing else.
+    MODULES: ClassVar[dict[str, str]] = {
+        "iceberg": "rekep.iceberg.dataset",
+        "text_file": "rekep.logs.text_file",
+        "text_files": "rekep.logs.text_files",
+    }
+
     #: What `read_arrow` redirects to, keyed by the type asked for.
     READS: ClassVar[dict[Any, str]] = {
         pyarrow.Table: "arrow_table",
@@ -62,6 +83,47 @@ class Dataset(Convertible, abc.ABC):
         list: "arrow_reader",
         tuple: "arrow_reader",
     }
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if cls.KIND:
+            Dataset.KINDS[cls.KIND] = cls
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
+        """Build the dataset a document declares, dispatching on its `kind`.
+
+        Called on `Dataset` it picks the implementation; called on one of them
+        it builds that one, and refuses a document naming a different kind
+        rather than quietly building the wrong store from the right fields.
+        A document with no `kind` read through a concrete class is just that
+        class, which is what keeps `IcebergDataset.from_yaml(...)` working
+        unchanged.
+        """
+        kind = str(mapping.get("kind", "") or "")
+        if cls is Dataset:
+            if not kind:
+                raise ValueError(
+                    "a dataset document says which store it is: add a `kind`, one of "
+                    f"{sorted(set(Dataset.KINDS) | set(Dataset.MODULES))}"
+                )
+            built = Dataset.KINDS.get(kind) or Dataset._imported(kind)
+            if built is None:
+                known = sorted(set(Dataset.KINDS) | set(Dataset.MODULES))
+                raise ValueError(f"no dataset of kind {kind!r}; there is {known}")
+            return built.from_dict(mapping)  # type: ignore[return-value]
+        if kind and kind != cls.KIND:
+            raise ValueError(f"{cls.__name__} is {cls.KIND!r}, and the document says {kind!r}")
+        return super().from_dict({key: value for key, value in mapping.items() if key != "kind"})
+
+    @staticmethod
+    def _imported(kind: str) -> type[Dataset] | None:
+        """The implementation for `kind`, imported if this package ships one."""
+        module = Dataset.MODULES.get(kind)
+        if module is None:
+            return None
+        importlib.import_module(module)
+        return Dataset.KINDS.get(kind)
 
     # -- what it holds ------------------------------------------------------
 

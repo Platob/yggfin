@@ -59,7 +59,7 @@ class Task(Convertible):
     `Convertible` dataclass rather than a `@field` class, and the same
     `from_yaml`/`from_json` that reads a schema contract reads one of these::
 
-        Task.from_yaml("tasks/parse_logs.yml").run()
+        Task.from_yaml("tasks/parse_logs/parse_logs.yml").run()
 
     The document says which task it is with a `kind`, and `from_dict`
     dispatches on it the way `from_`/`into_` dispatch everywhere else: one

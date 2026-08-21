@@ -84,25 +84,32 @@ logs.optimize()                      # compact, expire, sweep
   committed here, as `data/fix.zip`, so there is nothing to wait for: a cache
   is a directory of JSON or a zip of the same, and the extension says which.
 - **`market`** — `Order`, `Execution`, `BookSide` and `Book` as a *history*:
-  every version of every thing is its own immutable row, keyed by the sixteen
-  fixed bytes of its own content (`int64`, which is Iceberg
-  `fixed[16]` and Spark `BinaryType`) and linked to the version before it. A
+  every version of every thing is its own immutable row, keyed by a signed
+  `int64` digest of its own content — the one column Iceberg, Spark and Doris
+  all read alike — and linked to the version before it. A
   state, a side and a kind are banded `int32` codes, so "is it over" is one
   range predicate an engine can prune on rather than a set of literals it
   cannot; around forty columns carry the FIX field they came from, checked
   against `data/fix.zip` by CI. `Book.summarise_arrow` derives the mid, the
   spread, the microprice and the imbalance in kernels, once, so no reader has
   to reach into a nested list that no engine below prunes on — and
-  `book.append_event(order)` builds one out of events, versioning and linking
-  each step as it goes.
+  `Book.from_events` folds one instrument's stream into the book it describes,
+  one row per instant that moved it. `FixEvents` is the way in from a venue: a
+  FIX message, or the pairs one was rendered as, read as the orders and
+  executions it carries — with `unix` taken from `TransactTime <60>`, which is
+  when the transaction happened, and not from `SendingTime <52>`, which is when
+  the message was sent.
 - **`tasks`** — a unit of work declared in a document rather than written as a
-  script: `Task.from_yaml("tasks/parse_logs.yml").run()`. `ParseLogs` is the
-  one shipped, and it is the job a capture needs — one streaming pass over a
-  folder of logs, every line classified by regular expression, each landing in
-  the Iceberg table for what it is about (`order_logs`, `execution_logs`, …
-  `unknown_logs`). Appending with a merge, so re-running it over a capture that
-  grew by a day costs the day. `tasks/parse_logs.yml` is a commented example
-  and `tasks/parse_logs.ipynb` runs one end to end.
+  script: `Task.from_yaml("tasks/parse_logs/parse_logs.yml").run()`. Two are
+  shipped, and together they are the pipeline a capture needs. `ParseLogs` is
+  one streaming pass over a folder of logs, every line classified by regular
+  expression and landed in the Iceberg table for what it is about
+  (`order_logs`, `execution_logs`, … `unknown_logs`). `ParseMarket` reads those
+  lines as FIX and lands what they *mean* — `market.orders`,
+  `market.executions`, and `market.books` folded from both, one row per instant
+  that moved the book. Both append with a merge, so re-running one over a
+  capture that grew by a day costs the day. Each has a commented `.yml` and a
+  notebook that runs it end to end under `tasks/`.
 - **`convert`** — `Convertible`: paired `from_*`/`into_*` methods that serialise
   any dataclass to dict, JSON, YAML or TOML and back.
 

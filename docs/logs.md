@@ -228,10 +228,14 @@ previous-version columns), and then whatever `static_values` declares, in the
 order it declares them. The envelope's unused half is constant down a whole
 capture, where run-length and dictionary encoding collapse it to nothing.
 
-**The digest is sixteen bytes, not sixty-four bits.** A capture is exactly the
-scale at which the birthday argument bites — a few billion lines is a week of a
-busy feed — and two colliding lines merge into one row nothing downstream can
-tell from a genuine duplicate.
+**The digest is a signed `int64`, and the key is `(unix, hash)`.** Sixty-four
+bits alone would be thin at a capture's scale — a few billion lines is a week of
+a busy feed, which is where the birthday argument starts to bite — but two
+digests only meet **in the table** if they also fall on the same nanosecond, so
+the bound is per instant rather than per capture. What that buys is the column
+itself: an `int64` is a join key, a sort key and a bucket source in every engine
+below Arrow, where a `fixed_size_binary[16]` is a different thing in each of
+them ([why](market.md#through-iceberg-spark-and-doris)).
 
 **The partition is the hour, and it is derived from the instant.** That is the
 reverse of the day-and-time columns it replaces, and deliberately: a partition

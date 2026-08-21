@@ -91,6 +91,9 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: the descriptions all follow, exactly as `TextFile.ROW` does for one file.
     FILE: ClassVar[type[TextFile]] = TextFile
 
+    #: What a document's `kind` names this store as, for `Dataset.from_dict`.
+    KIND: ClassVar[str] = "text_files"
+
     #: Roots to read, in the order given: folders to walk, or files to take.
     #: The order a caller states is never reshuffled -- yesterday's archive
     #: directory before today's live one is a statement about time.

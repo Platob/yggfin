@@ -22,12 +22,13 @@ from rekep.market import (
     BookSide,
     Event,
     Execution,
+    FixEvents,
     Instrument,
     MarketEvent,
     Order,
     Ranged,
 )
-from rekep.tasks import ParseLogs, Task, TaskRun
+from rekep.tasks import ParseLogs, ParseMarket, Task, TaskRun
 from rekep.urls import Url
 
 __version__ = "0.1.0"
@@ -41,6 +42,7 @@ __all__ = [
     "Execution",
     "Field",
     "FieldBuilder",
+    "FixEvents",
     "FixMessage",
     "FixRegistry",
     "FixedSizeListField",
@@ -54,6 +56,7 @@ __all__ = [
     "MarketEvent",
     "Order",
     "ParseLogs",
+    "ParseMarket",
     "ProtocolMetadata",
     "Ranged",
     "StructField",

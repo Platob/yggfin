@@ -110,6 +110,9 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: schema, the descriptions and the column order all follow.
     ROW: ClassVar[type[Log]] = Log
 
+    #: What a document's `kind` names this store as, for `Dataset.from_dict`.
+    KIND: ClassVar[str] = "text_file"
+
     url: str
     filesystem: pyarrow.fs.FileSystem | None = None
     header_pattern: re.Pattern[bytes] = HEADER_PATTERN

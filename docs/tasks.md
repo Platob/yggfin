@@ -7,7 +7,7 @@ one, and running it is one call:
 ```python
 from rekep import Task
 
-Task.from_yaml("tasks/parse_logs.yml").run()
+Task.from_yaml("tasks/parse_logs/parse_logs.yml").run()
 ```
 
 The document says which task it is with a `kind`, and `from_dict` dispatches on
@@ -17,23 +17,27 @@ classes for.
 
 ## Parsing a capture into one table per event
 
-`ParseLogs` is the one task shipped here, and it is the job a capture actually
-needs: read a folder of trading logs, decide what each line is about, and land
-each line in the Iceberg table for its kind — `order_logs`, `execution_logs`, …
-`unknown_logs`.
+Two tasks are shipped here, and together they are the pipeline a capture
+actually needs. `ParseLogs` sorts a capture into a table per kind of line,
+keeping the line; [`ParseMarket`](#reading-market-logs) reads those lines as FIX
+and lands what they *mean*.
+
+`ParseLogs` first: read a folder of trading logs, decide what each line is
+about, and land each line in the Iceberg table for its kind — `order_logs`,
+`execution_logs`, … `unknown_logs`.
 
 === "From a document"
 
     ```python
     from rekep import Task
 
-    report = Task.from_yaml("tasks/parse_logs.yml").run()
+    report = Task.from_yaml("tasks/parse_logs/parse_logs.yml").run()
     print(report)
     # parse-trading-logs: 600 read, 600 written in 1.06s -- logs.order_logs=100, ...
     ```
 
-    `tasks/parse_logs.yml` in this repository is a commented example of every
-    field, and `tasks/parse_logs.ipynb` is a notebook that builds a small
+    `tasks/parse_logs/parse_logs.yml` in this repository is a commented example of every
+    field, and `tasks/parse_logs/parse_logs.ipynb` is a notebook that builds a small
     capture and runs it end to end.
 
 === "In Python"
@@ -136,6 +140,85 @@ Each is created on the first write to it, from the parser's own shape —
 
 **A line nothing classifies still lands.** Dropping it would make the job lossy
 in exactly the case a new log format shows up.
+
+## Reading market logs
+
+`ParseMarket` is the second half. It reads FIX messages and lands the events
+they carry: an orders table, an executions table, and a book table folded from
+both.
+
+=== "From a document"
+
+    ```python
+    from rekep import Task
+
+    report = Task.from_yaml("tasks/parse_market/parse_market.yml").run()
+    print(report)
+    # parse-market-logs: 5 read, 16 written in 0.95s -- market.books=8, market.orders=7, ...
+    ```
+
+    `tasks/parse_market/parse_market.yml` is a commented example of every field,
+    and `tasks/parse_market/parse_market.ipynb` builds a small capture and runs
+    it end to end.
+
+=== "In Python"
+
+    ```python
+    from rekep import ParseMarket
+
+    ParseMarket(
+        source="s3://captures/2026-08-21",
+        venue="XCME",
+        catalog="rekep",
+        namespace="market",
+        properties={"type": "rest", "uri": "https://catalog/api"},
+    ).run()
+    ```
+
+Three tables come out, each created from the declaration of the shape it holds
+— which is the same declaration published under `schemas/rekep/`:
+
+| table | shape | holds |
+| --- | --- | --- |
+| `market.orders` | [`Order`](market.md) | what somebody asked for, version by version |
+| `market.executions` | `Execution` | what actually moved |
+| `market.books` | `Book` | the book after each instant that changed it |
+
+**The source is a `Dataset`, whichever kind.** Point it at a folder and it is
+read as text; point it at a *document naming a store* and it is read from
+there — which is how this chains onto `ParseLogs` without re-reading the
+capture:
+
+```yaml
+source:
+  kind: iceberg
+  name: logs.book_side_logs
+  catalog: rekep
+  properties: {type: sql, uri: "sqlite:///data/catalog.db", warehouse: "file://data/warehouse"}
+```
+
+`kind` names the store and `Dataset.from_dict` finds the class for it — the
+same dispatch a task's own `kind` gets, and the mechanism that keeps the
+Iceberg dependency optional: the module is imported by a document that asks for
+it, and by nothing else.
+
+**Books are folded last, and per instrument.** `Book.from_events` needs one
+instrument's events in time order, so the orders and executions are grouped by
+`instrument_hash` and each group folded on its own. That is the one pass that
+is not streaming the way the other two are: a fold has to see a whole
+instrument's stream, and what it costs is the live orders of every instrument
+in the capture rather than the capture itself. Set `books: false` for a job
+landing raw events for something else to fold.
+
+!!! warning "A schema is handed over, never inferred"
+
+    `into_dict` leaves out a member that is None, and `RecordBatch.from_pylist`
+    with no schema builds one from the **first row's keys**. A first book with
+    no bid — which is what the first book of a capture usually is — therefore
+    defined a schema with no `bid_px`, `spread`, `micro_px` or `imbalance` in
+    it, and every row after it was cast onto that and came back null. Silently,
+    and for the whole table. With the declaration handed over, a missing key is
+    a null in *that row* and nothing else moves.
 
 ## Writing your own
 

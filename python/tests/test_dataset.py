@@ -331,3 +331,58 @@ def test_read_arrow_picks_the_method_by_the_type_asked_for(dataset: MemoryDatase
 def test_a_write_of_something_unwritable_is_refused(dataset: MemoryDataset) -> None:
     with pytest.raises(TypeError, match="cannot infer"):
         dataset.write_arrow("not arrow data")
+
+
+# -- reading one out of a document -------------------------------------------
+
+
+def test_a_document_says_which_store_it_names() -> None:
+    """The same dispatch a task's `kind` gets: one lookup, keyed by what each
+    implementation declares, so a scheduler reads a document for a class it has
+    never imported by name."""
+    built = Dataset.from_dict({"kind": "text_file", "url": "a.log"})
+    assert type(built).KIND == "text_file"
+    assert built.url.endswith("a.log")
+
+
+def test_an_implementation_behind_an_optional_dependency_is_imported_by_the_document() -> None:
+    """And by nothing else, which is what keeps the dependency optional."""
+    pytest.importorskip("pyiceberg")
+    from rekep.iceberg import IcebergDataset
+
+    built = Dataset.from_dict({"kind": "iceberg", "name": "a.b", "catalog": "c"})
+    assert isinstance(built, IcebergDataset) and built.name == "a.b"
+
+
+def test_a_document_with_no_kind_says_what_it_could_have_said() -> None:
+    with pytest.raises(ValueError, match="add a `kind`"):
+        Dataset.from_dict({"url": "a.log"})
+
+
+def test_a_kind_nothing_implements_lists_what_does() -> None:
+    with pytest.raises(ValueError, match="no dataset of kind 'parquet'"):
+        Dataset.from_dict({"kind": "parquet"})
+
+
+def test_a_concrete_class_still_reads_its_own_document_with_no_kind_in_it() -> None:
+    """Which is what keeps `IcebergDataset.from_yaml(...)` working unchanged."""
+    from rekep.logs import TextFile
+
+    assert TextFile.from_dict({"url": "a.log"}).url.endswith("a.log")
+
+
+def test_a_concrete_class_refuses_a_document_naming_a_different_store() -> None:
+    """Rather than quietly building the wrong store from the right fields."""
+    from rekep.logs import TextFile
+
+    with pytest.raises(ValueError, match="text_file"):
+        TextFile.from_dict({"kind": "text_files", "url": "a.log"})
+
+
+def test_every_shipped_kind_is_reachable_from_a_document() -> None:
+    """A name in `MODULES` that no class claims is a document that cannot be read."""
+    for kind, module in Dataset.MODULES.items():
+        if kind == "iceberg":
+            pytest.importorskip("pyiceberg")
+        assert Dataset._imported(kind) is not None, f"{kind} is not in {module}"
+        assert Dataset.KINDS[kind].KIND == kind

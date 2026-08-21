@@ -8,7 +8,7 @@ import functools
 import json
 from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Any
+from typing import Any, ClassVar
 
 import pyarrow
 import pyarrow.fs
@@ -172,6 +172,9 @@ class IcebergDataset(Dataset):
     `snapshot_id`), so a job can work on a branch and publish it later without
     a second dataset object.
     """
+
+    #: What a document's `kind` names this store as, for `Dataset.from_dict`.
+    KIND: ClassVar[str] = "iceberg"
 
     #: Table identifier, `namespace.name`.
     name: str

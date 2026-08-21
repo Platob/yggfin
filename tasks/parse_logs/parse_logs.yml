@@ -4,11 +4,11 @@
 # This file *is* the job. Nothing here is code:
 #
 #     from rekep import Task
-#     Task.from_yaml("tasks/parse_logs.yml").run()
+#     Task.from_yaml("tasks/parse_logs/parse_logs.yml").run()
 #
 # or from a shell, without writing any Python at all:
 #
-#     python -c "from rekep import Task; print(Task.from_yaml('tasks/parse_logs.yml').run())"
+#     python -c "from rekep import Task; print(Task.from_yaml('tasks/parse_logs/parse_logs.yml').run())"
 #
 # Every line below is a field of `rekep.tasks.ParseLogs`, so the class's
 # docstrings are the reference for what each one means.
