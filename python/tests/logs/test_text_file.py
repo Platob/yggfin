@@ -60,7 +60,7 @@ def test_header_pattern_splits_a_row() -> None:
     assert match is not None
     assert match["timestamp"] == b"2026-08-14 00:05:01.147_250"
     assert match["thread_name"] == b"250-e7256476:9effef3e6a:72505"
-    assert match["driver"] == b"OMSSales_Enrichment"
+    assert match["driver_name"] == b"OMSSales_Enrichment"
     assert match["level"] == b"DEBUG"
     assert match["message"].startswith(b"-> [5] {trade")
 
@@ -198,15 +198,18 @@ def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
     assert schema.names == [
         "url",
-        "unix",
-        "date",
-        "time",
+        "ulbridge_name",
+        "recorded_at_unix",
+        "recorded_at_date",
+        "recorded_at_time",
         "thread_name",
-        "driver",
+        "driver_name",
+        "category_id",
+        "category_name",
         "message",
         "hash64",
     ]
-    assert schema.field("unix").type == pyarrow.int64()
+    assert schema.field("recorded_at_unix").type == pyarrow.int64()
     assert schema.field("hash64").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
 
@@ -238,9 +241,9 @@ def test_first_row(plain: Path) -> None:
 
     first = table.slice(0, 1).to_pylist()[0]
     assert first["url"] == url
-    assert first["unix"] == FIRST_UNIX
+    assert first["recorded_at_unix"] == FIRST_UNIX
     assert first["thread_name"] == "250-e7256476:9effef3e6a:72505"
-    assert first["driver"] == "OMSSales_Enrichment"
+    assert first["driver_name"] == "OMSSales_Enrichment"
     assert first["message"].startswith("-> [5] {trade")
 
 
@@ -249,11 +252,13 @@ def test_date_and_time_are_derived_from_the_timestamp(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_table()
     for row in table.to_pylist():
-        moment = datetime.datetime.fromtimestamp(row["unix"] / 1e9, tz=datetime.UTC)
-        assert row["date"] == moment.date()
-        assert row["time"].replace(microsecond=0) == moment.time().replace(microsecond=0)
-        micros = (row["unix"] // 1000) % 1_000_000
-        assert row["time"].microsecond == micros
+        moment = datetime.datetime.fromtimestamp(row["recorded_at_unix"] / 1e9, tz=datetime.UTC)
+        assert row["recorded_at_date"] == moment.date()
+        assert row["recorded_at_time"].replace(microsecond=0) == moment.time().replace(
+            microsecond=0
+        )
+        micros = (row["recorded_at_unix"] // 1000) % 1_000_000
+        assert row["recorded_at_time"].microsecond == micros
 
 
 def test_unix_is_total_nanos_since_epoch(plain: Path) -> None:
@@ -262,7 +267,7 @@ def test_unix_is_total_nanos_since_epoch(plain: Path) -> None:
     assert expected == FIRST_UNIX
 
     with TextFile(url=plain.as_uri()) as log:
-        unix = log.into_arrow_table().column("unix").to_pylist()
+        unix = log.into_arrow_table().column("recorded_at_unix").to_pylist()
 
     assert unix[0] == expected
     assert unix == sorted(unix), "the sample is in chronological order"
@@ -290,7 +295,7 @@ def test_hash64_is_stable_across_reads(plain: Path) -> None:
 
 def test_rows_stay_in_file_order(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
-        unix = log.into_arrow_table().column("unix").to_pylist()
+        unix = log.into_arrow_table().column("recorded_at_unix").to_pylist()
     assert unix[0] == FIRST_UNIX
     assert unix == sorted(unix), "the sample is chronological, so parsing must keep it so"
 
@@ -355,7 +360,9 @@ def test_read_byte_size_does_not_change_the_result(plain: Path, read_byte_size: 
     with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_reader(read_byte_size=read_byte_size).read_all()
     assert table.num_rows == EXPECTED_RECORDS
-    assert table.column("unix").to_pylist()[-1] == max(table.column("unix").to_pylist())
+    assert table.column("recorded_at_unix").to_pylist()[-1] == max(
+        table.column("recorded_at_unix").to_pylist()
+    )
 
 
 def test_reader_is_lazy_until_pulled(plain: Path) -> None:
@@ -376,7 +383,7 @@ def test_custom_header_pattern(tmp_path: Path) -> None:
     bundled offsets.
     """
     pattern = re.compile(
-        rb"^(?P<timestamp>\S+)\|(?P<thread_name>[^|]*)\|(?P<driver>[^|]*)\|(?P<message>.*)$",
+        rb"^(?P<timestamp>\S+)\|(?P<thread_name>[^|]*)\|(?P<driver_name>[^|]*)\|(?P<message>.*)$",
         re.DOTALL,
     )
     path = tmp_path / "custom.txt"
@@ -386,7 +393,10 @@ def test_custom_header_pattern(tmp_path: Path) -> None:
     with TextFile(url=path.as_uri(), header_pattern=pattern) as log:
         table = log.into_arrow_table()
     assert table.column("message").to_pylist() == ["first", "second"]
-    assert [time.microsecond for time in table.column("time").to_pylist()] == [167520, 1]
+    assert [time.microsecond for time in table.column("recorded_at_time").to_pylist()] == [
+        167520,
+        1,
+    ]
 
 
 @pytest.mark.parametrize(
@@ -429,8 +439,12 @@ def test_from_path_takes_the_zone_too(plain: Path) -> None:
     """The documented example: a local log is the one most likely to be local time."""
     naive = TextFile.from_path(plain).read_arrow_table()
     zoned = TextFile.from_path(plain, timezone="Europe/Paris").read_arrow_table()
-    assert zoned.column("unix").to_pylist() != naive.column("unix").to_pylist()
-    assert zoned.column("time").to_pylist() == naive.column("time").to_pylist(), "same wall clock"
+    assert (
+        zoned.column("recorded_at_unix").to_pylist() != naive.column("recorded_at_unix").to_pylist()
+    )
+    assert (
+        zoned.column("recorded_at_time").to_pylist() == naive.column("recorded_at_time").to_pylist()
+    ), "same wall clock"
 
 
 def test_reading_the_same_log_twice_reads_it_twice(plain: Path) -> None:
@@ -463,7 +477,7 @@ def test_a_write_renders_the_zone_it_read(tmp_path: Path, plain: Path, zone: str
     written = tmp_path / "written.txt"
     TextFile.from_url(written.as_uri(), timezone=zone).write_arrow(rows)
     back = TextFile.from_url(written.as_uri(), timezone=zone).read_arrow_table()
-    for column in ("unix", "date", "time", "message"):
+    for column in ("recorded_at_unix", "recorded_at_date", "recorded_at_time", "message"):
         assert back.column(column).to_pylist() == rows.column(column).to_pylist(), column
 
 
@@ -586,14 +600,16 @@ def test_without_a_timezone_the_clock_is_read_as_utc() -> None:
     with TextFile.from_url(SAMPLE.resolve().as_uri()) as log:
         batch = next(iter(log.into_arrow_batches()))
     instant = FIRST_CLOCK.replace(tzinfo=datetime.UTC)
-    assert batch.column("unix")[0].as_py() == int(instant.timestamp() * 1_000_000) * 1_000
+    assert (
+        batch.column("recorded_at_unix")[0].as_py() == int(instant.timestamp() * 1_000_000) * 1_000
+    )
 
 
 def test_a_timezone_shifts_the_instant_by_its_offset() -> None:
     """Same characters in the file, different moment in time."""
     naive, paris, york = (
         next(iter(TextFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone).into_arrow_batches()))
-        .column("unix")[0]
+        .column("recorded_at_unix")[0]
         .as_py()
         for zone in (None, "Europe/Paris", "America/New_York")
     )
@@ -607,7 +623,10 @@ def test_the_date_and_time_columns_stay_on_the_local_clock() -> None:
     for zone in (None, "Europe/Paris", "Pacific/Auckland"):
         with TextFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone) as log:
             batch = next(iter(log.into_arrow_batches()))
-        columns[zone] = (batch.column("date")[0].as_py(), batch.column("time")[0].as_py())
+        columns[zone] = (
+            batch.column("recorded_at_date")[0].as_py(),
+            batch.column("recorded_at_time")[0].as_py(),
+        )
     assert len(set(columns.values())) == 1, "the wall clock does not move"
     assert columns[None] == (FIRST_CLOCK.date(), FIRST_CLOCK.time())
 
@@ -668,7 +687,14 @@ def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> N
 
     again = TextFile.from_path(tmp_path / "written.txt").read_arrow_table()
     assert again.num_rows == source.num_rows
-    for column in ("unix", "date", "time", "thread_name", "driver", "message"):
+    for column in (
+        "recorded_at_unix",
+        "recorded_at_date",
+        "recorded_at_time",
+        "thread_name",
+        "driver_name",
+        "message",
+    ):
         assert again.column(column).to_pylist() == source.column(column).to_pylist(), column
 
 
@@ -698,10 +724,10 @@ def test_commit_row_size_writes_in_chunks(plain: Path, tmp_path: Path) -> None:
 def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
     batch = pyarrow.RecordBatch.from_pydict(
         {
-            "unix": pyarrow.array([1_786_665_901_147_250_000], pyarrow.int64()),
+            "recorded_at_unix": pyarrow.array([1_786_665_901_147_250_000], pyarrow.int64()),
             "message": ["hello"],
             "thread_name": ["t"],
-            "driver": ["d"],
+            "driver_name": ["d"],
             "noise": ["dropped"],
         }
     )
@@ -709,7 +735,7 @@ def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
     target.write_arrow(batch)
     parsed = target.read_arrow_table()
     assert parsed.column("message").to_pylist() == ["hello"]
-    assert parsed.column("driver").to_pylist() == ["d"]
+    assert parsed.column("driver_name").to_pylist() == ["d"]
 
 
 def test_a_text_file_cannot_merge(tmp_path: Path) -> None:

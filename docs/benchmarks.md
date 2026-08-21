@@ -169,15 +169,15 @@ opened; `skipped` is what the filter saved.
 | `date = '2026-08-14'` (partition) | 0.019–0.022 | 50,000 | 1 | 13 |
 | partition + 3 of 8 columns | 0.015–0.019 | 50,000 | 1 | 13 |
 | 3 of 8 columns, no filter | 0.087–0.094 | 400,000 | 14 | 0 |
-| `unix < …` (correlates with the partition) | 0.039–0.045 | 100,000 | 3 | 11 |
-| `driver = 'ULBridge'` (no useful statistics) | 0.086–0.096 | 100,000 | 14 | **0** |
+| `recorded_at_unix < …` (correlates with the partition) | 0.039–0.045 | 100,000 | 3 | 11 |
+| `driver_name = 'ULBridge'` (no useful statistics) | 0.086–0.096 | 100,000 | 14 | **0** |
 | narrow shape, projection from the shape | 0.075–0.080 | 400,000 | 14 | 0 |
 | narrow shape declared with the store's widths | 0.055–0.063 | 400,000 | 14 | 0 |
 
 One more, measured separately because it is a write-side choice: sorting each
 commit on the column a read filters. On a single 600k-row commit, a filter
-matching the top 5% of `unix` values took **214 ms** when the rows arrived
-shuffled and **22 ms** when the commit was sorted (`sort_by=["unix"]`), with
+matching the top 5% of `recorded_at_unix` values took **214 ms** when the rows arrived
+shuffled and **22 ms** when the commit was sorted (`sort_by=["recorded_at_unix"]`), with
 one file planned in both cases. That is row-group skipping inside the file, and
 it only exists because `write.parquet.row-group-limit` is set: Iceberg's
 default of a million rows per group would make the whole file one group with
@@ -188,12 +188,12 @@ Three things worth taking away:
 - **A partition filter is worth 13 of 14 files.** A filter on a column that
   merely *correlates* with the partition still skips 11 — Iceberg prunes on
   per-file column bounds, not only on partitions.
-- **A filter that cannot prune says nothing about it.** The `driver` filter
+- **A filter that cannot prune says nothing about it.** The `driver_name` filter
   returns exactly the right rows and reads every file. `scan_plan` is how you
   see that:
 
     ```python
-    quotes.scan_plan("driver = 'ULBridge'")["skipped"]   # 0
+    quotes.scan_plan("driver_name = 'ULBridge'")["skipped"]   # 0
     ```
 
 - **Declaring narrower widths than the store costs a conversion per row.**

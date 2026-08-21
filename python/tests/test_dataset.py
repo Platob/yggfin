@@ -183,6 +183,88 @@ def test_a_read_casts_only_when_asked(dataset: MemoryDataset) -> None:
     assert dataset.read_arrow_reader(narrow).schema.field("symbol").type == pyarrow.large_string()
 
 
+# -- appending --------------------------------------------------------------
+
+
+@field
+class Keyed(Convertible):
+    """One keyed row."""
+
+    symbol: Annotated[str, Field.primary_key()]
+    """Instrument."""
+
+    size: int
+    """Quantity."""
+
+
+@pytest.fixture
+def keyed() -> MemoryDataset:
+    return MemoryDataset(struct=Keyed.FIELD)
+
+
+def keyed_batch(symbols: list[str], sizes: list[int]) -> pyarrow.RecordBatch:
+    return batch_of(symbol=symbols, size=sizes)
+
+
+def stored_rows(dataset: MemoryDataset) -> dict[str, int]:
+    table = dataset.read_arrow_table()
+    return dict(zip(*(table.column(name).to_pylist() for name in ("symbol", "size")), strict=True))
+
+
+def test_append_without_merge_by_is_a_plain_write(keyed: MemoryDataset) -> None:
+    keyed.append_arrow(keyed_batch(["A"], [1]))
+    keyed.append_arrow(keyed_batch(["A"], [2]))
+    assert keyed.read_arrow_table().num_rows == 2, "falsy merge_by appends, same as a write"
+
+
+def test_append_merge_by_skips_stored_keys_and_never_rewrites(keyed: MemoryDataset) -> None:
+    keyed.write_arrow(keyed_batch(["A", "B"], [1, 2]))
+    keyed.append_arrow(keyed_batch(["B", "C"], [20, 3]), merge_by=True)
+    assert stored_rows(keyed) == {"A": 1, "B": 2, "C": 3}, "B keeps its stored value"
+
+
+def test_replaying_a_stream_appends_nothing(keyed: MemoryDataset) -> None:
+    batch = keyed_batch(["A", "B"], [1, 2])
+    keyed.append_arrow(batch, merge_by=True)
+    commits = len(keyed.commits)
+    keyed.append_arrow(batch, merge_by=True)
+    assert stored_rows(keyed) == {"A": 1, "B": 2}
+    assert len(keyed.commits) == commits, "a replay is not even a commit"
+
+
+def test_duplicate_keys_inside_the_stream_collapse_to_the_first(keyed: MemoryDataset) -> None:
+    keyed.append_arrow_reader(
+        iter([keyed_batch(["A", "A"], [1, 9]), keyed_batch(["A"], [8])]), merge_by=True
+    )
+    assert stored_rows(keyed) == {"A": 1}
+
+
+def test_append_merge_by_a_list_names_the_columns(keyed: MemoryDataset) -> None:
+    keyed.append_arrow(keyed_batch(["A"], [1]), merge_by=["symbol"])
+    keyed.append_arrow(keyed_batch(["A"], [9]), merge_by=["symbol"])
+    assert stored_rows(keyed) == {"A": 1}
+
+
+def test_a_null_merge_key_is_refused(dataset: MemoryDataset) -> None:
+    batch = batch_of(symbol=["A"], day=[datetime.date(2026, 8, 14)], size=[None])
+    with pytest.raises(ValueError, match="merge key and cannot be null"):
+        dataset.append_arrow(batch, merge_by=["size"])
+
+
+def test_append_creates_what_is_not_there(keyed: MemoryDataset) -> None:
+    assert not keyed.exists
+    keyed.append_arrow(keyed_batch(["A"], [1]), merge_by=True)
+    assert keyed.exists and stored_rows(keyed) == {"A": 1}
+
+
+def test_append_arrow_picks_the_method_by_what_it_is(keyed: MemoryDataset) -> None:
+    batch = keyed_batch(["A"], [1])
+    keyed.append_arrow(batch, merge_by=True)
+    keyed.append_arrow(pyarrow.Table.from_batches([batch]), merge_by=True)
+    keyed.append_arrow(iter([batch]), merge_by=True)
+    assert stored_rows(keyed) == {"A": 1}
+
+
 # -- chunking ---------------------------------------------------------------
 
 

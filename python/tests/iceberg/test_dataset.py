@@ -229,6 +229,83 @@ def test_a_dataset_round_trips_through_yaml(dataset: IcebergDataset) -> None:
     assert rebuilt.struct.into_arrow_schema().equals(Quote.FIELD.into_arrow_schema())
 
 
+# -- appending (insert-only merges) -----------------------------------------
+
+
+def stored_sizes(dataset: IcebergDataset) -> dict[str, int]:
+    table = dataset.read_arrow_table()
+    return dict(zip(*(table.column(name).to_pylist() for name in ("symbol", "size")), strict=True))
+
+
+def test_append_merge_by_inserts_new_keys_and_never_rewrites(dataset: IcebergDataset) -> None:
+    dataset.write_arrow_table(quotes(2))
+    changed = quotes(3).set_column(2, "size", pyarrow.array([90, 91, 92], pyarrow.int64()))
+    dataset.append_arrow_table(changed, merge_by=True)
+    assert stored_sizes(dataset) == {"S0": 0, "S1": 1, "S2": 92}, "stored rows keep their values"
+
+
+def test_a_replay_commits_no_snapshot(dataset: IcebergDataset) -> None:
+    dataset.append_arrow_table(quotes(3), merge_by=True)
+    before = len(dataset.iceberg_table.snapshots())
+    dataset.append_arrow_table(quotes(3), merge_by=True)
+    assert len(dataset.iceberg_table.snapshots()) == before, "nothing new means no commit"
+    assert dataset.read_arrow_table().num_rows == 3
+
+
+def test_append_scans_keys_not_rows(dataset: IcebergDataset) -> None:
+    """The insert's scan projects the key columns alone -- that is the point."""
+    dataset.write_arrow_table(quotes(4))
+    inserted = dataset.insert_arrow_table(quotes(6))
+    assert inserted == 2
+    assert stored_sizes(dataset) == {f"S{i}": i for i in range(6)}
+
+
+def test_insert_collapses_duplicate_keys_to_the_first(dataset: IcebergDataset) -> None:
+    day = datetime.date(2026, 8, 14)
+    chunk = pyarrow.Table.from_pydict(
+        {
+            "symbol": ["A", "A"],
+            "day": [day, day],
+            "size": [1, 9],
+            "venue": ["XPAR", "XPAR"],
+        },
+        schema=Quote.FIELD.into_arrow_schema(),
+    )
+    assert dataset.insert_arrow_table(chunk) == 1
+    assert stored_sizes(dataset) == {"A": 1}
+
+
+def test_insert_refuses_a_null_or_nan_key(dataset: IcebergDataset) -> None:
+    dataset.get_or_create_table()
+    day = datetime.date(2026, 8, 14)
+    schema = pyarrow.schema(
+        [
+            ("symbol", pyarrow.string()),
+            ("day", pyarrow.date32()),
+            ("size", pyarrow.int64()),
+            ("venue", pyarrow.string()),
+        ]
+    )
+    nulled = pyarrow.Table.from_pydict(
+        {"symbol": [None], "day": [day], "size": [1], "venue": ["XPAR"]}, schema=schema
+    )
+    with pytest.raises(ValueError, match="cannot be null"):
+        dataset.insert_arrow_table(nulled, ["symbol"])
+
+
+def test_append_without_merge_by_is_a_plain_append(dataset: IcebergDataset) -> None:
+    dataset.append_arrow_table(quotes(2))
+    dataset.append_arrow_table(quotes(2))
+    assert dataset.read_arrow_table().num_rows == 4
+
+
+def test_append_streams_one_commit_per_chunk(dataset: IcebergDataset) -> None:
+    reader = quotes(6).to_reader(max_chunksize=1)
+    dataset.append_arrow_reader(reader, merge_by=True, commit_row_size=2)
+    assert dataset.read_arrow_table().num_rows == 6
+    assert len(dataset.iceberg_table.snapshots()) == 3, "two rows per commit"
+
+
 def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None:
     """The parser's own shape, end to end: declared, created, written, read."""
     logs = IcebergDataset(
@@ -239,11 +316,14 @@ def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None
     )
     row = Log(
         url="a.txt",
-        unix=1,
-        date=datetime.date(2026, 8, 14),
-        time=datetime.time(0, 5, 1),
+        ulbridge_name="bridge-1",
+        recorded_at_unix=1,
+        recorded_at_date=datetime.date(2026, 8, 14),
+        recorded_at_time=datetime.time(0, 5, 1),
         thread_name="t",
-        driver="d",
+        driver_name="d",
+        category_id=0,
+        category_name="",
         message="m",
         hash64=2,
     )
@@ -257,8 +337,8 @@ def dataclass_row(row: Log) -> dict:
     """A `Log` as the plain values Arrow wants, dates and times included."""
     return {
         **row.into_dict(),
-        "date": row.date,
-        "time": row.time,
+        "recorded_at_date": row.recorded_at_date,
+        "recorded_at_time": row.recorded_at_time,
     }
 
 
