@@ -1610,6 +1610,37 @@ def test_a_temporal_key_bands_whatever_width_it_stores(kind: pyarrow.DataType) -
     assert type(banded).__name__ == "Or", "two clusters 900 days apart, and one range spans both"
 
 
+def test_a_key_range_bands_a_type_that_cannot_be_subtracted() -> None:
+    """Gaps are measured in the numbers a value was *placed* by, not in the
+    values: `datetime.time` has no subtraction at all, and measuring a gap in
+    the column's own values raised `TypeError` out of `_key_ranges` and out of
+    every merge and insert on a table keyed by one. It takes more than
+    `MERGE_RANGE_BANDS` occupied bands to reach the merging at all, which is
+    why two clusters never found it.
+    """
+    from pyiceberg.expressions.visitors import bind, rewrite_not
+    from pyiceberg.io.pyarrow import expression_to_pyarrow
+    from pyiceberg.schema import Schema
+    from pyiceberg.types import NestedField, TimeType
+
+    from rekep.iceberg.dataset import MERGE_RANGE_BANDS, _key_ranges
+
+    moments = [
+        datetime.time(second // 3600 % 24, second // 60 % 60, second % 60)
+        for cluster in range(MERGE_RANGE_BANDS * 3)
+        for second in (cluster * 2_000 + offset for offset in range(15))
+    ]
+    chunk = pyarrow.table(
+        {"at": pyarrow.chunked_array([pyarrow.array(moments, pyarrow.time64("us"))])}
+    )
+    ranges = _key_ranges(chunk, ["at"])
+    assert type(ranges).__name__ == "Or"
+
+    schema = Schema(NestedField(1, "at", TimeType(), required=True))
+    bound = expression_to_pyarrow(bind(schema, rewrite_not(ranges), case_sensitive=True))
+    assert chunk.filter(bound).num_rows == chunk.num_rows, "and it still covers every value"
+
+
 def test_a_key_range_covers_a_column_it_cannot_band(dataset: IcebergDataset) -> None:
     """A string key has no arithmetic to find gaps with, and a nanosecond
     timestamp has no bound pyarrow will hand back as a `datetime` at all. One

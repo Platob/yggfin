@@ -1838,10 +1838,10 @@ def _banded(column: str, values: Any) -> Any | None:
         if len(compute.unique(index)) * 10 >= slices * 9:
             return whole
         occupied = (
-            pyarrow.table({"value": values, "band": index})
+            pyarrow.table({"value": values, "place": numeric, "band": index})
             .group_by("band")
-            .aggregate([("value", "min"), ("value", "max")])
-            .sort_by([("value_min", "ascending")])
+            .aggregate([("value", "min"), ("value", "max"), ("place", "min"), ("place", "max")])
+            .sort_by([("place_min", "ascending")])
         )
     except (
         pyarrow.ArrowInvalid,
@@ -1851,11 +1851,18 @@ def _banded(column: str, values: Any) -> Any | None:
         OverflowError,
     ):
         return whole
+    # The literals a band is expressed as, and the numbers its gaps are
+    # measured in. They have to be both: a `time` cannot be subtracted from a
+    # `time` at all, so measuring a gap in the column's own values crashed
+    # every merge on a table keyed by one -- while a range still has to be
+    # spelled in the values Iceberg will compare against.
     bands = _fewest(
         list(
             zip(
                 occupied.column("value_min").to_pylist(),
                 occupied.column("value_max").to_pylist(),
+                occupied.column("place_min").to_pylist(),
+                occupied.column("place_max").to_pylist(),
                 strict=True,
             )
         ),
@@ -1865,19 +1872,29 @@ def _banded(column: str, values: Any) -> Any | None:
         return whole
     from pyiceberg.expressions import Or
 
-    return Or(*[_between(column, low, high) for low, high in bands])
+    return Or(*[_between(column, low, high) for low, high, _, _ in bands])
 
 
-def _fewest(bands: list[tuple[Any, Any]], keep: int) -> list[tuple[Any, Any]]:
+def _fewest(
+    bands: list[tuple[Any, Any, float, float]], keep: int
+) -> list[tuple[Any, Any, float, float]]:
     """`bands` reduced to at most `keep`, always by closing the smallest gap.
+
+    Each band is `(low, high, where low is, where high is)` -- the first two
+    spell the range, the last two measure it. Gaps are compared in the numbers
+    because the values cannot always be subtracted: `datetime.time` has no
+    subtraction at all, and a merge key of that type raised `TypeError` out of
+    here, out of `_key_ranges`, and out of every merge and insert on the table.
 
     Merging two adjacent bands into one range only ever *widens* what the
     filter matches, so no value can fall out of it; which gaps survive is a
     quality choice, and the widest are the ones worth keeping.
     """
     while len(bands) > keep:
-        gap = min(range(len(bands) - 1), key=lambda i: bands[i + 1][0] - bands[i][1])
-        bands[gap : gap + 2] = [(bands[gap][0], bands[gap + 1][1])]
+        gap = min(range(len(bands) - 1), key=lambda i: bands[i + 1][2] - bands[i][3])
+        bands[gap : gap + 2] = [
+            (bands[gap][0], bands[gap + 1][1], bands[gap][2], bands[gap + 1][3])
+        ]
     return bands
 
 
