@@ -166,13 +166,14 @@ class BookSide(MarketEvent):
         That is the honest shape of an aggregated book, and it is what a venue
         that publishes levels rather than orders gives you anyway.
         """
+        self._facing(order)
         if order.px is None:
             raise ValueError(
                 f"order {order.xhash} has no price and so never rests: "
                 "a market order is an execution against this side, not a level on it"
             )
         resting = 0.0 if order.state.is_terminal else _resting(order)
-        return self._moved(order, order.px, resting * order.side.sign * self.side.sign)
+        return self._moved(order, order.px, resting)
 
     def append_execution(self, execution: Execution) -> Self:
         """Take a fill's quantity out of this side, and record the trade.
@@ -181,6 +182,7 @@ class BookSide(MarketEvent):
         and a restatement share the same message type, and subtracting their
         quantity is how a book ends up empty by lunchtime.
         """
+        self._facing(execution)
         if not execution.kind.moves_shares or execution.px is None or execution.qty is None:
             return self
         traded = LevelExecution(
@@ -192,6 +194,26 @@ class BookSide(MarketEvent):
         )
         self.executions = [*(self.executions or []), traded]
         return self._moved(execution, execution.px, -abs(execution.qty))
+
+    def _facing(self, event: MarketEvent) -> None:
+        """Refuse an event that does not belong on this side.
+
+        A sell order does not rest on the bid; it *takes* from it, which is an
+        execution and a different method. Left unchecked the direction was a
+        factor in the arithmetic, so a mismatched order quietly removed
+        liquidity instead of being refused -- and an event with no side at all
+        moved a level by nothing and recorded a `DELETE` of a level that had
+        never existed. Both were silent, and both were wrong.
+        """
+        if not self.side.sign:
+            raise ValueError(
+                f"a book side is a bid or an ask, not {self.side.name}: "
+                "set `side` before appending anything to it"
+            )
+        if event.side.sign != self.side.sign:
+            raise ValueError(
+                f"a {event.side.name} event does not belong on the {self.side.name} side of a book"
+            )
 
     def _moved(self, event: MarketEvent, px: float, delta: float) -> Self:
         """One level moved by `delta`, with the update and the lineage recorded."""
@@ -394,7 +416,12 @@ class Book(MarketEvent):
         `from_side` puts the result back. One walk, one set of rules, whichever
         shape is holding them.
         """
-        name = "bid" if event.side.sign >= 0 else "ask"
+        if not event.side.sign:
+            raise ValueError(
+                f"a {event.side.name} event names no side of the book to go on: "
+                "set `side` on it, or append it to the side you mean directly"
+            )
+        name = "bid" if event.side.sign > 0 else "ask"
         return self.from_side(name, getattr(self.into_side(name), method)(event))
 
     # -- the sides, lifted and put back --------------------------------------

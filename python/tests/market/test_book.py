@@ -370,3 +370,35 @@ def test_a_book_lifts_a_side_out_and_puts_it_back_unchanged() -> None:
     assert side.alive == built.bid_alive
     with pytest.raises(ValueError, match="bid and an ask"):
         built.into_side("middle")
+
+
+def test_an_order_on_the_wrong_side_is_refused_rather_than_netted_off() -> None:
+    """It used to be a factor in the arithmetic, so it removed liquidity in silence."""
+    side = BookSide(side=Side.BID)
+    side.append_order(Order(side=Side.BUY, px=10.0, qty=100.0, state=State.NEW))
+    with pytest.raises(ValueError, match="does not belong on the"):
+        side.append_order(Order(side=Side.SELL, px=10.0, qty=40.0, state=State.NEW))
+    assert side.alive[0].qty == 100.0, "and nothing moved while it was refused"
+
+
+def test_an_event_with_no_side_is_refused_everywhere() -> None:
+    """It moved a level by nothing and recorded a delete of one that never existed."""
+    with pytest.raises(ValueError, match="does not belong on the"):
+        BookSide(side=Side.BID).append_order(Order(px=10.0, qty=100.0, state=State.NEW))
+    with pytest.raises(ValueError, match="names no side"):
+        Book().append_event(Order(px=10.0, qty=100.0, state=State.NEW))
+
+
+def test_a_side_that_is_neither_a_bid_nor_an_ask_is_refused() -> None:
+    with pytest.raises(ValueError, match="a bid or an ask"):
+        BookSide(side=Side.CROSS).append_order(
+            Order(side=Side.CROSS, px=10.0, qty=1.0, state=State.NEW)
+        )
+
+
+def test_a_fill_on_the_wrong_side_is_refused_too() -> None:
+    side = BookSide(side=Side.ASK)
+    side.append_order(Order(side=Side.SELL, px=10.0, qty=100.0, state=State.NEW))
+    with pytest.raises(ValueError, match="does not belong on the"):
+        side.append_execution(Execution(side=Side.BUY, px=10.0, qty=5.0, kind=ExecKind.TRADED))
+    assert side.alive[0].qty == 100.0
