@@ -895,24 +895,24 @@ table, and splitting the two would report a number no caller can have:
 
 | message | events out | measured |
 | --- | --- | --- |
-| `NewOrderSingle <D>` | 1 | ~15k messages/s |
-| `ExecutionReport <8>`, filled | 2 | ~7.5k messages/s, ~15k events/s |
-| `MarketDataIncrementalRefresh <X>`, 5 entries | 5 | ~3.7k messages/s, ~19k events/s |
+| `NewOrderSingle <D>` | 1 | ~14.3–14.7k messages/s |
+| `ExecutionReport <8>`, filled | 2 | ~7.3k messages/s, ~14.6–14.7k events/s |
+| `MarketDataIncrementalRefresh <X>`, 5 entries | 5 | ~3.5k messages/s, ~17.4–17.6k events/s |
 
 Per *event* the three agree within a fifth, which is the useful reading: the
 cost is the event, not the message. Getting there took three measured changes —
 `FixMessage.get` is a scan and then a regex scan, which cost **434 regex matches
 per message** when the translation read forty fields off one; the tag mapping
 was rebuilt per message; and the fold-vs-alternation choice for a key was
-[raced rather than assumed](fix.md#benchmarks). Together, 7.1k → 16k events/s
-on a `NewOrderSingle`.
+[raced rather than assumed](fix.md#benchmarks). Together, **2.1×** on a
+`NewOrderSingle`.
 
 **Folding a book**, 100,000 events of one instrument, a quarter of which
 restate an order already resting:
 
 | case | measured |
 | --- | --- |
-| `Book.from_events` | ~115 µs/event, ~6.4k books/s |
+| `Book.from_events` | ~119 µs/event, ~6.3k books/s |
 
 The fold keeps every live order, so its cost is the events and the depth rather
 than the books. Three measured changes got it there, 2.2× together: a `Ranged`

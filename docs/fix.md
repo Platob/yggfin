@@ -315,7 +315,7 @@ twice.
 | wire messages, twelve fields per row | ~300k rows/s, ~5× the scalar parser |
 | rendered messages | ~140–260k rows/s, depending on group density |
 | all-numeric keys, `tag_arrow_array` | ~140M keys/s |
-| `from_pairs`, nine keys a row, mixed spellings | ~70k rows/s, ~630k fields/s |
+| `from_pairs`, nine keys a row, mixed spellings | ~61k rows/s, ~550k fields/s |
 
 **Resolving a key.** The last row is a scalar path, so the sweep also races the
 three readings of a key on their own, at two dictionary sizes — because an
@@ -325,10 +325,13 @@ right:
 
 | reading, resolving to a **tag** | 9 names | 1,500 names |
 | --- | --- | --- |
-| probe, then fold — what ships | ~3.8M keys/s | ~3.4M keys/s |
-| fold, then probe | ~3.1M keys/s | ~3.0M keys/s |
-| one compiled case-insensitive alternation | ~4.2M keys/s | **~89k keys/s** |
-| lower, then probe — no folding at all | ~19M keys/s | ~19M keys/s |
+| probe, then fold — what ships | ~3.2–3.3M keys/s | ~3.3–3.4M keys/s |
+| fold, then probe | ~2.7M keys/s | ~2.6–2.8M keys/s |
+| one compiled case-insensitive alternation | ~3.9–4.0M keys/s | **~83k keys/s** |
+| lower, then probe — no folding at all | ~16–18M keys/s | ~17–18M keys/s |
+
+The alternation is the only row that moves with the dictionary, and it moves by
+**48×**. A hash probe does not move at all.
 
 The last row is the floor and not a contender: it resolves `msg_type` to
 nothing. What the shipped reading costs against it is the fold, and it is only

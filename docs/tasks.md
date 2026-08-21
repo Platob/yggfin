@@ -306,8 +306,8 @@ message carries three entries:
 
 | case | measured |
 | --- | --- |
-| events only: parse, translate, write | ~2.1k messages/s |
-| and folded into books | ~1.1k messages/s, **~0.5×** |
+| events only: parse, translate, write | ~2.7k messages/s |
+| and folded into books | ~1.3k messages/s, **~0.5×** |
 
 So the fold roughly doubles the job, which is what a pass that has to see a
 whole instrument's stream costs against two that stream. The per-event cost of
