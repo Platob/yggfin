@@ -55,7 +55,7 @@ into a history.
     Separate because they answer different questions and disagree constantly:
     by microseconds on a good day, and by hours when something upstream has
     gone wrong. All five are whole nanoseconds since the epoch as `int64`, like
-    [`Log.recorded_at_unix`](logs.md) and for the same reason — a timestamp
+    [`Log.unix`](logs.md) and for the same reason — a timestamp
     width or zone that a downstream is picky about is a conversion per row.
 
     A snapshot's own `unix` is when the picture was taken, because that is what

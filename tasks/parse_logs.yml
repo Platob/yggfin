@@ -1,0 +1,105 @@
+# Parse a capture of trading logs into one Iceberg table per kind of event it
+# holds -- in one pass, streamingly.
+#
+# This file *is* the job. Nothing here is code:
+#
+#     from rekep import Task
+#     Task.from_yaml("tasks/parse_logs.yml").run()
+#
+# or from a shell, without writing any Python at all:
+#
+#     python -c "from rekep import Task; print(Task.from_yaml('tasks/parse_logs.yml').run())"
+#
+# Every line below is a field of `rekep.tasks.ParseLogs`, so the class's
+# docstrings are the reference for what each one means.
+
+kind: parse_logs
+name: parse-trading-logs
+
+# -- what to read ------------------------------------------------------------
+
+# A folder or a single file. A bare path, a `file://` URI, `s3://bucket/prefix`
+# and a Windows drive letter are all read the same way; which of the two it is
+# is decided by asking the filesystem, not by the shape of the string.
+source: ../data/capture
+
+# Which files in the folder, and whether to descend into it.
+pattern: "*.log*"
+recursive: true
+
+# The IANA zone the wall clock in the log header belongs to. Leave it out and
+# the clock is read as UTC, which is a guess that is wrong by the offset for
+# any log that is not. Naming it is what makes `unix` a real instant.
+timezone: Europe/Paris
+
+# -- what each line is about --------------------------------------------------
+
+# Tried in order, first match wins, and a line nothing matches is `UNKNOWN` --
+# still parsed, still keyed, still partitioned, and landed in `unknown_logs`.
+# Dropping it would make the job lossy exactly when a log format changes.
+#
+# Delete this whole block to take the defaults, which read a FIX trading log by
+# both spellings every one of them uses: the wire `35=` message type, and the
+# name a rendered log prints.
+rules:
+  rules:
+    - pattern: '35=8(\D|$)|ExecutionReport'
+      etype: EXECUTION
+      label: a fill, or a report of one
+    - pattern: '35=[DFG](\D|$)|NewOrderSingle|OrderCancel(Request|Replace)'
+      etype: ORDER
+      label: an order, or an amendment to one
+    - pattern: '35=X(\D|$)|MarketDataIncrementalRefresh'
+      etype: BOOK_SIDE
+      label: an incremental book update
+    - pattern: '35=W(\D|$)|MarketDataSnapshot'
+      etype: BOOK
+      label: a full book snapshot
+    - pattern: '35=[SR](\D|$)|Quote(Request)?\b'
+      etype: QUOTE
+      label: a quote, or a request for one
+    - pattern: '35=d(\D|$)|SecurityDefinition'
+      etype: INSTRUMENT
+      label: reference data
+
+# -- where it lands -----------------------------------------------------------
+
+# `{event_type}` is the lower-cased `EventType` name, so this produces
+# `logs.order_logs`, `logs.execution_logs`, ... `logs.unknown_logs`. Each is
+# created on the first write to it, partitioned by `hunix` -- the hour the line
+# happened in.
+catalog: rekep
+namespace: logs
+table: "{event_type}_logs"
+
+# How to reach the catalog. This one is a local SQLite catalog with a local
+# warehouse, which needs nothing running; a REST or Glue catalog is the same
+# three keys pointed somewhere else.
+properties:
+  type: sql
+  uri: sqlite:///../data/catalog.db
+  warehouse: file://../data/warehouse
+
+# Columns every row carries that the file itself never states -- which bridge
+# wrote the capture, which desk, which environment. Nothing is hardcoded in the
+# shape; a source names its own.
+static_values:
+  bridge: bridge-1
+  environment: prod
+
+# -- how it runs --------------------------------------------------------------
+
+# Skip rows a target already holds. This is an *append's* merge: nothing stored
+# is ever rewritten and no delete file is produced, so re-running this over a
+# capture that grew by a day costs the day. Set it to false to append
+# everything, duplicates included.
+merge_by: true
+
+# Rows the parser puts in one batch, and rows a target buffers before it
+# commits. The second is what bounds the job's memory: roughly
+# `targets * commit_row_size` rows, so about 1.5M rows across six targets here.
+batch_row_size: 65536
+commit_row_size: 250000
+
+# Stop after this many rows. Uncomment for a dry run over a large capture.
+# limit: 1000

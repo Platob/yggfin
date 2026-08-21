@@ -3,7 +3,8 @@
 Every number on this site was measured, and it lives on the page it is about:
 casting is on [Types](types.md#benchmarks), parsing on
 [Logs](logs.md#benchmarks), FIX on [FIX](fix.md#benchmarks), identifiers and
-books on [Market](market.md#benchmarks), and everything about tables on
+books on [Market](market.md#benchmarks), whole jobs on
+[Tasks](tasks.md#benchmarks), and everything about tables on
 [Iceberg](iceberg.md#benchmarks). This page is the method —
 what the scripts do, and how to read what they print.
 
@@ -20,6 +21,7 @@ uv run python benchmarks/bench_text_file.py --only folders   # a capture of many
 uv run python benchmarks/bench_cast.py                       # casting data onto a shape
 uv run python benchmarks/bench_fix.py                        # FIX, scalar and vectorised
 uv run python benchmarks/bench_market.py                     # identifiers, and a book's prices
+uv run python benchmarks/bench_tasks.py                      # parse, fan out, append with a merge
 uv run python benchmarks/bench_iceberg.py                    # parse, stream in, read back
 uv run python benchmarks/bench_iceberg.py --only maintain    # the maintenance
 uv run python benchmarks/bench_iceberg.py --only update      # the half that rewrites
@@ -38,6 +40,7 @@ you are changing a benchmark rather than reading one.
 | [Logs](logs.md#benchmarks) | parsing one log; parsing a folder of them; shipping the bytes | `bench_text_file.py` |
 | [FIX](fix.md#benchmarks) | the scalar parser, the vectorised one, and turning keys into tags | `bench_fix.py` |
 | [Market](market.md#benchmarks) | building identifier columns, and deriving a book's flat prices | `bench_market.py` |
+| [Tasks](tasks.md#benchmarks) | parsing a capture, fanning it out, and what a replay costs | `bench_tasks.py` |
 | [Iceberg](iceberg.md#benchmarks) | commits, merges, reads, maintenance, backfills, and store calls | `bench_iceberg.py` |
 
 ## How to read a number

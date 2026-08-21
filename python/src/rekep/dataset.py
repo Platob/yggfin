@@ -100,6 +100,17 @@ class Dataset(Convertible, abc.ABC):
             return keys
         return list(merge_by)
 
+    @property
+    def records(self) -> int | None:
+        """How many rows this holds, when the store can say without reading them.
+
+        None by default, which means "this store cannot say cheaply" and is a
+        different answer from zero. A caller that needs the number counts it;
+        one that only wants to report what it landed says so, or says it does
+        not know -- rather than paying for a scan to decorate a log line.
+        """
+        return None
+
     # -- creating -----------------------------------------------------------
 
     @property

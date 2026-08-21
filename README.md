@@ -54,7 +54,7 @@ capture = TextFiles.from_folder(
 )
 logs.append_arrow(capture.read_arrow_reader(), merge_by=True, commit_row_size=1_000_000)
 
-logs.read_arrow_table(row_filter="recorded_at_date = '2026-08-14'")
+logs.read_arrow_table(row_filter="hunix = 1786665600000000000")
 logs.optimize()                      # compact, expire, sweep
 ```
 
@@ -95,6 +95,14 @@ logs.optimize()                      # compact, expire, sweep
   to reach into a nested list that no engine below prunes on — and
   `book.append_event(order)` builds one out of events, versioning and linking
   each step as it goes.
+- **`tasks`** — a unit of work declared in a document rather than written as a
+  script: `Task.from_yaml("tasks/parse_logs.yml").run()`. `ParseLogs` is the
+  one shipped, and it is the job a capture needs — one streaming pass over a
+  folder of logs, every line classified by regular expression, each landing in
+  the Iceberg table for what it is about (`order_logs`, `execution_logs`, …
+  `unknown_logs`). Appending with a merge, so re-running it over a capture that
+  grew by a day costs the day. `tasks/parse_logs.yml` is a commented example
+  and `tasks/parse_logs.ipynb` runs one end to end.
 - **`convert`** — `Convertible`: paired `from_*`/`into_*` methods that serialise
   any dataclass to dict, JSON, YAML or TOML and back.
 

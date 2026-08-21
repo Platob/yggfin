@@ -206,20 +206,42 @@ stream — in path order, one file open at a time, over any filesystem
 is also published as a [contract](contracts.md) at `schemas/rekep/log.yaml`,
 so a consumer that does not import this package still knows what a row is.
 
+**A parsed line is an [`Event`](market.md)**, which is what lets a capture be
+read beside the orders and books it describes rather than beside nothing. It
+carries the same envelope every other event does, and adds four columns of its
+own:
+
 | column | type | what it is |
 | --- | --- | --- |
+| `unix` | `int64` | nanoseconds since the epoch — **primary key** with `hash` |
+| `hunix` | `int64` | `unix` floored to the hour — **partition** |
+| `etype` | `int32` | which kind of event the line is, decided by `LogRules` |
+| `hash` | `fixed_size_binary[16]` | xxh3-128 of the raw line — **primary key** with `unix` |
+| `xhash` | `fixed_size_binary[16]` | the same digest: a line is its own lifecycle |
 | `url` | `string` | the log the line came from |
-| `recorded_at_unix` | `int64` | nanoseconds since the epoch — **primary key** with `h64` |
-| `recorded_at_date` | `date32` | the local calendar day — **partition** |
-| `recorded_at_time` | `time64[us]` | the local time of day |
 | `thread_name` | `string` | the first bracketed field |
 | `driver_name` | `string` | the second bracketed field |
-| `category_id` | `int32` | categorisation placeholder — `0` until assigned, never null |
-| `category_name` | `string` | categorisation placeholder — empty until assigned, never null |
 | `message` | `string` | payload, continuations folded in |
-| `h64` | `int64` | xxh3-64 of the raw line — **primary key** with `recorded_at_unix` |
 
-…and then whatever `static_values` declares, in the order it declares them.
+…the rest of the envelope (`cunix`, `runix`, `version`, `state`, the
+previous-version columns), and then whatever `static_values` declares, in the
+order it declares them. The envelope's unused half is constant down a whole
+capture, where run-length and dictionary encoding collapse it to nothing.
+
+**The digest is sixteen bytes, not sixty-four bits.** A capture is exactly the
+scale at which the birthday argument bites — a few billion lines is a week of a
+busy feed — and two colliding lines merge into one row nothing downstream can
+tell from a genuine duplicate.
+
+**The partition is the hour, and it is derived from the instant.** That is the
+reverse of the day-and-time columns it replaces, and deliberately: a partition
+has to be a function of the column a reader filters on, and that column is
+`unix`. Two logs written in different zones at the same moment then land in the
+same partition, which is the only reading under which partitioning prunes
+anything. An hour rather than a day because a day of ticks is one partition,
+which prunes nothing inside a session; the same `int64` as `unix` because a
+partition filter and a time filter are then one comparison, with no cast
+between a date and an instant in the middle of it.
 
 === "Inspect it"
 
@@ -227,9 +249,9 @@ so a consumer that does not import this package still knows what a row is.
     from rekep import Log
 
     Log.FIELD.names                                   # the columns above
-    Log.FIELD.field("recorded_at_unix").metadata      # {'unit': 'nanosecond', ...}
-    Log.FIELD.primary_keys()                          # ['recorded_at_unix', 'h64']
-    Log.FIELD.partition_keys()                        # {'recorded_at_date': 'identity'}
+    Log.FIELD.field("unix").metadata      # {'unit': 'nanosecond', ...}
+    Log.FIELD.primary_keys()                          # ['unix', 'hash']
+    Log.FIELD.partition_keys()                        # {'hunix': 'identity'}
     ```
 
 === "Local time"
@@ -240,7 +262,7 @@ so a consumer that does not import this package still knows what a row is.
     ```
 
     A log writes a wall clock and says nothing about which one. Naming the zone
-    turns the same characters into a real instant (`recorded_at_unix`); leaving it out keeps
+    turns the same characters into a real instant (`unix`); leaving it out keeps
     the older reading — the clock *is* UTC — rather than inventing a zone. A
     set passes whatever it is given to every file it opens.
 
@@ -276,11 +298,67 @@ so a consumer that does not import this package still knows what a row is.
     this type". A bare `None` is refused: Arrow's `null` type is a column no
     store can widen later.
 
+## What each line is about
+
+`etype` is what the line is *about* — an order, a fill, a book update — and
+`LogRules` decides it. The rules are nothing but data: an ordered list of
+regular expressions, matched against the message.
+
+=== "The defaults"
+
+    ```python
+    from rekep.logs import TextFiles
+
+    files = TextFiles.from_folder("/var/log/app")     # the default rules
+    table = files.read_arrow_table()
+    table.column("etype").to_pylist()                 # 210, 110, 0, 310, ...
+    ```
+
+    They read a FIX trading log by the two spellings every one of them uses:
+    the wire `35=` message type, and the name a rendered log prints. So
+    `35=8|` and `sent ExecutionReport for cl-1` are both an `EXECUTION`.
+
+=== "Your own"
+
+    ```python
+    from rekep.logs.log import LogRule, LogRules
+    from rekep.market import EventType
+
+    rules = LogRules(rules=[
+        LogRule(r"\bTIMEOUT\b", EventType.UNKNOWN, "a stall"),
+        LogRule(r"OrderAck", EventType.ORDER, "our own gateway's spelling"),
+    ])
+    TextFiles.from_folder("/var/log/app", rules=rules)
+    ```
+
+    A desk with its own log format writes its own rules rather than patching
+    this package — and because they are data, they travel in a
+    [task document](tasks.md) with the rest of the job. `LogRules.from_yaml`
+    reads a set on its own.
+
+=== "What it costs"
+
+    ```python
+    LogRules().etype_arrow(batch.column("message"))    # one kernel per rule
+    ```
+
+    One Arrow kernel per rule over the whole message column, applied in
+    reverse so the earliest rule is the one that survives. A handful of passes
+    per batch, nothing per row.
+
+**The first match wins, and no match is `UNKNOWN`.** Both halves matter. An
+ordered list is what lets a specific rule sit in front of a general one without
+either having to know about the other — an execution report quoting the order
+it fills names both, and it is a fill. And a line nothing matches is still a
+line: it is parsed, keyed and partitioned like every other, under a type that
+says plainly that nobody has classified it. Dropping it, or guessing, is how a
+log stops being a record of what happened.
+
 ## Writing one
 
 Writes render the header back — in Arrow string kernels, not a loop — so a file
 written here parses back into the same rows. Give the writer the same
-`timezone` you gave the reader: `recorded_at_unix` is an instant and a line is a wall
+`timezone` you gave the reader: `unix` is an instant and a line is a wall
 clock, so the zone is what turns one back into the other.
 
 === "Round trip"
@@ -299,7 +377,7 @@ clock, so the zone is what turns one back into the other.
     # only the columns a line is made of; the rest is derived when it is read
     batch = pyarrow.RecordBatch.from_pydict(
         {
-            "recorded_at_unix": [...],
+            "unix": [...],
             "thread_name": [...],
             "driver_name": [...],
             "message": [...],
@@ -354,7 +432,7 @@ a read and a write, with nothing in between.
     with TextFile.from_path("app.txt.gz", static_values={"bridge": "bridge-1"}) as log:
         logs.append_arrow(
             log.read_arrow_reader(),   # streamed, never materialised
-            merge_by=True,             # insert only new (recorded_at_unix, h64)
+            merge_by=True,             # insert only new (unix, h64)
             commit_row_size=1_000_000, # one snapshot per million rows
         )
     ```
@@ -378,8 +456,8 @@ a read and a write, with nothing in between.
 
     ```python
     logs.read_arrow_table(
-        row_filter="recorded_at_date = '2026-08-14'",             # pushed to the planner
-        columns=["recorded_at_unix", "driver_name", "message"],   # so is the projection
+        row_filter="hunix = 1786665600000000000",             # pushed to the planner
+        columns=["unix", "driver_name", "message"],   # so is the projection
     )
     ```
 
@@ -473,7 +551,7 @@ turning folding off does not reliably move it either, and only a trace every
 not a regex match.
 
 And **the hash is worth a quarter of the parser**. That row is the reason
-`xxhash` is a hard dependency rather than an extra: `h64` is half of the
+`xxhash` is a hard dependency rather than an extra: `hash` is half of the
 primary key, so which hash produced it is data — under a fallback the same line
 would be keyed differently in two environments — and the fallback would cost
 26% of the parse as well.

@@ -18,6 +18,7 @@ import pyarrow.fs
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
+from rekep.logs.log import LogRules
 from rekep.logs.text_file import (
     DEFAULT_BATCH_ROW_SIZE,
     DEFAULT_READ_BYTE_SIZE,
@@ -128,6 +129,11 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: passed to every file the walk opens, so a set is one shape and not one
     #: per file.
     static_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
+
+    #: What decides each line's `etype`, handed to every file the set opens --
+    #: a folder of one capture is one log format, so the rules belong to the
+    #: set and not to each file in it.
+    rules: LogRules = dataclass_field(default_factory=LogRules)
 
     def __post_init__(self) -> None:
         """Resolve one filesystem for every root, and rewrite the roots as paths on it."""
@@ -327,6 +333,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 row=self.row,
                 timezone=self.timezone,
                 static_values=self.static_values,
+                rules=self.rules,
             )
 
     def _walk(self, directory: str, seen: set[str] | None = None) -> Iterator[pyarrow.fs.FileInfo]:

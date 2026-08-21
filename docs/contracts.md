@@ -385,11 +385,11 @@ and a pre-commit hook need without writing Python, so they are a command.
     ```text
     Log: 10 columns, builds
       url: string
-      recorded_at_unix: int64  [primary key]
-      recorded_at_date: date32[day]  [partition identity]
+      unix: int64  [primary key]
+      hunix: date32[day]  [partition identity]
       ...
-      primary keys: ['recorded_at_unix', 'h64']
-      partition keys: {'recorded_at_date': 'identity'}
+      primary keys: ['unix', 'hash']
+      partition keys: {'hunix': 'identity'}
     ```
 
     Parsing is not the check — **building** is. A document can be valid YAML

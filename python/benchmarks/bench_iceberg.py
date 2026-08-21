@@ -888,9 +888,7 @@ def stored_narrow(target: IcebergDataset) -> Any:
 
     schema = target.table_field.into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema(
-            [schema.field(name) for name in ("unix", "driver_name", "message")]
-        ),
+        pyarrow.schema([schema.field(name) for name in ("unix", "driver_name", "message")]),
         "Narrow",
     )
 
@@ -901,9 +899,7 @@ def narrow_field() -> Any:
 
     schema = Log.FIELD.into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema(
-            [schema.field(name) for name in ("unix", "driver_name", "message")]
-        ),
+        pyarrow.schema([schema.field(name) for name in ("unix", "driver_name", "message")]),
         "Narrow",
     )
 

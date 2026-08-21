@@ -343,7 +343,7 @@ goes.
     holding a zero, because the inner half becomes an `In` and `pc.is_in`
     hashes `-0.0` apart from the `0.0` it equals; and a key that repeats
     nothing, where one group per row is the tree it already builds. The second
-    is measured too — `(at, h64)` at 0.51–11.94 s for the same 500 to 5,000
+    is measured too — `(at, hash)` at 0.51–11.94 s for the same 500 to 5,000
     rows — because an exact filter over *n* arbitrary key pairs is *n* terms
     and there is no smaller way to say it.
 
@@ -848,16 +848,16 @@ between runs, so both runs are quoted.
 | `date = '2026-08-14'` (partition) | 0.024–0.025 | 62,500 | 1 | 14 |
 | partition + 3 of 8 columns | 0.016–0.019 | 62,500 | 1 | 14 |
 | 3 of 8 columns, no filter | 0.055–0.061 | 500,000 | 15 | 0 |
-| `recorded_at_unix < …` (correlates with the partition) | 0.042–0.062 | 125,000 | 3 | 12 |
+| `unix < …` (correlates with the partition) | 0.042–0.062 | 125,000 | 3 | 12 |
 | `driver_name = 'ULBridge'` (no useful statistics) | 0.093–0.105 | 125,000 | 15 | **0** |
 | narrow shape, projection from the shape | 0.058–0.064 | 500,000 | 15 | 0 |
 | narrow shape declared with the store's widths | 0.050–0.059 | 500,000 | 15 | 0 |
 
 One more, measured separately because it is a write-side choice: sorting each
 commit on the column a read filters. On a single 600k-row commit, a filter
-matching the top 5% of `recorded_at_unix` values took **214 ms** when the rows
+matching the top 5% of `unix` values took **214 ms** when the rows
 arrived shuffled and **22 ms** when the commit was sorted
-(`sort_by=["recorded_at_unix"]`), with one file planned in both cases. That is
+(`sort_by=["unix"]`), with one file planned in both cases. That is
 row-group skipping inside the file, and it only exists because
 `write.parquet.row-group-limit` is set: Iceberg's default of a million rows per
 group would make the whole file one group with nothing to skip.
@@ -969,7 +969,7 @@ reading of this one.
 
 | partitioning | run 1 | run 2 | run 3 |
 | --- | --- | --- | --- |
-| identity (`recorded_at_date`) | 13 | 0 | 0 |
+| identity (`hunix`) | 13 | 0 | 0 |
 | none | 10 | 0 | 0 |
 | transform (`day`), before | 13 | **4** | **4** |
 | transform (`day`), after | 13 | **0** | **0** |
@@ -1032,7 +1032,7 @@ distinct values says the repeated half once. The filter stays exact, and
 [the tests](https://github.com/Platob/rekep/blob/main/python/tests/iceberg/test_coherence.py)
 compare it against pyiceberg's own row for row rather than against itself.
 
-**A key that repeats nothing** — `(at, h64)`, where every value of both
+**A key that repeats nothing** — `(at, hash)`, where every value of both
 halves is distinct — is left alone, because one group per row is the tree
 `create_match_filter` already builds. Its numbers are what a merge of many
 updates costs when nothing can be factored out of it, and they are here because

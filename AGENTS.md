@@ -299,6 +299,27 @@ The middle one must be asked, and asked second: a `dictionary<int32, int32>`
 of ranged codes has an index and a value type of the same width, and indices
 encoded as values point every row at the wrong member.
 
+**A task is a document, and a log line is an event.** A job is configuration
+(`Task.from_yaml(...).run()`), dispatched on a `kind` the way everything else
+here dispatches, and it **returns what it did** rather than printing it -- like
+every maintenance verb. A parsed log carries the same `Event` envelope as an
+order or a book, so a capture is read beside what it describes; its `hash` is
+the digest of the raw line, sixteen bytes because a capture is exactly the
+scale where sixty-four bits collide, and `xhash` is the same digest because a
+line is one version of one thing. What a line is *about* is an ordered list of
+regexes (`LogRules`), first match winning, no match `UNKNOWN` -- and a line
+nothing matches still lands, because dropping it makes a job lossy exactly when
+a log format changes.
+
+**Fan out in one pass, and say what it costs.** Splitting a stream into N
+targets is one read, N buffers and a flush at `commit_row_size` -- so the
+memory is `targets * commit_row_size` rows and is stated, not discovered.
+Re-running is an **append's** merge, never a write's: a stored key is skipped,
+nothing stored is rewritten, no delete file is produced, so a capture that grew
+by a day costs the day. Splitting measured *cheaper* than one table (2.0-2.1x),
+because the anti-join is per target; committing twenty times instead of twice
+measured 3.4x dearer (`benchmarks/bench_tasks.py`).
+
 ## 9. A dataset is a stream in and a stream out
 
 `Dataset` is three methods -- `into_struct_field`, `read_arrow_reader`,
@@ -464,22 +485,30 @@ rekep/
 │                  JSON or a zip of the same -- the extension decides --
 │                  published here as data/fix.zip, with lookup and fuzzy
 │                  search, all names case-insensitive)
-└── logs/          log.py (the Log shape), text_file.py (TextFile: a log read
-                   into Arrow batches and written back out as lines, itself a
-                   Dataset) and text_files.py (TextFiles: a folder of them as one
-                   ordered stream -- the lazy pyarrow.fs walk, the batch
-                   combining, and the raw/compressed byte flow)
+├── logs/          log.py (Log -- a parsed line, which is an `Event`; and
+│                  LogRules, the ordered regexes that decide its `etype`),
+│                  text_file.py (TextFile: a log read into Arrow batches and
+│                  written back out as lines, itself a Dataset) and
+│                  text_files.py (TextFiles: a folder of them as one ordered
+│                  stream -- the lazy pyarrow.fs walk, the batch combining, and
+│                  the raw/compressed byte flow)
+└── tasks/         a unit of work declared in a document: task.py (Task, the
+                   `kind` dispatch and the TaskRun report) and logs.py
+                   (ParseLogs: one streaming pass over a capture, fanned out
+                   into one Iceberg table per event type)
 ```
 
 Beside `python/`, `schemas/` holds the published contracts (one directory per
 namespace, one file per shape), `data/` the dictionaries this repository
 publishes -- the FIX one as `data/fix.zip`, which is a `FixRegistry` cache
-and nothing else -- and `docs/` the site.
+and nothing else -- `tasks/` the job documents and the notebook that runs one,
+and `docs/` the site.
 
-Dependencies point one way: `logs`/`iceberg` -> `dataset` -> `fields` ->
-`convert` -> `annotations`, and `fix`/`market` sit beside `dataset` on the same
-`fields` base -- `market` reaching into `fix` only for the datatype table its
-tests check the tags against. `urls` is a leaf below all of it: `filesystems`, `convert`,
+Dependencies point one way: `tasks` -> `logs`/`iceberg` -> `dataset` ->
+`fields` -> `convert` -> `annotations`, and `fix`/`market` sit beside `dataset`
+on the same `fields` base -- `market` reaching into `fix` only for the datatype
+table its tests check the tags against, and `logs` reaching into `market`
+because a parsed line *is* an `Event`. `urls` is a leaf below all of it: `filesystems`, `convert`,
 `logs` and `iceberg/fileio` all reach a store through it, so there is one
 answer to "what is this location" rather than one per caller. The one loop back is deliberate and lazy: a
 `Field`'s `into_iceberg_*` imports `rekep.iceberg.fields` at the point of use,

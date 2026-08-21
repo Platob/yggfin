@@ -242,6 +242,31 @@ class IcebergDataset(Dataset):
         """Whether the table is there yet."""
         return self.store.table_exists(self.name)
 
+    @property
+    def records(self) -> int | None:
+        """How many rows the current snapshot holds, from its summary, or None.
+
+        **Metadata, not a scan.** Iceberg records the count when it commits, so
+        it is already in what this process loaded: no manifest is walked and no
+        data file is opened. That is what makes it usable per commit -- a job
+        that reported what it landed by reading the table back would spend more
+        on the report than on the write.
+
+        None when the snapshot does not say -- another engine's summary, or a
+        table nothing has written to -- because the readings a caller wants for
+        that are opposite ones: count it, or assume nothing is known. A table
+        that does not exist yet holds nothing, which is `0` and not unknown.
+        """
+        if not self.exists:
+            return 0
+        snapshot = self.iceberg_table.current_snapshot()
+        if snapshot is None:
+            return 0
+        try:
+            return int(snapshot.summary["total-records"])
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return None
+
     def create_with_field(self, field: StructField, **kwargs: Any) -> IcebergDataset:
         """Create the table from `field`: schema, keys, partitioning and docs.
 

@@ -27,6 +27,7 @@ from rekep.market import (
     Order,
     Ranged,
 )
+from rekep.tasks import ParseLogs, Task, TaskRun
 from rekep.urls import Url
 
 __version__ = "0.1.0"
@@ -52,9 +53,12 @@ __all__ = [
     "MapField",
     "MarketEvent",
     "Order",
+    "ParseLogs",
     "ProtocolMetadata",
     "Ranged",
     "StructField",
+    "Task",
+    "TaskRun",
     "TextFile",
     "TextFiles",
     "Url",
