@@ -1,0 +1,58 @@
+{
+  "name": "Venue",
+  "type": "struct",
+  "description": "A trading venue, as reference data publishes it.",
+  "metadata": {
+    "namespace": "trading",
+    "version": "1",
+    "owner": "reference-data"
+  },
+  "fields": [
+    {
+      "name": "mic",
+      "type": "string",
+      "description": "ISO 10383 market identifier.",
+      "metadata": {
+        "iceberg:primary_key": "true"
+      }
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Operating name of the venue."
+    },
+    {
+      "name": "country",
+      "type": "string",
+      "nullable": true,
+      "description": "ISO 3166-1 alpha-2, when the venue publishes one."
+    },
+    {
+      "name": "sessions",
+      "type": "list",
+      "nullable": true,
+      "description": "Trading sessions, in the order the venue runs them.",
+      "item": {
+        "type": "struct",
+        "nullable": true,
+        "fields": [
+          {
+            "name": "label",
+            "type": "string",
+            "description": "Name of the session, as the venue calls it."
+          },
+          {
+            "name": "opens_at",
+            "type": "time64[us]",
+            "description": "Local opening time."
+          },
+          {
+            "name": "closes_at",
+            "type": "time64[us]",
+            "description": "Local closing time."
+          }
+        ]
+      }
+    }
+  ]
+}
