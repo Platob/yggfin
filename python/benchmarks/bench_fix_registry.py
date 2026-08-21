@@ -24,10 +24,12 @@ Four questions:
    sizes, because that is the one number that decides whether the index is
    built on demand or shipped.
 4. Which optimisations were *not* taken, and why. A trigram FTS5 index for
-   `search`, a window function for `tags()`, and parsing the Arrow type per
-   row rather than per distinct spelling: all three are measured here, and
-   two of them are faster. The reasons they are not in `rekep.fix.sqlite`
-   are in the numbers beside them.
+   `search`, a window function for `tags()`, pooling the three big text
+   columns, and parsing the Arrow type per row rather than per distinct
+   spelling: all four are measured here, and two of them are faster. The
+   reasons they are not in `rekep.fix.sqlite` are in the numbers beside them
+   -- pooling in particular *looks* obvious, halves the file, and costs more
+   than it saves on the one query that reads the most text.
 
 Every case is warmed once and reported as the best of `--repeat` runs; run the
 script twice before quoting a number anywhere.
@@ -193,11 +195,6 @@ def sweep_not_taken(database: pathlib.Path, repeat: int) -> None:
     for label, query, parameters in (
         ("tags(): folded min (taken)", fold, {}),
         ("tags(): window function", window, {}),
-        (
-            "search: LIKE scan (taken)",
-            like,
-            {"text": "reject", "prefix": "reject%", "contains": "%reject%"},
-        ),
     ):
         seconds = best_of(lambda q=query, p=parameters: connection.execute(q, p).fetchall(), repeat)
         print(f"{label:>32} {seconds * 1000:>8.3f}")
@@ -232,6 +229,26 @@ def sweep_not_taken(database: pathlib.Path, repeat: int) -> None:
             f" and {short} rows for a two-letter query -- the reason it is not taken)"
         )
 
+    interned = _interned(database)
+    for label, path, query in (
+        ("search: over the columns (taken)", database, like),
+        ("search: over an interned pool", interned, like.replace("f.description", "d.body")),
+    ):
+        pooled = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        pooled.execute("PRAGMA mmap_size=268435456")
+        if path is interned:
+            query = query.replace(
+                "JOIN version v", "LEFT JOIN pool d ON d.id = f.description JOIN version v"
+            )
+        seconds = best_of(
+            lambda q=query, c=pooled: c.execute(
+                q, {"text": "reject", "prefix": "reject%", "contains": "%reject%"}
+            ).fetchall(),
+            repeat,
+        )
+        print(f"{label:>32} {seconds * 1000:>8.3f}   ({path.stat().st_size / 1e6:.2f} MB)")
+    interned.unlink()
+
     rows = connection.execute(f"SELECT {COLUMNS} FROM field WHERE version = '4.4'").fetchall()
     types: dict[str, object] = {}
 
@@ -253,6 +270,54 @@ def sweep_not_taken(database: pathlib.Path, repeat: int) -> None:
     )
     print(f"{'arrow type: one parse per row':>32} {best_of(per_row, repeat) * 1000:>8.3f}")
     connection.close()
+
+
+def _interned(database: pathlib.Path) -> pathlib.Path:
+    """The same index with the three big texts pooled: smaller, and slower.
+
+    `description`, `fix:values` and `fix:used_in` are 6,479 slots holding
+    3,516 distinct bodies, so pooling them takes the file from 2.46 MB to
+    1.51 MB -- and puts a join on the read path. It is built here so the
+    trade is a measurement rather than an opinion.
+    """
+    pooled = database.with_name("interned.db")
+    if pooled.exists():
+        pooled.unlink()
+    source = sqlite3.connect(f"file:{database}?mode=ro", uri=True)
+    rows = source.execute(f"SELECT {COLUMNS} FROM field").fetchall()
+    versions = source.execute("SELECT name, rank FROM version").fetchall()
+    source.close()
+    db = sqlite3.connect(pooled)
+    db.executescript(
+        "PRAGMA page_size=8192; PRAGMA journal_mode=OFF;"
+        "CREATE TABLE version(name TEXT PRIMARY KEY, rank INTEGER NOT NULL) WITHOUT ROWID;"
+        "CREATE TABLE pool(id INTEGER PRIMARY KEY, body TEXT NOT NULL);"
+        "CREATE TABLE field(version TEXT NOT NULL, tag INTEGER NOT NULL, name TEXT NOT NULL,"
+        " name_lower TEXT NOT NULL, arrow_type TEXT NOT NULL, nullable INTEGER NOT NULL,"
+        " description INTEGER, fix_type TEXT, fix_version TEXT, values_json INTEGER,"
+        " used_in INTEGER, note TEXT, extra TEXT, PRIMARY KEY (version, tag)) WITHOUT ROWID;"
+        "CREATE INDEX field_by_name ON field(name_lower, tag);"
+    )
+    bodies: dict[str, int] = {}
+
+    def intern(text: str | None) -> int | None:
+        if not text:
+            return None
+        if text not in bodies:
+            bodies[text] = len(bodies) + 1
+        return bodies[text]
+
+    prepared = [
+        (*row[:6], intern(row[6]), row[7], row[8], intern(row[9]), intern(row[10]), *row[11:])
+        for row in rows
+    ]
+    with db:
+        db.executemany("INSERT INTO version VALUES (?,?)", versions)
+        db.executemany("INSERT INTO field VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", prepared)
+        db.executemany("INSERT INTO pool VALUES (?,?)", [(i, b) for b, i in bodies.items()])
+    db.execute("VACUUM")
+    db.close()
+    return pooled
 
 
 def main() -> None:

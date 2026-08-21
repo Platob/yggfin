@@ -264,13 +264,18 @@ other row is a question the JSON registry answers by building thousands of
 fields in order to look at a handful.
 
 **What was measured and left out.** A trigram FTS5 index answers
-`search("reject")` in 0.04 ms against the LIKE scan's 2.3 ms — and returns
+`search("reject")` in 0.04 ms against the LIKE scan's 2.4 ms — and returns
 *nothing* for a two-letter query, because a trigram tokenizer cannot match
 terms shorter than three characters, while nearly tripling the file
-(7.6 MB). A window function for `tags()` is 8.3 ms against the folded
-`min()`'s 2.2 ms. Parsing the Arrow type per row rather than per distinct
-spelling costs 7.3 ms a version against 0.1 ms. All three are cases in the
-sweep, because the reason a thing was not done is worth keeping.
+(7.6 MB). Pooling the three big text columns — `description`, `fix:values`
+and `fix:used_in` are 6,479 slots holding 3,516 distinct bodies — takes the
+file from 2.79 MB to 1.42 MB and takes `search` from 2.4 ms to 3.2 ms,
+because the join costs more than the smaller corpus saves; a cache that is
+already smaller than the JSON it came from does not need the half. A window
+function for `tags()` is 7.4 ms against the folded `min()`'s 2.2 ms. Parsing
+the Arrow type per row rather than per distinct spelling costs 7.0 ms a
+version against 0.1 ms. All four are cases in the sweep, because the reason
+a thing was not done is worth keeping.
 
 **Fields per row.** The work is per token, not per row, so a rows/s at one
 message shape says nothing about another: the wire fixture is twelve fields

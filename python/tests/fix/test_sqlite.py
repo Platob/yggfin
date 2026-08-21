@@ -471,12 +471,43 @@ def test_the_schema_is_what_the_queries_assume(indexed: SqliteFixRegistry) -> No
             "AND name NOT LIKE 'sqlite_%'"
         )
     }
-    assert named == {"version", "field", "field_by_name", "field_by_tag"}
+    assert named == {"meta", "version", "field", "field_by_name", "field_by_tag"}
     plan = indexed._rows(
         "EXPLAIN QUERY PLAN SELECT f.tag FROM field f JOIN version v ON v.name = f.version "
         "WHERE f.name_lower = 'side' ORDER BY v.rank, f.tag"
     )
     assert any("field_by_name" in str(row[-1]) for row in plan), "the by-name lookup is indexed"
+
+
+def test_an_index_of_another_schema_is_refused_by_name(dumped: Path, tmp_path: Path) -> None:
+    """`CREATE TABLE IF NOT EXISTS` opens a wrong-shaped file happily.
+
+    What follows is a query failing on a missing column, three calls away
+    from the cause. The version turns it into one sentence naming the file.
+    """
+    database = tmp_path / "fix.db"
+    indexed = OfflineSqliteRegistry(cache_dir=dumped, database=database)
+    indexed.fields("4.4")
+    indexed.connection.execute("UPDATE meta SET value = '0' WHERE key = 'schema'")
+    indexed.connection.commit()
+    indexed.close()
+    reopened = OfflineSqliteRegistry(cache_dir=dumped, database=database)
+    with pytest.raises(ValueError, match="schema 0, and this is 1"):
+        reopened.field("Side")
+
+
+def test_closing_leaves_one_file_behind(dumped: Path, tmp_path: Path) -> None:
+    """A dictionary travels by being copied, so it has to be in the file."""
+    database = tmp_path / "fix.db"
+    indexed = OfflineSqliteRegistry(cache_dir=dumped, database=database)
+    indexed.load("4.4")
+    indexed.close()
+    assert database.exists()
+    assert not database.with_suffix(".db-wal").exists(), "checkpointed, not left beside it"
+    copied = tmp_path / "copy.db"
+    copied.write_bytes(database.read_bytes())
+    with OfflineSqliteRegistry(cache_dir=tmp_path / "empty", database=copied) as elsewhere:
+        assert elsewhere.field("Side", "4.4").fix["tag"] == "54"
 
 
 def test_a_torn_database_is_not_read_as_a_dictionary(dumped: Path, tmp_path: Path) -> None:

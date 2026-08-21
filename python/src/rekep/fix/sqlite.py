@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import json
 import os
@@ -10,7 +11,7 @@ import sqlite3
 import threading
 import time
 from functools import cached_property
-from typing import Any, ClassVar
+from typing import Any
 
 import pyarrow
 
@@ -52,6 +53,11 @@ PRAGMA busy_timeout=5000;
 #: JSON the metadata already carries, kept as text so reading a field costs
 #: no parsing at all.
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS meta(
+  key   TEXT NOT NULL PRIMARY KEY,
+  value TEXT NOT NULL
+) WITHOUT ROWID;
+
 CREATE TABLE IF NOT EXISTS version(
   name      TEXT NOT NULL PRIMARY KEY,
   rank      INTEGER NOT NULL,
@@ -97,12 +103,21 @@ KNOWN = frozenset(
     {"description", "fix:tag", "fix:type", "fix:version", "fix:values", "fix:used_in", "fix:note"}
 )
 
+#: What this module's `SCHEMA` is, written into `meta` when a file is made.
+#: `CREATE TABLE IF NOT EXISTS` is happy to open a database whose tables are
+#: the wrong shape, and the first query then fails on a missing column; the
+#: version is what turns that into one sentence saying which file to delete.
+SCHEMA_VERSION = "1"
+
 #: Version rank and tag folded into one sortable integer, so "the newest
 #: version's first declaration" is one `min()` rather than a window function
-#: (measured: 1.7 ms against 5.3 ms over the whole dictionary) and does not
-#: rest on SQLite's bare-column tie-breaking. 2**32 because a FIX tag is
-#: four figures and the product still has fifty bits of headroom.
+#: (measured over the whole dictionary: ~2.2 ms against ~8 ms) and does not
+#: rest on SQLite's bare-column tie-breaking. 2**32 because a FIX tag is four
+#: figures and the product still has fifty bits of headroom.
 _FOLD = 4294967296
+
+#: Pairs bound into one `IN (VALUES ...)`; see `_nearest`.
+_CHUNK = 400
 
 
 @dataclasses.dataclass(eq=False)
@@ -145,15 +160,16 @@ class SqliteFixRegistry(FixRegistry):
     Where no dump sits beside it, a version that is asked for is scraped and
     stored exactly as `FixRegistry` would have -- the store is what changes
     here, never the source.
+
+    One difference is deliberate: every answer is a *fresh* `Field`. The JSON
+    registry hands back objects out of an in-memory index, so two lookups of
+    one field are the same mutable object and writing to it edits what the
+    next lookup returns. Here they are equal and separate, which is what a
+    store handing out copies can promise.
     """
 
     #: The database. Empty means `fix.db` inside `cache_dir`.
     database: str | os.PathLike[str] = ""
-
-    #: Rows read at a time when a whole version is materialised. A version is
-    #: a few thousand rows and the reader builds a `Field` per row, so this is
-    #: about not holding two copies of a version, not about the fetch.
-    fetch_size: ClassVar[int] = 1024
 
     #: Held around every write, and around opening a connection. One writer
     #: at a time inside the process, so two threads never open a transaction
@@ -202,6 +218,19 @@ class SqliteFixRegistry(FixRegistry):
             connection = sqlite3.connect(path, check_same_thread=False)
             connection.executescript(PRAGMAS)
             connection.executescript(SCHEMA)
+            with connection:
+                connection.execute(
+                    "INSERT INTO meta(key, value) VALUES ('schema', ?) ON CONFLICT(key) DO NOTHING",
+                    (SCHEMA_VERSION,),
+                )
+            (found,) = connection.execute("SELECT value FROM meta WHERE key = 'schema'").fetchone()
+            if found != SCHEMA_VERSION:
+                connection.close()
+                raise ValueError(
+                    f"{path} is a FIX index of schema {found}, and this is {SCHEMA_VERSION}: "
+                    "delete it and it will be built again from the dump beside it, or from "
+                    "the site"
+                )
             self._connections.append(connection)
         self._local.connection = connection
         return connection
@@ -215,7 +244,15 @@ class SqliteFixRegistry(FixRegistry):
         with self._writing:
             connections, self._connections = self._connections, []
             self._local = threading.local()
-        for connection in connections:
+        for index, connection in enumerate(connections):
+            if index == 0:
+                # WAL keeps committed rows in `fix.db-wal` until something
+                # checkpoints, and SQLite only folds them in when the *last*
+                # connection closes cleanly. Copying a directory is how this
+                # dictionary travels, so the file is made whole here rather
+                # than left to a clean exit that may not happen.
+                with contextlib.suppress(sqlite3.Error):
+                    connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
             connection.close()
 
     def __enter__(self) -> SqliteFixRegistry:
@@ -503,11 +540,19 @@ class SqliteFixRegistry(FixRegistry):
         nearest = ranked[:limit]  # negative slices the way the JSON registry does
         if not nearest:
             return []
-        pairs = ",".join("(?,?)" * 1 for _ in nearest)
-        rows = self._rows(
-            f"SELECT {COLUMNS} FROM field WHERE (version, tag) IN (VALUES {pairs})",
-            tuple(value for _, _, tag, version in nearest for value in (version, tag)),
-        )
+        # In chunks, because the list is as long as the query matched and a
+        # bound-parameter ceiling is a compile-time choice of whichever
+        # SQLite this runs on -- 250,000 here, 999 on an older build.
+        rows: list[tuple[Any, ...]] = []
+        for start in range(0, len(nearest), _CHUNK):
+            chunk = nearest[start : start + _CHUNK]
+            pairs = ",".join("(?,?)" for _ in chunk)
+            rows.extend(
+                self._rows(
+                    f"SELECT {COLUMNS} FROM field WHERE (version, tag) IN (VALUES {pairs})",
+                    tuple(value for _, _, tag, version in chunk for value in (version, tag)),
+                )
+            )
         # The query answers in storage order; the ranking is what was asked for.
         by_key = {(row[0], row[1]): row for row in rows}
         return [self._field_of(by_key[(version, tag)]) for _, _, tag, version in nearest]
@@ -538,7 +583,6 @@ class SqliteFixRegistry(FixRegistry):
     def _rows(self, query: str, parameters: Any = ()) -> list[tuple[Any, ...]]:
         """Run one query. The single place the database is read."""
         cursor = self.connection.cursor()
-        cursor.arraysize = self.fetch_size
         try:
             return cursor.execute(query, parameters).fetchall()
         finally:
