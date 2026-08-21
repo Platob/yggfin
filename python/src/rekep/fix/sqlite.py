@@ -262,10 +262,17 @@ class SqliteFixRegistry(FixRegistry):
         self.close()
 
     def __del__(self) -> None:
-        # Defensive because `__del__` runs even when `__init__` did not
-        # finish: there may be no lock and no list to close anything with.
-        if self.__dict__.get("_connections"):
+        # Defensive twice over: `__del__` runs when `__init__` did not finish,
+        # so there may be no lock and no list to close anything with, and it
+        # runs during interpreter shutdown, where the modules `close()` needs
+        # may already be gone. A handle that cannot be released quietly is
+        # not worth a traceback on the way out.
+        if not self.__dict__.get("_connections"):
+            return
+        try:
             self.close()
+        except Exception:  # noqa: BLE001 - teardown, and the process is leaving
+            pass
 
     def __repr__(self) -> str:
         """Says where it keeps things without opening anything to find out."""
