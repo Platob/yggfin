@@ -248,7 +248,11 @@ class BookSide(MarketEvent):
         assembled from a feed: `prev_hash` is the version before, `parent_hash`
         gains the event that caused this one, and the derived columns follow.
         """
-        self.prev_hash, self.prev_state, self.prev_unix = self.hash, self.state, self.unix
+        # `NIL` means nothing hashed this yet, so the first version replaced
+        # nothing and says so with a null rather than with sixteen zero bytes
+        # that a reader would have to know to recognise.
+        self.prev_hash = None if self.hash == NIL else self.hash
+        self.prev_state, self.prev_unix = self.state, self.unix
         self.version += 1
         self.unix = max(self.unix, event.unix)
         # Set, never appended to: `parent_hash` is what *this version* was
@@ -463,7 +467,11 @@ class Book(MarketEvent):
         """`side` written back into this book's flat columns, and the book re-priced."""
         for column in ("hash", "px", "qty", "depth", "total_qty", "alive", "updates", "executions"):
             setattr(self, f"{name}_{column}", getattr(side, column))
-        self.prev_hash, self.prev_state, self.prev_unix = self.hash, self.state, self.unix
+        # `NIL` means nothing hashed this yet, so the first version replaced
+        # nothing and says so with a null rather than with sixteen zero bytes
+        # that a reader would have to know to recognise.
+        self.prev_hash = None if self.hash == NIL else self.hash
+        self.prev_state, self.prev_unix = self.state, self.unix
         self.version += 1
         self.unix = max(self.unix, side.unix)
         # The side this version was built from, and only that -- the reasoning

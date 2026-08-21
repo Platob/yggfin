@@ -433,3 +433,13 @@ def test_a_side_lifted_from_a_different_book_is_a_different_lifecycle() -> None:
     assert Book(xhash=identifier(1)).into_side("bid").xhash != (
         Book(xhash=identifier(2)).into_side("bid").xhash
     )
+
+
+@pytest.mark.parametrize("shape", (BookSide, Book), ids=lambda cls: cls.__name__)
+def test_the_first_version_replaced_nothing_and_says_so_with_a_null(shape: type) -> None:
+    """Sixteen zero bytes would be a value a reader has to know to recognise."""
+    built = shape(side=Side.BID) if shape is BookSide else shape()
+    built.append_event(Order(side=Side.BUY, px=10.0, qty=1.0, state=State.NEW))
+    assert built.version == 1 and built.prev_hash is None
+    built.append_event(Order(side=Side.BUY, px=11.0, qty=1.0, state=State.NEW))
+    assert built.version == 2 and built.prev_hash is not None
