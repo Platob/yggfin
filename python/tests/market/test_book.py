@@ -315,7 +315,7 @@ def test_every_append_is_a_new_version_that_remembers_the_one_before() -> None:
     assert side.version == 2
     assert side.prev_hash == second and second != first
     assert side.hash not in (first, second), "a new version is a new content hash"
-    assert len(side.parent_hash) == 2, "and both events that caused it are on the row"
+    assert len(side.parent_hash) == 1, "and the event that caused *this* version is on it"
     assert side.xhash == identifier(7), "while the lifecycle is the same thing throughout"
 
 
@@ -402,3 +402,34 @@ def test_a_fill_on_the_wrong_side_is_refused_too() -> None:
     with pytest.raises(ValueError, match="does not belong on the"):
         side.append_execution(Execution(side=Side.BUY, px=10.0, qty=5.0, kind=ExecKind.TRADED))
     assert side.alive[0].qty == 100.0
+
+
+def test_a_version_names_what_built_it_and_not_everything_that_ever_did() -> None:
+    """It accumulated, so two hundred appends put two hundred parents on one row."""
+    side = BookSide(side=Side.BID)
+    for step in range(20):
+        side.append_order(Order(side=Side.BUY, px=10.0 + step, qty=1.0, state=State.NEW))
+    assert len(side.parent_hash) == 1, "one version, one cause"
+    assert side.version == 20, "while the version count still says how many there were"
+    assert side.prev_hash is not None, "and the one before is on the row already"
+
+    built = Book()
+    for step in range(20):
+        built.append_event(Order(side=Side.BUY, px=10.0 + step, qty=1.0, state=State.NEW))
+    assert len(built.parent_hash) == 1 and built.version == 20
+
+
+def test_each_side_of_a_book_has_a_lifecycle_of_its_own() -> None:
+    """Both lifted with the book's `xhash`, so the two sides were one thing."""
+    built = Book(symbol="AAPL", xhash=identifier(3))
+    bid, ask = built.into_side("bid"), built.into_side("ask")
+    assert bid.xhash != ask.xhash, "a bid and an ask are not versions of each other"
+    assert bid.xhash != built.xhash and ask.xhash != built.xhash
+    assert built.into_side("bid").xhash == bid.xhash, "and each is stable"
+
+
+def test_a_side_lifted_from_a_different_book_is_a_different_lifecycle() -> None:
+    """Derived from the book's, so two books never share a side by accident."""
+    assert Book(xhash=identifier(1)).into_side("bid").xhash != (
+        Book(xhash=identifier(2)).into_side("bid").xhash
+    )

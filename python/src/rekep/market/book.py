@@ -13,6 +13,7 @@ from rekep.fields import Field, FieldBuilder, field
 from rekep.market.enums import EventType, Side, UpdateAction
 from rekep.market.event import UNIX, MarketEvent
 from rekep.market.fields import MarketFieldBuilder, fix_tag
+from rekep.market.identity import NIL
 from rekep.market.orders import Execution, Order
 
 
@@ -250,7 +251,12 @@ class BookSide(MarketEvent):
         self.prev_hash, self.prev_state, self.prev_unix = self.hash, self.state, self.unix
         self.version += 1
         self.unix = max(self.unix, event.unix)
-        self.parent_hash = [*(self.parent_hash or []), event.hash]
+        # Set, never appended to: `parent_hash` is what *this version* was
+        # built from, and the version before it is already on the row as
+        # `prev_hash`. Accumulating instead put one entry per append on a
+        # single row -- two hundred appends, two hundred parents -- which is
+        # both unbounded and a different claim from the one the column makes.
+        self.parent_hash = [event.hash]
         self.depth = len(self.alive or [])
         self.total_qty = sum(level.qty for level in (self.alive or []))
         best = (self.alive or [None])[0]
@@ -433,7 +439,12 @@ class Book(MarketEvent):
         given = {
             "etype": EventType.BOOK_SIDE,
             "side": Side.BID if name == "bid" else Side.ASK,
-            "hash": getattr(self, f"{name}_hash") or self.hash,
+            # A side has a lifecycle of its own, derived from the book's so it
+            # is stable and reproducible without being shared: lifting the bid
+            # and the ask out of one book gave both the book's own `xhash`,
+            # which made `bid_hash` and `ask_hash` versions of the same thing.
+            "xhash": BookSide.hash_of(self.xhash, name),
+            "hash": getattr(self, f"{name}_hash") or NIL,
         } | {
             column: getattr(self, f"{name}_{column}")
             for column in ("px", "qty", "depth", "total_qty", "alive", "updates", "executions")
@@ -455,7 +466,10 @@ class Book(MarketEvent):
         self.prev_hash, self.prev_state, self.prev_unix = self.hash, self.state, self.unix
         self.version += 1
         self.unix = max(self.unix, side.unix)
-        self.parent_hash = [*(self.parent_hash or []), side.hash]
+        # The side this version was built from, and only that -- the reasoning
+        # is on `BookSide._versioned`. The other side is unchanged and is
+        # already named by the `bid_hash`/`ask_hash` pair.
+        self.parent_hash = [side.hash]
         self._priced()
         self.hash = self.hash_of(self.xhash, self.version, self.unix, self.px, self.spread)
         return self
