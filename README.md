@@ -80,7 +80,8 @@ logs.optimize()                      # compact, expire, sweep
   `parse_arrow_array` does whole columns in Arrow kernels, `tag_arrow_array`
   turns the maps' text keys into integer FIX tags, and `FixRegistry` scrapes
   every FIX version's fields from the OnixS dictionary into `~/.config/fix/` —
-  name, datatype, comment, values — to work offline after.
+  name, datatype, comment, values — to work offline after. That scrape is also
+  committed here, under `data/fix/`, so there is nothing to wait for.
 - **`convert`** — `Convertible`: paired `from_*`/`into_*` methods that serialise
   any dataclass to dict, JSON, YAML or TOML and back.
 
@@ -104,6 +105,19 @@ checks run from the command line, without writing Python:
 ```bash
 rekep fields dump --pyclass rekep.logs.log:Log --target schemas/rekep/log.yaml
 rekep fields load --target schemas/rekep/log.yaml     # does it still build?
+```
+
+## Published data
+
+`data/` at the repo root is what this repository publishes that is the same for
+everyone: `data/fix/` is the whole OnixS FIX dictionary, one file per version,
+scraped once and checked by the build.
+
+```python
+from rekep.fix import FixRegistry
+
+registry = FixRegistry(cache_dir="data/fix")   # a warm cache, nothing fetched
+registry.field("Side").fix["values"]           # '{"1":"Buy","2":"Sell",...}'
 ```
 
 ## Development

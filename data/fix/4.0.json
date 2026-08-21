@@ -1,0 +1,1692 @@
+{
+ "version": "4.0",
+ "url": "https://www.onixs.biz/fix-dictionary/4.0/",
+ "fields": [
+  {
+   "name": "Account",
+   "type": "string",
+   "nullable": true,
+   "description": "Account mnemonic as agreed between broker and institution.",
+   "metadata": {
+    "fix:tag": "1",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "AdvId",
+   "type": "int64",
+   "nullable": true,
+   "description": "Unique identifier of Advertisement <7> message",
+   "metadata": {
+    "fix:tag": "2",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Advertisement\"]"
+   }
+  },
+  {
+   "name": "AdvRefID",
+   "type": "int64",
+   "nullable": true,
+   "description": "Reference identifier used with CANCEL and REPLACE transaction types.",
+   "metadata": {
+    "fix:tag": "3",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Advertisement\"]"
+   }
+  },
+  {
+   "name": "AdvSide",
+   "type": "string",
+   "nullable": true,
+   "description": "Broker's side of advertised trade",
+   "metadata": {
+    "fix:tag": "4",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"B\":\"Buy\",\"S\":\"Sell\",\"X\":\"Cross\",\"T\":\"Trade\"}",
+    "fix:used_in": "[\"Advertisement\"]"
+   }
+  },
+  {
+   "name": "AdvTransType",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifies Advertisement <7> message transaction type",
+   "metadata": {
+    "fix:tag": "5",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"N\":\"New\",\"C\":\"Cancel\",\"R\":\"Replace\"}",
+    "fix:used_in": "[\"Advertisement\"]"
+   }
+  },
+  {
+   "name": "AvgPx",
+   "type": "double",
+   "nullable": true,
+   "description": "Calculated average price of all fills on this order.",
+   "metadata": {
+    "fix:tag": "6",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\",\"List Status\"]"
+   }
+  },
+  {
+   "name": "BeginSeqNo",
+   "type": "int64",
+   "nullable": true,
+   "description": "Message sequence number of first record in range to be resent",
+   "metadata": {
+    "fix:tag": "7",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Resend Request\"]"
+   }
+  },
+  {
+   "name": "BeginString",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifies beginning of new message and protocol version. ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted)",
+   "metadata": {
+    "fix:tag": "8",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "BodyLength",
+   "type": "int64",
+   "nullable": true,
+   "description": "Message length, in bytes, forward to the CheckSum <10> field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)",
+   "metadata": {
+    "fix:tag": "9",
+    "fix:type": "int",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "CheckSum",
+   "type": "string",
+   "nullable": true,
+   "description": "Three byte, simple checksum (see Appendix B: \"CheckSum Calculation\" for description). ALWAYS LAST FIELD IN RECORD; i.e. serves, with the trailing <SOH>, as the end-of-record delimiter. Always defined as three characters. (Always unencrypted)",
+   "metadata": {
+    "fix:tag": "10",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "ClOrdID",
+   "type": "string",
+   "nullable": true,
+   "description": "Unique identifier for Order as assigned by institution. Uniqueness must be guaranteed within a single trading day. Firms which electronically submit multi-day orders should consider embedding a date within the ClOrdID <11> field to assure uniqueness across days.",
+   "metadata": {
+    "fix:tag": "11",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Order Cancel Reject\",\"Email\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Order Status Request\",\"Allocation\",\"List Status\"]"
+   }
+  },
+  {
+   "name": "Commission",
+   "type": "double",
+   "nullable": true,
+   "description": "Commission.",
+   "metadata": {
+    "fix:tag": "12",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "CommType",
+   "type": "string",
+   "nullable": true,
+   "description": "Commission <12> type",
+   "metadata": {
+    "fix:tag": "13",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"1\":\"per share\",\"2\":\"percentage\",\"3\":\"absolute\"}",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "CumQty",
+   "type": "int64",
+   "nullable": true,
+   "description": "Total number of shares filled.",
+   "metadata": {
+    "fix:tag": "14",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"List Status\"]"
+   }
+  },
+  {
+   "name": "Currency",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifies currency used for price. Absence of this field in a message is interpreted as US dollars. See Appendix A: \"Valid Currency Codes\" for information on obtaining",
+   "metadata": {
+    "fix:tag": "15",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Indication of Interest\",\"Advertisement\",\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "EndSeqNo",
+   "type": "int64",
+   "nullable": true,
+   "description": "Message sequence number of last record in range to be resent. If request is for a single record BeginSeqNo <7> = EndSeqNo <16> . If request is for all messages subsequent to a particular message, EndSeqNo <16> = \"999999\"",
+   "metadata": {
+    "fix:tag": "16",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Resend Request\"]"
+   }
+  },
+  {
+   "name": "ExecID",
+   "type": "int64",
+   "nullable": true,
+   "description": "Unique identifier of execution message as assigned by broker (will be 0 (zero) for ExecTransType <20> ='3' (Status)). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the ExecID <17> field to assure uniqueness across days.",
+   "metadata": {
+    "fix:tag": "17",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\",\"Don't Know Trade\"]"
+   }
+  },
+  {
+   "name": "ExecInst",
+   "type": "string",
+   "nullable": true,
+   "description": "Instructions for order handling on exchange trading floor. If more than one instruction is applicable to an order, this field can contain multiple instructions separated by space.",
+   "metadata": {
+    "fix:tag": "18",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"Stay on offerside\",\"1\":\"Not held\",\"2\":\"Work\",\"3\":\"Go along\",\"4\":\"Over the day\",\"5\":\"Held\",\"6\":\"Participate don't initiate\",\"7\":\"Strict scale\",\"8\":\"Try to scale\",\"9\":\"Stay on bidside\",\"A\":\"No cross\",\"B\":\"OK to cross\",\"C\":\"Call first\",\"D\":\"Percent of volume\",\"E\":\"Do not increase - DNI\",\"F\":\"Do not reduce - DNR\",\"G\":\"All or none - AON\",\"I\":\"Institutions only\",\"L\":\"Last peg (last sale)\",\"M\":\"Mid-price peg (midprice of inside quote)\",\"N\":\"Non-negotiable\",\"O\":\"Opening peg\",\"P\":\"Market peg\",\"R\":\"Primary peg (primary market - buy at bid/sell at offer)\",\"S\":\"Suspend\"}",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "ExecRefID",
+   "type": "int64",
+   "nullable": true,
+   "description": "Reference identifier used with Cancel and Correct transaction types.",
+   "metadata": {
+    "fix:tag": "19",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\"]"
+   }
+  },
+  {
+   "name": "ExecTransType",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifies transaction type",
+   "metadata": {
+    "fix:tag": "20",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"New\",\"1\":\"Cancel\",\"2\":\"Correct\",\"3\":\"Status\"}",
+    "fix:used_in": "[\"Execution Report\"]"
+   }
+  },
+  {
+   "name": "HandlInst",
+   "type": "string",
+   "nullable": true,
+   "description": "Instructions for order handling on Broker trading floor",
+   "metadata": {
+    "fix:tag": "21",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"1\":\"Automated execution order, private, no Broker intervention\",\"2\":\"Automated execution order, public, Broker intervention OK\",\"3\":\"Manual order, best execution\"}",
+    "fix:used_in": "[\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "IDSource",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifies class of alternative SecurityID <48>",
+   "metadata": {
+    "fix:tag": "22",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"1\":\"CUSIP\",\"2\":\"SEDOL\",\"3\":\"QUIK\",\"4\":\"ISIN number\",\"5\":\"RIC code\"}",
+    "fix:used_in": "[\"Indication of Interest\",\"Advertisement\",\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\",\"Order Cancel Request\",\"Allocation\",\"Quote Request\",\"Quote\"]"
+   }
+  },
+  {
+   "name": "IOIid",
+   "type": "int64",
+   "nullable": true,
+   "description": "Unique identifier of Indication of Interest <6> message.",
+   "metadata": {
+    "fix:tag": "23",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Indication of Interest\",\"New Order - Single\"]"
+   }
+  },
+  {
+   "name": "IOIOthSvc",
+   "type": "string",
+   "nullable": true,
+   "description": "Indicates if, and on which other services, the indication has been advertised. Each character represents an additional service (e.g. if on Bridge and Autex, field = BA, if only on Autex, field = A)",
+   "metadata": {
+    "fix:tag": "24",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"A\":\"Autex\",\"B\":\"Bridge\"}",
+    "fix:used_in": "[\"Indication of Interest\"]"
+   }
+  },
+  {
+   "name": "IOIQltyInd",
+   "type": "string",
+   "nullable": true,
+   "description": "Relative quality of indication",
+   "metadata": {
+    "fix:tag": "25",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"L\":\"Low\",\"M\":\"Medium\",\"H\":\"High\"}",
+    "fix:used_in": "[\"Indication of Interest\"]"
+   }
+  },
+  {
+   "name": "IOIRefID",
+   "type": "int64",
+   "nullable": true,
+   "description": "Reference identifier used with CANCEL and REPLACE, transaction types.",
+   "metadata": {
+    "fix:tag": "26",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Indication of Interest\"]"
+   }
+  },
+  {
+   "name": "IOIShares",
+   "type": "string",
+   "nullable": true,
+   "description": "Number of shares in numeric or relative size.",
+   "metadata": {
+    "fix:tag": "27",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"S\":\"Small\",\"M\":\"Medium\",\"L\":\"Large\"}",
+    "fix:used_in": "[\"Indication of Interest\"]"
+   }
+  },
+  {
+   "name": "IOITransType",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifies Indication of Interest <6> message transaction type.",
+   "metadata": {
+    "fix:tag": "28",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"N\":\"New\",\"C\":\"Cancel\",\"R\":\"Replace\"}",
+    "fix:used_in": "[\"Indication of Interest\"]"
+   }
+  },
+  {
+   "name": "LastCapacity",
+   "type": "string",
+   "nullable": true,
+   "description": "Broker capacity in order execution",
+   "metadata": {
+    "fix:tag": "29",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"1\":\"Agent\",\"2\":\"Cross as agent\",\"3\":\"Cross as principal\",\"4\":\"Principal\"}",
+    "fix:used_in": "[\"Execution Report\"]"
+   }
+  },
+  {
+   "name": "LastMkt",
+   "type": "string",
+   "nullable": true,
+   "description": "Market of execution for last fill",
+   "metadata": {
+    "fix:tag": "30",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "LastPx",
+   "type": "double",
+   "nullable": true,
+   "description": "Price of last fill. Field not required for ExecTransType <20> ='3' (Status)",
+   "metadata": {
+    "fix:tag": "31",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\",\"Don't Know Trade\"]"
+   }
+  },
+  {
+   "name": "LastShares",
+   "type": "int64",
+   "nullable": true,
+   "description": "Quantity of shares bought/sold on this fill. Field not required for ExecTransType <20> ='3' (Status)",
+   "metadata": {
+    "fix:tag": "32",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\",\"Don't Know Trade\"]"
+   }
+  },
+  {
+   "name": "LinesOfText",
+   "type": "int64",
+   "nullable": true,
+   "description": "Identifies number of lines of text body",
+   "metadata": {
+    "fix:tag": "33",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"News\",\"Email\"]"
+   }
+  },
+  {
+   "name": "MsgSeqNum",
+   "type": "int64",
+   "nullable": true,
+   "description": "Integer message sequence number.",
+   "metadata": {
+    "fix:tag": "34",
+    "fix:type": "int",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "MsgType",
+   "type": "string",
+   "nullable": true,
+   "description": "Defines message type. ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted) Note: A \"U\" as the first character in the MsgType <35> field indicates that the message format is privately defined between the sender and receiver.",
+   "metadata": {
+    "fix:tag": "35",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"Heartbeat <0>\",\"1\":\"Test Request <1>\",\"2\":\"Resend Request <2>\",\"3\":\"Reject <3>\",\"4\":\"Sequence Reset <4>\",\"5\":\"Logout <5>\",\"6\":\"Indication of Interest <6>\",\"7\":\"Advertisement <7>\",\"8\":\"Execution Report <8>\",\"9\":\"Order Cancel Reject <9>\",\"A\":\"Logon <A>\",\"B\":\"News <B>\",\"C\":\"Email <C>\",\"D\":\"New Order - Single <D>\",\"E\":\"New Order - List <E>\",\"F\":\"Order Cancel Request <F>\",\"G\":\"Order Cancel/Replace Request <G>\",\"H\":\"Order Status Request <H>\",\"J\":\"Allocation <J>\",\"K\":\"List Cancel Request <K>\",\"L\":\"List Execute <L>\",\"M\":\"List Status Request <M>\",\"N\":\"List Status <N>\",\"P\":\"Allocation ACK <P>\",\"Q\":\"Don't Know Trade <Q> (DK)\",\"R\":\"Quote Request <R>\",\"S\":\"Quote <S>\"}"
+   }
+  },
+  {
+   "name": "NewSeqNo",
+   "type": "int64",
+   "nullable": true,
+   "description": "New sequence number",
+   "metadata": {
+    "fix:tag": "36",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Sequence Reset\"]"
+   }
+  },
+  {
+   "name": "OrderID",
+   "type": "string",
+   "nullable": true,
+   "description": "Unique identifier for Order as assigned by broker. Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID <37> field to assure uniqueness across days.",
+   "metadata": {
+    "fix:tag": "37",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Order Cancel Reject\",\"Email\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Order Status Request\",\"Allocation\",\"Don't Know Trade\"]"
+   }
+  },
+  {
+   "name": "OrderQty",
+   "type": "int64",
+   "nullable": true,
+   "description": "Number of shares ordered",
+   "metadata": {
+    "fix:tag": "38",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Don't Know Trade\",\"Quote Request\"]"
+   }
+  },
+  {
+   "name": "OrdStatus",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifies current status of order.",
+   "metadata": {
+    "fix:tag": "39",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"New\",\"1\":\"Partially filled\",\"2\":\"Filled\",\"3\":\"Done for day\",\"4\":\"Canceled\",\"5\":\"Replaced\",\"6\":\"Pending Cancel/Replace\",\"7\":\"Stopped\",\"8\":\"Rejected\",\"9\":\"Suspended\",\"A\":\"Pending New\",\"B\":\"Calculated\",\"C\":\"Expired\"}",
+    "fix:used_in": "[\"Execution Report\"]"
+   }
+  },
+  {
+   "name": "OrdType",
+   "type": "string",
+   "nullable": true,
+   "description": "Order type.",
+   "metadata": {
+    "fix:tag": "40",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"1\":\"Market\",\"2\":\"Limit\",\"3\":\"Stop\",\"4\":\"Stop limit\",\"5\":\"Market on close\",\"6\":\"With or without\",\"7\":\"Limit or better\",\"8\":\"Limit with or without\",\"9\":\"On basis\",\"A\":\"On close\",\"B\":\"Limit on close\",\"C\":\"Forex\",\"D\":\"Previously quoted\",\"E\":\"Previously indicated\",\"P\":\"Pegged (requires ExecInst <18> = L, R, M, P or O)\"}",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "OrigClOrdID",
+   "type": "string",
+   "nullable": true,
+   "description": "Original order id as assigned by the institution, used to identify original order in cancel and cancel/replace requests.",
+   "metadata": {
+    "fix:tag": "41",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Order Cancel Request\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "OrigTime",
+   "type": "timestamp[ns]",
+   "nullable": true,
+   "description": "Time of message origination (always expressed in GMT)",
+   "metadata": {
+    "fix:tag": "42",
+    "fix:type": "time",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"News\",\"Email\"]"
+   }
+  },
+  {
+   "name": "PossDupFlag",
+   "type": "string",
+   "nullable": true,
+   "description": "Indicates possible retransmission of message with this sequence number",
+   "metadata": {
+    "fix:tag": "43",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"Y\":\"Possible duplicate\",\"N\":\"Original transmission\"}"
+   }
+  },
+  {
+   "name": "Price",
+   "type": "double",
+   "nullable": true,
+   "description": "Price per share.",
+   "metadata": {
+    "fix:tag": "44",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Indication of Interest\",\"Advertisement\",\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "RefSeqNum",
+   "type": "int64",
+   "nullable": true,
+   "description": "Reference message sequence number",
+   "metadata": {
+    "fix:tag": "45",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Reject\"]"
+   }
+  },
+  {
+   "name": "RelatdSym",
+   "type": "string",
+   "nullable": true,
+   "description": "Symbol of issue related to story. Can be repeated within message to identify multiple companies.",
+   "metadata": {
+    "fix:tag": "46",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"News\",\"Email\"]"
+   }
+  },
+  {
+   "name": "Rule80A",
+   "type": "string",
+   "nullable": true,
+   "description": "Indicates order type upon which exchange Rule 80A is applied.",
+   "metadata": {
+    "fix:tag": "47",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"A\":\"Agency single order\",\"C\":\"Program Order, non-index arb, for Member firm/org\",\"D\":\"Program Order, index arb, for Member firm/org\",\"I\":\"Individual Investor, single order\",\"J\":\"Program Order, index arb, for individual customer\",\"K\":\"Program Order, non-index arb, for individual customer\",\"M\":\"Program Order, index arb, for other member\",\"N\":\"Program Order, non-index arb, for other member\",\"U\":\"Program Order, index arb, for other agency\",\"Y\":\"Program Order, non-index arb, for other agency\",\"W\":\"All other orders as agent for other member\"}",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "SecurityID",
+   "type": "string",
+   "nullable": true,
+   "description": "CUSIP or other alternate security identifier",
+   "metadata": {
+    "fix:tag": "48",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Indication of Interest\",\"Advertisement\",\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Allocation\",\"Quote Request\",\"Quote\"]"
+   }
+  },
+  {
+   "name": "SenderCompID",
+   "type": "string",
+   "nullable": true,
+   "description": "Assigned value used to identify firm sending message.",
+   "metadata": {
+    "fix:tag": "49",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "SenderSubID",
+   "type": "string",
+   "nullable": true,
+   "description": "Assigned value used to identify specific message originator (desk, trader, etc.)",
+   "metadata": {
+    "fix:tag": "50",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "SendingDate (not used)",
+   "type": "date32[day]",
+   "nullable": true,
+   "description": "Field not presently used. Included here as reference to previous versions.",
+   "metadata": {
+    "fix:tag": "51",
+    "fix:type": "date",
+    "fix:version": "4.0",
+    "fix:note": "not used"
+   }
+  },
+  {
+   "name": "SendingTime",
+   "type": "timestamp[ns]",
+   "nullable": true,
+   "description": "Time of message transmission (always expressed in GMT)",
+   "metadata": {
+    "fix:tag": "52",
+    "fix:type": "time",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "Shares",
+   "type": "int64",
+   "nullable": true,
+   "description": "Number of shares",
+   "metadata": {
+    "fix:tag": "53",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Advertisement\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "Side",
+   "type": "string",
+   "nullable": true,
+   "description": "Side of order.",
+   "metadata": {
+    "fix:tag": "54",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"1\":\"Buy\",\"2\":\"Sell\",\"3\":\"Buy minus\",\"4\":\"Sell plus\",\"5\":\"Sell short\",\"6\":\"Sell short exempt\"}",
+    "fix:used_in": "[\"Indication of Interest\",\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Order Status Request\",\"Allocation\",\"Don't Know Trade\",\"Quote Request\"]"
+   }
+  },
+  {
+   "name": "Symbol",
+   "type": "string",
+   "nullable": true,
+   "description": "Ticker symbol",
+   "metadata": {
+    "fix:tag": "55",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Indication of Interest\",\"Advertisement\",\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Order Status Request\",\"Allocation\",\"Don't Know Trade\",\"Quote Request\",\"Quote\"]"
+   }
+  },
+  {
+   "name": "TargetCompID",
+   "type": "string",
+   "nullable": true,
+   "description": "Assigned value used to identify receiving firm.",
+   "metadata": {
+    "fix:tag": "56",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "TargetSubID",
+   "type": "string",
+   "nullable": true,
+   "description": "Assigned value used to identify specific individual or unit intended to receive message. 'ADMIN' reserved for administrative messages not intended for a specific user.",
+   "metadata": {
+    "fix:tag": "57",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "Text",
+   "type": "string",
+   "nullable": true,
+   "description": "Free format text string",
+   "metadata": {
+    "fix:tag": "58",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Reject\",\"Logout\",\"Indication of Interest\",\"Advertisement\",\"Execution Report\",\"Order Cancel Reject\",\"News\",\"Email\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Allocation\",\"List Cancel Request\",\"List Execute\",\"List Status Request\",\"Allocation ACK\",\"Don't Know Trade\"]"
+   }
+  },
+  {
+   "name": "TimeInForce",
+   "type": "string",
+   "nullable": true,
+   "description": "Specifies how long the order remains in effect. Absence of this field is interpreted as DAY.",
+   "metadata": {
+    "fix:tag": "59",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"Day\",\"1\":\"Good Till Cancel (GTC)\",\"2\":\"At the Opening (OPG)\",\"3\":\"Immediate or Cancel (OC)\",\"4\":\"Fill or Kill (FOK)\",\"5\":\"Good Till Crossing (GTX)\",\"6\":\"Good Till Date\"}",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "TransactTime",
+   "type": "timestamp[ns]",
+   "nullable": true,
+   "description": "Time of execution/order creation (expressed in GMT)",
+   "metadata": {
+    "fix:tag": "60",
+    "fix:type": "time",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Advertisement\",\"Execution Report\",\"Allocation\",\"Allocation ACK\"]"
+   }
+  },
+  {
+   "name": "Urgency",
+   "type": "string",
+   "nullable": true,
+   "description": "Urgency flag.",
+   "metadata": {
+    "fix:tag": "61",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"Normal\",\"1\":\"Flash\",\"2\":\"Background\"}",
+    "fix:used_in": "[\"News\"]"
+   }
+  },
+  {
+   "name": "ValidUntilTime",
+   "type": "timestamp[ns]",
+   "nullable": true,
+   "description": "Indicates expiration time of indication message (always expressed in GMT)",
+   "metadata": {
+    "fix:tag": "62",
+    "fix:type": "time",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Indication of Interest\",\"Quote\"]"
+   }
+  },
+  {
+   "name": "SettlmntTyp",
+   "type": "string",
+   "nullable": true,
+   "description": "Indicates order settlement period. Absence of this field is interpreted as Regular. Regular is defined as the default settlement period for the particular security on the exchange of execution.",
+   "metadata": {
+    "fix:tag": "63",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"Regular\",\"1\":\"Cash\",\"2\":\"Next Day\",\"3\":\"T+2\",\"4\":\"T+3\",\"5\":\"T+4\",\"6\":\"Future\",\"7\":\"When Issued\",\"8\":\"Sellers Option\",\"9\":\"T+5\"}",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "FutSettDate",
+   "type": "date32[day]",
+   "nullable": true,
+   "description": "Specific date of trade settlement in YYYYMMDD format. Required when SettlmntTyp <63> ='6' (Future) or SettlmntTyp <63> ='8' (Sellers Option). (expressed in local time at place of settlement)",
+   "metadata": {
+    "fix:tag": "64",
+    "fix:type": "date",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"New Order - List\",\"New Order - Single\",\"Order Cancel/Replace Request\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "SymbolSfx",
+   "type": "string",
+   "nullable": true,
+   "description": "Additional information about the security (e.g. preferred, warrants, etc.). Absence of this field indicates common.",
+   "metadata": {
+    "fix:tag": "65",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Indication of Interest\",\"Advertisement\",\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Order Status Request\",\"Allocation\",\"Quote Request\",\"Quote\"]"
+   }
+  },
+  {
+   "name": "ListID",
+   "type": "string",
+   "nullable": true,
+   "description": "Customer assigned listUnique identifier for list as assigned by institution, used to associate multiple individual orders. Uniqueness must be guaranteed within a single trading day. Firms which generate multi-day orders should consider embedding a date within the ListID <66> field to assure uniqueness across days.",
+   "metadata": {
+    "fix:tag": "66",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Order Cancel Reject\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Allocation\",\"List Cancel Request\",\"List Execute\",\"List Status Request\",\"List Status\"]"
+   }
+  },
+  {
+   "name": "ListSeqNo",
+   "type": "int64",
+   "nullable": true,
+   "description": "Sequence of individual order within list (i.e. ListSeqNo <67> of ListNoOrds <68> , 2 of 25, 3 of 25, . . . )",
+   "metadata": {
+    "fix:tag": "67",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"New Order - List\"]"
+   }
+  },
+  {
+   "name": "ListNoOrds",
+   "type": "int64",
+   "nullable": true,
+   "description": "Total number of orders within list (i.e. ListSeqNo <67> of ListNoOrds <68> , e.g. 2 of 25, 3 of 25, . . . )",
+   "metadata": {
+    "fix:tag": "68",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"New Order - List\"]"
+   }
+  },
+  {
+   "name": "ListExecInst",
+   "type": "string",
+   "nullable": true,
+   "description": "Free format text message containing list handling and execution instructions.",
+   "metadata": {
+    "fix:tag": "69",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"New Order - List\"]"
+   }
+  },
+  {
+   "name": "AllocID",
+   "type": "int64",
+   "nullable": true,
+   "description": "Unique identifier for allocation record.",
+   "metadata": {
+    "fix:tag": "70",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\",\"Allocation ACK\"]"
+   }
+  },
+  {
+   "name": "AllocTransType",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifies allocation transaction type",
+   "metadata": {
+    "fix:tag": "71",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"New\",\"1\":\"Replace\",\"2\":\"Cancel\"}",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "RefAllocID",
+   "type": "int64",
+   "nullable": true,
+   "description": "Reference identifier to be used with Replace and Cancel AllocTransType <71> records.",
+   "metadata": {
+    "fix:tag": "72",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "NoOrders",
+   "type": "int64",
+   "nullable": true,
+   "description": "Indicates number of orders to be combined for average pricing and allocation.",
+   "metadata": {
+    "fix:tag": "73",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\",\"List Status\"]"
+   }
+  },
+  {
+   "name": "AvgPrxPrecision",
+   "type": "int64",
+   "nullable": true,
+   "description": "Indicates number of decimal places to be used for average pricing. Absence of this field indicates that default precision arranged by the broker/institution is to be used.",
+   "metadata": {
+    "fix:tag": "74",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "TradeDate",
+   "type": "date32[day]",
+   "nullable": true,
+   "description": "Indicates date of trade referenced in this record in YYYYMMDD format. Absence of this field indicates current day (expressed in local time at place of trade).",
+   "metadata": {
+    "fix:tag": "75",
+    "fix:type": "date",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\",\"Allocation ACK\"]"
+   }
+  },
+  {
+   "name": "ExecBroker",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifies executing / give-up broker. Standard NASD market-maker mnemonic is preferred.",
+   "metadata": {
+    "fix:tag": "76",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Order Cancel Reject\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Order Status Request\",\"Allocation\",\"Allocation ACK\"]"
+   }
+  },
+  {
+   "name": "OpenClose",
+   "type": "string",
+   "nullable": true,
+   "description": "For options only.",
+   "metadata": {
+    "fix:tag": "77",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "NoAllocs",
+   "type": "int64",
+   "nullable": true,
+   "description": "Number of AllocAccount <79> / AllocShares <80> / ProcessCode <81> instances included in allocation record.",
+   "metadata": {
+    "fix:tag": "78",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "AllocAccount",
+   "type": "string",
+   "nullable": true,
+   "description": "Sub-account mnemonic",
+   "metadata": {
+    "fix:tag": "79",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "AllocShares",
+   "type": "int64",
+   "nullable": true,
+   "description": "Number of shares to be allocated to specific sub-account",
+   "metadata": {
+    "fix:tag": "80",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "ProcessCode",
+   "type": "string",
+   "nullable": true,
+   "description": "Processing code for sub-account. Absence of this field in AllocAccount <79> / AllocShares <80> / ProcessCode <81> instance indicates regular trade.",
+   "metadata": {
+    "fix:tag": "81",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"regular\",\"1\":\"soft dollar\",\"2\":\"step-in\",\"3\":\"step-out\",\"4\":\"soft-dollar step-in\",\"5\":\"soft-dollar step-out\",\"6\":\"plan sponsor\"}",
+    "fix:used_in": "[\"New Order - Single\",\"New Order - List\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "NoRpts",
+   "type": "int64",
+   "nullable": true,
+   "description": "Total number of reports within series.",
+   "metadata": {
+    "fix:tag": "82",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"List Status\"]"
+   }
+  },
+  {
+   "name": "RptSeq",
+   "type": "int64",
+   "nullable": true,
+   "description": "Sequence number of message within report series.",
+   "metadata": {
+    "fix:tag": "83",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"List Status\"]"
+   }
+  },
+  {
+   "name": "CxlQty",
+   "type": "int64",
+   "nullable": true,
+   "description": "Total number of shares canceled for this order.",
+   "metadata": {
+    "fix:tag": "84",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"List Status\"]"
+   }
+  },
+  {
+   "name": "NoDlvyInst",
+   "type": "int64",
+   "nullable": true,
+   "description": "Number of delivery instruction fields to follow",
+   "metadata": {
+    "fix:tag": "85",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "DlvyInst",
+   "type": "string",
+   "nullable": true,
+   "description": "Free format text field to indicate delivery instructions.",
+   "metadata": {
+    "fix:tag": "86",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "AllocStatus",
+   "type": "int64",
+   "nullable": true,
+   "description": "Identifies status of allocation.",
+   "metadata": {
+    "fix:tag": "87",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"accepted (successfully processed)\",\"1\":\"rejected\",\"2\":\"partial accept\",\"3\":\"received (received, not yet processed)\"}",
+    "fix:used_in": "[\"Allocation ACK\"]"
+   }
+  },
+  {
+   "name": "AllocRejCode",
+   "type": "int64",
+   "nullable": true,
+   "description": "Identifies reason for rejection.",
+   "metadata": {
+    "fix:tag": "88",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"unknown account(s)\",\"1\":\"incorrect quantity\",\"2\":\"incorrect average price\",\"3\":\"unknown executing broker mnemonic\",\"4\":\"commission difference\",\"5\":\"unknown OrderID <37>\",\"6\":\"unknown ListID <66>\",\"7\":\"other\"}",
+    "fix:used_in": "[\"Allocation ACK\"]"
+   }
+  },
+  {
+   "name": "Signature",
+   "type": "binary",
+   "nullable": true,
+   "description": "Electronic signature",
+   "metadata": {
+    "fix:tag": "89",
+    "fix:type": "data",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "SecureDataLen",
+   "type": "int64",
+   "nullable": true,
+   "description": "Length of encrypted message",
+   "metadata": {
+    "fix:tag": "90",
+    "fix:type": "Length",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "SecureData",
+   "type": "binary",
+   "nullable": true,
+   "description": "Actual encrypted data stream",
+   "metadata": {
+    "fix:tag": "91",
+    "fix:type": "data",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "BrokerOfCredit",
+   "type": "string",
+   "nullable": true,
+   "description": "Broker to receive trade credit",
+   "metadata": {
+    "fix:tag": "92",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "SignatureLength",
+   "type": "int64",
+   "nullable": true,
+   "description": "Number of bytes in Signature <89> field.",
+   "metadata": {
+    "fix:tag": "93",
+    "fix:type": "Length",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "EmailType",
+   "type": "string",
+   "nullable": true,
+   "description": "Email <C> message type.",
+   "metadata": {
+    "fix:tag": "94",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"New\",\"1\":\"Reply\",\"2\":\"Admin Reply\"}",
+    "fix:used_in": "[\"Email\"]"
+   }
+  },
+  {
+   "name": "RawDataLength",
+   "type": "int64",
+   "nullable": true,
+   "description": "Number of bytes in raw data field.",
+   "metadata": {
+    "fix:tag": "95",
+    "fix:type": "Length",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Logon\",\"News\",\"Email\"]"
+   }
+  },
+  {
+   "name": "RawData",
+   "type": "binary",
+   "nullable": true,
+   "description": "Unformatted raw data, can include bitmaps, word processor documents, etc.",
+   "metadata": {
+    "fix:tag": "96",
+    "fix:type": "data",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Logon\",\"News\",\"Email\"]"
+   }
+  },
+  {
+   "name": "PossResend",
+   "type": "string",
+   "nullable": true,
+   "description": "Indicates that message may contain information that has been sent under another sequence number.",
+   "metadata": {
+    "fix:tag": "97",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "EncryptMethod",
+   "type": "int64",
+   "nullable": true,
+   "description": "Method of encryption.",
+   "metadata": {
+    "fix:tag": "98",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"None / other\",\"1\":\"PKCS (proprietary)\",\"2\":\"DES (EBC mode)\",\"3\":\"PKCS/DES (proprietary)\",\"4\":\"PGP/DES (defunct)\",\"5\":\"PGP/DES-MD5 (see app note on FIX home page)\",\"6\":\"PEM/DES-MD5 (see app note on FIX home page)\"}",
+    "fix:used_in": "[\"Logon\"]"
+   }
+  },
+  {
+   "name": "StopPx",
+   "type": "double",
+   "nullable": true,
+   "description": "Price per share.",
+   "metadata": {
+    "fix:tag": "99",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "ExDestination",
+   "type": "string",
+   "nullable": true,
+   "description": "Execution destination as defined by institution when order is entered.",
+   "metadata": {
+    "fix:tag": "100",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"none\",\"4\":\"POSIT\"}",
+    "fix:used_in": "[\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "CxlRejReason",
+   "type": "int64",
+   "nullable": true,
+   "description": "Code to identify reason for cancel rejection.",
+   "metadata": {
+    "fix:tag": "102",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"Too late to cancel\",\"1\":\"Unknown order\"}",
+    "fix:used_in": "[\"Order Cancel Reject\"]"
+   }
+  },
+  {
+   "name": "OrdRejReason",
+   "type": "int64",
+   "nullable": true,
+   "description": "Code to identify reason for order rejection.",
+   "metadata": {
+    "fix:tag": "103",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:values": "{\"0\":\"Broker option\",\"1\":\"Unknown symbol\",\"2\":\"Exchange closed\",\"3\":\"Order exceeds limit\",\"4\":\"Too late to enter\"}",
+    "fix:used_in": "[\"Execution Report\"]"
+   }
+  },
+  {
+   "name": "IOIQualifier",
+   "type": "string",
+   "nullable": true,
+   "description": "Code to qualify Indication of Interest <6> use.",
+   "metadata": {
+    "fix:tag": "104",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"A\":\"All or none\",\"C\":\"At the close\",\"I\":\"In touch with\",\"L\":\"Limit\",\"M\":\"More behind\",\"O\":\"At the open\",\"P\":\"Taking a position\",\"Q\":\"Current quote\",\"S\":\"Portfolio show-n\",\"T\":\"Through the day\",\"V\":\"Versus\",\"W\":\"Indication - Working away\",\"X\":\"Crossing opportunity\"}",
+    "fix:used_in": "[\"Indication of Interest\"]"
+   }
+  },
+  {
+   "name": "WaveNo",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifier to aid in the management of multiple lists derived from a single, master list.",
+   "metadata": {
+    "fix:tag": "105",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"New Order - List\",\"Allocation\",\"List Cancel Request\",\"List Execute\",\"List Status Request\",\"List Status\"]"
+   }
+  },
+  {
+   "name": "Issuer",
+   "type": "string",
+   "nullable": true,
+   "description": "Company name of security issuer (e.g. International Business Machines)",
+   "metadata": {
+    "fix:tag": "106",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Indication of Interest\",\"Advertisement\",\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Order Status Request\",\"Allocation\",\"Quote Request\",\"Quote\"]"
+   }
+  },
+  {
+   "name": "SecurityDesc",
+   "type": "string",
+   "nullable": true,
+   "description": "Security description.",
+   "metadata": {
+    "fix:tag": "107",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Indication of Interest\",\"Advertisement\",\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Order Status Request\",\"Allocation\",\"Quote Request\",\"Quote\"]"
+   }
+  },
+  {
+   "name": "HeartBtInt",
+   "type": "int64",
+   "nullable": true,
+   "description": "Heartbeat <0> interval (seconds)",
+   "metadata": {
+    "fix:tag": "108",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Logon\"]"
+   }
+  },
+  {
+   "name": "ClientID",
+   "type": "string",
+   "nullable": true,
+   "description": "Firm identifier used in third party-transactions.",
+   "metadata": {
+    "fix:tag": "109",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Order Cancel Reject\",\"New Order - Single\",\"New Order - List\",\"Order Cancel Request\",\"Order Cancel/Replace Request\",\"Order Status Request\",\"Allocation\",\"Allocation ACK\"]"
+   }
+  },
+  {
+   "name": "MinQty",
+   "type": "int64",
+   "nullable": true,
+   "description": "Minimum quantity of an order to be executed.",
+   "metadata": {
+    "fix:tag": "110",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "MaxFloor",
+   "type": "int64",
+   "nullable": true,
+   "description": "Maximum number of shares within an order to be shown on the exchange floor at any given time.",
+   "metadata": {
+    "fix:tag": "111",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "TestReqID",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifier included in Test Request <1> message to be returned in resulting Heartbeat <0>",
+   "metadata": {
+    "fix:tag": "112",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Heartbeat\",\"Test Request\"]"
+   }
+  },
+  {
+   "name": "ReportToExch",
+   "type": "string",
+   "nullable": true,
+   "description": "Identifies party of trade responsible for exchange reporting.",
+   "metadata": {
+    "fix:tag": "113",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"Y\":\"Indicates that party receiving message must report trade\",\"N\":\"Indicates that party sending message will report trade\"}",
+    "fix:used_in": "[\"Execution Report\"]"
+   }
+  },
+  {
+   "name": "LocateReqd",
+   "type": "string",
+   "nullable": true,
+   "description": "Indicates whether the broker is to locate the stock in conjuction with a short sell order.",
+   "metadata": {
+    "fix:tag": "114",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"Y\":\"Indicates the broker is responsible for locating the stock\",\"N\":\"Indicates the broker is not required to locate\"}",
+    "fix:used_in": "[\"New Order - Single\",\"New Order - List\"]"
+   }
+  },
+  {
+   "name": "OnBehalfOfCompID",
+   "type": "string",
+   "nullable": true,
+   "description": "Assigned value used to identify firm originating message if the message was delivered by a third party i.e. the third party firm identifier would be delivered in the SenderCompID <49> field and the firm originating the message in this field.",
+   "metadata": {
+    "fix:tag": "115",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "OnBehalfOfSubID",
+   "type": "string",
+   "nullable": true,
+   "description": "Assigned value used to identify specific message originator (desk, trader, etc.) if the message was delivered by a third party",
+   "metadata": {
+    "fix:tag": "116",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "QuoteID",
+   "type": "string",
+   "nullable": true,
+   "description": "Unique identifier for quote",
+   "metadata": {
+    "fix:tag": "117",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"New Order - Single\",\"Quote\"]"
+   }
+  },
+  {
+   "name": "NetMoney",
+   "type": "double",
+   "nullable": true,
+   "description": "Total amount due as the result of the transaction (e.g. for Buy order - principal + commission + fees) reported in currency of execution.",
+   "metadata": {
+    "fix:tag": "118",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "SettlCurrAmt",
+   "type": "double",
+   "nullable": true,
+   "description": "Total amount due expressed in settlement currency (includes the effect of the forex transaction)",
+   "metadata": {
+    "fix:tag": "119",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "SettlCurrency",
+   "type": "string",
+   "nullable": true,
+   "description": "Currency code of settlement denomination. See Appendix A: \"Valid Currency Codes\" for information on obtaining",
+   "metadata": {
+    "fix:tag": "120",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "ForexReq",
+   "type": "string",
+   "nullable": true,
+   "description": "Indicates request for forex accommodation trade to be executed along with security transaction.",
+   "metadata": {
+    "fix:tag": "121",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"Y\":\"Execute Forex after security trade\",\"N\":\"Do not execute Forex after security trade\"}",
+    "fix:used_in": "[\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "OrigSendingTime",
+   "type": "timestamp[ns]",
+   "nullable": true,
+   "description": "Original time of message transmission (always expressed in GMT) when transmitting orders as the result of a resend request.",
+   "metadata": {
+    "fix:tag": "122",
+    "fix:type": "time",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "GapFillFlag",
+   "type": "string",
+   "nullable": true,
+   "description": "Indicates that the Sequence Reset <4> message is replacing administrative or application messages which will not be resent.",
+   "metadata": {
+    "fix:tag": "123",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"Y\":\"Gap Fill message, MsgSeqNum <34> field valid\",\"N\":\"Sequence Reset <4> , ignore MsgSeqNum <34>\"}",
+    "fix:used_in": "[\"Sequence Reset\"]"
+   }
+  },
+  {
+   "name": "NoExecs",
+   "type": "int64",
+   "nullable": true,
+   "description": "No of execution record groups to follow.",
+   "metadata": {
+    "fix:tag": "124",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Allocation\"]"
+   }
+  },
+  {
+   "name": "CxlType",
+   "type": "string",
+   "nullable": true,
+   "description": "Defines if cancel is for part or all of the remaining quantity of an order.",
+   "metadata": {
+    "fix:tag": "125",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"P\":\"partial cancel (reduce quantity)\",\"F\":\"full remaining quantity\"}",
+    "fix:used_in": "[\"Order Cancel Request\"]"
+   }
+  },
+  {
+   "name": "ExpireTime",
+   "type": "timestamp[ns]",
+   "nullable": true,
+   "description": "Time/Date of order expiration (always expressed in GMT)",
+   "metadata": {
+    "fix:tag": "126",
+    "fix:type": "time",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"New Order - Single\",\"New Order - List\",\"Order Cancel/Replace Request\"]"
+   }
+  },
+  {
+   "name": "DKReason",
+   "type": "string",
+   "nullable": true,
+   "description": "Reason for execution rejection.",
+   "metadata": {
+    "fix:tag": "127",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"A\":\"Unknown symbol\",\"B\":\"Wrong side\",\"C\":\"Quantity exceeds order\",\"D\":\"No matching order\",\"E\":\"Price <44> exceeds limit\",\"Z\":\"Other\"}",
+    "fix:used_in": "[\"Don't Know Trade\"]"
+   }
+  },
+  {
+   "name": "DeliverToCompID",
+   "type": "string",
+   "nullable": true,
+   "description": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field.",
+   "metadata": {
+    "fix:tag": "128",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "DeliverToSubID",
+   "type": "string",
+   "nullable": true,
+   "description": "Assigned value used to identify specific message recipient (desk, trader, etc.) if the message is delivered by a third party",
+   "metadata": {
+    "fix:tag": "129",
+    "fix:type": "char",
+    "fix:version": "4.0"
+   }
+  },
+  {
+   "name": "IOINaturalFlag",
+   "type": "string",
+   "nullable": true,
+   "description": "Indicates that IOI is the result of an existing agency order or a facilitation position resulting from an agency order, not from principal trading or order solicitation activity.",
+   "metadata": {
+    "fix:tag": "130",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"Y\":\"Natural\",\"N\":\"Not natural\"}",
+    "fix:used_in": "[\"Indication of Interest\"]"
+   }
+  },
+  {
+   "name": "QuoteReqID",
+   "type": "string",
+   "nullable": true,
+   "description": "Unique identifier for quote request",
+   "metadata": {
+    "fix:tag": "131",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Quote\",\"Quote Request\"]"
+   }
+  },
+  {
+   "name": "BidPx",
+   "type": "double",
+   "nullable": true,
+   "description": "Bid price/rate",
+   "metadata": {
+    "fix:tag": "132",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Quote\"]"
+   }
+  },
+  {
+   "name": "OfferPx",
+   "type": "double",
+   "nullable": true,
+   "description": "Offer price/rate",
+   "metadata": {
+    "fix:tag": "133",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Quote\"]"
+   }
+  },
+  {
+   "name": "BidSize",
+   "type": "int64",
+   "nullable": true,
+   "description": "Quantity of bid",
+   "metadata": {
+    "fix:tag": "134",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Quote\"]"
+   }
+  },
+  {
+   "name": "OfferSize",
+   "type": "int64",
+   "nullable": true,
+   "description": "Quantity of offer",
+   "metadata": {
+    "fix:tag": "135",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Quote\"]"
+   }
+  },
+  {
+   "name": "NoMiscFees",
+   "type": "int64",
+   "nullable": true,
+   "description": "Number of repeating groups of miscellaneous fees",
+   "metadata": {
+    "fix:tag": "136",
+    "fix:type": "int",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "MiscFeeAmt",
+   "type": "double",
+   "nullable": true,
+   "description": "Miscellaneous fee value",
+   "metadata": {
+    "fix:tag": "137",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "MiscFeeCurr",
+   "type": "string",
+   "nullable": true,
+   "description": "Currency <15> of miscellaneous fee",
+   "metadata": {
+    "fix:tag": "138",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "MiscFeeType",
+   "type": "string",
+   "nullable": true,
+   "description": "Indicates type of miscellaneous fee.",
+   "metadata": {
+    "fix:tag": "139",
+    "fix:type": "char",
+    "fix:version": "4.0",
+    "fix:values": "{\"1\":\"Regulatory (e.g. SEC)\",\"2\":\"Tax\",\"3\":\"Local Commission\",\"4\":\"Exchange Fees\",\"5\":\"Stamp\",\"6\":\"Levy\",\"7\":\"Other\"}",
+    "fix:used_in": "[\"Execution Report\",\"Allocation\"]"
+   }
+  },
+  {
+   "name": "PrevClosePx",
+   "type": "double",
+   "nullable": true,
+   "description": "Previous closing price of security.",
+   "metadata": {
+    "fix:tag": "140",
+    "fix:type": "float",
+    "fix:version": "4.0",
+    "fix:used_in": "[\"New Order - Single\",\"New Order - List\",\"Quote Request\"]"
+   }
+  }
+ ]
+}

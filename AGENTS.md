@@ -395,8 +395,9 @@ rekep/
 │                  tag_arrow_array: map keys as integer tags), fields.py
 │                  (the FIX datatype -> Arrow projection and the forgiving
 │                  Boolean reading) and registry.py (FixRegistry: the OnixS
-│                  dictionary scraped per version, cached in ~/.config/fix/,
-│                  lookup and fuzzy search, all names case-insensitive)
+│                  dictionary scraped per version, cached in ~/.config/fix/
+│                  and dumped into data/fix/ here, lookup and fuzzy search,
+│                  all names case-insensitive)
 └── logs/          log.py (the Log shape), text_file.py (TextFile: a log read
                    into Arrow batches and written back out as lines, itself a
                    Dataset) and text_files.py (TextFiles: a folder of them as one
@@ -405,7 +406,9 @@ rekep/
 ```
 
 Beside `python/`, `schemas/` holds the published contracts (one directory per
-namespace, one file per shape) and `docs/` the site.
+namespace, one file per shape), `data/` the dictionaries this repository
+publishes -- the FIX one under `data/fix/`, which is a `FixRegistry` cache
+directory and nothing else -- and `docs/` the site.
 
 Dependencies point one way: `logs`/`iceberg` -> `dataset` -> `fields` ->
 `convert` -> `annotations`, and `fix` sits beside `dataset` on the same

@@ -11,7 +11,9 @@ joined by SOH — which every log prints as something visible instead:
 `rekep.fix` parses those lines — one at a time or whole columns in Arrow
 kernels — and carries a dictionary of every FIX version's fields, scraped once
 from the [OnixS FIX Dictionary](https://www.onixs.biz/fix-dictionary.html) and
-cached under `~/.config/fix/` so everything after works offline.
+cached under `~/.config/fix/` so everything after works offline. That scrape is
+[committed here](#the-dump-in-this-repository) as well, under `data/fix/`, so a
+machine that was never online has the dictionary too.
 
 ## Parsing lines
 
@@ -129,6 +131,30 @@ registry.search("Sied")              # nothing matches -> Levenshtein fallback
     result in `~/.config/fix/{version}.json`. Every later call — on this
     machine or any machine the directory is copied to — answers from the file.
     `refresh=True` scrapes over a stale cache.
+
+    A whole-dictionary scrape is around seven thousand pages, and the site
+    paces it: `429 Too Many Requests` arrives partway through. A refused page
+    is waited out and asked for again — `Retry-After` when the site sends one,
+    a doubling pause when it does not — and a page still refused after
+    `retries` attempts *fails the version*. It is not treated as a page that
+    does not exist, because that writes a field with no type and no comment
+    into the cache and answers every later call from it.
+
+### The dump in this repository
+
+`data/fix/` is that scrape, committed: one JSON per version, exactly what the
+registry writes into `~/.config/fix/`. Point a registry at it and the whole
+dictionary answers on a machine that has never been online.
+
+```python
+registry = FixRegistry(cache_dir="data/fix")
+registry.tags()                      # every name to its tag, nothing fetched
+```
+
+What each file says, and how to refresh one, is in
+[`data/README.md`](https://github.com/Platob/yggfin/blob/main/data/README.md);
+`python/tests/test_data.py` is what keeps a throttled scrape from shipping as
+one.
 
 ## Reading values
 
