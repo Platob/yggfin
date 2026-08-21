@@ -217,3 +217,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 site/
+
+# A dictionary unpacked beside the archive it came from is a working copy,
+# not something to publish twice.
+data/fix/

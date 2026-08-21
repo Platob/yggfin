@@ -11,7 +11,9 @@ joined by SOH — which every log prints as something visible instead:
 `rekep.fix` parses those lines — one at a time or whole columns in Arrow
 kernels — and carries a dictionary of every FIX version's fields, scraped once
 from the [OnixS FIX Dictionary](https://www.onixs.biz/fix-dictionary.html) and
-cached under `~/.config/fix/` so everything after works offline.
+cached under `~/.config/fix/` so everything after works offline. That scrape is
+[committed here](#the-dump-in-this-repository) as well, as `data/fix.zip`, so
+a machine that was never online has the dictionary too.
 
 ## Parsing lines
 
@@ -130,6 +132,82 @@ registry.search("Sied")              # nothing matches -> Levenshtein fallback
     machine or any machine the directory is copied to — answers from the file.
     `refresh=True` scrapes over a stale cache.
 
+    A whole-dictionary scrape is around seven thousand pages, and the site
+    paces it: `429 Too Many Requests` arrives partway through. A refused page
+    is waited out and asked for again — `Retry-After` when the site sends one,
+    a doubling pause when it does not — and a page still refused after
+    `retries` attempts *fails the version*. It is not treated as a page that
+    does not exist, because that writes a field with no type and no comment
+    into the cache and answers every later call from it.
+
+### The dump in this repository
+
+`data/fix.zip` is that scrape, committed: one JSON document per version —
+exactly what the registry writes into `~/.config/fix/` — packed into one
+archive. Point a registry at it and the whole dictionary answers on a machine
+that has never been online.
+
+```python
+registry = FixRegistry(cache_dir="data/fix.zip")
+registry.tags()                      # every name to its tag, nothing fetched
+```
+
+What each document says, and how to refresh one, is in
+[`data/README.md`](https://github.com/Platob/yggfin/blob/main/data/README.md);
+`python/tests/test_data.py` is what keeps a throttled scrape from shipping as
+one.
+
+### A directory, or a zip of it
+
+`cache_dir` names either, and **the extension is what decides** — the same
+inference `Field.from_("quote.yaml")` makes. A path ending in `.zip` is an
+archive of the same JSON documents; anything else is a directory of them.
+
+=== "A directory"
+
+    ```python
+    registry = FixRegistry(cache_dir="~/.config/fix")   # the default
+    registry.load("4.4")                                # writes 4.4.json
+    ```
+
+    One file per version, so a diff shows a field that changed and a single
+    version can be refreshed on its own.
+
+=== "An archive"
+
+    ```python
+    registry = FixRegistry(cache_dir="data/fix.zip")
+    registry.load("4.4")     # writes the member 4.4.json, replacing it
+    registry.archived        # True -- read off the extension, nothing else
+    ```
+
+    One file to publish, copy or attach, six times smaller. Scrapes land in
+    it the same way: a member is written whole, and never twice.
+
+Both are the same store to everything above them — the scraping, the version
+rules, the ordering, the search — so a dictionary can be moved between them
+without anything downstream noticing:
+
+```python
+FixRegistry(cache_dir="~/.config/fix").into_zip("fix.zip")   # publish it
+FixRegistry(cache_dir="fix.zip").fields("4.4")               # read it back
+```
+
+`into_zip` stamps every member at the start of zip time, so building the same
+dictionary twice gives the same bytes — which is what makes an archive worth
+committing: "nothing changed" looks like nothing changed.
+
+!!! note "What an archive costs, and what it saves"
+
+    A zip made of the *folder* (`zip -r fix.zip fix/`) reads too: members are
+    found by their file name, whatever directory they sit in, and a member
+    written into such an archive joins its neighbours rather than landing at
+    the root. A torn archive is treated as a cold cache — scraped over, not
+    mourned — exactly as a torn file is.
+
+    Reading through deflate costs 12–17% of a question, and the archive is
+    6.1× smaller than the directory ([measured](#benchmarks)).
+
 ## Reading values
 
 The projection is deliberately forgiving where the wire is:
@@ -175,36 +253,33 @@ twice.
 | rendered messages | ~140–260k rows/s, depending on group density |
 | all-numeric keys, `tag_arrow_array` | ~140M keys/s |
 
-**Fields per row.** The work is per token, not per row, so a rows/s at one
-message shape says nothing about another: the wire fixture is twelve fields
-and a CheckSum per line, and a wider message pays for every field it adds.
-That is why the sweep prints a fields/s column beside rows/s — it is the
-column to compare across cases.
+**The registry's two stores.** `benchmarks/bench_fix_registry.py` is the other
+sweep: the same published dictionary as a directory and as an archive, every
+answer asserted equal before anything is timed.
 
-**Group density.** Repeating groups are extra tokens, and in a rendered line
-they are the *expensive* tokens: the inner `member=` regex only runs on
-`Group[i]=Member=Value`, so a column with no group entries skips it entirely
-while one with them sends a third of its tokens through it. The sweep runs
-both, and that bracket is the ~140–260k spread.
+```bash
+cd python
+uv run python benchmarks/bench_fix_registry.py
+```
 
-**Wire against rendered.** A wire line cuts at the first `=` with a numeric
-tag on the left; a rendered line has to read a name, an optional index and an
-optional member out of the same grammar. Rendered parsing therefore sits
-below wire on the same rows. The sweep also runs wire lines separated by SOH,
-by `|`, with log noise wrapped around the message, and with repeating groups
-— those cases are measured by the script and no number for them is quoted
-here.
+| question, from cold | directory | zip |
+| --- | --- | --- |
+| `field("Side")`, every version | ~71 ms | ~80 ms |
+| `field(54, "4.4")`, one version | ~10.4 ms | ~11.9 ms |
+| `tags()`, every version | ~78 ms | ~89 ms |
+| `search("reject")` | ~81 ms | ~88 ms |
+| `fields("4.4")`, one version | ~9.8 ms | ~11.4 ms |
 
-**Numeric against rendered keys.** `tag_arrow_array` over all-numeric keys is
-one cast kernel over the map's key array, which is why it is quoted in keys/s
-and not in rows/s. Rendered keys instead resolve through `names` once per
-distinct spelling, dictionary-encoded, so their cost follows the number of
-distinct names in the column rather than its length. The script measures the
-`int64` key type and the rendered resolution as their own cases; neither is
-quoted as a number on this page.
+So deflate costs 12–17% of a question, and never changes an answer.
 
-**The tag/value cut.** The script also races the cut itself — one
-`split_pattern` plus `list_element` against one `extract_regex`, trimming and
-greedy — on ten tokens per row of the sweep. That race is what
-`parse_arrow_array`'s choice was decided by, and it is measured, not quoted:
-the loser looked entirely plausible.
+**What the archive saves.** 2.86 MB of JSON becomes 0.47 MB, 6.1× smaller, in
+~62 ms. The deflate level is zlib's own: level 9 is 2% smaller for twice the
+time, level 1 is 26% bigger, and level 0 — stored rather than deflated, the
+case in the sweep expected to be bad — is the whole 2.86 MB back.
+
+**Where the time actually goes.** Both stores spend most of a question
+building `Field` objects: `fields("4.4")` is 953 of them, and a `lookup`
+across versions builds all 6,479 to return one. That is why the two stores
+sit within a fifth of each other however the bytes are packed — and why the
+one number that moves either of them is how many fields a question has to
+build.

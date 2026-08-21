@@ -1,3 +1,10 @@
 # Normalise line endings: source stays LF everywhere, including Windows
 * text=auto eol=lf
 *.png binary
+# The published FIX dictionary. A zip is bytes, and `text=auto` must not go
+# looking for line endings in it.
+*.zip binary
+
+# Captured pages are evidence: kept byte for byte, CRLF included, so the
+# parsing they pin is asserted against what the site actually served.
+python/tests/fix/fixtures/capture/** -text

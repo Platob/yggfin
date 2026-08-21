@@ -61,6 +61,14 @@ FIX_SCALARS: dict[str, pyarrow.DataType] = {
     "localmkttime": pyarrow.time64("ns"),
     "tztimestamp": pyarrow.string(),
     "tztimeonly": pyarrow.string(),
+    # The dictionary's own slips, found by dumping every version of it
+    # (`data/fix/`). They are here because the fallback is wrong for them --
+    # a quantity read as text, a day of month read as text, a date read as
+    # text -- and its other slips (`Stirng`, `month`) land on a string
+    # either way, which is what the fallback already gives them.
+    "quantity": pyarrow.float64(),  # RatioQty, in 4.2 and 4.3
+    "day": pyarrow.int64(),  # MaturityDay, in 4.1
+    "localmmktdate": pyarrow.date32(),  # LegFutSettDate, in 4.3
 }
 
 #: What a FIX Boolean accepts, beyond the `Y`/`N` the standard writes: real
