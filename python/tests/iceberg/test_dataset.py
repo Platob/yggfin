@@ -905,6 +905,186 @@ def test_the_merge_path_can_be_handed_back_to_pyiceberg(dataset: IcebergDataset)
     assert set(dataset.refresh().read_arrow_table().column("venue").to_pylist()) == {"XETR"}
 
 
+# -- filesystem frugality ----------------------------------------------------
+
+
+def keyed(prefix: str, count: int) -> pyarrow.Table:
+    """`quotes`, under keys that share nothing with the `S...` ones."""
+    day = datetime.date(2026, 8, 14)
+    return pyarrow.Table.from_pydict(
+        {
+            "symbol": [f"{prefix}{i}" for i in range(count)],
+            "day": [day] * count,
+            "size": list(range(count)),
+            "venue": ["XPAR"] * count,
+        },
+        schema=Quote.FIELD.into_arrow_schema(),
+    )
+
+
+@pytest.fixture
+def opened(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
+    """Store opens by file kind, counted on `PyArrowFile` -- below any cache."""
+    from pyiceberg.io.pyarrow import PyArrowFile
+
+    counts: dict[str, int] = {}
+    original = PyArrowFile.open
+
+    def counted(self: PyArrowFile, *args: object, **kwargs: object) -> object:
+        kind = "data" if self.location.endswith(".parquet") else "metadata"
+        counts[kind] = counts.get(kind, 0) + 1
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(PyArrowFile, "open", counted)
+    return counts
+
+
+def test_a_merge_of_disjoint_keys_opens_no_data_file(
+    dataset: IcebergDataset, opened: dict[str, int]
+) -> None:
+    """Keys no stored file can hold plan to nothing, and nothing is read."""
+    dataset.write_arrow_table(quotes(3))
+    opened.clear()
+    updated, inserted = dataset.merge_arrow_table(keyed("T", 3))
+    assert (updated, inserted) == (0, 3)
+    assert opened.get("data", 0) == 0, "the merge was an append, arrived at by planning"
+    assert dataset.read_arrow_table().num_rows == 6
+
+
+def test_a_merge_that_matches_still_reads_and_updates(
+    dataset: IcebergDataset, opened: dict[str, int]
+) -> None:
+    dataset.write_arrow_table(quotes(3))
+    opened.clear()
+    updated, inserted = dataset.merge_arrow_table(quotes(3, "XETR"))
+    assert (updated, inserted) == (3, 0)
+    assert opened.get("data", 0) > 0, "matching keys have to be read to be compared"
+
+
+def test_a_replayed_insert_opens_data_once_and_commits_nothing(
+    dataset: IcebergDataset,
+) -> None:
+    dataset.write_arrow_table(quotes(3))
+    before = len(dataset.iceberg_table.snapshots())
+    assert dataset.insert_arrow_table(quotes(3, "XETR")) == 0
+    assert len(dataset.iceberg_table.snapshots()) == before, "nothing new, no commit"
+
+
+def test_an_insert_of_disjoint_keys_appends_without_reading(
+    dataset: IcebergDataset, opened: dict[str, int]
+) -> None:
+    dataset.write_arrow_table(quotes(3))
+    opened.clear()
+    assert dataset.insert_arrow_table(keyed("T", 2)) == 2
+    assert opened.get("data", 0) == 0
+
+
+def test_a_bare_limit_opens_only_the_files_it_needs(
+    dataset: IcebergDataset, opened: dict[str, int]
+) -> None:
+    """pyiceberg submits every planned file before its row cap bites; the plan
+    is cut here instead, so a peek at a wide table stays a peek."""
+    for _ in range(3):
+        dataset.write_arrow_table(quotes(4))  # three commits, three files
+    opened.clear()
+    assert dataset.read_arrow_reader(limit=2).read_all().num_rows == 2
+    assert opened.get("data", 0) == 1, "one file already held the two rows"
+
+
+def test_a_filtered_limit_still_caps_the_rows(dataset: IcebergDataset) -> None:
+    """With a filter the record counts over-estimate, so the whole plan stands
+    -- the cap on what comes back is pyiceberg's, unchanged."""
+    dataset.write_arrow_table(quotes(6))
+    found = dataset.read_arrow_reader(row_filter="size >= 1", limit=2).read_all()
+    assert found.num_rows == 2
+
+
+def test_a_limit_over_delete_files_reads_the_whole_plan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A file carrying deletes holds fewer live rows than it counts, so
+    trimming by `record_count` could under-deliver; the plan goes back whole."""
+    import types
+
+    from rekep.iceberg import dataset as module
+
+    tasks = [
+        types.SimpleNamespace(delete_files={"pos"}, file=types.SimpleNamespace(record_count=5)),
+        types.SimpleNamespace(delete_files=set(), file=types.SimpleNamespace(record_count=5)),
+    ]
+    handed: dict[str, list] = {}
+
+    def capture(scan: object, taken: list) -> str:
+        handed["tasks"] = list(taken)
+        return "reader"
+
+    monkeypatch.setattr(module, "_planned_reader", capture)
+    scan = types.SimpleNamespace(plan_files=lambda: tasks)
+    assert module._limited_reader(scan, None, 1) == "reader"
+    assert handed["tasks"] == tasks
+
+
+def test_a_bare_limit_cuts_the_plan_at_the_records_it_needs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import types
+
+    from rekep.iceberg import dataset as module
+
+    tasks = [
+        types.SimpleNamespace(delete_files=set(), file=types.SimpleNamespace(record_count=5))
+        for _ in range(4)
+    ]
+    handed: dict[str, list] = {}
+
+    def capture(scan: object, taken: list) -> str:
+        handed["tasks"] = list(taken)
+        return "reader"
+
+    monkeypatch.setattr(module, "_planned_reader", capture)
+    scan = types.SimpleNamespace(plan_files=lambda: tasks)
+    assert module._limited_reader(scan, None, 7) == "reader"
+    assert handed["tasks"] == tasks[:2], "five rows are not seven; ten are"
+
+
+# -- optimizing on its own ---------------------------------------------------
+
+
+def test_maybe_optimize_is_quiet_on_a_tidy_table(dataset: IcebergDataset) -> None:
+    dataset.write_arrow_table(quotes(3))
+    before = len(dataset.iceberg_table.snapshots())
+    assert dataset.maybe_optimize() is None
+    assert len(dataset.iceberg_table.snapshots()) == before, "quiet means no commit either"
+
+
+def test_maybe_optimize_runs_once_the_table_frays(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.iceberg import dataset as module
+
+    monkeypatch.setattr(module, "AUTO_OPTIMIZE_SNAPSHOTS", 3)
+    dataset.write_arrow(quotes(4).to_reader(max_chunksize=1), commit_row_size=1)  # four commits
+    report = dataset.maybe_optimize()
+    assert report is not None and report["rewritten"] >= 2
+    assert dataset.maybe_optimize() is None, "and once run, the table is quiet again"
+
+
+def test_a_stream_ends_by_asking_maybe_optimize_only_when_asked(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[dict] = []
+    monkeypatch.setattr(
+        IcebergDataset, "maybe_optimize", lambda self, **kwargs: calls.append(kwargs)
+    )
+    dataset.write_arrow_table(quotes(2))
+    assert calls == [], "off by default: expiring snapshots is not a writer's call"
+    dataset.auto_optimize = True
+    dataset.write_arrow_table(quotes(2))
+    assert len(calls) == 1
+    dataset.append_arrow(keyed("T", 2), merge_by=True)
+    assert len(calls) == 2
+
+
 # -- maintenance that settles -----------------------------------------------
 
 

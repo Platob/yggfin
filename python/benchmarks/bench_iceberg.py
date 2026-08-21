@@ -6,7 +6,7 @@ Run from `python/`::
     uv run python benchmarks/bench_iceberg.py             # the full sweep
     uv run python benchmarks/bench_iceberg.py --only read
 
-Three questions, measured rather than assumed:
+Four questions, measured rather than assumed:
 
 1. **How fast does a stream land?** Append, upsert, and upsert on a stream that
    cannot match anything already stored -- at several commit sizes, partitioned
@@ -19,6 +19,12 @@ Three questions, measured rather than assumed:
    got lucky.
 3. **What do the table properties buy?** The same stream written with Iceberg's
    commit knobs at their defaults and at the ones this package sets.
+4. **How often is the store asked?** (`--only fs`) Every flow again, counted in
+   filesystem calls at the `PyArrowFile` layer -- below the FileIO cache, so a
+   count is a call an object store would actually serve: one `open` is a GET,
+   one `create` a PUT. Once with the immutable-content cache off, once on,
+   because seconds on a local disk cannot show what a scan-per-chunk flow does
+   to S3.
 
 Everything runs against a local SQLite catalog and a file warehouse, so the
 numbers are storage-latency-free: they measure planning, commit and Arrow work,
@@ -371,6 +377,159 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
+def sweep_fs(rows: int, days: int) -> None:
+    """Every flow again, in store calls: what S3 would be asked, not seconds.
+
+    Counted on `PyArrowFile` itself -- *below* the FileIO content cache, so a
+    count is a call the store actually served. The same sweep runs with the
+    cache off and on, because the cache is the answer to most of what the off
+    leg shows: everything it removes is a manifest, manifest list or
+    `metadata.json` fetched again.
+    """
+    import contextlib
+
+    from pyiceberg.io.pyarrow import PyArrowFile
+
+    from rekep.iceberg.fileio import CONTENT_CACHE
+
+    counts: dict[str, int] = {}
+
+    def sort(location: str) -> str:
+        name = location.rsplit("/", 1)[-1]
+        if name.endswith(".parquet"):
+            return "data"
+        if name.startswith("snap-") and name.endswith(".avro"):
+            return "list"
+        if name.endswith(".avro"):
+            return "manifest"
+        return "meta"
+
+    @contextlib.contextmanager
+    def counted():
+        originals = {"open": PyArrowFile.open, "create": PyArrowFile.create}
+
+        def watched(verb: str, original: Callable[..., Any]) -> Callable[..., Any]:
+            def call(self: Any, *args: Any, **kwargs: Any) -> Any:
+                key = f"{verb} {sort(self.location)}"
+                counts[key] = counts.get(key, 0) + 1
+                return original(self, *args, **kwargs)
+
+            return call
+
+        PyArrowFile.open = watched("get", originals["open"])
+        PyArrowFile.create = watched("put", originals["create"])
+        try:
+            yield
+        finally:
+            PyArrowFile.open = originals["open"]
+            PyArrowFile.create = originals["create"]
+
+    def fresh(root: pathlib.Path, name: str, cached: bool) -> IcebergDataset:
+        warehouse = root / f"wh-{name}"
+        warehouse.mkdir(parents=True)
+        properties = {
+            "type": "sql",
+            "uri": f"sqlite:///{(root / f'{name}.db').as_posix()}",
+            "warehouse": warehouse.as_uri(),
+            **({} if cached else {"rekep.io.cache-bytes": "0"}),
+        }
+        catalog = IcebergCatalog(name=f"fs{name}", properties=properties)
+        return catalog.dataset(
+            "bench.logs", struct=Log.FIELD, table_properties=OPTIMISED
+        ).create_with()
+
+    def report(label: str, seconds: float) -> None:
+        gets = sum(v for k, v in counts.items() if k.startswith("get"))
+        puts = sum(v for k, v in counts.items() if k.startswith("put"))
+        parts = ", ".join(f"{k}={v}" for k, v in sorted(counts.items()))
+        print(f"{label:>30} {gets:>6} {puts:>6} {seconds:>9.3f}  {parts}")
+        counts.clear()
+
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-fs-"))
+    try:
+        path = tmp / "bench.txt"
+        generate(path, rows, days)
+        table = parsed(path)
+        # One throwaway write, so the first case is not also paying for
+        # importing pyiceberg and opening the first catalog.
+        write_case(table.slice(0, 1_000), mode="append", commit_row_size=0)
+        chunk = max(table.num_rows // 8, 1)
+        half = table.slice(0, table.num_rows // 2)
+        day = datetime.date(2026, 8, 14)
+
+        def leg(cached: bool) -> None:
+            CONTENT_CACHE.clear()
+            print(
+                f"\n== store calls: {table.num_rows:,} rows, 8 commits, cache "
+                f"{'on' if cached else 'off'} =="
+            )
+            header(("case", "GET", "PUT", "seconds", "detail"), (30, 6, 6, 9, 40))
+            with counted():
+                target = fresh(tmp, f"a{cached}", cached)
+                counts.clear()
+                seconds, _ = timed(
+                    lambda: target.write_arrow(batches(table, 16_384), commit_row_size=chunk)
+                )
+                report("append stream", seconds)
+
+                target = fresh(tmp, f"m{cached}", cached)
+                counts.clear()
+                seconds, _ = timed(
+                    lambda: target.write_arrow(
+                        batches(table, 16_384), merge_by=True, commit_row_size=chunk
+                    )
+                )
+                report("merge, all new", seconds)
+
+                target = fresh(tmp, f"h{cached}", cached)
+                target.write_arrow(half, commit_row_size=0)
+                counts.clear()
+                seconds, _ = timed(
+                    lambda: target.write_arrow(
+                        batches(table, 16_384), merge_by=True, commit_row_size=chunk
+                    )
+                )
+                report("merge, half stored", seconds)
+
+                target = fresh(tmp, f"i{cached}", cached)
+                target.write_arrow(table, commit_row_size=0)
+                counts.clear()
+                seconds, _ = timed(
+                    lambda: target.append_arrow(
+                        batches(table, 16_384), merge_by=True, commit_row_size=chunk
+                    )
+                )
+                report("insert-only, full replay", seconds)
+
+                target = fresh(tmp, f"r{cached}", cached)
+                target.write_arrow(batches(table, 16_384), commit_row_size=chunk)
+                counts.clear()
+                seconds, _ = timed(target.read_arrow_table)
+                report("read everything", seconds)
+                seconds, _ = timed(
+                    lambda: target.read_arrow_table(row_filter=f"recorded_at_date = '{day}'")
+                )
+                report("read one partition", seconds)
+                seconds, _ = timed(lambda: target.read_arrow_reader(limit=100).read_all())
+                report("read limit=100", seconds)
+                seconds, _ = timed(lambda: target.scan_plan(f"recorded_at_date = '{day}'"))
+                report("scan_plan one partition", seconds)
+                seconds, _ = timed(target.read_arrow_table)
+                report("read everything, again", seconds)
+                seconds, _ = timed(target.optimize)
+                report("optimize", seconds)
+
+        for cached in (False, True):
+            leg(cached)
+        stats = CONTENT_CACHE.stats()
+        print(
+            f"\ncache: {stats['hits']} hits, {stats['misses']} misses, "
+            f"{stats['entries']} entries, {stats['bytes'] / 2**10:.0f} KiB held"
+        )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def stored_narrow(target: IcebergDataset) -> Any:
     """The same three columns, declared with the widths the store reads back.
 
@@ -408,7 +567,7 @@ def main() -> int:
     parser.add_argument("--days", type=int, default=8)
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--quick", action="store_true")
-    parser.add_argument("--only", choices=["parse", "write", "read"], default=None)
+    parser.add_argument("--only", choices=["parse", "write", "read", "fs"], default=None)
     arguments = parser.parse_args()
     rows = 100_000 if arguments.quick else arguments.rows
     days = 4 if arguments.quick else arguments.days
@@ -419,6 +578,8 @@ def main() -> int:
         shutil.rmtree(sweep_write(rows, days, arguments.quick), ignore_errors=True)
     if arguments.only in (None, "read"):
         sweep_read(rows, days, 2 if arguments.quick else arguments.repeat)
+    if arguments.only in (None, "fs"):
+        sweep_fs(min(rows, 100_000), days)
     return 0
 
 

@@ -98,6 +98,16 @@ COMPACTION_MARK = "rekep.compaction"
 #: in the metadata references it, so a sweep has to know the name.
 HADOOP_POINTER = "version-hint.text"
 
+#: What `maybe_optimize` calls fragmented: this many manifests or snapshots on
+#: the branch, or this many files the compaction planner would rewrite. Loose
+#: on purpose -- `optimize` is cheap to run and expensive to need, and the
+#: signals cost no store round trips beyond what the write already cached --
+#: but not zero, because a table of two commits does not need a maintenance
+#: pass appended to every stream.
+AUTO_OPTIMIZE_MANIFESTS = 8
+AUTO_OPTIMIZE_SNAPSHOTS = 16
+AUTO_OPTIMIZE_FILES = 16
+
 #: Rows per parquet row group. Iceberg's default is a million, which makes
 #: nearly every file this package writes a single row group -- and a filter can
 #: only skip a *row group*, so one row group per file means a filter that got
@@ -182,6 +192,14 @@ class IcebergDataset(Dataset):
     #: Whether a table created here gets `COMMIT_PROPERTIES`. The defaults are
     #: Iceberg's, and Iceberg's defaults are not tuned for a stream.
     optimize_commits: bool = True
+
+    #: Whether a write stream ends by asking `maybe_optimize` whether the
+    #: table has fragmented enough to be worth an `optimize` -- the check is
+    #: metadata already in memory, the run only happens past the
+    #: `AUTO_OPTIMIZE_*` thresholds. Off by default for one reason: `optimize`
+    #: expires snapshots, and whether yesterday's snapshots are still wanted
+    #: is not something a writer can decide for its readers.
+    auto_optimize: bool = False
 
     #: Only used when the table is created: where it lives and what it carries.
     location: str | None = None
@@ -323,10 +341,15 @@ class IcebergDataset(Dataset):
         `scan_plan` to see whether a filter actually skipped anything -- the
         rows that come back never say so.
 
-        `limit` is **not** a planning hint in pyiceberg: it is applied to the
-        rows, after the files it could have skipped have been opened. Take what
-        you need from the reader instead when that matters. `snapshot_id` reads
-        an older state, `branch` another line of it.
+        `limit` is not a planning hint in pyiceberg -- every planned file's
+        read is submitted before the row cap is checked -- so with no
+        `row_filter` the plan is cut off here instead: files are taken in plan
+        order until their record counts alone satisfy the limit, and the rest
+        are never opened. Measured on eight files, `limit=100` opened eight
+        without this and one with it. A `row_filter` makes record counts an
+        over-estimate (the matching rows may sit in any file), so a filtered
+        limit keeps pyiceberg's row-cap behaviour untrimmed. `snapshot_id`
+        reads an older state, `branch` another line of it.
 
         With no `schema` the reader is pyiceberg's own, untouched -- the fastest
         path, and the one that keeps the widths the store uses. With one, every
@@ -360,7 +383,7 @@ class IcebergDataset(Dataset):
         elif target is not None:
             found = self._selected(target, scan)
             scan = scan.select(*found)
-        reader = scan.to_arrow_batch_reader()
+        reader = _limited_reader(scan, row_filter, limit)
         if target is None:
             return reader
         return target.cast_arrow_reader(_renamed(reader, found))
@@ -463,6 +486,8 @@ class IcebergDataset(Dataset):
                     branch=reference,
                     snapshot_properties=properties or {},
                 )
+        if self.auto_optimize:
+            self.maybe_optimize(branch=branch)
 
     def merge_arrow_table(
         self,
@@ -586,11 +611,26 @@ class IcebergDataset(Dataset):
         scan = table.scan(row_filter=_key_ranges(chunk, join))
         if reference in table.refs():
             scan = scan.use_ref(reference)
+        # Planned once and read from that plan: `to_arrow_batch_reader` plans
+        # again on its own, and a streaming merge pays planning per chunk.
+        tasks = list(scan.plan_files())
+        if not tasks:
+            # No stored file overlaps the chunk's key ranges, so no stored row
+            # can match: the merge *is* an append, with nothing read and
+            # nothing to compare. A stream of new keys -- the log-ingest case
+            # this exists for -- lands every chunk here.
+            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            return 0, chunk.num_rows
         # The batch reader, not `to_arrow()`: the two read paths disagree about
         # string widths -- `to_arrow()` hands back `string` where the reader
         # hands back the `large_string` the table itself reports -- and this one
         # streams, which is what a merge of an arbitrary chunk needs.
-        matched = _under_current_names(table, scan.to_arrow_batch_reader().read_all())
+        matched = _under_current_names(table, _planned_reader(scan, tasks).read_all())
+        if matched.num_rows == 0:
+            # Files overlapped the ranges but held none of the keys: the same
+            # append, minus the casts and joins that would narrow nothing.
+            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            return 0, chunk.num_rows
         matched = shape.cast_arrow_table(matched)
         # The scan filter is a *superset* -- a range covers stored keys the
         # chunk never mentions -- so the rows it brought back are narrowed to
@@ -664,6 +704,8 @@ class IcebergDataset(Dataset):
         rows = self.commit_row_size if commit_row_size is None else commit_row_size
         for chunk in arrow_chunks(reader, rows):
             self.insert_arrow_table(self.sorted(chunk), join, branch=branch, properties=properties)
+        if self.auto_optimize:
+            self.maybe_optimize(branch=branch)
 
     def insert_arrow_table(
         self,
@@ -709,7 +751,16 @@ class IcebergDataset(Dataset):
         scan = table.scan(row_filter=_key_ranges(chunk, join), selected_fields=tuple(join))
         if reference in table.refs():
             scan = scan.use_ref(reference)
-        matched = _under_current_names(table, scan.to_arrow_batch_reader().read_all())
+        # Planned once, like a merge: no overlapping file, or overlapping files
+        # with none of the keys, means every row is new and nothing needs the
+        # anti-join -- the replayed stream pays a plan, the fresh one an append.
+        tasks = list(scan.plan_files())
+        matched = (
+            _under_current_names(table, _planned_reader(scan, tasks).read_all()) if tasks else None
+        )
+        if matched is None or matched.num_rows == 0:
+            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            return chunk.num_rows
         # Onto the chunk's own key columns, so the anti-join can run: a scan
         # hands back `large_string` where the chunk carries `string`.
         keys = field_of(pyarrow.schema([chunk.schema.field(name) for name in join]))
@@ -1199,6 +1250,38 @@ class IcebergDataset(Dataset):
             live.add(statistics.statistics_path)
         return live
 
+    def maybe_optimize(
+        self, *, min_files: int = 2, branch: str | None = None, **kwargs: Any
+    ) -> dict[str, int] | None:
+        """`optimize`, but only once cheap signals say the table needs it.
+
+        The signals cost no store round trips a write has not already paid
+        for: snapshot count is in the metadata this object holds, manifest
+        count is one manifest-list read the FileIO cache is already holding,
+        and the compaction planner -- the expensive question -- is only asked
+        when the first two stay quiet, over manifests that same cache serves.
+        Returns `optimize`'s report, or None when nothing crossed an
+        `AUTO_OPTIMIZE_*` threshold -- which is also the answer right after an
+        optimize ran, so `auto_optimize=True` on a stream converges instead of
+        compacting on every call.
+        """
+        table = self.iceberg_table
+        reference = branch or self.branch or MAIN
+        head = table.refs().get(reference)
+        if head is None:
+            return None
+        snapshot = table.metadata.snapshot_by_id(head.snapshot_id)
+        manifests = len(snapshot.manifests(table.io)) if snapshot is not None else 0
+        fragmented = (
+            len(table.metadata.snapshots) >= AUTO_OPTIMIZE_SNAPSHOTS
+            or manifests >= AUTO_OPTIMIZE_MANIFESTS
+            or sum(count for _, _, count in self._plan_rows(min_files, branch))
+            >= AUTO_OPTIMIZE_FILES
+        )
+        if not fragmented:
+            return None
+        return self.optimize(min_files=min_files, branch=branch, **kwargs)
+
     def optimize(self, *, min_files: int = 2, retain: int = 1, **kwargs: Any) -> dict[str, int]:
         """Merge manifests, compact files, then expire and sweep -- in that order.
 
@@ -1241,6 +1324,56 @@ class IcebergDataset(Dataset):
 
 
 # -- helpers ----------------------------------------------------------------
+
+
+def _planned_reader(scan: Any, tasks: Sequence[Any]) -> pyarrow.RecordBatchReader:
+    """The scan's own batch reader, over files it has already planned.
+
+    `DataScan.to_arrow_batch_reader` calls `plan_files` again -- and pyiceberg
+    re-reads the manifest list per plan, on purpose -- so a caller that has
+    planned already, to see whether there is anything to read or to trim what
+    there is, would pay planning twice per chunk. This is that method's own
+    construction, handed the tasks in hand; the rows are the rows it would
+    return.
+    """
+    from pyiceberg.io.pyarrow import ArrowScan, schema_to_pyarrow
+
+    target = schema_to_pyarrow(scan.projection())
+    batches = ArrowScan(
+        scan.table_metadata,
+        scan.io,
+        scan.projection(),
+        scan.row_filter,
+        scan.case_sensitive,
+        scan.limit,
+    ).to_record_batches(tasks)
+    return pyarrow.RecordBatchReader.from_batches(target, batches).cast(target)
+
+
+def _limited_reader(scan: Any, row_filter: Any, limit: int | None) -> pyarrow.RecordBatchReader:
+    """`scan`'s reader, opening only the files a bare `limit` can need.
+
+    pyiceberg treats `limit` as a row cap: every planned file's read is
+    submitted to the pool before the cap is checked, so `limit=100` on an
+    eight-file table opens eight files to keep one batch (measured; this
+    opens one). With no row filter a file's `record_count` says exactly how
+    many rows it contributes, so the *plan* is cut at the limit instead and
+    the files past it are never opened. Two things put the whole plan back in
+    pyiceberg's hands: a row filter, whose matches could sit in any file, and
+    delete files, which make `record_count` an over-count of the live rows.
+    """
+    if limit is None or row_filter is not None:
+        return scan.to_arrow_batch_reader()
+    tasks = list(scan.plan_files())
+    taken, rows = [], 0
+    for task in tasks:
+        if task.delete_files:
+            return _planned_reader(scan, tasks)
+        taken.append(task)
+        rows += task.file.record_count
+        if rows >= limit:
+            break
+    return _planned_reader(scan, taken)
 
 
 def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:

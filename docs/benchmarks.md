@@ -14,7 +14,10 @@ uv run python benchmarks/bench_cast.py          # casting data onto a shape
 The Iceberg numbers use a local SQLite catalog and a file warehouse, so they are
 storage-latency-free: they measure planning, commit and Arrow work, which is
 what this package is responsible for. On an object store every commit also pays
-a round trip — which makes the number of commits matter *more*, not less.
+a round trip — which makes the number of commits matter *more*, not less. What
+those round trips add up to is measured separately:
+`bench_iceberg.py --only fs` counts every store call each flow makes
+([the results](#what-the-store-is-asked)).
 
 ## Parsing
 
@@ -157,6 +160,46 @@ one prunes to exactly the right partitions, so it is worth paying.
 
 Partitioning costs about half the write throughput here, because eight days
 means up to eight files per commit instead of one. It buys the read below.
+
+### What the store is asked
+
+Seconds on a local disk cannot show what a scan-per-chunk flow does to S3, so
+this sweep counts **store calls** instead, on the file handles themselves —
+below the FileIO cache, so a count is a call the store actually served: one
+`open` is a GET, one `create` a PUT. 100,000 rows streamed in 8 commits,
+measured twice with identical counts:
+
+| flow | GETs, cache off | GETs, cache on |
+| --- | --- | --- |
+| append stream | 13 | **0** |
+| merge, every key new | 40 | **0** |
+| merge, half stored | 33 | 5 |
+| insert-only, full replay | 24 | 10 |
+| read everything | 18 | 10 |
+| read one partition | 5 | 2 |
+| read `limit=100` | 9 | **1** |
+| `scan_plan` one partition | 11 | **0** |
+| optimize (compact + sweep) | 71 | 10 |
+
+Three separate changes produce that column, and they compose:
+
+- **The content cache** ([what the store is asked](iceberg.md#what-the-store-is-asked)):
+  manifests, manifest lists and `metadata.json` are immutable, so `ArrowFileIO`
+  serves them from memory after the first fetch — and caches them *as they are
+  written*, which is why a pure append stream makes zero GETs: every file the
+  next chunk's plan wants is one this process just wrote. Over the sweep: 214
+  hits, 0 misses, ~500 KiB held.
+- **Plan-once merges**: a merge plans its scan once, and a plan of zero files
+  commits the chunk as an append with no reader built — so `merge, all new`
+  matches `append stream` exactly. (`Table.upsert` reads the table either way.)
+- **Limit-aware planning**: with no filter, `limit` cuts the *plan*, not just
+  the rows — one file opened where pyiceberg submits all eight.
+
+The wall-clock is not the point on a local disk — the counts are exact and
+reproduce to the call, the seconds are noisy — but it moves the same way: the
+cached append stream landed in 0.29–0.32 s against 0.95–1.6 s uncached across
+three runs. On an object store, where every one of those calls is a round
+trip, the counts *are* the seconds.
 
 ## Reading it back
 

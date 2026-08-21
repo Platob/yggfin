@@ -38,9 +38,11 @@ value when a write lands on a table partitioned by a transform.
     ```
 
     Whatever pyiceberg loads, loads. The one default added here is
-    `py-io-impl` → Arrow's `PyArrowFileIO`, so Iceberg reads, writes and
+    `py-io-impl` → this package's `ArrowFileIO`, so Iceberg reads, writes and
     maintenance all go through the same `pyarrow.fs` handles as everything else
-    — one credential chain, one set of URI rules. Naming another wins.
+    — one credential chain, one set of URI rules — plus the two things it adds:
+    Windows drive letters parse, and immutable metadata is
+    [fetched once](#what-the-store-is-asked). Naming another wins.
 
 === "Namespaces"
 
@@ -149,11 +151,16 @@ keys and partitions intact.
     the target field rather than reading everything and dropping the rest.
     Naming `columns` overrides it.
 
-!!! warning "`limit` is not a planning hint"
+!!! note "`limit` prunes files, unless a filter is on"
 
-    pyiceberg applies `limit` to the rows, *after* opening the files a filter
-    allowed. Measured: `limit=1` on a four-file table read all four files and
-    every byte. Take what you need from the reader instead when it matters.
+    pyiceberg applies `limit` to the rows, *after* submitting every planned
+    file for reading. With no `row_filter`, the plan itself is cut here
+    instead: files are taken in plan order until their record counts alone
+    satisfy the limit, and the rest are never opened — measured, `limit=100`
+    on an eight-file table opened **one** file instead of eight. A filter puts
+    the whole plan back in pyiceberg's hands (its matches could sit in any
+    file), and so does a file carrying delete files (its record count
+    over-counts the live rows); the row cap still applies either way.
 
 === "Delete"
 
@@ -246,7 +253,9 @@ goes.
     | half new, half unchanged | 0.20 s | 8.12 s (42×) |
 
     A chunk of entirely new keys prunes to **zero files** and becomes a plain
-    append, which is what a log ingest hits every time.
+    append, which is what a log ingest hits every time — the scan is planned
+    once, sees nothing to read, and the chunk goes straight to a commit with
+    no reader built and no data file opened.
 
     When most rows genuinely *change*, the win is closer to 2×: the delete half
     still carries pyiceberg's exact per-row filter, because a range there would
@@ -466,6 +475,27 @@ calls are the whole routine.
     legitimately needs ten files still reports ten afterwards. A plan that only
     counted files would rewrite it on every run and double the table each time.
 
+=== "Automatically"
+
+    ```python
+    quotes.maybe_optimize()                        # None, or optimize()'s report
+    quotes = IcebergDataset(..., auto_optimize=True)
+    quotes.write_arrow(reader, merge_by=True)      # ends by asking maybe_optimize
+    ```
+
+    `maybe_optimize` runs the routine only once cheap signals say the table
+    needs it: snapshots past `AUTO_OPTIMIZE_SNAPSHOTS`, the branch head's
+    manifests past `AUTO_OPTIMIZE_MANIFESTS`, or a compaction plan worth
+    `AUTO_OPTIMIZE_FILES` — checked in that order, against metadata the write
+    just paid for, so a quiet answer costs no store round trips. Right after
+    an optimize the signals are quiet again, so a stream that ends with it
+    converges instead of compacting every time.
+
+    `auto_optimize=True` asks at the end of every write stream. It is **off by
+    default** for one reason: `optimize` expires snapshots, and whether
+    yesterday's snapshots are still wanted is not something a writer can
+    decide for its readers.
+
 === "Properties"
 
     ```python
@@ -494,6 +524,52 @@ calls are the whole routine.
         and has no cross-commit state, so it can only split a large commit — it
         cannot fill a file across commits. `commit_row_size` and `compact` are
         the levers on file count.
+
+## What the store is asked
+
+Seconds on a local disk cannot show what a scan-per-chunk flow does to an
+object store, so `bench_iceberg.py --only fs` counts **store calls** instead —
+on the file handles themselves, below any cache, where one `open` is a GET and
+one `create` a PUT. The waste has one shape: everything Iceberg writes below
+the catalog pointer is immutable, yet pyiceberg re-reads the manifest list on
+every scan plan and every manifest on every fetch. So `ArrowFileIO` keeps a
+bounded, process-wide cache of those files' bytes — filled on first read *and
+on write*, because the manifest list a commit just wrote is the one the next
+chunk's scan plans from.
+
+100,000 rows streamed in 8 commits, a local warehouse, measured twice:
+
+| flow | GETs, cache off | GETs, cache on |
+| --- | --- | --- |
+| append stream | 13 | **0** |
+| merge, every key new | 40 | **0** |
+| merge, half stored | 33 | 5 — the data files that matched |
+| insert-only, full replay | 24 | 10 — key columns only |
+| read everything | 18 | 10 — the data files |
+| read one partition | 5 | 2 |
+| read `limit=100` | 9 | **1** |
+| `scan_plan` | 11 | **0** |
+| optimize (compact + sweep) | 71 | 10 |
+
+With the cache on, the only GETs left are data files a read genuinely needs;
+every manifest, manifest list and `metadata.json` fetch is served from memory
+(214 hits, 0 misses over the sweep, ~500 KiB held). A merge-shaped ingest of
+new keys now costs the store exactly what a blind append does.
+
+```python
+IcebergCatalog(name="prod", properties={
+    ...,
+    "rekep.io.cache-bytes": "134217728",   # resize the shared budget; "0" opts out
+})
+```
+
+The cache holds **only** what Iceberg promises never to rewrite — `.avro` and
+`.metadata.json`, written once at UUID-bearing names — so entries can go cold,
+never stale. Data files are never cached: they are the bytes worth streaming,
+and one of them would evict everything else. The budget is 64 MiB by default,
+LRU by bytes, shared across the process the way pyiceberg shares its own
+manifest-file cache; a file bigger than an eighth of the budget is never
+stored, a deleted file is evicted, and a write abandoned mid-file never lands.
 
 ## The escape hatch
 
