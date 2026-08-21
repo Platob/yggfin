@@ -315,7 +315,10 @@ goes.
     Two shapes keep the library's per-row form whole: a float key column
     holding a zero, because the inner half becomes an `In` and `pc.is_in`
     hashes `-0.0` apart from the `0.0` it equals; and a key that repeats
-    nothing, where one group per row is the tree it already builds.
+    nothing, where one group per row is the tree it already builds. The second
+    is measured too — `(at, hash64)` at 0.51–11.94 s for the same 500 to 5,000
+    rows — because an exact filter over *n* arbitrary key pairs is *n* terms
+    and there is no smaller way to say it.
 
 === "Coherence"
 

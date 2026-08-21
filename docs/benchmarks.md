@@ -333,14 +333,15 @@ sorting would need.
 `bench_iceberg.py --only update`. A merge that *inserts* is measured everywhere
 else here; this is the half that rewrites. The filter naming the rows to delete
 is one term per row for a composite key, and pyiceberg binds that tree once per
-manifest it plans. 10,000 stored rows over four days, a `(symbol, day)` key,
-both legs run twice:
+manifest it plans. 10,000 stored rows, both legs run twice.
+
+**A key one half of which repeats** — `(symbol, day)` over four days:
 
 | rows updated | terms | seconds | rows/s |
 | --- | --- | --- | --- |
-| 500 | 1,000 → **2** | 0.95 → **0.22** | 527 → 2,245 |
-| 2,000 | 4,000 → **2** | 4.55 → **0.23** | 440 → 8,935 |
-| 5,000 | 10,000 → **4** | 21.16 → **0.43** | 236 → 11,589 |
+| 500 | 1,000 → **2** | 0.95 → **0.12–0.19** | 527 → 2,682–4,256 |
+| 2,000 | 4,000 → **2** | 4.55 → **0.19–0.22** | 440 → 9,105–10,689 |
+| 5,000 | 10,000 → **4** | 21.16 → **0.42–0.43** | 236 → 11,581–11,991 |
 
 `terms` is the leaf count of the delete filter, and it is the whole story:
 profiled at 5,000 rows, 15.8 of the 18.1 seconds went on nineteen
@@ -350,8 +351,22 @@ distinct values says the repeated half once. The filter stays exact, and
 [the tests](https://github.com/Platob/yggfin/blob/main/python/tests/iceberg/test_coherence.py)
 compare it against pyiceberg's own row for row rather than against itself.
 
-A key that repeats nothing is left alone — one group per row is the tree
-`create_match_filter` already builds — so this is never the slower of the two.
+**A key that repeats nothing** — `(at, hash64)`, where every value of both
+halves is distinct — is left alone, because one group per row is the tree
+`create_match_filter` already builds. Its numbers are what a merge of many
+updates costs when nothing can be factored out of it, and they are here because
+a sweep that left them out would read as a claim about merges rather than about
+keys:
+
+| rows updated | terms | seconds | rows/s |
+| --- | --- | --- | --- |
+| 500 | 1,000 | 0.51–0.54 | 921–988 |
+| 2,000 | 4,000 | 3.08–3.10 | 645–649 |
+| 5,000 | 10,000 | 11.76–11.94 | 419–425 |
+
+That is roughly linear in the rows updated, and it is pyiceberg's cost: an
+exact filter over *n* arbitrary key pairs is *n* terms, and there is no smaller
+way to say it.
 
 ## Casting
 

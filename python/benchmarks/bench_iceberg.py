@@ -714,38 +714,78 @@ def sweep_update(rows: int, days: int) -> None:
 
     A merge that inserts is cheap and measured everywhere else here. A merge
     that updates pays for the filter naming the rows it deletes, and that
-    filter is one `And(EqualTo, EqualTo)` per row for a composite key --
-    a tree pyiceberg binds once per manifest it plans. Factoring out whatever
-    the key repeats is what this sweeps: the same rows, through a filter with
-    one term per distinct value of the repeated column instead of one per row.
+    filter is one `And(EqualTo, EqualTo)` per row for a composite key -- a tree
+    pyiceberg binds once per manifest it plans. Factoring out whatever the key
+    repeats is what this sweeps.
+
+    Both key shapes, including the one that cannot be helped: a key neither
+    half of which repeats groups one row per term, which is the tree the
+    library already builds, and its numbers are what a merge of many updates
+    costs when nothing can be factored out of it.
     """
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-update-"))
     try:
-        target = catalog(root).dataset("bench.quotes", struct=Quote.FIELD).create_with()
-        # Sized off `rows` so the update counts below are a slice of it, not
-        # the whole table: a merge that touches everything measures a rewrite.
-        stored = quote_rows(max(rows // (10 * max(days, 1)), 250), days)
-        target.write_arrow(stored, commit_row_size=stored.num_rows // max(days, 1))
-        print(f"\n== updating a stored table: {stored.num_rows:,} rows, {days} days ==")
-        header(("rows updated", "seconds", "rows/s", "terms", "files"), (14, 9, 11, 8, 7))
-        index = stored.schema.get_field_index("venue")
-        for count in (500, 2_000, 5_000):
-            if count * 2 > stored.num_rows:
-                continue
-            changed = stored.slice(0, count)
-            changed = changed.set_column(
-                index,
-                changed.schema.field("venue"),
-                pyarrow.array([f"V{i}" for i in range(count)]),
-            )
-            terms = _terms(_match_filter(changed, ["symbol", "day"]))
-            seconds, report = timed(functools.partial(target.merge_arrow_table, changed, True))
-            files = target.refresh().iceberg_table.inspect.data_files().num_rows
-            print(f"{count:>14,} {seconds:>9.2f} {count / seconds:>11,.0f} {terms:>8,} {files:>7,}")
-            assert report == (count, 0), report
-            target.merge_arrow_table(stored.slice(0, count), True)  # put them back
+        # Sized off `rows` so the update counts below are a slice of the table,
+        # not the whole of it: a merge that touches everything is a rewrite.
+        wide = max(rows // (10 * max(days, 1)), 250)
+        # Both shapes, because only one of them can be factored -- and a sweep
+        # that left out the one that cannot would read as a claim about merges
+        # rather than about keys.
+        cases = (
+            (
+                "(symbol, day) — day repeats",
+                Quote.FIELD,
+                quote_rows(wide, days),
+                ["symbol", "day"],
+                "venue",
+            ),
+            (
+                "(at, hash64) — nothing repeats",
+                Tick.FIELD,
+                tick_rows(wide * days),
+                ["at", "hash64"],
+                "payload",
+            ),
+        )
+        for label, shape, stored, join, column in cases:
+            target = catalog(root / label[:8]).dataset("bench.updated", struct=shape).create_with()
+            target.write_arrow(stored, commit_row_size=max(stored.num_rows // max(days, 1), 1))
+            print(f"\n== updating {label}: {stored.num_rows:,} rows ==")
+            header(("rows updated", "seconds", "rows/s", "terms", "files"), (14, 9, 11, 8, 7))
+            index = stored.schema.get_field_index(column)
+            for count in (500, 2_000, 5_000):
+                if count * 2 > stored.num_rows:
+                    continue
+                changed = stored.slice(0, count)
+                changed = changed.set_column(
+                    index,
+                    changed.schema.field(column),
+                    pyarrow.array([f"V{i}" for i in range(count)]),
+                )
+                terms = _terms(_match_filter(changed, join))
+                seconds, report = timed(functools.partial(target.merge_arrow_table, changed, join))
+                files = target.refresh().iceberg_table.inspect.data_files().num_rows
+                print(
+                    f"{count:>14,} {seconds:>9.2f} {count / seconds:>11,.0f} "
+                    f"{terms:>8,} {files:>7,}"
+                )
+                assert report == (count, 0), report
+                target.merge_arrow_table(stored.slice(0, count), join)  # put them back
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def tick_rows(count: int) -> pyarrow.Table:
+    """`count` ticks under a key neither half of which repeats."""
+    source = random.Random(20_260_821)
+    return pyarrow.Table.from_pydict(
+        {
+            "at": list(range(count)),
+            "hash64": [source.getrandbits(62) for _ in range(count)],
+            "payload": ["XPAR"] * count,
+        },
+        schema=Tick.FIELD.into_arrow_schema(),
+    )
 
 
 def sweep_backfill(rows: int, days: int) -> None:
