@@ -18,6 +18,7 @@ from rekep.iceberg.fileio import (
     ArrowFileIO,
     CachedInputFile,
     ContentCache,
+    inferred_properties,
 )
 
 
@@ -37,7 +38,9 @@ def test_a_file_uri_with_a_drive_sheds_the_leading_slash(windows: None) -> None:
 
 def test_a_bare_drive_path_is_local_not_a_scheme(windows: None) -> None:
     assert ArrowFileIO.parse_location("C:/warehouse/t") == ("file", "", "C:/warehouse/t")
-    assert ArrowFileIO.parse_location("C:\\warehouse\\t") == ("file", "", "C:\\warehouse\\t")
+    # Both separators name one location, so both parse to one spelling of it --
+    # which is what lets a swept path be compared against a recorded one.
+    assert ArrowFileIO.parse_location("C:\\warehouse\\t") == ("file", "", "C:/warehouse/t")
 
 
 def test_everything_without_a_drive_is_the_parents_answer(windows: None) -> None:
@@ -48,6 +51,59 @@ def test_everything_without_a_drive_is_the_parents_answer(windows: None) -> None
 
 def test_a_posix_directory_named_like_a_drive_keeps_meaning_what_it_says(posix: None) -> None:
     assert ArrowFileIO.parse_location("file:///C:/warehouse/t") == ("file", "", "/C:/warehouse/t")
+
+
+# -- an S3 endpoint, which is not a bucket ----------------------------------
+
+
+def test_an_endpoint_keeps_the_bucket_below_it(posix: None) -> None:
+    """The parent reads `minio` as the bucket and drops the port, silently."""
+    assert ArrowFileIO.parse_location("s3://key:secret@minio:9000/wh/t") == (
+        "s3",
+        "wh",
+        "wh/t",
+    )
+
+
+def test_a_location_that_names_no_endpoint_is_the_parents_answer(posix: None) -> None:
+    """`s3://bucket/key` means one thing everywhere, so nothing is corrected."""
+    assert ArrowFileIO.parse_location("s3://bucket/t") == ("s3", "bucket", "bucket/t")
+    assert ArrowFileIO.parse_location("s3://key:secret@bucket/t") == ("s3", "bucket", "bucket/t")
+
+
+def test_a_warehouse_url_configures_the_filesystem_it_names() -> None:
+    """Said once as a location, rather than again as three settings."""
+    assert inferred_properties({"warehouse": "s3://key:sec:ret@minio:9000/wh"}) == {
+        "warehouse": "s3://key:sec:ret@minio:9000/wh",
+        "s3.endpoint": "http://minio:9000",
+        "s3.access-key-id": "key",
+        "s3.secret-access-key": "sec:ret",
+    }
+
+
+def test_what_the_caller_set_wins_over_what_the_location_says() -> None:
+    """An explicit property is a decision; a URL is a default."""
+    inferred = inferred_properties(
+        {"warehouse": "s3://key:secret@minio:9000/wh", "s3.access-key-id": "other"}
+    )
+    assert inferred["s3.access-key-id"] == "other"
+    assert inferred["s3.endpoint"] == "http://minio:9000"
+
+
+def test_a_location_that_says_nothing_adds_nothing() -> None:
+    for properties in ({"warehouse": "s3://bucket/wh"}, {"warehouse": "/tmp/wh"}, {}):
+        assert inferred_properties(properties) == properties
+
+
+def test_the_filesystem_a_catalog_builds_reaches_that_endpoint() -> None:
+    """Which is the point of inferring them: pyiceberg reads `s3.*`, not URLs."""
+    io = ArrowFileIO({"warehouse": "s3://key:secret@minio:9000/wh"})
+    filesystem = io.fs_by_scheme("s3", "wh")
+    # pyiceberg passes `s3.endpoint` on with its scheme, which pyarrow reads;
+    # settings are write-only there, so pickling is where they can be read back.
+    settings = filesystem.__reduce__()[1][0]
+    assert settings["endpoint_override"] == "http://minio:9000"
+    assert settings["access_key"] == "key"
 
 
 # -- the immutable-content cache --------------------------------------------

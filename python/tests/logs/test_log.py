@@ -8,7 +8,6 @@ from rekep import Field, Log
 
 EXPECTED_COLUMNS = [
     "url",
-    "ulbridge_name",
     "recorded_at_unix",
     "recorded_at_date",
     "recorded_at_time",
@@ -17,7 +16,7 @@ EXPECTED_COLUMNS = [
     "category_id",
     "category_name",
     "message",
-    "hash64",
+    "h64",
 ]
 
 
@@ -35,6 +34,12 @@ def test_every_column_is_documented() -> None:
         assert "\n" not in member.description, f"{member.name} description is not one line"
 
 
+def test_the_key_is_the_moment_and_the_line() -> None:
+    """Two columns: a hash identifies the line, the time is what an engine prunes on."""
+    assert Log.FIELD.primary_keys() == ["recorded_at_unix", "h64"]
+    assert Log.FIELD.partition_keys() == {"recorded_at_date": "identity"}
+
+
 def test_recorded_at_unix_declares_its_unit() -> None:
     metadata = Log.FIELD.field("recorded_at_unix").metadata
     assert metadata["unit"] == "nanosecond"
@@ -42,7 +47,7 @@ def test_recorded_at_unix_declares_its_unit() -> None:
 
 
 def test_wide_columns_are_int64_not_smaller() -> None:
-    for name in ("recorded_at_unix", "hash64"):
+    for name in ("recorded_at_unix", "h64"):
         assert Log.FIELD.field(name).arrow_type == pyarrow.int64()
 
 
@@ -55,7 +60,6 @@ def test_the_schema_says_which_class_it_came_from() -> None:
 def test_a_row_round_trips_as_a_document() -> None:
     row = Log(
         url="a.txt",
-        ulbridge_name="bridge-1",
         recorded_at_unix=2,
         recorded_at_date=datetime.date(2026, 8, 14),
         recorded_at_time=datetime.time(0, 5, 1, 147_250),
@@ -64,6 +68,6 @@ def test_a_row_round_trips_as_a_document() -> None:
         category_id=0,
         category_name="",
         message="m",
-        hash64=3,
+        h64=3,
     )
     assert Log.from_json(row.into_json()) == row

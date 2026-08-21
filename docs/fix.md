@@ -46,9 +46,8 @@ cached under `~/.config/fix/` so everything after works offline.
     The same rules, vectorised: one split, one regex classification and one
     cumulative sum per batch — no Python per row. A map rather than a struct,
     because a repeating group *is* tags repeating, and an Arrow map keeps
-    duplicate keys in order. Measured (`benchmarks/bench_fix.py`, twice):
-    ~300k wire rows/s at twelve fields per row, ~5× the scalar parser, and
-    ~140–260k rendered rows/s depending on group density.
+    duplicate keys in order. It runs several times faster than the scalar
+    parser ([measured](#benchmarks)).
 
     ```python
     from rekep.fix import FixRegistry, tag_arrow_array
@@ -59,11 +58,11 @@ cached under `~/.config/fix/` so everything after works offline.
 
     `tag_arrow_array` turns the text keys into the integer tags FIX defines —
     what a join or a filter wants. All-numeric keys (tag-mode parsing) are one
-    cast kernel, ~140M keys/s; rendered keys resolve through `names` by their
-    member (`NoPartyIDs[0].PartyID` → `PartyID` → 448), each distinct
-    spelling once. A key that resolves nowhere is refused by name;
-    `drop_unknown=True` drops those entries instead, which is how a rendered
-    log's `took=5ms` noise falls out.
+    cast kernel ([measured](#benchmarks)); rendered keys resolve through
+    `names` by their member (`NoPartyIDs[0].PartyID` → `PartyID` → 448),
+    each distinct spelling once. A key that resolves nowhere is refused by
+    name; `drop_unknown=True` drops those entries instead, which is how a
+    rendered log's `took=5ms` noise falls out.
 
 === "Repeating groups"
 
@@ -149,3 +148,63 @@ arrow_type_of("Price")       # double
 cast_arrow_bool(pyarrow.array(["Y", "non", "TRUE", "maybe"]))
 # [true, false, true, null]
 ```
+
+## Benchmarks
+
+`benchmarks/bench_fix.py` is the sweep behind every number below. It builds
+synthetic columns whose shape matches the tests' fixtures — wire messages with
+and without log noise and repeating groups, rendered `Name=Value` and
+`Group[i]=Member=Value` lines — and asserts the vectorised answer *is* the
+scalar one before it times anything, because a benchmark that measures the
+wrong answer measures nothing. The method the whole site shares is on the
+[Benchmarks](benchmarks.md) page.
+
+```bash
+cd python
+uv run python benchmarks/bench_fix.py            # full sweep: 100,000 rows, best of 5
+uv run python benchmarks/bench_fix.py --quick    # 10,000 rows, best of 3
+```
+
+`--rows` and `--repeat` override either. Every case is warmed once and
+reported as the best of `--repeat` runs. The figures below were measured
+twice.
+
+| case | measured |
+| --- | --- |
+| wire messages, twelve fields per row | ~300k rows/s, ~5× the scalar parser |
+| rendered messages | ~140–260k rows/s, depending on group density |
+| all-numeric keys, `tag_arrow_array` | ~140M keys/s |
+
+**Fields per row.** The work is per token, not per row, so a rows/s at one
+message shape says nothing about another: the wire fixture is twelve fields
+and a CheckSum per line, and a wider message pays for every field it adds.
+That is why the sweep prints a fields/s column beside rows/s — it is the
+column to compare across cases.
+
+**Group density.** Repeating groups are extra tokens, and in a rendered line
+they are the *expensive* tokens: the inner `member=` regex only runs on
+`Group[i]=Member=Value`, so a column with no group entries skips it entirely
+while one with them sends a third of its tokens through it. The sweep runs
+both, and that bracket is the ~140–260k spread.
+
+**Wire against rendered.** A wire line cuts at the first `=` with a numeric
+tag on the left; a rendered line has to read a name, an optional index and an
+optional member out of the same grammar. Rendered parsing therefore sits
+below wire on the same rows. The sweep also runs wire lines separated by SOH,
+by `|`, with log noise wrapped around the message, and with repeating groups
+— those cases are measured by the script and no number for them is quoted
+here.
+
+**Numeric against rendered keys.** `tag_arrow_array` over all-numeric keys is
+one cast kernel over the map's key array, which is why it is quoted in keys/s
+and not in rows/s. Rendered keys instead resolve through `names` once per
+distinct spelling, dictionary-encoded, so their cost follows the number of
+distinct names in the column rather than its length. The script measures the
+`int64` key type and the rendered resolution as their own cases; neither is
+quoted as a number on this page.
+
+**The tag/value cut.** The script also races the cut itself — one
+`split_pattern` plus `list_element` against one `extract_regex`, trimming and
+greedy — on ten tokens per row of the sweep. That race is what
+`parse_arrow_array`'s choice was decided by, and it is measured, not quoted:
+the loser looked entirely plausible.

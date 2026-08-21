@@ -36,6 +36,13 @@ FIX = "fix"
 PRIMARY_KEY = "iceberg:primary_key"
 PARTITION_KEY = "iceberg:partition_key"
 
+#: Iceberg identifies a column by id and never by name, so an id is part of
+#: what a schema *is* once a table exists. It rides under the protocol's own
+#: prefix like every other Iceberg key -- the ecosystem's `PARQUET:field_id`
+#: is what parquet files carry, and the two are translated at the Iceberg
+#: boundary rather than mixed here.
+FIELD_ID = "iceberg:field_id"
+
 #: The partition transform that means "the value itself".
 IDENTITY = "identity"
 
@@ -298,6 +305,31 @@ class Field(Convertible):
         self.iceberg["partition_key"] = IDENTITY if value is True else str(value)
 
     @property
+    def field_id(self) -> int | None:
+        """The Iceberg column id this field carries, or None when it has none.
+
+        A declaration written in Python has none: ids belong to a table, and
+        the first write is where they are assigned. A field read back from an
+        Iceberg schema carries them, and a contract dumped from one publishes
+        them -- which is what lets a consumer name a column the way Iceberg
+        does, and what makes a round trip through the protocol keep the
+        identity a rename would otherwise lose.
+        """
+        declared = self.iceberg.get("field_id")
+        return int(declared) if declared else None
+
+    @field_id.setter
+    def field_id(self, value: int | None) -> None:
+        if value is None:
+            self.iceberg.pop("field_id", None)
+            return
+        if int(value) < 1:
+            raise ValueError(
+                f"{self.name!r} cannot have field_id {value}: Iceberg numbers columns from 1"
+            )
+        self.iceberg["field_id"] = int(value)
+
+    @property
     def partition_transform(self) -> str:
         """How the data is partitioned on this field, or an empty string."""
         return self.iceberg.get("partition_key", "")
@@ -430,18 +462,37 @@ class Field(Convertible):
 
     @classmethod
     def _type_of(cls, mapping: Mapping[str, Any]) -> pyarrow.DataType:
-        """The Arrow type one dumped field describes, nesting recursively."""
+        """The Arrow type one dumped field describes, nesting recursively.
+
+        Every container names its own flavour, so a contract file read back is
+        the type that was dumped and not a resemblance of it: `large_list`
+        stays 64-bit, a view stays a view, and a `fixed_size_list` keeps the
+        width that is part of its type.
+        """
         kind = mapping.get("type")
+        if kind is None:
+            raise ValueError(
+                f"field {mapping.get(NAME, '')!r} has no type: a contract says what the data is, "
+                'so every field names an Arrow type ("int64", "struct", "list", "map", ...)'
+            )
+        kind = str(kind)
         if kind == "struct":
             return pyarrow.struct(
                 [cls.from_dict(member).into_arrow_field() for member in mapping.get("fields", [])]
             )
-        if kind == "list":
-            return pyarrow.list_(cls._member(mapping, "item").into_arrow_field())
         if kind == "map":
             key = cls._member(mapping, "key").into_arrow_field()
-            return pyarrow.map_(key, cls._member(mapping, "value").into_arrow_field())
-        return arrow_type_for(str(kind))
+            value = cls._member(mapping, "value").into_arrow_field()
+            return pyarrow.map_(key, value, keys_sorted=_flag(mapping, "keys_sorted"))
+        if kind == "fixed_size_list":
+            return pyarrow.list_(
+                cls._member(mapping, "item").into_arrow_field(),
+                _list_size(mapping),
+            )
+        build = _LIST_KINDS.get(kind)
+        if build is not None:
+            return build(cls._member(mapping, "item").into_arrow_field())
+        return arrow_type_for(kind)
 
     @classmethod
     def _member(cls, mapping: Mapping[str, Any], key: str) -> Field:
@@ -699,6 +750,9 @@ class LargeListField(ListField):
     def with_item(self, item: pyarrow.Field) -> pyarrow.DataType:
         return pyarrow.large_list(item)
 
+    def kind(self) -> str:
+        return "large_list"
+
 
 class ListViewField(ListField):
     """A list whose rows carry an offset and a size, so they may be out of order."""
@@ -706,12 +760,18 @@ class ListViewField(ListField):
     def with_item(self, item: pyarrow.Field) -> pyarrow.DataType:
         return pyarrow.list_view(item)
 
+    def kind(self) -> str:
+        return "list_view"
+
 
 class LargeListViewField(ListViewField):
     """A list view whose offsets and sizes are 64 bit."""
 
     def with_item(self, item: pyarrow.Field) -> pyarrow.DataType:
         return pyarrow.large_list_view(item)
+
+    def kind(self) -> str:
+        return "large_list_view"
 
 
 class FixedSizeListField(ListField):
@@ -724,6 +784,13 @@ class FixedSizeListField(ListField):
 
     def with_item(self, item: pyarrow.Field) -> pyarrow.DataType:
         return pyarrow.list_(item, self.list_size)
+
+    def kind(self) -> str:
+        return "fixed_size_list"
+
+    def nested(self) -> dict[str, Any]:
+        """The width first, then the item: it is part of the type, not of it."""
+        return {"list_size": self.list_size, **super().nested()}
 
 
 class MapField(Field):
@@ -754,7 +821,17 @@ class MapField(Field):
         return "map"
 
     def nested(self) -> dict[str, Any]:
-        return {"key": _anonymous(self.key), "value": _anonymous(self.value)}
+        """Both halves -- and whether the keys are sorted, which is in the type.
+
+        Arrow compares two maps that disagree on it as different types, so a
+        dump that left it out read back as a map a cast would refuse.
+        """
+        described: dict[str, Any] = {}
+        if self.arrow_type.keys_sorted:
+            described["keys_sorted"] = True
+        described["key"] = _anonymous(self.key)
+        described["value"] = _anonymous(self.value)
+        return described
 
     def leaf_names(self) -> list[str]:
         return self._extend({"key": self.key, "value": self.value})
@@ -1258,7 +1335,23 @@ def arrow_type_for(text: str) -> pyarrow.DataType:
     timestamp = re.fullmatch(r"timestamp\[(\w+),\s*tz=(.+)\]", text)
     if timestamp:
         return pyarrow.timestamp(timestamp[1], tz=timestamp[2])
+    fixed_binary = re.fullmatch(r"fixed_size_binary(?:\[(\d+)\]|\((\d+)\))", text)
+    if fixed_binary:
+        return pyarrow.binary(int(fixed_binary[1] or fixed_binary[2]))
     return pyarrow.type_for_alias(text)
+
+
+#: How a dumped list flavour is built back. Every flavour used to dump itself
+#: as `list`, so a contract file read back narrowed a `large_list` to 32-bit
+#: offsets and turned a view into a list -- silently, since both cast.
+#: `fixed_size_list` is not here: its width is a second argument, so it is
+#: rebuilt where that argument is read.
+_LIST_KINDS: dict[str, Callable[[pyarrow.Field], pyarrow.DataType]] = {
+    "list": pyarrow.list_,
+    "large_list": pyarrow.large_list,
+    "list_view": pyarrow.list_view,
+    "large_list_view": pyarrow.large_list_view,
+}
 
 
 #: Which subclass speaks for which Arrow kind. Every `is_*` here is a type-id
@@ -1330,6 +1423,46 @@ def _column_of(batch: pyarrow.RecordBatch) -> Callable[[str], Any]:
         return batch.column(index) if index >= 0 else None
 
     return column_of
+
+
+def _list_size(mapping: Mapping[str, Any]) -> int:
+    """The width a `fixed_size_list` document states, checked rather than coerced.
+
+    `int(size)` took a float, a bool and a string, and a negative width built a
+    plain `list` -- a contract that says one thing and loads as another, which
+    is the one failure a contract cannot have.
+    """
+    name = mapping.get(NAME, "")
+    size = mapping.get("list_size")
+    if size is None:
+        raise ValueError(
+            f"fixed_size_list {name!r} has no list_size, and the width is part of the type; "
+            "dump it with into_dict() rather than writing it by hand"
+        )
+    if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+        raise ValueError(
+            f"fixed_size_list {name!r} has list_size {size!r}: it is the number of elements in "
+            "every row, so it has to be a whole number and not negative"
+        )
+    return size
+
+
+def _flag(mapping: Mapping[str, Any], key: str) -> bool:
+    """A boolean a document states, read strictly.
+
+    `bool("false")` is True, so a hand-written `keys_sorted: 'false'` used to
+    turn the flag *on* -- and `keys_sorted` is part of a map's Arrow type, so
+    that is a different type read back from the same file.
+    """
+    value = mapping.get(key, False)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str) and value.lower() in {"true", "false"}:
+        return value.lower() == "true"
+    raise ValueError(
+        f"field {mapping.get(NAME, '')!r} has {key}={value!r}: write true or false, since it is "
+        "part of the type and not a value to be coerced"
+    )
 
 
 def _anonymous(member: Field) -> dict[str, Any]:

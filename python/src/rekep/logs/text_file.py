@@ -3,24 +3,25 @@
 from __future__ import annotations
 
 import datetime
-import hashlib
 import io
 import os
-import pathlib
 import re
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from functools import cached_property
 from typing import Any, ClassVar
 
 import pyarrow
 import pyarrow.compute
 import pyarrow.fs
+import xxhash
 
 from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField
 from rekep.filesystems import resolve
 from rekep.logs.log import Log
+from rekep.urls import Url
 
 #: Matches the fixed header every log row opens with, leaving the free-form
 #: payload to `message`::
@@ -50,6 +51,11 @@ STAMP_WIDTH = 27
 #: separator", so a fraction written `167_520` or `167,520` can be put back
 #: together as digits instead of as more separators.
 _FRACTION = re.compile(r"^([^.,]*)([.,])?(.*)$")
+
+#: Seed every line hash is taken under. Fixed and module-level: `h64` is
+#: half of the primary key, so a seed that moved between runs -- Python's own
+#: salted `hash()`, a per-process random -- would store the same line twice.
+HASH_SEED = 0x9E3779B185EBCA87
 
 #: Rows per record batch: memory is bounded by it, per-batch Arrow overhead is
 #: amortised over it.
@@ -129,11 +135,15 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: `_unix_nanos`.
     timezone: str | None = None
 
-    #: Name of the ULBridge instance the log came from -- the static column
-    #: every parsed row repeats, the way `url` is. Empty when the capture
-    #: does not say; naming it is the caller's job, because the file itself
-    #: never does.
-    ulbridge_name: str = ""
+    #: Constant columns every parsed row carries, appended **after** the data
+    #: columns in the order they are given here -- the bridge that wrote the
+    #: capture, the desk, the environment, whatever the file itself never says.
+    #: Nothing here is hardcoded: a source names its own columns.
+    #:
+    #: A plain Python value has its Arrow type inferred; a `pyarrow.Scalar`
+    #: states it (`pyarrow.scalar("bridge-1", pyarrow.large_string())`), which
+    #: is also the only way to say "null, of this type".
+    static_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Resolve the filesystem, and rewrite `url` as a path on it."""
@@ -149,10 +159,15 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
-        ulbridge_name: str = "",
+        **declared: Any,
     ) -> TextFile:
-        """Build from a URI, or from a path when `filesystem` is given."""
-        return cls(url=url, filesystem=filesystem, timezone=timezone, ulbridge_name=ulbridge_name)
+        """Build from a URI, or from a path when `filesystem` is given.
+
+        Anything else the file declares -- `static_values`, `row`,
+        `header_pattern`, `id_epoch_ms` -- is a keyword here, so a call reads
+        as one shape.
+        """
+        return cls(url=url, filesystem=filesystem, timezone=timezone, **declared)
 
     @classmethod
     def from_path(
@@ -161,7 +176,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem: pyarrow.fs.FileSystem | None = None,
         *,
         timezone: str | None = None,
-        ulbridge_name: str = "",
+        **declared: Any,
     ) -> TextFile:
         """Build from a local path, absolute or relative.
 
@@ -170,24 +185,20 @@ class TextFile(Dataset, io.BufferedIOBase):
         example that raised `TypeError`.
         """
         if filesystem is not None:
-            return cls(
-                url=os.fspath(path),
-                filesystem=filesystem,
-                timezone=timezone,
-                ulbridge_name=ulbridge_name,
-            )
-        return cls(
-            url=pathlib.Path(path).resolve().as_uri(),
-            timezone=timezone,
-            ulbridge_name=ulbridge_name,
-        )
+            return cls(url=os.fspath(path), filesystem=filesystem, timezone=timezone, **declared)
+        return cls(url=Url.from_path(path).into_string(), timezone=timezone, **declared)
 
     # -- the dataset ---------------------------------------------------------
 
     @cached_property
+    def static_columns(self) -> tuple[tuple[str, pyarrow.Scalar], ...]:
+        """Each static value as an Arrow scalar, in the order it was declared."""
+        return static_columns_of(self.static_values)
+
+    @cached_property
     def parsed_field(self) -> StructField:
-        """What the parser produces, whatever shape reads are cast onto."""
-        return self.ROW.FIELD
+        """What the parser produces: the row shape, then the constant columns."""
+        return parsed_field_of(self.ROW.FIELD, self.static_columns)
 
     def into_struct_field(self) -> StructField:
         """The shape this file holds: the declared one, or what the parser fills."""
@@ -383,10 +394,9 @@ class TextFile(Dataset, io.BufferedIOBase):
         local = _local_micros(timestamps)
         unix = _unix_nanos(local, self.timezone)
         date, time = _date_and_time(local)
-        batch = pyarrow.RecordBatch.from_arrays(
+        return pyarrow.RecordBatch.from_arrays(
             [
                 pyarrow.repeat(self.url, len(rows)),
-                pyarrow.repeat(self.ulbridge_name, len(rows)),
                 unix,
                 date,
                 time,
@@ -398,10 +408,10 @@ class TextFile(Dataset, io.BufferedIOBase):
                 pyarrow.repeat("", len(rows)),
                 _utf8(messages),
                 pyarrow.array(hashes, type=pyarrow.int64()),
+                *(pyarrow.repeat(scalar, len(rows)) for _, scalar in self.static_columns),
             ],
             schema=self.schema,
         )
-        return batch
 
     def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
         """Cut newline-delimited lines out of fixed-size reads.
@@ -536,6 +546,52 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
         flat.combine_chunks() if isinstance(flat, pyarrow.ChunkedArray) else flat,
     )
     return compute.binary_join(whole, "\n")[0].as_py().encode() + b"\n"
+
+
+def parsed_field_of(
+    row: StructField, static_columns: Sequence[tuple[str, pyarrow.Scalar]]
+) -> StructField:
+    """`row`, with each static column appended after the data columns.
+
+    At the **end**, in insertion order, so adding one never moves a column a
+    reader already selects by position and the data columns keep the order the
+    declaration gives them. Shared with `TextFiles`, whose shape is the shape
+    of the files it opens.
+    """
+    if not static_columns:
+        return row
+    schema = row.into_arrow_schema()
+    for name, scalar in static_columns:
+        schema = schema.append(pyarrow.field(name, scalar.type, nullable=not scalar.is_valid))
+    return Field.from_arrow_schema(schema, row.name)
+
+
+def static_columns_of(static_values: Mapping[str, Any]) -> tuple[tuple[str, pyarrow.Scalar], ...]:
+    """Each static value as an Arrow scalar, in the order it was declared."""
+    return tuple((name, _scalar(name, value)) for name, value in static_values.items())
+
+
+def _scalar(name: str, value: Any) -> pyarrow.Scalar:
+    """A static value as an Arrow scalar, its type inferred unless it says one.
+
+    A bare `None` is refused: it would infer Arrow's `null` type, which no
+    store can widen later, and the caller who meant "unknown, but a string"
+    has a way to say it -- `pyarrow.scalar(None, pyarrow.string())`.
+    """
+    if isinstance(value, pyarrow.Scalar):
+        return value
+    if value is None:
+        raise ValueError(
+            f"static value {name!r} is None, which has no Arrow type; say which one it is with "
+            "pyarrow.scalar(None, pyarrow.string())"
+        )
+    try:
+        return pyarrow.scalar(value)
+    except (pyarrow.ArrowInvalid, pyarrow.ArrowTypeError, TypeError) as error:
+        raise TypeError(
+            f"static value {name!r} ({type(value).__name__}) has no Arrow type; pass a "
+            "pyarrow.scalar(...) that states one"
+        ) from error
 
 
 def _nbytes(size: int | None) -> int | None:
@@ -687,27 +743,15 @@ def _epoch_nanos_slow(timestamp: bytes) -> int:
     return (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000
 
 
-def _select_hash64() -> Callable[[bytes], int]:
-    """Pick a line hash, preferring xxhash when it is installed.
+def _hash64(raw: bytes) -> int:
+    """The line's hash, signed so an Arrow `int64` column holds it.
 
-    Note the two disagree: a `hash64` is stable across runs on one machine, not
-    across environments that differ in whether xxhash is present.
+    xxh3 under a fixed seed, and only that. It is half of the primary key, so
+    it is data rather than an implementation detail: a fallback hash -- which
+    is what this used to have -- made `h64` stable within an environment and
+    not across two that disagreed about whether `xxhash` was installed, and a
+    row keyed on it could be stored twice. `xxhash` is a dependency of this
+    package for that reason, imported at module top with no guard.
     """
-    try:
-        from xxhash import xxh64_intdigest
-    except ImportError:
-
-        def hash64(raw: bytes) -> int:
-            digest = hashlib.blake2b(raw, digest_size=8).digest()
-            return int.from_bytes(digest, "little", signed=True)
-
-    else:
-
-        def hash64(raw: bytes) -> int:
-            value = xxh64_intdigest(raw)
-            return value - (1 << 64) if value >= (1 << 63) else value
-
-    return hash64
-
-
-_hash64 = _select_hash64()
+    value = xxhash.xxh3_64_intdigest(raw, seed=HASH_SEED)
+    return value - (1 << 64) if value >= (1 << 63) else value

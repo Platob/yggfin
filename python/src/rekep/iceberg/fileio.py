@@ -1,5 +1,5 @@
-"""Arrow's FileIO, taught two things: Windows drive letters, and not to fetch
-the same immutable file twice.
+"""Arrow's FileIO, taught three things: Windows drive letters, S3 endpoints,
+and not to fetch the same immutable file twice.
 
 **The parse fix.** `PyArrowFileIO.parse_location` splits a URI and glues netloc
 and path back together, so `file:///C:/warehouse` comes out as `/C:/warehouse`
@@ -7,7 +7,17 @@ and path back together, so `file:///C:/warehouse` comes out as `/C:/warehouse`
 `WinError 123`. The same split hands a bare `C:/warehouse` to `urlparse`, which
 reads the drive as a one-letter URI scheme and refuses it as a filesystem. Both
 are the standard spellings a Windows path arrives in, so the default FileIO
-cannot write a local warehouse there at all.
+cannot write a local warehouse there at all. Locations are parsed by
+`rekep.urls.Url` here, which is the same parser everything else in this package
+reads a location with.
+
+**The endpoint fix.** A warehouse on MinIO is `s3://key:secret@minio:9000/wh`,
+and every parser in the stack reads `minio` as the *bucket* and drops the port
+-- a bucket name that is legal, so nothing raises and the write lands nowhere
+anybody looks. A location that names a port names an endpoint, so this reads
+the endpoint, the access key and the secret out of it and fills in the
+`s3.*` properties pyiceberg configures its filesystem from. What the caller
+already set wins; nothing is guessed where the location says nothing.
 
 **The cache.** Every file Iceberg writes below the catalog pointer is immutable
 and lives at a name no other write will ever reuse -- manifests, manifest
@@ -40,6 +50,8 @@ from pyiceberg.io import InputFile, InputStream, OutputFile, OutputStream
 from pyiceberg.io.pyarrow import PyArrowFileIO
 from pyiceberg.typedef import EMPTY_DICT, Properties
 
+from rekep.urls import S3, Url, properties_of
+
 #: The `metadata.json` names Iceberg mints per attempt: a version number, a
 #: UUID and the suffix. A name *without* the UUID -- `v3.metadata.json`, which
 #: a Hadoop-style catalog writes -- is one two racing writers can both produce
@@ -48,11 +60,12 @@ _VERSIONED = re.compile(
     r"^\d+-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\.metadata\.json$"
 )
 
-#: A path whose first segment is a drive letter -- `C:/x` or `C:\x`.
-_DRIVE = re.compile(r"^[A-Za-z]:[/\\]")
-
-#: The slash a URI split leaves in front of one -- `/C:/x`.
-_ROOTED_DRIVE = re.compile(r"^/+(?=[A-Za-z]:[/\\])")
+#: Properties naming the locations a catalog was configured with, most
+#: specific first -- the first one that says anything is the one read, since
+#: a warehouse URL describes the store a `uri` may only point a metastore at.
+#: An endpoint and credentials in one of these is how a MinIO catalog is
+#: usually spelled.
+LOCATION_PROPERTIES = ("warehouse", "location", "uri")
 
 #: Decided per host, held as data so a test can exercise the other answer.
 _WINDOWS = os.name == "nt"
@@ -287,22 +300,50 @@ class _TeeStream:
         return getattr(self._inner, name)
 
 
-class ArrowFileIO(PyArrowFileIO):
-    """`PyArrowFileIO` whose locations survive Windows and whose immutable
-    metadata is fetched once.
+def inferred_properties(properties: Properties) -> Properties:
+    """`properties`, plus what the locations in them already say.
 
-    Two changes, one per failure mode. Parsing: on Windows, `/C:/x` sheds the
-    slash the URI split left in front of the drive, and a bare `C:/x` is a
+    A catalog configured with `warehouse=s3://key:secret@minio:9000/wh` has
+    said where the store is, which key reaches it and which secret -- and then
+    has to say all three again as `s3.endpoint`, `s3.access-key-id` and
+    `s3.secret-access-key`, because that is where pyiceberg reads them. This
+    fills those in from the location, and only where the caller left them out:
+    an explicit property is a decision, and a URL is a default.
+    """
+    inferred: dict[str, str] = {}
+    for name in LOCATION_PROPERTIES:
+        location = properties.get(name)
+        if not location:
+            continue
+        url = Url.from_string(str(location))
+        if url.scheme not in S3:
+            continue
+        for key, value in properties_of(url).items():
+            inferred.setdefault(key, value)
+    if not inferred:
+        return properties
+    return {**inferred, **properties}
+
+
+class ArrowFileIO(PyArrowFileIO):
+    """`PyArrowFileIO` whose locations are read the way this package reads
+    every location, and whose immutable metadata is fetched once.
+
+    Three changes, one per failure mode. **Parsing**: on Windows, `/C:/x` sheds
+    the slash the URI split left in front of the drive, and a bare `C:/x` is a
     local path rather than a URI with scheme `c`; everywhere else the parent's
     answer stands, so a POSIX directory literally named `C:` keeps meaning what
-    it says. Fetching: manifests, manifest lists and `metadata.json` versions
-    are served from `CONTENT_CACHE` and kept there as they are written, which
-    is what keeps a scan-per-chunk write flow from asking an object store for
-    the same bytes on every chunk.
+    it says. **Configuration**: a warehouse URL that names an endpoint and
+    credentials fills in the `s3.*` properties saying the same thing, so the
+    filesystem pyiceberg builds reaches the store the location named.
+    **Fetching**: manifests, manifest lists and `metadata.json` versions are
+    served from `CONTENT_CACHE` and kept there as they are written, which is
+    what keeps a scan-per-chunk write flow from asking an object store for the
+    same bytes on every chunk.
     """
 
     def __init__(self, properties: Properties = EMPTY_DICT) -> None:
-        super().__init__(properties=properties)
+        super().__init__(properties=inferred_properties(properties))
         budget = properties.get(CACHE_BYTES_PROPERTY)
         self._content_cache: ContentCache | None = CONTENT_CACHE
         if budget is not None:
@@ -313,12 +354,23 @@ class ArrowFileIO(PyArrowFileIO):
 
     @staticmethod
     def parse_location(location: str, properties: Properties = EMPTY_DICT) -> tuple[str, str, str]:
-        if _WINDOWS and _DRIVE.match(location):
-            return "file", "", location
-        scheme, netloc, path = PyArrowFileIO.parse_location(location, properties)
-        if _WINDOWS and scheme == "file":
-            path = _ROOTED_DRIVE.sub("", path)
-        return scheme, netloc, path
+        """Where a location is: its scheme, its netloc, and the path on it.
+
+        Two answers the parent gets wrong. A Windows drive letter is a path and
+        not a scheme, on the host where that is true. And an S3 location says
+        its bucket in two places: in the netloc when it names a bucket, and in
+        the first path segment when the netloc was an endpoint -- while the
+        parent reads the netloc either way, so `s3://key:secret@minio:9000/wh`
+        addresses a bucket called `key:secret@minio`. Legal as a name, and
+        therefore silent. Every S3 location is read here for that reason; a
+        plain `s3://bucket/key` comes out exactly as the parent reads it.
+        """
+        url = Url.from_string(location)
+        if _WINDOWS and url.scheme == "file":
+            return "file", "", url.path
+        if url.scheme in S3:
+            return url.scheme, url.bucket, url.store_path
+        return PyArrowFileIO.parse_location(location, properties)
 
     def new_input(self, location: str) -> InputFile:
         inner = super().new_input(location)

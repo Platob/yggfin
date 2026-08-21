@@ -12,10 +12,10 @@ never `read_log_as_table(log)`. Justified free functions stay private
 
 ## 2. `from_*` builds, `into_*` converts
 
-- `from_<thing>`: classmethod, builds an instance (`LogFile.from_path`).
+- `from_<thing>`: classmethod, builds an instance (`TextFile.from_path`).
 - `into_<thing>`: instance method, converts or emits (`Field.into_json`).
 - Never a `format=` argument; never a module-level factory beside a class --
-  `LogFile.from_path(...)` is the whole API.
+  `TextFile.from_path(...)` is the whole API.
 
 ## 3. `from_` and `into_` infer and redirect
 
@@ -54,8 +54,12 @@ Arrow struct type, and metadata. Rules:
   schema, the member list) are cached and dropped whenever the declaration
   changes.
 - Protocol properties live in metadata under a prefixed key
-  (`iceberg:primary_key`); unprefixed keys are ours. A nullable primary key is
-  refused, at the declaration and at the setter.
+  (`iceberg:primary_key`, `iceberg:partition_key`, `iceberg:field_id`);
+  unprefixed keys are ours. A nullable primary key is refused, at the
+  declaration and at the setter. A **column id** is Iceberg's own identity for
+  a column, so it is read back into `iceberg:field_id` and published in a
+  contract; the ecosystem's `PARQUET:field_id` is what parquet files carry, and
+  the two are translated at the Iceberg boundary and nowhere else.
 - Refuse rather than guess: recursive classes, non-optional unions and unknown
   leaves all raise, naming the member and the way out.
 - The projection is built once per class, lazily, by a descriptor -- and a
@@ -66,6 +70,23 @@ Arrow struct type, and metadata. Rules:
   builds a lossless class, identity included (schema metadata carries `name`
   and `namespace`). Same for Iceberg, both ways
   (`into_iceberg_schema`/`from_iceberg_schema`).
+- **A dump is the declaration, not a resemblance of it.** Every container names
+  its own flavour -- `large_list`, `list_view`, `large_list_view`,
+  `fixed_size_list` with the `list_size` that is part of its type, a map with
+  `keys_sorted` -- because a document that spelled all five `list` narrowed a
+  64-bit offset and dropped a width *silently*, both of them being things a
+  cast then papered over. So a new Arrow kind is a new subclass, one row in
+  `_KINDS`, a `kind()` that names it, and one row in `_LIST_KINDS` when it is a
+  list. A hand-written field that omits what a type needs (`list_size`, `type`
+  itself) is refused by name.
+- **A contract is a file.** `schemas/<namespace>/<name>.{yaml,json}` at the repo
+  root is the declaration as whoever does not import this package sees it:
+  `Field.from_yaml` reads it back as the same Arrow type, keys, comments and
+  nesting included. `tests/test_schemas.py` pins every file (parse -> dump ->
+  parse) and pins `schemas/rekep/log.yaml` against `Log.FIELD`, so a column
+  that exists in code and not in the contract fails the build. Contracts change
+  by adding a nullable column; retyping or dropping is a new version, not an
+  edit.
 - A format nobody needs is an extra (`yaml`, `toml`, `fast`, `iceberg`);
   import optional deps at the point of use via `require`, never at module top.
 
@@ -122,6 +143,15 @@ remote file. This rules out `frozen=True`/`slots=True` on such classes.
   `read_arrow` picks by the type asked for. `Convertible.redirect_of(value,
   mapping)` is the one lookup; a second family of methods passes its own
   mapping rather than reimplementing it.
+- **Between two systems, the hub is a document.** A producer casts onto the
+  contract before it sends -- shipping whatever it happens to hold makes a
+  parser of every consumer, and the first one to get it wrong does so in
+  silence. A consumer loads the same contract and casts on receipt, with
+  `merge_schema=True` so a producer that has moved ahead does not break it.
+  Evolution is additive at every level (`merge_with`, `add_fields`); anything
+  else is a version. The transport carries the schema where it can (Arrow IPC,
+  parquet, Iceberg) and the contract file is what stands in for it where it
+  cannot (a log file).
 
 ## 8. Let the library own what it already knows
 
@@ -234,6 +264,24 @@ Ten things that were learned the expensive way, all of them measured:
   accumulates `commit_row_size` rows first (`dataset.arrow_chunks`).
 - Push filters, columns and limits down to the engine that holds the
   statistics; never read rows to throw them away here.
+- **A set of files is a dataset too, and its order is ours.** `TextFiles` walks
+  `pyarrow.fs` one directory at a time (a generator, so the first path arrives
+  before the tree is listed) and sorts every listing itself with digit runs
+  compared as numbers -- no filesystem promises an order, so a set that did not
+  sort would read a capture differently on every machine. One file is open at a
+  time; short per-file batches are combined to the size asked for, because 500
+  rotated logs otherwise mean 500 batches for every stage downstream, and a
+  batch already at size is passed through untouched. A missing root is refused
+  rather than skipped, and a write is refused outright: nothing says which file
+  a row belongs in. The bytes have their own flow beside the rows -- streamed,
+  and compressed *as it goes* through Arrow's codecs, since `Codec.compress`
+  would need the whole capture in memory.
+
+**Nothing names a source but the caller.** A column that says which bridge,
+desk or environment a capture came from is `static_values` on the reader --
+inferred from the value or stated with a `pyarrow.Scalar` -- appended after the
+data columns in insertion order, so adding one never moves a column a reader
+selects. No source name is ever hardcoded in a shape.
 
 ## 10. Stream; never materialise
 
@@ -304,8 +352,17 @@ rekep/
 │                  serialisation it dispatches to -- any dataclass to and
 │                  from dict/JSON/YAML/TOML, nested classes included, over
 │                  files, paths, URIs or raw bytes
+├── cli.py         the `rekep` command: `fields dump` publishes a class as a
+│                  document, `fields load` reads one back and builds it -- both
+│                  thin over `field_of`, `Field.from_file` and the `into_*`
 ├── require.py     optional deps at the point of use
-├── filesystems.py FileSystem.from_uri, cached per URL
+├── urls.py        Url: the one parser for a location -- parts, percent
+│                  decoding, a secret that may contain a colon, an S3
+│                  endpoint told from a bucket, a Windows drive told from a
+│                  scheme, `join`/`parent` as a mutable walk, and
+│                  `into_filesystem()`/`properties_of()` as what a store and
+│                  a catalog are configured from
+├── filesystems.py resolve(): a location as (FileSystem, path), cached per URL
 ├── fields/        a dataclass is its own Arrow schema:
 │                  field.py (Field, its container subclasses, the `field`
 │                  decorator, every cast), arrays.py (the kernel-only array
@@ -331,23 +388,41 @@ rekep/
 │                  Boolean reading) and registry.py (FixRegistry: the OnixS
 │                  dictionary scraped per version, cached in ~/.config/fix/,
 │                  lookup and fuzzy search, all names case-insensitive)
-└── logs/          log.py (the Log shape) and text_file.py (TextFile: a log
-                   read into Arrow batches and written back out as lines,
-                   itself a Dataset)
+└── logs/          log.py (the Log shape), text_file.py (TextFile: a log read
+                   into Arrow batches and written back out as lines, itself a
+                   Dataset) and text_files.py (TextFiles: a folder of them as one
+                   ordered stream -- the lazy pyarrow.fs walk, the batch
+                   combining, and the raw/compressed byte flow)
 ```
+
+Beside `python/`, `schemas/` holds the published contracts (one directory per
+namespace, one file per shape) and `docs/` the site.
 
 Dependencies point one way: `logs`/`iceberg` -> `dataset` -> `fields` ->
 `convert` -> `annotations`, and `fix` sits beside `dataset` on the same
-`fields` base. The one loop back is deliberate and lazy: a
+`fields` base. `urls` is a leaf below all of it: `filesystems`, `convert`,
+`logs` and `iceberg/fileio` all reach a store through it, so there is one
+answer to "what is this location" rather than one per caller. The one loop back is deliberate and lazy: a
 `Field`'s `into_iceberg_*` imports `rekep.iceberg.fields` at the point of use,
 so the API stays on the class that owns the data without `fields/` depending
 on an extra. `tests/` mirrors `src/` folder for folder.
 
 **Documentation is a site, not a README.** `docs/` is mkdocs-material at the
-repo root: Types first (the field and its kinds), then Logs, then Iceberg, with
-content tabs carrying the examples so a page reads as one narrative instead of
-a wall of code. It builds `--strict` in CI, so a broken link fails there rather
-than shipping. The README is a landing page that points at it.
+repo root, in two groups: *Architecture* (design.md, contracts.md -- the rules
+and the schema contracts, which is where anyone building on this starts) and
+*Guides* (types.md, logs.md, fix.md, iceberg.md). Content tabs carry the
+examples so a page reads as one narrative instead of a wall of code.
+
+**Every page has the same shape**: a short description of what the thing is,
+then the usages -- each example with a line saying what it is for -- then
+`## Benchmarks` last, holding the measurements for *that* topic and the command
+that produced them. Numbers live with the thing they describe; benchmarks.md is
+the method (how a number is made, how to read a range, why a count beats a
+second) and an index, not a dump of every table.
+
+It builds `--strict` in CI, and `validation.links.anchors` is raised to `warn`
+so a broken `#anchor` fails there too rather than shipping. The README is a
+landing page that points at it.
 
 ## 15. Typing and file structure
 

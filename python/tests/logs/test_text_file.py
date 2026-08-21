@@ -198,7 +198,6 @@ def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
     assert schema.names == [
         "url",
-        "ulbridge_name",
         "recorded_at_unix",
         "recorded_at_date",
         "recorded_at_time",
@@ -207,10 +206,10 @@ def test_schema(plain: Path) -> None:
         "category_id",
         "category_name",
         "message",
-        "hash64",
+        "h64",
     ]
     assert schema.field("recorded_at_unix").type == pyarrow.int64()
-    assert schema.field("hash64").type == pyarrow.int64()
+    assert schema.field("h64").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
 
 
@@ -281,15 +280,15 @@ def test_url_column_identifies_the_source(plain: Path) -> None:
 
 def test_hash64_is_per_line_and_fits_int64(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
-        hashes = log.into_arrow_table().column("hash64").to_pylist()
+        hashes = log.into_arrow_table().column("h64").to_pylist()
     assert len(set(hashes)) == EXPECTED_RECORDS, "distinct lines hash distinctly"
     assert all(-(2**63) <= h < 2**63 for h in hashes)
 
 
 def test_hash64_is_stable_across_reads(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as first, TextFile(url=plain.as_uri()) as second:
-        assert first.into_arrow_table().column("hash64").to_pylist() == (
-            second.into_arrow_table().column("hash64").to_pylist()
+        assert first.into_arrow_table().column("h64").to_pylist() == (
+            second.into_arrow_table().column("h64").to_pylist()
         )
 
 
@@ -655,6 +654,75 @@ def test_a_pre_epoch_timestamp_lands_on_the_right_day() -> None:
     date, time = _date_and_time(before)
     assert date[0].as_py() == datetime.date(1969, 12, 31)
     assert time[0].as_py() == datetime.time(23, 59, 59)
+
+
+# -- static values ----------------------------------------------------------
+
+
+def test_static_values_land_at_the_end_in_insertion_order(plain: Path) -> None:
+    """After the data columns, so adding one moves nothing a reader selects."""
+    log = TextFile.from_path(plain, static_values={"bridge": "bridge-1", "shard": 7})
+    table = log.read_arrow_table()
+    assert table.schema.names[-2:] == ["bridge", "shard"]
+    assert table.schema.names[:-2] == Log.FIELD.into_arrow_schema().names
+    assert table.column("bridge").to_pylist() == ["bridge-1"] * table.num_rows
+    assert table.column("shard").to_pylist() == [7] * table.num_rows
+
+
+def test_nothing_names_the_source_but_the_caller(plain: Path) -> None:
+    """No column is hardcoded: a capture says what it is, or says nothing."""
+    assert TextFile.from_path(plain).read_arrow_table().schema.names == (
+        Log.FIELD.into_arrow_schema().names
+    )
+
+
+def test_a_static_value_infers_its_arrow_type(plain: Path) -> None:
+    log = TextFile.from_path(
+        plain, static_values={"text": "a", "count": 2, "ratio": 0.5, "flag": True}
+    )
+    schema = log.schema
+    assert schema.field("text").type == pyarrow.string()
+    assert schema.field("count").type == pyarrow.int64()
+    assert schema.field("ratio").type == pyarrow.float64()
+    assert schema.field("flag").type == pyarrow.bool_()
+
+
+def test_a_static_value_can_state_its_type(plain: Path) -> None:
+    """A scalar is the explicit form -- and the only way to say a typed null."""
+    log = TextFile.from_path(
+        plain,
+        static_values={
+            "desk": pyarrow.scalar("EU", pyarrow.large_string()),
+            "region": pyarrow.scalar(None, pyarrow.string()),
+        },
+    )
+    assert log.schema.field("desk").type == pyarrow.large_string()
+    assert log.schema.field("region").type == pyarrow.string()
+    assert log.schema.field("region").nullable is True
+    assert log.schema.field("desk").nullable is False
+    table = log.read_arrow_table()
+    assert table.column("region").to_pylist() == [None] * table.num_rows
+
+
+def test_a_static_value_of_none_is_refused(plain: Path) -> None:
+    """Arrow's `null` type is a column no store can widen later."""
+    log = TextFile.from_path(plain, static_values={"region": None})
+    with pytest.raises(ValueError, match="has no Arrow type"):
+        log.read_arrow_table()
+
+
+def test_a_static_column_is_part_of_the_declared_shape(plain: Path) -> None:
+    log = TextFile.from_path(plain, static_values={"bridge": "bridge-1"})
+    assert log.into_struct_field().names[-1] == "bridge"
+    assert log.into_struct_field().field("bridge").arrow_type == pyarrow.string()
+
+
+def test_static_columns_are_not_written_back_into_a_line(plain: Path, tmp_path: Path) -> None:
+    """A line is what the header says; a constant column is not in it."""
+    rows = TextFile.from_path(plain, static_values={"bridge": "bridge-1"}).read_arrow_table()
+    out = TextFile.from_path(tmp_path / "copy.txt")
+    out.write_arrow(rows)
+    assert out.read_arrow_table().num_rows == rows.num_rows
 
 
 # -- the dataset ------------------------------------------------------------

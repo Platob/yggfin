@@ -13,7 +13,7 @@ from typing import Any
 
 import pyarrow
 
-from rekep.fields import DESCRIPTION, Field, StructField
+from rekep.fields import DESCRIPTION, FIELD_ID, Field, StructField
 from rekep.require import require
 
 #: Arrow field metadata key pyiceberg reads a column comment from, and writes
@@ -25,8 +25,11 @@ DOC = b"doc"
 FIRST_PARTITION_ID = 1000
 
 #: Arrow field metadata key the ecosystem stores Iceberg's column ids under --
-#: parquet's own, which is why the prefix is not ours.
-FIELD_ID = b"PARQUET:field_id"
+#: parquet's own, which is why the prefix is not ours. Ours is
+#: `iceberg:field_id`, beside the other keys the protocol owns; this is the
+#: bridge between the two, and it is crossed here and nowhere else.
+PARQUET_FIELD_ID = b"PARQUET:field_id"
+ICEBERG_FIELD_ID = FIELD_ID.encode()
 
 
 def iceberg_schema(source: StructField) -> Any:
@@ -92,12 +95,15 @@ def struct_field_of(schema: Any, name: str = "", spec: Any = None) -> StructFiel
     string column as `large_string`, and a field that said otherwise would
     make every read pay a conversion. What is added here is what Arrow has no
     place for: the documentation, which pyiceberg keeps under `doc`, the
-    identifier fields, and the partition transforms when a spec is given.
+    identifier fields, the partition transforms when a spec is given, and the
+    **column ids**, which come back under `iceberg:field_id` -- so a field read
+    from a table can be published as a contract that says which id each column
+    has, and handed back to Iceberg without renumbering anything.
     """
     require("pyiceberg", "iceberg")
     from pyiceberg.io.pyarrow import schema_to_pyarrow
 
-    arrow = _described(schema_to_pyarrow(schema, include_field_ids=False))
+    arrow = _described(schema_to_pyarrow(schema, include_field_ids=True))
     field = Field.from_arrow_schema(arrow, name)
     for field_id in schema.identifier_field_ids:
         column = schema.find_column_name(field_id)
@@ -134,7 +140,7 @@ def _fresh(arrow: pyarrow.Schema, next_id: Any = None) -> Any:
 
 def _has_ids(field: pyarrow.Field) -> bool:
     """Whether `field` and everything under it carries an Iceberg column id."""
-    if FIELD_ID not in (field.metadata or {}):
+    if PARQUET_FIELD_ID not in (field.metadata or {}):
         return False
     data_type = field.type
     return all(_has_ids(data_type.field(index)) for index in range(data_type.num_fields))
@@ -150,6 +156,12 @@ def _document(field: pyarrow.Field) -> pyarrow.Field:
     description = metadata.get(DESCRIPTION.encode())
     if description:
         metadata[DOC] = description
+    column_id = metadata.get(ICEBERG_FIELD_ID)
+    if column_id:
+        # A declaration that names its ids is one that came from a table, and
+        # keeping them is what makes the round trip an identity rather than a
+        # rename of every column. pyiceberg reads them under parquet's key.
+        metadata[PARQUET_FIELD_ID] = column_id
     return pyarrow.field(
         field.name, _document_type(field.type), nullable=field.nullable, metadata=metadata
     )
@@ -180,6 +192,9 @@ def _describe(field: pyarrow.Field) -> pyarrow.Field:
     doc = metadata.pop(DOC, None)
     if doc:
         metadata[DESCRIPTION.encode()] = doc
+    column_id = metadata.pop(PARQUET_FIELD_ID, None)
+    if column_id:
+        metadata[ICEBERG_FIELD_ID] = column_id
     return pyarrow.field(
         field.name, _describe_type(field.type), nullable=field.nullable, metadata=metadata or None
     )

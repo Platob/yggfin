@@ -97,7 +97,7 @@ class Tick(Convertible):
     at: Annotated[int, Field.primary_key()]
     """A timestamp that advances with the commits."""
 
-    hash64: Annotated[int, Field.primary_key()]
+    h64: Annotated[int, Field.primary_key()]
     """A hash spread over the whole 62-bit range."""
 
     payload: str
@@ -740,10 +740,10 @@ def sweep_update(rows: int, days: int) -> None:
                 "venue",
             ),
             (
-                "(at, hash64) — nothing repeats",
+                "(at, h64) — nothing repeats",
                 Tick.FIELD,
                 tick_rows(wide * days),
-                ["at", "hash64"],
+                ["at", "h64"],
                 "payload",
             ),
         )
@@ -781,7 +781,7 @@ def tick_rows(count: int) -> pyarrow.Table:
     return pyarrow.Table.from_pydict(
         {
             "at": list(range(count)),
-            "hash64": [source.getrandbits(62) for _ in range(count)],
+            "h64": [source.getrandbits(62) for _ in range(count)],
             "payload": ["XPAR"] * count,
         },
         schema=Tick.FIELD.into_arrow_schema(),
@@ -810,7 +810,7 @@ def sweep_backfill(rows: int, days: int) -> None:
             pyarrow.Table.from_pydict(
                 {
                     "at": [band * 10**12 + i for i in range(per)],
-                    "hash64": [source.getrandbits(62) for _ in range(per)],
+                    "h64": [source.getrandbits(62) for _ in range(per)],
                     "payload": ["x" * 40] * per,
                 },
                 schema=Tick.FIELD.into_arrow_schema(),
@@ -827,7 +827,7 @@ def sweep_backfill(rows: int, days: int) -> None:
             ("one band", commits[7]),
             ("half the table", pyarrow.concat_tables(commits[:10])),
         ):
-            ranges = _key_ranges(replay, ["at", "hash64"])
+            ranges = _key_ranges(replay, ["at", "h64"])
             plan = target.scan_plan(ranges)
             seconds, inserted = timed(functools.partial(target.insert_arrow_table, replay, True))
             print(
