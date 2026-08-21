@@ -151,16 +151,43 @@ keys and partitions intact.
     the target field rather than reading everything and dropping the rest.
     Naming `columns` overrides it.
 
-!!! note "`limit` prunes files, unless a filter is on"
+!!! note "`limit` prunes files, not just rows"
 
     pyiceberg applies `limit` to the rows, *after* submitting every planned
-    file for reading. With no `row_filter`, the plan itself is cut here
-    instead: files are taken in plan order until their record counts alone
-    satisfy the limit, and the rest are never opened — measured, `limit=100`
-    on an eight-file table opened **one** file instead of eight. A filter puts
-    the whole plan back in pyiceberg's hands (its matches could sit in any
-    file), and so does a file carrying delete files (its record count
-    over-counts the live rows); the row cap still applies either way.
+    file for reading. The plan itself is cut here instead: files are taken in
+    plan order until their record counts alone satisfy the limit, and the rest
+    are never opened — measured, `limit=100` on an eight-file table opened
+    **one** file instead of eight.
+
+    A record count is trusted where pyiceberg's own `count()` trusts one: the
+    file's `residual` is `AlwaysTrue`, meaning its partition already satisfies
+    the whole filter, and no delete file has removed rows from it. So a limit
+    under a **partition** filter is trimmed too — `limit=2` under
+    `day = '2026-08-14'` opens one of the day's three files — while a filter
+    the files themselves have to answer hands the whole plan back. The row cap
+    is pyiceberg's either way.
+
+    With one thing `count()` gets wrong. A residual is resolved against the
+    partition value in *Python*, so a file in a **null** partition answers
+    `venue != 'XPAR'` with `None != 'XPAR'` — True — and its residual comes
+    back `AlwaysTrue`; Arrow then applies the same filter to the rows in
+    three-valued logic, where `NULL != 'XPAR'` is NULL, and drops all of them.
+    A filtered limit leaves those files to pyiceberg.
+
+!!! note "A reader is a stream, and holds the pool, not the table"
+
+    `ArrowScan` submits every planned file to its thread pool at once, and each
+    finished one holds a whole file's decoded batches until the consumer
+    reaches it — which makes a reader over a big table a `read_arrow_table`
+    that takes longer. Measured on 24 files and 99 MiB, one batch of 20,000
+    rows opened all 24 and left Arrow holding 97 of those MiB.
+
+    The plan goes over a group at a time instead, the group being the pool's
+    own width: past that there is a queue, not parallelism. On the same
+    fixture: 8 files open, 32.5 MiB held. Draining the whole reader took
+    54.6–56.5 ms against 59.6–72.4 ms before, so the bound costs nothing. A
+    plan carrying delete files still goes over whole — `_read_all_delete_files`
+    runs per scan, and a shared delete file would be read once per group.
 
 === "Delete"
 
@@ -240,11 +267,24 @@ goes.
 
 === "The fix"
 
-    The scan is filtered by the chunk's **key values or ranges** — a couple of
+    The scan is filtered by the chunk's **key values or ranges** — a handful of
     terms per key column, whatever the chunk's size — which every matching row
     satisfies, so the scan returns a superset and nothing can be missed. Rows to
     insert then come from one Arrow anti-join, and rows to update from a
     vectorised comparison instead of pyiceberg's per-row Python loop.
+
+    Past `MERGE_IN_LIMIT` distinct values a key column cannot be named one
+    value at a time, and one min/max range there prunes nothing on keys that
+    sit in a **few bands of a wide span** — a backfill, or a replay of two days
+    into a month. So the column is described by up to `MERGE_RANGE_BANDS`
+    ranges instead, found by placing every value in one of 64 equal slices of
+    `[min, max]` and merging the occupied ones back: a slice reports the exact
+    min and max of what landed in it, so the union covers every value however
+    the arithmetic rounded — which it does, since a nanosecond timestamp does
+    not fit a float64 mantissa and the cast is deliberately unchecked. Measured
+    on 20 files of clustered keys, replaying two distant ones planned **18
+    files before and 2 after**; a replay of one contiguous band plans 1 either
+    way and pays the banding pass for nothing.
 
     | scenario (4,000-row chunk, 20k-row table) | planned | pyiceberg |
     | --- | --- | --- |
@@ -257,10 +297,36 @@ goes.
     once, sees nothing to read, and the chunk goes straight to a commit with
     no reader built and no data file opened.
 
-    When most rows genuinely *change*, the win is closer to 2×: the delete half
-    still carries pyiceberg's exact per-row filter, because a range there would
-    delete rows the chunk never touched. Finding the rows is what got fast;
-    rewriting them costs what it costs.
+=== "Updating"
+
+    When most rows genuinely *change*, finding them stops being the cost and
+    the filter that names them for deletion becomes it. That filter stays
+    exact — a range there would delete rows the chunk never touched — but it
+    does not have to repeat itself. `create_match_filter` spells a composite
+    key as one `And(EqualTo, EqualTo)` per row, and pyiceberg binds that whole
+    tree **once per manifest it plans**: profiled on a 5,000-row update of an
+    eight-file table, 15.8 of the 18.1 seconds went on nineteen metrics
+    evaluators at 770 ms each, against 0.4 ms for the ranges beside it.
+
+    So whatever a key column repeats is said once. The rows are grouped on the
+    key column with the fewest distinct values and each group becomes one term:
+    a `(symbol, day)` key over one day collapses 500 terms into one
+    `And(EqualTo(day, …), In(symbol, […]))`. Measured on 10,000 stored rows
+    over four days, both legs run twice:
+
+    | rows updated | terms | seconds | rows/s |
+    | --- | --- | --- | --- |
+    | 500 | 1,000 → **2** | 0.95 → **0.22** | 527 → 2,245 |
+    | 2,000 | 4,000 → **2** | 4.55 → **0.23** | 440 → 8,935 |
+    | 5,000 | 10,000 → **4** | 21.16 → **0.43** | 236 → 11,589 |
+
+    Two shapes keep the library's per-row form whole: a float key column
+    holding a zero, because the inner half becomes an `In` and `pc.is_in`
+    hashes `-0.0` apart from the `0.0` it equals; and a key that repeats
+    nothing, where one group per row is the tree it already builds. The second
+    is measured too — `(at, hash64)` at 0.51–11.94 s for the same 500 to 5,000
+    rows — because an exact filter over *n* arbitrary key pairs is *n* terms
+    and there is no smaller way to say it.
 
 === "Coherence"
 
@@ -469,11 +535,29 @@ calls are the whole routine.
     because compacting makes the snapshots that cleanup then expires, and
     merging manifests first means those commits land in fewer of them.
 
-    It **settles**. A part is only planned again once something has landed in
-    it since it was last rewritten — which is the only reliable signal, because
-    pyiceberg sizes its output files from in-memory bytes, so a part that
-    legitimately needs ten files still reports ten afterwards. A plan that only
-    counted files would rewrite it on every run and double the table each time.
+    It **settles**, on every partition shape. A part is only planned again once
+    something has landed in it since it was last rewritten — which is the only
+    reliable signal, because pyiceberg sizes its output files from in-memory
+    bytes, so a part that legitimately needs ten files still reports ten
+    afterwards. A plan that only counted files would rewrite it on every run
+    and double the table each time.
+
+    A table the plan can only address *as a whole* — no partitioning, or
+    transforms that hide which rows are where — settles as a whole, under a key
+    of its own. Asking the per-partition question there recorded nothing a
+    later run could match: measured on four commits over four days, a `day`
+    partition rewrote 16 files, then 4, then 4, forever, with
+    `compaction_marks()` empty throughout and the rows never changing. It is
+    16, then 0, then 0.
+
+    Everything `cleanup` takes is reachable here too. The sweep is the
+    expensive half — a recursive listing of the whole store — so
+    `optimize(remove_orphans=False)` is the compaction on its own:
+
+    ```python
+    quotes.optimize(remove_orphans=False)          # compact, expire, no listing
+    quotes.optimize(retain=10, orphan_age=datetime.timedelta(days=1))
+    ```
 
 === "Automatically"
 
@@ -487,9 +571,16 @@ calls are the whole routine.
     needs it: snapshots past `AUTO_OPTIMIZE_SNAPSHOTS`, the branch head's
     manifests past `AUTO_OPTIMIZE_MANIFESTS`, or a compaction plan worth
     `AUTO_OPTIMIZE_FILES` — checked in that order, against metadata the write
-    just paid for, so a quiet answer costs no store round trips. Right after
-    an optimize the signals are quiet again, so a stream that ends with it
-    converges instead of compacting every time.
+    just paid for. Right after an optimize the signals are quiet again, so a
+    stream that ends with it converges instead of compacting every time.
+
+    The plan is the only expensive one, and it is bounded by a free one: a
+    plan cannot rewrite more files than the branch holds, and the head snapshot
+    already says how many that is (`total-data-files`). Below the threshold the
+    planner is never asked — which is every call on a stream that has
+    converged, and used to cost a walk of every manifest to learn nothing:
+    measured, one partitions read and one manifest read at 5–6 ms, now none at
+    all.
 
     `auto_optimize=True` asks at the end of every write stream. It is **off by
     default** for one reason: `optimize` expires snapshots, and whether
@@ -548,8 +639,13 @@ chunk's scan plans from.
 | read everything | 18 | 10 — the data files |
 | read one partition | 5 | 2 |
 | read `limit=100` | 9 | **1** |
-| `scan_plan` | 11 | **0** |
-| optimize (compact + sweep) | 71 | 10 |
+| `scan_plan` one partition | 11 → **3** | **0** |
+| optimize (compact + sweep) | 71 → **69** | 10 |
+
+The two uncached counts that moved are not the cache's doing: `scan_plan` under
+a filter stopped planning the table a second time to count what an unfiltered
+scan would touch, and the sweep stopped walking the manifests once per half of
+its live set.
 
 With the cache on, the only GETs left are data files a read genuinely needs;
 every manifest, manifest list and `metadata.json` fetch is served from memory
@@ -563,13 +659,23 @@ IcebergCatalog(name="prod", properties={
 })
 ```
 
-The cache holds **only** what Iceberg promises never to rewrite — `.avro` and
-`.metadata.json`, written once at UUID-bearing names — so entries can go cold,
-never stale. Data files are never cached: they are the bytes worth streaming,
-and one of them would evict everything else. The budget is 64 MiB by default,
-LRU by bytes, shared across the process the way pyiceberg shares its own
-manifest-file cache; a file bigger than an eighth of the budget is never
-stored, a deleted file is evicted, and a write abandoned mid-file never lands.
+The cache holds **only** what Iceberg promises never to rewrite, and the UUID
+is what the promise rests on: `.avro` manifests and manifest lists, and the
+`00007-<uuid>.metadata.json` pyiceberg mints per attempt. The `v7.metadata.json`
+a Hadoop-style catalog writes has no UUID, so two racing writers can both
+produce it with different bytes — that one is read from the store every time.
+Entries can go cold, never stale.
+
+Data files are never cached: they are the bytes worth streaming, and one of
+them would evict everything else. The budget is 64 MiB by default, LRU by
+bytes, shared across the process the way pyiceberg shares its own
+manifest-file cache. A file bigger than an eighth of the budget is never
+stored — and stops being copied the moment it passes that, rather than being
+accumulated whole and dropped on arrival. A write abandoned mid-file never
+lands, and a deleted file is evicted **including by the sweep**, which deletes
+through a `pyarrow.fs` handle and so has to say so itself: five swept manifests
+went on answering `exists()` and handing over their bytes after one `cleanup`
+before it did.
 
 ## The escape hatch
 

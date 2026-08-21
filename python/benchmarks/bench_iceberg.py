@@ -6,7 +6,7 @@ Run from `python/`::
     uv run python benchmarks/bench_iceberg.py             # the full sweep
     uv run python benchmarks/bench_iceberg.py --only read
 
-Four questions, measured rather than assumed:
+Seven questions, measured rather than assumed:
 
 1. **How fast does a stream land?** Append, upsert, and upsert on a stream that
    cannot match anything already stored -- at several commit sizes, partitioned
@@ -16,7 +16,8 @@ Four questions, measured rather than assumed:
 2. **Does a read prune?** A filter on a partition column, on a column that
    correlates with one, and on one that does not -- with the planned file count
    beside the wall time, because a fast scan that read every file is a scan that
-   got lucky.
+   got lucky. Warmed twice before anything is timed, once for the process and
+   once per case: a sweep of single calls in order is a story about warm-up.
 3. **What do the table properties buy?** The same stream written with Iceberg's
    commit knobs at their defaults and at the ones this package sets.
 4. **How often is the store asked?** (`--only fs`) Every flow again, counted in
@@ -25,6 +26,22 @@ Four questions, measured rather than assumed:
    one `create` a PUT. Once with the immutable-content cache off, once on,
    because seconds on a local disk cannot show what a scan-per-chunk flow does
    to S3.
+
+5. **What does the maintenance cost, and does it settle?** (`--only maintain`)
+   How much of a table a *reader* holds before its consumer asks for a second
+   batch, how much metadata `maybe_optimize` walks to decide a quiet table
+   needs nothing, and whether `compact` converges on every partition shape --
+   including the transformed one, where a plan that never settles reads and
+   rewrites the whole table on every run.
+
+6. **What does the *update* half of a merge cost?** (`--only update`) The
+   filter naming the rows a merge deletes is one term per row for a composite
+   key, and pyiceberg binds that tree once per manifest it plans. Swept against
+   a key whose halves repeat, with the term count beside the seconds.
+
+7. **Does a replay reach only the files it lands in?** (`--only backfill`) A
+   chunk of keys clustered in a few bands of a wide table, planned rather than
+   read: the number that matters is files, never rows.
 
 Everything runs against a local SQLite catalog and a file warehouse, so the
 numbers are storage-latency-free: they measure planning, commit and Arrow work,
@@ -37,20 +54,55 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import functools
 import pathlib
+import random
 import shutil
 import sys
 import tempfile
 import time
 from collections.abc import Callable, Iterator
-from typing import Any
+from typing import Annotated, Any
 
 import pyarrow
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep import Log, TextFile  # noqa: E402
+from rekep import Convertible, Field, Log, TextFile, field  # noqa: E402
 from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
+from rekep.iceberg.dataset import _key_ranges, _match_filter  # noqa: E402
+
+
+@field
+class Quote(Convertible):
+    """One quote, under a composite key whose halves both repeat."""
+
+    symbol: Annotated[str, Field.primary_key()]
+    """Instrument."""
+
+    day: Annotated[datetime.date, Field.primary_key(), Field.partition_key()]
+    """Trading day, and the partition."""
+
+    size: int
+    """Quantity."""
+
+    venue: str
+    """Where it traded."""
+
+
+@field
+class Tick(Convertible):
+    """A row under a wide composite key, clustered per commit."""
+
+    at: Annotated[int, Field.primary_key()]
+    """A timestamp that advances with the commits."""
+
+    hash64: Annotated[int, Field.primary_key()]
+    """A hash spread over the whole 62-bit range."""
+
+    payload: str
+    """Payload."""
+
 
 DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
 LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
@@ -357,9 +409,19 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
             ("narrow shape (pushdown)", None, None, narrow_field()),
             ("narrow shape, store widths", None, None, "stored"),
         ]
+        # Warm the process before the first case is timed. An Acero join, the
+        # Arrow parquet reader and the page cache all cost their setup once,
+        # and a sweep of single calls in order charges the whole of it to
+        # whichever case happens to run first: measured over three
+        # back-to-back `--only read` runs, "everything" came out 0.057, 0.031
+        # and 0.027 -- a 2.1x spread that is nothing but warm-up.
+        read_case(target, row_filter=None, columns=None, schema=None)
         for name, row_filter, columns, schema in cases:
             if schema == "stored":
                 schema = stored_narrow(target)
+            # And once per case, discarded: the first read of a configuration
+            # touches files and builds a projection the repeats then reuse.
+            read_case(target, row_filter=row_filter, columns=columns, schema=schema)
             report = min(
                 (
                     read_case(target, row_filter=row_filter, columns=columns, schema=schema)
@@ -530,6 +592,291 @@ def sweep_fs(rows: int, days: int) -> None:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def sweep_maintain(rows: int, days: int) -> None:
+    """The maintenance a streaming table needs, and what a reader holds.
+
+    Three questions seconds on a local disk answer badly and counts answer
+    exactly: how much of a table a *reader* materialises before its consumer
+    asks, how much of the metadata `maybe_optimize` walks to decide there is
+    nothing to do, and whether compaction settles -- which is the difference
+    between a routine that costs nothing on a quiet table and one that reads
+    and rewrites the whole table every time it runs.
+    """
+    import gc
+
+    from pyiceberg.io.pyarrow import PyArrowFile
+    from pyiceberg.manifest import ManifestFile
+    from pyiceberg.table.inspect import InspectTable
+
+    walks: list[str] = []
+    partitions, entries = InspectTable.partitions, ManifestFile.fetch_manifest_entry
+
+    def counted(self: Any, snapshot_id: int | None = None) -> Any:
+        walks.append("partitions")
+        return partitions(self, snapshot_id)
+
+    def fetched(self: Any, io: Any, discard_deleted: bool = True) -> Any:
+        walks.append("manifest")
+        return entries(self, io, discard_deleted)
+
+    InspectTable.partitions, ManifestFile.fetch_manifest_entry = counted, fetched
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-maint-"))
+    try:
+        path = tmp / "bench.txt"
+        generate(path, rows, days)
+        table = parsed(path)
+
+        # -- what a reader holds ------------------------------------------
+        print(f"\n== reading as a stream: {table.num_rows:,} rows ==")
+        header(("case", "files opened", "MiB held", "MiB total"), (30, 13, 10, 10))
+        target = dataset(tmp / "read", partitioned=True, properties=OPTIMISED)
+        # Small batches on purpose: a commit closes at the first batch boundary
+        # at or beyond its size, so a big batch makes the commit size inert and
+        # the table comes out in two files instead of the many this measures.
+        target.write_arrow(batches(table, 2_048), commit_row_size=max(table.num_rows // 24, 1))
+        target.read_arrow_table()  # warm the page cache, so this measures memory
+        planned = target.scan_plan()["files"]
+        opened: list[str] = []
+        original = PyArrowFile.open
+
+        def watched(self: Any, *args: Any, **kwargs: Any) -> Any:
+            if self.location.endswith(".parquet"):
+                opened.append(self.location)
+            return original(self, *args, **kwargs)
+
+        PyArrowFile.open = watched
+        try:
+            gc.collect()
+            base = pyarrow.total_allocated_bytes()
+            reader = target.read_arrow_reader()
+            reader.read_next_batch()
+            # A consumer that is not instantaneous, which is the only kind this
+            # is about: the pool goes on decoding whether or not anyone is
+            # asking, and what it has finished is what is being held.
+            time.sleep(0.25)
+            held = pyarrow.total_allocated_bytes() - base
+            after = len(opened)
+            del reader
+            whole = target.read_arrow_table()
+            print(
+                f"{'one batch, ' + str(planned) + ' files planned':>30} {after:>13} "
+                f"{held / 2**20:>10.1f} {whole.nbytes / 2**20:>10.1f}"
+            )
+        finally:
+            PyArrowFile.open = original
+
+        # -- deciding, and settling ---------------------------------------
+        print("\n== maintenance ==")
+        header(("case", "partitions", "manifests", "seconds", "result"), (30, 11, 10, 9, 26))
+
+        def maintenance(label: str, call: Callable[[], Any]) -> None:
+            walks.clear()
+            seconds, out = timed(call)
+            print(
+                f"{label:>30} {walks.count('partitions'):>11} {walks.count('manifest'):>10} "
+                f"{seconds:>9.3f}  {out!s:.26}"
+            )
+
+        quiet = dataset(tmp / "quiet", partitioned=True, properties=OPTIMISED)
+        quiet.write_arrow(table.slice(0, 2_000), commit_row_size=0)
+        maintenance("maybe_optimize, quiet table", quiet.maybe_optimize)
+
+        frayed = dataset(tmp / "frayed", partitioned=True, properties=OPTIMISED)
+        frayed.write_arrow(batches(table, 2_048), commit_row_size=max(table.num_rows // 24, 1))
+        maintenance("maybe_optimize, frayed", frayed.maybe_optimize)
+        maintenance("maybe_optimize, settled", frayed.maybe_optimize)
+
+        # -- does a rewrite settle, on every partition shape? -------------
+        print("\n== compaction settles: files rewritten per run ==")
+        header(("partitioning", "run 1", "run 2", "run 3", "rows"), (30, 8, 8, 8, 10))
+        for label, built in (
+            (
+                "identity (recorded_at_date)",
+                lambda root: dataset(root, partitioned=True, properties=OPTIMISED),
+            ),
+            ("none", lambda root: dataset(root, partitioned=False, properties=OPTIMISED)),
+            ("transform (day)", lambda root: daily(root)),
+        ):
+            target = built(tmp / f"settle-{label[:8]}")
+            target.write_arrow(batches(table, 2_048), commit_row_size=max(rows // 12, 1))
+            runs = [target.compact(min_files=2) for _ in range(3)]
+            print(
+                f"{label:>30} {runs[0]:>8,} {runs[1]:>8,} {runs[2]:>8,} "
+                f"{target.refresh().read_arrow_table().num_rows:>10,}"
+            )
+    finally:
+        InspectTable.partitions, ManifestFile.fetch_manifest_entry = partitions, entries
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def sweep_update(rows: int, days: int) -> None:
+    """The half of a merge that *rewrites*, on the key shape it costs most on.
+
+    A merge that inserts is cheap and measured everywhere else here. A merge
+    that updates pays for the filter naming the rows it deletes, and that
+    filter is one `And(EqualTo, EqualTo)` per row for a composite key -- a tree
+    pyiceberg binds once per manifest it plans. Factoring out whatever the key
+    repeats is what this sweeps.
+
+    Both key shapes, including the one that cannot be helped: a key neither
+    half of which repeats groups one row per term, which is the tree the
+    library already builds, and its numbers are what a merge of many updates
+    costs when nothing can be factored out of it.
+    """
+    root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-update-"))
+    try:
+        # Sized off `rows` so the update counts below are a slice of the table,
+        # not the whole of it: a merge that touches everything is a rewrite.
+        wide = max(rows // (10 * max(days, 1)), 250)
+        # Both shapes, because only one of them can be factored -- and a sweep
+        # that left out the one that cannot would read as a claim about merges
+        # rather than about keys.
+        cases = (
+            (
+                "(symbol, day) — day repeats",
+                Quote.FIELD,
+                quote_rows(wide, days),
+                ["symbol", "day"],
+                "venue",
+            ),
+            (
+                "(at, hash64) — nothing repeats",
+                Tick.FIELD,
+                tick_rows(wide * days),
+                ["at", "hash64"],
+                "payload",
+            ),
+        )
+        for label, shape, stored, join, column in cases:
+            target = catalog(root / label[:8]).dataset("bench.updated", struct=shape).create_with()
+            target.write_arrow(stored, commit_row_size=max(stored.num_rows // max(days, 1), 1))
+            print(f"\n== updating {label}: {stored.num_rows:,} rows ==")
+            header(("rows updated", "seconds", "rows/s", "terms", "files"), (14, 9, 11, 8, 7))
+            index = stored.schema.get_field_index(column)
+            for count in (500, 2_000, 5_000):
+                if count * 2 > stored.num_rows:
+                    continue
+                changed = stored.slice(0, count)
+                changed = changed.set_column(
+                    index,
+                    changed.schema.field(column),
+                    pyarrow.array([f"V{i}" for i in range(count)]),
+                )
+                terms = _terms(_match_filter(changed, join))
+                seconds, report = timed(functools.partial(target.merge_arrow_table, changed, join))
+                files = target.refresh().iceberg_table.inspect.data_files().num_rows
+                print(
+                    f"{count:>14,} {seconds:>9.2f} {count / seconds:>11,.0f} "
+                    f"{terms:>8,} {files:>7,}"
+                )
+                assert report == (count, 0), report
+                target.merge_arrow_table(stored.slice(0, count), join)  # put them back
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def tick_rows(count: int) -> pyarrow.Table:
+    """`count` ticks under a key neither half of which repeats."""
+    source = random.Random(20_260_821)
+    return pyarrow.Table.from_pydict(
+        {
+            "at": list(range(count)),
+            "hash64": [source.getrandbits(62) for _ in range(count)],
+            "payload": ["XPAR"] * count,
+        },
+        schema=Tick.FIELD.into_arrow_schema(),
+    )
+
+
+def sweep_backfill(rows: int, days: int) -> None:
+    """Replaying keys that sit in a few bands of a wide table.
+
+    The shape a backfill makes, and the one a single min/max range cannot prune
+    at all: past `MERGE_IN_LIMIT` distinct values a key column used to become
+    one range spanning everything between the bands. What a scan *plans* is the
+    number here -- rows returned say nothing about files opened.
+    """
+    root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-backfill-"))
+    try:
+        target = catalog(root).dataset("bench.ticks", struct=Tick.FIELD).create_with()
+        per = max(rows // 20, 1_000)
+        # The hash is drawn per *row*, not derived from the band: a real line
+        # hash spreads over the whole range, so every file's bounds on it span
+        # nearly everything and it prunes nothing. Deriving it from the band
+        # instead gave each file a narrow hash band that pruned the table by
+        # itself -- the fixture doing the work the code is supposed to.
+        source = random.Random(20_260_821)
+        commits = [
+            pyarrow.Table.from_pydict(
+                {
+                    "at": [band * 10**12 + i for i in range(per)],
+                    "hash64": [source.getrandbits(62) for _ in range(per)],
+                    "payload": ["x" * 40] * per,
+                },
+                schema=Tick.FIELD.into_arrow_schema(),
+            )
+            for band in range(20)
+        ]
+        for commit in commits:
+            target.write_arrow(commit, commit_row_size=0)
+        stored = target.refresh().data_files().num_rows
+        print(f"\n== backfill: {stored} files of {per:,} rows, keys clustered per file ==")
+        header(("case", "planned", "skipped", "seconds", "inserted"), (30, 8, 8, 9, 9))
+        for label, replay in (
+            ("two distant bands", pyarrow.concat_tables([commits[1], commits[18]])),
+            ("one band", commits[7]),
+            ("half the table", pyarrow.concat_tables(commits[:10])),
+        ):
+            ranges = _key_ranges(replay, ["at", "hash64"])
+            plan = target.scan_plan(ranges)
+            seconds, inserted = timed(functools.partial(target.insert_arrow_table, replay, True))
+            print(
+                f"{label:>30} {plan['files']:>8} {plan['skipped']:>8} "
+                f"{seconds:>9.2f} {inserted:>9,}"
+            )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def quote_rows(symbols: int, days: int) -> pyarrow.Table:
+    """`symbols` instruments on each of `days` days: a key whose halves repeat."""
+    day = datetime.date(2026, 8, 14)
+    pairs = [
+        (f"S{s}", day + datetime.timedelta(days=d)) for d in range(days) for s in range(symbols)
+    ]
+    return pyarrow.Table.from_pydict(
+        {
+            "symbol": [pair[0] for pair in pairs],
+            "day": [pair[1] for pair in pairs],
+            "size": list(range(len(pairs))),
+            "venue": ["XPAR"] * len(pairs),
+        },
+        schema=Quote.FIELD.into_arrow_schema(),
+    )
+
+
+def _terms(expression: Any) -> int:
+    """Leaf predicates in a filter -- what pyiceberg binds, once per manifest."""
+    left, right = getattr(expression, "left", None), getattr(expression, "right", None)
+    if left is None and right is None:
+        return 1
+    return _terms(left) + _terms(right)
+
+
+def daily(root: pathlib.Path) -> IcebergDataset:
+    """The log shape again, partitioned by a *transform* of the same column.
+
+    Every partition transform but `identity` hides which rows a partition
+    holds, so the table is only addressable as a whole -- and a plan that
+    cannot address parts of it has to settle as a whole too. When it did not,
+    every run read the table back and wrote it out again, forever.
+    """
+    field = Log.FIELD.into_dataclass("Daily").FIELD
+    field.field("recorded_at_date").is_partition_key = "day"
+    built = catalog(root).dataset("bench.daily", struct=field, table_properties=OPTIMISED)
+    return built.create_with()
+
+
 def stored_narrow(target: IcebergDataset) -> Any:
     """The same three columns, declared with the widths the store reads back.
 
@@ -567,7 +914,11 @@ def main() -> int:
     parser.add_argument("--days", type=int, default=8)
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--quick", action="store_true")
-    parser.add_argument("--only", choices=["parse", "write", "read", "fs"], default=None)
+    parser.add_argument(
+        "--only",
+        choices=["parse", "write", "read", "fs", "maintain", "update", "backfill"],
+        default=None,
+    )
     arguments = parser.parse_args()
     rows = 100_000 if arguments.quick else arguments.rows
     days = 4 if arguments.quick else arguments.days
@@ -580,6 +931,12 @@ def main() -> int:
         sweep_read(rows, days, 2 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "fs"):
         sweep_fs(min(rows, 100_000), days)
+    if arguments.only in (None, "maintain"):
+        sweep_maintain(min(rows, 100_000), days)
+    if arguments.only in (None, "update"):
+        sweep_update(min(rows, 100_000), days)
+    if arguments.only in (None, "backfill"):
+        sweep_backfill(min(rows, 100_000), days)
     return 0
 
 

@@ -40,6 +40,14 @@ from pyiceberg.io import InputFile, InputStream, OutputFile, OutputStream
 from pyiceberg.io.pyarrow import PyArrowFileIO
 from pyiceberg.typedef import EMPTY_DICT, Properties
 
+#: The `metadata.json` names Iceberg mints per attempt: a version number, a
+#: UUID and the suffix. A name *without* the UUID -- `v3.metadata.json`, which
+#: a Hadoop-style catalog writes -- is one two racing writers can both produce
+#: with different bytes, so caching it is caching a guess about which won.
+_VERSIONED = re.compile(
+    r"^\d+-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\.metadata\.json$"
+)
+
 #: A path whose first segment is a drive letter -- `C:/x` or `C:\x`.
 _DRIVE = re.compile(r"^[A-Za-z]:[/\\]")
 
@@ -61,14 +69,21 @@ DEFAULT_CACHE_BYTES = 64 * 1024 * 1024
 def _immutable(location: str) -> bool:
     """Whether Iceberg promises never to rewrite the file at `location`.
 
-    Manifests and manifest lists (`.avro`) and metadata versions
-    (`.metadata.json`) are written once at a UUID-bearing name and referenced
-    forever after; the one mutable file near them, a Hadoop catalog's
-    `version-hint.text`, matches neither suffix. Data files are immutable too,
-    but caching is for what is fetched *repeatedly*, and a data file is read
-    once per scan that wants its rows.
+    Manifests and manifest lists (`.avro`) and metadata versions are written
+    once at a UUID-bearing name and referenced forever after; the one mutable
+    file near them, a Hadoop catalog's `version-hint.text`, matches neither.
+    Data files are immutable too, but caching is for what is fetched
+    *repeatedly*, and a data file is read once per scan that wants its rows.
+
+    The UUID is what the promise rests on, so a metadata version has to carry
+    one: pyiceberg mints `00007-<uuid>.metadata.json` per attempt, but the
+    `v7.metadata.json` a Hadoop-style catalog writes is a name two racing
+    writers can both produce, with different bytes. That one is read from the
+    store every time, which is the only honest answer about a file whose name
+    does not say which write it came from.
     """
-    return location.endswith(".avro") or location.endswith(".metadata.json")
+    name = location.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+    return name.endswith(".avro") or bool(_VERSIONED.match(name))
 
 
 class ContentCache:
@@ -232,12 +247,21 @@ class _TeeStream:
         self._inner = inner
         self._location = location
         self._cache = cache
-        self._buffer = bytearray()
+        self._cap = cache.limit // 8
+        self._buffer: bytearray | None = bytearray()
         self._failed = False
 
     def write(self, data: Any) -> int:
         written = self._inner.write(data)
-        self._buffer += data
+        if self._buffer is not None:
+            self._buffer += data
+            if len(self._buffer) > self._cap:
+                # `put` refuses anything this big at the door, so going on
+                # copying is paying the whole cost of the copy -- and holding a
+                # second copy of the file -- for something that is dropped on
+                # arrival. Which one is being written decides: the manifest
+                # this exists for is single-digit KBs.
+                self._buffer = None
         return written
 
     def close(self) -> None:
@@ -247,9 +271,9 @@ class _TeeStream:
             self._failed = True
             raise
         finally:
-            if not self._failed:
+            if not self._failed and self._buffer is not None:
                 self._cache.put(self._location, bytes(self._buffer))
-            self._buffer = bytearray()
+            self._buffer = None
 
     def __enter__(self) -> _TeeStream:
         return self
