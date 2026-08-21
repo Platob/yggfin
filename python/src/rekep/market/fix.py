@@ -426,7 +426,12 @@ class FixEvents(Convertible):
         yield order
         kind = ExecKind.from_fix(self.get(150), ExecKind.UNKNOWN)
         if kind.band == ExecKind.TRADE or kind in (ExecKind.TRADE_CORRECT, ExecKind.TRADE_CANCEL):
-            yield self.into_execution(order)
+            # Completed *from the order*, not from a previous report: the
+            # running totals a venue leaves out of a fill -- how much is done
+            # now, how much is left, what the average is -- are all statements
+            # about the order this report is on, and the order row is the one
+            # thing here that already holds them.
+            yield self.into_execution(order).with_previous(order)
 
     def _entries(self, kind: str) -> Iterator[MarketEvent]:
         """One market-data refresh, entry by entry.
@@ -484,7 +489,7 @@ class FixEvents(Convertible):
             reason_code=_integer(get(103) or get(102)),
             reason=get(58),
             **self._shared(),
-        ).identify()
+        ).with_previous(None)
 
     def into_execution(self, order: Order | None = None) -> Execution:
         """What traded, as the report says it. `px` is `LastPx <31>`, not `Price <44>`."""
@@ -513,7 +518,7 @@ class FixEvents(Convertible):
             reason_code=_integer(get(378)),
             reason=get(58),
             **self._shared(),
-        ).identify()
+        ).with_previous(None)
 
     def into_entry_order(self, side: Side, snapshot: bool = False) -> Order:
         """One market-data entry as the resting interest it describes.
@@ -543,7 +548,7 @@ class FixEvents(Convertible):
             # and it is what makes a level's own lifecycle findable.
             order_id=get(278) or (f"{side.name}@{get(270)}" if get(270) else None),
             **self._shared(),
-        ).identify()
+        ).with_previous(None)
 
     def into_entry_execution(self) -> Execution:
         """One market-data entry of type Trade <2> as the execution it reports."""
@@ -561,7 +566,7 @@ class FixEvents(Convertible):
             exec_id=get(278),
             trade_id=get(1003) or get(880),
             **self._shared(),
-        ).identify()
+        ).with_previous(None)
 
     def into_instrument(self) -> Instrument:
         """What the message says is being traded.

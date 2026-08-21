@@ -159,11 +159,11 @@ class BookSide(MarketEvent):
 
     # -- building a side out of events ---------------------------------------
 
-    def append_event(self, event: Any) -> Self:
+    def append_event(self, event: Any) -> Self | None:
         """`append_order` or `append_execution`, inferred from what it was handed."""
         return getattr(self, f"append_{self.redirect_of(event, self.APPENDS)}")(event)
 
-    def append_order(self, order: Order) -> Self:
+    def append_order(self, order: Order) -> Self | None:
         """Add an order's resting quantity to this side, and record the update.
 
         **Aggregated, not per order.** The level at `order.px` moves by what
@@ -175,6 +175,13 @@ class BookSide(MarketEvent):
 
         That is the honest shape of an aggregated book, and it is what a venue
         that publishes levels rather than orders gives you anyway.
+
+        **None when nothing moved**, and the side is left exactly as it was --
+        no version, no update, no new hash. An order that rests for nothing is
+        the common case of that: a terminal one, or one the venue sent with no
+        quantity at all. A caller that writes what it gets back therefore
+        writes one row per real change rather than one per message, which is
+        the difference between a book table and a copy of the feed.
         """
         self._facing(order)
         if order.px is None:
@@ -185,16 +192,17 @@ class BookSide(MarketEvent):
         resting = 0.0 if order.state.is_terminal else _resting(order)
         return self._moved(order, order.px, resting)
 
-    def append_execution(self, execution: Execution) -> Self:
+    def append_execution(self, execution: Execution) -> Self | None:
         """Take a fill's quantity out of this side, and record the trade.
 
         Only a report that moved shares changes the book: an acknowledgement
         and a restatement share the same message type, and subtracting their
-        quantity is how a book ends up empty by lunchtime.
+        quantity is how a book ends up empty by lunchtime. Anything that moved
+        none of them returns None, having changed nothing.
         """
         self._facing(execution)
         if not execution.kind.moves_shares or execution.px is None or execution.qty is None:
-            return self
+            return None
         traded = LevelExecution(
             unix=execution.unix,
             px=execution.px,
@@ -225,9 +233,17 @@ class BookSide(MarketEvent):
                 f"a {event.side.name} event does not belong on the {self.side.name} side of a book"
             )
 
-    def _moved(self, event: MarketEvent, px: float, delta: float) -> Self:
-        """One level moved by `delta`, with the update and the lineage recorded."""
+    def _moved(self, event: MarketEvent, px: float, delta: float) -> Self | None:
+        """One level moved by `delta`, with the update and the lineage recorded.
+
+        None when `delta` moves nothing that is there: a zero delta on a level
+        the side does not hold is a message about liquidity that was already
+        gone, and versioning the side for it would write a row that differs
+        from the one before it only in its hash.
+        """
         levels = {level.px: level for level in (self.alive or [])}
+        if not delta and px not in levels:
+            return None
         standing = levels.get(px)
         quantity = (standing.qty if standing else 0.0) + delta
         if quantity > 0:
@@ -423,19 +439,19 @@ class Book(MarketEvent):
 
     # -- building a book out of events ---------------------------------------
 
-    def append_event(self, event: Any) -> Self:
+    def append_event(self, event: Any) -> Self | None:
         """`append_order` or `append_execution`, inferred from what it was handed."""
         return getattr(self, f"append_{self.redirect_of(event, self.APPENDS)}")(event)
 
-    def append_order(self, order: Order) -> Self:
-        """Add an order to whichever side it belongs on."""
+    def append_order(self, order: Order) -> Self | None:
+        """Add an order to whichever side it belongs on; None if nothing moved."""
         return self._through(order, "append_order")
 
-    def append_execution(self, execution: Execution) -> Self:
-        """Take a fill out of whichever side it hit."""
+    def append_execution(self, execution: Execution) -> Self | None:
+        """Take a fill out of whichever side it hit; None if nothing moved."""
         return self._through(execution, "append_execution")
 
-    def _through(self, event: MarketEvent, method: str) -> Self:
+    def _through(self, event: MarketEvent, method: str) -> Self | None:
         """Route `event` to its side, apply it there, and read the side back flat.
 
         The sides are columns here and a `BookSide` there, so routing goes
@@ -444,6 +460,11 @@ class Book(MarketEvent):
         the side they came from, the side's own method moves it, and
         `from_side` puts the result back. One walk, one set of rules, whichever
         shape is holding them.
+
+        A side that says nothing moved stops here: the book is not versioned,
+        the other side is not touched, and the caller gets None. Passing it on
+        would write a book row whose only difference from the last one is that
+        a message arrived.
         """
         if not event.side.sign:
             raise ValueError(
@@ -451,7 +472,8 @@ class Book(MarketEvent):
                 "set `side` on it, or append it to the side you mean directly"
             )
         name = "bid" if event.side.sign > 0 else "ask"
-        return self.from_side(name, getattr(self.into_side(name), method)(event))
+        moved = getattr(self.into_side(name), method)(event)
+        return None if moved is None else self.from_side(name, moved)
 
     # -- the sides, lifted and put back --------------------------------------
 

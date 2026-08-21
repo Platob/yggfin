@@ -469,6 +469,96 @@ None of the awkward Doris type mappings apply any more, which is the point of
 the change: an `int64` is a `bigint` there, with no catalog property to set and
 nothing to `hex()` before a human can read it.
 
+## Completing a version
+
+A venue restates only what changed. A report that says *"partially filled, 4
+done"* and nothing else is a complete row only once the price, the side, the
+instrument and everything else it did not repeat are carried forward from the
+version it follows. `with_previous` is that.
+
+```python
+order = Order(unix=10, px=100.0, qty=10.0, order_id="ORD-1", ...).with_previous(None)
+order.leaves_qty                # 10.0 -- a fresh order rests all of it
+
+later = Order(unix=20, order_id="ORD-1", filled_qty=4.0).with_previous(order)
+later.px, later.qty             # 100.0, 10.0 -- carried, never re-sent
+later.leaves_qty                # 6.0  -- derived, not copied
+later.version, later.prev_state # 1, State.NEW
+```
+
+Two halves, and they are separate methods because only one of them needs a
+previous version:
+
+- **`complete_from(previous)`** — what the row before implies about this one.
+  Layered: each class overrides it and calls `super()`, and each fills only
+  what this version left absent. A value the message actually sent always
+  wins; this completes a row, it does not correct one.
+- **`derive()`** — what *this* row implies about itself. A quantity that is the
+  difference of two others, a notional that is the product of three. A first
+  version has no previous and still derives.
+
+What is not layered is the versioning, and it sits in `with_previous` so no
+subclass can forget a piece of it: the counter moves on, the version before is
+recorded as `prev_hash`/`prev_state`/`prev_unix` so a transition is on the row
+rather than behind a self-join, and the content hash is re-derived **last** —
+after every layer has filled, or it would identify a row that does not exist
+yet.
+
+### The rules that are arithmetic
+
+| Rule | Why |
+|---|---|
+| `cunix` is **get-or-set** | A lifecycle is created once, and every later version of it was created then. Recomputing it makes "how old is this order" mean "how long since the last message about it". |
+| `leaves_qty = qty - filled_qty` | A venue that sends `CumQty <14>` and not `LeavesQty <151>` has still said how much is working. Deriving it once stops every reader deriving it differently. |
+| A terminal order rests **nothing** | `qty` and `leaves_qty` both go to zero. The order is done, cancelled or expired, and a book folding it has to take its liquidity out rather than leave it standing. What was asked for is on the version before, which `prev_hash` names. |
+| `State.FILLED` filled what it asked for | A report that gives the state and not `CumQty <14>` has still said how much was done. |
+| `prev_client_order_id` is the previous version's | FIX requires a new `ClOrdID <11>` per version and calls the old one `OrigClOrdID <41>`. |
+| `filled_qty` accumulates, `leaves_qty` decreases | A fill that sends `LastQty <32>` and no running totals has still said what they now are. Only where shares actually moved — adding an acknowledgement's quantity is how a fills table starts overcounting. |
+| `avg_px` is **re-weighted**, not copied | Copying it forward would leave every partial fill reporting the first one's price. |
+| A notional needs all three of price, quantity and multiplier | One computed with a multiplier of "probably one" is wrong by a factor nobody notices until settlement. Only a cash instrument may assume it. |
+
+### A version of it, or a different thing built from it
+
+The abstract slots `px` and `qty` mean what the subclass says they mean — an
+order's are what it asked for, a fill's are what traded, a book's are the mid
+and the touch — so they carry only from a version of the **same shape**.
+Carrying an execution's `LastQty` into an order's `OrderQty` made a partly
+filled order claim it had asked for exactly what had just traded, and derive a
+`leaves_qty` of zero from it. The named fields (`filled_qty`, `avg_px`, the
+identifiers) mean the same thing everywhere and carry across shapes.
+
+Whether `previous` is the version before or a different thing is read from the
+identities, not the classes — because both answers happen between the same two
+classes:
+
+```python
+fill = Execution(...).with_previous(order)
+fill.version        # 0 -- version zero of its own life
+fill.prev_hash      # None -- nothing came before it
+fill.parent_hash    # [order.hash] -- but it was built from the order
+```
+
+`same_life_as` is asked **after** every layer has completed, and that is not
+incidental: an order version carrying only its `OrderID <37>` does not know its
+own instrument or venue until the previous version has given them to it, and
+those are part of what its lifecycle is.
+
+### An append that changed nothing
+
+`append_order`, `append_execution` and `append_event` return the updated
+version, or **None when nothing moved** — leaving the side or the book exactly
+as it was: no version, no update, no new hash.
+
+```python
+side.append_order(fresh)        # the side, versioned
+side.append_execution(acked)    # None: an acknowledgement moves no shares
+side.append_order(terminal)     # None: it rests nothing, and never did
+```
+
+A caller that writes what it gets back therefore writes one row per real
+change rather than one per message, which is the difference between a book
+table and a copy of the feed.
+
 ## Reading a venue
 
 `FixEvents` is the way in: a FIX message, or the pairs one was rendered as,

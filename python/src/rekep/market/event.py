@@ -10,7 +10,7 @@ import pyarrow
 
 from rekep.convert import Convertible
 from rekep.fields import Field, FieldBuilder, field
-from rekep.market.enums import EventType, Side, State
+from rekep.market.enums import AssetKind, EventType, Side, State
 from rekep.market.fields import MarketFieldBuilder, fix_tag
 from rekep.market.identity import NIL, hash_arrow, hash_of
 from rekep.market.instrument import Instrument
@@ -259,6 +259,123 @@ class Event(Convertible):
             self.hash = self.hash_of(*self.version_parts())
         return self
 
+    def with_previous(self, previous: Event | None) -> Self:
+        """This event completed from the version before it, and re-identified.
+
+        The whole point of a versioned event: a venue restates only what
+        changed, so a report that says "partially filled, 4 done" and nothing
+        else is a complete row only once the price, the side, the instrument
+        and everything else it did not repeat are carried forward from the
+        version it follows.
+
+        What that means field by field is **layered**: `complete_from` is what
+        each class overrides, and it fills only what this version left absent.
+        A value the message actually sent always wins -- this completes a row,
+        it does not correct one.
+
+        There are two halves to filling a row and they are separate methods,
+        because only one of them needs a previous version. `complete_from` is
+        what the row before implies about this one; `derive` is what *this*
+        row implies about itself -- a quantity that is the difference of two
+        others, a notional that is a product of three. A first version has no
+        previous and still derives.
+
+        What is *not* layered is the versioning, and it is here so no subclass
+        can forget a piece of it: the counter moves on, the version before is
+        recorded as `prev_hash`/`prev_state`/`prev_unix` so a transition is on
+        the row rather than behind a self-join, and the content hash is
+        re-derived last -- after every layer has filled, or it would identify
+        a row that does not exist yet.
+        """
+        if previous is None:
+            self.derive()
+            return self.identify()
+        self.complete_from(previous)
+        self.derive()
+        if self.same_life_as(previous):
+            self.version = previous.version + 1
+            # NIL means the previous version was never hashed, and a null says
+            # "no previous version" -- which is the truth about it either way.
+            self.prev_hash = previous.hash or None
+            self.prev_state = previous.state
+            self.prev_unix = previous.unix
+        elif previous.hash and previous.hash not in (self.parent_hash or ()):
+            # Not a version of it: a different thing, built from it. A fill
+            # completed from the order it happened to is the case that matters
+            # -- it takes the order's running totals and stays version zero of
+            # its own life, because a version counter counts one lifecycle.
+            self.parent_hash = [*(self.parent_hash or ()), previous.hash]
+        # Cleared, not kept: every layer has just filled fields the hash is
+        # made of, so the identity this row arrived with was of a different
+        # row. `identify` refuses to overwrite a hash that is set, which is
+        # what makes clearing it the way to ask for a new one.
+        self.hash = NIL
+        return self.identify()
+
+    def same_life_as(self, previous: Event) -> bool:
+        """Whether `previous` is the version before this one, or a different thing.
+
+        Read from the identities rather than from the classes, because both
+        answers happen between the same two classes: an `ExecutionReport <8>`
+        yields an order *and* a fill, and the next order version follows the
+        fill. So the question is which lifecycle each of them is in, and
+        `life_parts` already answers it.
+
+        Asked **after** every layer has completed, and that is not incidental:
+        an order version that arrived carrying only its `OrderID <37>` does not
+        know its own instrument or venue until the previous version has given
+        them to it, and those are part of what its lifecycle is. Asked before,
+        it would identify as something else and start its own version count.
+
+        An event with nothing to be identified by inherits the lifecycle it is
+        completed from, which is the only one available to it.
+        """
+        parts = self.life_parts()
+        self.xhash = self.xhash or (self.hash_of(*parts) if parts else previous.xhash)
+        return bool(self.xhash) and self.xhash == previous.xhash
+
+    def complete_from(self, previous: Event) -> None:
+        """Fill what this version left absent, from the version before it.
+
+        The envelope's own layer. `cunix` is the one that reads oddly and is
+        the most important: it is **get-or-set**, because a lifecycle is
+        created once and every later version of it was created at the same
+        instant. A version that recomputed it would make "how old is this
+        order" mean "how long since the last message about it".
+
+        The identity is deliberately not here: whether this row is a version
+        of `previous` or a different thing built from it is `same_life_as`,
+        and it can only be asked once every layer has filled.
+        """
+        if not self.cunix:
+            self.cunix = previous.cunix or previous.unix
+        if not self.unix:
+            # A message with no clock at all still belongs somewhere in time,
+            # and the only honest answer is where the version before it was.
+            self.unix = previous.unix
+            self.hunix = self.unix - self.unix % HOUR
+        if not self.runix:
+            self.runix = previous.runix
+        if self.eunix is None:
+            self.eunix = previous.eunix
+        if not self.symbol:
+            self.symbol = previous.symbol
+        if self.seq is None:
+            self.seq = previous.seq
+        if self.state is State.UNKNOWN:
+            # A report that says nothing about the state is not saying the
+            # state is unknown; it is not mentioning it.
+            self.state = previous.state
+
+    def derive(self) -> None:
+        """Fill what this row's own fields already determine.
+
+        Nothing at the envelope's layer: an event's own time, state and
+        identity are given, never computed from each other. Subclasses have
+        real work here, and this exists so every one of them can call
+        `super().derive()` without knowing that.
+        """
+
     def life_parts(self) -> tuple[Any, ...]:
         """What makes this event's lifecycle the one it is, across every version.
 
@@ -360,6 +477,71 @@ class MarketEvent(Event):
         super().__post_init__()
         if self.instrument.xhash:
             self.instrument_hash = self.instrument.xhash
+
+    def complete_from(self, previous: Event) -> None:
+        """The four market slots, carried forward where this version was silent.
+
+        `px` and `qty` are filled because a venue restating an order's status
+        rarely repeats its limit, and a row with a null price is a row that
+        drops out of every filter on price. The instrument is filled for the
+        same reason and re-flattened onto `instrument_hash` after, so a
+        completed row lands in the partition its lifecycle already lives in.
+        """
+        super().complete_from(previous)
+        if not isinstance(previous, MarketEvent):
+            return
+        if not self.instrument.xhash and previous.instrument.xhash:
+            self.instrument = previous.instrument
+        if not self.instrument_hash:
+            self.instrument_hash = self.instrument.xhash or previous.instrument_hash
+        if self.side is Side.UNKNOWN:
+            self.side = previous.side
+        # `px` and `qty` are the abstract slots, and what they hold is the
+        # subclass's to say: an order's are what it asked for, an execution's
+        # are what traded, a book's are the mid and the touch. So they carry
+        # only from a version of the *same shape*. Carrying an execution's
+        # `LastQty` into an order's `OrderQty` made a partly filled order
+        # claim it had asked for exactly what had just traded, and then
+        # derived a `leaves_qty` of zero from it.
+        if previous.etype == self.etype:
+            if self.px is None:
+                self.px = previous.px
+            if self.qty is None:
+                self.qty = previous.qty
+        if not self.px_unit:
+            self.px_unit = previous.px_unit
+        if not self.qty_unit:
+            self.qty_unit = previous.qty_unit
+        if self.venue is None:
+            self.venue = previous.venue
+
+    def derive(self) -> None:
+        """A notional is a price times a quantity times a multiplier, or nothing."""
+        super().derive()
+        if self.notional is None:
+            self.notional = self.into_notional()
+
+    def into_notional(self) -> float | None:
+        """`px * qty * multiplier` in the instrument's currency, or None.
+
+        None when any of the three is missing, and that is the point of it
+        being a method rather than an expression at the call site: a notional
+        computed with a multiplier of "probably one" is wrong by a factor
+        nobody notices until settlement, so a contract whose multiplier is
+        unknown has no notional rather than a plausible one.
+        """
+        if self.px is None or self.qty is None:
+            return None
+        multiplier = self.instrument.multiplier
+        if multiplier is None:
+            # A cash instrument really does trade one for one, and it is the
+            # only class where the multiplier can be assumed rather than read.
+            # `band` is the floor as an `int`, which is what a range predicate
+            # compares against -- so this is `==` and never `is`.
+            if self.instrument.kind.band != AssetKind.CASH:
+                return None
+            multiplier = 1.0
+        return self.px * self.qty * multiplier
 
     def life_parts(self) -> tuple[Any, ...]:
         """A market lifecycle is an instrument and a direction, at least.
