@@ -342,14 +342,16 @@ class IcebergDataset(Dataset):
         rows that come back never say so.
 
         `limit` is not a planning hint in pyiceberg -- every planned file's
-        read is submitted before the row cap is checked -- so with no
-        `row_filter` the plan is cut off here instead: files are taken in plan
-        order until their record counts alone satisfy the limit, and the rest
-        are never opened. Measured on eight files, `limit=100` opened eight
-        without this and one with it. A `row_filter` makes record counts an
-        over-estimate (the matching rows may sit in any file), so a filtered
-        limit keeps pyiceberg's row-cap behaviour untrimmed. `snapshot_id`
-        reads an older state, `branch` another line of it.
+        read is submitted before the row cap is checked -- so the plan is cut
+        off here instead: files are taken in plan order until their record
+        counts alone satisfy the limit, and the rest are never opened.
+        Measured on eight files, `limit=100` opened eight without this and one
+        with it. A record count is used only where pyiceberg's own `count()`
+        uses one -- the file's partition satisfies the whole filter and no
+        delete file has removed rows from it -- so a limit under a *partition*
+        filter is trimmed too, and a filter the files themselves have to answer
+        hands the plan back whole. `snapshot_id` reads an older state, `branch`
+        another line of it.
 
         With no `schema` the reader is pyiceberg's own, untouched -- the fastest
         path, and the one that keeps the widths the store uses. With one, every
@@ -383,7 +385,7 @@ class IcebergDataset(Dataset):
         elif target is not None:
             found = self._selected(target, scan)
             scan = scan.select(*found)
-        reader = _limited_reader(scan, row_filter, limit)
+        reader = _limited_reader(scan, limit)
         if target is None:
             return reader
         return target.cast_arrow_reader(_renamed(reader, found))
@@ -944,9 +946,6 @@ class IcebergDataset(Dataset):
         if not rows:
             return []
         marks = self.compaction_marks()
-        fresh = [row for row in rows if marks.get(_mark_key(reference, row)) != _counts(row)]
-        if not fresh:
-            return []
 
         spec = table.spec()
         identities = [
@@ -959,15 +958,31 @@ class IcebergDataset(Dataset):
             # holds: the table is only addressable as a whole -- which means
             # reading it whole, so `row_filter` is the escape hatch for a table
             # that does not fit.
-            total = int(sum(row["file_count"] for row in fresh))
-            return [(f"{reference}/", None, total)] if total >= min_files else []
+            #
+            # And it settles as a whole, against every partition's counts added
+            # up. Asking the *per-partition* question here -- which is what
+            # this did -- compared marks that only the identity branch ever
+            # writes, so a `day` or `bucket[16]` partition matched none of
+            # them, recorded none of them, and had its whole table read back
+            # and rewritten on every single `optimize`. Measured on four
+            # commits over four days: 16 files rewritten, then 4, then 4,
+            # forever, with `compaction_marks()` empty throughout. An
+            # unpartitioned table settled only because its one partition is
+            # empty and happens to share this key.
+            key = _mark_key(reference, None)
+            whole = _totals(rows)
+            if marks.get(key) == whole:
+                return []
+            return [(key, None, whole[0])] if whole[0] >= min_files else []
 
         plan: list[tuple[str, Any, int]] = []
-        for row in fresh:
+        for row in rows:
+            key = _mark_key(reference, row.get("partition"))
+            if marks.get(key) == _counts(row):
+                continue
             count = int(row["file_count"])
             if count < min_files:
                 continue
-            key = _mark_key(reference, row)
             plan.append((key, _partition_filter(row["partition"], identities), count))
         return plan
 
@@ -1022,8 +1037,17 @@ class IcebergDataset(Dataset):
         plan = (
             # What that filter's own scan plans, not the whole table's files:
             # counting every manifest to report a number about one partition is
-            # both slower and wrong.
-            [("", row_filter, self.scan_plan(row_filter, branch=branch)["files"])]
+            # both slower and wrong. `_planned` and not `scan_plan`, which
+            # plans the *unfiltered* scan as well to report what the filter
+            # skipped -- a second walk of every manifest for a number this
+            # throws away.
+            [
+                (
+                    "",
+                    row_filter,
+                    self._planned(self.iceberg_table, row_filter, None, None, branch)["files"],
+                )
+            ]
             if row_filter is not None
             else self._plan_rows(min_files, branch)
         )
@@ -1049,20 +1073,22 @@ class IcebergDataset(Dataset):
 
         Read back after the commits rather than predicted from them: the counts
         that matter are the ones the next plan will compare against, and they
-        are whatever Iceberg now reports.
+        are whatever Iceberg now reports. Read **once**: the whole-branch mark
+        is those same rows added up, and asking Iceberg for them a second time
+        was a second walk of every manifest for an answer already in hand.
         """
         settled = dict(self.compaction_marks())
         wanted = set(keys)
-        for row in self._partition_rows(reference):
-            key = _mark_key(reference, row)
+        rows = self._partition_rows(reference)
+        for row in rows:
+            key = _mark_key(reference, row.get("partition"))
             if key in wanted:
                 settled[key] = _counts(row)
-        if "" in wanted:  # the whole-table plan, which has no partition of its own
-            rows = self._partition_rows(reference)
-            settled[f"{reference}/"] = [
-                int(sum(row["file_count"] for row in rows)),
-                int(sum(row["record_count"] for row in rows)),
-            ]
+        whole = _mark_key(reference, None)
+        if whole in wanted:
+            # The plan that can only address the table as a whole -- no
+            # partitioning, or transforms that hide which rows are where.
+            settled[whole] = _totals(rows)
         self.set_properties({COMPACTION_MARK: json.dumps(settled)})
 
     def cleanup(
@@ -1107,10 +1133,9 @@ class IcebergDataset(Dataset):
             return report
         orphans = self._orphans(orphan_age, metadata=metadata)
         report["deleted"] = len(orphans)
-        report["bytes"] = int(sum(size for _, _, size in orphans))
+        report["bytes"] = int(sum(size for *_, size in orphans))
         if not dry_run:
-            for filesystem, path, _ in orphans:
-                filesystem.delete_file(path)
+            self._sweep(orphans)
         return report
 
     def orphan_files(
@@ -1156,33 +1181,53 @@ class IcebergDataset(Dataset):
         deleted the whole table.
         """
         self.refresh()
-        return [(path, size) for _, path, size in self._orphans(older_than, metadata=metadata)]
+        return [(path, size) for _, path, _, size in self._orphans(older_than, metadata=metadata)]
 
     def _orphans(
         self, older_than: datetime.timedelta, *, metadata: bool
-    ) -> list[tuple[Any, str, int]]:
-        """`orphan_files`, each path beside the filesystem that lists it.
+    ) -> list[tuple[Any, str, str, int]]:
+        """`orphan_files`, as `(filesystem, path, location, size)`.
 
-        Which is the one that can delete it: `write.data.path` often points at
-        another store entirely, and one handle built from the table's location
-        would delete against the wrong one.
+        The **filesystem** is the one that can delete it: `write.data.path`
+        often points at another store entirely, and one handle built from the
+        table's location would delete against the wrong one. The **location**
+        is the URI Iceberg would have written the file under -- the directory
+        the listing walked, plus what the file's path has under it -- which is
+        the key the content cache holds its bytes at, and `_sweep` is what
+        needs it.
         """
         table = self.iceberg_table
         cutoff = datetime.datetime.now(datetime.UTC) - older_than
-        directories = [(self._data_path(table), self._live_data(table))]
+        # **One** live set, against **every** listing. The two halves used to
+        # guard only their own directory, which holds exactly as long as the
+        # two directories are disjoint -- and `write.data.path` is an arbitrary
+        # location, so they need not be. Point it at the table root, which is
+        # what a table written flat does, and the data listing walks
+        # `metadata/` too: measured, ten orphans reported and all ten of them
+        # the current pointer, the manifest lists and the manifests. `cleanup`
+        # would have deleted the table. A file is live when *anything* live
+        # names it, never when the directory it happens to sit under does.
+        data, files = self._live(table)
+        live = data | files
+        directories = [self._data_path(table)]
         if metadata:
-            directories.append((self._metadata_path(table), self._live_metadata(table)))
+            directories.append(self._metadata_path(table))
 
-        found = []
-        for directory, live in directories:
+        found: dict[str, tuple[Any, str, str, int]] = {}
+        for directory in directories:
             filesystem, base = resolve(directory)
             bases = (directory.rstrip("/"), base.rstrip("/"), _path_of(directory).rstrip("/"))
+            # Reduced against *these* bases, which is what makes a live file in
+            # another directory comparable at all: a metadata location under a
+            # data directory that contains it comes back as `metadata/x.avro`,
+            # and so does the listing's own path for it.
             relative = {_relative(path, bases) for path in live}
             selector = pyarrow.fs.FileSelector(base, recursive=True, allow_not_found=True)
             for info in filesystem.get_file_info(selector):
                 if info.type != pyarrow.fs.FileType.File:
                     continue
-                if _relative(info.path, bases) in relative:
+                name = _relative(info.path, bases)
+                if name in relative:
                     continue
                 # A Hadoop-style catalog keeps its pointer beside the metadata
                 # and nothing inside the metadata names it: reading the table
@@ -1191,8 +1236,44 @@ class IcebergDataset(Dataset):
                     continue
                 if info.mtime and info.mtime > cutoff:
                     continue
-                found.append((filesystem, info.path, info.size))
-        return found
+                # Keyed by path, because one nested directory inside another is
+                # listed under both and a file deleted twice raises the second
+                # time -- which would abort the sweep and lose its report.
+                found.setdefault(
+                    info.path, (filesystem, info.path, f"{directory.rstrip('/')}/{name}", info.size)
+                )
+        return list(found.values())
+
+    def _sweep(self, orphans: Sequence[tuple[Any, str, str, int]]) -> None:
+        """Delete what the sweep found -- from the store, and from the cache.
+
+        Both, because the two disagree the moment only one is told. The bytes
+        of every manifest, manifest list and `metadata.json` this process
+        touched are held by `ArrowFileIO`'s content cache, keyed by location,
+        and deleting through a `pyarrow.fs` handle goes behind its back: a
+        swept file kept answering `exists()` with True and handing its bytes
+        to `open()` -- measured, five of them after one `cleanup` -- which is
+        exactly the copy that lies `ArrowFileIO.delete` exists to prevent.
+
+        The location a listing's path is put back together as is the one
+        Iceberg recorded, because Iceberg does not decode what it writes:
+        `parse_location` hands `urlparse().path` straight to `pyarrow.fs`, so
+        the spelling in the metadata *is* the spelling on the store.
+        """
+        # At the point of use, like every other pyiceberg import here: the
+        # module has to import without the extra installed.
+        from rekep.iceberg.fileio import CONTENT_CACHE
+
+        for filesystem, path, location, _ in orphans:
+            CONTENT_CACHE.evict(location)
+            try:
+                filesystem.delete_file(path)
+            except FileNotFoundError:
+                # Already gone -- another sweeper reached it between the
+                # listing and here. That is the outcome this wanted, and
+                # raising would abandon every orphan after it and throw away
+                # the report of the ones before.
+                continue
 
     def _data_path(self, table: Any) -> str:
         """Where this table's data files live, as Iceberg decides it."""
@@ -1208,47 +1289,58 @@ class IcebergDataset(Dataset):
 
         return load_location_provider(table.location(), table.properties)
 
-    def _live_data(self, table: Any) -> set[str]:
-        """Every data and delete file any retained snapshot still holds.
+    def _live(self, table: Any) -> tuple[set[str], set[str]]:
+        """`(data files, metadata files)` nothing may delete, from **one** walk.
+
+        Two readings of the same manifests: what a manifest *holds* is the
+        data, what it *is* is metadata. Walked twice -- which is how this was
+        written first -- every retained snapshot's manifest list was decoded a
+        second time for the second reading; measured on a 40-commit table,
+        24 ms of the 101 ms the live set cost, and one round trip per snapshot
+        on a store the cache has gone cold on.
 
         Walked from the manifests rather than read off `inspect.all_files()`,
         which builds -- per data file -- the column sizes, value counts, null
         counts and a decoded lower *and* upper bound for every field in the
         schema, so that one column of paths can be kept. Measured on 40 columns
         and 80 snapshots: 550 ms against 143, and the gap grows with the column
-        count. `_live_metadata` walks the same manifests, so this is the
-        module's existing idiom rather than a second way of doing it.
-        """
-        live = set()
-        for _, manifest in _manifests(table):
-            for entry in manifest.fetch_manifest_entry(table.io):
-                live.add(entry.data_file.file_path)
-        return live
+        count.
 
-    def _live_metadata(self, table: Any) -> set[str]:
-        """Every metadata file a retained snapshot, the log, or the pointer names.
-
-        Deleting one of these does not lose a row; it loses the *table*. So the
-        set is built from every direction at once -- the current pointer, the
-        metadata log, every snapshot's manifest list and its manifests, and the
-        statistics the metadata registers -- and a file is only swept when none
-        of them mention it.
+        Deleting a metadata file does not lose a row; it loses the *table*. So
+        that half is built from every direction at once -- the current pointer,
+        the metadata log, every snapshot's manifest list, every manifest, and
+        the statistics the metadata registers -- and a file is only swept when
+        none of them mention it. The manifest **lists** are collected from the
+        snapshots directly and not from the walk, which dedupes on the manifest
+        path: a snapshot reaching no manifest another has already reached would
+        otherwise never have its own list named, and the one thing this set may
+        not be is narrow.
 
         The statistics are the ones nothing else reaches: a Puffin file another
         engine wrote sits in `metadata/` beside everything else, is named only
         by `metadata.statistics`, and is exactly as old as the snapshot it
         describes -- so an age rule does not save it either.
+
+        Both halves are always built. `metadata=False` on a sweep says do not
+        *list* the metadata directory; it does not say those files stopped
+        being live, and a data directory that contains them still has to know
+        what they are.
         """
-        live = {table.metadata_location}
-        for entry in table.metadata.metadata_log:
-            live.add(entry.metadata_file)
-        for snapshot, manifest in _manifests(table):
-            if snapshot.manifest_list:
-                live.add(snapshot.manifest_list)
-            live.add(manifest.manifest_path)
-        for statistics in (*table.metadata.statistics, *table.metadata.partition_statistics):
-            live.add(statistics.statistics_path)
-        return live
+        data: set[str] = set()
+        files: set[str] = {table.metadata_location}
+        files.update(entry.metadata_file for entry in table.metadata.metadata_log)
+        files.update(
+            statistics.statistics_path
+            for statistics in (*table.metadata.statistics, *table.metadata.partition_statistics)
+        )
+        files.update(
+            snapshot.manifest_list for snapshot in table.snapshots() if snapshot.manifest_list
+        )
+        for _, manifest in _manifests(table):
+            files.add(manifest.manifest_path)
+            for entry in manifest.fetch_manifest_entry(table.io):
+                data.add(entry.data_file.file_path)
+        return data, files
 
     def maybe_optimize(
         self, *, min_files: int = 2, branch: str | None = None, **kwargs: Any
@@ -1350,29 +1442,42 @@ def _planned_reader(scan: Any, tasks: Sequence[Any]) -> pyarrow.RecordBatchReade
     return pyarrow.RecordBatchReader.from_batches(target, batches).cast(target)
 
 
-def _limited_reader(scan: Any, row_filter: Any, limit: int | None) -> pyarrow.RecordBatchReader:
-    """`scan`'s reader, opening only the files a bare `limit` can need.
+def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
+    """`scan`'s reader, opening only the files the `limit` can need.
 
     pyiceberg treats `limit` as a row cap: every planned file's read is
     submitted to the pool before the cap is checked, so `limit=100` on an
-    eight-file table opens eight files to keep one batch (measured; this
-    opens one). With no row filter a file's `record_count` says exactly how
-    many rows it contributes, so the *plan* is cut at the limit instead and
-    the files past it are never opened. Two things put the whole plan back in
-    pyiceberg's hands: a row filter, whose matches could sit in any file, and
-    delete files, which make `record_count` an over-count of the live rows.
+    eight-file table opens eight files to keep one batch (measured; this opens
+    one). A file's `record_count` says how many rows it contributes, so the
+    *plan* is cut at the limit instead and the files past it are never opened.
+
+    When that count is **exact** is pyiceberg's own rule, not one invented
+    here: `DataScan.count()` adds `record_count` for a task whose residual is
+    `AlwaysTrue` and which carries no delete files, and reads the file for
+    every other. A residual is what a filter leaves once the file's partition
+    has answered what it can, so the rule covers more than a bare limit does --
+    `limit=100` under `recorded_at_date = '2026-08-14'` opens one file of the
+    day's several, where this used to hand the whole plan back on sight of a
+    filter. It still hands it back the moment a task is not exact: a residual
+    over a non-partition column may match any number of that file's rows, and
+    a delete file makes the count an over-count of the live ones. Either way
+    the cap on what comes back is pyiceberg's, unchanged.
+
+    A limit already satisfied stops the walk, so a task past it is never even
+    inspected -- which is also what makes `limit=0` open nothing.
     """
-    if limit is None or row_filter is not None:
+    if limit is None:
         return scan.to_arrow_batch_reader()
     tasks = list(scan.plan_files())
+    exact = _always_true()
     taken, rows = [], 0
     for task in tasks:
-        if task.delete_files:
+        if rows >= limit:
+            break
+        if task.delete_files or task.residual != exact:
             return _planned_reader(scan, tasks)
         taken.append(task)
         rows += task.file.record_count
-        if rows >= limit:
-            break
     return _planned_reader(scan, taken)
 
 
@@ -1657,13 +1762,30 @@ def _manifests(table: Any) -> Iterator[tuple[Any, Any]]:
             yield snapshot, manifest
 
 
-def _mark_key(branch: str, row: Any) -> str:
-    """A stable name for one partition of one branch, for `COMPACTION_MARK`."""
-    partition = row.get("partition") or {}
+def _mark_key(branch: str, partition: Any) -> str:
+    """A stable name for one partition of one branch, for `COMPACTION_MARK`.
+
+    No partition at all -- `None`, or the empty mapping an unpartitioned table
+    reports -- is the whole branch, which is what a plan that cannot address
+    parts of the table separately settles under.
+    """
     if not partition:
         return f"{branch}/"
     values = ",".join(f"{name}={partition[name]!r}" for name in sorted(partition))
     return f"{branch}/{values}"
+
+
+def _totals(rows: Sequence[Any]) -> list[int]:
+    """What a whole branch holds: `[file count, record count]`, added up.
+
+    `_counts` for one partition; this for all of them at once, which is what a
+    whole-table plan has to compare against -- it rewrote every partition, so
+    what settles it is every partition's counts.
+    """
+    return [
+        int(sum(row["file_count"] for row in rows)),
+        int(sum(row["record_count"] for row in rows)),
+    ]
 
 
 def _counts(row: Any) -> list[int]:

@@ -550,6 +550,59 @@ def test_an_unpartitioned_table_compacts(tmp_path: Path) -> None:
     assert flat.compact(min_files=2) == 0, "and it settles"
 
 
+def test_a_transformed_partition_settles(tmp_path: Path) -> None:
+    """The table this could only ever address as a whole, and so never settled.
+
+    A `day` partition is not an identity, so the plan is the whole table under
+    one key -- but the freshness test asked the *per-partition* question, which
+    nothing on this branch ever records an answer to. Measured before the fix:
+    16 files rewritten, then 4, then 4, forever, with `compaction_marks()`
+    empty throughout, while the rows never changed. Every `optimize` on a
+    `day`- or `bucket[16]`-partitioned table read it whole and wrote it whole.
+    """
+
+    @field
+    class Event(Convertible):
+        """One event, partitioned by a transform of its timestamp."""
+
+        symbol: str
+        """Instrument."""
+
+        at: Annotated[datetime.datetime, Field.partition_key("day")]
+        """When it happened."""
+
+    catalog = IcebergCatalog(name="daily", properties=catalog_properties(tmp_path))
+    daily = catalog.dataset("trading.daily", struct=Event.FIELD)
+    schema = Event.FIELD.into_arrow_schema()
+    base = datetime.datetime(2026, 8, 14)
+    for index in range(4):
+        daily.write_arrow(
+            pyarrow.Table.from_pydict(
+                {
+                    "symbol": [f"S{index}", f"T{index}"],
+                    "at": [base, base + datetime.timedelta(days=1)],
+                },
+                schema=schema,
+            ),
+            commit_row_size=0,
+        )
+    assert str(daily.iceberg_table.spec().fields[0].transform) == "day", "not an identity"
+    before = daily.read_arrow_table().num_rows
+
+    first = daily.compact(min_files=2)
+    assert first == 8, "every file, since a transform hides which rows are where"
+    assert daily.compaction_marks(), "and what it rewrote was recorded"
+    assert daily.compact(min_files=2) == 0, "so the second pass has nothing to do"
+    assert daily.compact(min_files=2) == 0, "and so does the third"
+    assert daily.refresh().read_arrow_table().num_rows == before
+
+    daily.write_arrow(
+        pyarrow.Table.from_pydict({"symbol": ["U"], "at": [base]}, schema=schema),
+        commit_row_size=0,
+    )
+    assert daily.compact(min_files=2) > 0, "and a commit since unsettles it again"
+
+
 @pytest.mark.parametrize("value", ["o'brien", "a b", None])
 def test_a_partition_value_a_filter_string_cannot_hold(tmp_path: Path, value: str | None) -> None:
     """The predicate is an expression: an apostrophe has nothing to escape into.
@@ -731,6 +784,65 @@ def test_cleanup_sweeps_the_files_expiry_stranded(dataset: IcebergDataset) -> No
     assert dataset.read_arrow_table().num_rows == 6, "only garbage went"
 
 
+def test_a_sweep_forgets_the_bytes_of_what_it_deleted(dataset: IcebergDataset) -> None:
+    """The cache is keyed by location and the sweep deletes through a
+    `pyarrow.fs` handle, so nothing told it -- and a swept manifest went on
+    answering `exists()` and handing over its bytes. Five of them, measured
+    after one `cleanup`."""
+    from rekep.iceberg.fileio import CONTENT_CACHE
+
+    for index in range(3):
+        dataset.write_arrow_table(quotes(2, f"venue{index}"))
+    dataset.compact(min_files=2)
+    dataset.cleanup(retain=1, remove_orphans=False)  # expire, and strand what they held
+    stranded = dataset._orphans(datetime.timedelta(seconds=0), metadata=True)
+    held = [location for _, _, location, _ in stranded if CONTENT_CACHE.peek(location) is not None]
+    assert held, "this process wrote those manifests, so it cached them"
+
+    report = dataset.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0))
+    assert report["deleted"] >= len(held)
+    assert [location for location in held if CONTENT_CACHE.peek(location) is not None] == []
+    assert dataset.read_arrow_table().num_rows == 6, "only garbage went"
+
+
+def test_the_live_set_walks_the_manifests_once(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Data and metadata are two readings of the same manifests. Two walks
+    decoded every retained snapshot's manifest list twice -- 96 ms against 76
+    on a 40-commit table, and a round trip per snapshot on a cold store."""
+    from rekep.iceberg import dataset as module
+
+    for index in range(3):
+        dataset.write_arrow_table(quotes(2, f"venue{index}"))
+    table = dataset.iceberg_table
+    walks = 0
+    original = module._manifests
+
+    def counted(target: object) -> object:
+        nonlocal walks
+        walks += 1
+        return original(target)
+
+    monkeypatch.setattr(module, "_manifests", counted)
+    data, files = dataset._live(table)
+    assert walks == 1
+    assert data and files
+
+
+def test_every_snapshots_manifest_list_is_live(dataset: IcebergDataset) -> None:
+    """Collected from the snapshots and not from the manifest walk, which
+    dedupes on the manifest path: a snapshot reaching only manifests another
+    already reached would never have its own list named, and this is the set
+    that may not be narrow."""
+    for index in range(3):
+        dataset.write_arrow_table(quotes(2, f"venue{index}"))
+    table = dataset.iceberg_table
+    _, files = dataset._live(table)
+    lists = {snapshot.manifest_list for snapshot in table.snapshots() if snapshot.manifest_list}
+    assert lists and lists <= files
+
+
 def test_a_recent_file_is_never_swept(dataset: IcebergDataset) -> None:
     """A writer committing right now has files no snapshot mentions yet."""
     dataset.write_arrow_table(quotes(2))
@@ -908,6 +1020,19 @@ def test_the_merge_path_can_be_handed_back_to_pyiceberg(dataset: IcebergDataset)
 # -- filesystem frugality ----------------------------------------------------
 
 
+def other_day(count: int) -> pyarrow.Table:
+    """`quotes`, in a partition of its own, so a partition filter has one to skip."""
+    return pyarrow.Table.from_pydict(
+        {
+            "symbol": [f"D{i}" for i in range(count)],
+            "day": [datetime.date(2026, 8, 15)] * count,
+            "size": list(range(count)),
+            "venue": ["XPAR"] * count,
+        },
+        schema=Quote.FIELD.into_arrow_schema(),
+    )
+
+
 def keyed(prefix: str, count: int) -> pyarrow.Table:
     """`quotes`, under keys that share nothing with the `S...` ones."""
     day = datetime.date(2026, 8, 14)
@@ -991,12 +1116,69 @@ def test_a_bare_limit_opens_only_the_files_it_needs(
     assert opened.get("data", 0) == 1, "one file already held the two rows"
 
 
-def test_a_filtered_limit_still_caps_the_rows(dataset: IcebergDataset) -> None:
-    """With a filter the record counts over-estimate, so the whole plan stands
-    -- the cap on what comes back is pyiceberg's, unchanged."""
-    dataset.write_arrow_table(quotes(6))
-    found = dataset.read_arrow_reader(row_filter="size >= 1", limit=2).read_all()
+def test_a_limit_under_a_partition_filter_opens_only_the_files_it_needs(
+    dataset: IcebergDataset, opened: dict[str, int]
+) -> None:
+    """A filter the partition fully answers leaves an `AlwaysTrue` residual, so
+    every row of a planned file matches and its record count is exact again."""
+    for _ in range(3):
+        dataset.write_arrow_table(quotes(4))  # three files, all in one day
+    dataset.write_arrow_table(other_day(4))
+    opened.clear()
+    found = dataset.read_arrow_reader(row_filter="day = '2026-08-14'", limit=2).read_all()
     assert found.num_rows == 2
+    assert opened.get("data", 0) == 1, "one of the day's three files held both rows"
+
+
+def test_a_limit_under_a_filter_the_files_answer_reads_the_whole_plan(
+    dataset: IcebergDataset, opened: dict[str, int]
+) -> None:
+    """`size >= 3` is not a partition, so the residual survives planning: how
+    many rows a file contributes is only known once it is read."""
+    for _ in range(3):
+        dataset.write_arrow_table(quotes(4))
+    opened.clear()
+    found = dataset.read_arrow_reader(row_filter="size >= 3", limit=2).read_all()
+    assert found.num_rows == 2, "the cap on the rows is still pyiceberg's"
+    assert opened.get("data", 0) == 3, "and every planned file was opened to apply it"
+
+
+def test_a_limit_of_zero_opens_nothing(dataset: IcebergDataset, opened: dict[str, int]) -> None:
+    dataset.write_arrow_table(quotes(4))
+    opened.clear()
+    assert dataset.read_arrow_reader(limit=0).read_all().num_rows == 0
+    assert opened.get("data", 0) == 0
+
+
+def _task(records: int, *, deletes: bool = False, residual: object = None) -> object:
+    """One planned file, as `_limited_reader` reads one."""
+    import types
+
+    from pyiceberg.expressions import AlwaysTrue
+
+    return types.SimpleNamespace(
+        delete_files={"pos"} if deletes else set(),
+        residual=AlwaysTrue() if residual is None else residual,
+        file=types.SimpleNamespace(record_count=records),
+    )
+
+
+def _trimmed_to(monkeypatch: pytest.MonkeyPatch, tasks: list, limit: int) -> list:
+    """The tasks `_limited_reader` would actually open, for that plan and limit."""
+    import types
+
+    from rekep.iceberg import dataset as module
+
+    handed: dict[str, list] = {}
+
+    def capture(scan: object, taken: list) -> str:
+        handed["tasks"] = list(taken)
+        return "reader"
+
+    monkeypatch.setattr(module, "_planned_reader", capture)
+    scan = types.SimpleNamespace(plan_files=lambda: tasks)
+    assert module._limited_reader(scan, limit) == "reader"
+    return handed["tasks"]
 
 
 def test_a_limit_over_delete_files_reads_the_whole_plan(
@@ -1004,47 +1186,35 @@ def test_a_limit_over_delete_files_reads_the_whole_plan(
 ) -> None:
     """A file carrying deletes holds fewer live rows than it counts, so
     trimming by `record_count` could under-deliver; the plan goes back whole."""
-    import types
+    tasks = [_task(5, deletes=True), _task(5)]
+    assert _trimmed_to(monkeypatch, tasks, 1) == tasks
 
-    from rekep.iceberg import dataset as module
 
-    tasks = [
-        types.SimpleNamespace(delete_files={"pos"}, file=types.SimpleNamespace(record_count=5)),
-        types.SimpleNamespace(delete_files=set(), file=types.SimpleNamespace(record_count=5)),
-    ]
-    handed: dict[str, list] = {}
+def test_a_limit_over_a_surviving_residual_reads_the_whole_plan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The other half of pyiceberg's own exactness rule: a residual the file
+    still has to answer says nothing about how many of its rows match."""
+    from pyiceberg.expressions import GreaterThan
 
-    def capture(scan: object, taken: list) -> str:
-        handed["tasks"] = list(taken)
-        return "reader"
-
-    monkeypatch.setattr(module, "_planned_reader", capture)
-    scan = types.SimpleNamespace(plan_files=lambda: tasks)
-    assert module._limited_reader(scan, None, 1) == "reader"
-    assert handed["tasks"] == tasks
+    tasks = [_task(5, residual=GreaterThan("size", 3)), _task(5)]
+    assert _trimmed_to(monkeypatch, tasks, 1) == tasks
 
 
 def test_a_bare_limit_cuts_the_plan_at_the_records_it_needs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import types
+    tasks = [_task(5) for _ in range(4)]
+    assert _trimmed_to(monkeypatch, tasks, 7) == tasks[:2], "five rows are not seven; ten are"
 
-    from rekep.iceberg import dataset as module
 
-    tasks = [
-        types.SimpleNamespace(delete_files=set(), file=types.SimpleNamespace(record_count=5))
-        for _ in range(4)
-    ]
-    handed: dict[str, list] = {}
-
-    def capture(scan: object, taken: list) -> str:
-        handed["tasks"] = list(taken)
-        return "reader"
-
-    monkeypatch.setattr(module, "_planned_reader", capture)
-    scan = types.SimpleNamespace(plan_files=lambda: tasks)
-    assert module._limited_reader(scan, None, 7) == "reader"
-    assert handed["tasks"] == tasks[:2], "five rows are not seven; ten are"
+def test_a_limit_of_zero_takes_no_file_however_the_plan_starts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The walk asks whether the limit is met *before* it looks at a task, so a
+    limit already satisfied opens nothing -- not even the file whose deletes
+    would otherwise have handed the whole plan back."""
+    assert _trimmed_to(monkeypatch, [_task(5, deletes=True), _task(5)], 0) == []
 
 
 # -- optimizing on its own ---------------------------------------------------
@@ -1271,6 +1441,66 @@ def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
     remaining = {path.name for path in elsewhere.rglob("*.parquet")}
     assert remaining == live, "what the sweep left is exactly what is still referenced"
     assert quotes_.read_arrow_table().num_rows == stored, "and the table still reads"
+
+
+def test_a_sweep_survives_a_data_path_that_contains_the_metadata(tmp_path: Path) -> None:
+    """`write.data.path` is an arbitrary location, so the two directories the
+    sweep walks need not be disjoint. Point it at the table root -- which is
+    what a table written flat does -- and the data listing walks `metadata/`
+    too. Guarding each directory with only its own half of the live set
+    reported ten orphans, all ten of them the current pointer, the manifest
+    lists and the manifests: `cleanup` deleted the table.
+    """
+    warehouse = tmp_path / "warehouse"
+    warehouse.mkdir()
+    catalog = IcebergCatalog(
+        name="flatpath",
+        properties={
+            "type": "sql",
+            "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
+            "warehouse": warehouse.as_uri(),
+        },
+    )
+    location = (warehouse / "trading" / "quotes").as_uri()
+    quotes_ = catalog.dataset(
+        "trading.quotes",
+        struct=Quote.FIELD,
+        location=location,
+        table_properties={"write.data.path": location},
+    )
+    for index in range(3):
+        quotes_.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+    table = quotes_.refresh().iceberg_table
+    assert quotes_._metadata_path(table).startswith(quotes_._data_path(table)), (
+        "the point of the fixture: one directory inside the other"
+    )
+    stored = quotes_.read_arrow_table().num_rows
+
+    _, live = quotes_._live(table)
+    doomed = {
+        Path(path).name for path, _ in quotes_.orphan_files(datetime.timedelta(seconds=0))
+    } & {Path(path).name for path in live}
+    assert doomed == set(), "no live metadata file may be reported as an orphan"
+
+    quotes_.cleanup(retain=10, orphan_age=datetime.timedelta(seconds=0))
+    assert quotes_.refresh().read_arrow_table().num_rows == stored, "and the table still reads"
+
+
+def test_a_sweep_finishes_when_an_orphan_is_already_gone(dataset: IcebergDataset) -> None:
+    """Another sweeper between the listing and the delete. Raising there would
+    abandon every orphan after it and throw away the report of the ones before."""
+    for index in range(4):
+        dataset.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+    dataset.compact(min_files=2)
+    dataset.cleanup(retain=1, remove_orphans=False)
+    orphans = dataset._orphans(datetime.timedelta(seconds=0), metadata=True)
+    assert len(orphans) > 1, "there has to be one after the vanished one"
+    orphans[0][0].delete_file(orphans[0][1])  # the other sweeper got there first
+
+    dataset._sweep(orphans)
+    remaining = [path for _, path, _, _ in orphans if Path(path).exists()]
+    assert remaining == [], "every one of them went, the vanished one included"
+    assert dataset.refresh().read_arrow_table().num_rows == 8
 
 
 def test_a_sweep_does_not_delete_another_writers_files(tmp_path: Path) -> None:
