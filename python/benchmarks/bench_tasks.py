@@ -5,7 +5,7 @@ Run from `python/`::
     uv run python benchmarks/bench_tasks.py            # full sweep
     uv run python benchmarks/bench_tasks.py --quick    # a tenth of the capture
 
-Four questions, answered on a synthetic capture whose mix of event kinds
+Five questions, answered on a synthetic capture whose mix of event kinds
 matches the tests' fixture:
 
 1. **What does the first run cost?** Everything lands, so this is the parse
@@ -20,6 +20,10 @@ matches the tests' fixture:
 4. **What does the fan-out cost?** One pass writing N tables, against the same
    rows going to one -- because a job that split its output by reparsing the
    capture once per kind is the alternative, and it is N passes.
+5. **What does the second half of the pipeline cost?** `ParseMarket` over a
+   market-data capture: the messages read as the events they carry, and those
+   folded into books. Timed with the fold and without it, because the fold is
+   the one pass that is not streaming and the difference is what it costs.
 
 Every case asserts what landed before it is timed, and the whole capture is
 parsed once into memory first where the point is to measure the write rather
@@ -39,7 +43,7 @@ from collections.abc import Callable
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
 from rekep.market import EventType  # noqa: E402
-from rekep.tasks import ParseLogs  # noqa: E402
+from rekep.tasks import ParseLogs, ParseMarket  # noqa: E402
 
 #: One line per kind, so a capture is an even mix of the things a log holds.
 KINDS = {
@@ -172,6 +176,66 @@ def bench_commits(source: pathlib.Path, work: pathlib.Path, rows: int) -> None:
         report(f"commit_row_size={size:,} (~{commits} commits)", seconds, rows)
 
 
+# -- 5: reading the market out of the lines ----------------------------------
+
+#: One instrument, because a book is one instrument's. A real capture carries
+#: thousands and the job folds each on its own; the per-event cost is the same
+#: and the memory is not, which the docstring of `ParseMarket` says.
+MARKET = "55=BTC-USD|207=XCME|15=USD"
+
+
+def write_market(folder: pathlib.Path, rows: int, name: str = "market.log") -> int:
+    """A market-data capture: a refresh per line, three entries in each.
+
+    A quarter of the entries delete the level they name, so the fold does the
+    work it exists for rather than only ever adding.
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    lines = []
+    for index in range(rows):
+        stamp = f"20260821-{index // 3600 % 24:02d}:{index // 60 % 60:02d}:{index % 60:02d}.000"
+        entries = []
+        for slot in range(3):
+            action = "2" if index % 4 == 3 else "0" if index % 4 == 0 else "1"
+            kind = "2" if slot == 2 else str(slot)
+            entries.append(
+                f"279={action}|269={kind}|270={100.0 + (index % 20) * 0.01:.2f}"
+                f"|271={1 + index % 9}|278=L{index % 40}|272=20260821|273={stamp[9:]}"
+            )
+        lines.append(
+            f"2026-08-21 10:30:00.000_000 [t-1] [Bridge] "
+            f"8=FIX.4.4|35=X|49=XCME|52={stamp}|{MARKET}|268=3|" + "|".join(entries) + "|10=001"
+        )
+    (folder / name).write_text("\n".join(lines) + "\n")
+    return len(lines)
+
+
+def bench_market(source: pathlib.Path, work: pathlib.Path, rows: int) -> None:
+    print(f"\nParse market -- {rows:,} messages, 3 entries each")
+
+    def market_task(name: str, **declared: object) -> ParseMarket:
+        return ParseMarket(
+            source=str(source),
+            pattern="*.log",
+            venue="XCME",
+            catalog="bench",
+            namespace="market",
+            properties=catalog(work, name),
+            **declared,
+        )
+
+    events = market_task("events", books=False)
+    flat, landed = timed(events.run)
+    assert landed.landed, "nothing landed at all"
+    report("events only: parse, translate, write", flat, rows)
+
+    whole = market_task("whole")
+    folded, both = timed(whole.run)
+    assert both.written.get("market.books"), "the fold produced no books"
+    report("and folded into books", folded, rows, against=flat)
+    print(f"  {'books written':<44} {both.written['market.books']:>12,}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--quick", action="store_true")
@@ -189,6 +253,9 @@ def main() -> None:
         write_capture(fresh, rows, "a.log", "2026-08-14")
         bench_fanout(fresh, work, written)
         bench_commits(fresh, work, written)
+
+        market = work / "market"
+        bench_market(market, work, write_market(market, rows // 10))
     finally:
         shutil.rmtree(work, ignore_errors=True)
 

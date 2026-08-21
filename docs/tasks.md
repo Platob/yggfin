@@ -300,3 +300,16 @@ Committing twenty times instead of twice costs **3.4×**, and past the point
 where the whole capture fits in one commit there is nothing further to buy. The
 result is identical at every size — the buffering is a memory bound, not a
 filter, and the benchmark asserts it.
+
+**The second half**, `ParseMarket` over a market-data capture whose every
+message carries three entries:
+
+| case | measured |
+| --- | --- |
+| events only: parse, translate, write | ~2.1k messages/s |
+| and folded into books | ~1.1k messages/s, **~0.5×** |
+
+So the fold roughly doubles the job, which is what a pass that has to see a
+whole instrument's stream costs against two that stream. The per-event cost of
+the translation itself is on the [market](market.md#benchmarks) page; what this
+adds is the write and the fold around it.

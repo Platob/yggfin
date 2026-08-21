@@ -889,6 +889,39 @@ is a couple of nanoseconds; walking the levels is hundreds. Deriving once at
 write time is worth **480–3090×** against re-deriving per query — before
 counting the files a flat column lets an engine skip and a nested one does not.
 
+**Reading a venue**, 50,000 messages of each shape. Parsing and translating
+together, because that is what a task does — a line off a log becomes rows in a
+table, and splitting the two would report a number no caller can have:
+
+| message | events out | measured |
+| --- | --- | --- |
+| `NewOrderSingle <D>` | 1 | ~15k messages/s |
+| `ExecutionReport <8>`, filled | 2 | ~7.5k messages/s, ~15k events/s |
+| `MarketDataIncrementalRefresh <X>`, 5 entries | 5 | ~3.7k messages/s, ~19k events/s |
+
+Per *event* the three agree within a fifth, which is the useful reading: the
+cost is the event, not the message. Getting there took three measured changes —
+`FixMessage.get` is a scan and then a regex scan, which cost **434 regex matches
+per message** when the translation read forty fields off one; the tag mapping
+was rebuilt per message; and the fold-vs-alternation choice for a key was
+[raced rather than assumed](fix.md#benchmarks). Together, 7.1k → 16k events/s
+on a `NewOrderSingle`.
+
+**Folding a book**, 100,000 events of one instrument, a quarter of which
+restate an order already resting:
+
+| case | measured |
+| --- | --- |
+| `Book.from_events` | ~115 µs/event, ~6.4k books/s |
+
+The fold keeps every live order, so its cost is the events and the depth rather
+than the books. Three measured changes got it there, 2.2× together: a `Ranged`
+member's band is computed once at construction (it was **1.1M evaluations per
+four thousand events**, because `sign`, `moves_shares` and `is_a` are all
+comparisons); `Resting` keeps running level totals as orders move instead of
+re-aggregating every live order per snapshot; and `part_bytes` settles the four
+types that are almost every part with one dict probe on the exact type.
+
 The sweep warms Acero once before it starts, because the first grouped
 aggregate in a process pays its own initialisation: unwarmed, it landed on
 whichever depth ran first and made the *shallowest* book look 1.6× more

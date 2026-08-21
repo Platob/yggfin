@@ -315,6 +315,25 @@ twice.
 | wire messages, twelve fields per row | ~300k rows/s, ~5× the scalar parser |
 | rendered messages | ~140–260k rows/s, depending on group density |
 | all-numeric keys, `tag_arrow_array` | ~140M keys/s |
+| `from_pairs`, nine keys a row, mixed spellings | ~70k rows/s, ~630k fields/s |
+
+**Resolving a key.** The last row is a scalar path, so the sweep also races the
+three readings of a key on their own, at two dictionary sizes — because an
+alternation's cost scales with how many names are in it and a hash probe's does
+not, and nine names is exactly the size at which "just use a regex" looks
+right:
+
+| reading, resolving to a **tag** | 9 names | 1,500 names |
+| --- | --- | --- |
+| probe, then fold — what ships | ~3.8M keys/s | ~3.4M keys/s |
+| fold, then probe | ~3.1M keys/s | ~3.0M keys/s |
+| one compiled case-insensitive alternation | ~4.2M keys/s | **~89k keys/s** |
+| lower, then probe — no folding at all | ~19M keys/s | ~19M keys/s |
+
+The last row is the floor and not a contender: it resolves `msg_type` to
+nothing. What the shipped reading costs against it is the fold, and it is only
+paid by a key a renderer put separators in — which is why the lowercase
+spelling is probed first.
 
 **The registry's two stores.** `benchmarks/bench_fix_registry.py` is the other
 sweep: the same published dictionary as a directory and as an archive, every

@@ -597,18 +597,20 @@ class Book(MarketEvent):
         # at the end of `with_previous` below, once the sides are on the row,
         # and computing it here as well hashed every book twice.
         book.xhash = book.life_hash()
+        parents = []
         for name, resting in (("bid", bid), ("ask", ask)):
-            side = resting.into_side(unix, BookSide.hash_of(book.xhash, name))
+            side = resting.into_side(unix, BookSide.hash_of(book.xhash, name)).identify()
             for column in ("hash", "px", "qty", "depth", "total_qty"):
-                setattr(book, f"{name}_{column}", getattr(side.identify(), column))
+                setattr(book, f"{name}_{column}", getattr(side, column))
             for column in ("alive", "updates", "executions"):
                 setattr(book, f"{name}_{column}", getattr(side, column))
-            book.parent_hash = [*(book.parent_hash or ()), side.hash]
+            parents.append(side.hash)
             resting.cleared()
-        book._priced()
-        # Cleared so `with_previous` re-derives it over the prices just set;
-        # `identify` above hashed a book that had no sides yet.
-        book.hash = NIL
+        book.parent_hash = parents
+        # The prices across the sides are `Book.derive`'s, which
+        # `with_previous` runs once every layer has filled -- so they are not
+        # computed here as well, and the content hash it ends with is of a row
+        # that already has them.
         return book.with_previous(previous)
 
     def append_event(self, event: Any) -> Self | None:
