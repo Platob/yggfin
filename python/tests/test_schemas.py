@@ -86,6 +86,22 @@ def test_the_quote_contract_carries_every_nested_kind() -> None:
     assert types["received_at"] == pyarrow.timestamp("us", tz="UTC")
 
 
+def test_a_published_contract_can_carry_its_iceberg_ids() -> None:
+    """A table identifies a column by id, so a contract for one says which."""
+    venue = Field.from_json(str(SCHEMAS / "trading" / "venue.json"))
+    assert [member.field_id for member in venue.fields] == [1, 2, 3, 4]
+    assert venue.field("sessions").item.field("label").field_id == 6
+    assert venue.field("mic").metadata["iceberg:field_id"] == "1"
+    # And they are what Iceberg gets back, rather than a fresh numbering.
+    schema = venue.into_iceberg_schema()
+    assert [(field.field_id, field.name) for field in schema.fields] == [
+        (1, "mic"),
+        (2, "name"),
+        (3, "country"),
+        (4, "sessions"),
+    ]
+
+
 def test_a_contract_is_a_target_shape_for_real_data() -> None:
     """What a contract is *for*: a nearly-right batch is cast onto it."""
     venue = Field.from_json(str(SCHEMAS / "trading" / "venue.json"))

@@ -54,8 +54,12 @@ Arrow struct type, and metadata. Rules:
   schema, the member list) are cached and dropped whenever the declaration
   changes.
 - Protocol properties live in metadata under a prefixed key
-  (`iceberg:primary_key`); unprefixed keys are ours. A nullable primary key is
-  refused, at the declaration and at the setter.
+  (`iceberg:primary_key`, `iceberg:partition_key`, `iceberg:field_id`);
+  unprefixed keys are ours. A nullable primary key is refused, at the
+  declaration and at the setter. A **column id** is Iceberg's own identity for
+  a column, so it is read back into `iceberg:field_id` and published in a
+  contract; the ecosystem's `PARQUET:field_id` is what parquet files carry, and
+  the two are translated at the Iceberg boundary and nowhere else.
 - Refuse rather than guess: recursive classes, non-optional unions and unknown
   leaves all raise, naming the member and the way out.
 - The projection is built once per class, lazily, by a descriptor -- and a
@@ -348,6 +352,9 @@ rekep/
 │                  serialisation it dispatches to -- any dataclass to and
 │                  from dict/JSON/YAML/TOML, nested classes included, over
 │                  files, paths, URIs or raw bytes
+├── cli.py         the `rekep` command: `fields dump` publishes a class as a
+│                  document, `fields load` reads one back and builds it -- both
+│                  thin over `field_of`, `Field.from_file` and the `into_*`
 ├── require.py     optional deps at the point of use
 ├── filesystems.py FileSystem.from_uri, cached per URL
 ├── fields/        a dataclass is its own Arrow schema:

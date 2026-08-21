@@ -115,6 +115,30 @@ class Convertible:
         return convert(target, *args, **kwargs)
 
     @classmethod
+    def from_file(cls, source: Target, filesystem: pyarrow.fs.FileSystem | None = None) -> Self:
+        """Build from a document, its format taken from the name's extension.
+
+        `from_` infers over everything it can be handed -- a type, a mapping,
+        an open file -- so a path whose extension it does not know raises about
+        inference. This one is only ever given a file, so it can say the thing
+        the caller needs instead: which extensions there are. That is the whole
+        difference, and it is why the command line reads a contract through
+        here.
+
+        A path, a URI, or a path on `filesystem`, exactly as every other
+        reader here takes one.
+        """
+        for key in cls._keys(source):
+            stem = cls.REDIRECTS.get(key) if isinstance(key, str) else None
+            if stem:
+                return getattr(cls, f"from_{stem}")(source, filesystem)
+        formats = sorted(key for key in cls.REDIRECTS if isinstance(key, str))
+        raise ValueError(
+            f"{_name_of(source) or source!r} is not a document this can read: "
+            f"name it {', '.join(formats)}"
+        )
+
+    @classmethod
     def redirect_of(cls, value: Any, redirects: Mapping[Any, str] | None = None) -> str:
         """Method stem `value` redirects to, most specific key first.
 

@@ -102,6 +102,21 @@ namespace's keys can never collide with another's:
 metadata:
   iceberg:primary_key: 'true'          # this column identifies a row
   iceberg:partition_key: identity      # or day, or bucket[16] -- any transform
+  iceberg:field_id: '3'                # the id the table knows this column by
+```
+
+`iceberg:field_id` is the one that only exists once a table does. Iceberg
+identifies a column by id and never by name, so a contract published *from* a
+table says which id each column has — and handing that contract back builds the
+same ids rather than a fresh numbering, which is what makes a rename a rename
+instead of a new column. A declaration written in Python carries none, and
+Iceberg numbers it on the first write.
+
+```python
+venue = Field.from_json("schemas/trading/venue.json")
+venue.field("mic").field_id                     # 1
+venue.field("sessions").item.field("label").field_id   # 6, at any depth
+venue.into_iceberg_schema()                     # the same ids, not new ones
 ```
 
 !!! warning "Quote the booleans"
@@ -341,6 +356,70 @@ A contract changes the way an agreement does: by adding.
     whatever the data is written into. A consumer that pins the version it was
     built against can say so out loud.
 
+## From the command line
+
+Publishing a declaration and checking a document builds are the two things CI
+and a pre-commit hook need without writing Python, so they are a command.
+
+=== "Dump"
+
+    ```bash
+    rekep fields dump --pyclass rekep.logs.log:Log --target schemas/rekep/log.yaml
+    rekep fields dump --pyclass rekep.logs.log:Log --format json      # to stdout
+    rekep fields dump --pyclass trading.quotes:Quote --target schemas/trading/quote.yaml
+    ```
+
+    `--pyclass` is `module:Attribute` (or `module.Attribute`, which a docstring
+    is more likely to write) and it takes whatever names a shape: a `@field`
+    class, a plain dataclass, or a `Field` a module holds. `--format` is
+    `yaml`, `json` or `toml`, inferred from `--target`'s extension when it says
+    one and winning over it when both are given. With no `--target` the
+    document goes to stdout — and *only* the document does, so it pipes.
+
+=== "Load"
+
+    ```bash
+    rekep fields load --target schemas/rekep/log.yaml
+    ```
+
+    ```text
+    Log: 10 columns, builds
+      url: string
+      recorded_at_unix: int64  [primary key]
+      recorded_at_date: date32[day]  [partition identity]
+      ...
+      primary keys: ['recorded_at_unix', 'hash64']
+      partition keys: {'recorded_at_date': 'identity'}
+    ```
+
+    Parsing is not the check — **building** is. A document can be valid YAML
+    and still name a type Arrow does not have, a `fixed_size_list` with no
+    width, or a map with a nullable key, and each of those is a contract two
+    systems would read differently. `load` builds the Arrow schema and prints
+    what it found, exit code 1 and one line on stderr when it cannot.
+
+=== "In a check"
+
+    ```bash
+    # a contract that no longer matches the code fails here rather than at a consumer
+    rekep fields dump --pyclass rekep.logs.log:Log --target /tmp/log.yaml
+    diff -u schemas/rekep/log.yaml /tmp/log.yaml
+
+    # and every published contract still builds
+    for contract in schemas/*/*.yaml schemas/*/*.json; do
+        rekep fields load --target "$contract" > /dev/null || exit 1
+    done
+    ```
+
+Both commands are thin on purpose: `dump` is `field_of(...)` and an `into_*`
+method, `load` is `Field.from_file(...)` and `into_arrow_schema()`. The command
+line can never do something the library cannot, or do it differently.
+
+```python
+Field.from_file("schemas/trading/quote.yaml")   # what `load` reads with
+Field.from_file("s3://contracts/quote.yaml")    # a path, a URI, or a filesystem
+```
+
 ## How they are checked
 
 A contract nobody verifies is a comment. `python/tests/test_schemas.py` runs in
@@ -358,6 +437,9 @@ CI over every file in the directory and pins two things:
 cd python
 uv run pytest tests/test_schemas.py
 ```
+
+The command line runs the same two checks without a test runner — see
+[From the command line](#from-the-command-line).
 
 The example contract is also the format reference, and the test asserts it
 exercises every nested kind — a struct, a list of structs, a map, a

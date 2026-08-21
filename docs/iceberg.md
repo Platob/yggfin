@@ -110,7 +110,9 @@ keys and partitions intact.
 
     Creating what is already there is not an error. A plain Arrow schema is
     numbered for you — Iceberg identifies columns by id, and one that carries
-    ids (from a parquet footer, or another Iceberg table) keeps them.
+    ids keeps them: a parquet footer's `PARQUET:field_id`, or our own
+    `iceberg:field_id` when the shape came from a table or from a
+    [contract](contracts.md) that pins them.
 
 === "Write"
 
@@ -669,6 +671,17 @@ And the shape is always a [`Field`](types.md), so the two views agree:
 quotes.into_struct_field()                    # StructField: docs, keys, partitions
 quotes.into_arrow_schema()                    # the Arrow view of the same thing
 quotes.into_struct_field().into_iceberg_schema()   # and back to Iceberg's
+```
+
+The table's own shape carries its **column ids** — Iceberg identifies a column
+by id and never by name, so `table_field` reads them back under
+`iceberg:field_id`, a [contract](contracts.md) dumped from it publishes them,
+and handing that contract back builds the same ids instead of a fresh
+numbering:
+
+```python
+quotes.table_field.field("symbol").field_id            # 1
+quotes.table_field.into_yaml("schemas/trading/quote.yaml")   # ids included
 ```
 
 ## Benchmarks

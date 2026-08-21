@@ -5,6 +5,7 @@ from rekep.fields.builder import FieldBuilder
 from rekep.fields.classes import ClassBuilder
 from rekep.fields.field import (
     DESCRIPTION,
+    FIELD_ID,
     FIX,
     ICEBERG,
     NAME,
@@ -29,6 +30,7 @@ from rekep.fields.field import (
 
 __all__ = [
     "DESCRIPTION",
+    "FIELD_ID",
     "FIX",
     "ICEBERG",
     "NAME",

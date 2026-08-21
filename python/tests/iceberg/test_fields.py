@@ -155,3 +155,63 @@ def test_the_module_functions_take_a_field_directly() -> None:
     """The methods on a field are the front door; these are what they call."""
     assert [f.name for f in iceberg_schema(Quote.FIELD).fields] == Quote.FIELD.names
     assert [f.name for f in iceberg_partition_spec(Quote.FIELD).fields] == ["day"]
+
+
+# -- column ids --------------------------------------------------------------
+
+
+def test_a_schema_read_back_carries_its_column_ids() -> None:
+    """Iceberg identifies a column by id, so the id is part of what it is."""
+    from pyiceberg.schema import Schema
+    from pyiceberg.types import IntegerType, NestedField, StringType, StructType
+
+    schema = Schema(
+        NestedField(5, "mic", StringType(), required=True, doc="ISO 10383."),
+        NestedField(
+            9,
+            "venue",
+            StructType(NestedField(12, "size", IntegerType(), required=False)),
+            required=False,
+        ),
+        identifier_field_ids=[5],
+    )
+    field = StructField.from_iceberg_schema(schema, "Venue")
+    assert [(member.name, member.field_id) for member in field.fields] == [("mic", 5), ("venue", 9)]
+    assert field.field("venue").field("size").field_id == 12
+    assert field.field("mic").is_primary_key is True
+
+
+def test_declared_ids_are_kept_rather_than_renumbered() -> None:
+    """A round trip through a contract file is an identity, not a rename."""
+    from pyiceberg.schema import Schema
+    from pyiceberg.types import NestedField, StringType
+
+    schema = Schema(NestedField(5, "mic", StringType(), required=True))
+    published = Field.from_yaml(StructField.from_iceberg_schema(schema, "Venue").into_yaml())
+    assert published.field("mic").field_id == 5
+    assert [(f.field_id, f.name) for f in published.into_iceberg_schema().fields] == [(5, "mic")]
+
+
+def test_a_declaration_with_no_ids_is_numbered_fresh() -> None:
+    """The user should not have to know the protocol to hand over a shape."""
+    plain = StructField.from_arrow_schema(
+        pyarrow.schema([("mic", pyarrow.string()), ("size", pyarrow.int32())]), "Venue"
+    )
+    assert plain.field("mic").field_id is None
+    assert [(f.field_id, f.name) for f in plain.into_iceberg_schema().fields] == [
+        (1, "mic"),
+        (2, "size"),
+    ]
+
+
+def test_ids_ride_under_the_protocol_prefix() -> None:
+    """`iceberg:field_id` beside the other Iceberg keys; parquet's is the bridge."""
+    from rekep.fields import FIELD_ID
+    from rekep.iceberg.fields import PARQUET_FIELD_ID
+
+    field = Field(name="mic", arrow_type=pyarrow.string())
+    field.field_id = 7
+    assert field.metadata[FIELD_ID] == "7"
+    assert FIELD_ID == "iceberg:field_id"
+    assert field.into_dict()["metadata"] == {FIELD_ID: "7"}
+    assert PARQUET_FIELD_ID == b"PARQUET:field_id", "what parquet files carry, not what we write"

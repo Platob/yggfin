@@ -13,19 +13,26 @@
       "type": "string",
       "description": "ISO 10383 market identifier.",
       "metadata": {
-        "iceberg:primary_key": "true"
+        "iceberg:primary_key": "true",
+        "iceberg:field_id": "1"
       }
     },
     {
       "name": "name",
       "type": "string",
-      "description": "Operating name of the venue."
+      "description": "Operating name of the venue.",
+      "metadata": {
+        "iceberg:field_id": "2"
+      }
     },
     {
       "name": "country",
       "type": "string",
       "nullable": true,
-      "description": "ISO 3166-1 alpha-2, when the venue publishes one."
+      "description": "ISO 3166-1 alpha-2, when the venue publishes one.",
+      "metadata": {
+        "iceberg:field_id": "3"
+      }
     },
     {
       "name": "sessions",
@@ -39,19 +46,34 @@
           {
             "name": "label",
             "type": "string",
-            "description": "Name of the session, as the venue calls it."
+            "description": "Name of the session, as the venue calls it.",
+            "metadata": {
+              "iceberg:field_id": "6"
+            }
           },
           {
             "name": "opens_at",
             "type": "time64[us]",
-            "description": "Local opening time."
+            "description": "Local opening time.",
+            "metadata": {
+              "iceberg:field_id": "7"
+            }
           },
           {
             "name": "closes_at",
             "type": "time64[us]",
-            "description": "Local closing time."
+            "description": "Local closing time.",
+            "metadata": {
+              "iceberg:field_id": "8"
+            }
           }
-        ]
+        ],
+        "metadata": {
+          "iceberg:field_id": "5"
+        }
+      },
+      "metadata": {
+        "iceberg:field_id": "4"
       }
     }
   ]

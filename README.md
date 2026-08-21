@@ -98,7 +98,13 @@ quote.cast_arrow(batch)          # a contract is a target shape, not a comment
 ```
 
 They are tested against the declarations they came from, so a column that
-exists in code and not in the contract fails the build.
+exists in code and not in the contract fails the build — and the same two
+checks run from the command line, without writing Python:
+
+```bash
+rekep fields dump --pyclass rekep.logs.log:Log --target schemas/rekep/log.yaml
+rekep fields load --target schemas/rekep/log.yaml     # does it still build?
+```
 
 ## Development
 

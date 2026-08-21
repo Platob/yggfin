@@ -36,6 +36,13 @@ FIX = "fix"
 PRIMARY_KEY = "iceberg:primary_key"
 PARTITION_KEY = "iceberg:partition_key"
 
+#: Iceberg identifies a column by id and never by name, so an id is part of
+#: what a schema *is* once a table exists. It rides under the protocol's own
+#: prefix like every other Iceberg key -- the ecosystem's `PARQUET:field_id`
+#: is what parquet files carry, and the two are translated at the Iceberg
+#: boundary rather than mixed here.
+FIELD_ID = "iceberg:field_id"
+
 #: The partition transform that means "the value itself".
 IDENTITY = "identity"
 
@@ -296,6 +303,31 @@ class Field(Convertible):
             self.iceberg.pop("partition_key", None)
             return
         self.iceberg["partition_key"] = IDENTITY if value is True else str(value)
+
+    @property
+    def field_id(self) -> int | None:
+        """The Iceberg column id this field carries, or None when it has none.
+
+        A declaration written in Python has none: ids belong to a table, and
+        the first write is where they are assigned. A field read back from an
+        Iceberg schema carries them, and a contract dumped from one publishes
+        them -- which is what lets a consumer name a column the way Iceberg
+        does, and what makes a round trip through the protocol keep the
+        identity a rename would otherwise lose.
+        """
+        declared = self.iceberg.get("field_id")
+        return int(declared) if declared else None
+
+    @field_id.setter
+    def field_id(self, value: int | None) -> None:
+        if value is None:
+            self.iceberg.pop("field_id", None)
+            return
+        if int(value) < 1:
+            raise ValueError(
+                f"{self.name!r} cannot have field_id {value}: Iceberg numbers columns from 1"
+            )
+        self.iceberg["field_id"] = int(value)
 
     @property
     def partition_transform(self) -> str:

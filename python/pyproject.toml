@@ -30,6 +30,11 @@ toml = ["tomli-w>=1.0"]
 iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.9"]
 all = ["rekep[iceberg,toml,yaml]"]
 
+[project.scripts]
+# Publishing a declaration and checking one loads are things CI and a
+# pre-commit hook need without writing Python.
+rekep = "rekep.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/Platob/yggfin"
 Repository = "https://github.com/Platob/yggfin"

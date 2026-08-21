@@ -101,6 +101,17 @@ Inference gets the common cases right. `Annotated` is for what it cannot know.
     A nullable primary key is refused, at the declaration and at the setter:
     an identifier that may be missing identifies nothing.
 
+    ```python
+    Venue.FIELD.field("mic").field_id          # None -- ids belong to a table
+    Field.from_iceberg_schema(schema).field("mic").field_id   # 5, read back
+    ```
+
+    An Iceberg column id rides under the same protocol prefix
+    (`iceberg:field_id`). A declaration written here has none — Iceberg assigns
+    them on the first write — and a shape read back from a table has them, so a
+    round trip through the protocol keeps the identity rather than renaming
+    every column.
+
     Every transform but `identity` is computed by Iceberg's Rust core when a
     write partitions on it. The `iceberg` extra pulls it in, so a `day` or a
     `bucket[16]` partition works out of the box; a bare `pyiceberg` install
