@@ -39,7 +39,7 @@ you are changing a benchmark rather than reading one.
 | [Types](types.md#benchmarks) | casting a batch, a nested column, a stream onto a shape — against `Array.cast` on the same data | `bench_cast.py` |
 | [Logs](logs.md#benchmarks) | parsing one log; parsing a folder of them; shipping the bytes | `bench_text_file.py` |
 | [FIX](fix.md#benchmarks) | the scalar parser, the vectorised one, and turning keys into tags | `bench_fix.py` |
-| [Market](market.md#benchmarks) | building identifier columns, and deriving a book's flat prices | `bench_market.py` |
+| [Market](market.md#benchmarks) | building identifier columns, deriving a book's flat prices, reading a venue's FIX, folding a book, and the ceiling on compiling any of it | `bench_market.py` |
 | [Tasks](tasks.md#benchmarks) | parsing a capture, fanning it out, and what a replay costs | `bench_tasks.py` |
 | [Iceberg](iceberg.md#benchmarks) | commits, merges, reads, maintenance, backfills, and store calls | `bench_iceberg.py` |
 

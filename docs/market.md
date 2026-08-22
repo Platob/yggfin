@@ -1065,6 +1065,32 @@ same code at ten times the fixture, which is slower per message; the ratios are
 what to read, because [seconds move](benchmarks.md#how-to-read-a-number) and
 ratios measured back to back do not.
 
+!!! note "What compiling it could buy, measured rather than argued"
+
+    "Rewrite the hot loop in C++" is a decision worth making against a number.
+    So the sweep measures the **ceiling**: each leg makes one candidate for an
+    extension cost literally nothing — the line arrives already tokenised, the
+    identity frame is a constant, the digest is a constant — and what is still
+    on the clock at the end is what no extension removes.
+
+    | with this free | speedup |
+    | --- | --- |
+    | tokenising | 1.15–1.16× |
+    | + framing an identifier | 1.36–1.41× |
+    | + the digest itself | 1.35–1.43× |
+
+    **70–74% of the run is untouchable**, and it is Python building `Order`s,
+    `Execution`s and their enums — objects the fold and the writer both need.
+    A real extension is not free, so the honest expectation is nearer 1.2×,
+    against a build system, wheels per architecture and Python version, and a
+    pure-Python fallback to keep. Amdahl's law is the whole answer, and it is
+    cheaper to measure than to discover.
+
+    Which says where the next real win is, if one is wanted: not in making the
+    objects faster, but in not building them — a translation whose output is a
+    column rather than a row. That fights the fold, which is stateful per
+    instrument by nature, so it is a redesign and not an optimisation.
+
 !!! note "The vectorised parser only pays if the result stays in Arrow"
 
     `parse_arrow_array` cuts a column of lines into `map<string, string>` in

@@ -50,7 +50,13 @@ import pyarrow.compute
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep.market import Book, BookSide, FixEvents  # noqa: E402
+from rekep.fix import FixMessage  # noqa: E402
+from rekep.market import (  # noqa: E402
+    Book,
+    BookSide,
+    FixEvents,
+    identity,  # noqa: E402
+)
 from rekep.market.fields import dictionary_arrow  # noqa: E402
 from rekep.market.identity import (  # noqa: E402
     _binary,
@@ -349,6 +355,51 @@ def stream(events: int) -> list[object]:
     return built
 
 
+def bench_ceiling(rows: int, repeat: int) -> None:
+    """What a compiled extension could take off a message, at most.
+
+    Not a proposal and not a plan: a **ceiling**. Each leg makes one candidate
+    for a C or Cython extension cost literally nothing -- the line is already
+    tokenised, the identity frame is a constant, the digest is a constant --
+    so what is still on the clock at the end is what no extension removes,
+    which is Python building `Order`s, `Execution`s and their enums.
+
+    Reported because "rewrite the hot loop in C++" is a decision that should
+    be made against a number rather than against a profile: Amdahl's law is
+    the whole answer here, and it is cheaper to measure than to discover.
+    """
+    print(f"\nThe ceiling on compiling it -- {rows:,} refreshes")
+    line = FEED["MarketData <X>, 5 entries"]
+    lines = [line] * rows
+    parsed = [FixMessage.from_text(line) for line in lines]
+
+    def whole() -> int:
+        return sum(1 for one in lines for _ in FixEvents.from_text(one))
+
+    def translated() -> int:
+        return sum(1 for one in parsed for _ in FixEvents(message=one))
+
+    assert whole() == translated(), "the two legs must produce the same events"
+    base, _ = timed(whole, repeat)
+    report("as it is", base, rows)
+
+    for label, patch in (
+        ("tokenising free", {}),
+        ("+ framing free", {"frame": lambda parts: b"x"}),
+        ("+ hashing free", {"frame": lambda parts: b"x", "hash_bytes": lambda raw: 1}),
+    ):
+        held = {name: getattr(identity, name) for name in patch}
+        for name, stub in patch.items():
+            setattr(identity, name, stub)
+        try:
+            seconds, _ = timed(translated, repeat)
+        finally:
+            for name, real in held.items():
+                setattr(identity, name, real)
+        print(f"  {label:<44} {seconds * 1000:>8.1f} ms   {base / seconds:>6.2f}x")
+    print(f"  {'what no extension removes':<44} {seconds / base * 100:>8.0f}% of the run")
+
+
 def bench_fold(events: int, repeat: int) -> None:
     """What folding one instrument's stream into books costs, per event and per book."""
     print(f"\nBook.from_events -- {events:,} events, one instrument")
@@ -380,6 +431,7 @@ def main() -> None:
         bench_book(rows // 10, depth, repeat)
     bench_codes(rows, repeat)
     bench_fix(rows // 20, repeat)
+    bench_ceiling(rows // 20, repeat)
     bench_fold(rows // 10, repeat)
 
 
