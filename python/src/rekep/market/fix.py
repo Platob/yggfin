@@ -32,6 +32,7 @@ from rekep.fix.message import FixMessage
 from rekep.market.enums import (
     AssetKind,
     ExecKind,
+    IdSource,
     OptionKind,
     OrderKind,
     Side,
@@ -40,7 +41,7 @@ from rekep.market.enums import (
     UpdateAction,
 )
 from rekep.market.event import MarketEvent
-from rekep.market.instrument import Instrument
+from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order
 
 #: Tags the translation reads that no market column declares -- the header,
@@ -82,6 +83,18 @@ CARRIED_TAGS: dict[str, int] = {
     "OrderQty": 38,
     "LastPx": 31,
     "LastQty": 32,
+    # The repeating groups an instrument is read out of. A group's own
+    # `NumInGroup` count and the members that land somewhere other than a
+    # column of their own -- an alternative identifier becomes a key of
+    # `alt_ids`, so its two tags are read and stored and are not extras.
+    "NoSecurityAltID": 454,
+    "SecurityAltID": 455,
+    "SecurityAltIDSource": 456,
+    "NoLegs": 555,
+    # The older way to say when a contract expires, which `maturity` falls back
+    # to. A venue that sends it usually sends no `MaturityDate <541>` at all.
+    "MaturityMonthYear": 200,
+    "LegMaturityMonthYear": 610,
 }
 
 #: What frames the message rather than describing the event. `BodyLength <9>`
@@ -569,31 +582,113 @@ class FixEvents(Convertible):
         ).with_previous(None)
 
     def into_instrument(self) -> Instrument:
-        """What the message says is being traded.
+        """What the message says is being traded, groups and all.
 
-        `kind` is the first character of `CFICode <461>` -- ISO 10962's own
-        category letter, which `AssetKind` is coded on -- so an instrument
-        that carries a CFI classifies itself and one that does not is
-        `UNKNOWN` rather than guessed from the shape of its symbol.
+        `kind` is read twice over, best first: the first character of `CFICode
+        <461>` is ISO 10962's own category letter and `AssetKind` is coded on
+        it, so an instrument carrying a CFI classifies itself exactly.
+        `SecurityType <167>` is the fallback, because a venue that sends no CFI
+        very often sends `CS`, `FUT` or `OPT` instead -- and an instrument that
+        carries neither is `UNKNOWN` rather than guessed from the shape of its
+        symbol.
         """
         get = self.get
         cfi = get(461)
+        security_type = get(167)
         return Instrument(
             symbol=get(55) or "",
-            kind=AssetKind.from_fix(cfi[:1] if cfi else None, AssetKind.UNKNOWN),
+            kind=_classified(cfi, security_type),
             security_id=get(48),
             security_id_source=get(22),
+            alt_ids=self.into_alt_ids() or None,
+            security_type=security_type,
             cfi=cfi,
             exchange=get(207) or get(100),
             currency=get(15),
             multiplier=_number(get(231)),
             tick=_number(get(969)),
             lot=_number(get(561)),
-            maturity=_date(get(541)),
+            maturity=_date(get(541)) or _month_year(get(200)),
             strike=_number(get(202)),
             option_kind=OptionKind.from_fix(get(201), OptionKind.UNKNOWN),
             label=get(107),
+            legs=self.into_legs() or None,
         )
+
+    def into_alt_ids(self) -> dict[str, str]:
+        """Every alternative identifier the message carried, by the scheme's name.
+
+        The `NoSecurityAltID <454>` group: `SecurityAltID <455>` under
+        `SecurityAltIDSource <456>`, which shares its enumeration with
+        `SecurityIDSource <22>` -- so one reading serves the identifier an
+        instrument leads with and every alternative beside it.
+
+        Keyed by `IdSource`'s **name** and not by the FIX character, because
+        the map is what a consumer reads: `alt_ids["ISIN"]` is a question, and
+        `alt_ids["4"]` is a lookup table away from being one. A scheme this
+        build has never seen keeps the character it came as, which is the only
+        honest key left for it.
+        """
+        found: dict[str, str] = {}
+        for entry in self._group(454, "NoSecurityAltID"):
+            named = entry.get("455")
+            scheme = IdSource.from_fix(entry.get("456"), IdSource.UNKNOWN)
+            if not named:
+                continue
+            key = scheme.name if scheme is not IdSource.UNKNOWN else (entry.get("456") or "")
+            found.setdefault(key or IdSource.UNKNOWN.name, named)
+        return found
+
+    def into_legs(self) -> list[Leg]:
+        """The legs of a multileg instrument, from the `NoLegs <555>` group.
+
+        Every member is the instrument field with a `Leg` in front of it --
+        `LegSymbol <600>` is `Symbol <55>` for the leg -- so the reading is the
+        same one, against a different set of tags.
+        """
+        built = []
+        for entry in self._group(555, "NoLegs"):
+            cfi, security_type = entry.get("608"), entry.get("609")
+            built.append(
+                Leg(
+                    symbol=entry.get("600") or "",
+                    side=Side.from_fix(entry.get("624"), Side.UNKNOWN),
+                    ratio=_number(entry.get("623")),
+                    kind=_classified(cfi, security_type),
+                    security_id=entry.get("602"),
+                    security_id_source=entry.get("603"),
+                    cfi=cfi,
+                    security_type=security_type,
+                    exchange=entry.get("616"),
+                    currency=entry.get("556"),
+                    multiplier=_number(entry.get("614")),
+                    maturity=_date(entry.get("611")) or _month_year(entry.get("610")),
+                    strike=_number(entry.get("612")),
+                    option_kind=OptionKind.from_fix(entry.get("1358"), OptionKind.UNKNOWN),
+                )
+            )
+        return built
+
+    def _group(self, count_tag: int, name: str) -> list[dict[str, str]]:
+        """One repeating group's entries, each as first-value-by-tag.
+
+        Both spellings, because a log prints whichever its bridge felt like:
+        the wire's `NumInGroup` followed by entries in order, which
+        `FixMessage.group` reads by the standard's own rules, and the indexed
+        rendering (`NoLegs[0].LegSymbol`), which `indexed_group` folds back.
+
+        An entry comes out as a dict rather than as pairs because the readings
+        above probe it by tag a dozen times each, and a scan per probe is what
+        `by_tag` exists to have stopped doing.
+        """
+        entries = self.message.group(count_tag) or self.message.indexed_group(name)
+        found = []
+        for entry in entries:
+            resolved: dict[str, str] = {}
+            for key, value in FixMessage.from_pairs(entry, market_tags()).pairs:
+                resolved.setdefault(key, value)
+            found.append(resolved)
+        return found
 
     # -- what every event carries ------------------------------------------
 
@@ -677,6 +772,111 @@ def _claimed_tags() -> frozenset[str]:
 
 
 _CLAIMED: frozenset[str] | None = None
+
+
+#: `SecurityType <167>` to what an instrument settles as, for the venues that
+#: send no `CFICode <461>`. FIX enumerates a hundred and eighteen of these and
+#: most of them are one kind of bond, so this maps the **bands** rather than
+#: the list: a value not here classifies as nothing, which is what `UNKNOWN`
+#: is for and better than a guess. Read off the dictionary in `data/fix.zip`,
+#: and checked against it by `tests/market/test_fix.py`.
+SECURITY_TYPES: dict[str, AssetKind] = {
+    # Equity
+    "CS": AssetKind.EQUITY,
+    "PS": AssetKind.EQUITY,
+    # Collective investment
+    "MF": AssetKind.FUND,
+    # Derivatives
+    "FUT": AssetKind.FUTURE,
+    "OPT": AssetKind.OPTION,
+    "OOF": AssetKind.OPTION,
+    "OOP": AssetKind.OPTION,
+    "OOC": AssetKind.OPTION,
+    "WAR": AssetKind.WARRANT,
+    "MLEG": AssetKind.MULTILEG,
+    # Swaps, which FIX spells one per underlying
+    "CDS": AssetKind.SWAP,
+    "IRS": AssetKind.SWAP,
+    "FXSWAP": AssetKind.SWAP,
+    # Currency
+    "FXSPOT": AssetKind.CURRENCY,
+    "FXFWD": AssetKind.FORWARD,
+    "FXNDF": AssetKind.FORWARD,
+    "FORWARD": AssetKind.FORWARD,
+    "CASH": AssetKind.CURRENCY,
+    # Financing
+    "REPO": AssetKind.REPO,
+    "BUYSELL": AssetKind.REPO,
+    "SECLOAN": AssetKind.LOAN,
+    "SECPLEDGE": AssetKind.LOAN,
+    "TERM": AssetKind.LOAN,
+    "RVLV": AssetKind.LOAN,
+    "RVLVTRM": AssetKind.LOAN,
+    "BRIDGE": AssetKind.LOAN,
+    "SWING": AssetKind.LOAN,
+    # Debt: the long tail, by what a reader would call it
+    "CORP": AssetKind.DEBT,
+    "CB": AssetKind.DEBT,
+    "TBOND": AssetKind.DEBT,
+    "TNOTE": AssetKind.DEBT,
+    "TBILL": AssetKind.DEBT,
+    "TIPS": AssetKind.DEBT,
+    "MUNI": AssetKind.DEBT,
+    "GO": AssetKind.DEBT,
+    "REV": AssetKind.DEBT,
+    "MTN": AssetKind.DEBT,
+    "CP": AssetKind.DEBT,
+    "CD": AssetKind.DEBT,
+    "ABS": AssetKind.DEBT,
+    "MBS": AssetKind.DEBT,
+    "CMO": AssetKind.DEBT,
+    "FRN": AssetKind.DEBT,
+    "EUCORP": AssetKind.DEBT,
+    "EUSOV": AssetKind.DEBT,
+    "BRADY": AssetKind.DEBT,
+}
+
+
+def _classified(cfi: str | None, security_type: str | None) -> AssetKind:
+    """What an instrument settles as, from its CFI code or from FIX's own word.
+
+    The CFI first, because ISO 10962's category letter *is* what `AssetKind` is
+    coded on and it classifies exactly. `SecurityType <167>` after it, because
+    a venue that sends no CFI very often sends `CS`, `FUT` or `OPT` instead --
+    and a reading that stopped at the CFI left every one of those `UNKNOWN`.
+    """
+    if cfi:
+        found = AssetKind.from_fix(cfi[:1], AssetKind.UNKNOWN)
+        if found is not AssetKind.UNKNOWN:
+            return found
+    if security_type:
+        return SECURITY_TYPES.get(security_type.strip().upper(), AssetKind.UNKNOWN)
+    return AssetKind.UNKNOWN
+
+
+def _month_year(text: str | None) -> datetime.date | None:
+    """`MaturityMonthYear <200>` as a date -- the first of the month it names.
+
+    FIX's `MonthYear` is `YYYYMM`, optionally with a day or a week after it.
+    It is the older of the two ways to say when a contract expires, and a venue
+    that sends it usually sends no `MaturityDate <541>` at all -- so reading it
+    is the difference between a dated future and an undated one.
+
+    The first of the month where no day is given, which is a date the venue did
+    not state. It is the only reading that turns a month into an instant at
+    all, and `maturity` is documented as when the contract expires rather than
+    as what the message said.
+    """
+    if not text:
+        return None
+    trimmed = text.strip()
+    if len(trimmed) < 6 or not trimmed[:6].isdigit():
+        return None
+    day = trimmed[6:8]
+    try:
+        return datetime.date(int(trimmed[:4]), int(trimmed[4:6]), int(day) if day.isdigit() else 1)
+    except ValueError:
+        return None
 
 
 def _number(text: str | None) -> float | None:

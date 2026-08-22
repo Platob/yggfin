@@ -696,6 +696,124 @@ class AssetKind(Ranged):
         return self >= AssetKind.DERIVATIVE
 
 
+class IdSource(Ranged):
+    """Which scheme an instrument identifier is issued in, banded by who issues it.
+
+    FIX numbers these on `SecurityIDSource <22>`, and `SecurityAltIDSource
+    <456>` uses the same enumeration -- which is what lets one reading serve
+    both the identifier an instrument leads with and every alternative it
+    carries beside it.
+
+    The bands are about **what the identifier is worth as an identity**, which
+    is the question `Instrument.identify` asks:
+
+    - `REGISTERED` -- issued by a numbering agency to one security, globally.
+      An ISIN is the same ISIN at every venue and to every vendor, which is
+      what makes it the strongest key an instrument can have.
+    - `VENDOR` -- issued by somebody selling data. Unique and stable, but only
+      inside that vendor's universe.
+    - `LOCAL` -- a national scheme. Unique where it is used and unheard of
+      elsewhere.
+    - `VENUE` -- assigned by the market. Unique on it, and reused off it.
+    - `OTHER` -- everything FIX also puts here, which is not an instrument
+      identifier at all: a currency code, a country, a URL.
+    """
+
+    UNKNOWN = 0
+    """No scheme was named, so the identifier means nothing on its own."""
+
+    REGISTERED = 100
+    """Band floor: issued by a numbering agency, and global."""
+
+    ISIN = 110, "4"
+    """ISO 6166. The strongest key an instrument carries, and what `isin_code` is."""
+
+    CUSIP = 120, "1"
+    """North American, issued by CUSIP Global Services."""
+
+    SEDOL = 130, "2"
+    """UK and Ireland, issued by the London Stock Exchange."""
+
+    COMMON = 140, "G"
+    """The Clearstream and Euroclear "Common Code"."""
+
+    VENDOR = 200
+    """Band floor: issued by a data vendor, and unique inside its universe."""
+
+    RIC = 210, "5"
+    """Refinitiv Instrument Code."""
+
+    BLOOMBERG = 220, "A"
+    """Bloomberg ticker."""
+
+    LOCAL = 300
+    """Band floor: a national scheme, unique where it is used."""
+
+    WERTPAPIER = 310, "B"
+    """German."""
+
+    DUTCH = 320, "C"
+    """Dutch."""
+
+    VALOREN = 330, "D"
+    """Swiss."""
+
+    SICOVAM = 340, "E"
+    """French."""
+
+    BELGIAN = 350, "F"
+    """Belgian."""
+
+    QUIK = 360, "3"
+    """Russian."""
+
+    VENUE = 400
+    """Band floor: assigned by a market, and reused off it."""
+
+    EXCHANGE = 410, "8"
+    """The exchange's own symbol for it."""
+
+    CTA = 420, "9"
+    """Consolidated Tape Association symbol."""
+
+    OPRA = 430, "J"
+    """Options Price Reporting Authority."""
+
+    CLEARING = 440, "H"
+    """Assigned by a clearing house."""
+
+    MARKETPLACE = 450, "M"
+    """Assigned by the marketplace, in the venue's own scheme."""
+
+    OTHER = 500
+    """Band floor: FIX puts these here and none of them names a security."""
+
+    CURRENCY = 510, "6"
+    """An ISO 4217 currency code, which is not an instrument identifier."""
+
+    COUNTRY = 520, "7"
+    """An ISO 3166 country code, likewise."""
+
+    ISDA_SPEC = 530, "I"
+    """An ISDA/FpML product specification, carried as XML elsewhere."""
+
+    ISDA_URL = 540, "K"
+    """An ISDA/FpML product URL, carried in `SecurityID` itself."""
+
+    CREDIT_LETTER = 550, "L"
+    """A letter of credit."""
+
+    @property
+    def is_registered(self) -> bool:
+        """Whether an identifier in this scheme is issued rather than chosen.
+
+        The test `Instrument.identify` makes: an issued identifier is the same
+        one at every venue and to every vendor, which is what a lifecycle key
+        has to be.
+        """
+        return self.band == IdSource.REGISTERED
+
+
 class OptionKind(Ranged):
     """Which way an option points.
 

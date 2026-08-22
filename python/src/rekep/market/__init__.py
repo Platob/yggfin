@@ -27,6 +27,7 @@ from rekep.market.enums import (
     AssetKind,
     EventType,
     ExecKind,
+    IdSource,
     OptionKind,
     OrderKind,
     Ranged,
@@ -48,7 +49,7 @@ from rekep.market.identity import (
     hash_of,
     part_bytes,
 )
-from rekep.market.instrument import Instrument
+from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order
 
 __all__ = [
@@ -68,7 +69,9 @@ __all__ = [
     "Execution",
     "FixEvents",
     "Folding",
+    "IdSource",
     "Instrument",
+    "Leg",
     "Level",
     "LevelExecution",
     "LevelUpdate",

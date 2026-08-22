@@ -8,9 +8,83 @@ from typing import Annotated, ClassVar
 
 from rekep.convert import Convertible
 from rekep.fields import Field, FieldBuilder, field
-from rekep.market.enums import AssetKind, OptionKind, Ranged
+from rekep.market.enums import AssetKind, IdSource, OptionKind, Ranged, Side
 from rekep.market.fields import MarketFieldBuilder, fix_tag
 from rekep.market.identity import NIL, hash_of
+
+
+@field
+class Leg(Convertible):
+    """One leg of a multileg instrument: a spread's near and far, an option's pair.
+
+    FIX carries these in the `NoLegs <555>` group, whose members are the
+    instrument fields with a `Leg` in front of them -- `LegSymbol <600>` is
+    `Symbol <55>` for the leg. So this is `Instrument`'s own shape, cut down to
+    what a leg actually varies: what it is, which way it points, and how much
+    of it there is per unit of the strategy.
+
+    Not an `Instrument`, and deliberately: a leg nested inside an instrument
+    that nested a leg is a recursion Arrow has no type for, and the leg of a
+    spread is a reference to a security rather than a second copy of the
+    reference data for it. `xhash` is that reference.
+    """
+
+    FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
+
+    xhash: int = NIL
+    """The instrument this leg is of, derived the same way any other one is."""
+
+    symbol: Annotated[str, fix_tag("LegSymbol", 600)] = ""
+    """Identifier as the venue spells the leg."""
+
+    side: Annotated[Side, fix_tag("LegSide", 624)] = Side.UNKNOWN
+    """Which way the strategy takes this leg; `side.sign` turns it into `+1`/`-1`."""
+
+    ratio: Annotated[float | None, fix_tag("LegRatioQty", 623)] = None
+    """How many of this leg one unit of the strategy is; the leg's weight."""
+
+    kind: AssetKind = AssetKind.UNKNOWN
+    """What the leg settles as, read from `LegCFICode <608>` or `LegSecurityType <609>`."""
+
+    security_id: Annotated[str | None, fix_tag("LegSecurityID", 602)] = None
+    """Identifier in the scheme `security_id_source` names."""
+
+    security_id_source: Annotated[str | None, fix_tag("LegSecurityIDSource", 603)] = None
+    """Which scheme `security_id` is in, as FIX numbers them."""
+
+    cfi: Annotated[str | None, fix_tag("LegCFICode", 608)] = None
+    """ISO 10962 classification of the leg."""
+
+    security_type: Annotated[str | None, fix_tag("LegSecurityType", 609)] = None
+    """What the venue calls this leg, from FIX's own list."""
+
+    exchange: Annotated[str | None, fix_tag("LegSecurityExchange", 616)] = None
+    """Where the leg is listed, when it differs from the strategy's venue."""
+
+    currency: Annotated[str | None, fix_tag("LegCurrency", 556)] = None
+    """ISO 4217 currency the leg is priced in."""
+
+    multiplier: Annotated[float | None, fix_tag("LegContractMultiplier", 614)] = None
+    """Units of the underlying one leg contract represents."""
+
+    maturity: Annotated[datetime.date | None, fix_tag("LegMaturityDate", 611)] = None
+    """When the leg expires; null for anything that does not."""
+
+    strike: Annotated[float | None, fix_tag("LegStrikePrice", 612)] = None
+    """Exercise price, where the leg is an option."""
+
+    option_kind: Annotated[OptionKind, fix_tag("LegPutOrCall", 1358)] = OptionKind.UNKNOWN
+    """Which way the leg points, where it is an option."""
+
+    def __post_init__(self) -> None:
+        """Derive `xhash` the way an instrument does, so a leg joins to one."""
+        if not self.xhash:
+            self.xhash = Instrument(
+                symbol=self.symbol,
+                exchange=self.exchange,
+                security_id=self.security_id,
+                security_id_source=self.security_id_source,
+            ).xhash
 
 
 @field
@@ -47,6 +121,25 @@ class Instrument(Convertible):
     security_id_source: Annotated[str | None, fix_tag("SecurityIDSource", 22)] = None
     """Which scheme `security_id` is in, as FIX numbers them (`4` is ISIN)."""
 
+    # Flat, and derived from whichever of the two places FIX carries it in --
+    # `SecurityID <48>` under source `4`, or an entry of the `NoSecurityAltID
+    # <454>` group. Flat because it is what a human looks an instrument up by
+    # and what a reference-data join keys on, and neither can reach into a map
+    # on any engine below Arrow.
+    isin_code: Annotated[str | None, Field(metadata={"iso": "6166"})] = None
+    """ISO 6166 identifier, wherever the message carried it; null when it did not."""
+
+    # A map and not a struct: which schemes a venue sends is not known when the
+    # shape is written, and a column per scheme would be forty nulls wide.
+    # Nullable, like `MarketEvent.metadata` and for the same reason: most
+    # instruments carry no alternative at all, and a null says that where an
+    # empty map says "it sent an empty list of them".
+    alt_ids: dict[str, str] | None = None
+    """Every other identifier the message carried, keyed by `IdSource`'s name."""
+
+    security_type: Annotated[str | None, fix_tag("SecurityType", 167)] = None
+    """What the venue calls it, from FIX's own list -- `CS`, `FUT`, `OPT`, `MLEG`."""
+
     cfi: Annotated[str | None, fix_tag("CFICode", 461)] = None
     """Full ISO 10962 classification; `kind` is its first character, decoded."""
 
@@ -81,6 +174,14 @@ class Instrument(Convertible):
     label: Annotated[str | None, fix_tag("SecurityDesc", 107)] = None
     """Human description, as reference data publishes it."""
 
+    # Last, and a list: a multileg instrument is a handful of legs and every
+    # other instrument has none. Last because Iceberg counts leaf columns in
+    # declaration order for the bounds it collects, and a nested member
+    # declared earlier pushes a flat one past the cutoff -- see
+    # `docs/market.md`.
+    legs: list[Leg] | None = None
+    """The legs of a multileg instrument, in the order the venue sent them."""
+
     def __post_init__(self) -> None:
         """Derive `xhash` from the strongest identifier present, unless given one.
 
@@ -89,8 +190,26 @@ class Instrument(Convertible):
         venue sent, and it still has to produce rows that join -- so the
         identity is derived, by `identify`, from what is actually there.
         """
+        if self.isin_code is None:
+            self.isin_code = self.into_isin()
         if not self.xhash:
             self.xhash = self.identify()
+
+    def into_isin(self) -> str | None:
+        """The ISO 6166 identifier this instrument carries, from either place.
+
+        FIX puts an ISIN in one of two places and a venue uses whichever it
+        prefers: `SecurityID <48>` when `SecurityIDSource <22>` is `4`, or an
+        entry of the `NoSecurityAltID <454>` group whose `SecurityAltIDSource
+        <456>` is -- the two tags share one enumeration, which is what lets one
+        reading serve both.
+
+        `alt_ids` is keyed by `IdSource`'s own name, so the alternative is a
+        probe rather than a scan.
+        """
+        if self.security_id and IdSource.from_fix(self.security_id_source) is IdSource.ISIN:
+            return self.security_id
+        return (self.alt_ids or {}).get(IdSource.ISIN.name)
 
     def enriched_with(self, other: Instrument) -> Instrument | None:
         """This instrument plus whatever `other` knows and it does not, or None.

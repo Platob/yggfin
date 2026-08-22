@@ -197,6 +197,30 @@ fields:
     metadata:
       fix:name: SecurityIDSource
       fix:tag: '22'
+  - name: isin_code
+    type: string
+    nullable: true
+    description: ISO 6166 identifier, wherever the message carried it; null when it
+      did not.
+    metadata:
+      iso: '6166'
+  - name: alt_ids
+    type: map
+    nullable: true
+    description: Every other identifier the message carried, keyed by `IdSource`'s
+      name.
+    key:
+      type: string
+    value:
+      type: string
+  - name: security_type
+    type: string
+    nullable: true
+    description: What the venue calls it, from FIX's own list -- `CS`, `FUT`, `OPT`,
+      `MLEG`.
+    metadata:
+      fix:name: SecurityType
+      fix:tag: '167'
   - name: cfi
     type: string
     nullable: true
@@ -271,6 +295,121 @@ fields:
     metadata:
       fix:name: SecurityDesc
       fix:tag: '107'
+  - name: legs
+    type: list
+    nullable: true
+    description: The legs of a multileg instrument, in the order the venue sent them.
+    item:
+      type: struct
+      fields:
+      - name: xhash
+        type: int64
+        description: The instrument this leg is of, derived the same way any other
+          one is.
+      - name: symbol
+        type: string
+        description: Identifier as the venue spells the leg.
+        metadata:
+          fix:name: LegSymbol
+          fix:tag: '600'
+      - name: side
+        type: int32
+        description: Which way the strategy takes this leg; `side.sign` turns it into
+          `+1`/`-1`.
+        metadata:
+          fix:name: LegSide
+          fix:tag: '624'
+          enum:name: Side
+          enum:type: int
+          enum:values: '{"0":"UNKNOWN","100":"BUY","110":"BUY_MINUS","120":"BORROW","130":"SUBSCRIBE","200":"SELL","210":"SELL_PLUS","220":"SELL_SHORT","230":"SELL_SHORT_EXEMPT","240":"LEND","250":"REDEEM","300":"CROSS","310":"CROSS_SHORT","320":"CROSS_SHORT_EXEMPT","330":"AS_DEFINED","340":"OPPOSITE","350":"UNDISCLOSED"}'
+      - name: ratio
+        type: double
+        nullable: true
+        description: How many of this leg one unit of the strategy is; the leg's weight.
+        metadata:
+          fix:name: LegRatioQty
+          fix:tag: '623'
+      - name: kind
+        type: int32
+        description: What the leg settles as, read from `LegCFICode <608>` or `LegSecurityType
+          <609>`.
+        metadata:
+          enum:name: AssetKind
+          enum:type: int
+          enum:values: '{"0":"UNKNOWN","100":"CASH","110":"EQUITY","120":"DEBT","130":"FUND","140":"CURRENCY","150":"COMMODITY","160":"INDEX","200":"DERIVATIVE","210":"FUTURE","220":"OPTION","230":"SWAP","240":"WARRANT","250":"FORWARD","300":"STRUCTURED","310":"SPREAD","320":"MULTILEG","330":"BASKET","400":"FINANCING","410":"REPO","420":"LOAN"}'
+      - name: security_id
+        type: string
+        nullable: true
+        description: Identifier in the scheme `security_id_source` names.
+        metadata:
+          fix:name: LegSecurityID
+          fix:tag: '602'
+      - name: security_id_source
+        type: string
+        nullable: true
+        description: Which scheme `security_id` is in, as FIX numbers them.
+        metadata:
+          fix:name: LegSecurityIDSource
+          fix:tag: '603'
+      - name: cfi
+        type: string
+        nullable: true
+        description: ISO 10962 classification of the leg.
+        metadata:
+          fix:name: LegCFICode
+          fix:tag: '608'
+      - name: security_type
+        type: string
+        nullable: true
+        description: What the venue calls this leg, from FIX's own list.
+        metadata:
+          fix:name: LegSecurityType
+          fix:tag: '609'
+      - name: exchange
+        type: string
+        nullable: true
+        description: Where the leg is listed, when it differs from the strategy's
+          venue.
+        metadata:
+          fix:name: LegSecurityExchange
+          fix:tag: '616'
+      - name: currency
+        type: string
+        nullable: true
+        description: ISO 4217 currency the leg is priced in.
+        metadata:
+          fix:name: LegCurrency
+          fix:tag: '556'
+      - name: multiplier
+        type: double
+        nullable: true
+        description: Units of the underlying one leg contract represents.
+        metadata:
+          fix:name: LegContractMultiplier
+          fix:tag: '614'
+      - name: maturity
+        type: date32[day]
+        nullable: true
+        description: When the leg expires; null for anything that does not.
+        metadata:
+          fix:name: LegMaturityDate
+          fix:tag: '611'
+      - name: strike
+        type: double
+        nullable: true
+        description: Exercise price, where the leg is an option.
+        metadata:
+          fix:name: LegStrikePrice
+          fix:tag: '612'
+      - name: option_kind
+        type: int32
+        description: Which way the leg points, where it is an option.
+        metadata:
+          fix:name: LegPutOrCall
+          fix:tag: '1358'
+          enum:name: OptionKind
+          enum:type: int
+          enum:values: '{"0":"UNKNOWN","100":"PUT","200":"CALL"}'
 - name: metadata
   type: map
   nullable: true
