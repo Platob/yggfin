@@ -301,11 +301,17 @@ def _encode(value: Any) -> Any:
     if _dumps_itself(kind):
         return _encode(value.into_dict())
     if dataclasses.is_dataclass(kind):
-        return {
-            name: _encode(attribute)
-            for name in _members(kind)
-            if (attribute := getattr(value, name)) is not None
-        }
+        # The `_VERBATIM` probe is repeated here rather than left to the call
+        # -- a row of forty columns is forty calls that do nothing else, and
+        # nearly every member of nearly every row is a number or a string.
+        # Measured on a market capture, 1.05 million calls for 16,000 rows.
+        encoded = {}
+        for name in _members(kind):
+            attribute = getattr(value, name)
+            if attribute is None:
+                continue
+            encoded[name] = attribute if type(attribute) in _VERBATIM else _encode(attribute)
+        return encoded
     if isinstance(value, enum.Enum):  # before str: a str-valued enum is also a str
         return _encode(value.value)
     if isinstance(value, Mapping):
@@ -313,7 +319,7 @@ def _encode(value: Any) -> Any:
     if isinstance(value, (str, bytes)):
         return value
     if isinstance(value, (Sequence, set, frozenset)):
-        return [_encode(v) for v in value]
+        return [one if type(one) in _VERBATIM else _encode(one) for one in value]
     if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
         return value.isoformat()
     if isinstance(value, (pathlib.PurePath, uuid.UUID, decimal.Decimal)):
