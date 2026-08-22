@@ -494,6 +494,65 @@ out of order asks the book to un-happen something. That is what
 `instrument_hash`'s `bucket[16]` partition and the `unix` sort order are for —
 read a partition and hand it straight here.
 
+### Two streams, one pass
+
+`Book.from_events` is one instrument's. A capture is not — it is every
+instrument a venue publishes, interleaved, and what a reader wants out of it is
+two tables: the books, and what was learned about the instruments while
+building them. `BookIterator` is that pass.
+
+```python
+from rekep.market import BookIterator
+
+folding = BookIterator(events=events, snapshot_every=HOUR)
+for book in folding.books():          # one stream of books, every instrument
+    ...
+for known in folding.instruments():   # one stream of instrument versions
+    ...
+```
+
+**One iterator, two streams, mutable state per instrument.** Internally each
+instrument has its own resting orders and sorted price lists, kept and mutated
+in place rather than rebuilt; a book is only *built* when the instant it
+belongs to has closed — a new timestamp, or the end of the stream. So an
+instrument that goes quiet costs nothing, and one that is being hammered costs
+one build per instant rather than one per message.
+
+The instrument stream is the other half of that state. A venue tells you about
+an instrument in pieces — a symbol here, a currency there, an ISIN on the
+security-definition message and never again — so what is known is accumulated
+and a version is emitted whenever it grows. A capture where nothing new is
+learned emits one row per instrument and no more.
+
+**Identity moves, and the fold survives it.** An instrument identified by
+symbol on one message and by ISIN on the next hashes two ways, which would open
+two books for one instrument. `Instrument.identities()` names every hash a
+version answers to and the iterator keeps the aliases, so the second message
+finds the book the first one opened.
+
+### Snapshots on the hour
+
+A book is a *delta* against the version before it, which is what makes the
+table small and what makes a reader of one hour depend on every hour before it.
+`Event.make_snapshot(unix)` is the answer:
+
+```python
+taken = book.make_snapshot(unix)   # None when this shape is not snapshotted,
+                                   # when `unix` is not later, or when the
+                                   # event already snapshots something newer
+```
+
+A snapshot is the same state stamped at a later instant, carrying `sunix` —
+what it is a snapshot *of* — so a reader can tell a restatement from something
+that happened. `BookIterator` takes one per instrument per `snapshot_every`
+nanoseconds, an hour by default, which is also the partition: **every hour of
+the table can be read on its own.**
+
+A snapshot carries no delta. It says what is, not what changed, so the
+per-level insertions and removals are dropped on the way out — carrying them
+would repeat one insertion in every hour of a quiet market, which is exactly
+what it did before `forget_delta` existed.
+
 ### What is kept between events
 
 The **live orders**, not the levels. A venue that restates an order has to
@@ -752,6 +811,64 @@ A market-data entry with no `MDEntryID <278>` is a *level*, not an order, so
 its price is what persists: that is what `MDUpdateAction <279>` addresses when
 it says Change or Delete, and it is what makes a level findable across its own
 updates.
+
+### What is known about an instrument
+
+An instrument arrives in pieces, and the pieces are worth keeping. A
+security-definition message names the ISIN, the maturity, the strike and the
+legs; a refresh a millisecond later names the symbol and nothing else.
+`Instrument.enriched_with` merges the two, and `Reference` publishes the result
+as its own versioned table beside the books.
+
+```python
+from rekep.market import Instrument, Leg, Reference
+
+known.isin_code          # deduced when the id source says so, or from a CFI
+known.alt_ids            # {'ISIN': 'US0378331005', 'RIC': 'AAPL.OQ', ...}
+known.security_type      # FUT, OPT, MLEG, ...
+known.legs               # [Leg(...), Leg(...)] on a multi-leg instrument
+```
+
+=== "Alternative identifiers"
+
+    `NoSecurityAltID <454>` is a repeating group of
+    `SecurityAltID <455>` / `SecurityAltIDSource <456>` pairs, and a venue puts
+    the ISIN, the RIC, the SEDOL and its own internal number in it. They are
+    kept under the *source's* name rather than merged into one column, because
+    which registry issued an identifier is part of what the identifier means.
+
+=== "Deducing the ISIN"
+
+    In order, and each rule stops at the first that answers:
+
+    1. `SecurityIDSource <22>` is `4` (ISIN) — so `SecurityID <48>` *is* one.
+    2. A `NoSecurityAltID` entry whose source says ISIN.
+    3. `SecurityID` that is shaped like one: twelve characters, two letters, a
+       check digit that verifies.
+
+    A twelve-character identifier that does not verify is not silently taken —
+    an internal number that happens to be twelve characters long is not an
+    ISIN, and writing one into `isin_code` is worse than leaving it empty.
+
+=== "Legs"
+
+    `NoLegs <555>` is a repeating group and each entry is a `Leg`: its symbol,
+    side, ratio, and its own security identifiers, type, exchange, currency,
+    maturity and strike. A spread, a butterfly and an option strategy are all
+    one instrument with legs rather than several instruments, which is what the
+    venue means by `MLEG`.
+
+    `Leg` is declared **last** in `Instrument`, which is not a style choice:
+    Iceberg counts bounds in declaration order, and a repeating group is a
+    handful of leaves that can never carry a bound anyway — putting it in front
+    of a filter column would spend the budget on something no reader filters on
+    ([why](iceberg.md#a-dataset)).
+
+Repeating groups are read by their count field and delimited by the tag FIX
+says starts each entry, so a component nested inside one — a leg's own
+`NoLegSecurityAltID` — belongs to the entry it appears in rather than to the
+message. A group whose count disagrees with the entries present is read for the
+entries that are there: a truncated log line is still worth what it carries.
 
 ### What has no column
 

@@ -386,3 +386,55 @@ def test_every_shipped_kind_is_reachable_from_a_document() -> None:
             pytest.importorskip("pyiceberg")
         assert Dataset._imported(kind) is not None, f"{kind} is not in {module}"
         assert Dataset.KINDS[kind].KIND == kind
+
+
+# -- what a join hands back --------------------------------------------------
+
+
+def joinable(keys: Sequence[int]) -> pyarrow.Table:
+    return pyarrow.table(
+        {
+            "at": pyarrow.array(keys, pyarrow.int64()),
+            "payload": pyarrow.array([f"row-{key}" for key in keys]),
+        }
+    )
+
+
+def descents(table: pyarrow.Table, column: str) -> int:
+    """How many times `column` goes backwards -- zero on a table still in order."""
+    values = table.column(column).combine_chunks()
+    return pyarrow.compute.sum(pyarrow.compute.less(values[1:], values[:-1])).as_py() or 0
+
+
+def test_an_anti_join_hands_the_rows_back_in_the_order_they_came() -> None:
+    """Arrow emits a join a batch at a time, in whatever order they finish. The
+    rows are right and their layout is not: a chunk is sorted before it is
+    written so each row group covers a narrow slice of the sort key, and a
+    scrambled take spreads every slice over all of them."""
+    from rekep.dataset import anti_join
+
+    chunk = joinable(range(200_000))
+    stored = joinable(range(0, 200_000, 3))
+    fresh = anti_join(chunk, stored, ["at"])
+    assert fresh.num_rows == 200_000 - len(range(0, 200_000, 3))
+    assert descents(fresh, "at") == 0, "the chunk's own order, not the join's"
+    assert fresh.column("payload")[0].as_py() == "row-1", "and the right rows in it"
+
+
+def test_a_semi_join_hands_the_rows_back_in_the_order_they_came() -> None:
+    from rekep.dataset import semi_join
+
+    stored = joinable(range(200_000))
+    chunk = joinable(range(0, 200_000, 3))
+    kept = semi_join(stored, chunk, ["at"])
+    assert kept.num_rows == len(range(0, 200_000, 3))
+    assert descents(kept, "at") == 0
+
+
+def test_a_join_that_drops_nothing_is_the_table_itself() -> None:
+    """The common case on a stream of new keys, and the one that must not pay
+    for an ordering it already has."""
+    from rekep.dataset import anti_join
+
+    chunk = joinable(range(10))
+    assert anti_join(chunk, joinable([]), ["at"]) is chunk

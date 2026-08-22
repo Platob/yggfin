@@ -140,6 +140,36 @@ with its docs, keys and partitions intact.
     `iceberg:field_id` when the shape came from a table or from a
     [contract](contracts.md) that pins them.
 
+!!! note "A wide shape says which columns must keep bounds"
+
+    Iceberg infers min/max bounds for the first hundred **leaf** columns in
+    declaration order and writes the rest with none, so a filter on a column
+    past that budget reads every file — and still returns the right answer,
+    which is why nothing notices. Position decides it, and a nested member
+    added in front of a filter column pushes one over the edge: `Book` reached
+    exactly a hundred leaves the day an instrument grew legs.
+
+    So a table created from a shape declares the columns that shape is *read*
+    by — its partition, sort and primary keys — as
+    `write.metadata.metrics.column.<name>`, which takes them out of the budget
+    entirely. Strings are bounded at sixteen characters, because a bound on a
+    long string is the string, in every manifest entry that names the file.
+    The budget itself is only raised when the shape is genuinely past it.
+
+    ```python
+    from rekep.iceberg import metrics_for
+
+    metrics_for(Quote.FIELD)
+    # {'write.metadata.metrics.column.symbol': 'truncate(16)',
+    #  'write.metadata.metrics.column.day': 'full'}
+    ```
+
+    `table_properties` wins over all of it, so a column nothing filters on can
+    be set to `none` and stop costing manifest bytes. pyiceberg collects every
+    top-level primitive regardless of position, so today this changes nothing
+    about what *this* writer records — it is written on the table for the
+    engines that do honour it.
+
 === "Write"
 
     ```python
@@ -321,6 +351,36 @@ goes.
     once, sees nothing to read, and the chunk goes straight to a commit with
     no reader built and no data file opened.
 
+=== "A column the keys decide"
+
+    A filter that names no partition column prunes nothing at the manifest
+    list, and the market shapes are keyed on `(unix, hash)` while being
+    partitioned on `hunix` — so the merge scaled with the **table**, not with
+    the chunk being merged.
+
+    But `hunix` *is* `unix`, truncated to the hour: two rows that agree on
+    `unix` agree on it, so the chunk's own values are the values of every row
+    that can match. That is a fact about the data rather than about any one
+    write, so the field says it once:
+
+    ```python
+    hunix: Annotated[int, Field.partition_key(derived_from="unix")] = 0
+    """`unix` truncated to the hour -- what the data is partitioned on."""
+    ```
+
+    A merge then names every column whose sources are all keys of *this*
+    merge, and the scan prunes to the partitions the keys fall in. Replaying
+    one hour, declared against not: **19 ms against 37** over 48 hourly
+    partitions, **20 against 93** over 168, **27 against 164** over 336. The
+    declared path barely moves; the other is linear in the table.
+
+    The declaration may only ever widen the filter, never narrow it. A derived
+    column holding a null or a NaN contributes no term at all, a derivation
+    whose sources are not all keys here is ignored, and a shape read back from
+    a table declares nothing — Iceberg records a partition spec, not *why* a
+    column holds what it does, and saying nothing costs pruning rather than a
+    row.
+
 === "Updating"
 
     When most rows genuinely *change*, finding them stops being the cost and
@@ -346,6 +406,26 @@ goes.
     is measured too — `(at, hash)` at 0.51–11.94 s for the same 500 to 5,000
     rows — because an exact filter over *n* arbitrary key pairs is *n* terms
     and there is no smaller way to say it.
+
+=== "What the join hands back"
+
+    An Arrow join emits its output a batch at a time and in whatever order
+    the batches finish — measured on pyarrow 25, a 400k-row anti-join comes
+    back in ten runs rather than one. The rows are right; their **layout** is
+    not. A chunk is sorted on the way in so that each of a file's row groups
+    covers a narrow slice of the sort key, and a scrambled take spreads every
+    slice across all of them, which makes `sort_by` mean nothing for any chunk
+    that had a row to drop — every partial replay, and only those.
+
+    So the *positions* the join hands back are put back in order before the
+    take. Sorting positions rather than any column is what keeps it honest: it
+    restores the order the caller had, whatever that order was, and says
+    nothing about what it should be.
+
+    Measured on a 1.2M-row table, a top-5% filter after inserting 800k rows
+    over 400k stored ones: **282,496 rows decoded in order against 400,000 to
+    531,072 out of it**. The ordering itself did not show up against
+    run-to-run variance on the insert.
 
 === "Coherence"
 
