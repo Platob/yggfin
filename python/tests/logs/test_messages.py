@@ -23,19 +23,32 @@ RECORDS = [line for line in SAMPLE_BYTES.split(b"\n") if HEADER_PATTERN.match(li
 CONTINUATIONS = [
     line for line in SAMPLE_BYTES.split(b"\n") if line and not HEADER_PATTERN.match(line)
 ]
-EXPECTED_RECORDS = 9
+EXPECTED_RECORDS = 10
 EXPECTED_CONTINUATIONS = 3
 
 #: Which category each record is, in file order. The whole point of the
 #: fixture, so it is spelled out rather than derived from the rules it checks.
-EXPECTED_CATEGORIES = ["OTHER", "OTHER", "FIX", "FIX", "FIX", "UL", "OTHER", "OTHER", "OTHER"]
+EXPECTED_CATEGORIES = [
+    "OTHER",
+    "OTHER",
+    "FIX",
+    "FIX",
+    "FIX",
+    "UL",
+    "UL",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+]
 
 #: Derived from the bridge line, then pinned: eleven tokens, two of which carry
 #: three members each, so a parser that lost one cannot move both sides.
 EXPECTED_BRIDGE_PAIRS = 15
 
-#: Row indexes worth naming.
-PIPED, CARET, SOHED, BRIDGE = 2, 3, 4, 5
+#: Row indexes worth naming. `WRAPPED` is a bridge message inside a FIX
+#: envelope -- a wire header and a `#NAME=` body on one line, which answers to
+#: both tells and so is the one the rule order exists for.
+PIPED, CARET, SOHED, BRIDGE, WRAPPED, REJECTED = 2, 3, 4, 5, 6, 7
 
 
 def test_the_sample_is_the_shape_the_tests_assume() -> None:
@@ -123,6 +136,26 @@ def test_the_bridge_group_keeps_both_entries_in_wire_order(table: pyarrow.Table)
     assert parties == ["BUYSIDE", "XPAR"]
 
 
+def test_a_bridge_message_in_a_fix_envelope_keeps_both_halves(table: pyarrow.Table) -> None:
+    """`8=FIX.4.2|35=UL|#SYMBOL=TTF` is one message with two spellings in it.
+
+    Read as a wire message every named field is noise; read from the `#` the
+    header that says what it is gets cut off with the log's prefix. So it is
+    its own rule, and the message still starts at its BeginString.
+    """
+    tags = dict(table.column("fix_tags")[WRAPPED].as_py())
+    assert tags[8] == "FIX.4.2" and tags[35] == "UL", "the wire header survives"
+    assert tags[55] == "TTF" and tags[54] == "1" and tags[38] == "1200", "and so do the names"
+    assert dict(table.column("keyval")[WRAPPED].as_py()) == {"ISINCODE": "XX0000084733"}
+
+
+def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> None:
+    """The discriminator is what the sender said it is, not a hash in a Text field."""
+    quoted = "8=FIX.4.4|35=8|58=see #A=1 and #B=2|10=1|"
+    assert Rules.DEFAULT.categorise(quoted).name == "FIX"
+    assert Rules.DEFAULT.categorise("8=FIX.4.2|35=ULX|#A=1|#B=2").name == "FIX"
+
+
 def test_a_name_no_dictionary_has_is_kept_and_never_guessed(table: pyarrow.Table) -> None:
     assert dict(table.column("keyval")[BRIDGE].as_py()) == {
         "ISINCODE": "XX0000084733",
@@ -185,7 +218,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     names = table.column("category_name").to_pylist()
     assert names[BRIDGE] == "BRIDGE", "the driver decides now, not the message"
     assert names[PIPED] == "OTHER", "and the wire messages are nobody's category"
-    assert names[6] == "BRIDGE", "including the bridge's own prose line"
+    assert names[REJECTED] == "BRIDGE", "including the bridge's own prose line"
     assert table.column("fix_tags")[PIPED].as_py() is None
 
 

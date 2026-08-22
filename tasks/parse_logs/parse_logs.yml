@@ -72,9 +72,16 @@ rules:
 # different facts.
 #
 # Delete this block to take the defaults: a BeginString anywhere is FIX, two or
-# more `#NAME=` tokens are a UL bridge message, everything else is OTHER.
+# more `#NAME=` tokens are a UL bridge message, everything else is OTHER -- and
+# a bridge message wrapped in a FIX envelope leads the list, because it answers
+# to both tells and the more specific reading has to get there first.
 categories:
   rules:
+    - name: UL
+      category_id: 2
+      pattern: '(?s)(?:^|[^0-9])8=FIXT?.*[^0-9]35=UL(?:[^A-Za-z0-9]|$)'
+      codec: ul
+      fix_version: "4.4"
     - name: FIX
       category_id: 1
       pattern: '(?:^|[^0-9])8=FIXT?'

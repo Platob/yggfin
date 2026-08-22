@@ -95,6 +95,18 @@ BRIDGE = rf"(?s){_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}"
 #: without a start marker the first key would be `toBridge #ISINCODE`.
 _BRIDGE_VECTOR = rf"(?s)(?P<msg>{_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}.*)"
 
+#: A wire message whose **body** is a bridge one: a BeginString, and MsgType
+#: `UL` somewhere after it. Some venues wrap the bridge's own `#NAME=` payload
+#: in a FIX envelope, and such a line answers to both tells -- so it needs a
+#: rule of its own, or the FIX one claims it first and every named field in it
+#: is read as noise.
+#:
+#: The MsgType is the discriminator and not the `#` tokens, because that is
+#: what the *sender* said the message is: a wire message with a hash in a Text
+#: field is not a bridge message, and one that says `35=UL` is one however few
+#: fields it happens to carry.
+BRIDGE_WIRE = rf"(?s){BEGIN_STRING}.*[^0-9]35=UL(?:[^A-Za-z0-9]|$)"
+
 #: The scalar reading of the same rule: the first `#NAME=` that has another
 #: after it. A lookahead rather than a capture, because the scalar path wants
 #: the *position* and RE2 -- which has neither -- reads it off the capture.
@@ -343,6 +355,13 @@ class FixMessage(Convertible):
         buried in noise (tags only), no BeginString means the line *is* the
         rendered pairs (names admitted).
 
+        **A message starts where it starts, once.** At its BeginString when it
+        has one, at its first `#NAME=` when it does not -- and never both, so a
+        line that carries a wire header *and* a bridge body
+        (`8=FIX.4.2|35=UL|#A=1|#B=2`) keeps its tags as well as its names.
+        Cutting at the bridge marker there dropped the header, which is the
+        half of the message that says what it is.
+
         `entry_separator` is the second one, inside a single indexed token:
         `#NoPartyIDs[0]=PartyID=x<SOH>PartyIDSource=D` is one whole group
         *entry* in one token, and its members land under the same canonical
@@ -357,7 +376,7 @@ class FixMessage(Convertible):
             text = text[begin.start() :]
         if named is None:
             named = begin is None
-        if named:
+        if named and begin is None:
             bridge = _BRIDGE.search(text)
             if bridge is not None:
                 text = text[bridge.start() :]
@@ -608,7 +627,12 @@ def parse_arrow_array(
         # Sampled from the column as handed over -- once, even for a chunked
         # column, so where a chunk boundary falls can never change what a row
         # parses to. Skipped entirely when the caller said all three.
-        sampled = _column_style(column)
+        #
+        # The caller's `named` is handed *in*, because whether there is a
+        # second separator to look for depends on it: a wrapped bridge message
+        # has a BeginString, so the sample would read it as wire and never look
+        # inside an indexed token the caller is about to ask it to read.
+        sampled = _column_style(column, named)
         separator = sampled[0] if separator is None else separator
         named = sampled[1] if named is None else named
         entry_separator = sampled[2] if entry_separator is None else entry_separator
@@ -628,13 +652,18 @@ def parse_arrow_array(
     # -- and `(?s)`, or a message holding a newline would end at it here
     # where the scalar slice keeps it.
     begun = compute.struct_field(compute.extract_regex(values, _BEGIN_VECTOR), "msg")
-    values = compute.if_else(compute.is_null(begun), values, begun)
+    wire = compute.is_valid(begun)
+    values = compute.if_else(wire, begun, values)
     if named:
-        # And the same rule for the other kind of message, in the same order
-        # the scalar parser applies them, so the two agree by construction on
-        # a line that somehow carries both tells.
+        # The other kind of message start, and **only** where there was no
+        # first one: a line carrying a wire header and a bridge body starts at
+        # the header, or the tags that say what it is are cut off with the
+        # log's prefix. The scalar parser applies the same guard, so the two
+        # agree by construction.
         bridged = compute.struct_field(compute.extract_regex(values, _BRIDGE_VECTOR), "msg")
-        values = compute.if_else(compute.is_null(bridged), values, bridged)
+        values = compute.if_else(
+            compute.and_(compute.invert(wire), compute.is_valid(bridged)), bridged, values
+        )
     tokens = compute.split_pattern(values, separator)
     # `.values`, not `.flatten()`: the boundaries below index into the child
     # array as the offsets wrote it, and `flatten` re-slices around null rows.
@@ -859,16 +888,21 @@ def _until_checksum(tags: Any, entries: Any, offsets: Any, parents: Any) -> tupl
     )
 
 
-def _column_style(column: Any) -> tuple[str, bool, str | None]:
+def _column_style(column: Any, named: bool | None = None) -> tuple[str, bool, str | None]:
     """`(separator, named, entry separator)` off the first non-empty line.
 
     One sample decides for the column -- the same reading `from_text` makes
     per line: a BeginString means wire tags buried in log noise, none means
     the line is rendered `name=value` pairs, and a second separator is looked
-    for only where the first reading says there could be one. Sampled from the
-    column *before* any cast, and decoded the way `from_text` decodes, so a
-    binary column holding a byte no UTF-8 admits is sampled rather than
-    crashed on. `(SOH, False, None)` for a column with nothing in it.
+    for only where the reading says there could be one. `named` overrides that
+    middle answer where a caller already knows it, which is what a wrapped
+    bridge message needs: it has a BeginString, so the sample alone would call
+    it wire and never look for the separator inside its indexed tokens.
+
+    Sampled from the column *before* any cast, and decoded the way `from_text`
+    decodes, so a binary column holding a byte no UTF-8 admits is sampled
+    rather than crashed on. `(SOH, False, None)` for a column with nothing in
+    it.
     """
     for value in column:
         if not value.is_valid:
@@ -881,10 +915,10 @@ def _column_style(column: Any) -> tuple[str, bool, str | None]:
             text = text.decode("utf-8", "replace")
         if text:
             separator = detect_separator(text)
-            named = _BEGIN.search(text) is None
-            entry = detect_entry_separator(text, separator) if named else None
-            return separator, named, entry
-    return SOH, False, None
+            reading = _BEGIN.search(text) is None if named is None else named
+            entry = detect_entry_separator(text, separator) if reading else None
+            return separator, reading, entry
+    return SOH, False if named is None else named, None
 
 
 def _boundaries(tokens: Any) -> Any:

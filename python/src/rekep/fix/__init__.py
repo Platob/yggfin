@@ -4,6 +4,7 @@ from rekep.fix.fields import FIX_SCALARS, arrow_type_of, cast_arrow_bool, fix_fi
 from rekep.fix.message import (
     BEGIN_STRING,
     BRIDGE,
+    BRIDGE_WIRE,
     SOH,
     FixMessage,
     detect_entry_separator,
@@ -19,6 +20,7 @@ __all__ = [
     "BASE_URL",
     "BEGIN_STRING",
     "BRIDGE",
+    "BRIDGE_WIRE",
     "CACHE_DIRECTORY",
     "CODECS",
     "FIX_SCALARS",

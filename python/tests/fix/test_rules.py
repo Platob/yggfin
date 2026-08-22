@@ -7,7 +7,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep.fix import BEGIN_STRING, BRIDGE, Rule, Rules
+from rekep.fix import BEGIN_STRING, BRIDGE, BRIDGE_WIRE, Rule, Rules
 from rekep.fix.rules import CODE, DEFAULT_RULES, NAMED, OTHER
 
 SOH = "\x01"
@@ -19,25 +19,31 @@ LINES = {
     "recv 8=FIX4^A9=61^A35=0^A10=017^A on session 3": "FIX",
     f"raw 8=FIX.4.4{SOH}9=224{SOH}35=8{SOH}10=118{SOH}": "FIX",
     "toBridge #ISINCODE=XX|#SYMBOL=TTF|#SIDE=1": "UL",
+    "sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|": "UL",
+    "8=FIX.4.4|35=8|58=quoting #A=1 and #B=2|10=1|": "FIX",
     "Message rejected because : ignoring OMSSales expiry message": "OTHER",
     "no level printed by this driver": "OTHER",
 }
 
 #: Derived from the rule set, then pinned, so a renamed built-in cannot move
 #: both sides of the assertions below together.
-EXPECTED_RULES = 3
+EXPECTED_RULES = 4
 
 
-def test_the_default_set_is_the_three_built_ins() -> None:
+def test_the_default_set_is_the_built_ins_in_order() -> None:
+    """The wrapped bridge message leads: it is the only one with two tells."""
     assert len(DEFAULT_RULES) == EXPECTED_RULES
-    assert [rule.name for rule in Rules.DEFAULT.rules] == ["FIX", "UL", "OTHER"]
-    assert [rule.category_id for rule in Rules.DEFAULT.rules] == [1, 2, 0]
+    assert [rule.name for rule in Rules.DEFAULT.rules] == ["UL", "FIX", "UL", "OTHER"]
+    assert [rule.category_id for rule in Rules.DEFAULT.rules] == [2, 1, 2, 0]
 
 
 def test_the_built_in_patterns_are_the_parser_s_own() -> None:
     """One answer to "where does a message start", not two that drift apart."""
     assert Rules.DEFAULT.rule(1).pattern == BEGIN_STRING
-    assert Rules.DEFAULT.rule(2).pattern == BRIDGE
+    assert {rule.pattern for rule in Rules.DEFAULT.rules if rule.category_id == 2} == {
+        BRIDGE,
+        BRIDGE_WIRE,
+    }
 
 
 @pytest.mark.parametrize(("message", "expected"), LINES.items(), ids=lambda v: str(v)[:28])
@@ -52,6 +58,15 @@ def test_the_column_agrees_with_the_line_for_line_reading() -> None:
     assert ids.to_pylist() == [rule.category_id for rule in scalar]
     assert names.to_pylist() == [rule.name for rule in scalar]
     assert ids.type == CODE
+
+
+def test_a_wrapped_bridge_message_is_read_as_a_bridge_message() -> None:
+    """It answers to both tells, so the order of the rules is what decides it."""
+    wrapped = "8=FIX.4.2|35=UL|#A=1|#B=2"
+    assert Rules.DEFAULT.categorise(wrapped).name == "UL"
+    assert Rules.DEFAULT.categorise(wrapped).named is True
+    assert Rules.DEFAULT.categorise("8=FIX.4.2|35=ULX|#A=1|#B=2").name == "FIX"
+    assert Rules.DEFAULT.categorise("8=FIX.4.2|135=UL|#A=1|#B=2").name == "FIX"
 
 
 def test_a_lone_marked_key_in_prose_is_not_a_bridge_message() -> None:

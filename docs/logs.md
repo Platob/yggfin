@@ -399,7 +399,10 @@ field a FIX tag answers for, `keyval` for every field none does.
     Three categories out of the box: a **BeginString** anywhere is FIX, two or
     more **`#NAME=`** tokens are a UL bridge message, and everything else is
     OTHER — which is most of a capture, parses to nothing, and leaves both maps
-    null. What each is and how to read it is a [rule set](fix.md#what-kind-of-message-a-line-carries).
+    null. A bridge message wrapped in a FIX envelope
+    (`8=FIX.4.2|35=UL|#A=1|#B=2`) is UL as well, and keeps its wire header.
+    What each is and how to read it is a
+    [rule set](fix.md#what-kind-of-message-a-line-carries).
 
 === "Point it at a dictionary"
 

@@ -19,7 +19,7 @@ import pyarrow.compute
 
 from rekep.convert import Convertible
 from rekep.fields import field
-from rekep.fix.message import BEGIN_STRING, BRIDGE
+from rekep.fix.message import BEGIN_STRING, BRIDGE, BRIDGE_WIRE
 
 #: What a `codec` may say, and what each means to the parser: read the line as
 #: wire tags, read it as rendered names, or do not read it at all. Three and
@@ -121,13 +121,28 @@ UL = Rule(
     codec="ul",
 )
 
+#: The same message inside a FIX envelope: `8=FIX.4.2|35=UL|#A=1|#B=2`. It
+#: answers to the FIX tell as well, so it sits **in front of** the FIX rule --
+#: first match wins, and read as a wire message every named field in it is
+#: noise. Same category as any other bridge message, because that is what it
+#: is; the wire header is not lost either way, since the named codec admits a
+#: numeric key and the message still starts at its BeginString.
+UL_WIRE = Rule(
+    name="UL",
+    category_id=2,
+    pattern=BRIDGE_WIRE,
+    codec="ul",
+)
+
 #: Everything else, which is most of a capture. An empty pattern matches every
 #: line, so this is the fall-through *as a rule*: last in the list, and the
 #: answer `categorise` gives when a custom set runs out without matching.
 OTHER = Rule(name="OTHER", category_id=0, pattern="", codec="none")
 
-#: The three built-ins, in the order they are tried.
-DEFAULT_RULES: tuple[Rule, ...] = (FIX, UL, OTHER)
+#: The built-ins, in the order they are tried. The wrapped bridge message
+#: leads, because it is the only one that answers to two tells and the more
+#: specific reading has to get there first.
+DEFAULT_RULES: tuple[Rule, ...] = (UL_WIRE, FIX, UL, OTHER)
 
 
 @dataclasses.dataclass

@@ -327,11 +327,20 @@ optionally against the driver that emitted it.
     Rules.DEFAULT.categorise("heartbeat emitted seq=38110").name         # 'OTHER'
     ```
 
-    Three built-ins. **FIX** is a BeginString anywhere in the line; **UL** is
-    two or more `#NAME=` tokens; **OTHER** is everything else, id 0. The first
-    two patterns are the parser's own constants (`BEGIN_STRING`, `BRIDGE`), so
-    "what makes this a FIX message" and "where does the message start" can
-    never drift apart.
+    **FIX** is a BeginString anywhere in the line; **UL** is two or more
+    `#NAME=` tokens; **OTHER** is everything else, id 0. Every pattern is the
+    parser's own constant (`BEGIN_STRING`, `BRIDGE`, `BRIDGE_WIRE`), so "what
+    makes this a FIX message" and "where does the message start" can never
+    drift apart.
+
+    A fourth rule leads the list, because one line answers to two tells:
+    `8=FIX.4.2|35=UL|#A=1|#B=2` is a bridge message inside a FIX envelope. Read
+    as a wire message every named field in it is noise, so it is UL — and the
+    message still starts at its **BeginString**, so the header that says what
+    it is survives beside the names. The discriminator is the MsgType and not
+    the `#` tokens: a wire message quoting `#A=1` in a Text field is not a
+    bridge message, and one that says `35=UL` is one however few fields it
+    carries.
 
 === "A whole column"
 
