@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import dataclasses
+import os
+import sys
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, ClassVar
 
@@ -117,6 +119,30 @@ class ParseMarket(Task):
     limit: int | None = None
     """Stop after this many source rows; None reads the whole capture. For a dry run."""
 
+    workers: int = 1
+    """How many processes translate the capture; `0` is one per CPU, `1` is here.
+
+    **Processes and not threads**, and that was measured rather than assumed:
+    every hot path in this job is pure Python, so a thread pool is *slower*
+    than doing the work here -- 0.86x on four threads, against a 0.98x ceiling
+    for four threads doing nothing but spin. pyarrow releases the GIL exactly
+    where the data is already in Arrow, which is the parquet write and nothing
+    else this touches.
+
+    **Translation and not the fold.** Reading a line as the events it carries
+    is per-line work with no state, so it shards perfectly; folding is a fold
+    and needs one instrument's events in order. The parent keeps the fold,
+    which after the encoder work is the smaller half, and the worker gets the
+    part that is embarrassingly parallel.
+
+    What it costs is a pickle of the events back -- measured at about 213 bytes
+    and 11 us a row against 85 us a message of translation, so roughly a
+    seventh of what it buys.
+    """
+
+    shard_row_size: int = 4_096
+    """Lines a worker is given at a time; what bounds the memory a fan-out adds."""
+
     # -- running -------------------------------------------------------------
 
     def run(self) -> TaskRun:
@@ -162,17 +188,26 @@ class ParseMarket(Task):
         capture twice to have both would double the only part of this job that
         touches the disk.
         """
-        for batch in self.into_arrow_batches():
-            report.rows += batch.num_rows
-            for event in self.into_events(batch):
-                self._hold(
-                    "orders" if event.is_order() else "executions",
-                    event,
-                    buffers,
-                    targets,
-                    report,
-                )
-                yield event
+        if self.workers == 1:
+            for batch in self.into_arrow_batches():
+                report.rows += batch.num_rows
+                for event in self.into_events(batch):
+                    self._landed(event, buffers, targets, report)
+                    yield event
+            return
+        for event in self.into_parallel_events(report):
+            self._landed(event, buffers, targets, report)
+            yield event
+
+    def _landed(
+        self,
+        event: MarketEvent,
+        buffers: dict[str, list[Any]],
+        targets: dict[str, Dataset],
+        report: TaskRun,
+    ) -> None:
+        """One translated event held for the table it belongs to."""
+        self._hold("orders" if event.is_order() else "executions", event, buffers, targets, report)
 
     def _hold(
         self,
@@ -206,6 +241,52 @@ class ParseMarket(Task):
             yield from FixEvents.from_text(
                 message, venue=self.venue, runix=recorded[index] if recorded else 0
             )
+
+    def into_parallel_events(self, report: TaskRun | None = None) -> Iterator[MarketEvent]:
+        """Every event the capture carries, translated across processes.
+
+        `executor.map` with an explicit chunk size, so the order events come
+        back in is the order the lines were read in -- which a fold depends on
+        and a shard would otherwise destroy.
+
+        How the workers are started is `_context`'s, and it is a correctness
+        question before it is a speed one.
+        """
+        import concurrent.futures
+
+        context = _context()
+        workers = self.workers or (os.cpu_count() or 1)
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=workers, mp_context=context
+        ) as pool:
+            for found in pool.map(_translated, self._shards(report), chunksize=1):
+                yield from found
+
+    def _shards(
+        self, report: TaskRun | None = None
+    ) -> Iterator[tuple[str, str | None, int, list[tuple[str, int]]]]:
+        """The capture cut into units of work, each a run of lines and their clocks.
+
+        Plain tuples of text and integers, because they cross a process boundary:
+        an Arrow batch would too, but the worker wants the lines one at a time
+        and slicing them out on this side is work the parent would do serially.
+        """
+        held: list[tuple[str, int]] = []
+        for batch in self.into_arrow_batches():
+            if report is not None:
+                report.rows += batch.num_rows
+            messages = batch.column(self.column).to_pylist()
+            names = batch.schema.names
+            recorded = batch.column("unix").to_pylist() if "unix" in names else None
+            for index, message in enumerate(messages):
+                if not message:
+                    continue
+                held.append((message, recorded[index] if recorded else 0))
+                if len(held) >= self.shard_row_size:
+                    yield (self.column, self.venue, len(held), held)
+                    held = []
+        if held:
+            yield (self.column, self.venue, len(held), held)
 
     def into_arrow_batches(self) -> Iterator[pyarrow.RecordBatch]:
         """The source, batch by batch; `limit` cuts the last one rather than reading on."""
@@ -313,3 +394,61 @@ class ParseMarket(Task):
         name = self.target_name(shape)
         report.written[name] = report.written.get(name, 0) + landed
         report.skipped += len(held) - landed
+
+
+def _context() -> Any:
+    """How to start a worker here: safely if that is possible, and say so if not.
+
+    A bare `fork` copies a process that may already have threads in it --
+    pyarrow starts them, and so does a test runner -- and the child inherits
+    their locks without the threads that would ever release them. CPython warns
+    about that today and Python 3.14 makes it an error. `forkserver` forks from
+    a process started clean and single-threaded, so its children are safe, and
+    `set_forkserver_preload` pays this package's import once for the server
+    rather than once per worker.
+
+    What it needs in exchange is a `__main__` a child can re-import, which is
+    ordinary `multiprocessing` semantics and is why every fan-out in Python
+    asks to be run from a script rather than from a REPL. Where there is no
+    such `__main__` -- an interactive session, `python -c`, a heredoc -- a
+    forkserver child dies re-preparing it, so `fork` is used instead and its
+    hazard is the lesser one: an interactive session is not usually the thing
+    with a thread pool inside it.
+
+    With neither, a fan-out cannot be started at all, and this says which
+    knob to turn rather than failing later with a broken pool.
+    """
+    import multiprocessing
+    import os.path
+
+    available = multiprocessing.get_all_start_methods()
+    main = sys.modules.get("__main__")
+    named = getattr(main, "__file__", None)
+    reachable = bool(named) and os.path.isfile(named)
+    if reachable and "forkserver" in available:
+        context = multiprocessing.get_context("forkserver")
+        context.set_forkserver_preload(["rekep.tasks.market"])
+        return context
+    if "fork" in available:
+        return multiprocessing.get_context("fork")
+    if reachable:
+        return multiprocessing.get_context("spawn")
+    raise RuntimeError(
+        "a fan-out needs a `__main__` its workers can import, and this process has "
+        f"none ({named!r}). Run the task from a script, or set `workers=1` to "
+        "translate in this process."
+    )
+
+
+def _translated(shard: tuple[str, str | None, int, list[tuple[str, int]]]) -> list[MarketEvent]:
+    """One shard of lines as the market events they carry. Runs in a worker.
+
+    A module-level function and not a method, because a bound method drags the
+    whole task -- its catalog properties, its source, its buffers -- through
+    the pickle to every worker, and none of that is what the work needs.
+    """
+    _, venue, _, lines = shard
+    found: list[MarketEvent] = []
+    for message, recorded in lines:
+        found.extend(FixEvents.from_text(message, venue=venue, runix=recorded))
+    return found

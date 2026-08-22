@@ -383,3 +383,53 @@ def test_turning_the_grid_off_leaves_only_the_instants_that_moved(
     assert report.written["market.books"] == INSTANTS
     stored = task.target("books").read_arrow_table()
     assert all(one is None for one in stored.column("sunix").to_pylist())
+
+
+# -- fanning the translation out ---------------------------------------------
+
+
+def test_workers_change_how_it_runs_and_not_what_it_lands(
+    capture: Path, catalog: dict, tmp_path: Path
+) -> None:
+    """The one property a fan-out has to have. `executor.map` hands results back in
+    submission order, which a fold depends on and a shard would otherwise destroy."""
+    alone = parse(capture, catalog).run()
+    second = {
+        "type": "sql",
+        "uri": f"sqlite:///{(tmp_path / 'second.db').as_posix()}",
+        "warehouse": (tmp_path / "second").as_uri(),
+    }
+    (tmp_path / "second").mkdir()
+    together = parse(capture, second, workers=2).run()
+    assert together.written == alone.written
+    assert together.rows == alone.rows
+
+
+def test_the_events_come_back_in_the_order_the_lines_were_read(
+    capture: Path, catalog: dict
+) -> None:
+    task = parse(capture, catalog, workers=2)
+    serial = [one for batch in task.into_arrow_batches() for one in task.into_events(batch)]
+    fanned = list(task.into_parallel_events())
+    assert [one.hash for one in fanned] == [one.hash for one in serial]
+
+
+def test_a_shard_carries_the_lines_and_their_clocks_and_nothing_else(
+    capture: Path, catalog: dict
+) -> None:
+    """A bound method would drag the task -- its catalog properties, its source,
+    its buffers -- through the pickle to every worker."""
+    task = parse(capture, catalog, workers=2, shard_row_size=2)
+    shards = list(task._shards())
+    assert len(shards) > 1, "the fixture has to actually shard"
+    for column, venue, count, lines in shards:
+        assert column == task.column and venue == "XCME"
+        assert count == len(lines) <= 2
+        assert all(isinstance(text, str) and isinstance(clock, int) for text, clock in lines)
+
+
+def test_one_worker_stays_in_this_process(capture: Path, catalog: dict) -> None:
+    """Which is the default, and what a small capture wants: a pool costs more to
+    start than the work it would take away."""
+    report = parse(capture, catalog, workers=1).run()
+    assert report.landed
