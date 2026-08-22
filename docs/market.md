@@ -1027,36 +1027,43 @@ table, and splitting the two would report a number no caller can have:
 
 | message | events out | measured |
 | --- | --- | --- |
-| `NewOrderSingle <D>` | 1 | ~10.4k messages/s |
-| `ExecutionReport <8>`, filled | 2 | ~5.5k messages/s, ~11.0k events/s |
-| `MarketDataIncrementalRefresh <X>`, 5 entries | 5 | ~2.6k messages/s, ~12.8k events/s |
+| `NewOrderSingle <D>` | 1 | ~12.5k messages/s |
+| `ExecutionReport <8>`, filled | 2 | ~6.3k messages/s, ~12.6k events/s |
+| `MarketDataIncrementalRefresh <X>`, 5 entries | 5 | ~3.7k messages/s, ~18.6k events/s |
 
 Per *event* the three agree within a quarter, which is the useful reading: the
 cost is the event, not the message.
 
-Six measured changes got it there. Three on what a lookup costs: `FixMessage.get`
-is a scan and then a regex scan, which cost **434 regex matches per message**
-when the translation read forty fields off one, so the message is read into
-`by_tag` once; the tag mapping was rebuilt per message; and the
-fold-vs-alternation choice for a key was
-[raced rather than assumed](fix.md#benchmarks). Together, **2.1×** on a
-`NewOrderSingle`. Three more on what a message costs:
+Nine measured changes got it there, and they fall into three kinds.
 
-- a repeating group the message does **not** carry — five of the six looked
-  for — fell through to a regex against every pair, which was **312,000 of the
-  332,000 regex matches** in a 4,000-line parse;
-- a `tag=value` token is split rather than matched, which is nearly every token
-  of nearly every message;
-- and a message is **one** instrument, so it is read once rather than once per
-  event: eighteen tags and two repeating groups, twice for a filled report and
-  once per entry for a refresh.
+**Stop looking things up.** `FixMessage.get` is a scan and then a regex scan,
+which cost **434 regex matches per message** when the translation read forty
+fields off one — so the message is read into `by_tag` once; the tag mapping was
+rebuilt per message; and the fold-vs-alternation choice for a key was
+[raced rather than assumed](fix.md#benchmarks).
+
+**Stop doing work the message did not ask for.** A repeating group the message
+does *not* carry — five of the six looked for — fell through to a regex against
+every pair, which was **312,000 of the 332,000 regex matches** in a 4,000-line
+parse. A `tag=value` token is split rather than matched, which is nearly every
+token of nearly every message. And a row of numbers no longer makes forty
+function calls that do nothing but check a type.
+
+**Answer a repeated question once.** A message is **one** instrument, so it is
+read once rather than once per event — eighteen tags and two repeating groups,
+twice for a filled report and once per entry for a refresh. `unix_of` is pure
+and a message asks it thirteen times over, because `TRANSACTED` probes five
+fields in order and `SendingTime` is one string for every entry. And a
+*lifecycle* hash is the identifier that repeats — forty resting levels
+restated on every refresh — where a version hash is different by definition
+and is deliberately not cached beside it.
 
 Measured back to back on one machine, 5,000 messages of each shape, best of
-three: `NewOrderSingle` **120 µs → 83**, `ExecutionReport` **267 → 187**, a
-five-entry refresh **507 → 420**. The table above is the same code at ten times
-the fixture, which is slower per message and on a different machine than the
-figures this page carried before — [seconds
-move](benchmarks.md#how-to-read-a-number), ratios measured back to back do not.
+three: `NewOrderSingle` **120 µs → 72**, `ExecutionReport` **267 → 139**, a
+five-entry refresh **507 → 261** — **1.7× to 1.9×**. The table above is the
+same code at ten times the fixture, which is slower per message; the ratios are
+what to read, because [seconds move](benchmarks.md#how-to-read-a-number) and
+ratios measured back to back do not.
 
 !!! note "The vectorised parser only pays if the result stays in Arrow"
 
@@ -1077,15 +1084,18 @@ restate an order already resting:
 
 | case | measured |
 | --- | --- |
-| `Book.from_events` | ~101 µs/event, ~7.5k books/s |
+| `Book.from_events` | ~84 µs/event, ~8.9k books/s |
 
 The fold keeps every live order, so its cost is the events and the depth rather
-than the books. Three measured changes got it there, 2.2× together: a `Ranged`
-member's band is computed once at construction (it was **1.1M evaluations per
-four thousand events**, because `sign`, `moves_shares` and `is_a` are all
-comparisons); `Resting` keeps running level totals as orders move instead of
-re-aggregating every live order per snapshot; and `part_bytes` settles the four
-types that are almost every part with one dict probe on the exact type.
+than the books. Four measured changes got it there: a `Ranged` member's band is
+computed once at construction (it was **1.1M evaluations per four thousand
+events**, because `sign`, `moves_shares` and `is_a` are all comparisons);
+`Resting` keeps running level totals as orders move instead of re-aggregating
+every live order per snapshot; `part_bytes` settles the four types that are
+almost every part with one dict probe on the exact type; and a lifecycle's
+identifier is remembered, because a book restating forty levels asks for the
+same forty over and over. The first three were 2.2× together; the fourth took
+101 µs an event to 84.
 
 The sweep warms Acero once before it starts, because the first grouped
 aggregate in a process pays its own initialisation: unwarmed, it landed on
