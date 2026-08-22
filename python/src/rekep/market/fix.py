@@ -266,8 +266,16 @@ def _declared_tags(struct: StructField, into: dict[str, int]) -> None:
             _declared_tags(member, into)
 
 
+@functools.lru_cache(maxsize=8192)
 def unix_of(text: str | None, day: int | None = None) -> int | None:
     """A FIX timestamp, date or time-of-day as nanoseconds since the epoch, UTC.
+
+    Cached because a message asks the same question several times over: the
+    order `TRANSACTED` probes in runs per event, `SendingTime <52>` is one
+    string for every entry of a refresh, and a whole capture spells the same
+    date all day. Pure -- text in, nanoseconds out -- so the cache cannot be
+    stale, and bounded so a capture of a million distinct instants does not
+    keep them all.
 
     One reading for all three of the standard's spellings, because a caller
     asking "when" should not have to know which of them a field is declared
