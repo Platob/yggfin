@@ -115,17 +115,25 @@ def hash_bytes(raw: bytes) -> int:
     return value - (1 << 64) if value >= (1 << 63) else value
 
 
+#: Every length prefix a part shorter than 256 bytes takes, packed once. A
+#: part is a symbol, a venue or an eight-byte number, so this is nearly all of
+#: them -- and `LENGTH.pack` is a call where a tuple index is not: 2.43 us a
+#: frame against 1.90, measured over seven parts.
+_PREFIXES = tuple(LENGTH.pack(size) for size in range(256))
+
+
 def frame(parts: tuple[Any, ...]) -> bytes:
     """`parts` as the bytes the digest is taken over -- the layout, in one place."""
-    out = bytearray()
+    out = []
     for part in parts:
         raw = part_bytes(part)
         if raw is None:
-            out += ABSENT_FRAME
+            out.append(ABSENT_FRAME)
             continue
-        out += LENGTH.pack(len(raw))
-        out += raw
-    return bytes(out)
+        size = len(raw)
+        out.append(_PREFIXES[size] if size < 256 else LENGTH.pack(size))
+        out.append(raw)
+    return b"".join(out)
 
 
 def _int_bytes(part: int) -> bytes:
