@@ -2368,16 +2368,47 @@ def _changed_by_kernel(
     compute = pyarrow.compute
     differs = None
     for name in compare:
-        one, other = left.column(name), right.column(name)
-        unequal = compute.fill_null(compute.not_equal(one, other), False)
-        # `not_equal` is null when either side is: a null against a value is a
-        # difference, two nulls are not.
-        only_one_null = compute.xor(compute.is_null(one), compute.is_null(other))
-        column = compute.or_(unequal, only_one_null)
+        column = _column_differs(left.column(name), right.column(name))
         # The first column *is* the running answer -- seeding one with a
         # Python list of falses costs 14 ms a million rows, and buys nothing.
         differs = column if differs is None else compute.or_(differs, column)
     return chunk.take(compute.filter(pairs.column(SOURCE_INDEX), differs))
+
+
+def _column_differs(one: Any, other: Any) -> Any:
+    """Which rows of two aligned columns disagree, nulls counted pyiceberg's way.
+
+    Per **column**, and that is the point. Arrow has no equality kernel for a
+    list, a struct or a map, and one such column used to hand the whole
+    comparison back to the library -- twenty scalar columns compared row by row
+    in Python because the twenty-first was a `list<int64>`. Measured on `Log`,
+    whose `parent_hash` is exactly that: a merge of 50,000 stored and unchanged
+    rows spent **6.35 seconds of 7.2** inside `get_rows_to_update`.
+    """
+    compute = pyarrow.compute
+    try:
+        unequal = compute.fill_null(compute.not_equal(one, other), False)
+    except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, pyarrow.ArrowTypeError):
+        return _column_differs_row_by_row(one, other)
+    # `not_equal` is null when either side is: a null against a value is a
+    # difference, two nulls are not.
+    only_one_null = compute.xor(compute.is_null(one), compute.is_null(other))
+    return compute.or_(unequal, only_one_null)
+
+
+def _column_differs_row_by_row(one: Any, other: Any) -> Any:
+    """The same answer for a column Arrow will not compare, in Python.
+
+    Two whole columns out of Arrow at once and one `!=` per row, against the
+    library's `slice(i, 1)` and `as_py()` per column per row -- and it is the
+    library's own comparison either way, because `to_pylist` and `as_py` build
+    the same Python objects and `!=` is `!=`. A list of nulls equals a list of
+    nulls, a null equals a null, and a NaN equals nothing, all as before.
+    """
+    return pyarrow.array(
+        [left != right for left, right in zip(one.to_pylist(), other.to_pylist(), strict=True)],
+        pyarrow.bool_(),
+    )
 
 
 def _renamed(reader: Any, names: dict[str, str]) -> Any:

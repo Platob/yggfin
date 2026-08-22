@@ -424,6 +424,29 @@ goes.
     rows — because an exact filter over *n* arbitrary key pairs is *n* terms
     and there is no smaller way to say it.
 
+=== "Comparing what matched"
+
+    Finding the rows a chunk matches is one half; deciding which of them
+    actually *changed* is the other. pyiceberg joins on the keys and then
+    compares the matched rows in Python — one `slice(i, 1)` and one `as_py()`
+    per non-key column per row, about 50 µs a row. Here the pairs are gathered
+    with `take` and compared column by column, so a million matched rows cost
+    a handful of vectorised passes.
+
+    Arrow has no equality kernel for a list, a struct or a map, and the
+    fallback for those is **per column** rather than per comparison — which it
+    was not, and that cost real time: `Log` carries twenty scalar columns and
+    one `list<int64>`, and the list sent all twenty-one row by row through the
+    library. A merge of 50,000 stored and unchanged rows spent **6.35 seconds
+    of 7.2** inside `get_rows_to_update`; the same case now takes **0.39 s**
+    against 6.19, sixteen times faster.
+
+    The awkward column is still compared the library's way — both sides out of
+    Arrow at once, then one `!=` per row — so the null and NaN semantics are
+    unchanged: two nulls are equal, a null and a value are not, and a NaN
+    equals nothing. `tests/iceberg/test_coherence.py` asserts that row for row
+    against `get_rows_to_update`, for a list, a struct and a map.
+
 === "What the join hands back"
 
     An Arrow join emits its output a batch at a time and in whatever order

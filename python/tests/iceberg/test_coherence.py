@@ -382,8 +382,9 @@ def test_unchanged_rows_are_not_rewritten() -> None:
     assert len(_changed(source, source, ["k"])) == 0
 
 
-def test_a_column_arrow_cannot_compare_falls_back_to_pyiceberg() -> None:
-    """A struct has no equality kernel, so the slow path is the correct path."""
+def test_a_column_arrow_cannot_compare_is_compared_in_python() -> None:
+    """A struct has no equality kernel, so that column is read out and compared
+    the way the library would. The answer is the library's."""
     from pyiceberg.table import upsert_util
 
     from rekep.iceberg.dataset import _changed
@@ -397,6 +398,79 @@ def test_a_column_arrow_cannot_compare_falls_back_to_pyiceberg() -> None:
         _changed(source, stored, ["k"]).to_pylist()
         == upsert_util.get_rows_to_update(source, stored, ["k"]).to_pylist()
     )
+
+
+NESTED_KINDS = {
+    "list": pyarrow.list_(pyarrow.int64()),
+    "struct": pyarrow.struct([("bid", pyarrow.float64())]),
+    "map": pyarrow.map_(pyarrow.string(), pyarrow.string()),
+}
+NESTED_VALUES = {
+    "list": ([1, 2], [1, 3], [None, 2]),
+    "struct": ({"bid": 1.0}, {"bid": 2.0}, {"bid": None}),
+    "map": ({"a": "1"}, {"a": "2"}, {"a": None}),
+}
+
+
+@pytest.mark.parametrize("kind", sorted(NESTED_KINDS))
+def test_a_nested_column_agrees_with_the_library_row_for_row(kind: str) -> None:
+    """Every shape Arrow has no equality kernel for, against every shape of
+    disagreement: same, different, one side null, both null, a null inside."""
+    from pyiceberg.table import upsert_util
+
+    from rekep.iceberg.dataset import _changed
+
+    one, other, holed = NESTED_VALUES[kind]
+    schema = pyarrow.schema([("k", pyarrow.int64()), ("nested", NESTED_KINDS[kind])])
+    left = [one, one, one, None, None, holed, holed]
+    right = [one, other, None, None, one, holed, one]
+    source = pyarrow.Table.from_pylist(
+        [{"k": index, "nested": value} for index, value in enumerate(left)], schema=schema
+    )
+    stored = pyarrow.Table.from_pylist(
+        [{"k": index, "nested": value} for index, value in enumerate(right)], schema=schema
+    )
+    assert rows_of(_changed(source, stored, ["k"])) == rows_of(
+        upsert_util.get_rows_to_update(source, stored, ["k"])
+    )
+
+
+def test_a_nested_column_does_not_drag_the_scalars_into_python() -> None:
+    """The bug this closes: one `list<int64>` beside twenty scalar columns sent
+    the whole comparison row by row through the library, and a merge of 50,000
+    stored rows spent 6.35 seconds of 7.2 inside it."""
+    from rekep.iceberg import dataset as module
+
+    schema = pyarrow.schema(
+        [
+            ("k", pyarrow.int64()),
+            ("parents", pyarrow.list_(pyarrow.int64())),
+            ("venue", pyarrow.string()),
+        ]
+    )
+    rows = 500
+    source = pyarrow.Table.from_pylist(
+        [{"k": index, "parents": [index], "venue": "XPAR"} for index in range(rows)],
+        schema=schema,
+    )
+    stored = pyarrow.Table.from_pylist(
+        [{"k": index, "parents": [index], "venue": "XETR"} for index in range(rows)],
+        schema=schema,
+    )
+    fell_back: list[str] = []
+    original = module._column_differs_row_by_row
+
+    def counted(one: object, other: object) -> object:
+        fell_back.append("once")
+        return original(one, other)
+
+    module._column_differs_row_by_row = counted
+    try:
+        changed = module._changed(source, stored, ["k"])
+    finally:
+        module._column_differs_row_by_row = original
+    assert changed.num_rows == rows, "every venue differs"
+    assert len(fell_back) == 1, "the list, and not the string beside it"
 
 
 def test_a_stored_table_with_duplicate_keys_is_refused() -> None:
