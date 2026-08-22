@@ -144,6 +144,33 @@ ENTRIED = frozenset({"W", "X"})
 #: and is not a market event this package stores.
 ENTRY_SIDES: dict[str, Side] = {"0": Side.BID, "1": Side.ASK}
 
+#: Every tag `FixEvents.instrument` reads, the two repeating groups included.
+#: An entry of a refresh that names none of them is not describing another
+#: instrument -- it is describing a level of the one the header named -- so it
+#: takes the header's instrument whole rather than building a poorer copy.
+INSTRUMENT_TAGS: frozenset[str] = frozenset(
+    {
+        "15",  # Currency
+        "22",  # SecurityIDSource
+        "48",  # SecurityID
+        "55",  # Symbol
+        "100",  # ExDestination
+        "107",  # SecurityDesc
+        "167",  # SecurityType
+        "200",  # MaturityMonthYear
+        "201",  # PutOrCall
+        "202",  # StrikePrice
+        "207",  # SecurityExchange
+        "231",  # ContractMultiplier
+        "454",  # NoSecurityAltID
+        "461",  # CFICode
+        "541",  # MaturityDate
+        "555",  # NoLegs
+        "561",  # RoundLot
+        "969",  # MinPriceIncrement
+    }
+)
+
 #: The MDEntryType <269> that is a trade rather than a resting interest.
 ENTRY_TRADE = "2"
 
@@ -467,7 +494,14 @@ class FixEvents(Convertible):
             # rebuilt per entry: resolving the whole header once per entry is
             # the same work N times, and a five-entry refresh is the common
             # case.
-            inside.__dict__["by_tag"] = {**self.by_tag, **inside.by_tag}
+            own = inside.by_tag
+            if INSTRUMENT_TAGS.isdisjoint(own):
+                # The entry says nothing about *what* is trading, only about a
+                # level of it, so it is the message's instrument -- alternative
+                # identifiers and legs included, which are read off the pairs
+                # rather than off `by_tag` and so were lost here before.
+                inside.__dict__["instrument"] = self.instrument
+            inside.__dict__["by_tag"] = {**self.by_tag, **own}
             entry_type = inside.get(269)
             if entry_type in ENTRY_SIDES:
                 yield inside.into_entry_order(ENTRY_SIDES[entry_type], snapshot=kind == "W")
@@ -582,6 +616,11 @@ class FixEvents(Convertible):
         ).with_previous(None)
 
     def into_instrument(self) -> Instrument:
+        """What the message says is being traded, groups and all."""
+        return self.instrument
+
+    @functools.cached_property
+    def instrument(self) -> Instrument:
         """What the message says is being traded, groups and all.
 
         `kind` is read twice over, best first: the first character of `CFICode
@@ -591,6 +630,12 @@ class FixEvents(Convertible):
         very often sends `CS`, `FUT` or `OPT` instead -- and an instrument that
         carries neither is `UNKNOWN` rather than guessed from the shape of its
         symbol.
+
+        Cached like `by_tag`, and for the same reason: a message is *one*
+        instrument, and an `ExecutionReport` yields two events off it while a
+        refresh yields one per entry. Reading eighteen tags and two repeating
+        groups once per event was that work N times -- a fifth of the cost of
+        reading a five-entry refresh.
         """
         get = self.get
         cfi = get(461)

@@ -471,3 +471,57 @@ def _published_tags() -> dict[str, int]:
             for entry in json.loads(opened.read(member))["fields"]:
                 found.setdefault(entry["name"], int(entry["metadata"]["fix:tag"]))
     return found
+
+
+# -- the instrument an entry is about ----------------------------------------
+
+#: A refresh whose header names the instrument fully -- an ISIN under
+#: `NoSecurityAltID <454>` included -- and whose entries name only levels.
+IDENTIFIED = (
+    "8=FIX.4.4|35=X|49=XCME|52=20260821-10:30:00.000|55=BTC-USD|207=XCME|15=USD|"
+    "48=US0378331005|22=4|454=1|455=US0378331005|456=4|"
+    "268=2|"
+    "279=0|269=0|270=100.5|271=3|278=L1|"
+    "279=0|269=1|270=100.7|271=4|278=L2|10=001"
+)
+
+
+def test_an_entry_that_names_no_instrument_takes_the_headers() -> None:
+    """An entry of a refresh describes a level, not another instrument -- so it
+    is the header's instrument, alternative identifiers and legs included,
+    which are read off the pairs and never reached an entry before."""
+    reader = FixEvents.from_text(IDENTIFIED, venue="XCME")
+    found = list(reader)
+    assert len(found) == 2
+    for one in found:
+        assert one.instrument is reader.instrument, "one message, one instrument"
+        assert one.instrument.alt_ids == {"ISIN": "US0378331005"}
+        assert one.instrument.isin_code == "US0378331005"
+
+
+def test_an_entry_that_names_its_own_instrument_gets_it() -> None:
+    """A refresh may carry entries for several instruments, and then the entry
+    is the one that says which."""
+    # Without the header's ISIN, because a registered identifier outranks a
+    # symbol and both entries would rightly land on the one instrument.
+    line = IDENTIFIED.replace("48=US0378331005|22=4|454=1|455=US0378331005|456=4|", "")
+    line = line.replace("269=1|270=100.7", "269=1|55=ETH-USD|270=100.7")
+    found = list(FixEvents.from_text(line, venue="XCME"))
+    assert [one.instrument.symbol for one in found] == ["BTC-USD", "ETH-USD"]
+    assert found[0].instrument.xhash != found[1].instrument.xhash
+
+
+def test_every_tag_the_instrument_reads_is_declared() -> None:
+    """`INSTRUMENT_TAGS` decides when an entry may skip building its own, so a
+    tag added to the reading and not to the set would let an entry inherit an
+    instrument that is not its."""
+    import inspect
+    import re
+
+    from rekep.market.fix import INSTRUMENT_TAGS
+
+    source = inspect.getsource(FixEvents.instrument.func)
+    read = set(re.findall(r"\bget\((\d+)\)", source))
+    assert read, "the reading is there to be read"
+    assert read <= INSTRUMENT_TAGS, f"undeclared: {sorted(read - INSTRUMENT_TAGS)}"
+    assert {"454", "555"} <= INSTRUMENT_TAGS, "the two groups it also reads"
