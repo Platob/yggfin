@@ -7,7 +7,7 @@ tables you can read and write without learning Iceberg first.
 [Design rules](https://platob.github.io/rekep/design/) ·
 [Schema contracts](https://platob.github.io/rekep/contracts/) ·
 [Types](https://platob.github.io/rekep/types/) ·
-[Logs](https://platob.github.io/rekep/logs/) ·
+[Logs](https://platob.github.io/rekep/text/) ·
 [Iceberg](https://platob.github.io/rekep/iceberg/)
 
 ```bash
@@ -137,7 +137,7 @@ exists in code and not in the contract fails the build — and the same two
 checks run from the command line, without writing Python:
 
 ```bash
-rekep fields dump --pyclass rekep.logs.log:Log --target schemas/rekep/log.yaml
+rekep fields dump --pyclass rekep.text.log:Log --target schemas/rekep/log.yaml
 rekep fields load --target schemas/rekep/log.yaml     # does it still build?
 ```
 

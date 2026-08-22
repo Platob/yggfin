@@ -14,8 +14,6 @@ from rekep.convert import Convertible
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
-from rekep.logs.text_file import DEFAULT_BATCH_ROW_SIZE, TextFile
-from rekep.logs.text_files import TextFiles
 from rekep.market.book import Book, BookIterator
 from rekep.market.event import HOUR, MarketEvent
 from rekep.market.fix import FixEvents
@@ -23,6 +21,8 @@ from rekep.market.orders import Execution, Order
 from rekep.market.reference import Reference
 from rekep.tasks.logs import DEFAULT_COMMIT_ROW_SIZE
 from rekep.tasks.task import Task, TaskRun
+from rekep.text.text_file import DEFAULT_BATCH_ROW_SIZE, TextFile
+from rekep.text.text_files import TextFiles
 from rekep.urls import Url
 
 #: The shapes this lands, keyed by the name their table is called after. The

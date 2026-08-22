@@ -8,7 +8,7 @@ import pyarrow
 import pytest
 
 from rekep.fix import FixCodec, FixRegistry, Rule, Rules
-from rekep.logs import HEADER_PATTERN, TextFile, TextFiles
+from rekep.text import HEADER_PATTERN, TextFile, TextFiles
 
 SOH = "\x01"
 SAMPLE = Path(__file__).parent.parent / "data" / "app_messages_sample.txt"

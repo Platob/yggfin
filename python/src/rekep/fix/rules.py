@@ -3,7 +3,7 @@
 Which is FIX knowledge and not log knowledge, which is why it lives here: the
 patterns that say "this line is a wire message" and "this line is a bridge
 message" are the same two patterns the parser cuts a line with
-(`BEGIN_STRING`, `BRIDGE`), and a second copy of either in `rekep.logs` would
+(`BEGIN_STRING`, `BRIDGE`), and a second copy of either in `rekep.text` would
 be a second answer to one question.
 """
 

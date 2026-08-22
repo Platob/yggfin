@@ -62,8 +62,8 @@ class Dataset(Convertible, abc.ABC):
     #: it is imported by a document that asks for it, and by nothing else.
     MODULES: ClassVar[dict[str, str]] = {
         "iceberg": "rekep.iceberg.dataset",
-        "text_file": "rekep.logs.text_file",
-        "text_files": "rekep.logs.text_files",
+        "text_file": "rekep.text.text_file",
+        "text_files": "rekep.text.text_files",
     }
 
     #: What `read_arrow` redirects to, keyed by the type asked for.

@@ -330,7 +330,7 @@ regular expressions, matched against the message.
 === "The defaults"
 
     ```python
-    from rekep.logs import TextFiles
+    from rekep.text import TextFiles
 
     files = TextFiles.from_folder("/var/log/app")     # the default rules
     table = files.read_arrow_table()
@@ -344,7 +344,7 @@ regular expressions, matched against the message.
 === "Your own"
 
     ```python
-    from rekep.logs.log import LogRule, LogRules
+    from rekep.text.log import LogRule, LogRules
     from rekep.market import EventType
 
     rules = LogRules(rules=[

@@ -2,7 +2,7 @@ name: Log
 type: struct
 description: One parsed line of a trading log.
 metadata:
-  namespace: rekep.logs.log
+  namespace: rekep.text.log
 fields:
 - name: unix
   type: int64

@@ -66,5 +66,5 @@ def test_the_registry_defaults_are_the_exported_ones() -> None:
 
 def test_every_submodule_imports_on_its_own() -> None:
     """A module reachable only through `rekep/__init__` still has to import."""
-    for name in ("rekep.fix", "rekep.logs", "rekep.market", "rekep.tasks", "rekep.fields"):
+    for name in ("rekep.fix", "rekep.text", "rekep.market", "rekep.tasks", "rekep.fields"):
         assert importlib.import_module(name) is not None

@@ -19,8 +19,8 @@ from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
 from rekep.fix.transcribe import FixCodec
-from rekep.logs.log import LogRules, MessageCodec
-from rekep.logs.text_file import (
+from rekep.text.log import LogRules, MessageCodec
+from rekep.text.text_file import (
     DEFAULT_BATCH_ROW_SIZE,
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,

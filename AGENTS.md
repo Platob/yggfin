@@ -514,8 +514,10 @@ rekep/
 │                  needs -- categorise, into_pairs, into_fix_pairs -- plus the
 │                  cached name->tag index per version and the values that
 │                  mean a field is absent)
-├── logs/          log.py (Log -- a parsed line, which is an `Event`; and
-│                  LogRules, the ordered regexes that decide its `etype`),
+├── text/          a text log, read and written: log.py (Log -- a parsed line,
+│                  which is an `Event`; LogRules, the ordered regexes that
+│                  decide its `etype`; and MessageCodec, the four verbs a
+│                  source turns a message column into columns through),
 │                  text_file.py (TextFile: a log read into Arrow batches and
 │                  written back out as lines, itself a Dataset) and
 │                  text_files.py (TextFiles: a folder of them as one ordered
@@ -536,15 +538,15 @@ publishes -- the FIX one as `data/fix.zip`, which is a `FixRegistry` cache
 and nothing else -- `tasks/` the job documents and the notebook that runs one,
 and `docs/` the site.
 
-Dependencies point one way: `tasks` -> `logs`/`iceberg` -> `dataset` ->
+Dependencies point one way: `tasks` -> `text`/`iceberg` -> `dataset` ->
 `fields` -> `convert` -> `annotations`, and `fix`/`market` sit beside `dataset`
 on the same `fields` base -- `market` reaching into `fix` only for the datatype
-table its tests check the tags against, `logs` reaching into `market` because a
-parsed line *is* an `Event`, and `logs` reaching into `fix` because a log line
+table its tests check the tags against, `text` reaching into `market` because a
+parsed line *is* an `Event`, and `text` reaching into `fix` because a log line
 *carries* a message. That last edge is one seam and not a dependency on the
 protocol: `TextFile` holds a codec and calls three verbs on it, and a second
 codec over another protocol implements the same three. `urls` is a leaf below all of it: `filesystems`, `convert`,
-`logs` and `iceberg/fileio` all reach a store through it, so there is one
+`text` and `iceberg/fileio` all reach a store through it, so there is one
 answer to "what is this location" rather than one per caller. The one loop back is deliberate and lazy: a
 `Field`'s `into_iceberg_*` imports `rekep.iceberg.fields` at the point of use,
 so the API stays on the class that owns the data without `fields/` depending

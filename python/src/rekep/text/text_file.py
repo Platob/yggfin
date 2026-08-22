@@ -20,9 +20,9 @@ from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField
 from rekep.filesystems import resolve
 from rekep.fix.transcribe import FixCodec
-from rekep.logs.log import Log, LogRules, MessageCodec
 from rekep.market.event import HOUR
 from rekep.market.identity import HASH, hash_bytes
+from rekep.text.log import Log, LogRules, MessageCodec
 from rekep.urls import Url
 
 #: Matches the fixed header every log row opens with, leaving the free-form

@@ -8,8 +8,8 @@ import pyarrow.fs
 import pytest
 
 from rekep import Dataset, Field, Log
-from rekep.logs import HEADER_PATTERN, TextFile
 from rekep.market.event import HOUR
+from rekep.text import HEADER_PATTERN, TextFile
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()
@@ -182,7 +182,7 @@ def test_from_path_accepts_a_relative_path(plain: Path, monkeypatch: pytest.Monk
 
 def test_construction_is_only_ever_a_classmethod() -> None:
     """There is no module-level factory to drift out of step with the class."""
-    import rekep.logs.text_file as module
+    import rekep.text.text_file as module
 
     assert not hasattr(module, "text_file")
     assert {"from_", "from_url", "from_path"} <= set(dir(TextFile))
@@ -478,7 +478,7 @@ def test_a_timestamp_is_read_not_sliced_at_another_width(stamp: bytes, microseco
     One character short, the same slices land on other digits and cast
     happily: `.167520` came back as `.167200`, silently.
     """
-    from rekep.logs.text_file import _local_micros
+    from rekep.text.text_file import _local_micros
 
     assert _local_micros([stamp])[0].as_py().microsecond == microsecond
 
@@ -704,7 +704,7 @@ def test_a_repeated_hour_resolves_rather_than_raising() -> None:
     pyarrow would raise by default, which would kill the parse once a year."""
     import pyarrow
 
-    from rekep.logs.text_file import _unix_nanos
+    from rekep.text.text_file import _unix_nanos
 
     ambiguous = pyarrow.array(
         [datetime.datetime(2026, 10, 25, 2, 30)], type=pyarrow.timestamp("us")
@@ -718,7 +718,7 @@ def test_a_pre_epoch_timestamp_lands_in_the_hour_that_contains_it() -> None:
     the hour *after* the one containing it."""
     import pyarrow
 
-    from rekep.logs.text_file import _hour_nanos
+    from rekep.text.text_file import _hour_nanos
 
     before = pyarrow.array([-1, -HOUR - 1, 0, HOUR, 3 * HOUR + 5], type=pyarrow.int64())
     assert _hour_nanos(before).to_pylist() == [-HOUR, -2 * HOUR, 0, HOUR, 3 * HOUR]

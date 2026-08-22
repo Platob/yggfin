@@ -62,8 +62,8 @@ from rekep.fix.message import (  # noqa: E402
     _tag_numbers,
     _until_checksum,
 )
-from rekep.logs import TextFile, TextFiles  # noqa: E402
-from rekep.logs.text_file import DEFAULT_BATCH_ROW_SIZE  # noqa: E402
+from rekep.text import TextFile, TextFiles  # noqa: E402
+from rekep.text.text_file import DEFAULT_BATCH_ROW_SIZE  # noqa: E402
 
 DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
 LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
@@ -372,7 +372,7 @@ def _hashing(blake: bool):
     """
     import hashlib
 
-    from rekep.logs import text_file
+    from rekep.text import text_file
 
     if not blake:
         yield

@@ -335,13 +335,18 @@ What each side owes the other:
 ## How the pieces depend on each other
 
 ```text
-   logs/  ──┐                          fix/
+   text/  ──┐                          fix/
    iceberg/ ─┴──▶ dataset ──▶ fields ──▶ convert ──▶ annotations
                                 ▲                        ▲
                  the Arrow schema and every cast    type hints and
                  that lands data on it              the docstrings that
                                                     become descriptions
 ```
+
+`text/` reaches sideways into `fix/` as well, and that edge is one **seam**
+rather than a dependency on the protocol: `TextFile` holds a codec and calls
+[four verbs](logs.md#a-second-codec) on it, so a second codec over another
+protocol changes nothing above it.
 
 Dependencies point one way. The one loop back is deliberate and lazy: a
 `Field`'s `into_iceberg_*` imports the Iceberg projection at the point of use,

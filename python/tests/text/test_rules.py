@@ -5,8 +5,8 @@ from __future__ import annotations
 import pyarrow
 import pytest
 
-from rekep.logs.log import DEFAULT_RULES, Log, LogRule, LogRules
 from rekep.market import EventType
+from rekep.text.log import DEFAULT_RULES, Log, LogRule, LogRules
 
 #: One line per kind the default rules know, in both spellings a log uses.
 WIRE = {

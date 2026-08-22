@@ -6,8 +6,8 @@ import pyarrow.fs
 import pytest
 
 from rekep import Dataset, Field, Log, TextFile, TextFiles
-from rekep.logs import HEADER_PATTERN
-from rekep.logs.text_files import _natural
+from rekep.text import HEADER_PATTERN
+from rekep.text.text_files import _natural
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()

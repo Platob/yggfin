@@ -16,11 +16,11 @@ from rekep.filesystems import resolve
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import Rules
 from rekep.fix.transcribe import NULL_VALUES, FixCodec
-from rekep.logs.log import LogRules
-from rekep.logs.text_file import DEFAULT_BATCH_ROW_SIZE, TextFile
-from rekep.logs.text_files import TextFiles
 from rekep.market.enums import EventType
 from rekep.tasks.task import Task, TaskRun
+from rekep.text.log import LogRules
+from rekep.text.text_file import DEFAULT_BATCH_ROW_SIZE, TextFile
+from rekep.text.text_files import TextFiles
 from rekep.urls import Url
 
 #: Rows a target accumulates before it commits. A store that commits per call
