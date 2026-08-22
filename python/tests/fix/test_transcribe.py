@@ -276,7 +276,11 @@ def test_an_offline_registry_still_serves_what_it_stored() -> None:
 
 
 #: The spellings a renderer reaches for when it has nothing to say, one field
-#: each, plus two fields that do have a value.
+#: each, plus two fields that do have a value. ` NULL ` is the renderer's
+#: padding and its casing, not a value -- and the two halves are pinned from
+#: two arrivals, because `parse_arrow_array` strips a value on the way in:
+#: through `into_pairs` only the casing is left to catch, and the trim in
+#: `drop_null_values` is what answers for a map the parser did not build.
 ABSENT = "|".join(
     [
         "#SYMBOL=TTF",
@@ -291,15 +295,20 @@ ABSENT = "|".join(
 
 
 def test_a_value_that_means_nothing_is_dropped(codec: FixCodec) -> None:
-    """`ACCOUNT=<null>` is an absent account, not an account called `<null>`."""
+    """`ACCOUNT=<null>` is an absent account, not an account called `<null>`.
+
+    Both arrivals, because only the second still carries the padding `ABSENT`
+    describes -- and a trim nothing hands a padded value to is a trim no
+    failure can reach.
+    """
     parsed = codec.into_pairs(pyarrow.array([ABSENT]), "UL")
     assert parsed.to_pylist()[0] == [("SYMBOL", "TTF"), ("ORDERQTY", "1200")]
-
-
-def test_the_absent_spellings_are_matched_case_blind_and_trimmed(codec: FixCodec) -> None:
-    """` NULL ` is the renderer's padding and its casing, not a value."""
-    parsed = codec.into_pairs(pyarrow.array([ABSENT]), "UL")
-    assert dict(parsed.to_pylist()[0]) == {"SYMBOL": "TTF", "ORDERQTY": "1200"}
+    padded = pyarrow.MapArray.from_arrays(
+        pyarrow.array([0, 2], pyarrow.int32()),
+        pyarrow.array(["SYMBOL", "TEXT"]),
+        pyarrow.array(["TTF", " NULL "]),
+    )
+    assert codec.drop_null_values(padded).to_pylist()[0] == [("SYMBOL", "TTF")]
 
 
 def test_an_absent_field_reaches_neither_map(codec: FixCodec) -> None:

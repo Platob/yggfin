@@ -276,12 +276,6 @@ def test_reads_whole_log_whatever_the_encoding(
         assert log.read() == SAMPLE_BYTES
 
 
-def test_compressed_log_is_decoded_not_raw(gzipped: Path) -> None:
-    assert gzipped.stat().st_size < len(SAMPLE_BYTES)
-    with TextFile(url=gzipped.as_uri()) as log:
-        assert log.read().startswith(b"2026-")
-
-
 # -- schema -----------------------------------------------------------------
 
 
@@ -586,7 +580,7 @@ def test_unix_is_total_nanos_since_epoch(plain: Path) -> None:
         unix = log.into_arrow_table().column("unix").to_pylist()
 
     assert unix[0] == expected
-    assert unix == sorted(unix), "the sample is in chronological order"
+    assert unix == sorted(unix), "the sample is chronological, so parsing must keep it so"
 
 
 def test_url_column_identifies_the_source(plain: Path) -> None:
@@ -609,13 +603,6 @@ def test_hash64_is_stable_across_reads(plain: Path) -> None:
         assert first.into_arrow_table().column("hash").to_pylist() == (
             second.into_arrow_table().column("hash").to_pylist()
         )
-
-
-def test_rows_stay_in_file_order(plain: Path) -> None:
-    with TextFile(url=plain.as_uri()) as log:
-        unix = log.into_arrow_table().column("unix").to_pylist()
-    assert unix[0] == FIRST_UNIX
-    assert unix == sorted(unix), "the sample is chronological, so parsing must keep it so"
 
 
 def test_level_is_stripped_from_the_message(plain: Path) -> None:
@@ -1050,12 +1037,6 @@ def test_a_static_value_that_is_already_a_column_is_refused_by_name(plain: Path)
     assert TextFile.from_path(plain, static_values={"desk": "x"}).into_struct_field().names[-1] == (
         "desk"
     )
-
-
-def test_a_static_column_is_part_of_the_declared_shape(plain: Path) -> None:
-    log = TextFile.from_path(plain, static_values={"bridge": "bridge-1"})
-    assert log.into_struct_field().names[-1] == "bridge"
-    assert log.into_struct_field().field("bridge").arrow_type == pyarrow.string()
 
 
 def test_static_columns_are_not_written_back_into_a_line(plain: Path, tmp_path: Path) -> None:

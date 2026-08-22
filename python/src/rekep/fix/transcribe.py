@@ -370,15 +370,10 @@ class FixCodec(Convertible):
         """The fields worth a column of their own, lifted out of `tags`.
 
         The mandatory session layer and the component fields a trading log is
-        made of (`rekep.fix.columns`) -- who sent it, what was traded, at what
-        price -- become columns, and are **removed** from the map rather than
-        stored in both places.
-
-        **Only where the tag occurs once in the line.** A tag that repeats is a
-        repeating group's, and lifting its first occurrence would answer "the
-        symbol" with whichever leg came first. Those rows keep everything in
-        `fix_tags` and the column is null, which is what a multi-leg order's
-        one symbol honestly is.
+        made of -- who sent it, what was traded, at what price -- become
+        columns, and are **removed** from the map rather than stored in both
+        places. `rekep.fix.columns` says which tags those are, and under what
+        rule an occurrence of one may be lifted at all.
 
         Text out, and the schema says what each decodes to -- with one
         exception the schema cannot make: a **stamp** is read here, because

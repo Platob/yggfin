@@ -224,11 +224,7 @@ class Url:
 
     @property
     def netloc(self) -> str:
-        """`host`, `host:port`, or nothing.
-
-        An IPv6 host is put back in the brackets that told it from a port in
-        the first place, so what this spells parses back to what it is.
-        """
+        """`host`, `host:port`, or nothing."""
         return _netloc(self.host, self.port)
 
     @property

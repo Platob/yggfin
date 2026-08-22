@@ -115,14 +115,6 @@ def test_a_capture_that_grew_costs_only_what_grew(capture: Path, catalog: dict) 
         assert task.target(int(kind)).read_arrow_table().num_rows == PER_HOUR * HOURS * 2
 
 
-def test_the_same_line_twice_in_one_run_lands_once(capture: Path, catalog: dict) -> None:
-    """A duplicate inside the stream collapses for the same reason as one across runs."""
-    write_capture(capture, name="copy.log")  # byte-for-byte the same lines
-    report = parse(capture, catalog).run()
-    assert report.rows == EXPECTED_ROWS * 2
-    assert report.landed == EXPECTED_ROWS and report.skipped == EXPECTED_ROWS
-
-
 def test_two_different_lines_both_land(capture: Path, catalog: dict) -> None:
     """The other half: dedup must not swallow rows that only look alike."""
     task = parse(capture, catalog)
@@ -278,7 +270,12 @@ def test_a_commit_holds_a_commit_size_worth_and_no_more(
 def test_a_rotated_copy_of_a_file_is_skipped_rather_than_written(
     capture: Path, catalog: dict
 ) -> None:
-    """A capture holds `app.log` and `app.log.1`, and the overlap is the norm."""
+    """A capture holds `app.log` and `app.log.1`, and the overlap is the norm.
+
+    This is also the in-stream half of the dedup: both copies are read in the
+    same run, so a duplicate that never crosses a run collapses for the same
+    reason one across runs does.
+    """
     (capture / "a.log.1").write_bytes((capture / "a.log").read_bytes())
     task = parse(capture, catalog)
     report = task.run()
@@ -326,23 +323,43 @@ MESSAGES = [
 ]
 
 
-@pytest.fixture
-def messages(tmp_path: Path) -> Path:
-    """A capture of four lines: FIX, a bridge, a wrapped bridge, and neither."""
-    folder = tmp_path / "messages"
-    folder.mkdir()
-    (folder / "m.log").write_text(
+@pytest.fixture(scope="module")
+def landed(tmp_path_factory: pytest.TempPathFactory) -> dict[EventType, pyarrow.Table]:
+    """Four lines -- FIX, a bridge, a wrapped bridge, and neither -- parsed
+    once, as the two tables every check below reads back.
+
+    They all run the same job over the same lines and none of them writes, so
+    one run answers all of them -- and the run is what this section costs. Its
+    own catalog rather than the `catalog` fixture, which is per-test and would
+    be torn down under it.
+    """
+    root = tmp_path_factory.mktemp("messages")
+    capture = root / "capture"
+    capture.mkdir()
+    (capture / "m.log").write_text(
         "".join(HEAD.format(slot=slot) + line + "\n" for slot, line in enumerate(MESSAGES))
     )
-    return folder
+    warehouse = root / "warehouse"
+    warehouse.mkdir()
+    catalog = {
+        "type": "sql",
+        "uri": f"sqlite:///{(root / 'catalog.db').as_posix()}",
+        "warehouse": warehouse.as_uri(),
+    }
 
-
-def test_a_line_lands_with_the_message_it_carries(messages: Path, catalog: dict) -> None:
-    """The whole layer, through the shipped job: a line, its columns, its rest."""
-    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
+    task = parse(capture, catalog, fix_dictionary=str(DICTIONARY))
     task.run()
+    # Sorted here rather than in every check: the fixture writes the lines in
+    # one order and a store does not promise to hand them back in it.
+    return {
+        kind: task.target(int(kind)).read_arrow_table().sort_by("unix")
+        for kind in (EventType.ORDER, EventType.UNKNOWN)
+    }
 
-    rows = task.target(int(EventType.UNKNOWN)).read_arrow_table().sort_by("unix")
+
+def test_a_line_lands_with_the_message_it_carries(landed: dict) -> None:
+    """The whole layer, through the shipped job: a line, its columns, its rest."""
+    rows = landed[EventType.UNKNOWN]
     assert rows.column("protocol").to_pylist() == ["UL", "UL", "OTHER"]
 
     assert rows.column("symbol")[0].as_py() == "TTF", "a name the dictionary knows, as a column"
@@ -357,13 +374,10 @@ def test_a_line_lands_with_the_message_it_carries(messages: Path, catalog: dict)
     assert rows.column("msg_type")[1].as_py() == "UL", "one message, read as one"
 
 
-def test_a_flat_field_is_a_column_and_not_a_pair_as_well(messages: Path, catalog: dict) -> None:
+def test_a_flat_field_is_a_column_and_not_a_pair_as_well(landed: dict) -> None:
     """One fact stored twice is one that can disagree with itself, so the tags
     the flat layer names leave `fix_tags` when they land in their column."""
-    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
-    task.run()
-
-    rows = task.target(int(EventType.UNKNOWN)).read_arrow_table().sort_by("unix")
+    rows = landed[EventType.UNKNOWN]
     assert rows.column("sender_comp_id")[0].as_py() == "BRIDGE1", (
         "a bridge spells tag 49 `SENDERCOMPID`, and it is lifted out all the same"
     )
@@ -374,13 +388,9 @@ def test_a_flat_field_is_a_column_and_not_a_pair_as_well(messages: Path, catalog
         assert not lifted & {tag for tag, _ in pairs or []}, row
 
 
-def test_a_line_carrying_no_message_says_so_rather_than_saying_nothing(
-    messages: Path, catalog: dict
-) -> None:
+def test_a_line_carrying_no_message_says_so_rather_than_saying_nothing(landed: dict) -> None:
     """Null, not an empty map: "not a message" and "a message that said nothing"."""
-    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
-    task.run()
-    rows = task.target(int(EventType.UNKNOWN)).read_arrow_table().sort_by("unix")
+    rows = landed[EventType.UNKNOWN]
     assert rows.column("protocol")[2].as_py() == "OTHER"
     assert rows.column("fix_tags")[2].as_py() is None
     assert rows.column("keyval")[2].as_py() is None
@@ -390,13 +400,9 @@ def test_a_line_carrying_no_message_says_so_rather_than_saying_nothing(
     assert set(silent.values()) == {None}
 
 
-def test_a_line_that_is_about_something_lands_in_its_own_table(
-    messages: Path, catalog: dict
-) -> None:
+def test_a_line_that_is_about_something_lands_in_its_own_table(landed: dict) -> None:
     """A FIX order is an ORDER, and what it ordered is a column each."""
-    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
-    task.run()
-    rows = task.target(int(EventType.ORDER)).read_arrow_table()
+    rows = landed[EventType.ORDER]
     assert rows.num_rows == 1
     assert rows.column("protocol").to_pylist() == ["FIX"]
     assert rows.column("fix_tags")[0].as_py() == [], "every field of it was worth a column"
@@ -404,15 +410,11 @@ def test_a_line_that_is_about_something_lands_in_its_own_table(
     assert [rows.column(name)[0].as_py() for name in ordered] == ["ORD-1", "TTF", "1", 1200.0]
 
 
-def test_the_flat_layer_survives_the_write_as_the_types_it_declares(
-    messages: Path, catalog: dict
-) -> None:
+def test_the_flat_layer_survives_the_write_as_the_types_it_declares(landed: dict) -> None:
     """The write is the half worth checking: a batch can hold the right value
     and still land as text, or fail to land at all. Text on the wire, a number,
     a flag and an instant in the store, read back through Iceberg."""
-    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
-    task.run()
-    rows = task.target(int(EventType.ORDER)).read_arrow_table()
+    rows = landed[EventType.ORDER]
     kinds = pyarrow.types
 
     assert rows.column("msg_type").to_pylist() == ["D"]
@@ -447,9 +449,6 @@ def test_the_flat_layer_survives_the_write_as_the_types_it_declares(
         assert kinds.is_integer(rows.schema.field(name).type), name
 
 
-def test_a_checksum_keeps_the_zeros_that_make_it_verify(messages: Path, catalog: dict) -> None:
+def test_a_checksum_keeps_the_zeros_that_make_it_verify(landed: dict) -> None:
     """`044` read as `44` is a checksum that no longer verifies, so it is text."""
-    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
-    task.run()
-    rows = task.target(int(EventType.UNKNOWN)).read_arrow_table().sort_by("unix")
-    assert rows.column("check_sum")[1].as_py() == "044"
+    assert landed[EventType.UNKNOWN].column("check_sum")[1].as_py() == "044"

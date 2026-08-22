@@ -46,7 +46,7 @@ ENUM = "enum"
 
 
 class MarketFieldBuilder(FieldBuilder):
-    """`FieldBuilder` with the three rules above, wired on with `FIELD_BUILDER`."""
+    """`FieldBuilder` with the four rules above, wired on with `FIELD_BUILDER`."""
 
     def scalar(self, annotation: Any) -> pyarrow.DataType | None:
         """A ranged code is `int32`; everything else is the base builder's answer.

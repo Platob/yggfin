@@ -6,13 +6,14 @@ second run that lands nothing because the first one already did.
 
 from __future__ import annotations
 
+import dataclasses
 from pathlib import Path
 
 import pyarrow
 import pytest
 
 from rekep.market import Book, EventType, Execution, Order, Reference
-from rekep.tasks import ParseMarket, Task
+from rekep.tasks import ParseMarket, Task, TaskRun
 
 pytest.importorskip("pyiceberg")
 
@@ -67,12 +68,22 @@ INSTANTS = 4
 INSTRUMENTS = 1
 
 
-@pytest.fixture
-def capture(tmp_path: Path) -> Path:
-    folder = tmp_path / "capture"
-    folder.mkdir()
-    (folder / "bridge.log").write_text("\n".join(LINES) + "\n")
+def capture_of(folder: Path, *lines: str) -> Path:
+    """A capture folder holding one log of `lines`, or of `LINES` when given none."""
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "bridge.log").write_text("\n".join(lines or LINES) + "\n")
     return folder
+
+
+def catalog_at(root: Path) -> dict[str, str]:
+    """A SQLite catalog and its warehouse under `root`, so a run reaches nothing else."""
+    warehouse = root / "warehouse"
+    warehouse.mkdir(parents=True, exist_ok=True)
+    return {
+        "type": "sql",
+        "uri": f"sqlite:///{(root / 'catalog.db').as_posix()}",
+        "warehouse": warehouse.as_uri(),
+    }
 
 
 def parse(capture: Path, catalog: dict[str, str], **declared: object) -> ParseMarket:
@@ -87,13 +98,35 @@ def parse(capture: Path, catalog: dict[str, str], **declared: object) -> ParseMa
     )
 
 
+#: One run of the whole job: the task that did it, and what it reported.
+type OnePass = tuple[ParseMarket, TaskRun]
+
+
+@pytest.fixture
+def capture(tmp_path: Path) -> Path:
+    return capture_of(tmp_path / "capture")
+
+
+@pytest.fixture(scope="module")
+def one_pass(tmp_path_factory: pytest.TempPathFactory) -> OnePass:
+    """The job run once, for every test below that only reads it back.
+
+    Nine of them each pull a different table out of a byte-identical run over
+    the same four lines. Shared by the reads alone: a test that writes to the
+    store again -- a replay, a capture that grew -- or that turns a knob keeps
+    its own catalog, because a second run into this one would move what the
+    others assert on.
+    """
+    root = tmp_path_factory.mktemp("one_pass")
+    task = parse(capture_of(root / "capture"), catalog_at(root))
+    return task, task.run()
+
+
 # -- what one pass lands -----------------------------------------------------
 
 
-def test_one_pass_lands_the_events_and_the_book_they_fold_into(
-    capture: Path, catalog: dict
-) -> None:
-    report = parse(capture, catalog).run()
+def test_one_pass_lands_the_events_and_the_book_they_fold_into(one_pass: OnePass) -> None:
+    _, report = one_pass
     assert report.rows == len(LINES) == 4, "derived from the fixture, pinned here"
     assert report.written == {
         "market.orders": ORDERS,
@@ -103,7 +136,7 @@ def test_one_pass_lands_the_events_and_the_book_they_fold_into(
     }
 
 
-def test_each_table_holds_the_shape_it_is_named_for(capture: Path, catalog: dict) -> None:
+def test_each_table_holds_the_shape_it_is_named_for(one_pass: OnePass) -> None:
     """The columns, and a lossless cast back onto the declaration.
 
     Not schema equality: a table read back through Iceberg spells a column
@@ -112,8 +145,7 @@ def test_each_table_holds_the_shape_it_is_named_for(capture: Path, catalog: dict
     and none of which is a difference in the shape. What has to hold is that
     the declaration still reads it, which is what the cast says.
     """
-    task = parse(capture, catalog)
-    task.run()
+    task, _ = one_pass
     for shape, declared in (("orders", Order), ("executions", Execution), ("books", Book)):
         stored = task.target(shape).read_arrow_table()
         assert stored.schema.names == declared.FIELD.names, shape
@@ -122,19 +154,17 @@ def test_each_table_holds_the_shape_it_is_named_for(capture: Path, catalog: dict
         assert onto.num_rows == stored.num_rows, shape
 
 
-def test_the_books_are_one_per_instant_that_moved_them(capture: Path, catalog: dict) -> None:
+def test_the_books_are_one_per_instant_that_moved_them(one_pass: OnePass) -> None:
     """Not one per message: several entries at one instant are one state."""
-    task = parse(capture, catalog)
-    task.run()
+    task, _ = one_pass
     books = task.target("books").read_arrow_table().sort_by("unix")
     assert books.num_rows == INSTANTS
     assert len(set(books.column("unix").to_pylist())) == INSTANTS
 
 
-def test_the_book_says_what_the_capture_did_to_it(capture: Path, catalog: dict) -> None:
+def test_the_book_says_what_the_capture_did_to_it(one_pass: OnePass) -> None:
     """Read down the columns and the capture is legible without opening it."""
-    task = parse(capture, catalog)
-    task.run()
+    task, _ = one_pass
     books = task.target("books").read_arrow_table().sort_by("unix")
     assert books.column("bid_px").to_pylist() == [100.0] * 4
     assert books.column("bid_qty").to_pylist() == [5.0, 9.0, 9.0, 9.0], "the size change"
@@ -142,9 +172,8 @@ def test_the_book_says_what_the_capture_did_to_it(capture: Path, catalog: dict) 
     assert books.column("spread").to_pylist()[-1] is None, "one side left, so no spread at all"
 
 
-def test_a_trade_lands_as_an_execution_and_on_the_side_it_hit(capture: Path, catalog: dict) -> None:
-    task = parse(capture, catalog)
-    task.run()
+def test_a_trade_lands_as_an_execution_and_on_the_side_it_hit(one_pass: OnePass) -> None:
+    task, _ = one_pass
     (fill,) = task.target("executions").read_arrow_table().to_pylist()
     assert (fill["px"], fill["qty"]) == (100.5, 3.0)
     books = task.target("books").read_arrow_table().sort_by("unix")
@@ -153,22 +182,18 @@ def test_a_trade_lands_as_an_execution_and_on_the_side_it_hit(capture: Path, cat
 
 
 def test_every_row_is_stamped_with_the_entry_s_own_time_not_the_message_s(
-    capture: Path, catalog: dict
+    one_pass: OnePass,
 ) -> None:
     """`MDEntryTime <273>` is the transaction; `SendingTime <52>` is transmission,
     and every message here sends half a second after its entries happened."""
-    task = parse(capture, catalog)
-    task.run()
+    task, _ = one_pass
     orders = task.target("orders").read_arrow_table()
     for row in orders.to_pylist():
         assert row["unix"] % 1_000_000_000 == 0, "on the second, as the entries are"
 
 
-def test_every_row_lands_in_the_partition_its_instrument_belongs_to(
-    capture: Path, catalog: dict
-) -> None:
-    task = parse(capture, catalog)
-    task.run()
+def test_every_row_lands_in_the_partition_its_instrument_belongs_to(one_pass: OnePass) -> None:
+    task, _ = one_pass
     for shape in ("orders", "executions", "books"):
         stored = task.target(shape).read_arrow_table()
         hashes = set(stored.column("instrument_hash").to_pylist())
@@ -190,9 +215,7 @@ def test_a_replay_lands_nothing(capture: Path, catalog: dict) -> None:
 def test_a_capture_that_grew_costs_the_growth(capture: Path, catalog: dict) -> None:
     task = parse(capture, catalog)
     task.run()
-    (capture / "bridge.log").write_text(
-        "\n".join([*LINES, refresh(4, entry("1", "0", 100.2, 6, 4, "A3"))]) + "\n"
-    )
+    capture_of(capture, *LINES, refresh(4, entry("1", "0", 100.2, 6, 4, "A3")))
     after = task.run()
     assert after.rows == len(LINES) + 1
     assert after.written == {
@@ -246,21 +269,21 @@ def test_an_empty_run_of_events_is_still_the_declared_schema(capture: Path, cata
     assert empty.schema.equals(Book.FIELD.into_arrow_schema())
 
 
-def test_a_source_that_is_a_dataset_document_is_read_as_that_store(
-    capture: Path, catalog: dict
-) -> None:
+def test_a_source_that_is_a_dataset_document_is_read_as_that_store(one_pass: OnePass) -> None:
     """Which is how this chains onto `parse_logs` without re-reading the capture."""
     from rekep.iceberg import IcebergDataset
 
-    task = parse(capture, catalog)
-    task.run()
-    task.source = {
-        "kind": "iceberg",
-        "name": "market.orders",
-        "catalog": "test",
-        "properties": dict(catalog),
-    }
-    reading = task.source_dataset()
+    task, _ = one_pass
+    # A copy and not an assignment: the run behind it is shared with the reads above.
+    reading = dataclasses.replace(
+        task,
+        source={
+            "kind": "iceberg",
+            "name": "market.orders",
+            "catalog": "test",
+            "properties": dict(task.properties),
+        },
+    ).source_dataset()
     assert isinstance(reading, IcebergDataset) and reading.name == "market.orders"
 
 
@@ -304,11 +327,8 @@ def test_a_message_that_is_not_market_data_produces_nothing(catalog: dict) -> No
 # -- the instrument table ----------------------------------------------------
 
 
-def test_the_instruments_the_capture_taught_it_are_a_table_of_their_own(
-    capture: Path, catalog: dict
-) -> None:
-    task = parse(capture, catalog)
-    task.run()
+def test_the_instruments_the_capture_taught_it_are_a_table_of_their_own(one_pass: OnePass) -> None:
+    task, _ = one_pass
     stored = task.target("instruments").read_arrow_table()
     assert stored.num_rows == INSTRUMENTS
     assert stored.column("symbol").to_pylist() == ["BTC-USD"]
@@ -317,27 +337,12 @@ def test_the_instruments_the_capture_taught_it_are_a_table_of_their_own(
     assert stored.column("unix").to_pylist()[0] > 0, "stamped with when it was learnt"
 
 
-def test_an_instrument_is_landed_once_however_often_the_feed_repeats_it(
-    capture: Path, catalog: dict
-) -> None:
-    """A row per message would be the feed again rather than the reference data."""
-    report = parse(capture, catalog).run()
-    assert report.written["market.instruments"] == 1
-    assert report.rows == len(LINES), "though every one of them named it"
-
-
 def test_a_message_that_knows_more_lands_another_version(tmp_path: Path, catalog: dict) -> None:
-    folder = tmp_path / "richer"
-    folder.mkdir()
-    (folder / "bridge.log").write_text(
-        "\n".join(
-            [
-                LINES[0],
-                # the same instrument, with reference data attached
-                LINES[1].replace(ABOUT, f"{ABOUT}|167=FUT|461=FFICSX|48=US1234567890|22=4"),
-            ]
-        )
-        + "\n"
+    folder = capture_of(
+        tmp_path / "richer",
+        LINES[0],
+        # the same instrument, with reference data attached
+        LINES[1].replace(ABOUT, f"{ABOUT}|167=FUT|461=FFICSX|48=US1234567890|22=4"),
     )
     task = parse(folder, catalog)
     task.run()
@@ -357,16 +362,12 @@ def test_the_books_carry_the_hourly_grid_the_fold_produced(tmp_path: Path, catal
     """A gap of hours with no messages still has a row per hour in the table."""
     from rekep.market.event import HOUR
 
-    folder = tmp_path / "gapped"
-    folder.mkdir()
     later = (
         refresh(0, entry("0", "1", 100.0, 9, 0, "B1"))
         .replace(f"{DAY}-10:30:00.500", f"{DAY}-13:30:00.500")
         .replace("273=10:30:00.000", "273=13:30:00.000")
     )
-    (folder / "bridge.log").write_text("\n".join([LINES[0], later]) + "\n")
-
-    task = parse(folder, catalog)
+    task = parse(capture_of(tmp_path / "gapped", LINES[0], later), catalog)
     task.run()
     books = task.target("books").read_arrow_table().sort_by("unix")
     hours = sorted({one // HOUR for one in books.column("unix").to_pylist()})
@@ -394,13 +395,7 @@ def test_workers_change_how_it_runs_and_not_what_it_lands(
     """The one property a fan-out has to have. `executor.map` hands results back in
     submission order, which a fold depends on and a shard would otherwise destroy."""
     alone = parse(capture, catalog).run()
-    second = {
-        "type": "sql",
-        "uri": f"sqlite:///{(tmp_path / 'second.db').as_posix()}",
-        "warehouse": (tmp_path / "second").as_uri(),
-    }
-    (tmp_path / "second").mkdir()
-    together = parse(capture, second, workers=2).run()
+    together = parse(capture, catalog_at(tmp_path / "second"), workers=2).run()
     assert together.written == alone.written
     assert together.rows == alone.rows
 
@@ -428,8 +423,24 @@ def test_a_shard_carries_the_lines_and_their_clocks_and_nothing_else(
         assert all(isinstance(text, str) and isinstance(clock, int) for text, clock in lines)
 
 
-def test_one_worker_stays_in_this_process(capture: Path, catalog: dict) -> None:
+def test_one_worker_stays_in_this_process(
+    capture: Path, catalog: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Which is the default, and what a small capture wants: a pool costs more to
-    start than the work it would take away."""
+    start than the work it would take away.
+
+    Spied, because the report cannot say: the same rows land either way, so a
+    version of this that only asserted rows landed passed under `workers=2` as
+    well and could not fail for the reason it names.
+    """
+    import concurrent.futures
+
+    from rekep.tasks import market as module
+
+    def refused(*started: object, **declared: object) -> object:
+        raise AssertionError("one worker started a pool")
+
+    monkeypatch.setattr(module, "_context", refused)
+    monkeypatch.setattr(concurrent.futures, "ProcessPoolExecutor", refused)
     report = parse(capture, catalog, workers=1).run()
-    assert report.landed
+    assert report.landed, "and it did the work here"

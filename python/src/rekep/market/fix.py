@@ -548,14 +548,6 @@ class FixEvents(Convertible):
     def instrument(self) -> Instrument:
         """What the message says is being traded, groups and all.
 
-        `kind` is read twice over, best first: the first character of `CFICode
-        <461>` is ISO 10962's own category letter and `AssetKind` is coded on
-        it, so an instrument carrying a CFI classifies itself exactly.
-        `SecurityType <167>` is the fallback, because a venue that sends no CFI
-        very often sends `CS`, `FUT` or `OPT` instead -- and an instrument that
-        carries neither is `UNKNOWN` rather than guessed from the shape of its
-        symbol.
-
         Cached like `by_tag`, and for the same reason: a message is *one*
         instrument, and an `ExecutionReport` yields two events off it while a
         refresh yields one per entry. Reading eighteen tags and two repeating

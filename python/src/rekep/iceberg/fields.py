@@ -98,15 +98,12 @@ def _kind(transform: str) -> str:
 def iceberg_sort_order(source: StructField, schema: Any = None) -> Any:
     """The `pyiceberg.table.sorting.SortOrder` `source` declares, in declaration order.
 
-    A sort order is not a partition: it does not decide which file a row lands
-    in, it decides where inside the file it lands. That is what narrows a
-    column's min/max in a manifest from "everything this file holds" to a real
-    range, and it is why a filter on a sorted column reads a few row groups
-    rather than all of them.
-
     Iceberg records it and every engine that writes through the table honours
     it; nothing here has to sort on read. `SortOrder()` with no fields is
     Iceberg's own "unsorted", which is what a shape declaring none gets.
+
+    What a sort key *is* -- where a row sits inside its file, against a
+    partition, which decides which file -- is on `Field.is_sort_key`.
     """
     require("pyiceberg", "iceberg")
     from pyiceberg.table.sorting import SortDirection, SortField, SortOrder

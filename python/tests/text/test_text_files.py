@@ -369,13 +369,27 @@ def test_a_full_batch_is_handed_over_untouched(capture: Path) -> None:
     assert [batch.num_rows for batch in alone] == [10, 10, 4]
 
 
-def test_continuations_do_not_fold_across_two_files(capture: Path) -> None:
-    """The next file was written before or after this one, never inside it."""
-    table = TextFiles.from_folder(capture, pattern="*.txt*").into_arrow_table()
-    messages = table.column("message").to_pylist()
-    assert len(messages) == len(CAPTURE_ORDER) * EXPECTED_RECORDS
-    first_of_each = messages[::EXPECTED_RECORDS]
-    assert all(message == first_of_each[0] for message in first_of_each)
+def test_continuations_do_not_fold_across_two_files(tmp_path: Path) -> None:
+    """The next file was written before or after this one, never inside it.
+
+    Not the `capture` fixture: every file in it opens on a header, so a parser
+    that carried its pending row across the boundary would read that folder
+    identically. A log that *ends* mid-trace beside one that *opens* on one is
+    the only shape that tells the two frames apart -- the first trace folds,
+    the second is dropped, and a fold across the seam would move it onto the
+    row above.
+    """
+    (tmp_path / "a.txt").write_bytes(
+        b"2026-08-14 00:05:01.000_000 [t] [M] (INFO) first\n\tat com.example.A.b(A.java:1)\n"
+    )
+    (tmp_path / "b.txt").write_bytes(
+        b"\tat com.example.C.d(C.java:2)\n2026-08-14 00:05:02.000_000 [t] [M] (INFO) second\n"
+    )
+    table = TextFiles.from_folder(tmp_path, pattern="*.txt").into_arrow_table()
+    assert table.column("message").to_pylist() == [
+        "first\n\tat com.example.A.b(A.java:1)",
+        "second",
+    ]
 
 
 def test_reading_casts_only_when_asked(capture: Path) -> None:

@@ -663,18 +663,9 @@ class MarketEvent(Event):
 def _life_hash(shape: str, parts: tuple[Any, ...]) -> int:
     """`hash_of` over a lifecycle's parts, remembered.
 
-    A lifecycle is what an event stream *repeats*: a book restates its levels
-    on every refresh, an order is amended and cancelled under one identifier,
-    a fill is corrected. So the same handful of tuples are framed and hashed
-    over and over, where a version hash is different by definition and is
-    deliberately not cached beside them -- it would only evict these.
-
     Pure, so the cache cannot be stale: the parts are the identifier, and the
     shape's name is in front of them for the same reason `Event.hash_of` puts
     it there. Bounded, because a feed of one-shot client order ids has no
     repeats to find and should not keep them all.
-
-    A part that cannot be a cache key -- a list, a dict -- raises here and
-    `life_hash` hashes it directly instead. The frame has never minded.
     """
     return hash_of(shape, *parts)

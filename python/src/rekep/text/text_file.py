@@ -405,7 +405,9 @@ class TextFile(Dataset, io.BufferedIOBase):
                     rows[-1] = (timestamp, thread, driver, (message or b"") + b"\n" + line)
                 continue
             rows.append(match.group(*indices))
-            hashes.append(_digest(line))
+            # A fallback digest here differed between environments, so one row
+            # could be stored twice under two keys. `xxhash` is a hard dependency.
+            hashes.append(hash_bytes(line))
             # One row past the size, not at it: a continuation belongs to the
             # row above it, and cutting the batch the moment that row is
             # complete puts it out of reach of the next line. A stack trace
@@ -927,19 +929,3 @@ def _epoch_nanos(timestamp: bytes) -> int:
         text = f"{head}.{re.sub(r'[._,]', '', fraction)}"
     delta = datetime.datetime.fromisoformat(text) - _EPOCH_DATETIME
     return (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000
-
-
-def _digest(raw: bytes) -> int:
-    """The line's hash: a signed `int64`, which is what every identifier here is.
-
-    `hash_bytes` and only that, so a line and an event are hashed by one
-    function: a fallback hash -- which is what this used to have -- made the
-    digest stable within an environment and not across two that disagreed
-    about whether `xxhash` was installed, and a row keyed on it could be
-    stored twice. `xxhash` is a dependency of this package for that reason.
-
-    A whole line is one blob with no split to forge, so it is hashed as it
-    stands rather than framed; the framing is for composed identifiers
-    (`rekep.market.identity`).
-    """
-    return hash_bytes(raw)

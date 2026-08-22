@@ -7,17 +7,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep.fix import (
-    COMMON,
-    FLAT,
-    NO_PROTOCOL,
-    SESSION,
-    FixCodec,
-    FixRegistry,
-    Rule,
-    Rules,
-    unix_of,
-)
+from rekep.fix import NO_PROTOCOL, FixCodec, FixRegistry, Rule, Rules, unix_of
 from rekep.fix.columns import COLUMNS
 from rekep.text import HEADER_PATTERN, TextFile, TextFiles
 
@@ -57,12 +47,11 @@ EXPECTED_PROTOCOLS = [
 EXPECTED_BRIDGE_PAIRS = 15
 
 #: Where each column of the flat layer lands, derived from the module that
-#: declares it. Pinned, because a tag quietly leaving the list would take its
-#: column's assertions with it.
+#: declares it. The count and the uniqueness of it are pinned in
+#: `tests/fix/test_columns.py` and the hop group's absence in
+#: `tests/fix/test_transcribe.py`, so a tag quietly leaving the list cannot
+#: take its column's assertions here with it.
 FLAT_NAMES = tuple(COLUMNS.values())
-EXPECTED_SESSION_COLUMNS = 33
-EXPECTED_COMMON_COLUMNS = 26
-EXPECTED_FLAT_COLUMNS = 59
 
 #: Row indexes worth naming. `WRAPPED` is a bridge message inside a FIX
 #: envelope -- a wire header and a `#NAME=` body on one line, which answers to
@@ -85,13 +74,15 @@ def test_the_sample_is_the_shape_the_tests_assume() -> None:
     assert len(WIRE.strip("|").split("|")) == EXPECTED_WIRE_FIELDS
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def codec() -> FixCodec:
     return FixCodec(registry=FixRegistry(cache_dir=DATA, offline=True), fix_version="4.4")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def table(codec: FixCodec) -> pyarrow.Table:
+    """Parsed once for the whole file: an Arrow table is immutable, and the four
+    tests that need another codec build their own from `codec.registry`."""
     with TextFile.from_path(SAMPLE, codec=codec) as log:
         return log.read_arrow_table()
 
@@ -263,18 +254,6 @@ def test_a_stack_trace_still_folds_into_the_row_above_it(table: pyarrow.Table) -
 # -- the flat layer, as columns ----------------------------------------------
 
 
-def test_the_flat_layer_is_a_column_each_and_no_repeating_group(
-    table: pyarrow.Table,
-) -> None:
-    """`NoHops <627>` is header too, and it is the one that must stay in the map."""
-    assert len(SESSION) == EXPECTED_SESSION_COLUMNS
-    assert len(COMMON) == EXPECTED_COMMON_COLUMNS
-    assert len(FLAT) == EXPECTED_FLAT_COLUMNS
-    assert len(FLAT_NAMES) == EXPECTED_FLAT_COLUMNS, "and no two tags share a column"
-    assert set(FLAT_NAMES) <= set(table.schema.names)
-    assert 627 not in COLUMNS, "one row of a repeating group is not one value"
-
-
 def test_a_wire_message_lands_its_header_and_trailer_in_columns(table: pyarrow.Table) -> None:
     """Who sent it, to whom, in what order and when -- what a reader filters on."""
     assert table.column("begin_string")[PIPED].as_py() == "FIX.4.2"
@@ -434,6 +413,10 @@ def test_the_capture_reparses_to_the_same_instants(
         written = again.read_arrow_table()
     assert written.column("unix").to_pylist() == table.column("unix").to_pylist()
     assert written.column("protocol").to_pylist() == EXPECTED_PROTOCOLS
+    # Named rather than left to a `KeyError` from the loop below: a column the
+    # flat layer declares and the shape does not is a missing column, and it
+    # should fail as one.
+    assert set(FLAT_NAMES) <= set(written.schema.names)
     for name in FLAT_NAMES:
         assert written.column(name).to_pylist() == table.column(name).to_pylist(), name
 

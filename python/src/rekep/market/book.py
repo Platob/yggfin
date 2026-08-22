@@ -1337,12 +1337,7 @@ class BookIterator:
     def instruments(self) -> Iterator[Reference]:
         """Every version of what the stream taught the fold about an instrument.
 
-        `Reference` rows and not bare `Instrument`s: reference data is learnt
-        rather than read -- a venue sends a symbol first, a CFI code with the
-        next message, a maturity with the one after -- so each time it says
-        something new that is a new *version*, stamped with when it was learnt
-        and chained to the one before it like every other row here. An
-        instrument nothing enriched is one row.
+        `Reference` rows and not bare `Instrument`s, for the reasons `Reference` gives.
         """
         return self._drain(self._instruments)
 
@@ -1495,9 +1490,7 @@ class BookIterator:
     def _learn(self, state: Folding, event: MarketEvent) -> None:
         """Take whatever reference data the event carries, and publish a version.
 
-        Only when it actually learnt something: a feed repeats the instrument
-        on every message, and a row per message would be the feed again rather
-        than the reference data in it.
+        Only where `enriched_with` says something was actually learnt.
         """
         enriched = state.instrument.enriched_with(event.instrument)
         if enriched is None:

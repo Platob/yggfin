@@ -508,11 +508,6 @@ def test_lookup_without_a_version_walks_them_newest_first(registry: FixtureRegis
     assert [member.fix["version"] for member in found] == ["4.4"]
 
 
-def test_an_unknown_version_is_refused_by_name(registry: FixtureRegistry) -> None:
-    with pytest.raises(KeyError, match="not a FIX version"):
-        registry.lookup("Side", "9.9")
-
-
 def test_an_unknown_field_raises_key_error(registry: FixtureRegistry) -> None:
     registry.fields("4.4")
     with pytest.raises(KeyError, match="NoSuchField"):

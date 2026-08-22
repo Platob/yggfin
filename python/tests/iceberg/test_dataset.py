@@ -19,6 +19,8 @@ from rekep import Convertible, Field, Log, StructField, field
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.market import EventType
 
+from ..conftest import catalog_properties
+
 
 @field
 class Quote(Convertible):
@@ -45,16 +47,6 @@ def local(location: str) -> Path:
     with, so it decides here too.
     """
     return Path(pyarrow.fs.FileSystem.from_uri(location)[1])
-
-
-def catalog_properties(tmp_path: Path) -> dict[str, str]:
-    warehouse = tmp_path / "warehouse"
-    warehouse.mkdir(exist_ok=True)
-    return {
-        "type": "sql",
-        "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
-        "warehouse": warehouse.as_uri(),
-    }
 
 
 @pytest.fixture
@@ -1076,13 +1068,19 @@ def test_declared_table_properties_win_over_the_defaults(tmp_path: Path) -> None
 # -- planning ---------------------------------------------------------------
 
 
-def test_a_merge_of_new_keys_writes_without_reading(dataset: IcebergDataset) -> None:
-    """The pruning short circuit: an append, arrived at by planning."""
+def test_a_merge_of_new_keys_writes_without_reading(
+    dataset: IcebergDataset, opened: dict[str, int]
+) -> None:
+    """The pruning short circuit, through `write_arrow(merge_by=True)`: keys no
+    stored file can hold plan to nothing, so the merge commits what it was
+    given without opening a data file to compare against."""
     dataset.write_arrow_table(quotes(3))
     before = len(dataset.iceberg_table.history())
-    dataset.write_arrow(quotes(3, "XETR"), merge_by=True)  # same keys -> updates
+    opened.clear()
+    dataset.write_arrow(keyed("T", 3), merge_by=True)  # keys nothing stored shares
     dataset.refresh()
-    assert dataset.read_arrow_table().num_rows == 3
+    assert opened.get("data", 0) == 0, "nothing was read to arrive at the append"
+    assert dataset.read_arrow_table().num_rows == 6, "the new keys landed beside the stored ones"
     assert len(dataset.iceberg_table.history()) > before
 
 
@@ -1251,11 +1249,15 @@ def test_a_merge_that_matches_still_reads_and_updates(
 
 
 def test_a_replayed_insert_opens_data_once_and_commits_nothing(
-    dataset: IcebergDataset,
+    dataset: IcebergDataset, opened: dict[str, int]
 ) -> None:
+    """Every key is stored, so the insert is nothing but the key scan: the one
+    file holding them, read once, and no snapshot for the zero rows left."""
     dataset.write_arrow_table(quotes(3))
     before = len(dataset.iceberg_table.snapshots())
+    opened.clear()
     assert dataset.insert_arrow_table(quotes(3, "XETR")) == 0
+    assert opened.get("data", 0) == 1, "one stored file, opened once to read its keys"
     assert len(dataset.iceberg_table.snapshots()) == before, "nothing new, no commit"
 
 
@@ -1982,18 +1984,9 @@ def test_a_sweep_finds_the_files_however_the_warehouse_is_spelled(tmp_path: Path
 
 def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
     """`write.data.path` moves the data; assuming `<location>/data` swept nothing."""
-    warehouse = tmp_path / "warehouse"
     elsewhere = tmp_path / "elsewhere"
-    warehouse.mkdir()
     elsewhere.mkdir()
-    catalog = IcebergCatalog(
-        name="relocated",
-        properties={
-            "type": "sql",
-            "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
-            "warehouse": warehouse.as_uri(),
-        },
-    )
+    catalog = IcebergCatalog(name="relocated", properties=catalog_properties(tmp_path))
     quotes_ = catalog.dataset(
         "trading.quotes",
         struct=Quote.FIELD,
@@ -2027,17 +2020,8 @@ def test_a_sweep_survives_a_data_path_that_contains_the_metadata(tmp_path: Path)
     reported ten orphans, all ten of them the current pointer, the manifest
     lists and the manifests: `cleanup` deleted the table.
     """
-    warehouse = tmp_path / "warehouse"
-    warehouse.mkdir()
-    catalog = IcebergCatalog(
-        name="flatpath",
-        properties={
-            "type": "sql",
-            "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
-            "warehouse": warehouse.as_uri(),
-        },
-    )
-    location = (warehouse / "trading" / "quotes").as_uri()
+    catalog = IcebergCatalog(name="flatpath", properties=catalog_properties(tmp_path))
+    location = (tmp_path / "warehouse" / "trading" / "quotes").as_uri()
     quotes_ = catalog.dataset(
         "trading.quotes",
         struct=Quote.FIELD,
