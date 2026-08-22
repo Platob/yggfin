@@ -160,7 +160,7 @@ different job, and it says so.
 
 Each is created on the first write to it, from the parser's own shape —
 [`Log`](logs.md) plus whatever `static_values` adds — and partitioned by
-`hunix`, the hour the line happened in.
+`unix_hour`, the hour the line happened in.
 
 **A line nothing classifies still lands.** Dropping it would make the job lossy
 in exactly the case a new log format shows up.

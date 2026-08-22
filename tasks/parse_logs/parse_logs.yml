@@ -121,7 +121,7 @@ null_values:
 
 # `{event_type}` is the lower-cased `EventType` name, so this produces
 # `logs.order_logs`, `logs.execution_logs`, ... `logs.unknown_logs`. Each is
-# created on the first write to it, partitioned by `hunix` -- the hour the line
+# created on the first write to it, partitioned by `unix_hour` -- the hour the line
 # happened in.
 catalog: rekep
 namespace: logs

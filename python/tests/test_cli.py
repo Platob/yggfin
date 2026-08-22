@@ -109,7 +109,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     printed = capsys.readouterr().out
     assert "Log: 25 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
-    assert "hunix: int64  [partition identity]" in printed
+    assert "unix_hour: int64  [partition identity]" in printed
     assert "primary keys: ['unix', 'hash']" in printed
 
 

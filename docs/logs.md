@@ -214,7 +214,7 @@ own:
 | column | type | what it is |
 | --- | --- | --- |
 | `unix` | `int64` | nanoseconds since the epoch — **primary key** with `hash` |
-| `hunix` | `int64` | `unix` floored to the hour — **partition** |
+| `unix_hour` | `int64` | `unix` floored to the hour — **partition** |
 | `etype` | `int32` | which kind of event the line is, decided by `LogRules` |
 | `hash` | `int64` | xxh3-64 of the raw line — **primary key** with `unix` |
 | `xhash` | `int64` | the same digest: a line is its own lifecycle |
@@ -274,7 +274,7 @@ between a date and an instant in the middle of it.
     Log.FIELD.names                                   # the columns above
     Log.FIELD.field("unix").metadata      # {'unit': 'nanosecond', ...}
     Log.FIELD.primary_keys()                          # ['unix', 'hash']
-    Log.FIELD.partition_keys()                        # {'hunix': 'identity'}
+    Log.FIELD.partition_keys()                        # {'unix_hour': 'identity'}
     ```
 
 === "Local time"
@@ -597,7 +597,7 @@ a read and a write, with nothing in between.
 
     ```python
     logs.read_arrow_table(
-        row_filter="hunix = 1786665600000000000",             # pushed to the planner
+        row_filter="unix_hour = 1786665600000000000",             # pushed to the planner
         columns=["unix", "driver_name", "message"],   # so is the projection
     )
     ```

@@ -66,7 +66,7 @@ def test_the_rows_land_in_the_hour_they_happened_in(capture: Path, catalog: dict
     task = parse(capture, catalog)
     task.run()
     rows = task.target(int(EventType.ORDER)).read_arrow_table()
-    hours = sorted(set(rows.column("hunix").to_pylist()))
+    hours = sorted(set(rows.column("unix_hour").to_pylist()))
     assert len(hours) == HOURS
     assert hours[1] - hours[0] == 3_600_000_000_000, "an hour apart, in nanoseconds"
 

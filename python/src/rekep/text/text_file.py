@@ -435,7 +435,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         digest = pyarrow.array(hashes, type=HASH)
         columns: dict[str, Any] = {
             "unix": unix,
-            "hunix": _hour_nanos(unix),
+            "unix_hour": _hour_nanos(unix),
             "etype": self.rules.etype_arrow(message),
             # A line is created when it is stamped. `runix` is when somebody
             # wrote it down *here*, which the parser does not know and must not

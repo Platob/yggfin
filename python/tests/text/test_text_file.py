@@ -262,7 +262,7 @@ def test_compressed_log_is_decoded_not_raw(gzipped: Path) -> None:
 def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
     assert schema.names == Log.FIELD.into_arrow_schema().names
-    assert schema.names[:3] == ["unix", "hunix", "etype"], "the envelope leads"
+    assert schema.names[:3] == ["unix", "unix_hour", "etype"], "the envelope leads"
     assert schema.names[-8:] == [
         "url",
         "thread_name",
@@ -274,7 +274,7 @@ def test_schema(plain: Path) -> None:
         "keyval",
     ]
     assert schema.field("unix").type == pyarrow.int64()
-    assert schema.field("hunix").type == pyarrow.int64()
+    assert schema.field("unix_hour").type == pyarrow.int64()
     assert schema.field("hash").type == pyarrow.int64()
     assert schema.field("etype").type == pyarrow.int32()
     assert schema.field("message").type == pyarrow.string()
@@ -319,9 +319,9 @@ def test_the_hour_column_is_the_instant_truncated(plain: Path) -> None:
         table = log.into_arrow_table()
     assert table.num_rows
     for row in table.to_pylist():
-        assert row["hunix"] == row["unix"] - row["unix"] % HOUR
-        assert row["hunix"] % HOUR == 0
-        assert 0 <= row["unix"] - row["hunix"] < HOUR
+        assert row["unix_hour"] == row["unix"] - row["unix"] % HOUR
+        assert row["unix_hour"] % HOUR == 0
+        assert 0 <= row["unix"] - row["unix_hour"] < HOUR
 
 
 def test_unix_is_total_nanos_since_epoch(plain: Path) -> None:
@@ -543,7 +543,7 @@ def test_a_write_renders_the_zone_it_read(tmp_path: Path, plain: Path, zone: str
     # the header regex read backwards, not the bytes that were parsed -- the
     # level marker a log prints is stripped into `message` and never rendered
     # back. What has to survive is what the columns say.
-    for column in ("unix", "hunix", "message"):
+    for column in ("unix", "unix_hour", "message"):
         assert back.column(column).to_pylist() == rows.column(column).to_pylist(), column
 
 
@@ -693,10 +693,10 @@ def test_the_hour_follows_the_instant_and_not_the_wall_clock() -> None:
     for zone in (None, "Europe/Paris", "Pacific/Auckland"):
         with TextFile.from_url(SAMPLE.resolve().as_uri(), timezone=zone) as log:
             batch = next(iter(log.into_arrow_batches()))
-        hours[zone] = (batch.column("unix")[0].as_py(), batch.column("hunix")[0].as_py())
+        hours[zone] = (batch.column("unix")[0].as_py(), batch.column("unix_hour")[0].as_py())
     assert len({unix for unix, _ in hours.values()}) == 3, "the instants differ by zone"
-    for unix, hunix in hours.values():
-        assert hunix == unix - unix % HOUR, "and the hour follows each of them"
+    for unix, unix_hour in hours.values():
+        assert unix_hour == unix - unix % HOUR, "and the hour follows each of them"
 
 
 def test_a_repeated_hour_resolves_rather_than_raising() -> None:
@@ -823,7 +823,7 @@ def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> N
 
     again = TextFile.from_path(tmp_path / "written.txt").read_arrow_table()
     assert again.num_rows == source.num_rows
-    for column in ("unix", "hunix", "thread_name", "driver_name", "message"):
+    for column in ("unix", "unix_hour", "thread_name", "driver_name", "message"):
         assert again.column(column).to_pylist() == source.column(column).to_pylist(), column
 
 

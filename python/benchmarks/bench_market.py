@@ -65,7 +65,7 @@ from rekep.market.identity import (  # noqa: E402
     hash_of,
 )
 
-#: On an hour boundary, so `unix` and `hunix` agree without the fixture
+#: On an hour boundary, so `unix` and `unix_hour` agree without the fixture
 #: having to derive one from the other.
 UNIX = 1710374400_000000000
 
@@ -171,7 +171,7 @@ def envelope(rows: int) -> dict[str, object]:
     """The NOT NULL half of any market event, one column per row."""
     return {
         "unix": [UNIX] * rows,
-        "hunix": [UNIX] * rows,
+        "unix_hour": [UNIX] * rows,
         "etype": [0] * rows,
         "cunix": [UNIX] * rows,
         "runix": [UNIX] * rows,

@@ -63,7 +63,7 @@ into a history.
     is a picture *of*, so staleness is `unix - sunix` rather than a join
     against whatever was snapshotted.
 
-    `hunix` is `unix` floored to the hour and is **derived, never given** — it
+    `unix_hour` is `unix` floored to the hour and is **derived, never given** — it
     is denormalised for the partition, so `__post_init__` computes it and one
     authority stays one authority. `instrument_hash` is derived the same way,
     from `instrument.xhash`: a nested member nothing can partition on and a flat
@@ -889,16 +889,16 @@ speaks is a real fact about what arrived.
 ## Layout
 
 A declaration says where its rows go, so nothing downstream has to be told
-twice. `unix` is `Field.sort_key()`, `hunix` and `instrument_hash` are
+twice. `unix` is `Field.sort_key()`, `unix_hour` and `instrument_hash` are
 `Field.partition_key(...)`, and `IcebergDataset` reads all three off the
 schema when it creates the table:
 
 ```python
-Order.FIELD.partition_keys()   # {'hunix': 'identity', 'instrument_hash': 'bucket[16]'}
+Order.FIELD.partition_keys()   # {'unix_hour': 'identity', 'instrument_hash': 'bucket[16]'}
 Order.FIELD.sort_keys()        # {'unix': 'asc'}
 ```
 
-**The hour, by identity.** `hunix` is `unix` floored to the hour, denormalised
+**The hour, by identity.** `unix_hour` is `unix` floored to the hour, denormalised
 so the partition is a plain column comparison. Identity is the one transform
 every engine reads alike: a `day` or `hour` transform over a timestamp needs
 Iceberg's Rust core on the writer, and buys a reader nothing it cannot get from
@@ -927,10 +927,10 @@ on the table, and this writer applies it: `sort_by` defaults to whatever the
 shape declares, so nothing sorts on read
 ([why](iceberg.md#a-dataset)).
 
-**And `hunix` says it is `unix`.** A merge joins on `(unix, hash)`, which names
+**And `unix_hour` says it is `unix`.** A merge joins on `(unix, hash)`, which names
 no partition column, so its scan pruned nothing at the manifest list and grew
 with the table. `Field.partition_key(derived_from="unix")` says the one thing
-that fixes it — two rows agreeing on `unix` agree on `hunix` — and a merge may
+that fixes it — two rows agreeing on `unix` agree on `unix_hour` — and a merge may
 then name the partition it is going to land in. Replaying one hour over 336 of
 them: **27 ms against 164**
 ([how](iceberg.md#how-a-merge-is-planned)).

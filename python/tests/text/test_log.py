@@ -9,7 +9,7 @@ from rekep.market.event import HOUR
 #: The envelope every event carries, then the four columns a log line adds.
 ENVELOPE = [
     "unix",
-    "hunix",
+    "unix_hour",
     "etype",
     "cunix",
     "runix",
@@ -60,12 +60,12 @@ def test_the_key_is_the_moment_and_the_line() -> None:
 
 def test_the_partition_is_the_hour_the_line_falls_in() -> None:
     """An identity partition on an integer, so every engine below reads it alike."""
-    assert Log.FIELD.partition_keys() == {"hunix": "identity"}
-    assert Log.FIELD.field("hunix").arrow_type == pyarrow.int64()
+    assert Log.FIELD.partition_keys() == {"unix_hour": "identity"}
+    assert Log.FIELD.field("unix_hour").arrow_type == pyarrow.int64()
 
 
 def test_every_unix_column_declares_its_unit() -> None:
-    for name in ("unix", "hunix", "cunix", "runix", "eunix", "sunix", "prev_unix"):
+    for name in ("unix", "unix_hour", "cunix", "runix", "eunix", "sunix", "prev_unix"):
         metadata = Log.FIELD.field(name).metadata
         assert metadata["unit"] == "nanosecond", name
         assert metadata["epoch"] == "1970-01-01", name
@@ -88,8 +88,8 @@ def test_a_line_is_unclassified_until_something_classifies_it() -> None:
 
 def test_the_hour_is_derived_from_the_instant() -> None:
     built = Log(unix=3 * HOUR + 5)
-    assert built.hunix == 3 * HOUR
-    assert Log(unix=-1).hunix == -HOUR, "and it floors, either side of the epoch"
+    assert built.unix_hour == 3 * HOUR
+    assert Log(unix=-1).unix_hour == -HOUR, "and it floors, either side of the epoch"
 
 
 def test_the_schema_says_which_class_it_came_from() -> None:

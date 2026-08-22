@@ -85,10 +85,10 @@ def test_the_partition_is_the_hour_then_the_instrument() -> None:
     because an identity on a 64-bit hash is one directory per instrument."""
     schema = Order.FIELD.into_iceberg_schema()
     spec = Order.FIELD.into_iceberg_partition_spec(schema)
-    assert [partition.name for partition in spec.fields] == ["hunix", "instrument_hash_bucket"]
+    assert [partition.name for partition in spec.fields] == ["unix_hour", "instrument_hash_bucket"]
     assert str(spec.fields[0].transform) == "identity"
     assert str(spec.fields[1].transform) == "bucket[16]"
-    assert schema.find_column_name(spec.fields[0].source_id) == "hunix"
+    assert schema.find_column_name(spec.fields[0].source_id) == "unix_hour"
     assert schema.find_column_name(spec.fields[1].source_id) == "instrument_hash"
     for partition in spec.fields:
         assert "[" not in partition.name, "a partition name becomes a directory name"

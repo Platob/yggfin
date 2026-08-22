@@ -80,24 +80,26 @@ def test_the_base_event_claims_to_be_nothing_in_particular() -> None:
 def test_the_hour_is_derived_from_the_timestamp_and_never_given() -> None:
     """Denormalised for the partition, so one authority rather than two columns."""
     unix = 1710374400_000000000 + 5
-    assert Order(unix=unix).hunix == 1710374400_000000000
-    assert Order(unix=unix, hunix=999).hunix == 1710374400_000000000, "what is given is ignored"
-    assert 0 <= unix - Order(unix=unix).hunix < HOUR
+    assert Order(unix=unix).unix_hour == 1710374400_000000000
+    assert Order(unix=unix, unix_hour=999).unix_hour == 1710374400_000000000, (
+        "what is given is ignored"
+    )
+    assert 0 <= unix - Order(unix=unix).unix_hour < HOUR
 
 
 def test_the_hour_floors_on_both_sides_of_the_epoch() -> None:
     """Integer division truncates towards zero in most languages and floors in Python."""
-    assert Order(unix=0).hunix == 0
-    assert Order(unix=HOUR - 1).hunix == 0
-    assert Order(unix=HOUR).hunix == HOUR
-    assert Order(unix=-1).hunix == -HOUR, "a pre-epoch instant"
-    assert Order(unix=-HOUR - 1).hunix == -2 * HOUR
+    assert Order(unix=0).unix_hour == 0
+    assert Order(unix=HOUR - 1).unix_hour == 0
+    assert Order(unix=HOUR).unix_hour == HOUR
+    assert Order(unix=-1).unix_hour == -HOUR, "a pre-epoch instant"
+    assert Order(unix=-HOUR - 1).unix_hour == -2 * HOUR
 
 
 def test_the_hour_and_the_instant_are_the_same_type() -> None:
     """So a partition filter and a time filter are one comparison, with no cast."""
-    assert Order.FIELD.field("hunix").arrow_type == Order.FIELD.field("unix").arrow_type
-    assert Order.FIELD.field("hunix").metadata["unit"] == "nanosecond"
+    assert Order.FIELD.field("unix_hour").arrow_type == Order.FIELD.field("unix").arrow_type
+    assert Order.FIELD.field("unix_hour").metadata["unit"] == "nanosecond"
 
 
 def test_a_snapshot_keeps_both_when_it_was_taken_and_what_it_is_of() -> None:

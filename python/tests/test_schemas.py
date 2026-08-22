@@ -79,7 +79,7 @@ def test_the_log_contract_is_the_declaration() -> None:
     assert published == Log.FIELD
     assert published.into_arrow_schema().equals(Log.FIELD.into_arrow_schema(), check_metadata=True)
     assert published.primary_keys() == ["unix", "hash"]
-    assert published.partition_keys() == {"hunix": "identity"}
+    assert published.partition_keys() == {"unix_hour": "identity"}
 
 
 @pytest.mark.parametrize(

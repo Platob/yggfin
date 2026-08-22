@@ -54,7 +54,7 @@ capture = TextFiles.from_folder(
 )
 logs.append_arrow(capture.read_arrow_reader(), merge_by=True, commit_row_size=1_000_000)
 
-logs.read_arrow_table(row_filter="hunix = 1786665600000000000")
+logs.read_arrow_table(row_filter="unix_hour = 1786665600000000000")
 logs.optimize()                      # compact, expire, sweep
 ```
 

@@ -138,7 +138,7 @@ stay correct.
 
 ```python
 TextFile.from_path("app.txt.zst")     # Arrow picks the codec off the extension
-logs.read_arrow_table(row_filter="hunix = 1786665600000000000")   # Iceberg plans
+logs.read_arrow_table(row_filter="unix_hour = 1786665600000000000")   # Iceberg plans
 ```
 
 But **probe real behaviour before designing around an assumption.** Several
