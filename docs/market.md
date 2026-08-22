@@ -1027,24 +1027,57 @@ table, and splitting the two would report a number no caller can have:
 
 | message | events out | measured |
 | --- | --- | --- |
-| `NewOrderSingle <D>` | 1 | ~14.3–14.7k messages/s |
-| `ExecutionReport <8>`, filled | 2 | ~7.3k messages/s, ~14.6–14.7k events/s |
-| `MarketDataIncrementalRefresh <X>`, 5 entries | 5 | ~3.5k messages/s, ~17.4–17.6k events/s |
+| `NewOrderSingle <D>` | 1 | ~10.4k messages/s |
+| `ExecutionReport <8>`, filled | 2 | ~5.5k messages/s, ~11.0k events/s |
+| `MarketDataIncrementalRefresh <X>`, 5 entries | 5 | ~2.6k messages/s, ~12.8k events/s |
 
-Per *event* the three agree within a fifth, which is the useful reading: the
-cost is the event, not the message. Getting there took three measured changes —
-`FixMessage.get` is a scan and then a regex scan, which cost **434 regex matches
-per message** when the translation read forty fields off one; the tag mapping
-was rebuilt per message; and the fold-vs-alternation choice for a key was
+Per *event* the three agree within a quarter, which is the useful reading: the
+cost is the event, not the message.
+
+Six measured changes got it there. Three on what a lookup costs: `FixMessage.get`
+is a scan and then a regex scan, which cost **434 regex matches per message**
+when the translation read forty fields off one, so the message is read into
+`by_tag` once; the tag mapping was rebuilt per message; and the
+fold-vs-alternation choice for a key was
 [raced rather than assumed](fix.md#benchmarks). Together, **2.1×** on a
-`NewOrderSingle`.
+`NewOrderSingle`. Three more on what a message costs:
+
+- a repeating group the message does **not** carry — five of the six looked
+  for — fell through to a regex against every pair, which was **312,000 of the
+  332,000 regex matches** in a 4,000-line parse;
+- a `tag=value` token is split rather than matched, which is nearly every token
+  of nearly every message;
+- and a message is **one** instrument, so it is read once rather than once per
+  event: eighteen tags and two repeating groups, twice for a filled report and
+  once per entry for a refresh.
+
+Measured back to back on one machine, 5,000 messages of each shape, best of
+three: `NewOrderSingle` **120 µs → 83**, `ExecutionReport` **267 → 187**, a
+five-entry refresh **507 → 420**. The table above is the same code at ten times
+the fixture, which is slower per message and on a different machine than the
+figures this page carried before — [seconds
+move](benchmarks.md#how-to-read-a-number), ratios measured back to back do not.
+
+!!! note "The vectorised parser only pays if the result stays in Arrow"
+
+    `parse_arrow_array` cuts a column of lines into `map<string, string>` in
+    kernels and is [2.4–3.3× faster](fix.md#benchmarks) than parsing them one
+    at a time. It buys the *translation* nothing, and that was measured rather
+    than assumed: the events are Python objects, so the map has to come back
+    through `to_pylist`, which costs what the kernels saved. On 4,000
+    refreshes, tokenising took 82.4 ms scalar and 80.3 ms through Arrow, and
+    the whole path 792 ms against 760.
+
+    Which is the useful reading of it: vectorise where the *output* is a
+    column — a capture landed as pairs, tags cast to integers, a whole file
+    scanned for one field — and not where every row becomes an object anyway.
 
 **Folding a book**, 100,000 events of one instrument, a quarter of which
 restate an order already resting:
 
 | case | measured |
 | --- | --- |
-| `Book.from_events` | ~119 µs/event, ~6.3k books/s |
+| `Book.from_events` | ~101 µs/event, ~7.5k books/s |
 
 The fold keeps every live order, so its cost is the events and the depth rather
 than the books. Three measured changes got it there, 2.2× together: a `Ranged`

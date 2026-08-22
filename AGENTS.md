@@ -485,10 +485,18 @@ rekep/
 │                  int64, a ranged code is int32 carrying its
 │                  member table, a nested shape loses its keys, a shape of one
 │                  member is that member; plus fix_tag and dictionary_arrow),
-│                  instrument.py, event.py (Event and MarketEvent), orders.py
-│                  (Order, Execution) and book.py (Level, LevelUpdate,
-│                  LevelExecution, BookSide, Book -- the append_* builders and
-│                  the derived prices computed in kernels)
+│                  instrument.py (Instrument and Leg: what is traded, its
+│                  alternative identifiers and its legs), event.py (Event and
+│                  MarketEvent -- the envelope, the five clocks, with_previous
+│                  and make_snapshot), reference.py (Reference: one version of
+│                  an instrument, as a row of its own), orders.py (Order,
+│                  Execution), book.py (Level, LevelUpdate, LevelExecution,
+│                  Resting, BookSide, Book -- the append_* builders, the
+│                  derived prices computed in kernels, and BookIterator: one
+│                  pass over a capture holding mutable state per instrument,
+│                  emitting a book stream and an instrument stream) and fix.py
+│                  (FixEvents: a FIX message read as the market events it
+│                  carries -- which clock, which shape, which instrument)
 ├── fix/           message.py (FixMessage and the vectorised line parsing:
 │                  separator detection, tag=value and rendered
 │                  Name[i]=Member=value cutting, repeating groups, and
@@ -507,9 +515,12 @@ rekep/
 │                  stream -- the lazy pyarrow.fs walk, the batch combining, and
 │                  the raw/compressed byte flow)
 └── tasks/         a unit of work declared in a document: task.py (Task, the
-                   `kind` dispatch and the TaskRun report) and logs.py
+                   `kind` dispatch and the TaskRun report), logs.py
                    (ParseLogs: one streaming pass over a capture, fanned out
-                   into one Iceberg table per event type)
+                   into one Iceberg table per event type) and market.py
+                   (ParseMarket: those lines read as FIX and landed as orders,
+                   executions, books and instruments -- one pass, the fold
+                   inside it, optionally sharded over worker processes)
 ```
 
 Beside `python/`, `schemas/` holds the published contracts (one directory per
