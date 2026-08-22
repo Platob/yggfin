@@ -57,6 +57,30 @@ about, and land each line in the Iceberg table for its kind — `order_logs`,
     report = task.run()
     ```
 
+=== "What each line carries"
+
+    ```python
+    task = ParseLogs(
+        source="/var/log/app",
+        categories=Rules.DEFAULT,          # which kind of message each line holds
+        fix_version="4.4",                 # what a name resolves against
+        fix_dictionary="data/fix.zip",     # read, never scraped
+        null_values=frozenset({"", "null", "<null>", "n/a"}),
+    )
+    ```
+
+    Four flat keys, and each says one thing. `categories` decides
+    `category_id`; `fix_version` and `fix_dictionary` decide what a *name*
+    resolves to in `fix_tags`; `null_values` are the spellings that mean the
+    field is absent, dropped before either map sees them — `ACCOUNT=<null>` is
+    an absent account, and keeping the text makes every consumer downstream
+    re-implement the same check. An empty set keeps every pair.
+
+    They assemble a [codec](logs.md#a-second-codec), which is what the source
+    actually holds; flat rather than nested because a task **is** a document
+    and `null_values: ["", "null"]` on its own line is what somebody editing a
+    job wants to write.
+
 === "The report"
 
     ```python

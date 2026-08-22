@@ -27,12 +27,13 @@ ENVELOPE = [
     "parent_hash",
 ]
 LINE = ["url", "thread_name", "driver_name", "message"]
+MESSAGE = ["category_id", "category_name", "fix_tags", "keyval"]
 
 
 def test_a_log_line_is_an_event() -> None:
     """Which is what lets a parsed log be read beside the orders it describes."""
     assert issubclass(Log, Event)
-    assert Log.FIELD.into_arrow_schema().names == ENVELOPE + LINE
+    assert Log.FIELD.into_arrow_schema().names == ENVELOPE + LINE + MESSAGE
 
 
 def test_the_envelope_is_the_same_one_every_other_event_carries() -> None:

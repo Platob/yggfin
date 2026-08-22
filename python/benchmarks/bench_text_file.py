@@ -29,7 +29,6 @@ import gzip
 import os
 import pathlib
 import random
-import re
 import sys
 import tempfile
 import threading
@@ -41,7 +40,14 @@ import pyarrow
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep.fix import SOH, FixMessage, FixRegistry, parse_arrow_array  # noqa: E402
+from rekep.fix import (  # noqa: E402
+    SOH,
+    FixCodec,
+    FixMessage,
+    FixRegistry,
+    Rules,
+    parse_arrow_array,
+)
 
 # The message sweep races variants of `parse_arrow_array` against the thing
 # itself, so it is built out of the same pieces: the token classifier, the
@@ -398,12 +404,6 @@ CATEGORY_SHARES: tuple[tuple[str, int], ...] = (("OTHER", 60), ("FIX", 25), ("UL
 #: `detect_separator` in some of them and not in others.
 CAPTURE_SEPARATOR = "|"
 
-#: Where a bridge message starts inside a log line -- the first `#NAME=`, the
-#: way `8=FIX` is where a wire message starts. `toBridge #ISINCODE=x` carries
-#: the driver's own prefix, and without a start marker the first key would be
-#: `toBridge #ISINCODE`.
-BRIDGE_START = re.compile(r"#[A-Za-z][A-Za-z0-9_.\-]*(?:\[\d+\])?=")
-
 
 def capture(path: pathlib.Path, rows: int, seed: int = 5) -> tuple[int, list[str]]:
     """Write a mixed capture, and say which category each row is.
@@ -519,31 +519,42 @@ def messages(rows: int, repeat: int, quick: bool) -> None:
 
 
 def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> None:
-    """Stage one: line -> header split, which already ships. The baseline.
+    """Stage one: a whole capture through the parser, with the layer on and off.
 
-    Timed here rather than carried over from the table above because the
-    fixture is a different one -- a quarter of these lines are messages, which
-    are longer than the payloads that sweep generates -- and a baseline read
+    Timed here rather than carried over from the tables above because the
+    fixture is a different one -- 40% of these lines are messages, and they are
+    much longer than the payloads that sweep generates -- and a baseline read
     off another fixture is not a baseline.
+
+    Two rows, because the interesting number is the **difference**: what
+    reading every message costs against not reading any. A rule set with no
+    rules in it categorises every line OTHER, which parses nothing, so the
+    second row is this parser with the message layer switched off -- and it is
+    also the configuration a caller gets by asking for it.
     """
-    print("\n  line -> header split")
-    print(f"    {'implementation':>34} {'rows/s':>12} {'MB/s':>8} {'peak RSS':>10}")
-    fastest, peak = float("inf"), 0
-    for _ in range(repeat):
-        before = _rss_bytes()
-        with _peak_rss() as sampled:
-            started = time.perf_counter()
-            seen = 0
-            with TextFile.from_path(path) as log:
-                for batch in log.into_arrow_batches(batch_row_size=DEFAULT_BATCH_ROW_SIZE):
-                    seen += batch.num_rows
-            elapsed = time.perf_counter() - started
-        assert seen == rows, f"{seen} rows parsed out of {rows}"
-        fastest, peak = min(fastest, elapsed), max(peak, sampled() - before)
-    print(
-        f"    {'TextFile.into_arrow_batches':>34} {rows / fastest:>12,.0f} "
-        f"{nbytes / 2**20 / fastest:>8.1f} {_mib(peak):>10}"
+    print("\n  a whole capture, streamed")
+    print(f"    {'configuration':>34} {'rows/s':>12} {'MB/s':>8} {'peak RSS':>10}")
+    cases = (
+        ("the message layer, on", FixCodec()),
+        ("no rules at all", FixCodec(rules=Rules(rules=[]))),
     )
+    for label, codec in cases:
+        fastest, peak = float("inf"), 0
+        for _ in range(repeat):
+            before = _rss_bytes()
+            with _peak_rss() as sampled:
+                started = time.perf_counter()
+                seen = 0
+                with TextFile.from_path(path, codec=codec) as log:
+                    for batch in log.into_arrow_batches(batch_row_size=DEFAULT_BATCH_ROW_SIZE):
+                        seen += batch.num_rows
+                elapsed = time.perf_counter() - started
+            assert seen == rows, f"{seen} rows parsed out of {rows}"
+            fastest, peak = min(fastest, elapsed), max(peak, sampled() - before)
+        print(
+            f"    {label:>34} {rows / fastest:>12,.0f} "
+            f"{nbytes / 2**20 / fastest:>8.1f} {_mib(peak):>10}"
+        )
 
 
 def _category_columns(
@@ -553,12 +564,9 @@ def _category_columns(
 
     Bounded by construction: the stream is dropped as soon as every category
     has `batch_row_size` rows, so what is held is three batches and not a
-    capture. The UL column is handed over **cut at its first `#NAME=` and with
-    the `#` off every key** -- one string operation, identical for every
-    implementation below, done here rather than inside the clock so the race is
-    over the cut and not over three spellings of the same strip. The parser
-    does not admit a `#` key yet; where it does, this pre-pass disappears into
-    the token pattern and costs nothing.
+    capture. Nothing is done to the lines: the parser reads a bridge's `#`
+    marker, its message start and its nested group entries itself now, so the
+    column that reaches the race is the column the pipeline gets.
     """
     collected: dict[str, list[str]] = {name: [] for name, _ in CATEGORY_SHARES}
     row = 0
@@ -571,16 +579,7 @@ def _category_columns(
                 row += 1
             if all(len(one) >= batch_row_size for one in collected.values()):
                 break
-    collected["UL"] = [_bridged(line) for line in collected["UL"]]
     return {name: pyarrow.array(lines, pyarrow.string()) for name, lines in collected.items()}
-
-
-def _bridged(line: str) -> str:
-    """A bridge line from its first `#NAME=`, with the `#` off every key."""
-    start = BRIDGE_START.search(line)
-    if start is None:
-        return line
-    return re.sub(rf"(^|{re.escape(CAPTURE_SEPARATOR)})#", r"\1", line[start.start() :])
 
 
 def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
@@ -653,8 +652,7 @@ def _numpy_pairs(column: pyarrow.Array) -> pyarrow.MapArray:
     values = compute.if_else(compute.is_null(begun), values, begun)
     tokens = compute.split_pattern(values, CAPTURE_SEPARATOR)
     flat = tokens.values
-    named = _column_style(column)[1]
-    if named:
+    if _column_style(column)[1]:
         raise _NotApplicable("no cut")
     matched = compute.fill_null(compute.match_substring_regex(flat, _PAIR_TOKEN), False)
     kept = compute.filter(flat, matched)
@@ -735,7 +733,9 @@ def _polars_pairs(column: pyarrow.Array) -> object:
     """
     import polars
 
-    named = _column_style(column)[1]
+    named, entry_separator = _column_style(column)[1:]
+    if entry_separator is not None:
+        raise _NotApplicable("no entries")
     frame = polars.DataFrame({"line": polars.from_arrow(column)}).with_row_index("row")
     if not named:
         frame = frame.with_columns(

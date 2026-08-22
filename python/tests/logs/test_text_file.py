@@ -263,7 +263,16 @@ def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
     assert schema.names == Log.FIELD.into_arrow_schema().names
     assert schema.names[:3] == ["unix", "hunix", "etype"], "the envelope leads"
-    assert schema.names[-4:] == ["url", "thread_name", "driver_name", "message"]
+    assert schema.names[-8:] == [
+        "url",
+        "thread_name",
+        "driver_name",
+        "message",
+        "category_id",
+        "category_name",
+        "fix_tags",
+        "keyval",
+    ]
     assert schema.field("unix").type == pyarrow.int64()
     assert schema.field("hunix").type == pyarrow.int64()
     assert schema.field("hash").type == pyarrow.int64()

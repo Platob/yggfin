@@ -1,15 +1,17 @@
-"""The shape of one parsed log line, and what decides which event it is."""
+"""The shape of one parsed log line, what decides which event it is, and what fills it."""
 
 from __future__ import annotations
 
 import dataclasses
-from typing import Any, ClassVar
+from typing import Annotated, Any, ClassVar, Protocol, runtime_checkable
 
 import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.fields import field
+from rekep.fields import Field, field
+from rekep.fix.rules import CODE
+from rekep.fix.transcribe import FIX_TAGS, KEYVAL
 from rekep.market.enums import EventType
 from rekep.market.event import Event
 
@@ -41,6 +43,76 @@ class Log(Event):
 
     message: str = ""
     """Payload with the header and level stripped, continuation lines folded in."""
+
+    # An integer and not the name, for the reason every other code column here
+    # is one: the column survives a rule set this build has never seen, and a
+    # filter on it prunes where a set of string literals cannot. The name is
+    # beside it because a rule set is data, so nothing downstream has a table
+    # to decode 42 with.
+    category_id: Annotated[int, Field(arrow_type=CODE)] = 0
+    """Which kind of message the line carries; 0 is a line that carries none."""
+
+    category_name: str = "OTHER"
+    """What that category is called, as the rule that matched it names it."""
+
+    # A **map**, and both of them, because tags repeat -- a repeating group *is*
+    # tags repeating -- and an Arrow map is the one nested type that keeps
+    # duplicate keys in the order they arrived. Which is the whole reason the
+    # parser already returns one.
+    #
+    # Nullable, and null is not an empty map: a line that carries no message
+    # has no pairs, a message that carried nothing has none *left*, and a store
+    # that spelled those the same way could not tell a bridge that sent an
+    # empty payload from a stack trace.
+    fix_tags: Annotated[dict[int, str] | None, Field(arrow_type=FIX_TAGS)] = None
+    """The message's fields under the tags FIX gives them, in wire order."""
+
+    keyval: Annotated[dict[str, str] | None, Field(arrow_type=KEYVAL)] = None
+    """The fields no FIX tag answers for, spelled as the log spelled them."""
+
+
+@runtime_checkable
+class MessageCodec(Protocol):
+    """What a source calls to turn a message column into the columns a row carries.
+
+    Three verbs and no more, which is the point: `TextFile` holds one of these
+    and never learns which protocol it is reading. `rekep.fix.FixCodec` is the
+    implementation this package ships; a second one over another protocol --
+    market data, an internal binary envelope, a venue's own text format --
+    implements the same three and the pipeline above it does not change.
+
+    Every verb is per **batch** and takes whole columns, because that is the
+    contract that makes a codec usable at all: a seam that handed over one row
+    at a time would put a Python loop in the middle of the hot path
+    (`docs/logs.md`).
+    """
+
+    def categorise(self, messages: Any, drivers: Any = None) -> tuple[Any, Any]:
+        """One `(category_id, category_name)` pair per row."""
+        ...
+
+    def into_pairs(self, messages: Any, category_id: int = 0) -> Any:
+        """One `map<string, string>` per row: the message as the line spells it.
+
+        Addressed by the id `categorise` gave the row, because that is what the
+        batch carries. Null, not an empty map, for a category that reads
+        nothing.
+        """
+        ...
+
+    def into_fix_pairs(self, pairs: Any, version: str | None = None) -> tuple[Any, Any]:
+        """`pairs` split into the keys the protocol names and the keys it does not."""
+        ...
+
+    def version_of(self, message: str | None, category_id: int = 0) -> tuple[str | None, str]:
+        """Which protocol version a message is read under, and where that came from.
+
+        The fourth verb, and the one a protocol without versions answers
+        `(None, "none")` to. It is here rather than inside `into_fix_pairs`
+        because the pipeline resolves it once per category slice and hands it
+        down -- resolving it per row would put a regex back in the hot path.
+        """
+        ...
 
 
 @dataclasses.dataclass

@@ -124,3 +124,27 @@ fields:
   type: string
   description: Payload with the header and level stripped, continuation lines folded
     in.
+- name: category_id
+  type: int32
+  description: Which kind of message the line carries; 0 is a line that carries none.
+- name: category_name
+  type: string
+  description: What that category is called, as the rule that matched it names it.
+- name: fix_tags
+  type: map
+  nullable: true
+  description: The message's fields under the tags FIX gives them, in wire order.
+  key:
+    type: int32
+  value:
+    type: string
+    nullable: true
+- name: keyval
+  type: map
+  nullable: true
+  description: The fields no FIX tag answers for, spelled as the log spelled them.
+  key:
+    type: string
+  value:
+    type: string
+    nullable: true

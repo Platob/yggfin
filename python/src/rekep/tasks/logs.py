@@ -13,6 +13,9 @@ import pyarrow.fs
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
+from rekep.fix.registry import FixRegistry
+from rekep.fix.rules import Rules
+from rekep.fix.transcribe import NULL_VALUES, FixCodec
 from rekep.logs.log import LogRules
 from rekep.logs.text_file import DEFAULT_BATCH_ROW_SIZE, TextFile
 from rekep.logs.text_files import TextFiles
@@ -68,6 +71,18 @@ class ParseLogs(Task):
 
     rules: LogRules = dataclasses.field(default_factory=LogRules)
     """What decides each line's `etype`, first match winning, `UNKNOWN` otherwise."""
+
+    categories: Rules = dataclasses.field(default_factory=Rules)
+    """What decides which kind of message each line carries, first match winning."""
+
+    fix_version: str | None = None
+    """Which FIX version to resolve names against when a message carries no BeginString."""
+
+    fix_dictionary: str | None = None
+    """Where the FIX dictionary is; None is the user's own cache, read and never scraped."""
+
+    null_values: frozenset[str] = NULL_VALUES
+    """Values that mean a field is absent, dropped from `fix_tags` and `keyval` alike."""
 
     catalog: str = "rekep"
     """Name of the Iceberg catalog the targets live in."""
@@ -166,6 +181,7 @@ class ParseLogs(Task):
             "timezone": self.timezone,
             "static_values": self.static_values,
             "rules": self.rules,
+            "codec": self.codec,
         }
         url = self.source_url
         filesystem, path = resolve(url)
@@ -177,6 +193,32 @@ class ParseLogs(Task):
                 url, pattern=self.pattern, recursive=self.recursive, **declared
             )
         return TextFile.from_url(url, **declared)
+
+    @property
+    def codec(self) -> FixCodec:
+        """What turns a message into the columns a row carries, as this job declares it.
+
+        Assembled from the flat keys above rather than taken as a nested one,
+        because a task **is** a document: `null_values: ["", "null"]` on its own
+        line is what somebody editing a job wants to write, and there is one
+        place each of these is said.
+
+        The registry is **offline** whichever cache it names. A parse that met
+        its first bridge line and answered it by scraping seven thousand pages
+        mid-batch would turn a job into an outage; a cold cache costs the tags
+        and never the capture.
+        """
+        registry = (
+            FixRegistry(offline=True)
+            if self.fix_dictionary is None
+            else FixRegistry(cache_dir=self.fix_dictionary, offline=True)
+        )
+        return FixCodec(
+            rules=self.categories,
+            registry=registry,
+            fix_version=self.fix_version,
+            null_values=frozenset(self.null_values),
+        )
 
     @property
     def source_url(self) -> str:

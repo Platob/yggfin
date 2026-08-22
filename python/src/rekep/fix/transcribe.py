@@ -20,9 +20,16 @@ import pyarrow.compute
 
 from rekep.convert import Convertible
 from rekep.fields import Field
-from rekep.fix.message import _BEGIN, _MEMBER_NAME_VECTOR, parse_arrow_array
+from rekep.fields.arrays import groups_of, scattered
+from rekep.fix.message import (
+    _BEGIN,
+    _MEMBER_NAME_VECTOR,
+    BRIDGE_SEPARATOR_VECTOR,
+    SEPARATOR_VECTOR,
+    parse_arrow_array,
+)
 from rekep.fix.registry import FixRegistry
-from rekep.fix.rules import Rule, Rules
+from rekep.fix.rules import Rules
 
 #: What a resolved key is: the tag number, as the `int32` every other code
 #: column here is.
@@ -103,6 +110,13 @@ class TagIndex:
         is not an error here: it is a key that belongs in `keyval`.
         """
         compute = pyarrow.compute
+        plain = compute.fill_null(compute.match_substring_regex(keys, _IS_TAG), False)
+        if compute.all(plain, min_count=0).as_py():
+            # Every key is already a tag, which is what a wire message is made
+            # of and so what most of a capture's pairs are. One cast, and none
+            # of the name machinery below is touched -- measured at roughly a
+            # third of what the general path costs on the same column.
+            return keys.cast(TAG)
         reduced = compute.fill_null(
             compute.struct_field(compute.extract_regex(keys, _MEMBER_NAME_VECTOR), "name"), ""
         )
@@ -160,25 +174,83 @@ class FixCodec(Convertible):
         """One `(category_id, category_name)` pair per row, in kernels."""
         return self.rules.into_arrow_category_arrays(messages, drivers)
 
-    def into_pairs(self, messages: Any, rule: Rule) -> Any:
+    def into_pairs(self, messages: Any, category_id: int = 0) -> Any:
         """One `map<string, string>` per row: the message as the line spells it.
 
-        A rule whose codec is `none` parses nothing and says so with a column
-        of nulls -- **not** empty maps. "Parsed, and there was nothing in it"
-        and "this line is not a message" are different facts, and a store that
-        spelled them the same way could not tell a bridge that sent an empty
-        payload from a stack trace.
+        Addressed by **category id** and not by rule, because that is what the
+        seam can carry: the id is a column the batch already holds, and the
+        rule behind it is this codec's business. A protocol with no rules at
+        all still has ids.
+
+        A category whose codec is `none` parses nothing and says so with a
+        column of nulls -- **not** empty maps. "Parsed, and there was nothing
+        in it" and "this line is not a message" are different facts, and a
+        store that spelled them the same way could not tell a bridge that sent
+        an empty payload from a stack trace.
         """
+        compute = pyarrow.compute
+        rule = self.rules.rule(category_id)
         if rule.named is None:
             return pyarrow.nulls(len(messages), KEYVAL)
-        return self.drop_null_values(
-            parse_arrow_array(
-                messages,
-                rule.separator,
-                named=rule.named,
-                entry_separator=rule.entry_separator,
+        if rule.separator is not None:
+            return self.drop_null_values(
+                parse_arrow_array(
+                    messages,
+                    rule.separator,
+                    named=rule.named,
+                    entry_separator=rule.entry_separator,
+                )
             )
-        )
+        # `parse_arrow_array` samples a column **once** and reads every row of
+        # it that way -- which is right, and which is why a category is not a
+        # fine enough slice on its own: one FIX session writes `|` and the next
+        # writes SOH, and a capture holds both, so a single sample would read
+        # one of them as a message of one field. The rows that share a
+        # separator are parsed together and put back where they were.
+        groups = list(groups_of(self.separators_of(messages, rule.named)))
+        if len(groups) == 1:
+            # One separator down the whole slice, which is every capture that
+            # holds one session. Handed over as it stands rather than through a
+            # `take` of every row, because that copy is the whole column.
+            return self.drop_null_values(
+                parse_arrow_array(messages, named=rule.named, entry_separator=rule.entry_separator)
+            )
+        parts, positions = [], []
+        for _, where in groups:
+            parts.append(
+                parse_arrow_array(
+                    compute.take(messages, where),
+                    named=rule.named,
+                    entry_separator=rule.entry_separator,
+                )
+            )
+            positions.append(where)
+        return self.drop_null_values(scattered(parts, positions))
+
+    def separators_of(self, messages: Any, named: bool | None = None) -> pyarrow.Array:
+        """What each line writes between its fields, read off the line itself.
+
+        `detect_separator`'s rule over a whole column: whatever follows the
+        BeginString value, and for a line that has none, whatever sits in front
+        of its second `#NAME=`. A line with neither answers `""`, which groups
+        every one of them together -- they parse to nothing either way.
+
+        `named` says which of the two readings a slice can possibly need, and
+        it is worth passing: a category is one kind of message, so running the
+        other pattern over it is a whole regex pass that can only return nulls.
+        None runs both, for a caller that does not know.
+        """
+        compute = pyarrow.compute
+        text = messages.cast(pyarrow.string(), safe=False)
+        found = None
+        if named is not True:
+            found = compute.struct_field(compute.extract_regex(text, SEPARATOR_VECTOR), "sep")
+        if named is not False:
+            bridge = compute.struct_field(
+                compute.extract_regex(text, BRIDGE_SEPARATOR_VECTOR), "sep"
+            )
+            found = bridge if found is None else compute.coalesce(found, bridge)
+        return compute.fill_null(found, "")
 
     def drop_null_values(self, pairs: Any) -> Any:
         """`pairs` without the fields whose value is one of `null_values`.
@@ -238,6 +310,11 @@ class FixCodec(Convertible):
         comes back with an *empty* map on the `keyval` side, and vice versa:
         the row parsed, and one half of it was empty.
         """
+        if len(pairs) and pairs.null_count == len(pairs):
+            # Every row of this slice is "not a message", which is most of a
+            # capture. Both halves are null, and the kernels below would run
+            # over an empty child array to establish it.
+            return pyarrow.nulls(len(pairs), FIX_TAGS), pyarrow.nulls(len(pairs), KEYVAL)
         index = self.index_of(version)
         if isinstance(pairs, pyarrow.ChunkedArray):
             halves = [self.into_fix_pairs(chunk, version) for chunk in pairs.chunks]
@@ -260,7 +337,7 @@ class FixCodec(Convertible):
 
     # -- versions -----------------------------------------------------------
 
-    def version_of(self, message: str | None, rule: Rule | None = None) -> tuple[str | None, str]:
+    def version_of(self, message: str | None, category_id: int = 0) -> tuple[str | None, str]:
         """Which FIX version a message is read under, and where that came from.
 
         Three answers in order of authority: **tag 8**, which is the message
@@ -281,7 +358,8 @@ class FixCodec(Convertible):
                 named = self.version_named(begin.group(0))
                 if named is not None:
                     return named, BEGIN_STRING_SOURCE
-        if rule is not None and rule.fix_version:
+        rule = self.rules.rule(category_id)
+        if rule.fix_version:
             return rule.fix_version, RULE_SOURCE
         if self.fix_version:
             return self.fix_version, DEFAULT_SOURCE

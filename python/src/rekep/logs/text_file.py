@@ -19,7 +19,8 @@ import pyarrow.fs
 from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField
 from rekep.filesystems import resolve
-from rekep.logs.log import Log, LogRules
+from rekep.fix.transcribe import FixCodec
+from rekep.logs.log import Log, LogRules, MessageCodec
 from rekep.market.event import HOUR
 from rekep.market.identity import HASH, hash_bytes
 from rekep.urls import Url
@@ -124,10 +125,11 @@ class TextFile(Dataset, io.BufferedIOBase):
     filesystem: pyarrow.fs.FileSystem | None = None
     header_pattern: re.Pattern[bytes] = HEADER_PATTERN
 
-    #: Columns one written line is made of. The rest of `ROW` is derived when
-    #: the line is read back -- the day and the hash are functions of the line,
-    #: the url is the file, the categories are placeholders -- so a write must
-    #: not demand them.
+    #: Columns one written line is made of, and it does not grow: everything
+    #: else `ROW` declares is **derived** when the line is read back -- the hour
+    #: and the hash are functions of the line, the url is the file, and the
+    #: category and its pairs are read out of the message. A write is never
+    #: asked for a column a read derives.
     RENDERED: ClassVar[tuple[str, ...]] = (
         "unix",
         "thread_name",
@@ -143,6 +145,16 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: matches. The default reads a FIX trading log; an empty `LogRules(rules=[])`
     #: skips the matching entirely and leaves every line `UNKNOWN`.
     rules: LogRules = dataclass_field(default_factory=LogRules)
+
+    #: What turns a message into the columns a row carries: which category it
+    #: is, its pairs, and the tags behind them. `FixCodec` reads a FIX-carrying
+    #: trading log; the seam is four verbs (`MessageCodec`), so a codec over
+    #: another protocol is handed over here and nothing above it changes.
+    #:
+    #: A codec whose rule set is empty categorises every line OTHER, which
+    #: parses nothing -- so a file that declares no rules reads exactly as it
+    #: did before any of this existed.
+    codec: MessageCodec = dataclass_field(default_factory=FixCodec)
 
     #: IANA zone the wall clock in the header belongs to (`Europe/Paris`).
     #: None keeps the historical reading: the clock *is* UTC. Naming the real
@@ -448,6 +460,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             "driver_name": _utf8(drivers),
             "message": message,
         }
+        columns.update(self._message_columns(message, columns["driver_name"], count))
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )
@@ -456,6 +469,59 @@ class TextFile(Dataset, io.BufferedIOBase):
             [columns[name].cast(schema.field(name).type, safe=False) for name in schema.names],
             schema=schema,
         )
+
+    def _message_columns(self, messages: Any, drivers: Any, count: int) -> dict[str, Any]:
+        """The four columns a message fills: its category, and its two halves.
+
+        **One style per parse.** `parse_arrow_array` samples a column once and
+        reads every row of it that way -- which is right, and which is why a
+        capture cannot be handed to it whole: a batch of a trading log mixes
+        wire messages, bridge messages and prose line by line, and one sample
+        would read two of the three wrong. So the batch is cut into one slice
+        per category, each parsed under its own rule, and the slices are
+        scattered back into the row order they came in.
+
+        The scatter is two kernels and no Python: the original positions of
+        every slice, concatenated in the order the slices were parsed, are a
+        permutation of the batch -- and sorting *that* is its own inverse, so
+        one `take` puts every row back. A batch that turns out to be all one
+        category skips the whole thing and parses once.
+
+        Nulls stay null and an unparseable line yields an empty map, never an
+        exception: a capture is a record of what happened, and a line nobody
+        can read is still a line that was written.
+        """
+        ids, names = self.codec.categorise(messages, drivers)
+        columns: dict[str, Any] = {"category_id": ids, "category_name": names}
+        codes = sorted(pyarrow.compute.unique(ids).to_pylist())
+        if len(codes) == 1:
+            columns["fix_tags"], columns["keyval"] = self._parsed(messages, codes[0])
+            return columns
+        compute = pyarrow.compute
+        positions = _row_indices(count)
+        order, tagged, rest = [], [], []
+        for code in codes:
+            mask = compute.equal(ids, code)
+            order.append(compute.filter(positions, mask))
+            one, other = self._parsed(compute.filter(messages, mask), code)
+            tagged.append(one)
+            rest.append(other)
+        back = compute.array_sort_indices(pyarrow.concat_arrays(order))
+        columns["fix_tags"] = pyarrow.concat_arrays(tagged).take(back)
+        columns["keyval"] = pyarrow.concat_arrays(rest).take(back)
+        return columns
+
+    def _parsed(self, messages: Any, code: int) -> tuple[Any, Any]:
+        """One category's slice as its two map columns.
+
+        The version is resolved **once per slice**, off the first line in it,
+        because that is the granularity the answer has: a BeginString is the
+        same for every message a session writes, and asking per row would put a
+        regex back in the hot path for a column whose keys are already numbers.
+        """
+        pairs = self.codec.into_pairs(messages, code)
+        version, _ = self.codec.version_of(_first_text(messages), code)
+        return self.codec.into_fix_pairs(pairs, version)
 
     def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
         """Cut newline-delimited lines out of fixed-size reads.
@@ -771,6 +837,29 @@ def _hour_nanos(unix: pyarrow.Array) -> pyarrow.Array:
         unix,
         compute.if_else(compute.less(remainder, 0), compute.add(remainder, hour), remainder),
     )
+
+
+def _row_indices(count: int) -> pyarrow.Array:
+    """`0..count-1`, built in kernels -- where a scatter puts each row back."""
+    ones = pyarrow.repeat(pyarrow.scalar(1, pyarrow.int32()), count)
+    return pyarrow.compute.subtract(
+        pyarrow.compute.cumulative_sum(ones), pyarrow.scalar(1, pyarrow.int32())
+    )
+
+
+def _first_text(messages: pyarrow.Array) -> str | None:
+    """The first line in a column that has anything in it, as text.
+
+    One row read per category per batch, which is what a version resolution
+    costs here. A column of nothing answers None, and a codec reads that as
+    "nobody said", which is an answer.
+    """
+    for value in messages:
+        if value.is_valid:
+            text = value.as_py()
+            if text:
+                return text
+    return None
 
 
 def _zeros(count: int, arrow_type: pyarrow.DataType) -> pyarrow.Array:

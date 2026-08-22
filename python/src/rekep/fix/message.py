@@ -26,6 +26,12 @@ SOH = "\x01"
 #: caret-A log reads every tag with an `A` glued to the front.
 SEPARATORS = (SOH, "|", "^A", "^", ";")
 
+#: What a BeginString *value* may hold: anything that is not a separator
+#: candidate and not whitespace -- so the value stops exactly where the
+#: separator starts. Spelled out for `_WS`'s reason, and shared, because the
+#: scalar reading of a separator and the vectorised one are one rule.
+_NOT_SEPARATOR = r"[^\x01|;^ \t\r\n\f\x0b]"
+
 #: The guard that keeps the `8=` inside tag 18 or 58 from reading as a
 #: BeginString: the start of the text, or a character that is not a digit.
 #: RE2 has no lookbehind, so wherever this rule is run vectorised the guard
@@ -53,7 +59,7 @@ _BEGIN_VECTOR = rf"(?s){_NOT_A_TAG}(?P<msg>8=FIXT?.*)"
 #: parsers are contracted to agree. Without the flag a tag written in
 #: Arabic-Indic digits was a pair to the scalar parser and noise to the
 #: vectorised one; ASCII is also what the FIX standard means by a digit.
-_BEGIN = re.compile(r"(?:^|(?<=[^\d]))8=FIXT?[^\x01|;^\s]*", re.ASCII)
+_BEGIN = re.compile(rf"(?:^|(?<=[^\d]))8=FIXT?{_NOT_SEPARATOR}*", re.ASCII)
 
 #: A rendered field or group name, as the tools around a bridge print one --
 #: letters first, then the word characters, dots (a component path like
@@ -97,6 +103,19 @@ _BRIDGE = re.compile(rf"{_BRIDGE_TOKEN}(?=.*{_BRIDGE_TOKEN})", re.DOTALL | re.AS
 #: One `#NAME=` on its own, for finding the *second* one -- whatever sits in
 #: front of which is the separator (`detect_separator`).
 _BRIDGE_NEXT = re.compile(_BRIDGE_TOKEN, re.ASCII)
+
+#: `detect_separator`, vectorised, in its two halves: whatever follows the
+#: BeginString value, and -- for a line that has none -- whatever sits in front
+#: of the second `#NAME=`. `\^A` is offered before `.` in both, or a caret-A
+#: log reads its separator as `^` and every tag comes back with an `A` glued to
+#: the front.
+#:
+#: One column of these is what lets a batch that mixes sessions be parsed at
+#: all: `parse_arrow_array` samples a column once by contract, so the rows that
+#: share a separator have to be handed to it together, and this is how a caller
+#: finds out which those are without reading a row in Python.
+SEPARATOR_VECTOR = rf"(?s)8=FIXT?{_NOT_SEPARATOR}*(?P<sep>\^A|.)"
+BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_TOKEN}.*?(?P<sep>\^A|.){_BRIDGE_TOKEN}"
 
 #: One token of a message, in every spelling the logs use. Five shapes come
 #: out of the same regex::

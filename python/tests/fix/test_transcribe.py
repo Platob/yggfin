@@ -143,9 +143,15 @@ def test_a_beginstring_no_version_answers_for_falls_through(codec: FixCodec) -> 
 
 
 def test_the_rule_answers_before_the_configured_default(codec: FixCodec) -> None:
-    rule = Rule(name="UL", category_id=2, codec="ul", fix_version="4.2")
-    assert codec.version_of("toBridge #A=1|#B=2", rule) == ("4.2", RULE_SOURCE)
-    assert codec.version_of("toBridge #A=1|#B=2") == ("4.4", DEFAULT_SOURCE)
+    own = FixCodec(
+        registry=codec.registry,
+        fix_version="4.4",
+        rules=Rules(
+            rules=[Rule(name="UL", category_id=2, pattern="#", codec="ul", fix_version="4.2")]
+        ),
+    )
+    assert own.version_of("toBridge #A=1|#B=2", 2) == ("4.2", RULE_SOURCE)
+    assert own.version_of("toBridge #A=1|#B=2") == ("4.4", DEFAULT_SOURCE)
 
 
 def test_nobody_saying_which_version_is_an_answer_too() -> None:
@@ -238,18 +244,18 @@ ABSENT = "|".join(
 
 def test_a_value_that_means_nothing_is_dropped(codec: FixCodec) -> None:
     """`ACCOUNT=<null>` is an absent account, not an account called `<null>`."""
-    parsed = codec.into_pairs(pyarrow.array([ABSENT]), Rules.DEFAULT.rule(2))
+    parsed = codec.into_pairs(pyarrow.array([ABSENT]), 2)
     assert parsed.to_pylist()[0] == [("SYMBOL", "TTF"), ("ORDERQTY", "1200")]
 
 
 def test_the_absent_spellings_are_matched_case_blind_and_trimmed(codec: FixCodec) -> None:
     """` NULL ` is the renderer's padding and its casing, not a value."""
-    parsed = codec.into_pairs(pyarrow.array([ABSENT]), Rules.DEFAULT.rule(2))
+    parsed = codec.into_pairs(pyarrow.array([ABSENT]), 2)
     assert dict(parsed.to_pylist()[0]) == {"SYMBOL": "TTF", "ORDERQTY": "1200"}
 
 
 def test_an_absent_field_reaches_neither_map(codec: FixCodec) -> None:
-    parsed = codec.into_pairs(pyarrow.array([ABSENT]), Rules.DEFAULT.rule(2))
+    parsed = codec.into_pairs(pyarrow.array([ABSENT]), 2)
     resolved, rest = codec.into_fix_pairs(parsed)
     assert dict(resolved.to_pylist()[0]) == {55: "TTF", 38: "1200"}
     assert rest.to_pylist()[0] == []
@@ -257,19 +263,19 @@ def test_an_absent_field_reaches_neither_map(codec: FixCodec) -> None:
 
 def test_a_message_whose_every_field_was_absent_is_empty_and_not_null(codec: FixCodec) -> None:
     """It was a message. It said nothing. Those are different facts."""
-    parsed = codec.into_pairs(pyarrow.array(["#A=null|#B=<NULL>"]), Rules.DEFAULT.rule(2))
+    parsed = codec.into_pairs(pyarrow.array(["#A=null|#B=<NULL>"]), 2)
     assert parsed.to_pylist() == [[]]
 
 
 def test_a_null_row_stays_null_through_the_filter(codec: FixCodec) -> None:
-    parsed = codec.into_pairs(pyarrow.array([ABSENT, None]), Rules.DEFAULT.rule(2))
+    parsed = codec.into_pairs(pyarrow.array([ABSENT, None]), 2)
     assert parsed.to_pylist()[1] is None
 
 
 def test_an_empty_set_keeps_every_pair(codec: FixCodec) -> None:
     """A feed whose `n/a` really is a value says so, and nothing is dropped."""
     keeping = FixCodec(registry=codec.registry, fix_version="4.4", null_values=frozenset())
-    parsed = keeping.into_pairs(pyarrow.array([ABSENT]), Rules.DEFAULT.rule(2))
+    parsed = keeping.into_pairs(pyarrow.array([ABSENT]), 2)
     assert len(parsed.to_pylist()[0]) == ABSENT.count("|") + 1
 
 
@@ -277,7 +283,7 @@ def test_the_set_is_configuration_and_travels_in_a_document(
     codec: FixCodec, tmp_path: Path
 ) -> None:
     own = FixCodec(registry=codec.registry, null_values=frozenset({"-", "unset"}))
-    parsed = own.into_pairs(pyarrow.array(["#A=-|#B=unset|#C=null|#D=1"]), Rules.DEFAULT.rule(2))
+    parsed = own.into_pairs(pyarrow.array(["#A=-|#B=unset|#C=null|#D=1"]), 2)
     assert parsed.to_pylist()[0] == [("C", "null"), ("D", "1")]
     path = tmp_path / "codec.yml"
     own.into_yaml(path)
@@ -295,16 +301,15 @@ def test_a_capture_carrying_no_absent_field_is_handed_straight_back(codec: FixCo
 
 def test_a_rule_that_reads_nothing_gives_nulls_and_not_empty_maps(codec: FixCodec) -> None:
     messages = pyarrow.array(["prose", "more prose"])
-    parsed = codec.into_pairs(messages, Rules.DEFAULT.rule(0))
+    parsed = codec.into_pairs(messages, 0)
     assert parsed.to_pylist() == [None, None]
     assert parsed.type == KEYVAL
 
 
 def test_the_codec_reads_each_category_the_way_its_rule_says(codec: FixCodec) -> None:
     for line, expected in ((BRIDGE, 2), ("8=FIX.4.2|35=D|10=203|", 1)):
-        rule = Rules.DEFAULT.categorise(line)
-        assert rule.category_id == expected
-        assert codec.into_pairs(pyarrow.array([line]), rule).to_pylist()[0]
+        assert Rules.DEFAULT.categorise(line).category_id == expected
+        assert codec.into_pairs(pyarrow.array([line]), expected).to_pylist()[0]
 
 
 def test_the_typed_reading_of_a_value_is_a_cast_against_the_field_that_knows(

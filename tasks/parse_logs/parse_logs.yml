@@ -62,6 +62,54 @@ rules:
       etype: INSTRUMENT
       label: reference data
 
+# -- what each line *carries* -------------------------------------------------
+
+# The other question about a line, and a different one: `rules` says what the
+# line is *about*, `categories` says what kind of message it holds and how to
+# read it. Tried in order, first match wins, and a line nothing matches is
+# OTHER -- parsed as nothing, with `fix_tags` and `keyval` null rather than
+# empty, because "not a message" and "a message that said nothing" are
+# different facts.
+#
+# Delete this block to take the defaults: a BeginString anywhere is FIX, two or
+# more `#NAME=` tokens are a UL bridge message, everything else is OTHER.
+categories:
+  rules:
+    - name: FIX
+      category_id: 1
+      pattern: '(?:^|[^0-9])8=FIXT?'
+      codec: fix
+    - name: UL
+      category_id: 2
+      pattern: '(?s)#[A-Za-z][A-Za-z0-9_.\-]*(?:\[\d+\])?[ \t\r\n\f\x0b]*=.*#[A-Za-z][A-Za-z0-9_.\-]*(?:\[\d+\])?[ \t\r\n\f\x0b]*='
+      codec: ul
+      fix_version: "4.4"
+    - name: OTHER
+      category_id: 0
+      codec: none
+
+# Which FIX version a *name* is resolved against when the message carries no
+# BeginString to say. A rule may name its own, which wins over this one; tag 8
+# wins over both, because that is the message saying so itself.
+fix_version: "4.4"
+
+# Where the FIX dictionary lives. Left out, it is the user's own cache
+# (`~/.config/fix`); `data/fix.zip` is the dictionary this repository
+# publishes. Either way it is read and **never scraped**: a parse that answered
+# its first bridge line by fetching seven thousand pages mid-batch would turn a
+# job into an outage. A cold cache costs the tags, never the capture.
+fix_dictionary: ../data/fix.zip
+
+# Values that mean the field is absent, dropped before either map sees them.
+# `ACCOUNT=<null>` is an absent account, and keeping the text makes every
+# consumer downstream re-implement this same check -- differently, and one of
+# them wrong. An empty list keeps every pair.
+null_values:
+  - ""
+  - "null"
+  - "<null>"
+  - "n/a"
+
 # -- where it lands -----------------------------------------------------------
 
 # `{event_type}` is the lower-cased `EventType` name, so this produces
