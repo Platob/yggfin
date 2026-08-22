@@ -208,8 +208,8 @@ so a consumer that does not import this package still knows what a row is.
 
 **A parsed line is an [`Event`](market.md)**, which is what lets a capture be
 read beside the orders and books it describes rather than beside nothing. It
-carries the same envelope every other event does, and adds four columns of its
-own:
+carries the same envelope every other event does, and adds what the line is and
+what its message said, for **81 columns** in all:
 
 | column | type | what it is |
 | --- | --- | --- |
@@ -222,10 +222,10 @@ own:
 | `thread_name` | `string` | the first bracketed field |
 | `driver_name` | `string` | the second bracketed field |
 | `message` | `string` | payload, continuations folded in |
-| `category_id` | `int32` | which kind of *message* the line carries; 0 is none |
-| `category_name` | `string` | what that category is called |
-| `fix_tags` | `map<int32,string>` | the message's fields under their FIX tags, in wire order |
-| `keyval` | `map<string,string>` | the fields no tag answers for, as the log spelled them |
+| `protocol` | `string` | which protocol the line carries; `OTHER` is a line carrying none |
+| `fix_tags` | `map<int32, string>` | the message's other fields under their FIX tags, in wire order |
+| `keyval` | `map<string, string>` | the fields no tag answers for, as the log spelled them |
+| 57 more columns | as the dictionary types them | the fields a message is queried on, [lifted out of the map](#the-message-flattened); 59 tags in all, two of which fill the envelope's own `symbol` and `seq` |
 
 …the rest of the envelope (`cunix`, `runix`, `version`, `state`, the
 previous-version columns), and then whatever `static_values` declares, in the
@@ -248,13 +248,17 @@ the parser returns one, because a repeating group *is* tags repeating. Both are
 nullable, and the two absences are different facts: `null` is a line that
 carries no message at all, `[]` is a message that carried nothing left to
 store. A store that spelled those the same way could not tell a bridge that
-sent an empty payload from a stack trace.
+sent an empty payload from a stack trace. The **values inside are NOT NULL**,
+like the keys Arrow already requires: a pair with no value is not a pair, so
+`ACCOUNT=<null>` and a value that is actually null are both dropped before
+either map is built rather than handing every consumer a third state between
+absent and present.
 
 **A write is never asked for either of them.** The columns a line is made of —
 the timestamp, the two bracketed fields and the message — are what
 `write_arrow` demands, and everything else is derived when the line is read
-back. The category and its pairs are functions of the message, so they are
-read, not written.
+back. The protocol, the two maps and every column lifted out of them are all
+functions of the message, so they are read, not written.
 
 **The partition is the hour, and it is derived from the instant.** That is the
 reverse of the day-and-time columns it replaces, and deliberately: a partition
@@ -379,9 +383,10 @@ log stops being a record of what happened.
 
 ## What each line carries
 
-`etype` says what a line is *about*. `category_id` says what kind of **message**
-it holds, and the two map columns are that message read: `fix_tags` for every
-field a FIX tag answers for, `keyval` for every field none does.
+`etype` says what a line is *about*. `protocol` says which **message** it
+holds, and the columns after it are that message read: the tags worth querying
+[lifted into columns of their own](#the-message-flattened), `fix_tags` for
+every other field a FIX tag answers for, `keyval` for every field none does.
 
 === "The defaults"
 
@@ -391,17 +396,18 @@ field a FIX tag answers for, `keyval` for every field none does.
     with TextFile.from_path("app.txt") as log:
         table = log.read_arrow_table()
 
-    table.column("category_name").to_pylist()   # ['OTHER', 'FIX', 'UL', ...]
-    table.column("fix_tags")[1].as_py()         # [(8,'FIX.4.2'), (35,'D'), (55,'TTF'), ...]
+    table.column("protocol").to_pylist()        # ['OTHER', 'FIX', 'UL', ...]
+    table.column("fix_tags")[1].as_py()         # [(453,'2'), (448,'BUYSIDE'), (447,'D'), ...]
     table.column("keyval")[2].as_py()           # [('ISINCODE','XX0000084733'), ...]
+    table.column("msg_type")[1].as_py()         # 'D' -- a tag lifted into its own column
     ```
 
-    Three categories out of the box: a **BeginString** anywhere is FIX, two or
+    Three protocols out of the box: a **BeginString** anywhere is FIX, two or
     more **`#NAME=`** tokens are a UL bridge message, and everything else is
     OTHER — which is most of a capture, parses to nothing, and leaves both maps
-    null. A bridge message wrapped in a FIX envelope
-    (`8=FIX.4.2|35=UL|#A=1|#B=2`) is UL as well, and keeps its wire header.
-    What each is and how to read it is a
+    null and every flattened column null. A bridge message wrapped in a FIX
+    envelope (`8=FIX.4.2|35=UL|#A=1|#B=2`) is UL as well, and keeps its wire
+    header. Which is which, and how to read each, is a
     [rule set](fix.md#what-kind-of-message-a-line-carries).
 
 === "Point it at a dictionary"
@@ -440,40 +446,137 @@ field a FIX tag answers for, `keyval` for every field none does.
 
     ```yaml
     # or in a task document, where each of these is one flat key
-    categories: {rules: [...]}
+    protocols: {rules: [...]}
     fix_version: "4.4"
     fix_dictionary: ../data/fix.zip
     null_values: ["", "null", "<null>", "n/a"]
     ```
 
-**A batch is cut per category before it is parsed, and put back afterwards.**
+**A batch is cut per protocol before it is parsed, and put back afterwards.**
 `parse_arrow_array` samples a column once and reads every row of it that way —
 which is right, and which is why a capture cannot be handed to it whole: a
 trading log mixes wire messages, bridge messages and prose line by line, and
 one sample would read two of the three wrong. So the batch is filtered into one
-slice per category, each parsed under its own rule, and the slices are
+slice per protocol, each parsed under its own rule, and the slices are
 scattered back into the row order they came in — two kernels and no Python,
 because the positions of every slice concatenated are a permutation of the
-batch and sorting a permutation is the same thing as inverting it.
+batch and sorting a permutation is the same thing as inverting it. The codec
+cuts again inside a slice, on the same principle: one FIX session writes `|`
+and the next writes SOH, and a capture holds both.
 
-The codec cuts again inside a slice, on the same principle: one FIX session
-writes `|` and the next writes SOH, and a capture holds both.
+## The message, flattened
+
+`fix_tags` holds every field a message carried, faithfully, and answers no
+question cheaply: no engine pushes a filter into a map, Iceberg writes no
+bounds under one, and reaching a field means a lookup per row. So the tags a
+trading log is actually queried on become **columns of their own** — 59 of
+them, named in `rekep/fix/columns.py` — and are removed from the map rather
+than stored in both places.
+
+Two sets, for two reasons. `SESSION` is the whole `StandardHeader` and
+`StandardTrailer`: the envelope, who sent it and to whom, on whose behalf a hub
+relayed it, where it sits in the session's stream, when it was sent, which
+application version speaks under FIXT, how the payload is written and how it is
+sealed. Every message carries them whatever else it says, which is what a
+reader filters and joins on. `COMMON` is what the components a trading log is
+made of carry, `Instrument` and `OrderQtyData` and the flat body of a
+`NewOrderSingle` or an `ExecutionReport`: what was traded, who asked and under
+which identifiers, on what terms, where it stands, for how much at what price,
+and when. Both are ordered by what the fields *mean* rather than by tag number,
+because a schema is read by people, and `FLAT` is the two of them in that
+order.
+
+=== "What lands"
+
+    ```python
+    table.column("msg_type")[1].as_py()        # 'D'
+    table.column("seq")[1].as_py()             # 7 -- an integer, not '7'
+    table.column("sender_comp_id")[1].as_py()  # 'BUYSIDE'
+    table.column("symbol")[1].as_py()          # 'TTF'
+    table.column("order_qty")[1].as_py()       # 1200.0
+    table.column("poss_dup_flag")[1].as_py()   # True -- `Y`, read as a boolean
+    table.column("sending_unix")[1].as_py()    # 1786699800123000000 -- nanoseconds
+    table.column("check_sum")[1].as_py()       # '203' -- three digits, so a string
+    ```
+
+    A line carrying no message leaves every one of them null, which is most of
+    a capture and what a column of nulls costs nothing to say.
+
+=== "The names there, the types here"
+
+    ```python
+    from rekep.fix.columns import COLUMNS, COMMON, FLAT, SESSION
+
+    len(SESSION), len(COMMON), len(FLAT)       # (33, 26, 59)
+    len(Log.FIELD.fields)                      # 81 -- the envelope, the line, and these
+    COLUMNS[49]                                # 'sender_comp_id'
+    Log.FIELD.field("order_qty").arrow_type    # double
+    ```
+
+    The **names** are one `(tag, column)` list in `rekep/fix/columns.py`, so a
+    codec and a schema cannot disagree about where tag 49 lands. The **types**
+    are `Log`'s own declaration, and `tests/text/test_log.py` binds both to the
+    [dictionary this repository publishes](fix.md#the-dump-in-this-repository):
+    every column is the Arrow type FIX gives its tag, the four stamps below
+    aside, so one that drifted from the standard fails the build rather than a
+    reader.
+
+=== "Reading it"
+
+    ```python
+    flat, rest = codec.into_flat_columns(table.column("fix_tags"))
+    flat["msg_type"]        # the text the wire carried
+    rest                    # fix_tags without the tags that were lifted
+    ```
+
+    One `is_in` finds every liftable field in one pass and one `value_counts`
+    says how many of each tag a row holds; a tag actually present then costs a
+    handful of kernels, and nothing per row.
+
+Four things the shape rests on:
+
+- **A tag is lifted only where the line carries it once.** A tag that repeats
+  belongs to a repeating group — `Symbol <55>` inside `NoRelatedSym`,
+  `LastPx <31>` inside `NoLegs` — and lifting the first occurrence would answer
+  "the symbol" with whichever leg came first. Those rows keep everything in
+  `fix_tags` and the column is null, which is what a multi-leg order's one
+  symbol honestly is.
+- **Stored once, and `NoHops <627>` stays in the map.** A tag that became a
+  column is *removed* from `fix_tags`: one fact in two places is one fact that
+  can disagree with itself. `NoHops` is part of the header and is left where it
+  is for the rule above: a repeating group is not one value.
+- **`symbol` and `seq` are the envelope's own**, declared as tags 55 and 34
+  before any of this existed, so a message that says either fills the column
+  the shape already has rather than a second one beside it. What a message does
+  not say keeps the default, because `symbol` is NOT NULL.
+- **The four instants are `int64` nanoseconds**, not Arrow timestamps:
+  `sending_unix`, `orig_sending_unix`, `on_behalf_of_sending_unix` and
+  `transact_unix`, which are exactly the lifted tags the dictionary types as a
+  timestamp. pyiceberg refuses `timestamp[ns]` outright, and `timestamp[us]`
+  would truncate a value whose text has just been lifted out of the map; every
+  other instant here is nanos too, so a latency is `unix - sending_unix` rather
+  than a conversion. The codec reads them, because no cast from
+  `20260814-09:30:00.123456789` to an integer could find its way there. Every
+  other column comes out as text, and `cast_arrow_fix` reads it into the
+  declared type in kernels and **never raises**: a value nothing can read lands
+  null rather than losing every line beside it.
 
 ## A second codec
 
 `TextFile` holds a **codec** and never learns which protocol it is reading.
-That is the seam, and it is four verbs:
+That is the seam, and it is five verbs:
 
 | verb | what it answers |
 | --- | --- |
-| `categorise(messages, drivers)` | one `(category_id, category_name)` per row |
-| `into_pairs(messages, category_id)` | one `map<string,string>` per row — null for a category that reads nothing |
+| `categorise(messages, drivers)` | one `protocol` name per row |
+| `into_pairs(messages, protocol)` | one `map<string, string>` per row — null for a protocol that reads nothing |
 | `into_fix_pairs(pairs, version)` | those pairs split into the keys the protocol names and the keys it does not |
-| `version_of(message, category_id)` | which protocol version to read under, and where that answer came from |
+| `version_of(message, protocol)` | which protocol version to read under, and where that answer came from |
+| `into_flat_columns(tags)` | the fields worth a column of their own, as `{column: array}` and what is left of the map |
 
 `rekep.fix.FixCodec` is the one this package ships. A second codec — market
 data, an internal binary envelope, a venue's own text format — implements the
-same four and nothing above it changes: not `Log`, not `TextFile`, not
+same five and nothing above it changes: not `Log`, not `TextFile`, not
 `TextFiles`, not `ParseLogs`, not the contract.
 
 Three things a second codec has to hold to, and they are the whole contract:
@@ -487,13 +590,16 @@ Three things a second codec has to hold to, and they are the whole contract:
   row comes back as an empty map, never as an exception — a capture is a record
   of what happened, and a line nobody can read is still a line that was
   written.
-- **Category 0 is "no message".** `into_pairs` returns a column of *nulls* for
-  it rather than empty maps, because "this line is not a message" and "this
+- **`OTHER` is "no message".** `into_pairs` returns a column of *nulls* for it
+  rather than empty maps, because "this line is not a message" and "this
   message said nothing" are different facts and the schema keeps them apart.
+  Every pair that survives has a value: the map's value type is NOT NULL.
 
-A protocol with no versions answers `version_of` with `(None, "none")`, which
-is an answer. A protocol whose keys are not FIX tags still fills `fix_tags`
-with whatever integer identity it has, and puts the rest in `keyval`.
+Answering with nothing is answering. A protocol with no versions answers
+`version_of` with `(None, "none")`, and one with nothing to lift answers
+`into_flat_columns` with `({}, tags)` — both leave everything above them
+unchanged. A protocol whose keys are not FIX tags still fills `fix_tags` with
+whatever integer identity it has, and puts the rest in `keyval`.
 
 ## Writing one
 
@@ -813,11 +919,11 @@ the megabyte.
 with nothing in it categorises every line OTHER, parses none of them, and
 leaves both map columns null. That row is also the honest comparison against
 the parser before any of this existed — which measured 233k–240k rows/s on the
-same fixture, so the four columns *existing* costs about 5% and the other 2.2×
+same fixture, so the message columns *existing* cost about 5% and the other 2.2×
 is the messages actually being read.
 
 Where the 2.3× goes is the next table, and it is not evenly spread: the bridge
-category is 15% of the capture and about two thirds of the added time, because
+protocol is 15% of the capture and about two thirds of the added time, because
 a bridge line is the one that needs its message start found, its `#` markers
 shed and its nested group entries expanded.
 
@@ -826,7 +932,7 @@ named path builds its keys with `extract_regex` and has no `list_element` for
 offsets arithmetic to replace, and the polars chain raced here expresses the
 cut but not the ragged fan-out a nested group entry needs.
 
-| category | implementation | rows/s | pairs/s | added RSS |
+| protocol | implementation | rows/s | pairs/s | added RSS |
 | --- | --- | --- | --- | --- |
 | OTHER | `FixMessage.from_text` | 198k–202k | 0 | ~0 |
 | OTHER | **`parse_arrow_array`** | **2.35M–2.36M** | 0 | 1.6–2.4 MiB |
@@ -857,15 +963,15 @@ materialises one row per token and then regroups. And on the bridge column it
 does not run at all: a nested group entry is a fan-out of one token into
 several pairs, and expressing that would have meant a second within-group
 position and a second regex dialect to keep in step with the scalar parser. A
-win on one category out of three, at 4–40× the memory, is not an argument for a
+win on one protocol out of three, at 4–40× the memory, is not an argument for a
 runtime dependency — so polars stays in the `bench` group, which is what that
 group is for.
 
-**And the OTHER row is why the categories exist at all.** Sixty per cent of a
-capture parses to nothing whichever implementation reads it. The scalar parser
-spends 198k rows/s discovering that; the vectorised one spends 2.35M. Deciding
-what a line *is* before parsing it is worth an order of magnitude on the
-majority of every capture, and it is the reason a rule set runs first.
+**And the OTHER row is why the rules run first.** Sixty per cent of a capture
+parses to nothing whichever implementation reads it. The scalar parser spends
+198k rows/s discovering that; the vectorised one spends 2.35M. Deciding what a
+line *is* before parsing it is worth an order of magnitude on the majority of
+every capture, and it is the reason a rule set runs before the parser does.
 
 **Stage three, name → tag.** The keys of the bridge column (983,040 of them),
 resolved against the real published dictionary (`data/fix.zip`, 1,566 names).

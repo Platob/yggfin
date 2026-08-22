@@ -12,6 +12,8 @@ from pathlib import Path
 import pyarrow
 import pytest
 
+from rekep.fix.columns import COLUMNS
+from rekep.fix.fields import unix_of
 from rekep.market import EventType
 from rekep.tasks import ParseLogs, Task
 
@@ -294,10 +296,31 @@ DICTIONARY = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
 HEAD = "2026-08-14 00:00:0{slot}.167_520 [t-1] [Bridge] "
 
-#: One line per spelling of a message, plus one carrying none.
+#: `SendingTime <52>` as the FIX line writes it, UTC. Named so the instant the
+#: store holds can be derived from it rather than copied out of a run.
+STAMP = "20260814-09:30:00.123"
+
+#: `TransactTime <60>`, to the nanosecond -- which is the digit a store that
+#: kept an instant as Iceberg's microsecond timestamp would drop in silence.
+TRANSACT = "20260814-09:29:59.123456789"
+
+#: How many columns the flat layer is, derived from the module that declares it
+#: and pinned, so a tag dropped from it cannot shrink the checks that walk it.
+EXPECTED_FLAT_COLUMNS = 59
+
+#: One line per spelling of a message, plus one carrying none. The FIX line
+#: carries a flat field of every shape -- a count, a sequence, a flag, two
+#: stamps, a price, a checksum -- because those are what the flattened columns
+#: decode, and each of them decodes to a different type.
+#:
+#: `44=41.27` rather than a round price on purpose: 41.27 is not exact in a
+#: 32-bit float, so a column narrowed on the way to the store fails the read
+#: back rather than passing it.
 MESSAGES = [
-    "sending 8=FIX.4.2|35=D|49=BUYSIDE|11=ORD-1|55=TTF|54=1|38=1200|10=203|",
-    "toBridge #ISINCODE=XX0000084733#SYMBOL=TTF#SIDE=1#ACCOUNT=<null>#UNKNOWNVENUEFIELD=Z9",
+    f"sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|52={STAMP}|43=Y"
+    f"|11=ORD-1|55=TTF|54=1|38=1200|44=41.27|60={TRANSACT}|10=203|",
+    "toBridge #ISINCODE=XX0000084733#SYMBOL=TTF#SIDE=1#ACCOUNT=<null>"
+    "#UNKNOWNVENUEFIELD=Z9#SENDERCOMPID=BRIDGE1",
     "8=FIX.4.2|35=UL|34=2|#SYMBOL=TTF|#SIDE=1|10=044|",
     "heartbeat emitted seq=7",
 ]
@@ -315,24 +338,40 @@ def messages(tmp_path: Path) -> Path:
 
 
 def test_a_line_lands_with_the_message_it_carries(messages: Path, catalog: dict) -> None:
-    """The whole layer, through the shipped job: a line, its tags, its rest."""
+    """The whole layer, through the shipped job: a line, its columns, its rest."""
     task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
     task.run()
 
     rows = task.target(int(EventType.UNKNOWN)).read_arrow_table().sort_by("unix")
-    assert rows.column("category_name").to_pylist() == ["UL", "UL", "OTHER"]
-    assert rows.column("category_id").to_pylist() == [2, 2, 0]
+    assert rows.column("protocol").to_pylist() == ["UL", "UL", "OTHER"]
 
-    bridge = dict(rows.column("fix_tags")[0].as_py())
-    assert bridge == {55: "TTF", 54: "1"}, "names the dictionary knows, as tags"
-    assert 1 not in bridge, "`ACCOUNT=<null>` is an absent account, not the text"
+    assert rows.column("symbol")[0].as_py() == "TTF", "a name the dictionary knows, as a column"
+    assert rows.column("side")[0].as_py() == "1"
+    assert rows.column("account")[0].as_py() is None, "`ACCOUNT=<null>` is absent, not the text"
     assert dict(rows.column("keyval")[0].as_py()) == {
         "ISINCODE": "XX0000084733",
         "UNKNOWNVENUEFIELD": "Z9",
     }, "and the names it does not, kept rather than dropped"
 
-    wrapped = dict(rows.column("fix_tags")[1].as_py())
-    assert wrapped[35] == "UL" and wrapped[55] == "TTF", "one message, read as one"
+    assert rows.column("symbol")[1].as_py() == "TTF"
+    assert rows.column("msg_type")[1].as_py() == "UL", "one message, read as one"
+
+
+def test_a_flat_field_is_a_column_and_not_a_pair_as_well(messages: Path, catalog: dict) -> None:
+    """One fact stored twice is one that can disagree with itself, so the tags
+    the flat layer names leave `fix_tags` when they land in their column."""
+    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
+    task.run()
+
+    rows = task.target(int(EventType.UNKNOWN)).read_arrow_table().sort_by("unix")
+    assert rows.column("sender_comp_id")[0].as_py() == "BRIDGE1", (
+        "a bridge spells tag 49 `SENDERCOMPID`, and it is lifted out all the same"
+    )
+    lifted = set(COLUMNS)
+    assert len(lifted) == EXPECTED_FLAT_COLUMNS, "the session layer and the components, pinned"
+    for row in range(rows.num_rows):
+        pairs = rows.column("fix_tags")[row].as_py()
+        assert not lifted & {tag for tag, _ in pairs or []}, row
 
 
 def test_a_line_carrying_no_message_says_so_rather_than_saying_nothing(
@@ -342,19 +381,75 @@ def test_a_line_carrying_no_message_says_so_rather_than_saying_nothing(
     task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
     task.run()
     rows = task.target(int(EventType.UNKNOWN)).read_arrow_table().sort_by("unix")
-    assert rows.column("category_name")[2].as_py() == "OTHER"
+    assert rows.column("protocol")[2].as_py() == "OTHER"
     assert rows.column("fix_tags")[2].as_py() is None
     assert rows.column("keyval")[2].as_py() is None
+    silent = {name: rows.column(name)[2].as_py() for name in COLUMNS.values()}
+    assert len(silent) == EXPECTED_FLAT_COLUMNS
+    assert silent.pop("symbol") == "", "`Event` declares it NOT NULL, so a line without one"
+    assert set(silent.values()) == {None}
 
 
-def test_the_wire_tags_land_for_a_line_that_is_about_something(
+def test_a_line_that_is_about_something_lands_in_its_own_table(
     messages: Path, catalog: dict
 ) -> None:
-    """A FIX line lands in its own table, with the tags it was written with."""
+    """A FIX order is an ORDER, and what it ordered is a column each."""
     task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
     task.run()
     rows = task.target(int(EventType.ORDER)).read_arrow_table()
     assert rows.num_rows == 1
-    assert rows.column("category_name").to_pylist() == ["FIX"]
-    tags = dict(rows.column("fix_tags")[0].as_py())
-    assert tags[35] == "D" and tags[11] == "ORD-1" and tags[38] == "1200"
+    assert rows.column("protocol").to_pylist() == ["FIX"]
+    assert rows.column("fix_tags")[0].as_py() == [], "every field of it was worth a column"
+    ordered = ("cl_ord_id", "symbol", "side", "order_qty")
+    assert [rows.column(name)[0].as_py() for name in ordered] == ["ORD-1", "TTF", "1", 1200.0]
+
+
+def test_the_flat_layer_survives_the_write_as_the_types_it_declares(
+    messages: Path, catalog: dict
+) -> None:
+    """The write is the half worth checking: a batch can hold the right value
+    and still land as text, or fail to land at all. Text on the wire, a number,
+    a flag and an instant in the store, read back through Iceberg."""
+    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
+    task.run()
+    rows = task.target(int(EventType.ORDER)).read_arrow_table()
+    kinds = pyarrow.types
+
+    assert rows.column("msg_type").to_pylist() == ["D"]
+    assert rows.column("sender_comp_id").to_pylist() == ["BUYSIDE"]
+    assert rows.column("target_comp_id").to_pylist() == ["XPAR"]
+    assert rows.column("seq").to_pylist() == [7], "tag 34 fills the column `Event` already has"
+    assert rows.column("body_length").to_pylist() == [176]
+    assert kinds.is_integer(rows.schema.field("seq").type), "a sequence is a number"
+    assert kinds.is_integer(rows.schema.field("body_length").type)
+    assert rows.column("poss_dup_flag").to_pylist() == [True], "`43=Y` is a boolean"
+    assert kinds.is_boolean(rows.schema.field("poss_dup_flag").type)
+
+    # The columns a desk actually selects on: which instrument, which way,
+    # under whose identifier, how much and at what price. Tag 55 lands on
+    # `Event`'s own `symbol` rather than beside it.
+    assert rows.column("symbol").to_pylist() == ["TTF"]
+    assert rows.column("side").to_pylist() == ["1"], "a code, and text -- `01` is not `1`"
+    assert rows.column("cl_ord_id").to_pylist() == ["ORD-1"]
+    assert rows.column("order_qty").to_pylist() == [1200.0], "and a quantity is a number too"
+    assert rows.column("price").to_pylist() == [41.27], "a price that rounded is a wrong price"
+    for name in ("order_qty", "price"):
+        assert kinds.is_floating(rows.schema.field(name).type), name
+
+    # Nanoseconds since the epoch, like every other instant here: derived from
+    # the stamps the fixture writes, then pinned, so a broken reading cannot
+    # move both sides at once. `transact_unix` carries nine fractional digits
+    # for the reason the column is an int64 at all -- Iceberg's own timestamp
+    # is microseconds, and would have dropped the last three of them here.
+    assert rows.column("sending_unix").to_pylist() == [unix_of(STAMP)] == [1786699800123000000]
+    assert rows.column("transact_unix").to_pylist() == [unix_of(TRANSACT)] == [1786699799123456789]
+    for name in ("sending_unix", "transact_unix"):
+        assert kinds.is_integer(rows.schema.field(name).type), name
+
+
+def test_a_checksum_keeps_the_zeros_that_make_it_verify(messages: Path, catalog: dict) -> None:
+    """`044` read as `44` is a checksum that no longer verifies, so it is text."""
+    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
+    task.run()
+    rows = task.target(int(EventType.UNKNOWN)).read_arrow_table().sort_by("unix")
+    assert rows.column("check_sum")[1].as_py() == "044"

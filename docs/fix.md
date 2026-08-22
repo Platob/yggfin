@@ -334,16 +334,16 @@ optionally against the driver that emitted it.
     ```python
     from rekep.fix import Rules
 
-    Rules.DEFAULT.categorise("sending >> 8=FIX.4.2|35=D|10=203|").name   # 'FIX'
-    Rules.DEFAULT.categorise("toBridge #ISINCODE=XX|#SIDE=1").name       # 'UL'
-    Rules.DEFAULT.categorise("heartbeat emitted seq=38110").name         # 'OTHER'
+    Rules.DEFAULT.categorise("sending >> 8=FIX.4.2|35=D|10=203|").protocol  # 'FIX'
+    Rules.DEFAULT.categorise("toBridge #ISINCODE=XX|#SIDE=1").protocol      # 'UL'
+    Rules.DEFAULT.categorise("heartbeat emitted seq=38110").protocol        # 'OTHER'
     ```
 
     **FIX** is a BeginString anywhere in the line; **UL** is two or more
-    `#NAME=` tokens; **OTHER** is everything else, id 0. Every pattern is the
-    parser's own constant (`BEGIN_STRING`, `BRIDGE`, `BRIDGE_WIRE`), so "what
-    makes this a FIX message" and "where does the message start" can never
-    drift apart.
+    `#NAME=` tokens; **OTHER** is everything else, and it is what a set that
+    runs out without matching answers. Every pattern is the parser's own
+    constant (`BEGIN_STRING`, `BRIDGE`, `BRIDGE_WIRE`), so "what makes this a
+    FIX message" and "where does the message start" can never drift apart.
 
     A fourth rule leads the list, because one line answers to two tells:
     `8=FIX.4.2|35=UL|#A=1|#B=2` is a bridge message inside a FIX envelope. Read
@@ -357,16 +357,16 @@ optionally against the driver that emitted it.
 === "A whole column"
 
     ```python
-    ids, names = Rules.DEFAULT.into_arrow_category_arrays(
+    protocols = Rules.DEFAULT.into_arrow_protocol_array(
         batch.column("message"), batch.column("driver_name")
     )
-    ids.type          # int32
+    protocols.type    # string: 'FIX', 'UL', 'OTHER', ...
     ```
 
     One kernel per rule over the column, applied in **reverse** so the earliest
     rule is the one that survives — which is the whole of "first match wins",
     at a handful of passes per batch rather than a scan per row. A null message
-    is OTHER rather than null: `category_id` is NOT NULL, and a line with no
+    is OTHER rather than null: `protocol` is NOT NULL, and a line with no
     payload carries no message.
 
 === "Your own"
@@ -375,9 +375,9 @@ optionally against the driver that emitted it.
     from rekep.fix import Rule, Rules
 
     rules = Rules(rules=[
-        Rule(name="OWN", category_id=42, pattern=r"toBridge", codec="ul",
+        Rule(protocol="OWN", pattern=r"toBridge", codec="ul",
              separator="|", fix_version="4.2"),
-        Rule(name="OTHER", category_id=0),
+        Rule(protocol="OTHER"),
     ])
     rules.into_yaml("rules.yml")
     Rules.from_yaml("rules.yml")
@@ -388,7 +388,9 @@ optionally against the driver that emitted it.
     [task document](tasks.md) with the rest of the job. A rule carries how to
     read its own lines: which `codec` (`fix`, `ul`, or `none` for "do not
     parse"), which `separator` and `entry_separator` (null detects them), and
-    which `fix_version` to resolve names against.
+    which `fix_version` to resolve names against. What it *names* is the
+    `protocol` the column then holds — one spelling and not an id beside a
+    name, which would be a second thing to keep in step.
 
 !!! warning "A pattern is run by two engines"
 
@@ -409,10 +411,14 @@ codec = FixCodec(
     registry=FixRegistry(cache_dir="data/fix.zip"),
     fix_version="4.4",
 )
-rule = Rules.DEFAULT.categorise(line)
-pairs = codec.into_pairs(column, rule)          # map<string, string>
-fix_tags, keyval = codec.into_fix_pairs(pairs)  # map<int32,string>, map<string,string>
+protocol = Rules.DEFAULT.categorise(line).protocol        # 'FIX'
+pairs = codec.into_pairs(column, protocol)                # map<string, string>
+fix_tags, keyval = codec.into_fix_pairs(pairs)            # map<int32, string>, map<string, string>
+flat, fix_tags = codec.into_flat_columns(fix_tags)        # {'msg_type': [...], ...}
 ```
+
+A slice is addressed by the **protocol name**, because that is what the batch
+carries: the rule behind it is the codec's business and never the caller's.
 
 **A name the dictionary answers for becomes its tag; every other key stays as
 the log spelled it.** No fuzzy match, no `search()` fallback in the hot path,
@@ -435,7 +441,7 @@ dictionary-rebuilt-per-call path it replaced ([measured](logs.md#the-message-lay
 
     ```python
     codec.version_of("8=FIX.4.2|35=D|")            # ('4.2', 'begin_string')
-    codec.version_of("toBridge #A=1|#B=2", rule)   # ('4.2', 'rule')
+    codec.version_of("toBridge #A=1|#B=2", "UL")   # ('4.2', 'rule')
     codec.version_of("toBridge #A=1|#B=2")         # ('4.4', 'default')
     ```
 
@@ -463,8 +469,11 @@ dictionary-rebuilt-per-call path it replaced ([measured](logs.md#the-message-lay
     before either map sees it, matched case-blind and after trimming.
 
     Configuration and not a rule: a feed whose `n/a` really is a value passes
-    its own set. A row whose every field was absent comes back as an **empty**
-    map rather than a null one — it was a message, and it said nothing.
+    its own set. A value that is *actually* null goes with them whatever the
+    set says, because both maps declare their value **NOT NULL** — `58=` on
+    the wire is a malformed message, not an empty Text. A row whose every
+    field was absent comes back as an **empty** map rather than a null one —
+    it was a message, and it said nothing.
 
 === "Typed values"
 
@@ -489,6 +498,36 @@ dictionary-rebuilt-per-call path it replaced ([measured](logs.md#the-message-lay
     resolves nothing and raises nothing — the keys go to `keyval` and the
     capture is stored, because a pipeline that died on a cold cache would lose
     the log rather than the tags.
+
+## Columns of their own
+
+`into_flat_columns` lifts the tags a trading log is queried on out of
+`fix_tags` and into [columns](logs.md#the-message-flattened): the whole
+`StandardHeader` and `StandardTrailer`, and what the components carry — the
+instrument, the order and where it stands, the quantities and the prices. A
+map holds all of it faithfully and answers nothing cheaply, which is the whole
+reason.
+
+```python
+from rekep.fix.columns import COLUMNS, COMMON, FLAT, SESSION, STAMPS, TAGS
+
+len(SESSION), len(COMMON), len(FLAT)   # (33, 26, 59)
+COLUMNS[52]                            # 'sending_unix'
+STAMPS                                 # {52, 122, 370, 60} -- read, and stored as nanos
+TAGS                                   # the same tags as an int32 value set
+```
+
+`rekep.fix.columns` holds the **names** and never the types; those are
+`Log`'s declaration, bound to this dictionary by a test. A tag is lifted only
+where the line carries it **once** — a tag that repeats is a repeating group's,
+and no single occurrence of it is the line's, which is also why `NoHops <627>`
+stays in the map. Nothing left there is lost.
+
+Two of the 59 land on columns the event envelope already declares: tag 55 on
+`symbol` and tag 34 on `seq`, so a parsed line and a market event answer the
+same question in the same column. The four `STAMPS` are `int64` **nanoseconds**
+and not an Arrow timestamp: Iceberg cannot store a `timestamp[ns]` at all, and
+a `timestamp[us]` would truncate a value the parser has just read out of text.
 
 ## Reading values
 

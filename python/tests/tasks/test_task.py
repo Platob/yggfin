@@ -106,5 +106,5 @@ def test_the_shipped_rules_are_the_shipped_defaults() -> None:
     defaults, which is only true while the block *is* them."""
     task = Task.from_yaml(str(TASKS / "parse_logs" / "parse_logs.yml"))
     assert task.rules == LogRules()
-    assert task.categories == Rules.DEFAULT
+    assert task.protocols == Rules.DEFAULT
     assert set(task.null_values) == {"", "null", "<null>", "n/a"}

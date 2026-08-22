@@ -1,5 +1,6 @@
 """`IcebergDataset` against a real, fully local catalog: SQLite and a file warehouse."""
 
+import dataclasses
 import datetime
 import os
 import subprocess
@@ -76,6 +77,63 @@ def quotes(count: int, message: str = "XPAR") -> pyarrow.Table:
             "venue": [message] * count,
         },
         schema=Quote.FIELD.into_arrow_schema(),
+    )
+
+
+@pytest.fixture
+def logs(tmp_path: Path) -> IcebergDataset:
+    """The parser's own shape, which is the widest thing this package stores."""
+    return IcebergDataset(
+        name="trading.logs",
+        catalog="test",
+        properties=catalog_properties(tmp_path),
+        struct=Log.FIELD,
+    )
+
+
+#: One wire FIX order as the parser lands it: the session layer and the fields
+#: the message carries once flattened into columns of their own, and the party
+#: group -- which repeats, so no one entry of it is the line's -- left in the
+#: map it arrived in.
+FIX_LINE = Log(
+    url="a.txt",
+    unix=1_786_665_901_167_520_000,
+    hash=3,
+    xhash=3,
+    etype=EventType.ORDER,
+    thread_name="t",
+    driver_name="d",
+    message="sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|11=ORD-1|55=TTF|10=203|",
+    protocol="FIX",
+    fix_tags={453: "2", 448: "BUYSIDE"},
+    keyval={},
+    begin_string="FIX.4.2",
+    body_length=176,
+    msg_type="D",
+    seq=7,
+    sender_comp_id="BUYSIDE",
+    target_comp_id="XPAR",
+    sending_unix=1_786_692_600_123_000_000,
+    poss_dup_flag=True,
+    signature=b"\x00sealed",
+    check_sum="203",
+    symbol="TTF",
+    cl_ord_id="ORD-1",
+    side="1",
+    order_qty=1200.0,
+    transact_unix=1_786_692_600_000_000_000,
+    text="all good",
+)
+
+
+def log_table(*rows: Log) -> pyarrow.Table:
+    """Lines as the values Arrow wants.
+
+    `into_dict` is the document view of a row and spells an integer map key as
+    text, which is the wrong reading here: `fix_tags` is keyed by the tag.
+    """
+    return pyarrow.Table.from_pylist(
+        [dataclasses.asdict(row) for row in rows], Log.FIELD.into_arrow_schema()
     )
 
 
@@ -347,33 +405,80 @@ def test_append_streams_one_commit_per_chunk(dataset: IcebergDataset) -> None:
     assert len(dataset.iceberg_table.snapshots()) == 3, "two rows per commit"
 
 
-def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None:
-    """The parser's own shape, end to end: declared, created, written, read."""
-    logs = IcebergDataset(
-        name="trading.logs",
-        catalog="test",
-        properties=catalog_properties(tmp_path),
-        struct=Log.FIELD,
-    )
-    row = Log(
-        url="a.txt",
-        unix=1_786_665_901_167_520_000,
-        hash=2,
-        xhash=2,
-        etype=EventType.EXECUTION,
-        thread_name="t",
-        driver_name="d",
-        message="m",
-    )
-    table = pyarrow.Table.from_pylist([dataclass_row(row)], Log.FIELD.into_arrow_schema())
-    logs.write_arrow_table(table, merge_by=True)
-    logs.write_arrow_table(table, merge_by=True)
-    assert logs.read_arrow_table().num_rows == 1, "the same line upserts onto itself"
+def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
+    """The parser's own shape, end to end: declared, created, written, read.
+
+    One line carrying every kind at once, because a column the catalog cannot
+    hold fails at the write and nowhere earlier: the two maps, a boolean, a
+    double, a binary block, and an instant as int64 nanoseconds rather than as
+    the timestamp Iceberg would have had to narrow to microseconds.
+    """
+    assert len(Log.FIELD.names) == 81
+    logs.write_arrow_table(log_table(FIX_LINE), merge_by=True)
+    logs.write_arrow_table(log_table(FIX_LINE), merge_by=True)
+
+    assert [one.name for one in logs.iceberg_table.schema().fields] == Log.FIELD.names
+    stored = logs.read_arrow_table(Log.FIELD)
+    assert stored.num_rows == 1, "the same line upserts onto itself"
+    row = stored.to_pylist()[0]
+    assert row["protocol"] == "FIX"
+    assert row["fix_tags"] == [(453, "2"), (448, "BUYSIDE")], "in the order they arrived"
+    assert row["seq"] == 7 and row["sender_comp_id"] == "BUYSIDE"
+    assert row["symbol"] == "TTF" and row["cl_ord_id"] == "ORD-1"
+    assert row["order_qty"] == 1200.0
+    assert row["poss_dup_flag"] is True
+    assert row["signature"] == b"\x00sealed", "binary, so a leading zero byte is not text"
+    assert row["sending_unix"] == FIX_LINE.sending_unix, "nanoseconds, to the digit"
+    assert row["check_sum"] == "203", "text, so a checksum keeps the leading zeros it needs"
+    assert row["price"] is None, "a field this message never carried"
 
 
-def dataclass_row(row: Log) -> dict:
-    """A `Log` as the plain values Arrow wants."""
-    return row.into_dict()
+def test_a_line_carrying_no_message_is_not_one_whose_message_said_nothing(
+    logs: IcebergDataset,
+) -> None:
+    """Three states the store has to keep apart: a null map is a line carrying
+    no message at all, an empty map is a message that said nothing, and neither
+    is a message that said something. Iceberg spells nullability in its own
+    words, so a round trip is where the three would collapse into one.
+    """
+    quiet = Log(unix=1, hash=1, xhash=1, message="heartbeat emitted")
+    bridged = Log(
+        unix=2, hash=2, xhash=2, message="toBridge #", protocol="UL", fix_tags={}, keyval={}
+    )
+    logs.write_arrow_table(log_table(quiet, bridged, FIX_LINE))
+
+    stored = logs.read_arrow_table(Log.FIELD).sort_by("unix")
+    assert stored.column("protocol").to_pylist() == ["OTHER", "UL", "FIX"]
+    assert stored.column("fix_tags").to_pylist() == [None, [], [(453, "2"), (448, "BUYSIDE")]]
+    assert stored.column("keyval").to_pylist() == [None, [], []]
+
+
+def test_the_maps_come_back_saying_what_a_pair_is(logs: IcebergDataset, tmp_path: Path) -> None:
+    """The map is nullable and its values are not, and both halves have to
+    survive the catalog: a value that came back nullable would let the next
+    write store a pair without one, which is what the declaration refuses.
+    """
+    logs.write_arrow_table(log_table(FIX_LINE))
+    found = IcebergDataset(name=logs.name, catalog="test", properties=catalog_properties(tmp_path))
+    shape = found.into_struct_field()
+    for column in ("fix_tags", "keyval"):
+        assert shape.field(column).nullable, column
+        assert not shape.field(column).value.nullable, column
+
+
+def test_the_flattened_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> None:
+    """Iceberg bounds the first `write.metadata.metrics.max-inferred-column
+    -defaults` leaves in pre-order, 100 by default, and flattening the message
+    took this shape to 83 of them. `text` is the last, so anything that fell
+    past the cutoff takes that one with it -- and an unbounded column prunes
+    nothing while looking exactly like a column that does.
+    """
+    logs.write_arrow_table(log_table(FIX_LINE))
+    assert len(Log.FIELD.leaf_names()) == 83
+    last = logs.iceberg_table.schema().find_field("text").field_id
+    written = [task.file for task in logs.iceberg_table.scan().plan_files()]
+    assert written, "a write landed a file"
+    assert all(last in one.lower_bounds for one in written), "the last column still prunes"
 
 
 def test_the_module_imports_without_pyiceberg() -> None:

@@ -21,13 +21,13 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
-import re
 import types
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, ClassVar
 
 from rekep.convert import Convertible
 from rekep.fields import StructField
+from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import FixMessage
 from rekep.market.enums import (
     AssetKind,
@@ -201,27 +201,6 @@ ENTRY_STATES: dict[UpdateAction, State] = {
     UpdateAction.DELETE_FROM: State.CANCELLED,
 }
 
-#: A FIX timestamp, date or time-of-day, in one pattern. The standard fixes
-#: `UTCTimestamp` as `YYYYMMDD-HH:MM:SS[.sss...]`, `UTCDateOnly` as
-#: `YYYYMMDD` and `UTCTimeOnly` as `HH:MM:SS[.sss...]`; the separator is a
-#: `-`, and `T` and a space are admitted because logs rewrite it. Both halves
-#: are optional so one pattern reads all three, and a trailing `Z` is tolerated
-#: for the feeds that add one.
-_STAMP = re.compile(
-    r"^[ \t]*(?:(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}))?"
-    r"(?:[-T ]?(?P<hour>\d{2}):(?P<minute>\d{2})(?::(?P<second>\d{2}))?"
-    r"(?:\.(?P<fraction>\d{1,9}))?)?"
-    r"[ \t]*Z?[ \t]*$",
-    re.ASCII,
-)
-
-#: `datetime.date(1970, 1, 1).toordinal()`. The proleptic Gregorian day count
-#: Python counts from is not the epoch, and the difference is a constant.
-_EPOCH_ORDINAL = 719163
-
-NANOS = 1_000_000_000
-SECONDS_A_DAY = 86_400
-
 
 def market_tags() -> Mapping[str, int]:
     """Every FIX field name the market shapes declare, to its tag.
@@ -264,68 +243,6 @@ def _declared_tags(struct: StructField, into: dict[str, int]) -> None:
             into.setdefault(str(name), int(tag))
         if member.fields:
             _declared_tags(member, into)
-
-
-@functools.lru_cache(maxsize=8192)
-def unix_of(text: str | None, day: int | None = None) -> int | None:
-    """A FIX timestamp, date or time-of-day as nanoseconds since the epoch, UTC.
-
-    Cached because a message asks the same question several times over: the
-    order `TRANSACTED` probes in runs per event, `SendingTime <52>` is one
-    string for every entry of a refresh, and a whole capture spells the same
-    date all day. Pure -- text in, nanoseconds out -- so the cache cannot be
-    stale, and bounded so a capture of a million distinct instants does not
-    keep them all.
-
-    One reading for all three of the standard's spellings, because a caller
-    asking "when" should not have to know which of them a field is declared
-    as -- and real feeds disagree with their own dictionary about that more
-    often than is comfortable.
-
-    `day` is the nanosecond instant a *time-only* value belongs to, which is
-    the one thing a `UTCTimeOnly` does not carry: `MDEntryTime <273>` without
-    its `MDEntryDate <272>` is a time of day, and the message's own date is
-    what places it. Without `day` a time-only value reads as that time on the
-    epoch's own day, which is honest -- it is what the value says -- and
-    visibly wrong rather than quietly plausible.
-
-    None for anything that is not a timestamp, including an empty string and
-    a date that does not exist: a `0` there would be the epoch, and the epoch
-    is a real instant that a sort would put first.
-    """
-    if not text:
-        return None
-    match = _STAMP.match(text)
-    if match is None:
-        return None
-    year, month, dayof, hour, minute, second, fraction = match.group(
-        "year", "month", "day", "hour", "minute", "second", "fraction"
-    )
-    if year is None and hour is None:
-        return None
-    if year is None:
-        base = day - day % (SECONDS_A_DAY * NANOS) if day is not None else 0
-    else:
-        try:
-            ordinal = datetime.date(int(year), int(month), int(dayof)).toordinal()
-        except ValueError:
-            return None
-        base = (ordinal - _EPOCH_ORDINAL) * SECONDS_A_DAY * NANOS
-    if hour is None:
-        return base
-    hours, minutes, secs = int(hour), int(minute), int(second) if second else 0
-    # Range-checked, because `\d{2}` is not: `99:99:99` parsed as a shape and came
-    # out as four days past midnight, which is a plausible-looking instant and a
-    # wrong one. `60` seconds is deliberately allowed -- the standard admits it
-    # for a leap second -- and nothing else past the clock is.
-    if hours > 23 or minutes > 59 or secs > 60:
-        return None
-    seconds = hours * 3600 + minutes * 60 + secs
-    # A fraction is a decimal fraction of a second, so its scale is its own
-    # width: `.5` is half a second and `.000000001` is one nanosecond. Padding
-    # to nine and reading it as an integer is that, without a float.
-    nanos = int(fraction.ljust(9, "0")) if fraction else 0
-    return base + seconds * NANOS + nanos
 
 
 @dataclasses.dataclass
@@ -970,4 +887,4 @@ def _date(text: str | None) -> datetime.date | None:
     stamped = unix_of(text)
     if stamped is None:
         return None
-    return datetime.date.fromordinal(stamped // (SECONDS_A_DAY * NANOS) + _EPOCH_ORDINAL)
+    return datetime.date.fromordinal(stamped // (SECONDS_A_DAY * NANOS) + EPOCH_ORDINAL)

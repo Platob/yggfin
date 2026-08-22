@@ -43,26 +43,22 @@ rules:
 
 # -- what each line carries ----------------------------------------------------
 
-# The other question, and a different one: which kind of message the line holds
-# and how to read it. Same shape, and a line nothing matches is OTHER -- with
+# The other question, and a different one: which protocol the line holds and
+# how to read it. Same shape, and a line nothing matches is OTHER -- with
 # `fix_tags` and `keyval` null rather than empty. Delete the block for these
 # defaults; the wrapped bridge leads because it answers to both tells.
-categories:
+protocols:
   rules:
-    - name: UL
-      category_id: 2
+    - protocol: UL
       pattern: '(?s)(?:^|[^0-9])8=FIXT?.*[^0-9]35=UL(?:[^A-Za-z0-9]|$)'
       codec: ul
-    - name: FIX
-      category_id: 1
+    - protocol: FIX
       pattern: '(?:^|[^0-9])8=FIXT?'
       codec: fix
-    - name: UL
-      category_id: 2
+    - protocol: UL
       pattern: '(?s)#[A-Za-z][A-Za-z0-9_.\-]*(?:\[\d+\])?[ \t\r\n\f\x0b]*=.*#[A-Za-z][A-Za-z0-9_.\-]*(?:\[\d+\])?[ \t\r\n\f\x0b]*='
       codec: ul
-    - name: OTHER
-      category_id: 0
+    - protocol: OTHER
       codec: none
 
 fix_version: "4.4"  # what a name resolves against absent tag 8; a rule may name its own

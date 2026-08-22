@@ -1,11 +1,11 @@
 """A log line's pairs as the tags FIX gave them -- as far as the dictionary goes.
 
-The registry side of the message layer. What the parser produces is
-`(key, value)` text, because that is what the line says; what a reader wants is
-`(tag, value)`, because that is what every other FIX consumer speaks. This is
-the step between, and its one rule is that **it never guesses**: a name the
-dictionary answers for becomes its tag, and a name it does not stays exactly as
-the log spelled it. No fuzzy match, no `search()` fallback, nothing dropped.
+The registry side of the message layer. The parser produces `(key, value)` text
+because that is what the line says; a reader wants `(tag, value)` because that
+is what every other FIX consumer speaks. This is the step between, and its one
+rule is that **it never guesses**: a name the dictionary answers for becomes
+its tag, a name it does not stays as the log spelled it. No fuzzy match, no
+`search()` fallback, nothing dropped.
 """
 
 from __future__ import annotations
@@ -21,6 +21,10 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.fields.arrays import groups_of, scattered
+from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
+from rekep.fix.columns import STAMPS as FLAT_STAMPS
+from rekep.fix.columns import TAGS as FLAT_TAGS
+from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.message import (
     _BEGIN,
     _MEMBER_NAME_VECTOR,
@@ -31,7 +35,7 @@ from rekep.fix.message import (
     parse_arrow_array,
 )
 from rekep.fix.registry import FixRegistry
-from rekep.fix.rules import Rules
+from rekep.fix.rules import NO_PROTOCOL, Rules
 
 #: What a resolved key is: the tag number, as the `int32` every other code
 #: column here is.
@@ -40,9 +44,16 @@ TAG: pyarrow.DataType = pyarrow.int32()
 #: The two map shapes a parsed line lands in. A **map** and not a
 #: `list<struct>` because tags repeat -- a repeating group *is* tags repeating
 #: -- and an Arrow map is the one nested type that keeps duplicate keys in
-#: order, which is exactly why `parse_arrow_array` already returns one.
-FIX_TAGS: pyarrow.DataType = pyarrow.map_(TAG, pyarrow.string())
-KEYVAL: pyarrow.DataType = pyarrow.map_(pyarrow.string(), pyarrow.string())
+#: order, which is why `parse_arrow_array` already returns one.
+#:
+#: The **value is NOT NULL**, like the key Arrow already requires: a pair whose
+#: value is missing is not a pair, and storing one would hand every consumer a
+#: third state to handle between "absent" and "present". `drop_null_values` is
+#: what makes that true rather than merely declared -- Arrow does not enforce
+#: it at construction, so the parser has to.
+_VALUE = pyarrow.field("value", pyarrow.string(), nullable=False)
+FIX_TAGS: pyarrow.DataType = pyarrow.map_(TAG, _VALUE)
+KEYVAL: pyarrow.DataType = pyarrow.map_(pyarrow.string(), _VALUE)
 
 #: A key that is already a tag: digits, and few enough of them to be one.
 #: Ten digits can overflow an `int32` and no FIX tag has ten, so the width is
@@ -135,18 +146,16 @@ class TagIndex:
 
 @dataclasses.dataclass(eq=False)
 class FixCodec(Convertible):
-    """A log line read as FIX: which category it is, its pairs, and its tags.
+    """A log line read as FIX: which protocol it is, its pairs, and its tags.
 
-    The three verbs a source needs to turn a message column into the columns a
-    row carries -- `categorise`, `into_pairs`, `into_fix_pairs` -- and nothing
-    else. That is deliberate and it is the seam: a second codec over another
-    protocol implements the same three and `TextFile` never learns which one it
-    is holding (`docs/logs.md`).
+    The verbs a source needs to turn a message column into the columns a row
+    carries, and nothing else. That is the seam: a second codec over another
+    protocol implements the same ones and `TextFile` never learns which it is
+    holding (`docs/logs.md`).
 
     Everything here is per **batch**: one mask per rule over the whole message
-    column, one parse per category slice, one name index per FIX version. There
-    is no per-row work in any of it, which is what a capture of millions of
-    lines needs.
+    column, one parse per slice, one name index per FIX version. No per-row
+    work in any of it, which is what a capture of millions of lines needs.
     """
 
     #: Which category each line is. `Rules.DEFAULT`'s three built-ins unless a
@@ -172,26 +181,25 @@ class FixCodec(Convertible):
 
     # -- the seam -----------------------------------------------------------
 
-    def categorise(self, messages: Any, drivers: Any = None) -> tuple[Any, Any]:
-        """One `(category_id, category_name)` pair per row, in kernels."""
-        return self.rules.into_arrow_category_arrays(messages, drivers)
+    def categorise(self, messages: Any, drivers: Any = None) -> Any:
+        """One `protocol` name per row, in kernels."""
+        return self.rules.into_arrow_protocol_array(messages, drivers)
 
-    def into_pairs(self, messages: Any, category_id: int = 0) -> Any:
+    def into_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
         """One `map<string, string>` per row: the message as the line spells it.
 
-        Addressed by **category id** and not by rule, because that is what the
-        seam can carry: the id is a column the batch already holds, and the
-        rule behind it is this codec's business. A protocol with no rules at
-        all still has ids.
+        Addressed by **protocol name** and not by rule, because that is what
+        the seam can carry: the name is a column the batch already holds, and
+        the rule behind it is this codec's business.
 
-        A category whose codec is `none` parses nothing and says so with a
+        A protocol whose codec is `none` parses nothing and says so with a
         column of nulls -- **not** empty maps. "Parsed, and there was nothing
         in it" and "this line is not a message" are different facts, and a
         store that spelled them the same way could not tell a bridge that sent
         an empty payload from a stack trace.
         """
         compute = pyarrow.compute
-        rule = self.rules.rule(category_id)
+        rule = self.rules.rule(protocol)
         if rule.named is None:
             return pyarrow.nulls(len(messages), KEYVAL)
         if rule.separator is not None:
@@ -233,22 +241,20 @@ class FixCodec(Convertible):
         """What each line writes between its fields, read off the line itself.
 
         `detect_separator`'s rule over a whole column: whatever follows the
-        BeginString value, and for a line that has none, whatever sits in front
-        of its second `#NAME=`. A line with neither answers `""`, which groups
-        every one of them together -- they parse to nothing either way.
+        BeginString value, and for a line with none, whatever sits in front of
+        its second `#NAME=`. A line with neither answers `""`, which groups
+        them together -- they parse to nothing either way.
 
-        `named` says which of the two readings a slice can possibly need, and
-        it is worth passing: a category is one kind of message, so running the
-        other pattern over it is a whole regex pass that can only return nulls.
-        None runs both, for a caller that does not know.
+        `named` says which of the two readings a slice can need, and is worth
+        passing: running the other pattern over it is a whole regex pass that
+        can only return nulls. None runs both, for a caller that does not know.
 
-        What the **bridge** half extracts is the character in front of the next
-        key, which is the separator only when it is one of the candidates: a
-        bridge that writes `#A=1#B=2` puts nothing between its tokens, and the
-        character there is the tail of a value. So a non-candidate is mapped to
-        the marker, `detect_separator`'s rule and for its reason -- and it also
-        keeps every `#`-separated row in **one** group rather than one group
-        per value it happens to end with.
+        The **bridge** half extracts the character in front of the next key,
+        which is a separator only when it is one of the candidates: `#A=1#B=2`
+        puts nothing between its tokens, so what sits there is the tail of a
+        value. A non-candidate maps to the marker -- `detect_separator`'s rule,
+        for its reason -- which also keeps every `#`-separated row in **one**
+        group rather than one per value it happens to end with.
         """
         compute = pyarrow.compute
         text = messages.cast(pyarrow.string(), safe=False)
@@ -268,40 +274,41 @@ class FixCodec(Convertible):
         return compute.fill_null(found, "")
 
     def drop_null_values(self, pairs: Any) -> Any:
-        """`pairs` without the fields whose value is one of `null_values`.
+        """`pairs` without the fields that have no value.
 
-        Dropped rather than kept as text and dropped rather than kept as an
-        empty string, because those are two different lies: an absent field is
-        absent, and `58=` on the wire is a malformed message rather than an
-        empty Text -- the same reading `FixMessage.from_pairs` makes of a
-        `None` value.
+        Two things at once, because they are one fact. A value spelled as one
+        of `null_values` is an absent field, and a value that is *actually*
+        null is one too -- `58=` on the wire is a malformed message rather than
+        an empty Text, which is the reading `FixMessage.from_pairs` already
+        makes. Either way the pair goes, so the NOT NULL the map type declares
+        is true of every row that reaches a store.
 
         Done here, above the parser and below the split, so a spelling that
         means "nothing" never reaches `fix_tags` *or* `keyval`. A row whose
         every field was absent comes back as an empty map, not a null one: the
         line was a message, and it said nothing.
 
-        One `is_in` over the whole flattened value child and one `all` to find
-        out whether anything has to move, so a capture that carries no absent
-        field pays two kernels a batch and rebuilds nothing.
+        One pass over the flattened value child and one `all` to find out
+        whether anything has to move, so a capture carrying no absent field
+        rebuilds nothing.
         """
-        if not self.null_values:
-            return pairs
         if isinstance(pairs, pyarrow.ChunkedArray):
             return pyarrow.chunked_array(
-                [self.drop_null_values(chunk) for chunk in pairs.chunks], type=pairs.type
+                [self.drop_null_values(chunk) for chunk in pairs.chunks], type=KEYVAL
             )
         compute = pyarrow.compute
         lengths, keys, items = _entries_of(pairs)
-        absent = compute.is_in(
-            compute.utf8_lower(compute.utf8_trim_whitespace(items)),
-            value_set=pyarrow.array(sorted(self.null_values), pyarrow.string()),
-        )
-        keep = compute.invert(compute.fill_null(absent, False))
+        keep = compute.is_valid(items)
+        if self.null_values:
+            absent = compute.is_in(
+                compute.utf8_lower(compute.utf8_trim_whitespace(items)),
+                value_set=pyarrow.array(sorted(self.null_values), pyarrow.string()),
+            )
+            keep = compute.and_(keep, compute.invert(compute.fill_null(absent, False)))
         if compute.all(keep, min_count=0).as_py():
-            return pairs
+            return pairs.cast(KEYVAL)
         return _mapped(
-            pairs, lengths, keep, compute.filter(keys, keep), compute.filter(items, keep)
+            pairs, lengths, keep, compute.filter(keys, keep), compute.filter(items, keep), KEYVAL
         )
 
     def into_fix_pairs(self, pairs: Any, version: str | None = None) -> tuple[Any, Any]:
@@ -317,8 +324,7 @@ class FixCodec(Convertible):
 
         A key the dictionary answers for becomes `(tag, value)`; every other
         key stays `(key, value)`, spelled as the log spelled it. Nothing is
-        dropped and nothing is guessed -- no fuzzy match, no `search()`
-        fallback in the hot path -- because a venue's own field is data and a
+        dropped and nothing is guessed -- a venue's own field is data, and a
         near-miss is a wrong answer that looks like a right one.
 
         A null row stays null in both halves. A row whose keys all resolve
@@ -343,25 +349,104 @@ class FixCodec(Convertible):
         known = compute.is_valid(tags)
         unknown = compute.invert(known)
         resolved = _mapped(
-            pairs, lengths, known, compute.filter(tags, known), compute.filter(items, known)
+            pairs,
+            lengths,
+            known,
+            compute.filter(tags, known),
+            compute.filter(items, known),
+            FIX_TAGS,
         )
         rest = _mapped(
-            pairs, lengths, unknown, compute.filter(keys, unknown), compute.filter(items, unknown)
+            pairs,
+            lengths,
+            unknown,
+            compute.filter(keys, unknown),
+            compute.filter(items, unknown),
+            KEYVAL,
         )
         return resolved, rest
 
+    def into_flat_columns(self, tags: Any) -> tuple[dict[str, Any], Any]:
+        """The fields worth a column of their own, lifted out of `tags`.
+
+        The mandatory session layer and the component fields a trading log is
+        made of (`rekep.fix.columns`) -- who sent it, what was traded, at what
+        price -- become columns, and are **removed** from the map rather than
+        stored in both places.
+
+        **Only where the tag occurs once in the line.** A tag that repeats is a
+        repeating group's, and lifting its first occurrence would answer "the
+        symbol" with whichever leg came first. Those rows keep everything in
+        `fix_tags` and the column is null, which is what a multi-leg order's
+        one symbol honestly is.
+
+        Text out, and the schema says what each decodes to -- with one
+        exception the schema cannot make: a **stamp** is read here, because
+        `20260814-09:30:00.123` is not something a cast to `int64` can find its
+        way to, and nanoseconds since the epoch is what this package stores an
+        instant as (`columns.STAMPS`).
+
+        One `is_in` finds every liftable field in one pass; each tag actually
+        present then costs a handful of kernels and no Python per row.
+        """
+        rows = len(tags)
+        columns: dict[str, Any] = {
+            name: pyarrow.nulls(rows, pyarrow.int64() if tag in FLAT_STAMPS else pyarrow.string())
+            for tag, name in FLAT_COLUMNS.items()
+        }
+        if isinstance(tags, pyarrow.ChunkedArray):
+            tags = tags.combine_chunks()
+        if not rows or tags.null_count == rows:
+            return columns, tags
+        compute = pyarrow.compute
+        listed = _listed(tags)
+        lengths = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32())
+        parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
+        entries = compute.list_flatten(listed)
+        keys, items = compute.struct_field(entries, 0), compute.struct_field(entries, 1)
+        lift = compute.and_(
+            compute.fill_null(compute.is_in(keys, value_set=FLAT_TAGS), False),
+            _once(parents, keys),
+        )
+        if not compute.any(lift, min_count=0).as_py():
+            return columns, tags
+        found = compute.filter(keys, lift)
+        where = compute.filter(parents, lift)
+        values = compute.filter(items, lift)
+        row_ids = pyarrow.array(range(rows), pyarrow.int64())
+        for tag in compute.unique(found).to_pylist():
+            at = compute.equal(found, tag)
+            column = compute.take(
+                compute.filter(values, at),
+                compute.index_in(row_ids, value_set=compute.filter(where, at)),
+            )
+            if tag in FLAT_STAMPS:
+                column = cast_arrow_fix(column, pyarrow.timestamp("ns")).cast(pyarrow.int64())
+            columns[FLAT_COLUMNS[tag]] = column
+        carried = compute.invert(lift)
+        rest = _mapped(
+            tags,
+            lengths,
+            carried,
+            compute.filter(keys, carried),
+            compute.filter(items, carried),
+            FIX_TAGS,
+        )
+        return columns, rest
+
     # -- versions -----------------------------------------------------------
 
-    def version_of(self, message: str | None, category_id: int = 0) -> tuple[str | None, str]:
+    def version_of(
+        self, message: str | None, protocol: str = NO_PROTOCOL
+    ) -> tuple[str | None, str]:
         """Which FIX version a message is read under, and where that came from.
 
-        Three answers in order of authority: **tag 8**, which is the message
-        saying so itself; the **rule**, which is the desk saying what its
-        bridge speaks; and the **configured default**, which is this codec
-        saying what to assume. The source comes back with the version because
-        `4.4` read off a BeginString and `4.4` because nobody said otherwise
-        are the same string and not the same fact -- one is evidence and the
-        other is a setting.
+        Three answers in order of authority: **tag 8**, the message saying so
+        itself; the **rule**, the desk saying what its bridge speaks; and the
+        **configured default**, this codec saying what to assume. The source
+        comes back with the version because `4.4` read off a BeginString and
+        `4.4` because nobody said otherwise are the same string and not the
+        same fact.
 
         A BeginString the dictionary has no version for -- a truncated `FIX4`,
         a vendor's own spelling -- falls through rather than being coerced into
@@ -373,7 +458,7 @@ class FixCodec(Convertible):
                 named = self.version_named(begin.group(0))
                 if named is not None:
                     return named, BEGIN_STRING_SOURCE
-        rule = self.rules.rule(category_id)
+        rule = self.rules.rule(protocol)
         if rule.fix_version:
             return rule.fix_version, RULE_SOURCE
         if self.fix_version:
@@ -446,27 +531,58 @@ class FixCodec(Convertible):
             return {}
 
 
-def _entries_of(pairs: Any) -> tuple[Any, Any, Any]:
-    """One map column as `(row lengths, keys, values)`.
+def _once(parents: Any, keys: Any) -> Any:
+    """Which entries are the only one of their tag in their row.
 
-    Through a list-of-struct **view** of the same buffers, for the reason
-    `tag_arrow_array` takes the same route: the list kernels honour a sliced
-    array's own offset and validity where the raw `.keys`/`.offsets` accessors
-    do not, and neither `list_flatten` nor `list_value_length` has a map
-    kernel. The cast moves no data.
+    One composite key per entry -- the row shifted above the tag, so no pair of
+    them can collide -- counted in a single `value_counts`. Per entry and not
+    per tag, because a batch carries thirty-odd liftable tags and one pass over
+    the child array answers for all of them at once.
     """
     compute = pyarrow.compute
-    listed = pairs.cast(
+    composite = compute.add(
+        compute.multiply(parents, pyarrow.scalar(2**32, pyarrow.int64())),
+        keys.cast(pyarrow.int64()),
+    )
+    counted = compute.value_counts(composite)
+    seen = compute.take(
+        counted.field("counts"), compute.index_in(composite, value_set=counted.field("values"))
+    )
+    return compute.equal(seen, 1)
+
+
+def _listed(pairs: Any) -> Any:
+    """A map column as a list-of-struct **view** of the same buffers.
+
+    The route `tag_arrow_array` takes, for its reason: the list kernels honour
+    a sliced array's own offset and validity where the raw `.keys`/`.offsets`
+    accessors do not, and neither `list_flatten` nor `list_value_length` has a
+    map kernel. The cast moves no data.
+    """
+    return pairs.cast(
         pyarrow.list_(
             pyarrow.struct([("key", pairs.type.key_type), ("value", pairs.type.item_type)])
         )
     )
+
+
+def _entries_of(pairs: Any) -> tuple[Any, Any, Any]:
+    """One map column as `(row lengths, keys, values)`."""
+    compute = pyarrow.compute
+    listed = _listed(pairs)
     lengths = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32())
     entries = compute.list_flatten(listed)
     return lengths, compute.struct_field(entries, 0), compute.struct_field(entries, 1)
 
 
-def _mapped(source: Any, lengths: Any, mask: Any, keys: Any, items: Any) -> pyarrow.MapArray:
+def _mapped(
+    source: Any,
+    lengths: Any,
+    mask: Any,
+    keys: Any,
+    items: Any,
+    arrow_type: pyarrow.DataType,
+) -> pyarrow.MapArray:
     """One half of a split, as a map with the source's own rows and nulls.
 
     The offsets are rebuilt from a cumulative sum of the mask -- the same
@@ -490,7 +606,7 @@ def _mapped(source: Any, lengths: Any, mask: Any, keys: Any, items: Any) -> pyar
             offsets.slice(0, len(source)),
         )
         offsets = pyarrow.concat_arrays([head, offsets.slice(len(source))])
-    return pyarrow.MapArray.from_arrays(offsets, keys, items)
+    return pyarrow.MapArray.from_arrays(offsets, keys, items, type=arrow_type)
 
 
 def _version_key(spelling: str) -> str:

@@ -10,7 +10,7 @@ import pyarrow.compute
 
 from rekep.convert import Convertible
 from rekep.fields import Field, field
-from rekep.fix.rules import CODE
+from rekep.fix.rules import NO_PROTOCOL
 from rekep.fix.transcribe import FIX_TAGS, KEYVAL
 from rekep.market.enums import EventType
 from rekep.market.event import Event
@@ -44,58 +44,268 @@ class Log(Event):
     message: str = ""
     """Payload with the header and level stripped, continuation lines folded in."""
 
-    # An integer and not the name, for the reason every other code column here
-    # is one: the column survives a rule set this build has never seen, and a
-    # filter on it prunes where a set of string literals cannot. The name is
-    # beside it because a rule set is data, so nothing downstream has a table
-    # to decode 42 with.
-    category_id: Annotated[int, Field(arrow_type=CODE)] = 0
-    """Which kind of message the line carries; 0 is a line that carries none."""
-
-    category_name: str = "OTHER"
-    """What that category is called, as the rule that matched it names it."""
+    protocol: str = NO_PROTOCOL
+    """Which protocol the line carries; OTHER is a line that carries none."""
 
     # A **map**, and both of them, because tags repeat -- a repeating group *is*
     # tags repeating -- and an Arrow map is the one nested type that keeps
-    # duplicate keys in the order they arrived. Which is the whole reason the
-    # parser already returns one.
+    # duplicate keys in the order they arrived, which is why the parser already
+    # returns one.
     #
-    # Nullable, and null is not an empty map: a line that carries no message
-    # has no pairs, a message that carried nothing has none *left*, and a store
-    # that spelled those the same way could not tell a bridge that sent an
-    # empty payload from a stack trace.
+    # Nullable, and null is not an empty map: a line carrying no message has no
+    # pairs, a message that carried nothing has none *left*, and a store that
+    # spelled those the same way could not tell a bridge that sent an empty
+    # payload from a stack trace. The values inside are NOT NULL -- a pair
+    # without a value is not a pair (`FixCodec.drop_null_values`).
     fix_tags: Annotated[dict[int, str] | None, Field(arrow_type=FIX_TAGS)] = None
     """The message's fields under the tags FIX gives them, in wire order."""
 
     keyval: Annotated[dict[str, str] | None, Field(arrow_type=KEYVAL)] = None
     """The fields no FIX tag answers for, spelled as the log spelled them."""
 
+    # -- what a message says, flattened ---------------------------------------
+    #
+    # The FIX session layer and the fields the components a trading log is made
+    # of carry (`rekep.fix.columns`). Each is a column of the type the
+    # dictionary declares, and is **not** in `fix_tags` as well -- one fact
+    # stored twice is one that can disagree with itself. A tag that repeats in
+    # a line stays in the map instead, because it belongs to a repeating group
+    # and no one value of it is the line's.
+    #
+    # Ordered by what they mean rather than by tag number. Two are `Event`'s
+    # own: `symbol` is already declared as tag 55 and `seq` as tag 34. The
+    # names live in `rekep/fix/columns.py`, the types here, and
+    # `tests/text/test_log.py` pins both against the published dictionary.
+
+    # The envelope itself.
+
+    begin_string: str | None = None
+    """`BeginString <8>`: which FIX version the message says it is."""
+
+    body_length: int | None = None
+    """`BodyLength <9>`, as the message counted it."""
+
+    msg_type: str | None = None
+    """`MsgType <35>`: what the message is, on the wire."""
+
+    check_sum: str | None = None
+    """`CheckSum <10>`: three digits, so a string -- `010` read as `10` no longer verifies."""
+
+    # Who sent it, and to whom.
+
+    sender_comp_id: str | None = None
+    """`SenderCompID <49>`: who sent it."""
+
+    sender_sub_id: str | None = None
+    """`SenderSubID <50>`: which desk of theirs."""
+
+    sender_location_id: str | None = None
+    """`SenderLocationID <142>`."""
+
+    target_comp_id: str | None = None
+    """`TargetCompID <56>`: who it was sent to."""
+
+    target_sub_id: str | None = None
+    """`TargetSubID <57>`."""
+
+    target_location_id: str | None = None
+    """`TargetLocationID <143>`."""
+
+    # And on whose behalf, when a hub relayed it.
+
+    on_behalf_of_comp_id: str | None = None
+    """`OnBehalfOfCompID <115>`: who the sender was speaking for."""
+
+    on_behalf_of_sub_id: str | None = None
+    """`OnBehalfOfSubID <116>`."""
+
+    on_behalf_of_location_id: str | None = None
+    """`OnBehalfOfLocationID <144>`."""
+
+    deliver_to_comp_id: str | None = None
+    """`DeliverToCompID <128>`: who it is ultimately for."""
+
+    deliver_to_sub_id: str | None = None
+    """`DeliverToSubID <129>`."""
+
+    deliver_to_location_id: str | None = None
+    """`DeliverToLocationID <145>`."""
+
+    # Where it sits in the session's stream, and whether it is a repeat.
+
+    last_msg_seq_num_processed: int | None = None
+    """`LastMsgSeqNumProcessed <369>`: how far the sender had read."""
+
+    poss_dup_flag: bool | None = None
+    """`PossDupFlag <43>`: a retransmission of a message already sent."""
+
+    poss_resend: bool | None = None
+    """`PossResend <97>`: the same business content under a new sequence."""
+
+    # When it was sent, which is not when anything happened. Nanoseconds since
+    # the epoch, like every other instant here, and not an Arrow timestamp:
+    # Iceberg's is microseconds, so `timestamp[ns]` cannot be stored and
+    # `timestamp[us]` would truncate a value whose text has just been lifted
+    # out of the map. It also makes a latency a subtraction -- `unix -
+    # sending_unix` -- rather than a conversion.
+
+    sending_unix: int | None = None
+    """`SendingTime <52>`: when it was transmitted."""
+
+    orig_sending_unix: int | None = None
+    """`OrigSendingTime <122>`: the original transmission, on a resend."""
+
+    on_behalf_of_sending_unix: int | None = None
+    """`OnBehalfOfSendingTime <370>`."""
+
+    # Which application version speaks, under FIXT.
+
+    appl_ver_id: str | None = None
+    """`ApplVerID <1128>`."""
+
+    cstm_appl_ver_id: str | None = None
+    """`CstmApplVerID <1129>`."""
+
+    appl_ext_id: int | None = None
+    """`ApplExtID <1156>`."""
+
+    # How the payload is written, when it is not plain ASCII.
+
+    message_encoding: str | None = None
+    """`MessageEncoding <347>`."""
+
+    xml_data_len: int | None = None
+    """`XmlDataLen <212>`."""
+
+    xml_data: bytes | None = None
+    """`XmlData <213>`, as the bytes it is."""
+
+    # And how it is sealed.
+
+    secure_data_len: int | None = None
+    """`SecureDataLen <90>`."""
+
+    secure_data: bytes | None = None
+    """`SecureData <91>`, as the bytes it is."""
+
+    signature_length: int | None = None
+    """`SignatureLength <93>`."""
+
+    signature: bytes | None = None
+    """`Signature <89>`, as the bytes it is."""
+
+    # What was traded.
+
+    security_id: str | None = None
+    """`SecurityID <48>`, under the scheme `security_id_source` names."""
+
+    security_id_source: str | None = None
+    """`SecurityIDSource <22>`: which scheme `security_id` is in -- `4` is ISIN."""
+
+    security_type: str | None = None
+    """`SecurityType <167>`."""
+
+    cfi_code: str | None = None
+    """`CFICode <461>`: what kind of instrument it is, as ISO 10962 spells it."""
+
+    security_exchange: str | None = None
+    """`SecurityExchange <207>`: the market the instrument is listed on."""
+
+    currency: str | None = None
+    """`Currency <15>`, which is what the prices below are in."""
+
+    # Who asked, and under which identifiers.
+
+    account: str | None = None
+    """`Account <1>`."""
+
+    cl_ord_id: str | None = None
+    """`ClOrdID <11>`: the client's own identifier for the order."""
+
+    orig_cl_ord_id: str | None = None
+    """`OrigClOrdID <41>`: which order an amendment or cancel is about."""
+
+    order_id: str | None = None
+    """`OrderID <37>`: the venue's identifier for it."""
+
+    exec_id: str | None = None
+    """`ExecID <17>`: the venue's identifier for this execution report."""
+
+    # On what terms.
+
+    side: str | None = None
+    """`Side <54>`: `1` buy, `2` sell, and the rest of the standard's codes."""
+
+    ord_type: str | None = None
+    """`OrdType <40>`: `1` market, `2` limit, ..."""
+
+    time_in_force: str | None = None
+    """`TimeInForce <59>`: `0` day, `1` GTC, `3` IOC, ..."""
+
+    # Where it stands.
+
+    ord_status: str | None = None
+    """`OrdStatus <39>`: where the order stands."""
+
+    exec_type: str | None = None
+    """`ExecType <150>`: what this report is reporting."""
+
+    # For how much, at what price.
+
+    order_qty: float | None = None
+    """`OrderQty <38>`: how much was asked for."""
+
+    price: float | None = None
+    """`Price <44>`: the limit, when there is one."""
+
+    avg_px: float | None = None
+    """`AvgPx <6>`: the average of what has filled so far."""
+
+    cum_qty: float | None = None
+    """`CumQty <14>`: how much has filled."""
+
+    leaves_qty: float | None = None
+    """`LeavesQty <151>`: how much is still working."""
+
+    last_px: float | None = None
+    """`LastPx <31>`: the price of this fill."""
+
+    last_qty: float | None = None
+    """`LastQty <32>`: the size of this fill."""
+
+    # When it happened, and whatever was said about it.
+
+    transact_unix: int | None = None
+    """`TransactTime <60>`: when the business event happened, in nanoseconds."""
+
+    text: str | None = None
+    """`Text <58>`: whatever the counterparty wrote, often the reject reason."""
+
 
 @runtime_checkable
 class MessageCodec(Protocol):
     """What a source calls to turn a message column into the columns a row carries.
 
-    Three verbs and no more, which is the point: `TextFile` holds one of these
+    Five verbs and no more, which is the point: `TextFile` holds one of these
     and never learns which protocol it is reading. `rekep.fix.FixCodec` is the
     implementation this package ships; a second one over another protocol --
     market data, an internal binary envelope, a venue's own text format --
-    implements the same three and the pipeline above it does not change.
+    implements the same five and the pipeline above it does not change.
 
-    Every verb is per **batch** and takes whole columns, because that is the
-    contract that makes a codec usable at all: a seam that handed over one row
-    at a time would put a Python loop in the middle of the hot path
-    (`docs/logs.md`).
+    Every verb is per **batch** and takes whole columns: a seam that handed
+    over one row at a time would put a Python loop in the middle of the hot
+    path (`docs/logs.md`).
     """
 
-    def categorise(self, messages: Any, drivers: Any = None) -> tuple[Any, Any]:
-        """One `(category_id, category_name)` pair per row."""
+    def categorise(self, messages: Any, drivers: Any = None) -> Any:
+        """One `protocol` name per row."""
         ...
 
-    def into_pairs(self, messages: Any, category_id: int = 0) -> Any:
+    def into_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
         """One `map<string, string>` per row: the message as the line spells it.
 
-        Addressed by the id `categorise` gave the row, because that is what the
-        batch carries. Null, not an empty map, for a category that reads
+        Addressed by the name `categorise` gave the row, because that is what
+        the batch carries. Null, not an empty map, for a protocol that reads
         nothing.
         """
         ...
@@ -104,13 +314,23 @@ class MessageCodec(Protocol):
         """`pairs` split into the keys the protocol names and the keys it does not."""
         ...
 
-    def version_of(self, message: str | None, category_id: int = 0) -> tuple[str | None, str]:
+    def version_of(
+        self, message: str | None, protocol: str = NO_PROTOCOL
+    ) -> tuple[str | None, str]:
         """Which protocol version a message is read under, and where that came from.
 
-        The fourth verb, and the one a protocol without versions answers
-        `(None, "none")` to. It is here rather than inside `into_fix_pairs`
-        because the pipeline resolves it once per category slice and hands it
-        down -- resolving it per row would put a regex back in the hot path.
+        The one a protocol without versions answers `(None, "none")` to. Here
+        rather than inside `into_fix_pairs` because the pipeline resolves it
+        once per slice and hands it down; per row would put a regex back in the
+        hot path.
+        """
+        ...
+
+    def into_flat_columns(self, tags: Any) -> tuple[dict[str, Any], Any]:
+        """The fields worth a column of their own, lifted out of `tags`.
+
+        `{column: array}` and what is left of the map. A protocol with nothing
+        to lift returns `({}, tags)` and nothing above it changes.
         """
         ...
 

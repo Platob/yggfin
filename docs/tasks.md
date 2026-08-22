@@ -64,19 +64,22 @@ about, and land each line in the Iceberg table for its kind — `order_logs`,
     ```python
     task = ParseLogs(
         source="/var/log/app",
-        categories=Rules.DEFAULT,          # which kind of message each line holds
+        protocols=Rules.DEFAULT,           # which protocol each line carries
         fix_version="4.4",                 # what a name resolves against
         fix_dictionary="data/fix.zip",     # read, never scraped
         null_values=frozenset({"", "null", "<null>", "n/a"}),
     )
     ```
 
-    Four flat keys, and each says one thing. `categories` decides
-    `category_id`; `fix_version` and `fix_dictionary` decide what a *name*
-    resolves to in `fix_tags`; `null_values` are the spellings that mean the
-    field is absent, dropped before either map sees them — `ACCOUNT=<null>` is
-    an absent account, and keeping the text makes every consumer downstream
-    re-implement the same check. An empty set keeps every pair.
+    Four flat keys, and each says one thing. `protocols` decides the `protocol`
+    column, and with it how each line is read; `fix_version` and
+    `fix_dictionary` decide what a *name* resolves to in `fix_tags` and in the
+    [columns lifted out of it](logs.md#the-message-flattened); `null_values`
+    are the spellings that mean the field is absent, dropped before either map
+    sees them — `ACCOUNT=<null>` is an absent account, and keeping the text
+    makes every consumer downstream re-implement the same check. An empty set
+    keeps every pair, but never a pair whose value is null: both maps declare
+    their value NOT NULL.
 
     They assemble a [codec](logs.md#a-second-codec), which is what the source
     actually holds; flat rather than nested because a task **is** a document
@@ -162,7 +165,10 @@ different job, and it says so.
 
 Each is created on the first write to it, from the parser's own shape —
 [`Log`](logs.md) plus whatever `static_values` adds — and partitioned by
-`unix_hour`, the hour the line happened in.
+`unix_hour`, the hour the line happened in. That shape is **81 columns**: the
+event envelope, the line itself, and the
+[message flattened out of its map](logs.md#the-message-flattened), so a query
+filters on `symbol` or `sending_unix` rather than reaching into one.
 
 **A line nothing classifies still lands.** Dropping it would make the job lossy
 in exactly the case a new log format shows up.

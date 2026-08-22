@@ -72,8 +72,8 @@ class ParseLogs(Task):
     rules: LogRules = dataclasses.field(default_factory=LogRules)
     """What decides each line's `etype`, first match winning, `UNKNOWN` otherwise."""
 
-    categories: Rules = dataclasses.field(default_factory=Rules)
-    """What decides which kind of message each line carries, first match winning."""
+    protocols: Rules = dataclasses.field(default_factory=Rules)
+    """What decides which protocol each line carries, first match winning."""
 
     fix_version: str | None = None
     """Which FIX version to resolve names against when a message carries no BeginString."""
@@ -214,7 +214,7 @@ class ParseLogs(Task):
             else FixRegistry(cache_dir=self.fix_dictionary, offline=True)
         )
         return FixCodec(
-            rules=self.categories,
+            rules=self.protocols,
             registry=registry,
             fix_version=self.fix_version,
             null_values=frozenset(self.null_values),

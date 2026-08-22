@@ -393,7 +393,7 @@ def _hashing(blake: bool):
 # -- the message layer -------------------------------------------------------
 
 
-#: What a FIX-carrying capture is made of, by share of lines. Three categories
+#: What a FIX-carrying capture is made of, by share of lines. Three protocols
 #: and not two: the cost of a line the pipeline will *not* parse is the number
 #: that says whether classifying first is worth anything, so the majority case
 #: has to be in the mix rather than assumed away.
@@ -406,25 +406,25 @@ CAPTURE_SEPARATOR = "|"
 
 
 def capture(path: pathlib.Path, rows: int, seed: int = 5) -> tuple[int, list[str]]:
-    """Write a mixed capture, and say which category each row is.
+    """Write a mixed capture, and say which protocol each row carries.
 
     `CATEGORY_SHARES` is dealt out deterministically -- a seeded shuffle of one
     hundred slots, repeated -- so the mix is exact rather than approximately
     right, and two runs of the benchmark read the same file.
 
     **No continuations.** Every line is a record here, so row `i` of the parsed
-    stream is line `i` and the per-category split needs no classifier at all.
+    stream is line `i` and the per-protocol split needs no classifier at all.
     That is deliberate: the classifier is what the next phase adds, and a
-    benchmark that had to guess a category would be timing that guess too.
+    benchmark that had to guess a protocol would be timing that guess too.
     """
     generate = random.Random(seed)
     slots = [name for name, share in CATEGORY_SHARES for _ in range(share)]
     generate.shuffle(slots)
-    categories: list[str] = []
+    protocols: list[str] = []
     with path.open("wb") as out:
         for i in range(rows):
-            category = slots[i % len(slots)]
-            categories.append(category)
+            protocol = slots[i % len(slots)]
+            protocols.append(protocol)
             second, micro = divmod(i, 1_000_000)
             out.write(
                 b"2026-08-14 %02d:%02d:%02d.%03d_%03d [250-e7256476:9effef3e6a:%05d] [%s] %s"
@@ -439,13 +439,13 @@ def capture(path: pathlib.Path, rows: int, seed: int = 5) -> tuple[int, list[str
                     LEVELS[i % len(LEVELS)],
                 )
             )
-            out.write(_capture_line(category, i, generate).encode() + b"\n")
-    return path.stat().st_size, categories
+            out.write(_capture_line(protocol, i, generate).encode() + b"\n")
+    return path.stat().st_size, protocols
 
 
-def _capture_line(category: str, i: int, generate: random.Random) -> str:
-    """One message payload of each category, in the spellings the logs use."""
-    if category == "FIX":
+def _capture_line(protocol: str, i: int, generate: random.Random) -> str:
+    """One message payload of each protocol, in the spellings the logs use."""
+    if protocol == "FIX":
         fields = [
             "8=FIX.4.2",
             "9=176",
@@ -465,7 +465,7 @@ def _capture_line(category: str, i: int, generate: random.Random) -> str:
         ]
         body = CAPTURE_SEPARATOR.join(fields)
         return f"sending >> {body}{CAPTURE_SEPARATOR} << queued seq={1000 + i}"
-    if category == "UL":
+    if protocol == "UL":
         entries = SOH.join(["PARTYID=BUYSIDE", "PARTYIDSOURCE=D", "PARTYROLE=1"])
         other = SOH.join(["PARTYID=XPAR", "PARTYIDSOURCE=G", "PARTYROLE=17"])
         fields = [
@@ -486,7 +486,7 @@ def _capture_line(category: str, i: int, generate: random.Random) -> str:
 
 
 def messages(rows: int, repeat: int, quick: bool) -> None:
-    """The hot path of the message layer, per category, implementation by implementation.
+    """The hot path of the message layer, per protocol, implementation by implementation.
 
     Three stages, each raced over the same capture: the line/header split that
     already ships, the cut from a message to its `(key, value)` pairs, and the
@@ -496,7 +496,7 @@ def messages(rows: int, repeat: int, quick: bool) -> None:
 
     Everything is streamed at `DEFAULT_BATCH_ROW_SIZE`: stage one reads the
     whole capture without holding it, and stages two and three race over one
-    batch of that size *per category*, filled from the same stream, because a
+    batch of that size *per protocol*, filled from the same stream, because a
     batch is the unit the parser is handed.
     """
     # A deprecation notice printed between two rows of a table is a table
@@ -505,15 +505,13 @@ def messages(rows: int, repeat: int, quick: bool) -> None:
     warnings.filterwarnings("ignore", message=".*empty_as_null.*")
     with tempfile.TemporaryDirectory() as tmp:
         path = pathlib.Path(tmp) / "capture.txt"
-        nbytes, categories = capture(path, rows)
-        counted = collections.Counter(categories)
+        nbytes, protocols = capture(path, rows)
+        counted = collections.Counter(protocols)
         shares = " ".join(f"{name} {counted[name] / rows:.0%}" for name, _ in CATEGORY_SHARES)
         print(f"\n{rows:,} rows, {nbytes / 2**20:.1f} MiB, {shares}, best of {repeat}")
 
         _split_stage(path, rows, nbytes, repeat)
-        columns = _category_columns(
-            path, categories, DEFAULT_BATCH_ROW_SIZE if not quick else 8_192
-        )
+        columns = _protocol_columns(path, protocols, DEFAULT_BATCH_ROW_SIZE if not quick else 8_192)
         _pairs_stage(columns, repeat)
         _tags_stage(columns, repeat)
 
@@ -528,7 +526,7 @@ def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> Non
 
     Two rows, because the interesting number is the **difference**: what
     reading every message costs against not reading any. A rule set with no
-    rules in it categorises every line OTHER, which parses nothing, so the
+    rules in it reads every line as OTHER, which parses nothing, so the
     second row is this parser with the message layer switched off -- and it is
     also the configuration a caller gets by asking for it.
     """
@@ -557,12 +555,12 @@ def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> Non
         )
 
 
-def _category_columns(
-    path: pathlib.Path, categories: list[str], batch_row_size: int
+def _protocol_columns(
+    path: pathlib.Path, protocols: list[str], batch_row_size: int
 ) -> dict[str, pyarrow.Array]:
-    """One batch of messages per category, taken off the same streamed capture.
+    """One batch of messages per protocol, taken off the same streamed capture.
 
-    Bounded by construction: the stream is dropped as soon as every category
+    Bounded by construction: the stream is dropped as soon as every protocol
     has `batch_row_size` rows, so what is held is three batches and not a
     capture. Nothing is done to the lines: the parser reads a bridge's `#`
     marker, its message start and its nested group entries itself now, so the
@@ -573,7 +571,7 @@ def _category_columns(
     with TextFile.from_path(path) as log:
         for batch in log.into_arrow_batches(batch_row_size=DEFAULT_BATCH_ROW_SIZE):
             for message in batch.column("message").to_pylist():
-                bucket = collected[categories[row]]
+                bucket = collected[protocols[row]]
                 if len(bucket) < batch_row_size:
                     bucket.append(message)
                 row += 1
@@ -596,7 +594,7 @@ def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
     no `list_element` to replace.
     """
     print("\n  message -> pairs")
-    header = ("category", "implementation", "rows/s", "pairs/s", "peak RSS")
+    header = ("protocol", "implementation", "rows/s", "pairs/s", "peak RSS")
     print(f"    {header[0]:>9} {header[1]:>26} {header[2]:>12} {header[3]:>12} {header[4]:>10}")
     for name, column in columns.items():
         reference = [

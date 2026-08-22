@@ -1,9 +1,14 @@
 """The FIX datatype projection, and the deliberately forgiving value readings."""
 
+import datetime
+
 import pyarrow
 import pytest
 
-from rekep.fix import arrow_type_of, cast_arrow_bool, fix_field
+import rekep.fix.fields
+import rekep.market
+import rekep.market.fix
+from rekep.fix import arrow_type_of, cast_arrow_bool, cast_arrow_fix, fix_field, unix_of
 
 # -- datatypes ---------------------------------------------------------------
 
@@ -99,3 +104,122 @@ def test_an_already_boolean_column_is_untouched() -> None:
 def test_a_chunked_column_casts_chunk_by_chunk() -> None:
     chunked = pyarrow.chunked_array([["Y"], ["non"]])
     assert cast_arrow_bool(chunked).to_pylist() == [True, False]
+
+
+# -- reading a column ---------------------------------------------------------
+
+
+def test_text_declared_as_text_is_handed_back_untouched() -> None:
+    """`check_sum` is three digits with leading zeros, so nothing may narrow it."""
+    column = pyarrow.array(["FIX.4.2", "007", "", None])
+    assert cast_arrow_fix(column, pyarrow.string()) is column
+
+
+def test_a_flag_column_reads_as_a_boolean_and_a_word_that_is_not_one_reads_null() -> None:
+    read = cast_arrow_fix(pyarrow.array(["Y", "N", "maybe", None]), pyarrow.bool_())
+    assert read.type == pyarrow.bool_()
+    assert read.to_pylist() == [True, False, None, None]
+
+
+def test_digits_read_as_an_integer_and_everything_else_reads_null() -> None:
+    """`body_length` is int64 and the wire is text: a bad one may not cost the batch."""
+    spelled = ["176", "-3", "12x", "", None]
+    read = cast_arrow_fix(pyarrow.array(spelled), pyarrow.int64()).to_pylist()
+    assert read == [176, -3, None, None, None]
+    assert read.count(None) == 3, "a value the type cannot hold costs its own row and no other"
+
+
+def test_a_number_wider_than_the_target_reads_null_where_arrow_itself_raises() -> None:
+    """The width guard, against the reference: Arrow raises, this nulls the one row."""
+    spelled = ["9" * 18, "9" * 19, "7"]
+    with pytest.raises(pyarrow.ArrowInvalid):
+        pyarrow.array(spelled).cast(pyarrow.int64())
+    assert cast_arrow_fix(pyarrow.array(spelled), pyarrow.int64()).to_pylist() == [
+        999999999999999999,
+        None,
+        7,
+    ]
+
+
+def test_a_price_reads_as_a_float_and_a_word_beside_it_reads_null() -> None:
+    read = cast_arrow_fix(pyarrow.array(["1200", "1.5", "abc", None]), pyarrow.float64())
+    assert read.to_pylist() == [1200.0, 1.5, None, None]
+
+
+def test_a_stamp_a_date_and_a_time_of_day_each_read_as_the_type_declared() -> None:
+    """One FIX spelling per temporal type, and the fraction keeps its own scale."""
+    stamp = cast_arrow_fix(pyarrow.array(["20260821-10:30:00.123456789"]), pyarrow.timestamp("ns"))
+    nanos = stamp.cast(pyarrow.int64()).to_pylist()
+    assert nanos == [unix_of("20260821-10:30:00.123456789")]
+    assert nanos == [1787308200123456789], "to the nanosecond, not to the microsecond"
+    date = cast_arrow_fix(pyarrow.array(["20260821", "20260821-10:30:00"]), pyarrow.date32())
+    assert date.to_pylist() == [datetime.date(2026, 8, 21)] * 2
+    clock = cast_arrow_fix(pyarrow.array(["10:30:00.5"]), pyarrow.time64("ns"))
+    assert clock.to_pylist() == [datetime.time(10, 30, 0, 500000)]
+
+
+def test_binary_keeps_the_bytes_the_line_carried() -> None:
+    """`secure_data`, `xml_data` and `signature` are binary; the wire is still text."""
+    read = cast_arrow_fix(pyarrow.array(["<x>1</x>", None]), pyarrow.binary())
+    assert read.to_pylist() == [b"<x>1</x>", None]
+
+
+def test_the_column_reading_answers_what_the_value_reading_does(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The vectorised path is what a good column takes, so the scalar one is made to raise."""
+    spelled = [
+        "20260821-10:30:00.123456789",
+        "20260821T10:30:00",
+        "20260821 10:30:00Z",
+        "  20260821-10:30:00  ",
+        "20260821",
+        "10:30:00.5",
+        "nope",
+        "",
+        None,
+    ]
+    expected = [unix_of(one) for one in spelled]
+    assert expected.count(None) == 3, "what is not a stamp reads null, never the epoch"
+    monkeypatch.setattr(rekep.fix.fields, "unix_of", _unreachable)
+    read = cast_arrow_fix(pyarrow.array(spelled), pyarrow.timestamp("ns"))
+    assert read.cast(pyarrow.int64()).to_pylist() == expected
+
+
+def test_a_date_that_does_not_exist_nulls_its_own_row_and_no_other() -> None:
+    """The shape parses and the date does not, which is what the scalar fallback is for."""
+    spelled = ["20260230-00:00:00", "20260821-10:30:00", "20250229", "20260821"]
+    with pytest.raises(pyarrow.ArrowInvalid):
+        pyarrow.array(["2026-02-30T00:00:00.0"]).cast(pyarrow.timestamp("ns"))
+    read = cast_arrow_fix(pyarrow.array(spelled), pyarrow.timestamp("ns")).cast(pyarrow.int64())
+    assert read.to_pylist() == [unix_of(one) for one in spelled]
+    assert read.null_count == 2, "only the two impossible dates"
+    assert read[1].as_py() == 1787308200000000000
+
+
+def test_a_chunked_column_is_read_chunk_by_chunk_and_stays_chunked() -> None:
+    read = cast_arrow_fix(pyarrow.chunked_array([["176"], ["12x"]]), pyarrow.int64())
+    assert read.num_chunks == 2
+    assert read.to_pylist() == [176, None]
+
+
+def test_an_empty_column_still_comes_back_as_the_type_asked_for() -> None:
+    """Zero rows is the boundary every kernel here has to cross without a shape."""
+    read = cast_arrow_fix(pyarrow.array([], type=pyarrow.string()), pyarrow.timestamp("ns"))
+    assert read.type == pyarrow.timestamp("ns")
+    assert len(read) == 0
+
+
+def test_the_value_reading_is_one_function_under_every_name_it_is_imported_by() -> None:
+    """`unix_of` moved into `rekep.fix.fields`; `rekep.market` still hands out that one."""
+    assert rekep.market.fix.unix_of is rekep.fix.fields.unix_of
+    assert rekep.market.unix_of is rekep.fix.fields.unix_of
+    assert unix_of is rekep.fix.fields.unix_of
+
+
+# -- helpers ------------------------------------------------------------------
+
+
+def _unreachable(*_arguments: object, **_named: object) -> int:
+    """Stands in for the scalar reading where the vectorised one must have answered."""
+    raise AssertionError("the scalar reading is the fallback, not the path a good column takes")

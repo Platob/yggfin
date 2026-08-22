@@ -509,14 +509,18 @@ rekep/
 │                  published here as data/fix.zip, with lookup and fuzzy
 │                  search, all names case-insensitive; `offline` for the
 │                  callers that must never fetch), rules.py (Rule and Rules:
-│                  which category a line is, first match winning, as data)
-│                  and transcribe.py (FixCodec: the three verbs a source
-│                  needs -- categorise, into_pairs, into_fix_pairs -- plus the
-│                  cached name->tag index per version and the values that
-│                  mean a field is absent)
+│                  which protocol a line carries, first match winning, as
+│                  data), columns.py (SESSION and COMMON: the tags worth a
+│                  column of their own -- the session layer, then what the
+│                  components a trading log is made of carry -- and the column
+│                  each lands in) and transcribe.py (FixCodec: the verbs a
+│                  source needs -- categorise, into_pairs, into_fix_pairs,
+│                  version_of and into_flat_columns -- plus the cached
+│                  name->tag index per version and the values that mean a
+│                  field is absent)
 ├── text/          a text log, read and written: log.py (Log -- a parsed line,
 │                  which is an `Event`; LogRules, the ordered regexes that
-│                  decide its `etype`; and MessageCodec, the four verbs a
+│                  decide its `etype`; and MessageCodec, the five verbs a
 │                  source turns a message column into columns through),
 │                  text_file.py (TextFile: a log read into Arrow batches and
 │                  written back out as lines, itself a Dataset) and

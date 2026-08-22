@@ -105,11 +105,21 @@ def test_a_spec_that_names_no_class_says_how_to_write_one(capsys: pytest.Capture
 
 
 def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -> None:
+    """The count is taken off the declaration and pinned, so a column that left
+    the contract cannot take the printed number quietly with it.
+
+    `fix_tags` is the one line the renderer has to spell out of a nested type,
+    and `check_sum` is the last of the flattened session columns, so between
+    them they say the whole shape reached the file.
+    """
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "log.yaml")) == 0
     printed = capsys.readouterr().out
-    assert "Log: 25 columns, builds" in printed
+    assert len(Log.FIELD.names) == 81
+    assert "Log: 81 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unix_hour: int64  [partition identity]" in printed
+    assert "fix_tags: map<int32, string>  [nullable]" in printed
+    assert "check_sum: string  [nullable]" in printed
     assert "primary keys: ['unix', 'hash']" in printed
 
 
