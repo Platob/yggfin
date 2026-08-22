@@ -346,12 +346,12 @@ def _hashing(blake: bool):
         digest = hashlib.blake2b(raw, digest_size=8).digest()
         return int.from_bytes(digest, "little", signed=True)
 
-    original = text_file._hash64
-    text_file._hash64 = fallback
+    original = text_file._digest
+    text_file._digest = fallback
     try:
         yield
     finally:
-        text_file._hash64 = original
+        text_file._digest = original
 
 
 def main() -> int:

@@ -4,16 +4,19 @@ import datetime
 import os
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Annotated
 
 import pyarrow
 import pyarrow.fs
+import pyarrow.parquet
 import pytest
 from pyiceberg.expressions import EqualTo
 
 from rekep import Convertible, Field, Log, StructField, field
 from rekep.iceberg import IcebergCatalog, IcebergDataset
+from rekep.market import EventType
 
 
 @field
@@ -89,6 +92,32 @@ def test_a_write_creates_the_table_from_the_declared_shape(dataset: IcebergDatas
     assert schema.find_field("symbol").doc == "Instrument.", "the docs land as column comments"
     assert schema.identifier_field_ids == [schema.find_field("symbol").field_id]
     assert [f.name for f in dataset.iceberg_table.spec().fields] == ["day"]
+
+
+def test_the_columns_a_reader_filters_on_are_declared_and_bounded(
+    dataset: IcebergDataset,
+) -> None:
+    dataset.write_arrow_table(quotes(3))
+    table = dataset.iceberg_table
+    assert table.properties["write.metadata.metrics.column.symbol"] == "truncate(16)"
+    assert table.properties["write.metadata.metrics.column.day"] == "full"
+
+    keyed = table.schema().find_field("symbol").field_id
+    written = [task.file for task in table.scan().plan_files()]
+    assert written, "a write landed a file"
+    assert all(keyed in one.lower_bounds for one in written), "the key is prunable"
+
+
+def test_a_declared_property_wins_over_the_metrics_default(tmp_path: Path) -> None:
+    dataset = IcebergDataset(
+        name="trading.quiet",
+        catalog="test",
+        properties=catalog_properties(tmp_path),
+        struct=Quote.FIELD,
+        table_properties={"write.metadata.metrics.column.symbol": "none"},
+    )
+    dataset.get_or_create_table()
+    assert dataset.iceberg_table.properties["write.metadata.metrics.column.symbol"] == "none"
 
 
 def test_creating_is_idempotent(dataset: IcebergDataset) -> None:
@@ -328,15 +357,13 @@ def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None
     )
     row = Log(
         url="a.txt",
-        recorded_at_unix=1,
-        recorded_at_date=datetime.date(2026, 8, 14),
-        recorded_at_time=datetime.time(0, 5, 1),
+        unix=1_786_665_901_167_520_000,
+        hash=2,
+        xhash=2,
+        etype=EventType.EXECUTION,
         thread_name="t",
         driver_name="d",
-        category_id=0,
-        category_name="",
         message="m",
-        h64=2,
     )
     table = pyarrow.Table.from_pylist([dataclass_row(row)], Log.FIELD.into_arrow_schema())
     logs.write_arrow_table(table, merge_by=True)
@@ -345,12 +372,8 @@ def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None
 
 
 def dataclass_row(row: Log) -> dict:
-    """A `Log` as the plain values Arrow wants, dates and times included."""
-    return {
-        **row.into_dict(),
-        "recorded_at_date": row.recorded_at_date,
-        "recorded_at_time": row.recorded_at_time,
-    }
+    """A `Log` as the plain values Arrow wants."""
+    return row.into_dict()
 
 
 def test_the_module_imports_without_pyiceberg() -> None:
@@ -2112,3 +2135,250 @@ def test_a_filtered_read_is_the_same_either_way(tmp_path: Path) -> None:
         found = target.read_arrow_table(row_filter="size >= 40").to_pylist()
         answers.append(sorted(found, key=str))
     assert answers[0] == answers[1]
+
+
+# -- a column derived from the keys -----------------------------------------
+
+
+@field
+class Beat(Convertible):
+    """A row keyed on a textual instant, partitioned on the hour it falls in."""
+
+    at: Annotated[str, Field.primary_key()]
+    """The instant, spelled out -- a key with no arithmetic to band."""
+
+    hour: Annotated[str, Field.partition_key(derived_from="at")] = ""
+    """`at` truncated to the hour -- what the data is partitioned on."""
+
+    payload: str = "x"
+    """Payload."""
+
+
+def beats(hour: int, count: int = 200) -> pyarrow.Table:
+    stamp = f"2026-08-14T{hour:02d}"
+    return pyarrow.Table.from_pydict(
+        {
+            "at": [
+                f"{stamp}:{index // 60:02d}:{index % 60:02d}.{index:04d}" for index in range(count)
+            ],
+            "hour": [stamp] * count,
+            "payload": ["x"] * count,
+        },
+        schema=Beat.FIELD.into_arrow_schema(),
+    )
+
+
+def test_a_derivation_is_usable_only_where_its_sources_are_keys() -> None:
+    from rekep.iceberg.dataset import _derivable
+
+    chunk = beats(0)
+    declared = {"hour": ("at",), "day": ("at", "venue"), "absent": ("at",)}
+    assert _derivable(chunk, ["at"], declared) == ["hour"], "day needs a key nothing joins on"
+    assert _derivable(chunk, ["at", "hour"], declared) == [], "already a key, already named"
+    assert _derivable(chunk, ["at"], None) == []
+
+
+def test_a_derived_column_is_named_in_the_filter() -> None:
+    from rekep.iceberg.dataset import _key_ranges
+
+    chunk = beats(5)
+    plain = _key_ranges(chunk, ["at"])
+    named = _key_ranges(chunk, ["at"], Beat.FIELD.derived_keys())
+    assert "hour" not in str(plain), "the merge joins on `at` and knows nothing else"
+    assert "hour" in str(named), "and `hour` is `at`, so it may say so"
+
+
+def test_a_derived_column_with_nulls_contributes_no_term() -> None:
+    """A term that cannot name every value would exclude a row it should match,
+    and this filter is only ever allowed to be too wide."""
+    from rekep.iceberg.dataset import _key_ranges
+
+    chunk = beats(5)
+    holed = chunk.set_column(
+        chunk.schema.get_field_index("hour"),
+        pyarrow.field("hour", pyarrow.string()),
+        pyarrow.array([None] + ["2026-08-14T05"] * (chunk.num_rows - 1), pyarrow.string()),
+    )
+    assert "hour" not in str(_key_ranges(holed, ["at"], Beat.FIELD.derived_keys()))
+
+
+def test_a_replay_prunes_to_the_partitions_the_keys_fall_in(tmp_path: Path) -> None:
+    """The whole point. A text key has no arithmetic to find gaps with, so two
+    distant hours become one range covering every hour between them and the
+    filter reads every hour between them -- while the partition column they are
+    a function of names exactly the two."""
+    catalog = IcebergCatalog(name="beats", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("trading.beats", struct=Beat.FIELD)
+    for hour in range(12):
+        dataset.insert_arrow_table(beats(hour), True)
+    assert dataset.refresh().data_files().num_rows == 12
+
+    from rekep.iceberg.dataset import _key_ranges
+
+    replay = pyarrow.concat_tables([beats(2), beats(9)])
+    unaware = dataset.scan_plan(_key_ranges(replay, ["at"]))
+    aware = dataset.scan_plan(_key_ranges(replay, ["at"], dataset.derived_columns()))
+    assert unaware["files"] == 8, "one text range, and every hour between the two"
+    assert aware["files"] == 2, "the two hours, and not the six between them"
+    assert dataset.insert_arrow_table(replay, True) == 0, "and every key is already stored"
+
+
+def test_a_derivation_never_loses_a_row_the_merge_had_to_find(tmp_path: Path) -> None:
+    """Pruning is only ever allowed to be a superset: the same merge, declared
+    and not, has to update the same rows."""
+    catalog = IcebergCatalog(name="same", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("trading.beats", struct=Beat.FIELD)
+    for hour in range(6):
+        dataset.insert_arrow_table(beats(hour), True)
+
+    def repainted(colour: str) -> pyarrow.Table:
+        rows = beats(3)
+        return rows.set_column(
+            rows.schema.get_field_index("payload"),
+            rows.schema.field("payload"),
+            pyarrow.array([colour] * rows.num_rows),
+        )
+
+    assert dataset.derived_columns() == {"hour": ("at",)}
+    assert dataset.merge_arrow_table(repainted("y"), True) == (200, 0), "matched, none inserted"
+
+    bare = catalog.dataset("trading.beats", struct=_undeclared())
+    assert bare.derived_columns() == {}
+    assert bare.merge_arrow_table(repainted("z"), True) == (200, 0), "the same rows, the long way"
+    held = dataset.refresh().read_arrow_table(row_filter="hour = '2026-08-14T03'")
+    assert set(held.column("payload").to_pylist()) == {"z"}, "and the last write is what stands"
+
+
+def _undeclared() -> StructField:
+    """`Beat` with the derivation struck out, to merge the long way round."""
+    plain = StructField.from_dict(Beat.FIELD.into_dict())
+    plain.field("hour").derived_from = None
+    return plain
+
+
+def test_a_table_read_back_declares_no_derivation(tmp_path: Path) -> None:
+    """Iceberg records a partition spec, not why a column holds what it does."""
+    catalog = IcebergCatalog(name="read", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("trading.beats", struct=Beat.FIELD)
+    dataset.insert_arrow_table(beats(0), True)
+    reread = catalog.dataset("trading.beats")
+    assert reread.into_struct_field().partition_keys() == {"hour": "identity"}
+    assert reread.derived_columns() == {}, "unsaid, which costs pruning and never a row"
+
+
+# -- the sort order the shape declares ---------------------------------------
+
+
+@field
+class Ticked(Convertible):
+    """A row the shape says is laid out in time order."""
+
+    at: Annotated[int, Field.primary_key(), Field.sort_key()]
+    """When."""
+
+    seq: Annotated[int, Field.sort_key()] = 0
+    """Second key, so the order is lexicographic and not one column."""
+
+    payload: str = "x"
+    """Payload."""
+
+
+def ticked(pairs: Sequence[tuple[int, int]]) -> pyarrow.Table:
+    return pyarrow.Table.from_pydict(
+        {
+            "at": [at for at, _ in pairs],
+            "seq": [seq for _, seq in pairs],
+            "payload": ["x"] * len(pairs),
+        },
+        schema=Ticked.FIELD.into_arrow_schema(),
+    )
+
+
+def test_the_columns_sorted_by_are_the_ones_declared(tmp_path: Path) -> None:
+    catalog = IcebergCatalog(name="sorted", properties=catalog_properties(tmp_path))
+    assert catalog.dataset("t.a", struct=Ticked.FIELD).sort_columns() == ["at", "seq"]
+    assert catalog.dataset("t.b", struct=Ticked.FIELD, sort_by=["seq"]).sort_columns() == ["seq"]
+    assert catalog.dataset("t.c", struct=Ticked.FIELD, sort_by=[]).sort_columns() == []
+    assert catalog.dataset("t.d").sort_columns() == [], "nothing declared, nothing to sort by"
+
+
+def test_a_chunk_already_in_order_is_not_sorted_again(tmp_path: Path) -> None:
+    """The common case on a capture, and the question is 20x cheaper than the
+    answer -- so it is asked."""
+    catalog = IcebergCatalog(name="sorted", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.a", struct=Ticked.FIELD)
+    tidy = ticked([(1, 0), (1, 1), (2, 0), (3, 0)])
+    assert dataset.sorted(tidy) is tidy, "handed straight back, not copied"
+    assert dataset.sorted(ticked([(2, 0), (1, 0)])) is not tidy
+
+
+@pytest.mark.parametrize(
+    ("pairs", "ordered"),
+    [
+        ([(1, 0), (2, 0), (3, 0)], True),
+        (
+            [(1, 0), (1, 1), (1, 2)],
+            True,
+        ),
+        ([(1, 1), (1, 0)], False),
+        ([(2, 0), (1, 9)], False),
+        ([(1, 0), (1, 0)], True),
+        ([(1, 0)], True),
+    ],
+)
+def test_sortedness_is_lexicographic_over_every_key(
+    pairs: Sequence[tuple[int, int]], ordered: bool
+) -> None:
+    from rekep.iceberg.dataset import _in_sort_order
+
+    assert _in_sort_order(ticked(pairs), ["at", "seq"]) is ordered
+
+
+def test_a_null_in_a_sort_column_is_answered_no() -> None:
+    """A comparison against a null is null, and where Arrow puts one in a sort
+    is not something to reimplement -- so the chunk is sorted rather than
+    guessed about."""
+    from rekep.iceberg.dataset import _in_sort_order
+
+    rows = ticked([(1, 0), (2, 0)])
+    holed = rows.set_column(
+        rows.schema.get_field_index("seq"),
+        pyarrow.field("seq", pyarrow.int64()),
+        pyarrow.array([None, 1], pyarrow.int64()),
+    )
+    assert _in_sort_order(holed, ["at", "seq"]) is False
+
+
+def test_a_shuffled_write_lands_in_the_declared_order(tmp_path: Path) -> None:
+    """The whole point: a sort order Iceberg records and the writer ignores is
+    a wish. A filter can only skip a *row group*, so this is what it buys."""
+    catalog = IcebergCatalog(name="layout", properties=catalog_properties(tmp_path))
+    rows = 40_000
+    shuffled = pyarrow.Table.from_pydict(
+        {
+            "at": [(index * 7919) % rows for index in range(rows)],
+            "seq": [0] * rows,
+            "payload": ["x"] * rows,
+        },
+        schema=Ticked.FIELD.into_arrow_schema(),
+    )
+
+    def decoded(sort_by: Sequence[str] | None, name: str) -> tuple[int, int]:
+        dataset = catalog.dataset(name, struct=Ticked.FIELD, sort_by=sort_by)
+        dataset.get_or_create_table().transaction().set_properties(
+            **{"write.parquet.row-group-limit": "8192"}
+        ).commit_transaction()
+        dataset.refresh().append_arrow(shuffled, merge_by=True, commit_row_size=0)
+        groups = touched = 0
+        floor = rows - rows // 10
+        for task in dataset.refresh().iceberg_table.scan().plan_files():
+            meta = pyarrow.parquet.ParquetFile(local(task.file.file_path)).metadata
+            for index in range(meta.num_row_groups):
+                groups += 1
+                touched += meta.row_group(index).column(0).statistics.max >= floor
+        return touched, groups
+
+    declared, whole = decoded(None, "t.declared"), decoded([], "t.opted_out")
+    assert whole[0] == whole[1], "unsorted, every row group holds the whole range"
+    assert declared[0] < declared[1], "sorted, a filter skips most of them"
+    assert declared[0] <= 2

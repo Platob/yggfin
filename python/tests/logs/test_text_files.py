@@ -333,9 +333,9 @@ def test_batching_does_not_change_the_result(capture: Path, batch_row_size: int)
     table = reader.read_all()
     assert table.num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
     assert (
-        table.column("h64").to_pylist()
+        table.column("hash").to_pylist()
         == (
-            TextFiles.from_folder(capture, pattern="*.txt*").into_arrow_table().column("h64")
+            TextFiles.from_folder(capture, pattern="*.txt*").into_arrow_table().column("hash")
         ).to_pylist()
     )
 
@@ -364,7 +364,7 @@ def test_a_full_batch_is_handed_over_untouched(capture: Path) -> None:
 
     with TextFile.from_path(capture / "app.txt") as log:
         alone = list(log.into_arrow_batches(10))
-    addresses = [batch.column("h64").buffers()[1].address for batch in batches]
+    addresses = [batch.column("hash").buffers()[1].address for batch in batches]
     assert len(set(addresses)) == len(addresses), "no batch shares another's buffer"
     assert [batch.num_rows for batch in alone] == [10, 10, 4]
 

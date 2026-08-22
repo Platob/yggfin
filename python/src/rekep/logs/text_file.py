@@ -15,12 +15,13 @@ from typing import Any, ClassVar
 import pyarrow
 import pyarrow.compute
 import pyarrow.fs
-import xxhash
 
 from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField
 from rekep.filesystems import resolve
-from rekep.logs.log import Log
+from rekep.logs.log import Log, LogRules
+from rekep.market.event import HOUR
+from rekep.market.identity import HASH, hash_bytes
 from rekep.urls import Url
 
 #: Matches the fixed header every log row opens with, leaving the free-form
@@ -52,10 +53,9 @@ STAMP_WIDTH = 27
 #: together as digits instead of as more separators.
 _FRACTION = re.compile(r"^([^.,]*)([.,])?(.*)$")
 
-#: Seed every line hash is taken under. Fixed and module-level: `h64` is
-#: half of the primary key, so a seed that moved between runs -- Python's own
-#: salted `hash()`, a per-process random -- would store the same line twice.
-HASH_SEED = 0x9E3779B185EBCA87
+#: The Arrow type a line's digest is, and the list of them a lineage would be.
+#: Named here so the parser builds the empty ones without re-deriving the type.
+PARENTS = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
 
 #: Rows per record batch: memory is bounded by it, per-batch Arrow overhead is
 #: amortised over it.
@@ -110,6 +110,9 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: schema, the descriptions and the column order all follow.
     ROW: ClassVar[type[Log]] = Log
 
+    #: What a document's `kind` names this store as, for `Dataset.from_dict`.
+    KIND: ClassVar[str] = "text_file"
+
     url: str
     filesystem: pyarrow.fs.FileSystem | None = None
     header_pattern: re.Pattern[bytes] = HEADER_PATTERN
@@ -119,7 +122,7 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: the url is the file, the categories are placeholders -- so a write must
     #: not demand them.
     RENDERED: ClassVar[tuple[str, ...]] = (
-        "recorded_at_unix",
+        "unix",
         "thread_name",
         "driver_name",
         "message",
@@ -129,9 +132,14 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: fills -- and anything else is cast onto on the way out and in.
     row: StructField | None = None
 
+    #: What decides each line's `etype`, tried in order, `UNKNOWN` when nothing
+    #: matches. The default reads a FIX trading log; an empty `LogRules(rules=[])`
+    #: skips the matching entirely and leaves every line `UNKNOWN`.
+    rules: LogRules = dataclass_field(default_factory=LogRules)
+
     #: IANA zone the wall clock in the header belongs to (`Europe/Paris`).
     #: None keeps the historical reading: the clock *is* UTC. Naming the real
-    #: zone is what makes `recorded_at_unix` a true instant -- see
+    #: zone is what makes `unix` a true instant -- see
     #: `_unix_nanos`.
     timezone: str | None = None
 
@@ -377,7 +385,7 @@ class TextFile(Dataset, io.BufferedIOBase):
                     rows[-1] = (timestamp, thread, driver, (message or b"") + b"\n" + line)
                 continue
             rows.append(match.group(*indices))
-            hashes.append(_hash64(line))
+            hashes.append(_digest(line))
             # One row past the size, not at it: a continuation belongs to the
             # row above it, and cutting the batch the moment that row is
             # complete puts it out of reach of the next line. A stack trace
@@ -390,27 +398,56 @@ class TextFile(Dataset, io.BufferedIOBase):
             yield self._batch(rows, hashes)
 
     def _batch(self, rows: list[tuple], hashes: list[int]) -> pyarrow.RecordBatch:
+        """One batch of parsed lines, as the `Event` columns a `Log` is.
+
+        Assembled **by name** and then ordered by the schema, rather than as a
+        positional list: a column added to `Log` then fails here by its own
+        name instead of silently shifting every column after it into the wrong
+        one. The dict costs twenty-odd entries per batch against sixty-five
+        thousand rows.
+        """
         timestamps, threads, drivers, messages = zip(*rows, strict=True)
+        count = len(rows)
         local = _local_micros(timestamps)
         unix = _unix_nanos(local, self.timezone)
-        date, time = _date_and_time(local)
+        message = _utf8(messages)
+        # The same digest twice: a log line is one version of one thing and
+        # never changes, so its lifecycle is itself.
+        digest = pyarrow.array(hashes, type=HASH)
+        columns: dict[str, Any] = {
+            "unix": unix,
+            "hunix": _hour_nanos(unix),
+            "etype": self.rules.etype_arrow(message),
+            # A line is created when it is stamped. `runix` is when somebody
+            # wrote it down *here*, which the parser does not know and must not
+            # invent: a clock read at parse time would make the same file parse
+            # into different rows every run.
+            "cunix": unix,
+            "runix": _zeros(count, pyarrow.int64()),
+            "eunix": pyarrow.nulls(count, pyarrow.int64()),
+            "sunix": pyarrow.nulls(count, pyarrow.int64()),
+            "hash": digest,
+            "xhash": digest,
+            "version": _zeros(count, pyarrow.int64()),
+            "state": _zeros(count, pyarrow.int32()),
+            "symbol": pyarrow.repeat("", count),
+            "seq": pyarrow.nulls(count, pyarrow.int64()),
+            "prev_hash": pyarrow.nulls(count, HASH),
+            "prev_state": _zeros(count, pyarrow.int32()),
+            "prev_unix": pyarrow.nulls(count, pyarrow.int64()),
+            "parent_hash": pyarrow.nulls(count, PARENTS),
+            "url": pyarrow.repeat(self.url, count),
+            "thread_name": _utf8(threads),
+            "driver_name": _utf8(drivers),
+            "message": message,
+        }
+        columns.update(
+            (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
+        )
+        schema = self.schema
         return pyarrow.RecordBatch.from_arrays(
-            [
-                pyarrow.repeat(self.url, len(rows)),
-                unix,
-                date,
-                time,
-                _utf8(threads),
-                _utf8(drivers),
-                # The category placeholders: zero and empty, never null, so a
-                # store keeps the columns NOT NULL for the categoriser to fill.
-                pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(rows)),
-                pyarrow.repeat("", len(rows)),
-                _utf8(messages),
-                pyarrow.array(hashes, type=pyarrow.int64()),
-                *(pyarrow.repeat(scalar, len(rows)) for _, scalar in self.static_columns),
-            ],
-            schema=self.schema,
+            [columns[name].cast(schema.field(name).type, safe=False) for name in schema.names],
+            schema=schema,
         )
 
     def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
@@ -514,7 +551,7 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
     into a single blob by wrapping it in a one-row list. Nothing here runs per
     row in Python -- which is what makes writing a log as cheap as reading it.
 
-    `timezone` is the inverse of the one reading assumed. `recorded_at_unix` is an
+    `timezone` is the inverse of the one reading assumed. `unix` is an
     instant, and a log line is a wall clock, so rendering the instant as UTC
     would move every stamp by the offset -- and by twice it on the next round
     trip, since reading would then add the offset back. Naming the zone here
@@ -525,7 +562,7 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
     if rows.num_rows == 0:
         return b""
     compute = pyarrow.compute
-    stamps = compute.divide(rows.column("recorded_at_unix"), 1000).cast(pyarrow.timestamp("us"))
+    stamps = compute.divide(rows.column("unix"), 1000).cast(pyarrow.timestamp("us"))
     if timezone:
         stamps = stamps.cast(pyarrow.timestamp("us", "UTC")).cast(pyarrow.timestamp("us", timezone))
     stamps = compute.strftime(stamps, format="%Y-%m-%d %H:%M:%S")
@@ -666,7 +703,7 @@ def _unix_nanos(local: pyarrow.Array, timezone: str | None) -> pyarrow.Array:
     pyarrow's `raise`: a DST transition is a property of the calendar, not a
     defect in the log, and a parser that dies once a year on an hour that
     repeats is worse than one that picks the first of the two. The cost is
-    that `recorded_at_unix` is not monotonic across a fall-back hour, true of
+    that `unix` is not monotonic across a fall-back hour, true of
     the underlying reality too.
 
     The `int64` cast after it is a reinterpret, not a conversion: an Arrow
@@ -679,21 +716,38 @@ def _unix_nanos(local: pyarrow.Array, timezone: str | None) -> pyarrow.Array:
     return pyarrow.compute.multiply(local.cast(pyarrow.int64()), 1000)
 
 
-def _date_and_time(local: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """Split the wall clock into a date32 day and a time64 time of day.
+def _hour_nanos(unix: pyarrow.Array) -> pyarrow.Array:
+    """`unix` truncated down to the hour it falls in -- the partition column.
 
-    Denormalised at parse time -- two casts per batch in Arrow -- so the
-    partition column exists in the data instead of every reader re-deriving
-    it.
+    Derived from the **instant**, not from the wall clock the line printed: a
+    partition has to be a function of the column the reader filters on, and
+    that column is `unix`. Two logs in different zones then land in the same
+    partition when they happened at the same time, which is the only reading
+    under which a partition prunes anything.
 
-    Taken from the **local** clock, not from `recorded_at_unix`: these columns are
-    what the line says, and a line stamped `2026-08-14 00:05` belongs to the
-    14th for whoever wrote it, whatever instant that was in UTC. `recorded_at_unix` is
-    the column that answers "when", `date` and `time` answer "what did the
-    log say" -- and a partition on the local day is the one an operator can
-    reason about.
+    Floored, not truncated toward zero, and that is the whole of why this is
+    five kernels rather than two: Arrow has no modulo, and its integer
+    `divide` rounds toward zero, so `-1` would come out in the hour *after* the
+    one containing it. The remainder is taken back to a positive one before it
+    is subtracted. Every kernel is integer arithmetic over the whole column.
     """
-    return local.cast(pyarrow.date32()), local.cast(pyarrow.time64("us"))
+    compute = pyarrow.compute
+    hour = pyarrow.scalar(HOUR, pyarrow.int64())
+    remainder = compute.subtract(unix, compute.multiply(compute.divide(unix, hour), hour))
+    return compute.subtract(
+        unix,
+        compute.if_else(compute.less(remainder, 0), compute.add(remainder, hour), remainder),
+    )
+
+
+def _zeros(count: int, arrow_type: pyarrow.DataType) -> pyarrow.Array:
+    """A column of `count` zeros -- the envelope members a parsed line leaves unset.
+
+    Zero and not null, because they are NOT NULL columns: what a log line does
+    not have is stated, so a store never has to widen a column for it later,
+    and a value repeated down a whole file encodes away to nothing on disk.
+    """
+    return pyarrow.repeat(pyarrow.scalar(0, arrow_type), count)
 
 
 _EPOCH = datetime.date(1970, 1, 1)
@@ -743,15 +797,17 @@ def _epoch_nanos_slow(timestamp: bytes) -> int:
     return (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000
 
 
-def _hash64(raw: bytes) -> int:
-    """The line's hash, signed so an Arrow `int64` column holds it.
+def _digest(raw: bytes) -> int:
+    """The line's hash: a signed `int64`, which is what every identifier here is.
 
-    xxh3 under a fixed seed, and only that. It is half of the primary key, so
-    it is data rather than an implementation detail: a fallback hash -- which
-    is what this used to have -- made `h64` stable within an environment and
-    not across two that disagreed about whether `xxhash` was installed, and a
-    row keyed on it could be stored twice. `xxhash` is a dependency of this
-    package for that reason, imported at module top with no guard.
+    `hash_bytes` and only that, so a line and an event are hashed by one
+    function: a fallback hash -- which is what this used to have -- made the
+    digest stable within an environment and not across two that disagreed
+    about whether `xxhash` was installed, and a row keyed on it could be
+    stored twice. `xxhash` is a dependency of this package for that reason.
+
+    A whole line is one blob with no split to forge, so it is hashed as it
+    stands rather than framed; the framing is for composed identifiers
+    (`rekep.market.identity`).
     """
-    value = xxhash.xxh3_64_intdigest(raw, seed=HASH_SEED)
-    return value - (1 << 64) if value >= (1 << 63) else value
+    return hash_bytes(raw)

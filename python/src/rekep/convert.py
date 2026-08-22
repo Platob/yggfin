@@ -6,6 +6,7 @@ import dataclasses
 import datetime
 import decimal
 import enum
+import functools
 import io
 import json
 import os
@@ -252,6 +253,34 @@ def _suffixes(name: str) -> list[str]:
 # -- encoding ---------------------------------------------------------------
 
 
+#: Types that encode as themselves, matched on the **exact** type rather than
+#: with `isinstance`. Almost every field of almost every row is one of these,
+#: and settling them in one frozenset probe is what stopped `_encode` walking
+#: a six-branch subclass chain per field: on ten thousand `Order` rows it was
+#: 678,000 `isinstance` calls and 56.5 us a row.
+#:
+#: Exact, and that is the point: `Ranged` is an `int` and must not pass
+#: through, `datetime` is a `date` and must not either. A subclass falls to the
+#: chain below and is encoded as what it is.
+_VERBATIM = frozenset({int, float, str, bool, bytes, type(None)})
+
+
+@functools.cache
+def _members(cls: type) -> tuple[str, ...]:
+    """A dataclass's field names, read once per class rather than once per row.
+
+    `dataclasses.fields` walks `__dataclass_fields__` and filters on every
+    call, and a row of forty fields with a nested shape in it called it twice.
+    """
+    return tuple(member.name for member in dataclasses.fields(cls))
+
+
+@functools.cache
+def _dumps_itself(cls: Any) -> bool:
+    """`_owns(cls, "into_dict")`, cached: it is a property of the class."""
+    return _owns(cls, "into_dict")
+
+
 def _encode(value: Any) -> Any:
     """Reduce `value` to containers every one of the three encoders accepts.
 
@@ -266,14 +295,23 @@ def _encode(value: Any) -> Any:
     A nested value whose class defines its own `into_dict` is dumped by it: a
     `Field` holds an Arrow type, which only the field knows how to write.
     """
-    if _owns(type(value), "into_dict"):
+    kind = type(value)
+    if kind in _VERBATIM:
+        return value
+    if _dumps_itself(kind):
         return _encode(value.into_dict())
-    if dataclasses.is_dataclass(value) and not isinstance(value, type):
-        return {
-            f.name: _encode(attribute)
-            for f in dataclasses.fields(value)
-            if (attribute := getattr(value, f.name)) is not None
-        }
+    if dataclasses.is_dataclass(kind):
+        # The `_VERBATIM` probe is repeated here rather than left to the call
+        # -- a row of forty columns is forty calls that do nothing else, and
+        # nearly every member of nearly every row is a number or a string.
+        # Measured on a market capture, 1.05 million calls for 16,000 rows.
+        encoded = {}
+        for name in _members(kind):
+            attribute = getattr(value, name)
+            if attribute is None:
+                continue
+            encoded[name] = attribute if type(attribute) in _VERBATIM else _encode(attribute)
+        return encoded
     if isinstance(value, enum.Enum):  # before str: a str-valued enum is also a str
         return _encode(value.value)
     if isinstance(value, Mapping):
@@ -281,7 +319,7 @@ def _encode(value: Any) -> Any:
     if isinstance(value, (str, bytes)):
         return value
     if isinstance(value, (Sequence, set, frozenset)):
-        return [_encode(v) for v in value]
+        return [one if type(one) in _VERBATIM else _encode(one) for one in value]
     if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
         return value.isoformat()
     if isinstance(value, (pathlib.PurePath, uuid.UUID, decimal.Decimal)):

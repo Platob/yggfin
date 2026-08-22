@@ -19,6 +19,12 @@ rendered `Name=Value` / `Group[i]=Member=Value` lines):
    loser looked entirely plausible.
 3. What does `tag_arrow_array` cost? The all-numeric cast fast path, and the
    dictionary-encoded name resolution that rendered keys pay for.
+4. What does `FixMessage.from_pairs` cost, and was the fold the right way to
+   resolve a name? The fold-then-probe it ships with is raced against one
+   compiled case-insensitive alternation over every known name, which is the
+   obvious "just use a regex" answer -- and against a bare dict probe, which
+   is the floor. The docstring of `_fold` claims the alternation loses; this
+   is where that claim is either kept or found out.
 
 Every case is warmed once and reported as the best of `--repeat` runs; run
 the script twice before quoting a number anywhere.
@@ -29,6 +35,7 @@ from __future__ import annotations
 import argparse
 import pathlib
 import random
+import re
 import sys
 import time
 from collections.abc import Callable
@@ -39,6 +46,7 @@ import pyarrow.compute
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
 from rekep.fix import FixMessage, parse_arrow_array, tag_arrow_array  # noqa: E402
+from rekep.fix.message import _fold  # noqa: E402
 
 NOISE = "2026-08-14 00:05:01.147_250 [250-e7256476:9effef3e6a:72505] [ULBridge] (INFO) sent "
 
@@ -244,6 +252,123 @@ def sweep_tags(rows: int, repeat: int) -> None:
         print(f"{label:>28} {rows / seconds:>14,.0f} rows/s {keys / seconds:>14,.0f} keys/s")
 
 
+def named_pairs(rows: int) -> list[list[tuple[str, object]]]:
+    """One message per row as `(name, value)` pairs, spelled every way a bridge does.
+
+    A fifth of the keys are numeric, a fifth are already canonical, and the
+    rest are cased, separator-ed or decorated -- which is the mix that decides
+    whether the fold is paying for itself or for nothing.
+    """
+    generate = random.Random(11)
+    spellings = ("Side", "side", "SIDE", "s_i_d_e".replace("_", ""), "Instrument.Side")
+    built = []
+    for i in range(rows):
+        built.append(
+            [
+                ("MsgType", "8"),
+                ("34", i),
+                ("TransactTime", "20260814-00:05:01.147"),
+                ("Symbol", f"S{i % 512}"),
+                (generate.choice(spellings), 1),
+                ("order_qty", float(generate.randint(1, 10_000))),
+                ("Price", generate.random() * 100),
+                ("PartyID[0]", "BRK"),
+                ("VenueOwnField", "kept"),
+            ]
+        )
+    return built
+
+
+def sweep_pairs(rows: int, repeat: int) -> None:
+    """`from_pairs`, and the three ways its keys could have been resolved."""
+    print(f"\nfrom_pairs, {rows:,} rows, best of {repeat}")
+    pairs = named_pairs(rows)
+    fields = sum(len(one) for one in pairs)
+    built = [FixMessage.from_pairs(one, NAMES) for one in pairs]
+    assert built[0].get(54) == "1" and built[0].get("VenueOwnField") == "kept"
+    seconds = best_of(lambda: [FixMessage.from_pairs(one, NAMES) for one in pairs], repeat)
+    print(f"{'from_pairs':>28} {rows / seconds:>14,.0f} rows/s {fields / seconds:>14,.0f} fields/s")
+
+    # The key-resolution race, on the keys alone. `from_pairs` above pays for
+    # value rendering and object construction too, which would drown the
+    # difference the three readings actually make.
+    #
+    # Raced at two dictionary sizes on purpose. An alternation's cost scales
+    # with how many names are in it and a hash probe's does not, so a race at
+    # nine names says nothing about a FIX dictionary at fifteen hundred -- and
+    # nine names is exactly where "just use a regex" looks right.
+    keys = [key for one in pairs for key, _ in one]
+    print(f"\n  resolving {len(keys):,} keys, best of {repeat}")
+    for size in (len(NAMES), 1_500):
+        _race_keys(keys, _sized_names(size), repeat)
+
+
+def _sized_names(size: int) -> dict[str, int]:
+    """`NAMES`, padded with plausible field names up to `size` entries.
+
+    Padded rather than scraped so the benchmark runs with no cache and no
+    network; what matters to the race is how many alternatives a regex has to
+    get past, and a synthetic name is as many as a real one.
+    """
+    built = dict(NAMES)
+    generate = random.Random(3)
+    parts = ("Order", "Exec", "Leg", "Party", "Settl", "Alloc", "Quote", "Trade", "Md")
+    tails = ("ID", "Qty", "Px", "Type", "Date", "Time", "Ref", "Source", "Status", "Code")
+    tag = 5_000
+    while len(built) < size:
+        built.setdefault(
+            f"{generate.choice(parts)}{generate.choice(tails)}{len(built)}", tag := tag + 1
+        )
+    return built
+
+
+def _race_keys(keys: list[str], names: dict[str, int], repeat: int) -> None:
+    """Four readings of the same keys, each resolving to a **tag**.
+
+    All four, because an alternation that only answers "is this a known name"
+    is half a resolution: the tag still has to be looked up afterwards, and
+    racing the half against the whole is how a regex wins a benchmark it would
+    lose in production.
+    """
+    folded = {_fold(name): str(tag) for name, tag in names.items()}
+    lowered = {name.lower(): str(tag) for name, tag in names.items()}
+    alternation = re.compile(
+        r"^(?:" + "|".join(sorted(map(re.escape, names), key=len, reverse=True)) + r")$",
+        re.IGNORECASE,
+    )
+
+    def by_fold() -> object:
+        return [folded.get(_fold(key)) for key in keys]
+
+    def by_alternation() -> object:
+        found = []
+        for key in keys:
+            match = alternation.match(key)
+            found.append(lowered.get(match[0].lower()) if match else None)
+        return found
+
+    def by_probe_then_fold() -> object:
+        found = []
+        for key in keys:
+            tag = folded.get(key.lower())
+            found.append(tag if tag is not None else folded.get(_fold(key)))
+        return found
+
+    def by_probe() -> object:
+        return [lowered.get(key.lower()) for key in keys]
+
+    assert by_probe_then_fold() == by_fold(), "the fast path has to give the same answer"
+    print(f"    {len(names):,} names in the dictionary")
+    for label, reading in (
+        ("probe, then fold (shipped)", by_probe_then_fold),
+        ("fold, then probe", by_fold),
+        ("one case-insensitive alternation", by_alternation),
+        ("lower, then probe (no folding)", by_probe),
+    ):
+        seconds = best_of(reading, repeat)
+        print(f"{label:>40} {len(keys) / seconds:>14,.0f} keys/s")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rows", type=int, default=100_000)
@@ -255,6 +380,7 @@ def main() -> None:
     sweep_parsing(rows, repeat)
     sweep_cut(rows * 10, repeat)
     sweep_tags(rows, repeat)
+    sweep_pairs(rows, repeat)
 
 
 if __name__ == "__main__":

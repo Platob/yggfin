@@ -394,3 +394,73 @@ def test_mixed_digit_and_named_keys_resolve_together() -> None:
     )
     tagged = tag_arrow_array(maps, names={"Price": 44}).to_pylist()
     assert tagged == [[(54, "1"), (44, "9.5"), (269, "0")]]
+
+
+# -- the fast path past the pattern ------------------------------------------
+
+#: Tokens where a hand-rolled split could disagree with `_TOKEN`: the
+#: whitespace the pattern calls whitespace and the whitespace it does not, the
+#: digits `re.ASCII` calls digits and the ones it does not, keys with an index
+#: or a member, and values that carry the separator or a newline.
+TOKENS = [
+    "54=1",
+    " 54 = 1 ",
+    "\t54\t=\tv\t",
+    "\x0b54=1",
+    " 54=1",
+    "5 4=1",
+    "٣=1",
+    "5³=1",
+    "0054=1",
+    "54=",
+    "54=  ",
+    "=1",
+    "=",
+    "",
+    "54",
+    "54.5=x",
+    "54[0]=x",
+    "54[0].a=b",
+    "Side=1",
+    "NoPartyIDs[0].PartyID=BRK",
+    "54=a=b",
+    "54=x|y",
+    "54=\n1\n",
+]
+
+
+def by_pattern(token: str, named: bool) -> tuple[str, str] | None:
+    """`_parse_token` with nothing but the regex -- what the fast path must match."""
+    from rekep.fix.message import _MEMBER, _TOKEN
+
+    match = _TOKEN.match(token)
+    if match is None:
+        return None
+    key, index, member, rest = match.group("key", "index", "member", "rest")
+    if not named and (index is not None or member is not None or not key.isdigit()):
+        return None
+    if index is None:
+        return (f"{key}.{member}" if member else key), rest.strip()
+    if member is None:
+        inner = _MEMBER.match(rest)
+        if inner is not None:
+            member, rest = inner.group("member", "value")
+    return (f"{key}[{index}].{member}" if member else f"{key}[{index}]"), rest.strip()
+
+
+@pytest.mark.parametrize("token", TOKENS, ids=lambda token: repr(token))
+@pytest.mark.parametrize("named", [False, True], ids=["tags", "names"])
+def test_the_token_fast_path_answers_what_the_pattern_answers(token: str, named: bool) -> None:
+    """A `tag=value` token skips the regex, and must not skip its rules with it."""
+    from rekep.fix.message import _parse_token
+
+    assert _parse_token(token, named) == by_pattern(token, named)
+
+
+def test_a_key_behind_unicode_whitespace_is_not_a_tag() -> None:
+    """`str.strip()` would eat a non-breaking space and hand back a tag the
+    pattern rejects, which is the one way this fast path could be wrong."""
+    from rekep.fix.message import _parse_token
+
+    assert _parse_token("\u00a054=1", False) is None, "not whitespace to the pattern"
+    assert _parse_token("\x0b54=1", False) == ("54", "1"), "and a vertical tab is"

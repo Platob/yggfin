@@ -184,7 +184,7 @@ def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]
     field = Log.FIELD
     if not partitioned:
         field = field.into_dataclass("Flat").FIELD
-        field.field("recorded_at_date").is_partition_key = False
+        field.field("hunix").is_partition_key = False
     built = catalog(root).dataset("bench.logs", struct=field, table_properties=properties)
     return built.create_with()
 
@@ -381,7 +381,11 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         target = dataset(root, partitioned=True, properties=OPTIMISED)
         target.write_arrow(batches(table, 65_536), commit_row_size=rows // max(days, 1))
         day = datetime.date(2026, 8, 14)
-        # The recorded_at_unix bound of the third day: a filter on a column that is not the
+        # A partition the data actually has, read from the data rather than
+        # spelled out: `hunix` is whatever hour the generator's first line fell
+        # in, and a filter naming an empty partition measures nothing.
+        hour = table.column("hunix")[0].as_py()
+        # The unix bound of the third day: a filter on a column that is not the
         # partition, but correlates with it, so only file statistics can prune.
         third_day = (
             int(
@@ -396,15 +400,15 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         header(("case", "seconds", "rows", "rows/s", "planned", "skipped"), (30, 9, 12, 12, 8, 8))
         cases = [
             ("everything", None, None, None),
-            ("partition = one day", f"recorded_at_date = '{day}'", None, None),
+            ("partition = one hour", f"hunix = {hour}", None, None),
             (
                 "partition, 3 columns",
-                f"recorded_at_date = '{day}'",
-                ["recorded_at_unix", "driver_name", "message"],
+                f"hunix = {hour}",
+                ["unix", "driver_name", "message"],
                 None,
             ),
-            ("3 columns, no filter", None, ["recorded_at_unix", "driver_name", "message"], None),
-            ("correlated column", f"recorded_at_unix < {third_day}", None, None),
+            ("3 columns, no filter", None, ["unix", "driver_name", "message"], None),
+            ("correlated column", f"unix < {third_day}", None, None),
             ("no stats to prune on", "driver_name = 'ULBridge'", None, None),
             ("narrow shape (pushdown)", None, None, narrow_field()),
             ("narrow shape, store widths", None, None, "stored"),
@@ -517,7 +521,7 @@ def sweep_fs(rows: int, days: int) -> None:
         write_case(table.slice(0, 1_000), mode="append", commit_row_size=0)
         chunk = max(table.num_rows // 8, 1)
         half = table.slice(0, table.num_rows // 2)
-        day = datetime.date(2026, 8, 14)
+        hour = table.column("hunix")[0].as_py()
 
         def leg(cached: bool) -> None:
             CONTENT_CACHE.clear()
@@ -568,13 +572,11 @@ def sweep_fs(rows: int, days: int) -> None:
                 counts.clear()
                 seconds, _ = timed(target.read_arrow_table)
                 report("read everything", seconds)
-                seconds, _ = timed(
-                    lambda: target.read_arrow_table(row_filter=f"recorded_at_date = '{day}'")
-                )
+                seconds, _ = timed(lambda: target.read_arrow_table(row_filter=f"hunix = {hour}"))
                 report("read one partition", seconds)
                 seconds, _ = timed(lambda: target.read_arrow_reader(limit=100).read_all())
                 report("read limit=100", seconds)
-                seconds, _ = timed(lambda: target.scan_plan(f"recorded_at_date = '{day}'"))
+                seconds, _ = timed(lambda: target.scan_plan(f"hunix = {hour}"))
                 report("scan_plan one partition", seconds)
                 seconds, _ = timed(target.read_arrow_table)
                 report("read everything, again", seconds)
@@ -691,11 +693,11 @@ def sweep_maintain(rows: int, days: int) -> None:
         header(("partitioning", "run 1", "run 2", "run 3", "rows"), (30, 8, 8, 8, 10))
         for label, built in (
             (
-                "identity (recorded_at_date)",
+                "identity (hunix)",
                 lambda root: dataset(root, partitioned=True, properties=OPTIMISED),
             ),
             ("none", lambda root: dataset(root, partitioned=False, properties=OPTIMISED)),
-            ("transform (day)", lambda root: daily(root)),
+            ("transform (bucket)", lambda root: daily(root)),
         ):
             target = built(tmp / f"settle-{label[:8]}")
             target.write_arrow(batches(table, 2_048), commit_row_size=max(rows // 12, 1))
@@ -872,7 +874,9 @@ def daily(root: pathlib.Path) -> IcebergDataset:
     every run read the table back and wrote it out again, forever.
     """
     field = Log.FIELD.into_dataclass("Daily").FIELD
-    field.field("recorded_at_date").is_partition_key = "day"
+    # `bucket[8]`, because `hunix` is an int64 and Iceberg's `day` transform is
+    # for dates. The point is unchanged: a transform, not the value itself.
+    field.field("hunix").is_partition_key = "bucket[8]"
     built = catalog(root).dataset("bench.daily", struct=field, table_properties=OPTIMISED)
     return built.create_with()
 
@@ -888,9 +892,7 @@ def stored_narrow(target: IcebergDataset) -> Any:
 
     schema = target.table_field.into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema(
-            [schema.field(name) for name in ("recorded_at_unix", "driver_name", "message")]
-        ),
+        pyarrow.schema([schema.field(name) for name in ("unix", "driver_name", "message")]),
         "Narrow",
     )
 
@@ -901,9 +903,7 @@ def narrow_field() -> Any:
 
     schema = Log.FIELD.into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema(
-            [schema.field(name) for name in ("recorded_at_unix", "driver_name", "message")]
-        ),
+        pyarrow.schema([schema.field(name) for name in ("unix", "driver_name", "message")]),
         "Narrow",
     )
 

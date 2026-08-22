@@ -116,13 +116,14 @@ quotes = IcebergDataset(
     commit_row_size=1_000_000, # rows per commit when a write does not say
     optimize_commits=True,     # commit properties tuned for a stream
     plan_merges=True,          # plan a merge's scan instead of handing it over
+    sort_by=None,              # None: the shape's own sort keys. [] opts out
 )
 ```
 
 `struct` is your [declaration](types.md). With one, the table is created from it
-— schema, column comments, identifier fields and partition spec. Without one,
-the table's own schema is the shape, read back as a `StructField` with its docs,
-keys and partitions intact.
+— schema, column comments, identifier fields, partition spec and sort order.
+Without one, the table's own schema is the shape, read back as a `StructField`
+with its docs, keys and partitions intact.
 
 === "Create"
 
@@ -139,6 +140,52 @@ keys and partitions intact.
     ids keeps them: a parquet footer's `PARQUET:field_id`, or our own
     `iceberg:field_id` when the shape came from a table or from a
     [contract](contracts.md) that pins them.
+
+!!! note "The declared sort order reaches the data"
+
+    A table records a sort order and every engine writing through it is meant
+    to honour it — so this one does. `sort_by` defaults to the shape's own
+    `Field.sort_key()` declarations, because a recorded order the writer
+    ignores is a wish: a filter can only skip a **row group**, and a row group
+    only helps if it covers a narrow slice of the column. On a shuffled 600k
+    row commit, a top-5% filter decoded **one row group of five** sorted
+    against five of five unsorted.
+
+    A chunk that is *already* in that order is handed straight back. The
+    question is far cheaper than the answer — on a million rows, 1.7 ms to
+    check against 38.7 ms to sort — so a stream that arrives in time order,
+    which is every capture and every log, pays almost nothing for the default.
+    Pass `sort_by=[]` to opt out entirely, or name other columns to override.
+
+!!! note "A wide shape says which columns must keep bounds"
+
+    Iceberg infers min/max bounds for the first hundred **leaf** columns in
+    declaration order and writes the rest with none, so a filter on a column
+    past that budget reads every file — and still returns the right answer,
+    which is why nothing notices. Position decides it, and a nested member
+    added in front of a filter column pushes one over the edge: `Book` reached
+    exactly a hundred leaves the day an instrument grew legs.
+
+    So a table created from a shape declares the columns that shape is *read*
+    by — its partition, sort and primary keys — as
+    `write.metadata.metrics.column.<name>`, which takes them out of the budget
+    entirely. Strings are bounded at sixteen characters, because a bound on a
+    long string is the string, in every manifest entry that names the file.
+    The budget itself is only raised when the shape is genuinely past it.
+
+    ```python
+    from rekep.iceberg import metrics_for
+
+    metrics_for(Quote.FIELD)
+    # {'write.metadata.metrics.column.symbol': 'truncate(16)',
+    #  'write.metadata.metrics.column.day': 'full'}
+    ```
+
+    `table_properties` wins over all of it, so a column nothing filters on can
+    be set to `none` and stop costing manifest bytes. pyiceberg collects every
+    top-level primitive regardless of position, so today this changes nothing
+    about what *this* writer records — it is written on the table for the
+    engines that do honour it.
 
 === "Write"
 
@@ -321,6 +368,36 @@ goes.
     once, sees nothing to read, and the chunk goes straight to a commit with
     no reader built and no data file opened.
 
+=== "A column the keys decide"
+
+    A filter that names no partition column prunes nothing at the manifest
+    list, and the market shapes are keyed on `(unix, hash)` while being
+    partitioned on `hunix` — so the merge scaled with the **table**, not with
+    the chunk being merged.
+
+    But `hunix` *is* `unix`, truncated to the hour: two rows that agree on
+    `unix` agree on it, so the chunk's own values are the values of every row
+    that can match. That is a fact about the data rather than about any one
+    write, so the field says it once:
+
+    ```python
+    hunix: Annotated[int, Field.partition_key(derived_from="unix")] = 0
+    """`unix` truncated to the hour -- what the data is partitioned on."""
+    ```
+
+    A merge then names every column whose sources are all keys of *this*
+    merge, and the scan prunes to the partitions the keys fall in. Replaying
+    one hour, declared against not: **19 ms against 37** over 48 hourly
+    partitions, **20 against 93** over 168, **27 against 164** over 336. The
+    declared path barely moves; the other is linear in the table.
+
+    The declaration may only ever widen the filter, never narrow it. A derived
+    column holding a null or a NaN contributes no term at all, a derivation
+    whose sources are not all keys here is ignored, and a shape read back from
+    a table declares nothing — Iceberg records a partition spec, not *why* a
+    column holds what it does, and saying nothing costs pruning rather than a
+    row.
+
 === "Updating"
 
     When most rows genuinely *change*, finding them stops being the cost and
@@ -343,9 +420,52 @@ goes.
     holding a zero, because the inner half becomes an `In` and `pc.is_in`
     hashes `-0.0` apart from the `0.0` it equals; and a key that repeats
     nothing, where one group per row is the tree it already builds. The second
-    is measured too — `(at, h64)` at 0.51–11.94 s for the same 500 to 5,000
+    is measured too — `(at, hash)` at 0.51–11.94 s for the same 500 to 5,000
     rows — because an exact filter over *n* arbitrary key pairs is *n* terms
     and there is no smaller way to say it.
+
+=== "Comparing what matched"
+
+    Finding the rows a chunk matches is one half; deciding which of them
+    actually *changed* is the other. pyiceberg joins on the keys and then
+    compares the matched rows in Python — one `slice(i, 1)` and one `as_py()`
+    per non-key column per row, about 50 µs a row. Here the pairs are gathered
+    with `take` and compared column by column, so a million matched rows cost
+    a handful of vectorised passes.
+
+    Arrow has no equality kernel for a list, a struct or a map, and the
+    fallback for those is **per column** rather than per comparison — which it
+    was not, and that cost real time: `Log` carries twenty scalar columns and
+    one `list<int64>`, and the list sent all twenty-one row by row through the
+    library. A merge of 50,000 stored and unchanged rows spent **6.35 seconds
+    of 7.2** inside `get_rows_to_update`; the same case now takes **0.39 s**
+    against 6.19, sixteen times faster.
+
+    The awkward column is still compared the library's way — both sides out of
+    Arrow at once, then one `!=` per row — so the null and NaN semantics are
+    unchanged: two nulls are equal, a null and a value are not, and a NaN
+    equals nothing. `tests/iceberg/test_coherence.py` asserts that row for row
+    against `get_rows_to_update`, for a list, a struct and a map.
+
+=== "What the join hands back"
+
+    An Arrow join emits its output a batch at a time and in whatever order
+    the batches finish — measured on pyarrow 25, a 400k-row anti-join comes
+    back in ten runs rather than one. The rows are right; their **layout** is
+    not. A chunk is sorted on the way in so that each of a file's row groups
+    covers a narrow slice of the sort key, and a scrambled take spreads every
+    slice across all of them, which makes `sort_by` mean nothing for any chunk
+    that had a row to drop — every partial replay, and only those.
+
+    So the *positions* the join hands back are put back in order before the
+    take. Sorting positions rather than any column is what keeps it honest: it
+    restores the order the caller had, whatever that order was, and says
+    nothing about what it should be.
+
+    Measured on a 1.2M-row table, a top-5% filter after inserting 800k rows
+    over 400k stored ones: **282,496 rows decoded in order against 400,000 to
+    531,072 out of it**. The ordering itself did not show up against
+    run-to-run variance on the insert.
 
 === "Coherence"
 
@@ -467,6 +587,18 @@ calls are the whole routine.
     chunk of shuffled rows spans the whole key range whatever order it is
     written in. File bounds come from chunks that are already roughly ordered,
     which is what a log is.
+
+    `sort_by` is what *this* writer does to a batch before it commits it. A
+    declaration's `Field.sort_key()` is a different thing: it writes Iceberg's
+    own **sort order** onto the table, where every engine that writes through
+    it — Spark, Doris, a Rust job — reads the same instruction. A shape that
+    declares one gets it at `create_with` and needs no `sort_by`; `sort_by` is
+    for a table whose schema you did not declare.
+
+    ```python
+    Order.FIELD.sort_keys()                    # {'unix': 'asc'}
+    Order.FIELD.into_iceberg_sort_order()      # what lands on the table
+    ```
 
 === "Compact"
 
@@ -848,16 +980,16 @@ between runs, so both runs are quoted.
 | `date = '2026-08-14'` (partition) | 0.024–0.025 | 62,500 | 1 | 14 |
 | partition + 3 of 8 columns | 0.016–0.019 | 62,500 | 1 | 14 |
 | 3 of 8 columns, no filter | 0.055–0.061 | 500,000 | 15 | 0 |
-| `recorded_at_unix < …` (correlates with the partition) | 0.042–0.062 | 125,000 | 3 | 12 |
+| `unix < …` (correlates with the partition) | 0.042–0.062 | 125,000 | 3 | 12 |
 | `driver_name = 'ULBridge'` (no useful statistics) | 0.093–0.105 | 125,000 | 15 | **0** |
 | narrow shape, projection from the shape | 0.058–0.064 | 500,000 | 15 | 0 |
 | narrow shape declared with the store's widths | 0.050–0.059 | 500,000 | 15 | 0 |
 
 One more, measured separately because it is a write-side choice: sorting each
 commit on the column a read filters. On a single 600k-row commit, a filter
-matching the top 5% of `recorded_at_unix` values took **214 ms** when the rows
+matching the top 5% of `unix` values took **214 ms** when the rows
 arrived shuffled and **22 ms** when the commit was sorted
-(`sort_by=["recorded_at_unix"]`), with one file planned in both cases. That is
+(`sort_by=["unix"]`), with one file planned in both cases. That is
 row-group skipping inside the file, and it only exists because
 `write.parquet.row-group-limit` is set: Iceberg's default of a million rows per
 group would make the whole file one group with nothing to skip.
@@ -969,7 +1101,7 @@ reading of this one.
 
 | partitioning | run 1 | run 2 | run 3 |
 | --- | --- | --- | --- |
-| identity (`recorded_at_date`) | 13 | 0 | 0 |
+| identity (`hunix`) | 13 | 0 | 0 |
 | none | 10 | 0 | 0 |
 | transform (`day`), before | 13 | **4** | **4** |
 | transform (`day`), after | 13 | **0** | **0** |
@@ -1032,7 +1164,7 @@ distinct values says the repeated half once. The filter stays exact, and
 [the tests](https://github.com/Platob/rekep/blob/main/python/tests/iceberg/test_coherence.py)
 compare it against pyiceberg's own row for row rather than against itself.
 
-**A key that repeats nothing** — `(at, h64)`, where every value of both
+**A key that repeats nothing** — `(at, hash)`, where every value of both
 halves is distinct — is left alone, because one group per row is the tree
 `create_match_filter` already builds. Its numbers are what a merge of many
 updates costs when nothing can be factored out of it, and they are here because

@@ -484,6 +484,52 @@ def test_a_partition_can_be_taken_back_off() -> None:
     assert not built.is_partition_key and built.partition_transform == ""
 
 
+def test_a_sort_order_is_declared_in_declaration_order() -> None:
+    """The struct already has an order, so the sort order does not need a position."""
+
+    @field
+    class Quote(Convertible):
+        day: Annotated[datetime.date, Field.sort_key()]
+        symbol: str
+        size: Annotated[int, Field.sort_key("desc")]
+
+    assert Quote.FIELD.sort_keys() == {"day": "asc", "size": "desc"}
+    assert Quote.FIELD.field("day").is_sort_key
+    assert not Quote.FIELD.field("symbol").is_sort_key
+    assert Quote.FIELD.field("symbol").sort_direction == ""
+
+
+def test_a_column_can_be_partitioned_on_and_sorted_on_at_once() -> None:
+    """They answer different questions -- which file, and where inside it."""
+
+    @field
+    class Quote(Convertible):
+        day: Annotated[datetime.date, Field.partition_key("day"), Field.sort_key()]
+
+    declared = Quote.FIELD.field("day")
+    assert declared.partition_transform == "day" and declared.sort_direction == "asc"
+
+
+def test_a_sort_key_can_be_taken_back_off() -> None:
+    built = Field(name="unix", arrow_type=pyarrow.int64())
+    built.is_sort_key = "desc"
+    assert built.is_sort_key and built.sort_direction == "desc"
+    built.is_sort_key = False
+    assert not built.is_sort_key and built.sort_direction == ""
+
+
+def test_a_sort_key_survives_the_round_trip_through_arrow() -> None:
+    """It is metadata on the column, so it travels wherever the schema does."""
+
+    @field
+    class Quote(Convertible):
+        unix: Annotated[int, Field.sort_key()]
+
+    schema = Quote.FIELD.into_arrow_schema()
+    assert schema.field("unix").metadata[b"iceberg:sort_key"] == b"asc"
+    assert Field.from_arrow_schema(schema).sort_keys() == {"unix": "asc"}
+
+
 def test_a_changed_declaration_drops_what_was_derived_from_it() -> None:
     built = Field.from_arrow_schema(pyarrow.schema([("symbol", pyarrow.string())]), "Quote")
     before = built.into_arrow_schema()

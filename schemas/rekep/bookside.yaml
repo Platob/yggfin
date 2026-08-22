@@ -1,0 +1,542 @@
+name: BookSide
+type: struct
+description: 'One side of one book: what is live, what changed, and what traded.'
+metadata:
+  namespace: rekep.market.book
+fields:
+- name: unix
+  type: int64
+  description: When the event happened, in whole nanoseconds since the epoch.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+    iceberg:primary_key: 'true'
+    iceberg:sort_key: asc
+- name: hunix
+  type: int64
+  description: '`unix` truncated to the hour -- what the data is partitioned on.'
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+    iceberg:partition_key: identity
+    iceberg:derived_from: unix
+- name: etype
+  type: int32
+  description: Which kind of event this is -- the one column a union of the tables
+    needs.
+  metadata:
+    enum:name: EventType
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","310":"BOOK_SIDE","320":"BOOK","400":"REFERENCE","410":"INSTRUMENT"}'
+- name: cunix
+  type: int64
+  description: When the event was created, upstream of anything that carried it.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: runix
+  type: int64
+  description: When the event was written down here; deliberately not part of `hash`.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: eunix
+  type: int64
+  nullable: true
+  description: When the event stops being true -- an order's expiry, a quote's staleness.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: sunix
+  type: int64
+  nullable: true
+  description: '`unix` of the event this is a snapshot of; null when it is not one.'
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: hash
+  type: int64
+  description: 'Digest of this version''s content: the same version, twice, is one
+    row.'
+  metadata:
+    iceberg:primary_key: 'true'
+- name: xhash
+  type: int64
+  description: Identity of the thing across every version of it -- the lifecycle.
+- name: version
+  type: int64
+  description: Which version of `xhash` this is, counting up from the first.
+- name: state
+  type: int32
+  description: 'Where the lifecycle stands, as a banded code: `>= State.TERMINAL`
+    is over.'
+  metadata:
+    enum:name: State
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","600":"FAILED","610":"REJECTED"}'
+- name: symbol
+  type: string
+  description: Main readable identifier of the subject, as the venue spells it.
+  metadata:
+    fix:name: Symbol
+    fix:tag: '55'
+- name: seq
+  type: int64
+  nullable: true
+  description: Sequence the venue gave the message, which orders what a clock cannot.
+  metadata:
+    fix:name: MsgSeqNum
+    fix:tag: '34'
+- name: prev_hash
+  type: int64
+  nullable: true
+  description: The version this one replaced; null on the first.
+- name: prev_state
+  type: int32
+  description: The state this version moved out of -- a transition, without the self-join.
+  metadata:
+    enum:name: State
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","600":"FAILED","610":"REJECTED"}'
+- name: prev_unix
+  type: int64
+  nullable: true
+  description: When the previous version happened, so dwell time is a subtraction.
+  metadata:
+    unit: nanosecond
+    epoch: '1970-01-01'
+- name: parent_hash
+  type: list
+  nullable: true
+  description: Every event this one was built from, in the order they were combined.
+  item:
+    type: int64
+- name: instrument_hash
+  type: int64
+  description: Which instrument this is about -- `instrument.xhash`, flat, for the
+    partition.
+  metadata:
+    iceberg:partition_key: bucket[16]
+- name: side
+  type: int32
+  description: Which way the interest points; `side.sign` turns it into `+1` or `-1`.
+  metadata:
+    fix:name: Side
+    fix:tag: '54'
+    enum:name: Side
+    enum:type: int
+    enum:values: '{"0":"UNKNOWN","100":"BUY","110":"BUY_MINUS","120":"BORROW","130":"SUBSCRIBE","200":"SELL","210":"SELL_PLUS","220":"SELL_SHORT","230":"SELL_SHORT_EXEMPT","240":"LEND","250":"REDEEM","300":"CROSS","310":"CROSS_SHORT","320":"CROSS_SHORT_EXEMPT","330":"AS_DEFINED","340":"OPPOSITE","350":"UNDISCLOSED"}'
+- name: px
+  type: double
+  nullable: true
+  description: The best level's price on this side -- the top of the book, this way
+    up.
+  metadata:
+    fix:name: MDEntryPx
+    fix:tag: '270'
+- name: px_unit
+  type: string
+  description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when
+    unstated.'
+- name: qty
+  type: double
+  nullable: true
+  description: The size at that best level; `total_qty` is every level's.
+  metadata:
+    fix:name: MDEntrySize
+    fix:tag: '271'
+- name: qty_unit
+  type: string
+  description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
+- name: notional
+  type: double
+  nullable: true
+  description: '`px * qty * multiplier` in the instrument''s currency, as the producer
+    computed it.'
+- name: venue
+  type: string
+  nullable: true
+  description: Where this event happened, which is not always where the instrument
+    is listed.
+  metadata:
+    fix:name: LastMkt
+    fix:tag: '30'
+- name: instrument
+  type: struct
+  description: What was traded. The flat `symbol` above is what a filter uses; this
+    is the rest.
+  fields:
+  - name: xhash
+    type: int64
+    description: Stable identity of the instrument, which outlives every symbol it
+      has had.
+  - name: symbol
+    type: string
+    description: Identifier as the venue spells it -- readable, and never an identity.
+    metadata:
+      fix:name: Symbol
+      fix:tag: '55'
+  - name: kind
+    type: int32
+    description: What it settles as, read from the first character of the CFI code.
+    metadata:
+      enum:name: AssetKind
+      enum:type: int
+      enum:values: '{"0":"UNKNOWN","100":"CASH","110":"EQUITY","120":"DEBT","130":"FUND","140":"CURRENCY","150":"COMMODITY","160":"INDEX","200":"DERIVATIVE","210":"FUTURE","220":"OPTION","230":"SWAP","240":"WARRANT","250":"FORWARD","300":"STRUCTURED","310":"SPREAD","320":"MULTILEG","330":"BASKET","400":"FINANCING","410":"REPO","420":"LOAN"}'
+  - name: security_id
+    type: string
+    nullable: true
+    description: Identifier in the scheme `security_id_source` names -- an ISIN, a
+      CUSIP, a FIGI.
+    metadata:
+      fix:name: SecurityID
+      fix:tag: '48'
+  - name: security_id_source
+    type: string
+    nullable: true
+    description: Which scheme `security_id` is in, as FIX numbers them (`4` is ISIN).
+    metadata:
+      fix:name: SecurityIDSource
+      fix:tag: '22'
+  - name: isin_code
+    type: string
+    nullable: true
+    description: ISO 6166 identifier, wherever the message carried it; null when it
+      did not.
+    metadata:
+      iso: '6166'
+  - name: alt_ids
+    type: map
+    nullable: true
+    description: Every other identifier the message carried, keyed by `IdSource`'s
+      name.
+    key:
+      type: string
+    value:
+      type: string
+  - name: security_type
+    type: string
+    nullable: true
+    description: What the venue calls it, from FIX's own list -- `CS`, `FUT`, `OPT`,
+      `MLEG`.
+    metadata:
+      fix:name: SecurityType
+      fix:tag: '167'
+  - name: cfi
+    type: string
+    nullable: true
+    description: Full ISO 10962 classification; `kind` is its first character, decoded.
+    metadata:
+      fix:name: CFICode
+      fix:tag: '461'
+  - name: exchange
+    type: string
+    nullable: true
+    description: ISO 10383 market identifier the instrument is listed on.
+    metadata:
+      fix:name: SecurityExchange
+      fix:tag: '207'
+  - name: currency
+    type: string
+    nullable: true
+    description: ISO 4217 currency the instrument is priced in.
+    metadata:
+      fix:name: Currency
+      fix:tag: '15'
+  - name: multiplier
+    type: double
+    nullable: true
+    description: Units of the underlying one contract represents; 1 for cash instruments.
+    metadata:
+      fix:name: ContractMultiplier
+      fix:tag: '231'
+  - name: tick
+    type: double
+    nullable: true
+    description: Smallest price change the venue accepts, which is what makes a spread
+      countable.
+    metadata:
+      fix:name: MinPriceIncrement
+      fix:tag: '969'
+  - name: lot
+    type: double
+    nullable: true
+    description: Quantity increment the venue trades in.
+    metadata:
+      fix:name: RoundLot
+      fix:tag: '561'
+  - name: maturity
+    type: date32[day]
+    nullable: true
+    description: When the contract expires; null for anything that does not.
+    metadata:
+      fix:name: MaturityDate
+      fix:tag: '541'
+  - name: strike
+    type: double
+    nullable: true
+    description: Exercise price of an option.
+    metadata:
+      fix:name: StrikePrice
+      fix:tag: '202'
+  - name: option_kind
+    type: int32
+    description: Which way the option points; `UNKNOWN` for everything that is not
+      one.
+    metadata:
+      fix:name: PutOrCall
+      fix:tag: '201'
+      enum:name: OptionKind
+      enum:type: int
+      enum:values: '{"0":"UNKNOWN","100":"PUT","200":"CALL"}'
+  - name: label
+    type: string
+    nullable: true
+    description: Human description, as reference data publishes it.
+    metadata:
+      fix:name: SecurityDesc
+      fix:tag: '107'
+  - name: legs
+    type: list
+    nullable: true
+    description: The legs of a multileg instrument, in the order the venue sent them.
+    item:
+      type: struct
+      fields:
+      - name: xhash
+        type: int64
+        description: The instrument this leg is of, derived the same way any other
+          one is.
+      - name: symbol
+        type: string
+        description: Identifier as the venue spells the leg.
+        metadata:
+          fix:name: LegSymbol
+          fix:tag: '600'
+      - name: side
+        type: int32
+        description: Which way the strategy takes this leg; `side.sign` turns it into
+          `+1`/`-1`.
+        metadata:
+          fix:name: LegSide
+          fix:tag: '624'
+          enum:name: Side
+          enum:type: int
+          enum:values: '{"0":"UNKNOWN","100":"BUY","110":"BUY_MINUS","120":"BORROW","130":"SUBSCRIBE","200":"SELL","210":"SELL_PLUS","220":"SELL_SHORT","230":"SELL_SHORT_EXEMPT","240":"LEND","250":"REDEEM","300":"CROSS","310":"CROSS_SHORT","320":"CROSS_SHORT_EXEMPT","330":"AS_DEFINED","340":"OPPOSITE","350":"UNDISCLOSED"}'
+      - name: ratio
+        type: double
+        nullable: true
+        description: How many of this leg one unit of the strategy is; the leg's weight.
+        metadata:
+          fix:name: LegRatioQty
+          fix:tag: '623'
+      - name: kind
+        type: int32
+        description: What the leg settles as, read from `LegCFICode <608>` or `LegSecurityType
+          <609>`.
+        metadata:
+          enum:name: AssetKind
+          enum:type: int
+          enum:values: '{"0":"UNKNOWN","100":"CASH","110":"EQUITY","120":"DEBT","130":"FUND","140":"CURRENCY","150":"COMMODITY","160":"INDEX","200":"DERIVATIVE","210":"FUTURE","220":"OPTION","230":"SWAP","240":"WARRANT","250":"FORWARD","300":"STRUCTURED","310":"SPREAD","320":"MULTILEG","330":"BASKET","400":"FINANCING","410":"REPO","420":"LOAN"}'
+      - name: security_id
+        type: string
+        nullable: true
+        description: Identifier in the scheme `security_id_source` names.
+        metadata:
+          fix:name: LegSecurityID
+          fix:tag: '602'
+      - name: security_id_source
+        type: string
+        nullable: true
+        description: Which scheme `security_id` is in, as FIX numbers them.
+        metadata:
+          fix:name: LegSecurityIDSource
+          fix:tag: '603'
+      - name: cfi
+        type: string
+        nullable: true
+        description: ISO 10962 classification of the leg.
+        metadata:
+          fix:name: LegCFICode
+          fix:tag: '608'
+      - name: security_type
+        type: string
+        nullable: true
+        description: What the venue calls this leg, from FIX's own list.
+        metadata:
+          fix:name: LegSecurityType
+          fix:tag: '609'
+      - name: exchange
+        type: string
+        nullable: true
+        description: Where the leg is listed, when it differs from the strategy's
+          venue.
+        metadata:
+          fix:name: LegSecurityExchange
+          fix:tag: '616'
+      - name: currency
+        type: string
+        nullable: true
+        description: ISO 4217 currency the leg is priced in.
+        metadata:
+          fix:name: LegCurrency
+          fix:tag: '556'
+      - name: multiplier
+        type: double
+        nullable: true
+        description: Units of the underlying one leg contract represents.
+        metadata:
+          fix:name: LegContractMultiplier
+          fix:tag: '614'
+      - name: maturity
+        type: date32[day]
+        nullable: true
+        description: When the leg expires; null for anything that does not.
+        metadata:
+          fix:name: LegMaturityDate
+          fix:tag: '611'
+      - name: strike
+        type: double
+        nullable: true
+        description: Exercise price, where the leg is an option.
+        metadata:
+          fix:name: LegStrikePrice
+          fix:tag: '612'
+      - name: option_kind
+        type: int32
+        description: Which way the leg points, where it is an option.
+        metadata:
+          fix:name: LegPutOrCall
+          fix:tag: '1358'
+          enum:name: OptionKind
+          enum:type: int
+          enum:values: '{"0":"UNKNOWN","100":"PUT","200":"CALL"}'
+- name: metadata
+  type: map
+  nullable: true
+  description: Protocol fields carried verbatim, exactly as the venue sent them.
+  key:
+    type: string
+  value:
+    type: string
+- name: depth
+  type: int32
+  nullable: true
+  description: How many levels are live -- `len(alive)`, flat, so a filter can use
+    it.
+- name: total_qty
+  type: double
+  nullable: true
+  description: Sum of `qty` over every live level.
+- name: alive
+  type: list
+  nullable: true
+  description: Every live level, best first; null on a row that carries only a delta.
+  item:
+    type: struct
+    fields:
+    - name: px
+      type: double
+      description: Price of the level.
+      metadata:
+        fix:name: MDEntryPx
+        fix:tag: '270'
+    - name: qty
+      type: double
+      description: Quantity resting at that price.
+      metadata:
+        fix:name: MDEntrySize
+        fix:tag: '271'
+    - name: orders
+      type: int32
+      nullable: true
+      description: How many orders make up the level; null when the venue does not
+        say.
+      metadata:
+        fix:name: NumberOfOrders
+        fix:tag: '346'
+- name: updates
+  type: list
+  nullable: true
+  description: The changes that produced this version, in the order the venue sent
+    them.
+  item:
+    type: struct
+    fields:
+    - name: action
+      type: int32
+      description: What this does to the book; `>= UpdateAction.REMOVE` takes liquidity
+        out.
+      metadata:
+        fix:name: MDUpdateAction
+        fix:tag: '279'
+        enum:name: UpdateAction
+        enum:type: int
+        enum:values: '{"0":"UNKNOWN","100":"APPLY","110":"NEW","120":"CHANGE","130":"OVERLAY","200":"REMOVE","210":"DELETE","220":"DELETE_THRU","230":"DELETE_FROM"}'
+    - name: px
+      type: double
+      nullable: true
+      description: Price the update applies at.
+      metadata:
+        fix:name: MDEntryPx
+        fix:tag: '270'
+    - name: qty
+      type: double
+      nullable: true
+      description: Quantity after the update; null on a deletion.
+      metadata:
+        fix:name: MDEntrySize
+        fix:tag: '271'
+    - name: orders
+      type: int32
+      nullable: true
+      description: How many orders make up the level after the update.
+      metadata:
+        fix:name: NumberOfOrders
+        fix:tag: '346'
+    - name: position
+      type: int32
+      nullable: true
+      description: Depth the update applies at, counting from the top; for venues
+        that index.
+      metadata:
+        fix:name: MDEntryPositionNo
+        fix:tag: '290'
+- name: executions
+  type: list
+  nullable: true
+  description: The trades that took liquidity out of this side, in the order they
+    printed.
+  item:
+    type: struct
+    fields:
+    - name: unix
+      type: int64
+      description: When it traded, in whole nanoseconds since the epoch.
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: px
+      type: double
+      description: What it traded at.
+      metadata:
+        fix:name: LastPx
+        fix:tag: '31'
+    - name: qty
+      type: double
+      description: How much traded.
+      metadata:
+        fix:name: LastQty
+        fix:tag: '32'
+    - name: xhash
+      type: int64
+      nullable: true
+      description: Lifecycle of the execution this came from -- the join into that
+        table.
+    - name: aggressor
+      type: bool
+      nullable: true
+      description: Whether this side was the one taking liquidity.
+      metadata:
+        fix:name: AggressorIndicator
+        fix:tag: '1057'

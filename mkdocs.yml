@@ -36,7 +36,9 @@ nav:
       - Types: types.md
       - Logs: logs.md
       - FIX: fix.md
+      - Market: market.md
       - Iceberg: iceberg.md
+      - Tasks: tasks.md
   - Benchmarks: benchmarks.md
 
 # Every page carries its own measurements, so the links into them are anchors

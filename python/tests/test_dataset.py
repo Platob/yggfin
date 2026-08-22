@@ -331,3 +331,110 @@ def test_read_arrow_picks_the_method_by_the_type_asked_for(dataset: MemoryDatase
 def test_a_write_of_something_unwritable_is_refused(dataset: MemoryDataset) -> None:
     with pytest.raises(TypeError, match="cannot infer"):
         dataset.write_arrow("not arrow data")
+
+
+# -- reading one out of a document -------------------------------------------
+
+
+def test_a_document_says_which_store_it_names() -> None:
+    """The same dispatch a task's `kind` gets: one lookup, keyed by what each
+    implementation declares, so a scheduler reads a document for a class it has
+    never imported by name."""
+    built = Dataset.from_dict({"kind": "text_file", "url": "a.log"})
+    assert type(built).KIND == "text_file"
+    assert built.url.endswith("a.log")
+
+
+def test_an_implementation_behind_an_optional_dependency_is_imported_by_the_document() -> None:
+    """And by nothing else, which is what keeps the dependency optional."""
+    pytest.importorskip("pyiceberg")
+    from rekep.iceberg import IcebergDataset
+
+    built = Dataset.from_dict({"kind": "iceberg", "name": "a.b", "catalog": "c"})
+    assert isinstance(built, IcebergDataset) and built.name == "a.b"
+
+
+def test_a_document_with_no_kind_says_what_it_could_have_said() -> None:
+    with pytest.raises(ValueError, match="add a `kind`"):
+        Dataset.from_dict({"url": "a.log"})
+
+
+def test_a_kind_nothing_implements_lists_what_does() -> None:
+    with pytest.raises(ValueError, match="no dataset of kind 'parquet'"):
+        Dataset.from_dict({"kind": "parquet"})
+
+
+def test_a_concrete_class_still_reads_its_own_document_with_no_kind_in_it() -> None:
+    """Which is what keeps `IcebergDataset.from_yaml(...)` working unchanged."""
+    from rekep.logs import TextFile
+
+    assert TextFile.from_dict({"url": "a.log"}).url.endswith("a.log")
+
+
+def test_a_concrete_class_refuses_a_document_naming_a_different_store() -> None:
+    """Rather than quietly building the wrong store from the right fields."""
+    from rekep.logs import TextFile
+
+    with pytest.raises(ValueError, match="text_file"):
+        TextFile.from_dict({"kind": "text_files", "url": "a.log"})
+
+
+def test_every_shipped_kind_is_reachable_from_a_document() -> None:
+    """A name in `MODULES` that no class claims is a document that cannot be read."""
+    for kind, module in Dataset.MODULES.items():
+        if kind == "iceberg":
+            pytest.importorskip("pyiceberg")
+        assert Dataset._imported(kind) is not None, f"{kind} is not in {module}"
+        assert Dataset.KINDS[kind].KIND == kind
+
+
+# -- what a join hands back --------------------------------------------------
+
+
+def joinable(keys: Sequence[int]) -> pyarrow.Table:
+    return pyarrow.table(
+        {
+            "at": pyarrow.array(keys, pyarrow.int64()),
+            "payload": pyarrow.array([f"row-{key}" for key in keys]),
+        }
+    )
+
+
+def descents(table: pyarrow.Table, column: str) -> int:
+    """How many times `column` goes backwards -- zero on a table still in order."""
+    values = table.column(column).combine_chunks()
+    return pyarrow.compute.sum(pyarrow.compute.less(values[1:], values[:-1])).as_py() or 0
+
+
+def test_an_anti_join_hands_the_rows_back_in_the_order_they_came() -> None:
+    """Arrow emits a join a batch at a time, in whatever order they finish. The
+    rows are right and their layout is not: a chunk is sorted before it is
+    written so each row group covers a narrow slice of the sort key, and a
+    scrambled take spreads every slice over all of them."""
+    from rekep.dataset import anti_join
+
+    chunk = joinable(range(200_000))
+    stored = joinable(range(0, 200_000, 3))
+    fresh = anti_join(chunk, stored, ["at"])
+    assert fresh.num_rows == 200_000 - len(range(0, 200_000, 3))
+    assert descents(fresh, "at") == 0, "the chunk's own order, not the join's"
+    assert fresh.column("payload")[0].as_py() == "row-1", "and the right rows in it"
+
+
+def test_a_semi_join_hands_the_rows_back_in_the_order_they_came() -> None:
+    from rekep.dataset import semi_join
+
+    stored = joinable(range(200_000))
+    chunk = joinable(range(0, 200_000, 3))
+    kept = semi_join(stored, chunk, ["at"])
+    assert kept.num_rows == len(range(0, 200_000, 3))
+    assert descents(kept, "at") == 0
+
+
+def test_a_join_that_drops_nothing_is_the_table_itself() -> None:
+    """The common case on a stream of new keys, and the one that must not pay
+    for an ordering it already has."""
+    from rekep.dataset import anti_join
+
+    chunk = joinable(range(10))
+    assert anti_join(chunk, joinable([]), ["at"]) is chunk

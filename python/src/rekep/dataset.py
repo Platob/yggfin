@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Iterator, Sequence
+import importlib
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any, ClassVar, Self
 
 import pyarrow
@@ -45,6 +46,26 @@ class Dataset(Convertible, abc.ABC):
     configuration is also a document: `IcebergDataset.from_yaml("logs.yaml")`.
     """
 
+    #: What a document's `kind` says to reach this class. Subclasses set it.
+    KIND: ClassVar[str] = ""
+
+    #: Every kind that has been declared, filled by `__init_subclass__` so an
+    #: implementation is reachable from a document by existing rather than by
+    #: registering. The same mechanism `Task.KINDS` uses, and for the same
+    #: reason: a job's configuration names the store it reads, and the class
+    #: for it may live in a package the reader has never imported by name.
+    KINDS: ClassVar[dict[str, type[Dataset]]] = {}
+
+    #: Where the implementations this package ships live, so a document naming
+    #: one reaches it without the reader having imported it first. The Iceberg
+    #: one is behind an optional dependency, and this is what keeps it optional:
+    #: it is imported by a document that asks for it, and by nothing else.
+    MODULES: ClassVar[dict[str, str]] = {
+        "iceberg": "rekep.iceberg.dataset",
+        "text_file": "rekep.logs.text_file",
+        "text_files": "rekep.logs.text_files",
+    }
+
     #: What `read_arrow` redirects to, keyed by the type asked for.
     READS: ClassVar[dict[Any, str]] = {
         pyarrow.Table: "arrow_table",
@@ -62,6 +83,47 @@ class Dataset(Convertible, abc.ABC):
         list: "arrow_reader",
         tuple: "arrow_reader",
     }
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if cls.KIND:
+            Dataset.KINDS[cls.KIND] = cls
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
+        """Build the dataset a document declares, dispatching on its `kind`.
+
+        Called on `Dataset` it picks the implementation; called on one of them
+        it builds that one, and refuses a document naming a different kind
+        rather than quietly building the wrong store from the right fields.
+        A document with no `kind` read through a concrete class is just that
+        class, which is what keeps `IcebergDataset.from_yaml(...)` working
+        unchanged.
+        """
+        kind = str(mapping.get("kind", "") or "")
+        if cls is Dataset:
+            if not kind:
+                raise ValueError(
+                    "a dataset document says which store it is: add a `kind`, one of "
+                    f"{sorted(set(Dataset.KINDS) | set(Dataset.MODULES))}"
+                )
+            built = Dataset.KINDS.get(kind) or Dataset._imported(kind)
+            if built is None:
+                known = sorted(set(Dataset.KINDS) | set(Dataset.MODULES))
+                raise ValueError(f"no dataset of kind {kind!r}; there is {known}")
+            return built.from_dict(mapping)  # type: ignore[return-value]
+        if kind and kind != cls.KIND:
+            raise ValueError(f"{cls.__name__} is {cls.KIND!r}, and the document says {kind!r}")
+        return super().from_dict({key: value for key, value in mapping.items() if key != "kind"})
+
+    @staticmethod
+    def _imported(kind: str) -> type[Dataset] | None:
+        """The implementation for `kind`, imported if this package ships one."""
+        module = Dataset.MODULES.get(kind)
+        if module is None:
+            return None
+        importlib.import_module(module)
+        return Dataset.KINDS.get(kind)
 
     # -- what it holds ------------------------------------------------------
 
@@ -99,6 +161,17 @@ class Dataset(Convertible, abc.ABC):
                 )
             return keys
         return list(merge_by)
+
+    @property
+    def records(self) -> int | None:
+        """How many rows this holds, when the store can say without reading them.
+
+        None by default, which means "this store cannot say cheaply" and is a
+        different answer from zero. A caller that needs the number counts it;
+        one that only wants to report what it landed says so, or says it does
+        not know -- rather than paying for a scan to decorate a log line.
+        """
+        return None
 
     # -- creating -----------------------------------------------------------
 
@@ -384,7 +457,7 @@ def normalised_keys(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
 
 
 def semi_join(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
-    """The rows of `matched` whose key the chunk references."""
+    """The rows of `matched` whose key the chunk references, in its own order."""
     if matched.num_rows == 0:
         return matched
     kept = keys_of(matched, join, TARGET_INDEX).join(
@@ -392,11 +465,11 @@ def semi_join(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str])
         keys=list(join),
         join_type="left semi",
     )
-    return matched.take(kept.column(TARGET_INDEX))
+    return matched.take(_in_order(kept.column(TARGET_INDEX)))
 
 
 def anti_join(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
-    """The rows of `chunk` no row of `matched` shares a key with.
+    """The rows of `chunk` no row of `matched` shares a key with, in its own order.
 
     One Arrow anti-join over the keys alone, rather than binding a per-row
     equality expression and filtering with it once per batch, which is what
@@ -409,7 +482,33 @@ def anti_join(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str])
         keys=list(join),
         join_type="left anti",
     )
-    return chunk.take(fresh.column(SOURCE_INDEX))
+    return chunk.take(_in_order(fresh.column(SOURCE_INDEX)))
+
+
+def _in_order(taken: Any) -> Any:
+    """Row positions a join handed back, put back into the table's own order.
+
+    An Arrow join emits its output a batch at a time and in whatever order the
+    batches finish -- measured on pyarrow 25, a 400k-row anti-join comes back
+    in ten runs rather than one. Nothing about the *rows* is wrong, and
+    everything about their **layout** is: a chunk is sorted on the way in so
+    that each of a file's row groups covers a narrow slice of the sort key,
+    and a scrambled take spreads every slice across all of them. `sorted` then
+    means nothing for any chunk that had a row to drop -- which is every
+    partial replay, and only those, since a chunk with nothing to drop is
+    handed back untouched.
+
+    Measured on a 1.2M-row table, a top-5% filter after inserting 800k rows
+    over 400k stored ones: **282,496 rows decoded in order against 400,000 to
+    531,072 out of it**, four row groups against four or five. The ordering
+    itself did not show up against run-to-run variance on the insert.
+
+    Sorting the *positions* rather than any column is what keeps this honest:
+    it restores the order the caller had, whatever that order was, and says
+    nothing about what it should be.
+    """
+    positions = taken.combine_chunks()
+    return positions.take(pyarrow.compute.sort_indices(positions))
 
 
 def first_rows(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:

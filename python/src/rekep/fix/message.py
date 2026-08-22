@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime
+import decimal
 import functools
 import re
-from collections.abc import Collection, Iterator, Mapping
+from collections.abc import Collection, Iterable, Iterator, Mapping
 from typing import Any, ClassVar
 
 import pyarrow
@@ -46,6 +48,11 @@ _NAME = r"[A-Za-z][A-Za-z0-9_.\-]*"
 #: not, so a `\s` in a pattern that exists in both engines is a divergence
 #: waiting for a vertical tab; one explicit class reads the same everywhere.
 _WS = r"[ \t\r\n\f\x0b]"
+
+#: The same characters as a set `str.strip` takes, for the paths that do not
+#: run the pattern. `str.strip()` with no argument strips *Unicode* whitespace,
+#: which is wider than what any of these regexes call whitespace.
+_STRIPPED = " \t\r\n\f\x0b"
 
 #: One token of a message, in every spelling the logs use. Four shapes come
 #: out of the same regex::
@@ -94,6 +101,34 @@ _MEMBER_VECTOR = rf"(?s)^{_WS}*(?P<member>\d+|{_NAME}){_WS}*=(?P<value>.*)$"
 #: the trailing name segment of `PartyID[1]`, `NoPartyIDs[0].PartyID` or a
 #: dotted component path, with the index stripped.
 _MEMBER_NAME = re.compile(r"([A-Za-z0-9_\-]+)(?:\[\d+\])?\s*$")
+
+#: A **rendered key** as tooling spells one, split into the part that says
+#: *which field* and the part that only says *where it sits*::
+#:
+#:     Side                    lead ''            name 'Side'     index ''
+#:     side                    lead ''            name 'side'     index ''
+#:     msg_type                lead ''            name 'msg_type' index ''
+#:     Msg Type                lead ''            name 'Msg Type' index ''
+#:     Instrument.Symbol       lead 'Instrument.' name 'Symbol'   index ''
+#:     NoPartyIDs[0].PartyID   lead 'NoPartyIDs[0].' name 'PartyID' index ''
+#:     PartyID[1]              lead ''            name 'PartyID'  index '[1]'
+#:
+#: `lead` is greedy, so the *last* segment is the field's own name and every
+#: component or group in front of it is decoration that `from_pairs` keeps.
+#: The classes cover both cases already, so the case-insensitivity is in the
+#: fold below rather than in a flag: `IGNORECASE` on an ASCII class buys
+#: nothing and costs a pass.
+_RENDERED_KEY = re.compile(
+    rf"^{_WS}*(?P<lead>(?:[A-Za-z0-9_\- ]+(?:\[\d+\])?\.)*)"
+    rf"(?P<name>[A-Za-z0-9_\- ]+)(?P<index>\[\d+\])?{_WS}*$",
+    re.ASCII,
+)
+
+#: What a fold drops from a name before it is looked up: the separators that
+#: only ever come from a renderer's casing convention (`msg_type`,
+#: `msg-type`, `Msg Type` are all `MsgType`). Nothing else is dropped -- a
+#: name is otherwise matched as it is spelled, lowercased.
+_UNFOLDED = re.compile(r"[ _\-]+", re.ASCII)
 
 #: BodyLength and CheckSum, the two fields whose *position* the standard
 #: fixes: 8, 9 lead and 10 ends the message.
@@ -178,6 +213,54 @@ class FixMessage(Convertible):
             if parsed[0] == CHECKSUM:
                 break
         return cls(pairs=pairs)
+
+    @classmethod
+    def from_pairs(
+        cls,
+        pairs: Iterable[tuple[Any, Any]],
+        names: Mapping[str, int | str] | None = None,
+    ) -> FixMessage:
+        """A message out of `(key, value)` pairs, where a key is a tag *or* a name.
+
+        The other way in. `from_text` reads a line; this takes what a bridge,
+        a decoder or a test already has as pairs and normalises it into the
+        same thing: keys resolved to tag numbers where they name a known
+        field, values rendered the way the wire spells them, order and
+        repetition preserved because that is what a message is.
+
+        A key may be:
+
+        - a **tag** -- `54`, `"54"`, or anything whose text is digits;
+        - a **name** -- `"Side"`, `"side"`, `"SIDE"`, `"msg_type"`, resolved
+          through `names` after a fold that drops the separators a renderer's
+          casing convention adds and lowercases the rest, so one entry in
+          `names` answers for every spelling of it;
+        - a **decorated name** -- `"Instrument.Symbol"`, `"PartyID[1]"`,
+          `"NoPartyIDs[0].PartyID"`. The component path and the entry index
+          say *where* the field sits, not what it is, so the name is resolved
+          without them and the decoration is kept on the stored key -- which
+          is exactly what `from_text` stores, so both ways in agree.
+
+        A key that resolves to nothing is **kept as it was given**. That is
+        deliberate and it is what makes this usable on a real feed: every
+        venue sends fields no dictionary has, and dropping them would lose
+        data that the map, the round trip and `get` all handle perfectly
+        well. `names=None` resolves nothing at all, which keeps every name a
+        name -- and `get("Side")` still finds it, because the rendered
+        spellings are a fallback there.
+
+        A `None` value drops its pair: an absent field is absent, and `54=`
+        on the wire is a malformed message rather than an empty side.
+        """
+        folded = _folded(names)
+        built: list[tuple[str, str]] = []
+        for key, value in pairs:
+            if value is None:
+                continue
+            resolved = _resolved_key(key, folded)
+            if resolved is not None:
+                built.append((resolved, _rendered(value)))
+        return cls(pairs=built)
 
     # -- reading ------------------------------------------------------------
 
@@ -291,9 +374,17 @@ class FixMessage(Convertible):
         like the rest of the rendered-name handling.
         """
         wanted = str(name)
-        pattern = re.compile(rf"^{re.escape(wanted)}\[(\d+)\](?:\.(.+))?$", re.IGNORECASE)
+        pattern = _indexed_pattern(wanted)
         entries: dict[int, list[tuple[str, str]]] = {}
         for key, value in self.pairs:
+            # An indexed key has a `[` in it, and a wire message has none in
+            # any of its keys -- so the reject is a substring test rather than
+            # a regex, and a feed of tag-spelled messages pays no regex at all
+            # for the groups it does not carry. Measured on market data, where
+            # six group lookups a message each fell through to here: 312,000
+            # of the 332,000 regex matches in a 4,000-line parse were this.
+            if "[" not in key:
+                continue
             match = pattern.match(key)
             if match is not None:
                 entries.setdefault(int(match[1]), []).append((match[2] or wanted, value))
@@ -664,6 +755,151 @@ def _tag_number(spelled: str | None, lookup: Mapping[str, int], key_type: Any) -
     return found
 
 
+# -- pairs -------------------------------------------------------------------
+
+
+#: The last few dictionaries folded, newest first, matched by **identity**.
+#: Tiny and strongly held: a few mappings of a few thousand entries is
+#: nothing, and holding them is what keeps an id from being recycled onto a
+#: different object.
+_FOLDED: list[tuple[Any, int, dict[str, str]]] = []
+_FOLDED_KEPT = 4
+
+
+def _folded(names: Mapping[str, int | str] | None) -> dict[str, str]:
+    """`names` as a fold-keyed lookup; empty when there is nothing to resolve.
+
+    Cached on the mapping *object*, because the natural call is
+    `from_pairs(pairs, names=TAGS)` in a loop over a stream and folding a
+    thousand-name dictionary per message is the whole cost of the conversion.
+
+    Identity and not contents, and that was measured: keying an `lru_cache` on
+    the sorted items spent **36% of `from_pairs`** building the key -- a cache
+    that costs more than the work it saves. The size is checked beside the
+    identity so a dictionary that *grew* is refolded; a mapping mutated in
+    place without changing size keeps the reading it had, which is why
+    `market_tags` hands back a read-only view rather than the dictionary
+    itself.
+    """
+    if not names:
+        return {}
+    for source, size, built in _FOLDED:
+        if source is names and size == len(names):
+            return built
+    built = {_fold(str(name)): str(tag) for name, tag in names.items()}
+    _FOLDED.insert(0, (names, len(names), built))
+    del _FOLDED[_FOLDED_KEPT:]
+    return built
+
+
+def _fold(name: str) -> str:
+    """One name in the spelling both sides of the lookup agree on.
+
+    Lowercased with the separators a renderer adds removed, so `MsgType`,
+    `msgtype`, `msg_type`, `msg-type` and `Msg Type` are one key.
+
+    It is *not* a regex over the known names, and it is not the first thing
+    tried either. Both were measured (`benchmarks/bench_fix.py`, mixed keys,
+    twice):
+
+    - one compiled case-insensitive alternation over the dictionary: **4.2M
+      keys/s at nine names, 89k at fifteen hundred**. It has to be probed for
+      the tag afterwards anyway, so it is a scan added *in front of* the
+      lookup it cannot replace -- and its cost scales with the dictionary
+      while a probe's does not. Nine names is exactly the size at which "just
+      use a regex" looks right.
+    - fold, then probe: **3.0M keys/s**, flat in the dictionary size.
+    - probe, then fold -- what `_resolved_key` does: **3.4-3.8M keys/s**,
+      because the `sub` here costs about 7x a bare `lower()` and a name with
+      no separator in it folds to its own lowercase. Those never pay for this
+      at all.
+    """
+    return _UNFOLDED.sub("", name).lower()
+
+
+def _resolved_key(key: Any, folded: Mapping[str, str]) -> str | None:
+    """One given key as the key the message stores it under, or None to drop it.
+
+    Digits are already a tag. A plain name is one lowercase and one probe --
+    the common case, and the reason it is tried before anything else: a name
+    with no separator in it folds to its own lowercase, so the fold is skipped
+    entirely. A name a renderer put separators in costs the fold as well. Only
+    a *decorated* key -- a component path, an entry index -- runs
+    `_RENDERED_KEY`, which splits the name from the decoration, resolves the
+    name and puts the decoration back, so `NoPartyIDs[0].Side` becomes
+    `NoPartyIDs[0].54` and keeps saying which entry it came from.
+
+    Ordering the three that way is worth about 7x on a mixed column and is
+    measured in `benchmarks/bench_fix.py`; a name nothing resolves is kept as
+    it was given, whichever reading failed to place it.
+    """
+    if isinstance(key, bool):
+        return None
+    if isinstance(key, int):
+        return str(key)
+    text = str(key).strip()
+    if not text:
+        return None
+    if text.isascii() and text.isdigit():
+        return text
+    tag = folded.get(text.lower())
+    if tag is None:
+        tag = folded.get(_fold(text))
+    if tag is not None:
+        return tag
+    match = _RENDERED_KEY.match(text)
+    if match is None:
+        return text
+    lead, name, index = match.group("lead", "name", "index")
+    tag = folded.get(name.lower()) or folded.get(_fold(name))
+    if tag is None:
+        return text
+    return f"{lead}{tag}{index or ''}"
+
+
+def _rendered(value: Any) -> str:
+    """One value as the wire spells it.
+
+    Text is itself. A boolean is FIX `Boolean`'s own `Y`/`N` -- not `True`,
+    which no FIX reader accepts. A float is rendered **positionally**, via
+    `Decimal` over its shortest round-tripping repr, because FIX `Price` and
+    `Qty` are "a sequence of digits with an optional decimal point" and an
+    exponent is not one: `1e-07` is a number Python prints and not a price
+    any venue parses. A value that knows its own FIX spelling is asked for it
+    (`into_fix`), which is how a banded enum renders as the code it came
+    from. Everything else is `str`.
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, bool):
+        return "Y" if value else "N"
+    if isinstance(value, bytes):
+        return value.decode("utf-8", "replace")
+    spelling = getattr(value, "into_fix", None)
+    if callable(spelling):
+        return str(spelling())
+    if isinstance(value, float):
+        return format(decimal.Decimal(repr(value)), "f")
+    if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
+        return _stamped(value)
+    return str(value)
+
+
+def _stamped(value: datetime.date | datetime.time) -> str:
+    """A date, a time or an instant in the spellings the standard fixes.
+
+    `UTCTimestamp` is `YYYYMMDD-HH:MM:SS.ssssss`, `UTCDateOnly` is
+    `YYYYMMDD` and `UTCTimeOnly` is `HH:MM:SS.ssssss` -- microseconds because
+    that is the finest the format carries a value for, and always present so
+    a reader never has to branch on whether the fraction is there.
+    """
+    if isinstance(value, datetime.datetime):
+        return value.strftime("%Y%m%d-%H:%M:%S.%f")
+    if isinstance(value, datetime.time):
+        return value.strftime("%H:%M:%S.%f")
+    return value.strftime("%Y%m%d")
+
+
 # -- one token ---------------------------------------------------------------
 
 
@@ -677,6 +913,16 @@ def _parse_token(token: str, named: bool) -> tuple[str, str] | None:
     `member=` is cut out of the rest (`_MEMBER`) and the key is rebuilt in
     its canonical spelling, index kept: `NoPartyIDs[0].PartyID`.
     """
+    head, sign, rest = token.partition("=")
+    key = head.strip(_STRIPPED)
+    if sign and key.isascii() and key.isdigit():
+        # `tag=value`, which is nearly every token of nearly every message and
+        # exactly what the regex would have come back with: a digit key takes
+        # no index and no member, and both modes admit it. The strip is the
+        # pattern's own `_WS` class and not `str.strip`, whose Unicode
+        # whitespace would let a non-breaking space through as a tag; the
+        # digits are `re.ASCII`'s, so an Arabic-Indic numeral still is not one.
+        return key, rest.strip()
     match = _TOKEN.match(token)
     if match is None:
         return None
@@ -695,6 +941,17 @@ def _parse_token(token: str, named: bool) -> tuple[str, str] | None:
             member, rest = inner.group("member", "value")
     canonical = f"{key}[{index}].{member}" if member else f"{key}[{index}]"
     return canonical, rest.strip()
+
+
+@functools.lru_cache(maxsize=1024)
+def _indexed_pattern(wanted: str) -> re.Pattern[str]:
+    """`wanted[i]` and `wanted[i].member`, for `indexed_group`.
+
+    Cached for the same reason `_member_pattern` is: a stream asks for the
+    same few group names on every message, and building the pattern is more
+    work than running it.
+    """
+    return re.compile(rf"^{re.escape(wanted)}\[(\d+)\](?:\.(.+))?$", re.IGNORECASE)
 
 
 @functools.lru_cache(maxsize=1024)

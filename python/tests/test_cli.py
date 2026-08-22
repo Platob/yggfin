@@ -107,10 +107,10 @@ def test_a_spec_that_names_no_class_says_how_to_write_one(capsys: pytest.Capture
 def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -> None:
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "log.yaml")) == 0
     printed = capsys.readouterr().out
-    assert "Log: 10 columns, builds" in printed
-    assert "recorded_at_unix: int64  [primary key]" in printed
-    assert "recorded_at_date: date32[day]  [partition identity]" in printed
-    assert "primary keys: ['recorded_at_unix', 'h64']" in printed
+    assert "Log: 21 columns, builds" in printed
+    assert "unix: int64  [primary key]" in printed
+    assert "hunix: int64  [partition identity]" in printed
+    assert "primary keys: ['unix', 'hash']" in printed
 
 
 @pytest.mark.parametrize(

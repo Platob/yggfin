@@ -6,9 +6,9 @@ import dataclasses
 import datetime
 import functools
 import json
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from functools import cached_property
-from typing import Any
+from typing import Any, ClassVar
 
 import pyarrow
 import pyarrow.fs
@@ -27,6 +27,7 @@ from rekep.dataset import (
 from rekep.fields import StructField, arrays, field_of
 from rekep.filesystems import resolve
 from rekep.iceberg.catalog import IcebergCatalog
+from rekep.iceberg.fields import metrics_for
 
 #: The branch a read or a write lands on when nothing names one -- pyiceberg's
 #: own default, spelled out here so the two cannot disagree about it.
@@ -173,6 +174,9 @@ class IcebergDataset(Dataset):
     a second dataset object.
     """
 
+    #: What a document's `kind` names this store as, for `Dataset.from_dict`.
+    KIND: ClassVar[str] = "iceberg"
+
     #: Table identifier, `namespace.name`.
     name: str
 
@@ -192,10 +196,12 @@ class IcebergDataset(Dataset):
     #: one commit over the whole stream.
     commit_row_size: int | None = DEFAULT_COMMIT_ROW_SIZE
 
-    #: Columns each chunk is sorted by before it is written. Off by default,
-    #: because it costs a sort per commit -- and worth it wherever reads filter
-    #: on those columns: measured, a top-5% filter over one 600k-row commit
-    #: took 214 ms unsorted and 22 ms sorted, the same single file either way.
+    #: Columns each chunk is sorted by before it is written. None means the
+    #: shape's own `sort_key()` declarations, because a table that records a
+    #: sort order and then writes rows in another one has recorded a wish: the
+    #: order is what makes a filter skip row groups, and measured, a top-5%
+    #: filter over one 600k-row commit took 214 ms unsorted and 22 ms sorted,
+    #: the same single file either way. An explicit `[]` opts out.
     sort_by: Sequence[str] | None = None
 
     #: Whether a merge plans its own scan instead of handing the whole chunk to
@@ -242,6 +248,31 @@ class IcebergDataset(Dataset):
         """Whether the table is there yet."""
         return self.store.table_exists(self.name)
 
+    @property
+    def records(self) -> int | None:
+        """How many rows the current snapshot holds, from its summary, or None.
+
+        **Metadata, not a scan.** Iceberg records the count when it commits, so
+        it is already in what this process loaded: no manifest is walked and no
+        data file is opened. That is what makes it usable per commit -- a job
+        that reported what it landed by reading the table back would spend more
+        on the report than on the write.
+
+        None when the snapshot does not say -- another engine's summary, or a
+        table nothing has written to -- because the readings a caller wants for
+        that are opposite ones: count it, or assume nothing is known. A table
+        that does not exist yet holds nothing, which is `0` and not unknown.
+        """
+        if not self.exists:
+            return 0
+        snapshot = self.iceberg_table.current_snapshot()
+        if snapshot is None:
+            return 0
+        try:
+            return int(snapshot.summary["total-records"])
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return None
+
     def create_with_field(self, field: StructField, **kwargs: Any) -> IcebergDataset:
         """Create the table from `field`: schema, keys, partitioning and docs.
 
@@ -255,12 +286,16 @@ class IcebergDataset(Dataset):
         if namespace:
             self.store.create_namespace(namespace)
         schema = field.into_iceberg_schema()
-        defaults = COMMIT_PROPERTIES if self.optimize_commits else {}
+        defaults = {**(COMMIT_PROPERTIES if self.optimize_commits else {}), **metrics_for(field)}
         table = self.iceberg_catalog.create_table(
             self.name,
             schema=schema,
             location=kwargs.pop("location", self.location),
             partition_spec=field.into_iceberg_partition_spec(schema),
+            # Declared at creation, because Iceberg records a sort order on the
+            # table and every writer through it honours it -- a shape that says
+            # how it is read is a shape that says how it should be laid out.
+            sort_order=field.into_iceberg_sort_order(schema),
             properties={**defaults, **self.table_properties, **kwargs.pop("properties", {})},
         )
         self.__dict__["iceberg_table"] = table
@@ -303,6 +338,16 @@ class IcebergDataset(Dataset):
     def into_struct_field(self) -> StructField:
         """The declared shape, or the table's own when nothing was declared."""
         return self.struct if self.struct is not None else self.table_field
+
+    def derived_columns(self) -> dict[str, tuple[str, ...]]:
+        """Columns the declared shape says are a function of other columns.
+
+        Read from the declaration and not from the table: Iceberg records a
+        partition spec, not why a column holds what it does, so a shape read
+        back from a table says nothing here -- and saying nothing costs a merge
+        pruning, never correctness.
+        """
+        return self.struct.derived_keys() if self.struct is not None else {}
 
     def add_fields(self, source: Any = None, *, dry_run: bool = False) -> list[str]:
         """Add the columns `source` has and the table lacks; skip when there are none.
@@ -625,7 +670,8 @@ class IcebergDataset(Dataset):
         chunk = normalised_keys(chunk, join)
         shape = field_of(chunk.schema)
         reference = branch or self.branch or MAIN
-        scan = table.scan(row_filter=_key_ranges(chunk, join))
+        derived = self.derived_columns()
+        scan = table.scan(row_filter=_key_ranges(chunk, join, derived))
         if reference in table.refs():
             scan = scan.use_ref(reference)
         # Planned once and read from that plan: `to_arrow_batch_reader` plans
@@ -676,7 +722,7 @@ class IcebergDataset(Dataset):
                     updates,
                     overwrite_filter=And(
                         _match_filter(updates, join),
-                        _key_ranges(updates, join),
+                        _key_ranges(updates, join, derived),
                     ),
                     branch=reference,
                     snapshot_properties=properties or {},
@@ -765,7 +811,7 @@ class IcebergDataset(Dataset):
         reference = branch or self.branch or MAIN
         # `_key_ranges` raises on a null or NaN key before the scan is even
         # built, which is the same refusal a merge makes.
-        scan = table.scan(row_filter=_key_ranges(chunk, join))
+        scan = table.scan(row_filter=_key_ranges(chunk, join, self.derived_columns()))
         if reference in table.refs():
             scan = scan.use_ref(reference)
         # Keys only -- an append never compares a non-key column, so it never
@@ -818,9 +864,17 @@ class IcebergDataset(Dataset):
         range whatever order it is written in. File bounds come from chunks
         that are already roughly ordered, which is what a log is.
         """
-        if not self.sort_by:
+        names = self.sort_columns()
+        if not names or chunk.num_rows < 2 or _in_sort_order(chunk, names):
             return chunk
-        return chunk.sort_by([(name, "ascending") for name in self.sort_by])
+        return chunk.sort_by([(name, "ascending") for name in names])
+
+    def sort_columns(self) -> list[str]:
+        """Columns a chunk is sorted by: what was asked for, or what is declared."""
+        if self.sort_by is not None:
+            return list(self.sort_by)
+        shape = self.struct
+        return list(shape.sort_keys()) if shape is not None else []
 
     def delete(self, row_filter: Any = None, *, branch: str | None = None) -> None:
         """Delete the rows a filter matches, in one commit."""
@@ -1650,7 +1704,7 @@ def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
 
     A residual is what a filter leaves once the file's partition has answered
     what it can, so the rule covers more than a bare limit does --
-    `limit=100` under `recorded_at_date = '2026-08-14'` opens one file of the
+    `limit=100` under `hunix = ...` opens one file of the
     day's several, where this used to hand the whole plan back on sight of a
     filter. It still hands it back the moment a task is not exact: a residual
     over a non-partition column may match any number of that file's rows, and
@@ -1700,7 +1754,44 @@ def _null_partition(partition: Any) -> bool:
     return any(partition[index] is None for index in range(len(partition)))
 
 
-def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
+def _in_sort_order(chunk: pyarrow.Table, names: Sequence[str]) -> bool:
+    """Whether `chunk`'s rows are already ascending on `names`, lexicographically.
+
+    Asked because the answer is usually yes and the question is far cheaper
+    than the sort: on a million rows in order, 1.7 ms to check against 38.7 ms
+    to sort, and on a million shuffled ones the same 1.7 ms against 185. A
+    stream that arrives in time order -- a capture, a log, a folded book -- is
+    the case this exists for, and it is the common one.
+
+    Nulls answer *no*. A comparison against one is null rather than false, and
+    where Arrow puts them in a sort is not something to reimplement here:
+    sorting a chunk that did not need it costs time, and skipping one that did
+    costs every reader after it.
+    """
+    compute = pyarrow.compute
+    ordered = None
+    for name in reversed(list(names)):
+        column = chunk.column(name).combine_chunks()
+        before, after = column[:-1], column[1:]
+        if ordered is None:
+            ordered = compute.less_equal(before, after)
+            continue
+        ordered = compute.or_(
+            compute.less(before, after),
+            compute.and_(compute.equal(before, after), ordered),
+        )
+    if ordered is None:
+        return True
+    # `min_count=0`, so a chunk with one row -- no adjacent pair to compare --
+    # answers yes rather than null. `all` of nothing is true.
+    return bool(compute.all(compute.fill_null(ordered, False), min_count=0).as_py())
+
+
+def _key_ranges(
+    chunk: pyarrow.Table,
+    join: Sequence[str],
+    derived: Mapping[str, Sequence[str]] | None = None,
+) -> Any:
     """A predicate every row matching `chunk` on `join` must satisfy.
 
     A stored row can only equal an incoming one if it agrees on every key
@@ -1708,14 +1799,25 @@ def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
     cheapest such filter is the one that does not grow with the chunk: the
     values a key column takes, when there are few of them, and its range when
     there are many. Two terms per column either way, against `Table.upsert`'s
-    one term per row.
+    one term from row.
 
     The `In` form matters beyond predicate size: an identity-partitioned key
     column prunes to exactly its partitions, where a range only prunes what the
     file bounds happen to exclude. A chunk of entirely new keys plans to no
     files at all, which is what turns a merge into an append.
+
+    `derived` extends that past the keys themselves. A column declared a
+    function of key columns -- `hunix`, which is `unix` truncated to the hour --
+    agrees wherever the keys agree, so its values in the chunk are its values
+    in every row that can match, and naming it is as safe as naming a key.
+    It is also the one that pays, because the market shapes are keyed on `unix`
+    and `hash` and partitioned on `hunix`: a filter that never mentions the
+    partition column prunes nothing at the manifest list, so the merge scales
+    with the *table* rather than with the chunk. Measured on a replayed hour,
+    declared against not: 19 ms against 37 over 48 hourly partitions, 20
+    against 93 over 168, 27 against 164 over 336.
     """
-    from pyiceberg.expressions import And, GreaterThanOrEqual, In, LessThanOrEqual, Or
+    from pyiceberg.expressions import And
 
     terms = []
     for column in join:
@@ -1728,10 +1830,7 @@ def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
                 f"column {column!r} is a merge key and cannot be null; "
                 "a null key matches nothing, so merging on it would duplicate rows"
             )
-        if (
-            pyarrow.types.is_floating(values.type)
-            and pyarrow.compute.any(pyarrow.compute.is_nan(values)).as_py()
-        ):
+        if _has_nan(values):
             # And no literal can name a NaN, which the two branches below
             # disagree about: `In` refuses it (pyiceberg will not build the
             # literal), while `min_max` skips it and hands back a range the
@@ -1741,32 +1840,75 @@ def _key_ranges(chunk: pyarrow.Table, join: Sequence[str]) -> Any:
                 f"column {column!r} is a merge key and cannot be NaN; "
                 "no predicate can name a NaN, so merging on it would duplicate rows"
             )
-        distinct = _distinct_under(values, MERGE_IN_LIMIT)
-        if distinct is not None:
-            if len(distinct) == 0:
-                continue
-            named = In(column, distinct.to_pylist())
-            if _has_zero(values):
-                # `In` of more than one literal reaches Arrow as `pc.is_in`,
-                # which hashes `-0.0` apart from the `0.0` it equals -- so a
-                # row stored as `-0.0` would not come back and would be
-                # inserted a second time. This filter is a superset anyway;
-                # widening it costs a few rows the semi-join then drops.
-                named = Or(
-                    named, And(GreaterThanOrEqual(column, 0.0), LessThanOrEqual(column, 0.0))
-                )
-            terms.append(named)
+        term = _column_term(column, values)
+        if term is not None:
+            terms.append(term)
+    for column in _derivable(chunk, join, derived):
+        values = chunk.column(column)
+        if values.null_count or _has_nan(values):
+            # Nothing here is required, so nothing here raises -- but a term
+            # that cannot name every value the column takes is a filter that
+            # excludes a row it should have matched, and this one is only ever
+            # allowed to be too wide.
             continue
+        term = _column_term(column, values)
+        if term is not None:
+            terms.append(term)
+    if not terms:
+        return _always_true()
+    return And(*terms) if len(terms) > 1 else terms[0]
+
+
+def _derivable(
+    chunk: pyarrow.Table, join: Sequence[str], derived: Mapping[str, Sequence[str]] | None
+) -> list[str]:
+    """Columns of `chunk` a row matching on `join` must agree on, keys aside.
+
+    A declared derivation is only usable when the chunk *has* the column and
+    every source it names is a key here: derived from `unix` alone it holds
+    for a merge on `(unix, hash)`, and derived from a column nothing joins on
+    it holds for nothing.
+    """
+    if not derived:
+        return []
+    keyed = set(join)
+    return [
+        name
+        for name, sources in derived.items()
+        if name not in keyed and name in chunk.column_names and keyed.issuperset(sources)
+    ]
+
+
+def _column_term(column: str, values: Any) -> Any | None:
+    """One conjunct covering every value `column` takes in the chunk, or None."""
+    from pyiceberg.expressions import And, GreaterThanOrEqual, In, LessThanOrEqual, Or
+
+    distinct = _distinct_under(values, MERGE_IN_LIMIT)
+    if distinct is None:
         # Neither bound can be null here: the column has rows, no nulls and no
         # NaN, which is everything `min_max` would have skipped. None means the
         # bounds cannot be expressed, and a missing term is a wider filter --
         # which is the direction this one is allowed to be wrong in.
-        banded = _banded(column, values)
-        if banded is not None:
-            terms.append(banded)
-    if not terms:
-        return _always_true()
-    return And(*terms) if len(terms) > 1 else terms[0]
+        return _banded(column, values)
+    if len(distinct) == 0:
+        return None
+    named = In(column, distinct.to_pylist())
+    if _has_zero(values):
+        # `In` of more than one literal reaches Arrow as `pc.is_in`, which
+        # hashes `-0.0` apart from the `0.0` it equals -- so a row stored as
+        # `-0.0` would not come back and would be inserted a second time. This
+        # filter is a superset anyway; widening it costs a few rows the
+        # semi-join then drops.
+        return Or(named, And(GreaterThanOrEqual(column, 0.0), LessThanOrEqual(column, 0.0)))
+    return named
+
+
+def _has_nan(values: Any) -> bool:
+    """Whether a floating column holds a NaN, which no literal can name."""
+    return (
+        pyarrow.types.is_floating(values.type)
+        and pyarrow.compute.any(pyarrow.compute.is_nan(values)).as_py()
+    )
 
 
 def _banded(column: str, values: Any) -> Any | None:
@@ -2226,16 +2368,47 @@ def _changed_by_kernel(
     compute = pyarrow.compute
     differs = None
     for name in compare:
-        one, other = left.column(name), right.column(name)
-        unequal = compute.fill_null(compute.not_equal(one, other), False)
-        # `not_equal` is null when either side is: a null against a value is a
-        # difference, two nulls are not.
-        only_one_null = compute.xor(compute.is_null(one), compute.is_null(other))
-        column = compute.or_(unequal, only_one_null)
+        column = _column_differs(left.column(name), right.column(name))
         # The first column *is* the running answer -- seeding one with a
         # Python list of falses costs 14 ms a million rows, and buys nothing.
         differs = column if differs is None else compute.or_(differs, column)
     return chunk.take(compute.filter(pairs.column(SOURCE_INDEX), differs))
+
+
+def _column_differs(one: Any, other: Any) -> Any:
+    """Which rows of two aligned columns disagree, nulls counted pyiceberg's way.
+
+    Per **column**, and that is the point. Arrow has no equality kernel for a
+    list, a struct or a map, and one such column used to hand the whole
+    comparison back to the library -- twenty scalar columns compared row by row
+    in Python because the twenty-first was a `list<int64>`. Measured on `Log`,
+    whose `parent_hash` is exactly that: a merge of 50,000 stored and unchanged
+    rows spent **6.35 seconds of 7.2** inside `get_rows_to_update`.
+    """
+    compute = pyarrow.compute
+    try:
+        unequal = compute.fill_null(compute.not_equal(one, other), False)
+    except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, pyarrow.ArrowTypeError):
+        return _column_differs_row_by_row(one, other)
+    # `not_equal` is null when either side is: a null against a value is a
+    # difference, two nulls are not.
+    only_one_null = compute.xor(compute.is_null(one), compute.is_null(other))
+    return compute.or_(unequal, only_one_null)
+
+
+def _column_differs_row_by_row(one: Any, other: Any) -> Any:
+    """The same answer for a column Arrow will not compare, in Python.
+
+    Two whole columns out of Arrow at once and one `!=` per row, against the
+    library's `slice(i, 1)` and `as_py()` per column per row -- and it is the
+    library's own comparison either way, because `to_pylist` and `as_py` build
+    the same Python objects and `!=` is `!=`. A list of nulls equals a list of
+    nulls, a null equals a null, and a NaN equals nothing, all as before.
+    """
+    return pyarrow.array(
+        [left != right for left, right in zip(one.to_pylist(), other.to_pylist(), strict=True)],
+        pyarrow.bool_(),
+    )
 
 
 def _renamed(reader: Any, names: dict[str, str]) -> Any:

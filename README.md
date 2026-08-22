@@ -54,7 +54,7 @@ capture = TextFiles.from_folder(
 )
 logs.append_arrow(capture.read_arrow_reader(), merge_by=True, commit_row_size=1_000_000)
 
-logs.read_arrow_table(row_filter="recorded_at_date = '2026-08-14'")
+logs.read_arrow_table(row_filter="hunix = 1786665600000000000")
 logs.optimize()                      # compact, expire, sweep
 ```
 
@@ -83,6 +83,39 @@ logs.optimize()                      # compact, expire, sweep
   name, datatype, comment, values — to work offline after. That scrape is also
   committed here, as `data/fix.zip`, so there is nothing to wait for: a cache
   is a directory of JSON or a zip of the same, and the extension says which.
+- **`market`** — `Order`, `Execution`, `BookSide` and `Book` as a *history*:
+  every version of every thing is its own immutable row, keyed by a signed
+  `int64` digest of its own content — the one column Iceberg, Spark and Doris
+  all read alike — and linked to the version before it. A
+  state, a side and a kind are banded `int32` codes, so "is it over" is one
+  range predicate an engine can prune on rather than a set of literals it
+  cannot; around forty columns carry the FIX field they came from, checked
+  against `data/fix.zip` by CI. `Book.summarise_arrow` derives the mid, the
+  spread, the microprice and the imbalance in kernels, once, so no reader has
+  to reach into a nested list that no engine below prunes on — and
+  `Book.from_events` folds one instrument's stream into the book it describes,
+  one row per instant that moved it. `BookIterator` does that for a whole
+  capture in one pass, holding a mutable state per instrument rather than the
+  capture, and hands back two streams: the books, and what the capture taught
+  it about the instruments themselves. It takes a snapshot on the hour, so any
+  hour of the table can be read on its own. `FixEvents` is the way in from a
+  venue: a FIX message, or the pairs one was rendered as, read as the orders
+  and executions it carries — with `unix` taken from `TransactTime <60>`, which
+  is when the transaction happened, and not from `SendingTime <52>`, which is
+  when the message was sent.
+- **`tasks`** — a unit of work declared in a document rather than written as a
+  script: `Task.from_yaml("tasks/parse_logs/parse_logs.yml").run()`. Two are
+  shipped, and together they are the pipeline a capture needs. `ParseLogs` is
+  one streaming pass over a folder of logs, every line classified by regular
+  expression and landed in the Iceberg table for what it is about
+  (`order_logs`, `execution_logs`, … `unknown_logs`). `ParseMarket` reads those
+  lines as FIX and lands what they *mean* — `market.orders`,
+  `market.executions`, `market.books` folded from both (one row per instant
+  that moved the book), and `market.instruments`, the reference data the
+  capture taught it along the way. Both append with a merge, so re-running one
+  over a capture that grew by a day costs the day; `ParseMarket` can also shard
+  the translation over worker processes. Each has a commented `.yml` and a
+  notebook that runs it end to end under `tasks/`.
 - **`convert`** — `Convertible`: paired `from_*`/`into_*` methods that serialise
   any dataclass to dict, JSON, YAML or TOML and back.
 

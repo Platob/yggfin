@@ -38,9 +38,12 @@ Arrow struct type, and metadata. Rules:
   Rationale goes in a `#` comment above the member. Never an `Attributes:`
   block; never restate a description in metadata.
 - Declarations ride on `Annotated[..., Field(...)]`: exact `arrow_type`,
-  `metadata`, `nullable`, plus `Field.primary_key()` and
-  `Field.partition_key(transform)`. A bare `DataType`/`Mapping`/`str` is a
-  shorthand for the type, the metadata or the description.
+  `metadata`, `nullable`, plus `Field.primary_key()`,
+  `Field.partition_key(transform)` and `Field.sort_key(direction)`. A bare
+  `DataType`/`Mapping`/`str` is a shorthand for the type, the metadata or the
+  description. A partition says which *file* a row lands in; a sort key says
+  where *inside* it -- declaration order is the sort order, because the struct
+  already has one.
 - **The type picks the class.** `Field(...)` returns `StructField`, `MapField`
   or one of the list flavours (`ListField`, `LargeListField`, `ListViewField`,
   `LargeListViewField`, `FixedSizeListField`) through `__new__` -- so `fields`,
@@ -49,12 +52,14 @@ Arrow struct type, and metadata. Rules:
   through `Field(...)`, so none of them repeats the rule. A new Arrow kind is a
   new subclass plus one row in `_KINDS`.
 - A member reached through a container is a **view** of it: setting
-  `is_primary_key`, `is_partition_key` or `description` on it rebuilds the
+  `is_primary_key`, `is_partition_key`, `is_sort_key` or `description` on it
+  rebuilds the
   struct, list or map it came from, to the root. Derived views (the Arrow
   schema, the member list) are cached and dropped whenever the declaration
   changes.
 - Protocol properties live in metadata under a prefixed key
-  (`iceberg:primary_key`, `iceberg:partition_key`, `iceberg:field_id`);
+  (`iceberg:primary_key`, `iceberg:partition_key`, `iceberg:sort_key`,
+  `iceberg:field_id`);
   unprefixed keys are ours. A nullable primary key is refused, at the
   declaration and at the setter. A **column id** is Iceberg's own identity for
   a column, so it is read back into `iceberg:field_id` and published in a
@@ -247,6 +252,88 @@ Ten things that were learned the expensive way, all of them measured:
   seeing *other* writers, and calling it per chunk is a catalog round trip per
   commit -- free on SQLite, a network hop on REST or Glue.
 
+**The market module's own rules.** A market notion is stored as an integer and
+read through an enum, never stored as the enum: the column survives a code this
+build has never seen, and `from_code` degrades it to its band rather than
+raising. The bands are ordered by how done the thing is, so the questions a
+query asks -- terminal, live, moved shares, removed liquidity, is this a
+snapshot -- are each **one range predicate**, which prunes where a set of `IN`
+literals cannot; the floor of every band is itself a member, so the degradation
+lands on something true. A value, once given, is never reused, and the schema
+carries the member table under `enum:` keys because a consumer that never
+imported this package has nothing else to decode `410` with. The **value type
+is read off the members**, never guessed from the base class: `class K(str,
+Enum)` and `class K(IntEnum)` both subclass something.
+
+An identifier is a signed `int64` -- the one column every engine below Arrow
+reads alike. `fixed_size_binary[16]` is better on paper and worse in practice:
+Doris reads it as `char(16)` of raw bytes, Spark cannot create one, and
+Iceberg's `uuid` reaches Spark as a string. The margin that costs is smaller
+than it looks, because the key is `(unix, hash)`: two digests only meet if they
+also share a nanosecond. **The frame is a specification**, written in
+`identity.py` down to the byte, because a Java or Rust producer has to compute
+the same number -- an `int64` little-endian length per part (`-1` when absent),
+then the part's bytes, then xxh3-64 read as two's complement. Parts of an identifier are hashed **behind their
+own byte lengths**: a separator alone does not stop a part that contains the
+separator, and a raw identifier used as a part contains any given byte about
+six times in a hundred. **A number is its own bytes, never its text** -- text
+needs a formatter, a scalar builder and a vectorised one are two of them, and
+they disagree (`10.0` against `10`, `1e-07` against `1e-7`). That shipped, and
+the tests missed it by only ever comparing the two builders over strings: when
+one path is a faster version of another, the test that compares them has to
+cross every *type* they branch on, not only every value.
+
+A key is a table's and not a struct's, so a nested shape keeps its comments and
+loses its keys -- nothing reads a nested key, and publishing one is a contract
+that lies. **A shape with one member is that member**, as an Arrow extension
+type over the member's own storage: a `struct` of one is a nesting level that
+carries nothing and costs a filter its pushdown, while an extension's storage
+is what every engine that never heard of it reads.
+
+**Nest nothing a filter needs.** What a reader would otherwise recompute is a
+flat column, derived once in kernels (`summarise_arrow`): a filter on `px`
+skips files, a filter on `alive[0].px` reads them all and throws the rows away
+-- Iceberg writes no bounds *at all* under a list or a map, and Doris pushes
+down only top-level scalars. Deriving costs 245-1136 ns/row against 0.4 ns to
+read the column back (`benchmarks/bench_market.py`). Watch the **leaf** budget
+while doing it: Iceberg bounds the first `write.metadata.metrics
+.max-inferred-column-defaults` leaves in pre-order, 100 by default, and nesting
+a whole `BookSide` under `bid` and `ask` put a `Book` at 140 leaves with
+`spread`, `micro_px` and `imbalance` at 138-140 -- past the cutoff, unbounded,
+and indistinguishable from working. Flat sides brought it to 80. Where two flat
+columns already determine a third, the third is not stored: `(px, spread)` *is*
+the best bid and offer, and `spread < 0` is crossed.
+
+**A code column is dictionary-*encoded*, not a map.** Arrow's `dictionary`
+stores each distinct value once with an index per row, which is the shape of a
+column whose point is that it repeats (4x smaller at six distinct states).
+`dictionary_arrow` asks three questions in one order, and the order is the
+rule: same **value** type -> encode as it stands; same **index** type -> take it
+as indices rather than encoding again; neither -> cast to the value type first.
+The middle one must be asked, and asked second: a `dictionary<int32, int32>`
+of ranged codes has an index and a value type of the same width, and indices
+encoded as values point every row at the wrong member.
+
+**A task is a document, and a log line is an event.** A job is configuration
+(`Task.from_yaml(...).run()`), dispatched on a `kind` the way everything else
+here dispatches, and it **returns what it did** rather than printing it -- like
+every maintenance verb. A parsed log carries the same `Event` envelope as an
+order or a book, so a capture is read beside what it describes; its `hash` is
+the digest of the raw line, and `xhash` is the same digest because a line is
+one version of one thing. What a line is *about* is an ordered list of
+regexes (`LogRules`), first match winning, no match `UNKNOWN` -- and a line
+nothing matches still lands, because dropping it makes a job lossy exactly when
+a log format changes.
+
+**Fan out in one pass, and say what it costs.** Splitting a stream into N
+targets is one read, N buffers and a flush at `commit_row_size` -- so the
+memory is `targets * commit_row_size` rows and is stated, not discovered.
+Re-running is an **append's** merge, never a write's: a stored key is skipped,
+nothing stored is rewritten, no delete file is produced, so a capture that grew
+by a day costs the day. Splitting measured *cheaper* than one table (2.0-2.1x),
+because the anti-join is per target; committing twenty times instead of twice
+measured 3.4x dearer (`benchmarks/bench_tasks.py`).
+
 ## 9. A dataset is a stream in and a stream out
 
 `Dataset` is three methods -- `into_struct_field`, `read_arrow_reader`,
@@ -389,6 +476,27 @@ rekep/
 │                  and dataset.py (IcebergDataset: scan pushdown out, cast +
 │                  append/upsert in, one commit per chunk, and the
 │                  maintenance -- add_fields, compact, cleanup, optimize)
+├── market/        what happened, as a history: enums.py (the banded int32
+│                  codes -- EventType, State, Side, TimeInForce, OrderKind,
+│                  ExecKind, UpdateAction, AssetKind, OptionKind -- and the FIX
+│                  character on each member), identity.py (the int64
+│                  identifier: the byte frame it is specified by, scalar and
+│                  vectorised), fields.py (MarketFieldBuilder: a UUID is
+│                  int64, a ranged code is int32 carrying its
+│                  member table, a nested shape loses its keys, a shape of one
+│                  member is that member; plus fix_tag and dictionary_arrow),
+│                  instrument.py (Instrument and Leg: what is traded, its
+│                  alternative identifiers and its legs), event.py (Event and
+│                  MarketEvent -- the envelope, the five clocks, with_previous
+│                  and make_snapshot), reference.py (Reference: one version of
+│                  an instrument, as a row of its own), orders.py (Order,
+│                  Execution), book.py (Level, LevelUpdate, LevelExecution,
+│                  Resting, BookSide, Book -- the append_* builders, the
+│                  derived prices computed in kernels, and BookIterator: one
+│                  pass over a capture holding mutable state per instrument,
+│                  emitting a book stream and an instrument stream) and fix.py
+│                  (FixEvents: a FIX message read as the market events it
+│                  carries -- which clock, which shape, which instrument)
 ├── fix/           message.py (FixMessage and the vectorised line parsing:
 │                  separator detection, tag=value and rendered
 │                  Name[i]=Member=value cutting, repeating groups, and
@@ -399,21 +507,33 @@ rekep/
 │                  JSON or a zip of the same -- the extension decides --
 │                  published here as data/fix.zip, with lookup and fuzzy
 │                  search, all names case-insensitive)
-└── logs/          log.py (the Log shape), text_file.py (TextFile: a log read
-                   into Arrow batches and written back out as lines, itself a
-                   Dataset) and text_files.py (TextFiles: a folder of them as one
-                   ordered stream -- the lazy pyarrow.fs walk, the batch
-                   combining, and the raw/compressed byte flow)
+├── logs/          log.py (Log -- a parsed line, which is an `Event`; and
+│                  LogRules, the ordered regexes that decide its `etype`),
+│                  text_file.py (TextFile: a log read into Arrow batches and
+│                  written back out as lines, itself a Dataset) and
+│                  text_files.py (TextFiles: a folder of them as one ordered
+│                  stream -- the lazy pyarrow.fs walk, the batch combining, and
+│                  the raw/compressed byte flow)
+└── tasks/         a unit of work declared in a document: task.py (Task, the
+                   `kind` dispatch and the TaskRun report), logs.py
+                   (ParseLogs: one streaming pass over a capture, fanned out
+                   into one Iceberg table per event type) and market.py
+                   (ParseMarket: those lines read as FIX and landed as orders,
+                   executions, books and instruments -- one pass, the fold
+                   inside it, optionally sharded over worker processes)
 ```
 
 Beside `python/`, `schemas/` holds the published contracts (one directory per
 namespace, one file per shape), `data/` the dictionaries this repository
 publishes -- the FIX one as `data/fix.zip`, which is a `FixRegistry` cache
-and nothing else -- and `docs/` the site.
+and nothing else -- `tasks/` the job documents and the notebook that runs one,
+and `docs/` the site.
 
-Dependencies point one way: `logs`/`iceberg` -> `dataset` -> `fields` ->
-`convert` -> `annotations`, and `fix` sits beside `dataset` on the same
-`fields` base. `urls` is a leaf below all of it: `filesystems`, `convert`,
+Dependencies point one way: `tasks` -> `logs`/`iceberg` -> `dataset` ->
+`fields` -> `convert` -> `annotations`, and `fix`/`market` sit beside `dataset`
+on the same `fields` base -- `market` reaching into `fix` only for the datatype
+table its tests check the tags against, and `logs` reaching into `market`
+because a parsed line *is* an `Event`. `urls` is a leaf below all of it: `filesystems`, `convert`,
 `logs` and `iceberg/fileio` all reach a store through it, so there is one
 answer to "what is this location" rather than one per caller. The one loop back is deliberate and lazy: a
 `Field`'s `into_iceberg_*` imports `rekep.iceberg.fields` at the point of use,
