@@ -94,11 +94,15 @@ logs.optimize()                      # compact, expire, sweep
   spread, the microprice and the imbalance in kernels, once, so no reader has
   to reach into a nested list that no engine below prunes on — and
   `Book.from_events` folds one instrument's stream into the book it describes,
-  one row per instant that moved it. `FixEvents` is the way in from a venue: a
-  FIX message, or the pairs one was rendered as, read as the orders and
-  executions it carries — with `unix` taken from `TransactTime <60>`, which is
-  when the transaction happened, and not from `SendingTime <52>`, which is when
-  the message was sent.
+  one row per instant that moved it. `BookIterator` does that for a whole
+  capture in one pass, holding a mutable state per instrument rather than the
+  capture, and hands back two streams: the books, and what the capture taught
+  it about the instruments themselves. It takes a snapshot on the hour, so any
+  hour of the table can be read on its own. `FixEvents` is the way in from a
+  venue: a FIX message, or the pairs one was rendered as, read as the orders
+  and executions it carries — with `unix` taken from `TransactTime <60>`, which
+  is when the transaction happened, and not from `SendingTime <52>`, which is
+  when the message was sent.
 - **`tasks`** — a unit of work declared in a document rather than written as a
   script: `Task.from_yaml("tasks/parse_logs/parse_logs.yml").run()`. Two are
   shipped, and together they are the pipeline a capture needs. `ParseLogs` is
@@ -106,9 +110,11 @@ logs.optimize()                      # compact, expire, sweep
   expression and landed in the Iceberg table for what it is about
   (`order_logs`, `execution_logs`, … `unknown_logs`). `ParseMarket` reads those
   lines as FIX and lands what they *mean* — `market.orders`,
-  `market.executions`, and `market.books` folded from both, one row per instant
-  that moved the book. Both append with a merge, so re-running one over a
-  capture that grew by a day costs the day. Each has a commented `.yml` and a
+  `market.executions`, `market.books` folded from both (one row per instant
+  that moved the book), and `market.instruments`, the reference data the
+  capture taught it along the way. Both append with a merge, so re-running one
+  over a capture that grew by a day costs the day; `ParseMarket` can also shard
+  the translation over worker processes. Each has a commented `.yml` and a
   notebook that runs it end to end under `tasks/`.
 - **`convert`** — `Convertible`: paired `from_*`/`into_*` methods that serialise
   any dataclass to dict, JSON, YAML or TOML and back.
