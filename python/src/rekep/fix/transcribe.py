@@ -1,0 +1,620 @@
+"""A log line's pairs as the tags FIX gave them -- as far as the dictionary goes.
+
+The registry side of the message layer. The parser produces `(key, value)` text
+because that is what the line says; a reader wants `(tag, value)` because that
+is what every other FIX consumer speaks. This is the step between, and its one
+rule is that **it never guesses**: a name the dictionary answers for becomes
+its tag, a name it does not stays as the log spelled it. No fuzzy match, no
+`search()` fallback, nothing dropped.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import re
+from functools import cached_property
+from typing import Any
+
+import pyarrow
+import pyarrow.compute
+
+from rekep.convert import Convertible
+from rekep.fields import Field
+from rekep.fields.arrays import groups_of, scattered
+from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
+from rekep.fix.columns import STAMPS as FLAT_STAMPS
+from rekep.fix.columns import TAGS as FLAT_TAGS
+from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.message import (
+    _BEGIN,
+    _MEMBER_NAME_VECTOR,
+    BRIDGE_SEPARATOR_VECTOR,
+    MARKER,
+    SEPARATOR_VECTOR,
+    SEPARATORS,
+    parse_arrow_array,
+)
+from rekep.fix.registry import FixRegistry
+from rekep.fix.rules import NO_PROTOCOL, Rules
+
+#: What a resolved key is: the tag number, as the `int32` every other code
+#: column here is.
+TAG: pyarrow.DataType = pyarrow.int32()
+
+#: The two map shapes a parsed line lands in. A **map** and not a
+#: `list<struct>` because tags repeat -- a repeating group *is* tags repeating
+#: -- and an Arrow map is the one nested type that keeps duplicate keys in
+#: order, which is why `parse_arrow_array` already returns one.
+#:
+#: The **value is NOT NULL**, like the key Arrow already requires: a pair whose
+#: value is missing is not a pair, and storing one would hand every consumer a
+#: third state to handle between "absent" and "present". `drop_null_values` is
+#: what makes that true rather than merely declared -- Arrow does not enforce
+#: it at construction, so the parser has to.
+_VALUE = pyarrow.field("value", pyarrow.string(), nullable=False)
+FIX_TAGS: pyarrow.DataType = pyarrow.map_(TAG, _VALUE)
+KEYVAL: pyarrow.DataType = pyarrow.map_(pyarrow.string(), _VALUE)
+
+#: A key that is already a tag: digits, and few enough of them to be one.
+#: Ten digits can overflow an `int32` and no FIX tag has ten, so the width is
+#: the guard -- an epoch-millis key is not a tag, and letting it through would
+#: turn a resolution into an Arrow overflow long after the decision was made.
+_IS_TAG = r"^[0-9]{1,9}$"
+
+#: Value spellings that mean **there is no value**. A bridge that has nothing
+#: to say for a field says it in whichever of these its renderer prefers, and
+#: they are not values: `ACCOUNT=<null>` is an absent account, and storing the
+#: literal text makes every consumer downstream re-implement this same check --
+#: differently, and one of them wrong.
+#:
+#: Matched case-blind and after trimming, because the spelling drifts with the
+#: renderer and the padding with the log format. Configuration, not a rule: a
+#: feed whose `n/a` really is a value passes its own set, and an empty set
+#: keeps every pair.
+NULL_VALUES: frozenset[str] = frozenset({"", "null", "<null>", "n/a"})
+
+#: Where each of the three answers to "which version" came from. Recorded
+#: rather than inferred later: `4.4` resolved off a BeginString and `4.4`
+#: because nobody said otherwise are the same string and not the same fact.
+BEGIN_STRING_SOURCE = "begin_string"
+RULE_SOURCE = "rule"
+DEFAULT_SOURCE = "default"
+NO_SOURCE = "none"
+
+
+@dataclasses.dataclass(frozen=True)
+class TagIndex:
+    """One FIX version's names as an Arrow value set, and the tags behind it.
+
+    Built once per version and probed with one kernel, which is the whole
+    point: raced against a Python dict over `to_pylist()` and against a polars
+    join on 720,896 keys and 1,566 names, `index_in` ran at **74.8M-78.7M
+    keys/s** -- 24x the dictionary-rebuilt-per-call path this replaced and 8x
+    the dict (`benchmarks/bench_text_file.py --only messages`). The rebuild is
+    what cost the 24x, so the index is a value it is worth holding.
+    """
+
+    #: Every name the version knows, lowercased. Lowercased *here* so the probe
+    #: is one kernel and never a scan: case-insensitivity is the dictionary's
+    #: business, not the parser's, and `pairs` keeps the log's own spelling.
+    names: pyarrow.Array
+
+    #: The tag behind each name, in the same order.
+    tags: pyarrow.Array
+
+    @classmethod
+    def from_tags(cls, tags: dict[str, int]) -> TagIndex:
+        """An index out of `FixRegistry.tags()`; an empty one resolves nothing."""
+        return cls(
+            names=pyarrow.array(list(tags), pyarrow.string()),
+            tags=pyarrow.array(list(tags.values()), TAG),
+        )
+
+    def resolve(self, keys: Any) -> pyarrow.Array:
+        """A key column as tag numbers, null where no reading finds one.
+
+        Three readings, in one pass each. The **decoration comes off first**:
+        `NoPartyIDs[0].PartyID`, `PartyID[1]` and `Instrument.Symbol` all say
+        *where* a field sits and the trailing segment says which field it is.
+        What is left is either digits -- already a tag -- or a name, probed
+        against the value set.
+
+        Null, never a guess, for anything else. A key that resolves to nothing
+        is not an error here: it is a key that belongs in `keyval`.
+        """
+        compute = pyarrow.compute
+        plain = compute.fill_null(compute.match_substring_regex(keys, _IS_TAG), False)
+        if compute.all(plain, min_count=0).as_py():
+            # Every key is already a tag, which is what a wire message is made
+            # of and so what most of a capture's pairs are. One cast, and none
+            # of the name machinery below is touched -- measured at roughly a
+            # third of what the general path costs on the same column.
+            return keys.cast(TAG)
+        reduced = compute.fill_null(
+            compute.struct_field(compute.extract_regex(keys, _MEMBER_NAME_VECTOR), "name"), ""
+        )
+        numeric = compute.fill_null(compute.match_substring_regex(reduced, _IS_TAG), False)
+        # Cast the whole column rather than a filtered subset: a non-numeric
+        # key is replaced by a digit that casts, and the `if_else` after throws
+        # it away. Filter-and-scatter costs two more kernels than the waste.
+        as_tag = compute.if_else(numeric, reduced, pyarrow.scalar("0")).cast(TAG)
+        by_name = compute.take(
+            self.tags, compute.index_in(compute.utf8_lower(reduced), value_set=self.names)
+        )
+        return compute.if_else(numeric, as_tag, by_name)
+
+
+@dataclasses.dataclass(eq=False)
+class FixCodec(Convertible):
+    """A log line read as FIX: which protocol it is, its pairs, and its tags.
+
+    The verbs a source needs to turn a message column into the columns a row
+    carries, and nothing else. That is the seam: a second codec over another
+    protocol implements the same ones and `TextFile` never learns which it is
+    holding (`docs/logs.md`).
+
+    Everything here is per **batch**: one mask per rule over the whole message
+    column, one parse per slice, one name index per FIX version. No per-row
+    work in any of it, which is what a capture of millions of lines needs.
+    """
+
+    #: Which category each line is. `Rules.DEFAULT`'s three built-ins unless a
+    #: document says otherwise.
+    rules: Rules = dataclasses.field(default_factory=Rules)
+
+    #: The dictionary names resolve through, **offline**: the default is the
+    #: user's own cache (`~/.config/fix`), read and never scraped, because a
+    #: parse that met its first bridge line and answered it by fetching seven
+    #: thousand pages mid-batch would be a worse surprise than an unresolved
+    #: name. Point it at `data/fix.zip` for the dictionary this repository
+    #: publishes, or hand over `FixRegistry()` to let it scrape.
+    registry: FixRegistry = dataclasses.field(default_factory=lambda: FixRegistry(offline=True))
+
+    #: Which FIX version to resolve names against when neither the message nor
+    #: the rule says. None means every version the dictionary holds, newest
+    #: winning -- which is what a name means when nobody said which version.
+    fix_version: str | None = None
+
+    #: Values that mean the field is absent, dropped from the pairs before
+    #: anything else looks at them. Empty keeps every pair.
+    null_values: frozenset[str] = NULL_VALUES
+
+    # -- the seam -----------------------------------------------------------
+
+    def categorise(self, messages: Any, drivers: Any = None) -> Any:
+        """One `protocol` name per row, in kernels."""
+        return self.rules.into_arrow_protocol_array(messages, drivers)
+
+    def into_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
+        """One `map<string, string>` per row: the message as the line spells it.
+
+        Addressed by **protocol name** and not by rule, because that is what
+        the seam can carry: the name is a column the batch already holds, and
+        the rule behind it is this codec's business.
+
+        A protocol whose codec is `none` parses nothing and says so with a
+        column of nulls -- **not** empty maps. "Parsed, and there was nothing
+        in it" and "this line is not a message" are different facts, and a
+        store that spelled them the same way could not tell a bridge that sent
+        an empty payload from a stack trace.
+        """
+        compute = pyarrow.compute
+        rule = self.rules.rule(protocol)
+        if rule.named is None:
+            return pyarrow.nulls(len(messages), KEYVAL)
+        if rule.separator is not None:
+            return self.drop_null_values(
+                parse_arrow_array(
+                    messages,
+                    rule.separator,
+                    named=rule.named,
+                    entry_separator=rule.entry_separator,
+                )
+            )
+        # `parse_arrow_array` samples a column **once** and reads every row of
+        # it that way -- which is right, and which is why a category is not a
+        # fine enough slice on its own: one FIX session writes `|` and the next
+        # writes SOH, and a capture holds both, so a single sample would read
+        # one of them as a message of one field. The rows that share a
+        # separator are parsed together and put back where they were.
+        groups = list(groups_of(self.separators_of(messages, rule.named)))
+        if len(groups) == 1:
+            # One separator down the whole slice, which is every capture that
+            # holds one session. Handed over as it stands rather than through a
+            # `take` of every row, because that copy is the whole column.
+            return self.drop_null_values(
+                parse_arrow_array(messages, named=rule.named, entry_separator=rule.entry_separator)
+            )
+        parts, positions = [], []
+        for _, where in groups:
+            parts.append(
+                parse_arrow_array(
+                    compute.take(messages, where),
+                    named=rule.named,
+                    entry_separator=rule.entry_separator,
+                )
+            )
+            positions.append(where)
+        return self.drop_null_values(scattered(parts, positions))
+
+    def separators_of(self, messages: Any, named: bool | None = None) -> pyarrow.Array:
+        """What each line writes between its fields, read off the line itself.
+
+        `detect_separator`'s rule over a whole column: whatever follows the
+        BeginString value, and for a line with none, whatever sits in front of
+        its second `#NAME=`. A line with neither answers `""`, which groups
+        them together -- they parse to nothing either way.
+
+        `named` says which of the two readings a slice can need, and is worth
+        passing: running the other pattern over it is a whole regex pass that
+        can only return nulls. None runs both, for a caller that does not know.
+
+        The **bridge** half extracts the character in front of the next key,
+        which is a separator only when it is one of the candidates: `#A=1#B=2`
+        puts nothing between its tokens, so what sits there is the tail of a
+        value. A non-candidate maps to the marker -- `detect_separator`'s rule,
+        for its reason -- which also keeps every `#`-separated row in **one**
+        group rather than one per value it happens to end with.
+        """
+        compute = pyarrow.compute
+        text = messages.cast(pyarrow.string(), safe=False)
+        found = None
+        if named is not True:
+            found = compute.struct_field(compute.extract_regex(text, SEPARATOR_VECTOR), "sep")
+        if named is not False:
+            bridge = compute.struct_field(
+                compute.extract_regex(text, BRIDGE_SEPARATOR_VECTOR), "sep"
+            )
+            bridge = compute.if_else(
+                compute.is_in(bridge, value_set=pyarrow.array(SEPARATORS, pyarrow.string())),
+                bridge,
+                pyarrow.scalar(MARKER),
+            )
+            found = bridge if found is None else compute.coalesce(found, bridge)
+        return compute.fill_null(found, "")
+
+    def drop_null_values(self, pairs: Any) -> Any:
+        """`pairs` without the fields that have no value.
+
+        Two things at once, because they are one fact. A value spelled as one
+        of `null_values` is an absent field, and a value that is *actually*
+        null is one too -- `58=` on the wire is a malformed message rather than
+        an empty Text, which is the reading `FixMessage.from_pairs` already
+        makes. Either way the pair goes, so the NOT NULL the map type declares
+        is true of every row that reaches a store.
+
+        Done here, above the parser and below the split, so a spelling that
+        means "nothing" never reaches `fix_tags` *or* `keyval`. A row whose
+        every field was absent comes back as an empty map, not a null one: the
+        line was a message, and it said nothing.
+
+        One pass over the flattened value child and one `all` to find out
+        whether anything has to move, so a capture carrying no absent field
+        rebuilds nothing.
+        """
+        if isinstance(pairs, pyarrow.ChunkedArray):
+            return pyarrow.chunked_array(
+                [self.drop_null_values(chunk) for chunk in pairs.chunks], type=KEYVAL
+            )
+        compute = pyarrow.compute
+        lengths, keys, items = _entries_of(pairs)
+        keep = compute.is_valid(items)
+        if self.null_values:
+            absent = compute.is_in(
+                compute.utf8_lower(compute.utf8_trim_whitespace(items)),
+                value_set=pyarrow.array(sorted(self.null_values), pyarrow.string()),
+            )
+            keep = compute.and_(keep, compute.invert(compute.fill_null(absent, False)))
+        if compute.all(keep, min_count=0).as_py():
+            return pairs.cast(KEYVAL)
+        return _mapped(
+            pairs, lengths, keep, compute.filter(keys, keep), compute.filter(items, keep), KEYVAL
+        )
+
+    def into_fix_pairs(self, pairs: Any, version: str | None = None) -> tuple[Any, Any]:
+        """`pairs` split into the keys FIX names and the keys it does not.
+
+        Two maps out of one, **in wire order**, which is the whole of how a
+        repeating group survives the transcription. `NoPartyIDs=2` then its
+        entries flattened -- `453, 448, 447, 452, 448, 447, 452` -- is exactly
+        what the same message looks like on the wire, and it is exactly what a
+        reader that knows the group can walk. So the `[i]` index is **dropped**
+        once the order carries it: the index was a rendering convenience, the
+        order is the standard.
+
+        A key the dictionary answers for becomes `(tag, value)`; every other
+        key stays `(key, value)`, spelled as the log spelled it. Nothing is
+        dropped and nothing is guessed -- a venue's own field is data, and a
+        near-miss is a wrong answer that looks like a right one.
+
+        A null row stays null in both halves. A row whose keys all resolve
+        comes back with an *empty* map on the `keyval` side, and vice versa:
+        the row parsed, and one half of it was empty.
+        """
+        if len(pairs) and pairs.null_count == len(pairs):
+            # Every row of this slice is "not a message", which is most of a
+            # capture. Both halves are null, and the kernels below would run
+            # over an empty child array to establish it.
+            return pyarrow.nulls(len(pairs), FIX_TAGS), pyarrow.nulls(len(pairs), KEYVAL)
+        index = self.index_of(version)
+        if isinstance(pairs, pyarrow.ChunkedArray):
+            halves = [self.into_fix_pairs(chunk, version) for chunk in pairs.chunks]
+            return (
+                pyarrow.chunked_array([one for one, _ in halves], type=FIX_TAGS),
+                pyarrow.chunked_array([other for _, other in halves], type=KEYVAL),
+            )
+        compute = pyarrow.compute
+        lengths, keys, items = _entries_of(pairs)
+        tags = index.resolve(keys)
+        known = compute.is_valid(tags)
+        unknown = compute.invert(known)
+        resolved = _mapped(
+            pairs,
+            lengths,
+            known,
+            compute.filter(tags, known),
+            compute.filter(items, known),
+            FIX_TAGS,
+        )
+        rest = _mapped(
+            pairs,
+            lengths,
+            unknown,
+            compute.filter(keys, unknown),
+            compute.filter(items, unknown),
+            KEYVAL,
+        )
+        return resolved, rest
+
+    def into_flat_columns(self, tags: Any) -> tuple[dict[str, Any], Any]:
+        """The fields worth a column of their own, lifted out of `tags`.
+
+        The mandatory session layer and the component fields a trading log is
+        made of -- who sent it, what was traded, at what price -- become
+        columns, and are **removed** from the map rather than stored in both
+        places. `rekep.fix.columns` says which tags those are, and under what
+        rule an occurrence of one may be lifted at all.
+
+        Text out, and the schema says what each decodes to -- with one
+        exception the schema cannot make: a **stamp** is read here, because
+        `20260814-09:30:00.123` is not something a cast to `int64` can find its
+        way to, and nanoseconds since the epoch is what this package stores an
+        instant as (`columns.STAMPS`).
+
+        One `is_in` finds every liftable field in one pass; each tag actually
+        present then costs a handful of kernels and no Python per row.
+        """
+        rows = len(tags)
+        columns: dict[str, Any] = {
+            name: pyarrow.nulls(rows, pyarrow.int64() if tag in FLAT_STAMPS else pyarrow.string())
+            for tag, name in FLAT_COLUMNS.items()
+        }
+        if isinstance(tags, pyarrow.ChunkedArray):
+            tags = tags.combine_chunks()
+        if not rows or tags.null_count == rows:
+            return columns, tags
+        compute = pyarrow.compute
+        listed = _listed(tags)
+        lengths = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32())
+        parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
+        entries = compute.list_flatten(listed)
+        keys, items = compute.struct_field(entries, 0), compute.struct_field(entries, 1)
+        lift = compute.and_(
+            compute.fill_null(compute.is_in(keys, value_set=FLAT_TAGS), False),
+            _once(parents, keys),
+        )
+        if not compute.any(lift, min_count=0).as_py():
+            return columns, tags
+        found = compute.filter(keys, lift)
+        where = compute.filter(parents, lift)
+        values = compute.filter(items, lift)
+        row_ids = pyarrow.array(range(rows), pyarrow.int64())
+        for tag in compute.unique(found).to_pylist():
+            at = compute.equal(found, tag)
+            column = compute.take(
+                compute.filter(values, at),
+                compute.index_in(row_ids, value_set=compute.filter(where, at)),
+            )
+            if tag in FLAT_STAMPS:
+                column = cast_arrow_fix(column, pyarrow.timestamp("ns")).cast(pyarrow.int64())
+            columns[FLAT_COLUMNS[tag]] = column
+        carried = compute.invert(lift)
+        rest = _mapped(
+            tags,
+            lengths,
+            carried,
+            compute.filter(keys, carried),
+            compute.filter(items, carried),
+            FIX_TAGS,
+        )
+        return columns, rest
+
+    # -- versions -----------------------------------------------------------
+
+    def version_of(
+        self, message: str | None, protocol: str = NO_PROTOCOL
+    ) -> tuple[str | None, str]:
+        """Which FIX version a message is read under, and where that came from.
+
+        Three answers in order of authority: **tag 8**, the message saying so
+        itself; the **rule**, the desk saying what its bridge speaks; and the
+        **configured default**, this codec saying what to assume. The source
+        comes back with the version because `4.4` read off a BeginString and
+        `4.4` because nobody said otherwise are the same string and not the
+        same fact.
+
+        A BeginString the dictionary has no version for -- a truncated `FIX4`,
+        a vendor's own spelling -- falls through rather than being coerced into
+        the nearest one.
+        """
+        if message:
+            begin = _BEGIN.search(message)
+            if begin is not None:
+                named = self.version_named(begin.group(0))
+                if named is not None:
+                    return named, BEGIN_STRING_SOURCE
+        rule = self.rules.rule(protocol)
+        if rule.fix_version:
+            return rule.fix_version, RULE_SOURCE
+        if self.fix_version:
+            return self.fix_version, DEFAULT_SOURCE
+        return None, NO_SOURCE
+
+    def version_named(self, begin_string: str) -> str | None:
+        """`8=FIX.4.2` as the version the dictionary spells `4.2`; None if unknown.
+
+        Matched on the digits and letters alone, because the two spellings
+        agree on nothing else: `FIX.4.2` is `4.2`, `FIXT.1.1` is `FIXT1.1` and
+        `FIX.5.0SP2` is `5.0.SP2`.
+        """
+        return self._spellings.get(_version_key(begin_string))
+
+    def index_of(self, version: str | None = None) -> TagIndex:
+        """The name index for one version, built once and held.
+
+        Built from `FixRegistry.tags`, which walks whole versions -- so it is
+        built per *batch* at the most, never per row, and in practice once per
+        version for the life of the codec.
+
+        A version the registry cannot answer for -- offline with a cold cache,
+        a spelling it has never seen -- is an **empty index**, not an
+        exception. A parsed line still has to land: its keys go to `keyval`
+        and the capture is stored. A pipeline that died on a cold cache would
+        lose the log rather than the tags.
+        """
+        wanted = version if version is not None else self.fix_version
+        if wanted not in self._indexes:
+            self._indexes[wanted] = TagIndex.from_tags(self._tags(wanted))
+        return self._indexes[wanted]
+
+    def tag_field(self, tag: int, version: str | None = None) -> Field | None:
+        """The dictionary's own declaration of one tag, or None when it has none.
+
+        The seam for **typed** values, and the reason values stay text in
+        `fix_tags`: the Arrow type on this field is `rekep.fix.fields`'
+        `FIX_SCALARS` projection of the FIX datatype, and its `fix["values"]`
+        carries the enumeration. So decoding a column of one tag is a cast
+        against the field that knows what the tag is -- which is where a cast
+        belongs -- rather than a second type table here that would have to be
+        kept in step with it.
+        """
+        try:
+            return self.registry.field(tag, version if version is not None else self.fix_version)
+        except (KeyError, OSError, ValueError):
+            return None
+
+    # -- held state ---------------------------------------------------------
+
+    @cached_property
+    def _indexes(self) -> dict[str | None, TagIndex]:
+        return {}
+
+    @cached_property
+    def _spellings(self) -> dict[str, str]:
+        """`{version key: canonical spelling}` for every version the store holds."""
+        try:
+            versions = self.registry.versions
+        except (OSError, ValueError):
+            return {}
+        return {_version_key(version): version for version in versions}
+
+    def _tags(self, version: str | None) -> dict[str, int]:
+        """`{name: tag}` for one version, or for all of them; empty when unknown."""
+        try:
+            return self.registry.tags(version)
+        except (KeyError, OSError, ValueError):
+            return {}
+
+
+def _once(parents: Any, keys: Any) -> Any:
+    """Which entries are the only one of their tag in their row.
+
+    One composite key per entry -- the row shifted above the tag, so no pair of
+    them can collide -- counted in a single `value_counts`. Per entry and not
+    per tag, because a batch carries thirty-odd liftable tags and one pass over
+    the child array answers for all of them at once.
+    """
+    compute = pyarrow.compute
+    composite = compute.add(
+        compute.multiply(parents, pyarrow.scalar(2**32, pyarrow.int64())),
+        keys.cast(pyarrow.int64()),
+    )
+    counted = compute.value_counts(composite)
+    seen = compute.take(
+        counted.field("counts"), compute.index_in(composite, value_set=counted.field("values"))
+    )
+    return compute.equal(seen, 1)
+
+
+def _listed(pairs: Any) -> Any:
+    """A map column as a list-of-struct **view** of the same buffers.
+
+    The route `tag_arrow_array` takes, for its reason: the list kernels honour
+    a sliced array's own offset and validity where the raw `.keys`/`.offsets`
+    accessors do not, and neither `list_flatten` nor `list_value_length` has a
+    map kernel. The cast moves no data.
+    """
+    return pairs.cast(
+        pyarrow.list_(
+            pyarrow.struct([("key", pairs.type.key_type), ("value", pairs.type.item_type)])
+        )
+    )
+
+
+def _entries_of(pairs: Any) -> tuple[Any, Any, Any]:
+    """One map column as `(row lengths, keys, values)`."""
+    compute = pyarrow.compute
+    listed = _listed(pairs)
+    lengths = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32())
+    entries = compute.list_flatten(listed)
+    return lengths, compute.struct_field(entries, 0), compute.struct_field(entries, 1)
+
+
+def _mapped(
+    source: Any,
+    lengths: Any,
+    mask: Any,
+    keys: Any,
+    items: Any,
+    arrow_type: pyarrow.DataType,
+) -> pyarrow.MapArray:
+    """One half of a split, as a map with the source's own rows and nulls.
+
+    The offsets are rebuilt from a cumulative sum of the mask -- the same
+    construction `parse_arrow_array` builds its rows from -- so an entry that
+    went to the other half costs nothing here and the ones that stayed keep
+    their order. A null row takes to null, which is Arrow's own `from_arrays`
+    convention and the one way to keep "not a message" apart from "a message
+    with nothing in it".
+    """
+    compute = pyarrow.compute
+    counted = compute.cumulative_sum(mask.cast(pyarrow.int32()))
+    bounds = pyarrow.concat_arrays([pyarrow.array([0], pyarrow.int32()), counted])
+    rows = pyarrow.concat_arrays(
+        [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(lengths)]
+    )
+    offsets = bounds.take(rows)
+    if source.null_count:
+        head = compute.if_else(
+            compute.is_null(source),
+            pyarrow.scalar(None, pyarrow.int32()),
+            offsets.slice(0, len(source)),
+        )
+        offsets = pyarrow.concat_arrays([head, offsets.slice(len(source))])
+    return pyarrow.MapArray.from_arrays(offsets, keys, items, type=arrow_type)
+
+
+def _version_key(spelling: str) -> str:
+    """A FIX version in the one spelling both sides of the lookup agree on.
+
+    Uppercased with the punctuation dropped, and the `FIX` prefix with it --
+    unless it is `FIXT`, which is a different protocol and not decoration. So
+    `8=FIX.4.2`, `FIX.4.2` and `4.2` all key on `42`, and `FIXT.1.1` keys on
+    `FIXT11` rather than colliding with `1.1`.
+    """
+    text = re.sub(r"[^A-Za-z0-9]", "", spelling.strip().upper())
+    if text.startswith("8FIX"):
+        text = text[1:]
+    if text.startswith("FIXT"):
+        return text
+    return text[3:] if text.startswith("FIX") else text

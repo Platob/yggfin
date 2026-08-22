@@ -1,5 +1,6 @@
 """`IcebergDataset` against a real, fully local catalog: SQLite and a file warehouse."""
 
+import dataclasses
 import datetime
 import os
 import subprocess
@@ -17,6 +18,8 @@ from pyiceberg.expressions import EqualTo
 from rekep import Convertible, Field, Log, StructField, field
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.market import EventType
+
+from ..conftest import catalog_properties
 
 
 @field
@@ -46,16 +49,6 @@ def local(location: str) -> Path:
     return Path(pyarrow.fs.FileSystem.from_uri(location)[1])
 
 
-def catalog_properties(tmp_path: Path) -> dict[str, str]:
-    warehouse = tmp_path / "warehouse"
-    warehouse.mkdir(exist_ok=True)
-    return {
-        "type": "sql",
-        "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
-        "warehouse": warehouse.as_uri(),
-    }
-
-
 @pytest.fixture
 def dataset(tmp_path: Path) -> IcebergDataset:
     return IcebergDataset(
@@ -76,6 +69,63 @@ def quotes(count: int, message: str = "XPAR") -> pyarrow.Table:
             "venue": [message] * count,
         },
         schema=Quote.FIELD.into_arrow_schema(),
+    )
+
+
+@pytest.fixture
+def logs(tmp_path: Path) -> IcebergDataset:
+    """The parser's own shape, which is the widest thing this package stores."""
+    return IcebergDataset(
+        name="trading.logs",
+        catalog="test",
+        properties=catalog_properties(tmp_path),
+        struct=Log.FIELD,
+    )
+
+
+#: One wire FIX order as the parser lands it: the session layer and the fields
+#: the message carries once flattened into columns of their own, and the party
+#: group -- which repeats, so no one entry of it is the line's -- left in the
+#: map it arrived in.
+FIX_LINE = Log(
+    url="a.txt",
+    unix=1_786_665_901_167_520_000,
+    hash=3,
+    xhash=3,
+    etype=EventType.ORDER,
+    thread_name="t",
+    driver_name="d",
+    message="sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|11=ORD-1|55=TTF|10=203|",
+    protocol="FIX",
+    fix_tags={453: "2", 448: "BUYSIDE"},
+    keyval={},
+    begin_string="FIX.4.2",
+    body_length=176,
+    msg_type="D",
+    seq=7,
+    sender_comp_id="BUYSIDE",
+    target_comp_id="XPAR",
+    sending_unix=1_786_692_600_123_000_000,
+    poss_dup_flag=True,
+    signature=b"\x00sealed",
+    check_sum="203",
+    symbol="TTF",
+    cl_ord_id="ORD-1",
+    side="1",
+    order_qty=1200.0,
+    transact_unix=1_786_692_600_000_000_000,
+    text="all good",
+)
+
+
+def log_table(*rows: Log) -> pyarrow.Table:
+    """Lines as the values Arrow wants.
+
+    `into_dict` is the document view of a row and spells an integer map key as
+    text, which is the wrong reading here: `fix_tags` is keyed by the tag.
+    """
+    return pyarrow.Table.from_pylist(
+        [dataclasses.asdict(row) for row in rows], Log.FIELD.into_arrow_schema()
     )
 
 
@@ -347,33 +397,80 @@ def test_append_streams_one_commit_per_chunk(dataset: IcebergDataset) -> None:
     assert len(dataset.iceberg_table.snapshots()) == 3, "two rows per commit"
 
 
-def test_a_log_lands_in_a_table(dataset: IcebergDataset, tmp_path: Path) -> None:
-    """The parser's own shape, end to end: declared, created, written, read."""
-    logs = IcebergDataset(
-        name="trading.logs",
-        catalog="test",
-        properties=catalog_properties(tmp_path),
-        struct=Log.FIELD,
-    )
-    row = Log(
-        url="a.txt",
-        unix=1_786_665_901_167_520_000,
-        hash=2,
-        xhash=2,
-        etype=EventType.EXECUTION,
-        thread_name="t",
-        driver_name="d",
-        message="m",
-    )
-    table = pyarrow.Table.from_pylist([dataclass_row(row)], Log.FIELD.into_arrow_schema())
-    logs.write_arrow_table(table, merge_by=True)
-    logs.write_arrow_table(table, merge_by=True)
-    assert logs.read_arrow_table().num_rows == 1, "the same line upserts onto itself"
+def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
+    """The parser's own shape, end to end: declared, created, written, read.
+
+    One line carrying every kind at once, because a column the catalog cannot
+    hold fails at the write and nowhere earlier: the two maps, a boolean, a
+    double, a binary block, and an instant as int64 nanoseconds rather than as
+    the timestamp Iceberg would have had to narrow to microseconds.
+    """
+    assert len(Log.FIELD.names) == 81
+    logs.write_arrow_table(log_table(FIX_LINE), merge_by=True)
+    logs.write_arrow_table(log_table(FIX_LINE), merge_by=True)
+
+    assert [one.name for one in logs.iceberg_table.schema().fields] == Log.FIELD.names
+    stored = logs.read_arrow_table(Log.FIELD)
+    assert stored.num_rows == 1, "the same line upserts onto itself"
+    row = stored.to_pylist()[0]
+    assert row["protocol"] == "FIX"
+    assert row["fix_tags"] == [(453, "2"), (448, "BUYSIDE")], "in the order they arrived"
+    assert row["seq"] == 7 and row["sender_comp_id"] == "BUYSIDE"
+    assert row["symbol"] == "TTF" and row["cl_ord_id"] == "ORD-1"
+    assert row["order_qty"] == 1200.0
+    assert row["poss_dup_flag"] is True
+    assert row["signature"] == b"\x00sealed", "binary, so a leading zero byte is not text"
+    assert row["sending_unix"] == FIX_LINE.sending_unix, "nanoseconds, to the digit"
+    assert row["check_sum"] == "203", "text, so a checksum keeps the leading zeros it needs"
+    assert row["price"] is None, "a field this message never carried"
 
 
-def dataclass_row(row: Log) -> dict:
-    """A `Log` as the plain values Arrow wants."""
-    return row.into_dict()
+def test_a_line_carrying_no_message_is_not_one_whose_message_said_nothing(
+    logs: IcebergDataset,
+) -> None:
+    """Three states the store has to keep apart: a null map is a line carrying
+    no message at all, an empty map is a message that said nothing, and neither
+    is a message that said something. Iceberg spells nullability in its own
+    words, so a round trip is where the three would collapse into one.
+    """
+    quiet = Log(unix=1, hash=1, xhash=1, message="heartbeat emitted")
+    bridged = Log(
+        unix=2, hash=2, xhash=2, message="toBridge #", protocol="UL", fix_tags={}, keyval={}
+    )
+    logs.write_arrow_table(log_table(quiet, bridged, FIX_LINE))
+
+    stored = logs.read_arrow_table(Log.FIELD).sort_by("unix")
+    assert stored.column("protocol").to_pylist() == ["OTHER", "UL", "FIX"]
+    assert stored.column("fix_tags").to_pylist() == [None, [], [(453, "2"), (448, "BUYSIDE")]]
+    assert stored.column("keyval").to_pylist() == [None, [], []]
+
+
+def test_the_maps_come_back_saying_what_a_pair_is(logs: IcebergDataset, tmp_path: Path) -> None:
+    """The map is nullable and its values are not, and both halves have to
+    survive the catalog: a value that came back nullable would let the next
+    write store a pair without one, which is what the declaration refuses.
+    """
+    logs.write_arrow_table(log_table(FIX_LINE))
+    found = IcebergDataset(name=logs.name, catalog="test", properties=catalog_properties(tmp_path))
+    shape = found.into_struct_field()
+    for column in ("fix_tags", "keyval"):
+        assert shape.field(column).nullable, column
+        assert not shape.field(column).value.nullable, column
+
+
+def test_the_flattened_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> None:
+    """Iceberg bounds the first `write.metadata.metrics.max-inferred-column
+    -defaults` leaves in pre-order, 100 by default, and flattening the message
+    took this shape to 83 of them. `text` is the last, so anything that fell
+    past the cutoff takes that one with it -- and an unbounded column prunes
+    nothing while looking exactly like a column that does.
+    """
+    logs.write_arrow_table(log_table(FIX_LINE))
+    assert len(Log.FIELD.leaf_names()) == 83
+    last = logs.iceberg_table.schema().find_field("text").field_id
+    written = [task.file for task in logs.iceberg_table.scan().plan_files()]
+    assert written, "a write landed a file"
+    assert all(last in one.lower_bounds for one in written), "the last column still prunes"
 
 
 def test_the_module_imports_without_pyiceberg() -> None:
@@ -971,13 +1068,19 @@ def test_declared_table_properties_win_over_the_defaults(tmp_path: Path) -> None
 # -- planning ---------------------------------------------------------------
 
 
-def test_a_merge_of_new_keys_writes_without_reading(dataset: IcebergDataset) -> None:
-    """The pruning short circuit: an append, arrived at by planning."""
+def test_a_merge_of_new_keys_writes_without_reading(
+    dataset: IcebergDataset, opened: dict[str, int]
+) -> None:
+    """The pruning short circuit, through `write_arrow(merge_by=True)`: keys no
+    stored file can hold plan to nothing, so the merge commits what it was
+    given without opening a data file to compare against."""
     dataset.write_arrow_table(quotes(3))
     before = len(dataset.iceberg_table.history())
-    dataset.write_arrow(quotes(3, "XETR"), merge_by=True)  # same keys -> updates
+    opened.clear()
+    dataset.write_arrow(keyed("T", 3), merge_by=True)  # keys nothing stored shares
     dataset.refresh()
-    assert dataset.read_arrow_table().num_rows == 3
+    assert opened.get("data", 0) == 0, "nothing was read to arrive at the append"
+    assert dataset.read_arrow_table().num_rows == 6, "the new keys landed beside the stored ones"
     assert len(dataset.iceberg_table.history()) > before
 
 
@@ -1146,11 +1249,15 @@ def test_a_merge_that_matches_still_reads_and_updates(
 
 
 def test_a_replayed_insert_opens_data_once_and_commits_nothing(
-    dataset: IcebergDataset,
+    dataset: IcebergDataset, opened: dict[str, int]
 ) -> None:
+    """Every key is stored, so the insert is nothing but the key scan: the one
+    file holding them, read once, and no snapshot for the zero rows left."""
     dataset.write_arrow_table(quotes(3))
     before = len(dataset.iceberg_table.snapshots())
+    opened.clear()
     assert dataset.insert_arrow_table(quotes(3, "XETR")) == 0
+    assert opened.get("data", 0) == 1, "one stored file, opened once to read its keys"
     assert len(dataset.iceberg_table.snapshots()) == before, "nothing new, no commit"
 
 
@@ -1877,18 +1984,9 @@ def test_a_sweep_finds_the_files_however_the_warehouse_is_spelled(tmp_path: Path
 
 def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
     """`write.data.path` moves the data; assuming `<location>/data` swept nothing."""
-    warehouse = tmp_path / "warehouse"
     elsewhere = tmp_path / "elsewhere"
-    warehouse.mkdir()
     elsewhere.mkdir()
-    catalog = IcebergCatalog(
-        name="relocated",
-        properties={
-            "type": "sql",
-            "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
-            "warehouse": warehouse.as_uri(),
-        },
-    )
+    catalog = IcebergCatalog(name="relocated", properties=catalog_properties(tmp_path))
     quotes_ = catalog.dataset(
         "trading.quotes",
         struct=Quote.FIELD,
@@ -1922,17 +2020,8 @@ def test_a_sweep_survives_a_data_path_that_contains_the_metadata(tmp_path: Path)
     reported ten orphans, all ten of them the current pointer, the manifest
     lists and the manifests: `cleanup` deleted the table.
     """
-    warehouse = tmp_path / "warehouse"
-    warehouse.mkdir()
-    catalog = IcebergCatalog(
-        name="flatpath",
-        properties={
-            "type": "sql",
-            "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
-            "warehouse": warehouse.as_uri(),
-        },
-    )
-    location = (warehouse / "trading" / "quotes").as_uri()
+    catalog = IcebergCatalog(name="flatpath", properties=catalog_properties(tmp_path))
+    location = (tmp_path / "warehouse" / "trading" / "quotes").as_uri()
     quotes_ = catalog.dataset(
         "trading.quotes",
         struct=Quote.FIELD,
@@ -2030,6 +2119,38 @@ def test_a_sweep_still_finds_an_orphan_beside_an_unreducible_live_file(
     assert dataset.cleanup(retain=10, orphan_age=datetime.timedelta(seconds=0))["deleted"] == 1
     assert not junk.exists() and live.exists()
     assert dataset.refresh().read_arrow_table().num_rows == 7
+
+
+def test_a_sweep_asked_for_no_grace_period_takes_a_file_written_now(
+    dataset: IcebergDataset,
+) -> None:
+    """`orphan_age=0` means what it says, whichever clock stamped the file.
+
+    A file written a moment ago can carry an mtime a moment in the *future*:
+    the filesystem stamps from its own clock and this process reads its own,
+    and on a Windows runner the two disagreed often enough to spare a file the
+    caller had just asked to have taken. The grace period is for a writer with
+    uncommitted files on disk, and zero says there is not one.
+    """
+    import os
+
+    import pyarrow.parquet
+
+    dataset.write_arrow_table(quotes(3))
+    root = local(dataset.iceberg_table.location())
+    junk = root / "data" / f"day={datetime.date(2026, 8, 14)}" / "written-just-now.parquet"
+    pyarrow.parquet.write_table(quotes(1), junk)
+    # Stamped ahead on purpose, because that is the disagreement itself and
+    # waiting for two real clocks to drift is a test that fails on one host in
+    # ten. A minute is longer than any skew and shorter than the grace period
+    # the first assertion asks for.
+    ahead = junk.stat().st_mtime + 60
+    os.utime(junk, (ahead, ahead))
+
+    spared = dataset.orphan_files(datetime.timedelta(minutes=30))
+    assert junk.name not in {Path(path).name for path, _ in spared}, "a grace period spares it"
+    swept = {Path(path).name for path, _ in dataset.orphan_files(datetime.timedelta(0))}
+    assert junk.name in swept, "and no grace period does not"
 
 
 def test_a_sweep_does_not_delete_another_writers_files(tmp_path: Path) -> None:

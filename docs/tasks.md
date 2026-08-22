@@ -36,9 +36,11 @@ about, and land each line in the Iceberg table for its kind — `order_logs`,
     # parse-trading-logs: 600 read, 600 written in 1.06s -- logs.order_logs=100, ...
     ```
 
-    `tasks/parse_logs/parse_logs.yml` in this repository is a commented example of every
-    field, and `tasks/parse_logs/parse_logs.ipynb` is a notebook that builds a small
-    capture and runs it end to end.
+    `tasks/parse_logs/parse_logs.yml` in this repository holds every field, set
+    to what this page describes; what each one means is on `ParseLogs` itself,
+    so the document stays a configuration rather than a second copy of the
+    reference. `tasks/parse_logs/parse_logs.ipynb` builds a small capture and
+    runs it end to end.
 
 === "In Python"
 
@@ -56,6 +58,33 @@ about, and land each line in the Iceberg table for its kind — `order_logs`,
     )
     report = task.run()
     ```
+
+=== "What each line carries"
+
+    ```python
+    task = ParseLogs(
+        source="/var/log/app",
+        protocols=Rules.DEFAULT,           # which protocol each line carries
+        fix_version="4.4",                 # what a name resolves against
+        fix_dictionary="data/fix.zip",     # read, never scraped
+        null_values=frozenset({"", "null", "<null>", "n/a"}),
+    )
+    ```
+
+    Four flat keys, and each says one thing. `protocols` decides the `protocol`
+    column, and with it how each line is read; `fix_version` and
+    `fix_dictionary` decide what a *name* resolves to in `fix_tags` and in the
+    [columns lifted out of it](logs.md#the-message-flattened); `null_values`
+    are the spellings that mean the field is absent, dropped before either map
+    sees them — `ACCOUNT=<null>` is an absent account, and keeping the text
+    makes every consumer downstream re-implement the same check. An empty set
+    keeps every pair, but never a pair whose value is null: both maps declare
+    their value NOT NULL.
+
+    They assemble a [codec](logs.md#a-second-codec), which is what the source
+    actually holds; flat rather than nested because a task **is** a document
+    and `null_values: ["", "null"]` on its own line is what somebody editing a
+    job wants to write.
 
 === "The report"
 
@@ -136,7 +165,10 @@ different job, and it says so.
 
 Each is created on the first write to it, from the parser's own shape —
 [`Log`](logs.md) plus whatever `static_values` adds — and partitioned by
-`hunix`, the hour the line happened in.
+`unix_hour`, the hour the line happened in. That shape is **81 columns**: the
+event envelope, the line itself, and the
+[message flattened out of its map](logs.md#the-message-flattened), so a query
+filters on `symbol` or `sending_unix` rather than reaching into one.
 
 **A line nothing classifies still lands.** Dropping it would make the job lossy
 in exactly the case a new log format shows up.
@@ -157,9 +189,10 @@ an instrument table of what the capture taught it along the way.
     # parse-market-logs: 5 read, 16 written in 0.95s -- market.books=8, market.orders=7, ...
     ```
 
-    `tasks/parse_market/parse_market.yml` is a commented example of every field,
-    and `tasks/parse_market/parse_market.ipynb` builds a small capture and runs
-    it end to end.
+    `tasks/parse_market/parse_market.yml` holds every field, with the meanings
+    on `ParseMarket` rather than repeated in it, and
+    `tasks/parse_market/parse_market.ipynb` builds a small capture and runs it
+    end to end.
 
 === "In Python"
 

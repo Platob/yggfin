@@ -13,12 +13,20 @@ import time
 import urllib.error
 import urllib.request
 import zipfile
+from collections.abc import Sequence
 from functools import cached_property
 from typing import Any, ClassVar
 
 from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.fix.fields import fix_field
+from rekep.fix.quickfix import (
+    QUICKFIX_URL,
+    SpecField,
+    parse_session,
+    parse_spec,
+    spec_name,
+)
 
 #: The dictionary that is scraped: OnixS publishes every FIX version as one
 #: page per version listing the tags, and one page per field carrying the
@@ -93,6 +101,14 @@ class FixRegistry(Convertible):
     #: Where the dictionary lives; override to scrape a mirror.
     base_url: str = BASE_URL
 
+    #: Where the QuickFIX spec files live, which is the *second* source. The
+    #: dictionary is prose written for people and the spec is the same standard
+    #: written for programs, so each has what the other lacks: descriptions
+    #: there, the symbolic name of every enumerated value here. One file per
+    #: version against the site's one page per field, so this costs a request
+    #: and enriches a whole version.
+    spec_url: str = QUICKFIX_URL
+
     #: Where scrapes persist: a directory of JSON, or a `.zip` of the same
     #: files. The extension is what says which -- like every other inference
     #: here -- so one path names either, and a dictionary that travels as one
@@ -117,6 +133,18 @@ class FixRegistry(Convertible):
     retries: int = 6
     backoff: float = 2.0
 
+    #: Whether this registry may reach the site at all. False is the default
+    #: and what a person at a prompt wants: ask for `4.4`, get `4.4`.
+    #:
+    #: True is what a **pipeline** wants, and it is not the same wish. A parse
+    #: that meets its first bridge line must not answer it by starting a
+    #: seven-thousand-page scrape in the middle of a batch -- so an offline
+    #: registry serves whatever the store already holds and reports the rest as
+    #: unavailable, down the same path an outage takes. Which is why this is
+    #: one flag rather than a second registry: every caller here already
+    #: handles "cannot be had right now".
+    offline: bool = False
+
     #: Sent with every request, so the traffic says what it is.
     user_agent: ClassVar[str] = "rekep-fix-registry (+https://github.com/Platob/rekep)"
 
@@ -139,10 +167,17 @@ class FixRegistry(Convertible):
         The store is asked first, the site second, and the store again when
         the site cannot be had -- three steps that are the same whether the
         store is a directory or an archive.
+
+        An **offline** registry stops after the first step and answers with
+        what it holds, empty included: raising here would report a network
+        failure that was never attempted, and a caller that asked an offline
+        registry what it has is owed the answer "nothing" rather than an error.
         """
         stored = self._stored_versions()
         if stored:
             return stored
+        if self.offline:
+            return self._known_versions()
         try:
             versions = self._scrape_versions()
         except OSError:
@@ -203,7 +238,7 @@ class FixRegistry(Convertible):
             if stored is not None:
                 return stored
         fields = self._scrape_version(version)
-        self._store_fields(version, fields)
+        self._store_fields(version, fields, parse_session(self._spec_document(version)))
         self._indexes.pop(version, None)
         return fields
 
@@ -239,6 +274,52 @@ class FixRegistry(Convertible):
             version: len(self.fields(version, refresh=refresh))
             for version in (versions or self.versions)
         }
+
+    def session(self, version: str) -> tuple[tuple[str, bool], ...]:
+        """`((name, required), ...)`: the standard header, then the trailer.
+
+        What every message of a version carries whatever it says, and which of
+        those it must -- the spec's own answer, read from the store so it costs
+        nothing and works offline. Empty for a version stored before this was
+        kept, or one whose spec could not be read.
+        """
+        cached = self._read_cache(f"{self._spelling(version)}.json")
+        if not cached:
+            return ()
+        return tuple((str(name), bool(required)) for name, required in cached.get("session", ()))
+
+    def enrich(self, *versions: str) -> dict[str, int]:
+        """Add the spec's value symbols to versions already stored: `{version: fields}`.
+
+        The cheap half of a scrape, on its own. A dictionary gathered before
+        this package read the spec has every description and no symbol, and
+        getting the symbols is one request per version -- so re-reading seven
+        thousand pages to gain them would be absurd. Only what is already
+        stored is touched: this adds to a dictionary, it never fetches one.
+
+        No versions named means every version the store holds.
+        """
+        counted: dict[str, int] = {}
+        for version in versions or self._stored_spellings():
+            stored = self._stored_fields(self._spelling(version))
+            if stored is None:
+                continue
+            document = self._spec_document(version)
+            spec = parse_spec(document)
+            if not spec:
+                counted[version] = 0
+                continue
+            enriched = 0
+            for member in stored:
+                tag = member.fix.get("tag")
+                known = spec.get(int(tag)) if tag and tag.isdigit() else None
+                if known and known.values:
+                    member.fix["value_names"] = json.dumps(known.values, separators=(",", ":"))
+                    enriched += 1
+            self._store_fields(self._spelling(version), stored, parse_session(document))
+            self._indexes.pop(self._spelling(version), None)
+            counted[version] = enriched
+        return counted
 
     # -- lookup --------------------------------------------------------------
 
@@ -371,16 +452,28 @@ class FixRegistry(Convertible):
     # -- scraping ------------------------------------------------------------
 
     def _scrape_version(self, version: str) -> list[Field]:
-        """One version, whole: the by-tag list, then every field page."""
+        """One version, whole: the spec, the by-tag list, then every field page.
+
+        Two sources merged, each supplying what the other has not. The spec is
+        fetched first because it is one request and answers for the whole
+        version; the site is then read for the prose it alone has. A tag only
+        the spec knows still becomes a field -- typed and named, with no
+        description -- because a field nobody wrote up is still a field.
+        """
+        spec = self._spec(version)
         listed = self._scrape_tags(version)
         with concurrent.futures.ThreadPoolExecutor(self.max_workers) as pool:
-            details = list(pool.map(lambda tag: self._scrape_field(version, tag), listed))
+            read = pool.map(lambda tag: self._scrape_field(version, tag), listed)
+            details = dict(zip(listed, read, strict=True))
         fields = []
-        for (tag, (name, note)), detail in zip(listed.items(), details, strict=True):
+        for tag in sorted(listed.keys() | spec.keys()):
+            name, note = listed.get(tag, ("", ""))
+            detail = details.get(tag, {})
+            known = spec.get(tag)
             built = fix_field(
-                detail.get("name") or name,
+                detail.get("name") or name or (known.name if known else str(tag)),
                 tag,
-                detail.get("type"),
+                detail.get("type") or (known.datatype if known else None),
                 description=detail.get("description"),
                 version=version,
                 values=detail.get("values"),
@@ -390,8 +483,30 @@ class FixRegistry(Convertible):
             used = detail.get("used_in")
             if used:
                 built.fix["used_in"] = json.dumps(used, separators=(",", ":"))
+            if known and known.values:
+                # The symbol, beside the description and never over it: the
+                # spec's `description=` attribute holds `BUY`, which is the
+                # value's *name*, and writing that where the prose goes would
+                # replace "Buy" with shouting.
+                built.fix["value_names"] = json.dumps(known.values, separators=(",", ":"))
             fields.append(built)
         return fields
+
+    def _spec(self, version: str) -> dict[int, SpecField]:
+        """The QuickFIX spec for one version, or nothing when it cannot be had.
+
+        Empty rather than raised, because this is the *enriching* source: a
+        scrape that failed here still has a whole dictionary, only without the
+        value symbols. The site is the one whose failure is fatal.
+        """
+        return parse_spec(self._spec_document(version))
+
+    def _spec_document(self, version: str) -> str:
+        """One spec file, or empty text when it cannot be had."""
+        try:
+            return self._fetch(f"{self.spec_url}/{spec_name(version)}")
+        except (OSError, ValueError):
+            return ""
 
     def _scrape_tags(self, version: str) -> dict[int, tuple[str, str]]:
         """`{tag: (name, note)}` off the by-tag page, in tag order.
@@ -502,16 +617,25 @@ class FixRegistry(Convertible):
             return None
         return [Field.from_dict(member) for member in cached["fields"]]
 
-    def _store_fields(self, version: str, fields: list[Field]) -> None:
-        """Keep one whole version, replacing whatever was there."""
-        self._write_cache(
-            f"{version}.json",
-            {
-                "version": version,
-                "url": f"{self.base_url}/{version}/",
-                "fields": [member.into_dict() for member in fields],
-            },
-        )
+    def _store_fields(
+        self, version: str, fields: list[Field], session: Sequence[tuple[str, bool]] = ()
+    ) -> None:
+        """Keep one whole version, replacing whatever was there.
+
+        `session` is the spec's standard header and trailer, kept beside the
+        fields so the one fact a *stored* dictionary could not otherwise answer
+        -- which fields every message carries, and which of them it must --
+        travels with it. Absent when the spec could not be read; a document
+        written before this existed simply has no such key.
+        """
+        payload: dict[str, Any] = {
+            "version": version,
+            "url": f"{self.base_url}/{version}/",
+            "fields": [member.into_dict() for member in fields],
+        }
+        if session:
+            payload["session"] = [[name, required] for name, required in session]
+        self._write_cache(f"{version}.json", payload)
 
     # -- the cache files and the wire -----------------------------------------
 
@@ -589,6 +713,8 @@ class FixRegistry(Convertible):
         site sends one, a doubling pause when it does not -- and only the last
         attempt raises.
         """
+        if self.offline:
+            raise OSError(f"{url} was not fetched: this registry is offline")
         request = urllib.request.Request(url, headers={"User-Agent": self.user_agent})
         pause = self.backoff
         for _ in range(self.retries):
@@ -617,15 +743,24 @@ def _document(payload: dict[str, Any]) -> str:
 
 
 def _member(name: str) -> zipfile.ZipInfo:
-    """One archive member, stamped at the start of zip time.
+    """One archive member, stamped at the start of zip time and on no host.
 
     A zip records a modification time per member, so an archive built twice
     from the same dictionary is two different files unless the stamp is
     fixed. This one is published in a repository, where "nothing changed"
     has to look like nothing changed.
+
+    The **host** is the other half of that, and it was missed: `ZipInfo`
+    reads `create_system` off `os.name`, so the same dictionary published
+    from Windows and from Linux differed in one byte per member and the
+    rebuild test failed on the Windows leg alone. It is pinned to 3 (Unix)
+    because that is what the permission bits already written just below mean
+    -- `external_attr` is POSIX mode, which a member claiming to come from
+    FAT does not have.
     """
     entry = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
     entry.compress_type = zipfile.ZIP_DEFLATED
+    entry.create_system = 3
     entry.external_attr = 0o644 << 16
     return entry
 

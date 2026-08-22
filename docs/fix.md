@@ -9,11 +9,14 @@ joined by SOH — which every log prints as something visible instead:
 ```
 
 `rekep.fix` parses those lines — one at a time or whole columns in Arrow
-kernels — and carries a dictionary of every FIX version's fields, scraped once
-from the [OnixS FIX Dictionary](https://www.onixs.biz/fix-dictionary.html) and
-cached under `~/.config/fix/` so everything after works offline. That scrape is
-[committed here](#the-dump-in-this-repository) as well, as `data/fix.zip`, so
-a machine that was never online has the dictionary too.
+kernels — and carries a dictionary of every FIX version's fields, gathered once
+from [two sources](#two-sources-and-what-each-has) and cached under
+`~/.config/fix/` so everything after works offline: the [OnixS FIX
+Dictionary](https://www.onixs.biz/fix-dictionary.html) for the prose, and the
+[QuickFIX spec](https://github.com/quickfix/quickfix/tree/master/spec) for the
+symbol of every enumerated value. That cache is [committed
+here](#the-dump-in-this-repository) as well, as `data/fix.zip`, so a machine
+that was never online has the dictionary too.
 
 ## Parsing lines
 
@@ -97,6 +100,56 @@ a machine that was never online has the dictionary too.
     `named=False` forces either. Name matching is case-insensitive
     throughout.
 
+=== "A bridge's own spelling"
+
+    ```python
+    line = (
+        "toBridge #ISINCODE=XX0000084733|#SYMBOL=TTF|#NOPARTYIDS=2|"
+        "#NOPARTYIDS[0]=PARTYID=BUYSIDE\x01PARTYIDSOURCE=D\x01PARTYROLE=1"
+    )
+    FixMessage.from_text(line).pairs
+    # [('ISINCODE','XX0000084733'), ('SYMBOL','TTF'), ('NOPARTYIDS','2'),
+    #  ('NOPARTYIDS[0].PARTYID','BUYSIDE'), ('NOPARTYIDS[0].PARTYIDSOURCE','D'), ...]
+    ```
+
+    A UL bridge writes the same message a third way, and it differs in three
+    places:
+
+    - **a `#` marks where a key starts.** It is dropped — it says *where* a key
+      is, not which field it is — and only in named mode, because a bridge's
+      `#54=x` is a rendered key that happens to be spelled with digits and not
+      tag 54. Where the bridge writes nothing else between its tokens
+      (`#A=1#B=2`) that marker is also the **separator**: the character in
+      front of the next key is the tail of the value before it, so only one of
+      the candidates is read as a delimiter and anything else is not.
+    - **the message starts at its first `#NAME=`**, exactly as a wire message
+      starts at `8=FIX`, so the driver's own `toBridge ` prefix never glues
+      itself onto the first key. Two `#NAME=` tokens or more, because a lone
+      `#FOO=bar` in prose is a sentence.
+    - **a whole group entry can sit in one token**, behind a second separator.
+      `entry_separator` names it and `detect_entry_separator` finds it — the
+      same candidate order as the outer one, SOH first, and looked for **only
+      inside an indexed token**, because `Text=a;b` is a value with a semicolon
+      in it and splitting it would cut a message in half.
+
+    The members land under the keys the one-member-per-token spelling already
+    produces — `NoPartyIDs[0].PartyIDSource` — so **no new key spelling**: a
+    log that nests its entries and one that prints them field by field parse to
+    the same pairs.
+
+    That is also why the outer separator is read off the *second* `#NAME=` on
+    such a line rather than from the candidate list: a nested SOH would
+    otherwise win the scan and the whole line would parse as one field.
+
+    ```python
+    detect_separator("#A=1|#B=2")   # '|'  — a candidate, so a delimiter
+    detect_separator("#A=1#B=2")    # '#'  — nothing between them, so the marker
+    ```
+
+    Reading that `1` as the separator is what the parser used to do, and it
+    gave `A` an empty value and glued `B` to whatever followed — silently,
+    because the result still parsed.
+
 ## The dictionary
 
 ```python
@@ -117,7 +170,8 @@ side.arrow_type                      # string  (char is a string, not one char)
 side.description                     # 'Side of order.'
 side.fix["tag"]                      # '54'
 side.fix["type"]                     # 'char'
-side.fix["values"]                   # '{"1":"Buy","2":"Sell",...}'
+side.fix["values"]                   # '{"1":"Buy","2":"Sell",...}'      the prose
+side.fix["value_names"]              # '{"1":"BUY","2":"SELL",...}'      the symbol
 
 registry.lookup("Side")              # every version's definition, newest first
 registry.lookup(54, "4.2")           # by tag, one version
@@ -139,6 +193,51 @@ registry.search("Sied")              # nothing matches -> Levenshtein fallback
     `retries` attempts *fails the version*. It is not treated as a page that
     does not exist, because that writes a field with no type and no comment
     into the cache and answers every later call from it.
+
+### Two sources, and what each has
+
+The dictionary is prose written for people. The [QuickFIX
+spec](https://github.com/quickfix/quickfix/tree/master/spec) is the same
+standard written for programs, and it has the half the prose cannot carry: the
+**symbol** of every enumerated value.
+
+```xml
+<value enum='1' description='MATCH' />
+```
+
+`description` there is the value's *name*, not a description — so merging it
+into the descriptions would replace `Buy` with `BUY` and lose the reading. Both
+are kept instead, one key each: `fix["values"]` stays the prose and
+`fix["value_names"]` carries the symbol. A consumer wanting an identifier no
+longer has to invent one by upper-casing a sentence.
+
+The spec is one file per version against the site's one page per field, so it
+also answers two things a scrape cannot afford to ask for twice:
+
+```python
+registry.session("4.4")   # (('BeginString', True), ..., ('CheckSum', True))
+registry.enrich()         # add the symbols to a dictionary already stored
+```
+
+`session` is the standard header and trailer with the standard's own `required`
+flag — which is what [`rekep/fix/columns.py`](logs.md#the-message-layer)
+declares by hand, and what `tests/fix/test_columns.py` holds that declaration
+to. From FIX 5.0 on it is **empty**, because the session layer moved to FIXT
+1.1 and the application versions no longer define one.
+
+`enrich` is the cheap half of a scrape on its own: a dictionary gathered before
+this package read the spec has every description and no symbol, and getting the
+symbols is one request per version rather than seven thousand pages. It only
+touches versions the store already holds — it adds to a dictionary, it never
+fetches one.
+
+!!! note "The spec is the *enriching* source"
+
+    Its failure is not the caller's. A scrape that could not reach GitHub still
+    has a whole dictionary, only without the symbols; the site is the one whose
+    failure fails the version. A tag only the spec knows still becomes a field,
+    typed and named, with no description — because a field nobody wrote up is
+    still a field.
 
 ### The dump in this repository
 
@@ -271,6 +370,214 @@ Three rules make that work:
     because a name with no separator in it folds to its own lowercase and
     never has to pay for the `sub`.
 
+## What kind of message a line carries
+
+A capture is mostly lines that are not messages at all — around 60% of one, and
+parsing them costs an order of magnitude more than deciding not to
+([measured](logs.md#the-message-layer)). So a rule set runs first, and it is
+nothing but data: an ordered list of patterns, matched against the message and
+optionally against the driver that emitted it.
+
+=== "The defaults"
+
+    ```python
+    from rekep.fix import Rules
+
+    Rules.DEFAULT.categorise("sending >> 8=FIX.4.2|35=D|10=203|").protocol  # 'FIX'
+    Rules.DEFAULT.categorise("toBridge #ISINCODE=XX|#SIDE=1").protocol      # 'UL'
+    Rules.DEFAULT.categorise("heartbeat emitted seq=38110").protocol        # 'OTHER'
+    ```
+
+    **FIX** is a BeginString anywhere in the line; **UL** is two or more
+    `#NAME=` tokens; **OTHER** is everything else, and it is what a set that
+    runs out without matching answers. Every pattern is the parser's own
+    constant (`BEGIN_STRING`, `BRIDGE`, `BRIDGE_WIRE`), so "what makes this a
+    FIX message" and "where does the message start" can never drift apart.
+
+    A fourth rule leads the list, because one line answers to two tells:
+    `8=FIX.4.2|35=UL|#A=1|#B=2` is a bridge message inside a FIX envelope. Read
+    as a wire message every named field in it is noise, so it is UL — and the
+    message still starts at its **BeginString**, so the header that says what
+    it is survives beside the names. The discriminator is the MsgType and not
+    the `#` tokens: a wire message quoting `#A=1` in a Text field is not a
+    bridge message, and one that says `35=UL` is one however few fields it
+    carries.
+
+=== "A whole column"
+
+    ```python
+    protocols = Rules.DEFAULT.into_arrow_protocol_array(
+        batch.column("message"), batch.column("driver_name")
+    )
+    protocols.type    # string: 'FIX', 'UL', 'OTHER', ...
+    ```
+
+    One kernel per rule over the column, applied in **reverse** so the earliest
+    rule is the one that survives — which is the whole of "first match wins",
+    at a handful of passes per batch rather than a scan per row. A null message
+    is OTHER rather than null: `protocol` is NOT NULL, and a line with no
+    payload carries no message.
+
+=== "Your own"
+
+    ```python
+    from rekep.fix import Rule, Rules
+
+    rules = Rules(rules=[
+        Rule(protocol="OWN", pattern=r"toBridge", codec="ul",
+             separator="|", fix_version="4.2"),
+        Rule(protocol="OTHER"),
+    ])
+    rules.into_yaml("rules.yml")
+    Rules.from_yaml("rules.yml")
+    ```
+
+    `Rule` is a `@field` class like every other declaration here, so a rule set
+    is a [contract file](contracts.md) that travels in a
+    [task document](tasks.md) with the rest of the job. A rule carries how to
+    read its own lines: which `codec` (`fix`, `ul`, or `none` for "do not
+    parse"), which `separator` and `entry_separator` (null detects them), and
+    which `fix_version` to resolve names against. What it *names* is the
+    `protocol` the column then holds — one spelling and not an id beside a
+    name, which would be a second thing to keep in step.
+
+!!! warning "A pattern is run by two engines"
+
+    Python's `re` on one line and RE2 over a whole column, and they are
+    contracted to agree — so a pattern here has to be spellable in both: no
+    lookbehind, no lookahead, no backreference. The built-ins are the parser's
+    own constants for exactly that reason.
+
+## Names to tags
+
+`FixCodec` is the step between what the line says and what a FIX consumer
+speaks. Its one rule is that **it never guesses**.
+
+```python
+from rekep.fix import FixCodec, FixRegistry, Rules
+
+codec = FixCodec(
+    registry=FixRegistry(cache_dir="data/fix.zip"),
+    fix_version="4.4",
+)
+protocol = Rules.DEFAULT.categorise(line).protocol        # 'FIX'
+pairs = codec.into_pairs(column, protocol)                # map<string, string>
+fix_tags, keyval = codec.into_fix_pairs(pairs)            # map<int32, string>, map<string, string>
+flat, fix_tags = codec.into_flat_columns(fix_tags)        # {'msg_type': [...], ...}
+```
+
+A slice is addressed by the **protocol name**, because that is what the batch
+carries: the rule behind it is the codec's business and never the caller's.
+
+**A name the dictionary answers for becomes its tag; every other key stays as
+the log spelled it.** No fuzzy match, no `search()` fallback in the hot path,
+nothing dropped — a venue's own field is data, and a near-miss is a wrong
+answer that looks like a right one. So a bridge line's `SYMBOL` is 55 and its
+`UNKNOWNVENUEFIELD` is still `UNKNOWNVENUEFIELD`, in `keyval`.
+
+**A repeating group keeps its meaning through order, not through the key.**
+`453` and then its entries flattened — `453, 448, 447, 452, 448, 447, 452` — is
+exactly what the same message looks like on the wire, and exactly what a reader
+that knows the group can walk. The `[i]` index is dropped once the order
+carries it: the index was a rendering convenience, the order is the standard.
+
+**The index is built once per version.** `FixRegistry.tags()` walks whole
+versions, so it is built per *batch* at the most and never per row, and it is
+probed with one `pyarrow.compute.index_in` — which was 24× the
+dictionary-rebuilt-per-call path it replaced ([measured](logs.md#the-message-layer)).
+
+=== "Which version"
+
+    ```python
+    codec.version_of("8=FIX.4.2|35=D|")            # ('4.2', 'begin_string')
+    codec.version_of("toBridge #A=1|#B=2", "UL")   # ('4.2', 'rule')
+    codec.version_of("toBridge #A=1|#B=2")         # ('4.4', 'default')
+    ```
+
+    Three answers in order of authority: tag 8, the rule, the configured
+    default. The **source** comes back with the version because `4.4` read off
+    a BeginString and `4.4` because nobody said otherwise are the same string
+    and not the same fact — one is evidence, the other is a setting. A
+    BeginString no version answers for — a truncated `8=FIX4` — falls through
+    rather than being coerced into the nearest one.
+
+=== "Values that mean nothing"
+
+    ```python
+    from rekep.fix import NULL_VALUES
+
+    NULL_VALUES                       # frozenset({'', 'null', '<null>', 'n/a'})
+    FixCodec(null_values=frozenset({"-", "unset"}))   # a feed with its own
+    FixCodec(null_values=frozenset())                 # keep every pair
+    ```
+
+    A renderer with nothing to say for a field says it in whichever of those it
+    prefers, and they are **not values**: `ACCOUNT=<null>` is an absent account,
+    and storing the literal text makes every consumer downstream re-implement
+    the same check — differently, and one of them wrong. So the pair is dropped
+    before either map sees it, matched case-blind and after trimming.
+
+    Configuration and not a rule: a feed whose `n/a` really is a value passes
+    its own set. A value that is *actually* null goes with them whatever the
+    set says, because both maps declare their value **NOT NULL** — `58=` on
+    the wire is a malformed message, not an empty Text. A row whose every
+    field was absent comes back as an **empty** map rather than a null one —
+    it was a message, and it said nothing.
+
+=== "Typed values"
+
+    ```python
+    side = codec.tag_field(54)        # the registry's own declaration of tag 54
+    side.arrow_type                   # string — `char` is a string
+    side.fix["values"]                # the enumeration
+    ```
+
+    Values stay **text** in `fix_tags`, because what a value *is* depends on
+    the dictionary and on the message. Decoding a column of one tag is a cast
+    against the field that knows what the tag is — whose Arrow type is
+    `FIX_SCALARS`' projection of the FIX datatype — rather than a second type
+    table here that would have to be kept in step with it.
+
+!!! note "A codec never scrapes"
+
+    `FixCodec`'s registry is **offline** by default: it reads whatever cache it
+    is pointed at and never fetches. A parse that met its first bridge line and
+    answered it by fetching seven thousand pages mid-batch would be a worse
+    surprise than an unresolved name. A registry with no cached version
+    resolves nothing and raises nothing — the keys go to `keyval` and the
+    capture is stored, because a pipeline that died on a cold cache would lose
+    the log rather than the tags.
+
+## Columns of their own
+
+`into_flat_columns` lifts the tags a trading log is queried on out of
+`fix_tags` and into [columns](logs.md#the-message-flattened): the whole
+`StandardHeader` and `StandardTrailer`, and what the components carry — the
+instrument, the order and where it stands, the quantities and the prices. A
+map holds all of it faithfully and answers nothing cheaply, which is the whole
+reason.
+
+```python
+from rekep.fix.columns import COLUMNS, COMMON, FLAT, SESSION, STAMPS, TAGS
+
+len(SESSION), len(COMMON), len(FLAT)   # (33, 26, 59)
+COLUMNS[52]                            # 'sending_unix'
+STAMPS                                 # {52, 122, 370, 60} -- read, and stored as nanos
+TAGS                                   # the same tags as an int32 value set
+```
+
+`rekep.fix.columns` holds the **names** and never the types; those are
+`Log`'s declaration, bound to this dictionary by a test. A tag is lifted only
+where the line carries it **once** — a tag that repeats is a repeating group's,
+and no single occurrence of it is the line's, which is also why `NoHops <627>`
+stays in the map. Nothing left there is lost.
+
+Two of the 59 land on columns the event envelope already declares: tag 55 on
+`symbol` and tag 34 on `seq`, so a parsed line and a market event answer the
+same question in the same column. The four `STAMPS` are `int64` **nanoseconds**
+and not an Arrow timestamp: Iceberg cannot store a `timestamp[ns]` at all, and
+a `timestamp[us]` would truncate a value the parser has just read out of text.
+
 ## Reading values
 
 The projection is deliberately forgiving where the wire is:
@@ -310,12 +617,39 @@ uv run python benchmarks/bench_fix.py --quick    # 10,000 rows, best of 3
 reported as the best of `--repeat` runs. The figures below were measured
 twice.
 
-| case | measured |
+!!! note "Re-measured, on its own machine"
+
+    The parsing table was re-measured when the parser learned a bridge's
+    spellings — a named-mode column now pays one more `extract_regex` for the
+    `#NAME=` message start — and it was re-measured on a different machine from
+    the registry tables further down. Its rows are comparable to each other and
+    not to those.
+
+| case | 100,000 rows, best of 5, both runs | vs the scalar parser |
+| --- | --- | --- |
+| wire messages, SOH, twelve fields | 281k–284k rows/s | 3.6–3.8× |
+| wire messages, pipe | 282k–285k rows/s | 3.6–3.7× |
+| wire messages, pipe, inside log noise | 244k–248k rows/s | 3.7–3.8× |
+| wire messages with a repeating group | 188k–196k rows/s | 3.3× |
+| rendered `Name=Value`, no group entries | 235k rows/s | 4.4–4.7× |
+| rendered, a third of the tokens group entries | 128k–129k rows/s | 4.1–4.4× |
+
+| what a key costs | measured |
 | --- | --- |
-| wire messages, twelve fields per row | ~300k rows/s, ~5× the scalar parser |
-| rendered messages | ~140–260k rows/s, depending on group density |
-| all-numeric keys, `tag_arrow_array` | ~140M keys/s |
-| `from_pairs`, nine keys a row, mixed spellings | ~61k rows/s, ~550k fields/s |
+| all-numeric keys, `tag_arrow_array` | 137M–153M keys/s |
+| rendered keys via `names` | 3.2M keys/s |
+| `from_pairs`, nine keys a row, mixed spellings | 54.5k rows/s, ~491k fields/s |
+
+**Group entries are what a rendered column pays for.** With none, the inner
+`member=` pass is skipped entirely and the column runs at 235k rows/s; with a
+third of its tokens carrying one it runs at 128k. The token regex, not that
+second pass, is where the difference goes.
+
+A column whose entries are *nested* — a whole group entry in one token behind a
+second separator — pays one more `split_pattern` and a ragged expansion, and
+only when a token actually turns out to carry more than one member: the check
+is one `any` per batch, and a bridge that prints one member per token never
+reaches the expansion at all.
 
 **Resolving a key.** The last row is a scalar path, so the sweep also races the
 three readings of a key on their own, at two dictionary sizes — because an

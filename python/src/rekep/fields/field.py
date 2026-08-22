@@ -46,20 +46,13 @@ FIELD_ID = "iceberg:field_id"
 #: The partition transform that means "the value itself".
 IDENTITY = "identity"
 
-#: The columns a field is a *function* of. A denormalised partition column --
-#: `hunix`, which is `unix` truncated to the hour -- carries no information its
-#: sources do not, and saying so is what lets a merge name it in a scan filter
-#: it only knows the sources of.
-DERIVED_FROM = "iceberg:derived_from"
-
 #: Which columns a table is kept sorted by, and which way. Declaration order is
 #: the sort order -- a second key would have to be a number every declaration
 #: then has to keep consistent, and the members are already in an order.
 SORT_KEY = "iceberg:sort_key"
 
-#: The two directions a sort key has, and the default.
+#: What a sort key means when a declaration only says there is one.
 ASCENDING = "asc"
-DESCENDING = "desc"
 
 #: The declaration; everything else a field holds is derived from these.
 DECLARED = ("name", "arrow_type", "nullable", "metadata")

@@ -366,14 +366,14 @@ def test_a_kind_nothing_implements_lists_what_does() -> None:
 
 def test_a_concrete_class_still_reads_its_own_document_with_no_kind_in_it() -> None:
     """Which is what keeps `IcebergDataset.from_yaml(...)` working unchanged."""
-    from rekep.logs import TextFile
+    from rekep.text import TextFile
 
     assert TextFile.from_dict({"url": "a.log"}).url.endswith("a.log")
 
 
 def test_a_concrete_class_refuses_a_document_naming_a_different_store() -> None:
     """Rather than quietly building the wrong store from the right fields."""
-    from rekep.logs import TextFile
+    from rekep.text import TextFile
 
     with pytest.raises(ValueError, match="text_file"):
         TextFile.from_dict({"kind": "text_files", "url": "a.log"})

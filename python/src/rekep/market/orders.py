@@ -79,7 +79,7 @@ class Order(MarketEvent):
     def complete_from(self, previous: Event) -> None:
         """An order completed from its last version, by what a market actually means.
 
-        Beyond carrying forward what the message did not repeat, three rules
+        Beyond carrying forward what the message did not repeat, two rules
         that are arithmetic rather than copying:
 
         - **`prev_client_order_id` is the identifier that was replaced.** FIX
@@ -93,14 +93,10 @@ class Order(MarketEvent):
           this is the only place that number is still readable.
         """
         super().complete_from(previous)
-        # Read by name and not behind an `isinstance`, because an order's own
-        # chain interleaves with executions: one `ExecutionReport <8>` yields
-        # both, so the version before an order is very often a fill. Neither
-        # class is a base of the other, and both carry these fields.
-        # `filled_qty` and `avg_px` are named fields and mean the same thing
-        # wherever they appear, unlike the abstract slots -- so they carry
-        # across shapes, and a fill's running totals complete the next order
-        # version of the same order.
+        # By name, for the reason `_carry` gives. `filled_qty` and `avg_px`
+        # mean the same thing wherever they appear, unlike the abstract slots
+        # -- so they carry across shapes, and a fill's running totals complete
+        # the next order version of the same order.
         _carry(self, previous, "stop_px", "display_qty", "filled_qty", "avg_px", "order_id")
         if self.leaves_qty is None and self.qty is None:
             # Carried only when `derive` below cannot work it out, which is
@@ -259,8 +255,7 @@ class Execution(MarketEvent):
         and adding its quantity is how a fills table starts overcounting.
         """
         super().complete_from(previous)
-        # By name, for the reason `Order.complete_from` gives: the version
-        # before a fill is as often an order as another fill.
+        # By name, for the reason `_carry` gives.
         _carry(self, previous, "order_xhash", "order_id", "client_order_id", "aggressor")
         _carry_code(self, previous, "kind")
         if self.order_xhash is None and previous.is_order():
@@ -341,8 +336,7 @@ def _totals_of(previous: MarketEvent) -> tuple[float | None, float | None, float
 
     An execution's previous version is the last report of the order, which may
     be an `Order` or another `Execution` -- both carry the three running
-    totals, and neither is a base of the other, so this reads them by name
-    rather than by type.
+    totals, and it is read from either by name, for the reason `_carry` gives.
     """
     return (
         getattr(previous, "filled_qty", None),

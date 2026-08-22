@@ -16,21 +16,12 @@ import pytest
 from rekep.fields import StructField
 from rekep.market import Book, BookSide, Execution, Instrument, MarketEvent, Order
 
+from ..conftest import catalog_properties
 from .conftest import batch
 
 pytest.importorskip("pyiceberg")
 
 SHAPES = (MarketEvent, Order, Execution, BookSide, Book, Instrument)
-
-
-def catalog_properties(tmp_path: Path) -> dict[str, str]:
-    warehouse = tmp_path / "warehouse"
-    warehouse.mkdir(exist_ok=True)
-    return {
-        "type": "sql",
-        "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
-        "warehouse": warehouse.as_uri(),
-    }
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
@@ -85,10 +76,10 @@ def test_the_partition_is_the_hour_then_the_instrument() -> None:
     because an identity on a 64-bit hash is one directory per instrument."""
     schema = Order.FIELD.into_iceberg_schema()
     spec = Order.FIELD.into_iceberg_partition_spec(schema)
-    assert [partition.name for partition in spec.fields] == ["hunix", "instrument_hash_bucket"]
+    assert [partition.name for partition in spec.fields] == ["unix_hour", "instrument_hash_bucket"]
     assert str(spec.fields[0].transform) == "identity"
     assert str(spec.fields[1].transform) == "bucket[16]"
-    assert schema.find_column_name(spec.fields[0].source_id) == "hunix"
+    assert schema.find_column_name(spec.fields[0].source_id) == "unix_hour"
     assert schema.find_column_name(spec.fields[1].source_id) == "instrument_hash"
     for partition in spec.fields:
         assert "[" not in partition.name, "a partition name becomes a directory name"
@@ -150,8 +141,18 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
     assert read.column("bid_alive")[0][0]["qty"].as_py() == 5.0
 
 
-def test_the_metrics_budget_covers_every_flat_column_of_a_book(tmp_path: Path) -> None:
-    """The reason the sides were unnested, checked against Iceberg's own schema."""
+def test_the_metrics_budget_covers_every_flat_column_of_a_book() -> None:
+    """The reason the sides were unnested, on the *Iceberg* projection rather
+    than the Arrow one: the derived prices have to arrive as top-level scalars,
+    because Iceberg writes no bounds at all under a list or a map -- a nested
+    one prunes nothing however much budget is left.
+
+    The budget itself is counted in **leaves**, in pre-order, and where each
+    filtered column falls in that walk is what `test_shapes.py` pins. What a
+    projection's own width says is the half that is necessary here: one wider
+    than the 100 leaves the budget stops at could not have kept the last of
+    these columns inside it.
+    """
     schema = Book.FIELD.into_iceberg_schema()
     flat = [
         member.name
@@ -159,4 +160,4 @@ def test_the_metrics_budget_covers_every_flat_column_of_a_book(tmp_path: Path) -
         if not str(member.field_type).startswith(("list", "map", "struct"))
     ]
     assert {"spread", "micro_px", "imbalance", "bid_px", "ask_px"} <= set(flat)
-    assert len(schema.fields) < 100, "every top-level field is inside the default budget"
+    assert len(schema.fields) < 100, "no more top-level fields than the budget counts leaves"

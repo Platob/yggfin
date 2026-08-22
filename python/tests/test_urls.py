@@ -81,11 +81,6 @@ def test_a_windows_drive_is_a_path_and_not_a_scheme() -> None:
     assert Url.from_string("C:/warehouse/x").scheme == "file"
 
 
-def test_both_windows_separators_name_one_location() -> None:
-    """Which is what lets a swept path be compared against a recorded one."""
-    assert Url.from_string("C:\\warehouse\\x") == Url.from_string("C:/warehouse/x")
-
-
 def test_a_local_path_comes_back_posix_on_a_windows_host(windows: None) -> None:
     """One parser, one spelling: a backslash is a separator where it is one."""
     assert Url.from_string("C:\\warehouse\\x").store_path == "C:/warehouse/x"
@@ -97,8 +92,18 @@ def test_a_backslash_stays_a_character_in_a_name_on_a_posix_host(posix: None) ->
     assert Url.from_string("logs/a\\b.txt").path == "logs/a\\b.txt"
 
 
-def test_a_drive_is_read_as_a_drive_on_either_host(posix: None) -> None:
-    """A recorded `C:\\x` has to mean the same thing wherever it is compared."""
+@pytest.mark.parametrize("host", ["posix", "windows"])
+def test_a_drive_is_read_as_a_drive_on_either_host(
+    host: str, request: pytest.FixtureRequest
+) -> None:
+    """A recorded `C:\\x` has to mean the same thing wherever it is compared.
+
+    Both hosts, from one test: the pair that stood here asserted this on the
+    host the suite happened to run on and again on a forced POSIX one, which
+    on the Linux leg is the same assertion twice and on neither leg is the
+    "either host" the name promises.
+    """
+    request.getfixturevalue(host)
     assert Url.from_string("C:\\warehouse\\x") == Url.from_string("C:/warehouse/x")
 
 

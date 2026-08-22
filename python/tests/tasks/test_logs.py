@@ -12,6 +12,8 @@ from pathlib import Path
 import pyarrow
 import pytest
 
+from rekep.fix.columns import COLUMNS
+from rekep.fix.fields import unix_of
 from rekep.market import EventType
 from rekep.tasks import ParseLogs, Task
 
@@ -66,7 +68,7 @@ def test_the_rows_land_in_the_hour_they_happened_in(capture: Path, catalog: dict
     task = parse(capture, catalog)
     task.run()
     rows = task.target(int(EventType.ORDER)).read_arrow_table()
-    hours = sorted(set(rows.column("hunix").to_pylist()))
+    hours = sorted(set(rows.column("unix_hour").to_pylist()))
     assert len(hours) == HOURS
     assert hours[1] - hours[0] == 3_600_000_000_000, "an hour apart, in nanoseconds"
 
@@ -111,14 +113,6 @@ def test_a_capture_that_grew_costs_only_what_grew(capture: Path, catalog: dict) 
     assert again.skipped == EXPECTED_ROWS
     for kind in KINDS:
         assert task.target(int(kind)).read_arrow_table().num_rows == PER_HOUR * HOURS * 2
-
-
-def test_the_same_line_twice_in_one_run_lands_once(capture: Path, catalog: dict) -> None:
-    """A duplicate inside the stream collapses for the same reason as one across runs."""
-    write_capture(capture, name="copy.log")  # byte-for-byte the same lines
-    report = parse(capture, catalog).run()
-    assert report.rows == EXPECTED_ROWS * 2
-    assert report.landed == EXPECTED_ROWS and report.skipped == EXPECTED_ROWS
 
 
 def test_two_different_lines_both_land(capture: Path, catalog: dict) -> None:
@@ -240,3 +234,221 @@ def test_one_file_is_a_source_as_much_as_a_folder(capture: Path, catalog: dict) 
     """Told apart by asking the filesystem, because a document cannot say."""
     report = parse(capture / "a.log", catalog).run()
     assert report.rows == EXPECTED_ROWS
+
+
+# -- the commit bound ---------------------------------------------------------
+
+
+def test_a_commit_holds_a_commit_size_worth_and_no_more(
+    capture: Path, catalog: dict, tmp_path: Path
+) -> None:
+    """What `commit_row_size` actually promises, read back off the snapshots.
+
+    The buffer is flushed when it *reaches* the size rather than when adding
+    the next batch would pass it, so a commit holds between `commit_row_size`
+    and one batch more -- and that upper bound is what the job's memory is.
+    """
+    for name in ("b.log", "c.log", "d.log", "e.log"):
+        write_capture(capture, name=name, day=f"2026-08-{16 + ord(name[0]) - ord('b')}")
+    task = parse(capture, catalog, batch_row_size=8, commit_row_size=25)
+    report = task.run()
+
+    assert report.rows == EXPECTED_ROWS * 5, "five days of the fixture"
+    for kind in KINDS:
+        dataset = task.target(int(kind))
+        added = [
+            int(dict(summary)["added-records"])
+            for summary in dataset.snapshots().column("summary").to_pylist()
+        ]
+        assert sum(added) == PER_HOUR * HOURS * 5, kind.name
+        assert len(added) > 1, "the fixture is bigger than one commit at this size"
+        for count in added[:-1]:
+            assert count >= task.commit_row_size, (kind.name, added)
+            assert count < task.commit_row_size + task.batch_row_size, (kind.name, added)
+
+
+def test_a_rotated_copy_of_a_file_is_skipped_rather_than_written(
+    capture: Path, catalog: dict
+) -> None:
+    """A capture holds `app.log` and `app.log.1`, and the overlap is the norm.
+
+    This is also the in-stream half of the dedup: both copies are read in the
+    same run, so a duplicate that never crosses a run collapses for the same
+    reason one across runs does.
+    """
+    (capture / "a.log.1").write_bytes((capture / "a.log").read_bytes())
+    task = parse(capture, catalog)
+    report = task.run()
+
+    assert report.rows == EXPECTED_ROWS * 2, "both files were read"
+    assert report.landed == EXPECTED_ROWS and report.skipped == EXPECTED_ROWS
+    for kind in KINDS:
+        assert task.target(int(kind)).read_arrow_table().num_rows == PER_HOUR * HOURS
+
+
+# -- the message layer --------------------------------------------------------
+
+#: The dictionary this repository publishes, so names resolve without a scrape.
+DICTIONARY = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
+
+HEAD = "2026-08-14 00:00:0{slot}.167_520 [t-1] [Bridge] "
+
+#: `SendingTime <52>` as the FIX line writes it, UTC. Named so the instant the
+#: store holds can be derived from it rather than copied out of a run.
+STAMP = "20260814-09:30:00.123"
+
+#: `TransactTime <60>`, to the nanosecond -- which is the digit a store that
+#: kept an instant as Iceberg's microsecond timestamp would drop in silence.
+TRANSACT = "20260814-09:29:59.123456789"
+
+#: How many columns the flat layer is, derived from the module that declares it
+#: and pinned, so a tag dropped from it cannot shrink the checks that walk it.
+EXPECTED_FLAT_COLUMNS = 59
+
+#: One line per spelling of a message, plus one carrying none. The FIX line
+#: carries a flat field of every shape -- a count, a sequence, a flag, two
+#: stamps, a price, a checksum -- because those are what the flattened columns
+#: decode, and each of them decodes to a different type.
+#:
+#: `44=41.27` rather than a round price on purpose: 41.27 is not exact in a
+#: 32-bit float, so a column narrowed on the way to the store fails the read
+#: back rather than passing it.
+MESSAGES = [
+    f"sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|52={STAMP}|43=Y"
+    f"|11=ORD-1|55=TTF|54=1|38=1200|44=41.27|60={TRANSACT}|10=203|",
+    "toBridge #ISINCODE=XX0000084733#SYMBOL=TTF#SIDE=1#ACCOUNT=<null>"
+    "#UNKNOWNVENUEFIELD=Z9#SENDERCOMPID=BRIDGE1",
+    "8=FIX.4.2|35=UL|34=2|#SYMBOL=TTF|#SIDE=1|10=044|",
+    "heartbeat emitted seq=7",
+]
+
+
+@pytest.fixture(scope="module")
+def landed(tmp_path_factory: pytest.TempPathFactory) -> dict[EventType, pyarrow.Table]:
+    """Four lines -- FIX, a bridge, a wrapped bridge, and neither -- parsed
+    once, as the two tables every check below reads back.
+
+    They all run the same job over the same lines and none of them writes, so
+    one run answers all of them -- and the run is what this section costs. Its
+    own catalog rather than the `catalog` fixture, which is per-test and would
+    be torn down under it.
+    """
+    root = tmp_path_factory.mktemp("messages")
+    capture = root / "capture"
+    capture.mkdir()
+    (capture / "m.log").write_text(
+        "".join(HEAD.format(slot=slot) + line + "\n" for slot, line in enumerate(MESSAGES))
+    )
+    warehouse = root / "warehouse"
+    warehouse.mkdir()
+    catalog = {
+        "type": "sql",
+        "uri": f"sqlite:///{(root / 'catalog.db').as_posix()}",
+        "warehouse": warehouse.as_uri(),
+    }
+
+    task = parse(capture, catalog, fix_dictionary=str(DICTIONARY))
+    task.run()
+    # Sorted here rather than in every check: the fixture writes the lines in
+    # one order and a store does not promise to hand them back in it.
+    return {
+        kind: task.target(int(kind)).read_arrow_table().sort_by("unix")
+        for kind in (EventType.ORDER, EventType.UNKNOWN)
+    }
+
+
+def test_a_line_lands_with_the_message_it_carries(landed: dict) -> None:
+    """The whole layer, through the shipped job: a line, its columns, its rest."""
+    rows = landed[EventType.UNKNOWN]
+    assert rows.column("protocol").to_pylist() == ["UL", "UL", "OTHER"]
+
+    assert rows.column("symbol")[0].as_py() == "TTF", "a name the dictionary knows, as a column"
+    assert rows.column("side")[0].as_py() == "1"
+    assert rows.column("account")[0].as_py() is None, "`ACCOUNT=<null>` is absent, not the text"
+    assert dict(rows.column("keyval")[0].as_py()) == {
+        "ISINCODE": "XX0000084733",
+        "UNKNOWNVENUEFIELD": "Z9",
+    }, "and the names it does not, kept rather than dropped"
+
+    assert rows.column("symbol")[1].as_py() == "TTF"
+    assert rows.column("msg_type")[1].as_py() == "UL", "one message, read as one"
+
+
+def test_a_flat_field_is_a_column_and_not_a_pair_as_well(landed: dict) -> None:
+    """One fact stored twice is one that can disagree with itself, so the tags
+    the flat layer names leave `fix_tags` when they land in their column."""
+    rows = landed[EventType.UNKNOWN]
+    assert rows.column("sender_comp_id")[0].as_py() == "BRIDGE1", (
+        "a bridge spells tag 49 `SENDERCOMPID`, and it is lifted out all the same"
+    )
+    lifted = set(COLUMNS)
+    assert len(lifted) == EXPECTED_FLAT_COLUMNS, "the session layer and the components, pinned"
+    for row in range(rows.num_rows):
+        pairs = rows.column("fix_tags")[row].as_py()
+        assert not lifted & {tag for tag, _ in pairs or []}, row
+
+
+def test_a_line_carrying_no_message_says_so_rather_than_saying_nothing(landed: dict) -> None:
+    """Null, not an empty map: "not a message" and "a message that said nothing"."""
+    rows = landed[EventType.UNKNOWN]
+    assert rows.column("protocol")[2].as_py() == "OTHER"
+    assert rows.column("fix_tags")[2].as_py() is None
+    assert rows.column("keyval")[2].as_py() is None
+    silent = {name: rows.column(name)[2].as_py() for name in COLUMNS.values()}
+    assert len(silent) == EXPECTED_FLAT_COLUMNS
+    assert silent.pop("symbol") == "", "`Event` declares it NOT NULL, so a line without one"
+    assert set(silent.values()) == {None}
+
+
+def test_a_line_that_is_about_something_lands_in_its_own_table(landed: dict) -> None:
+    """A FIX order is an ORDER, and what it ordered is a column each."""
+    rows = landed[EventType.ORDER]
+    assert rows.num_rows == 1
+    assert rows.column("protocol").to_pylist() == ["FIX"]
+    assert rows.column("fix_tags")[0].as_py() == [], "every field of it was worth a column"
+    ordered = ("cl_ord_id", "symbol", "side", "order_qty")
+    assert [rows.column(name)[0].as_py() for name in ordered] == ["ORD-1", "TTF", "1", 1200.0]
+
+
+def test_the_flat_layer_survives_the_write_as_the_types_it_declares(landed: dict) -> None:
+    """The write is the half worth checking: a batch can hold the right value
+    and still land as text, or fail to land at all. Text on the wire, a number,
+    a flag and an instant in the store, read back through Iceberg."""
+    rows = landed[EventType.ORDER]
+    kinds = pyarrow.types
+
+    assert rows.column("msg_type").to_pylist() == ["D"]
+    assert rows.column("sender_comp_id").to_pylist() == ["BUYSIDE"]
+    assert rows.column("target_comp_id").to_pylist() == ["XPAR"]
+    assert rows.column("seq").to_pylist() == [7], "tag 34 fills the column `Event` already has"
+    assert rows.column("body_length").to_pylist() == [176]
+    assert kinds.is_integer(rows.schema.field("seq").type), "a sequence is a number"
+    assert kinds.is_integer(rows.schema.field("body_length").type)
+    assert rows.column("poss_dup_flag").to_pylist() == [True], "`43=Y` is a boolean"
+    assert kinds.is_boolean(rows.schema.field("poss_dup_flag").type)
+
+    # The columns a desk actually selects on: which instrument, which way,
+    # under whose identifier, how much and at what price. Tag 55 lands on
+    # `Event`'s own `symbol` rather than beside it.
+    assert rows.column("symbol").to_pylist() == ["TTF"]
+    assert rows.column("side").to_pylist() == ["1"], "a code, and text -- `01` is not `1`"
+    assert rows.column("cl_ord_id").to_pylist() == ["ORD-1"]
+    assert rows.column("order_qty").to_pylist() == [1200.0], "and a quantity is a number too"
+    assert rows.column("price").to_pylist() == [41.27], "a price that rounded is a wrong price"
+    for name in ("order_qty", "price"):
+        assert kinds.is_floating(rows.schema.field(name).type), name
+
+    # Nanoseconds since the epoch, like every other instant here: derived from
+    # the stamps the fixture writes, then pinned, so a broken reading cannot
+    # move both sides at once. `transact_unix` carries nine fractional digits
+    # for the reason the column is an int64 at all -- Iceberg's own timestamp
+    # is microseconds, and would have dropped the last three of them here.
+    assert rows.column("sending_unix").to_pylist() == [unix_of(STAMP)] == [1786699800123000000]
+    assert rows.column("transact_unix").to_pylist() == [unix_of(TRANSACT)] == [1786699799123456789]
+    for name in ("sending_unix", "transact_unix"):
+        assert kinds.is_integer(rows.schema.field(name).type), name
+
+
+def test_a_checksum_keeps_the_zeros_that_make_it_verify(landed: dict) -> None:
+    """`044` read as `44` is a checksum that no longer verifies, so it is text."""
+    assert landed[EventType.UNKNOWN].column("check_sum")[1].as_py() == "044"

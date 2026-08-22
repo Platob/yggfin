@@ -36,6 +36,32 @@ def schema() -> object:
     return Quote.FIELD.into_iceberg_schema()
 
 
+# -- one field on its own ---------------------------------------------------
+
+
+def test_one_field_projects_on_its_own_and_numbers_from_the_id_given() -> None:
+    """`Field.into_iceberg_field` is the documented single-column form.
+
+    It is on the site and it was in no test: the two lines that import the
+    projection and call it were the only lines of `field.py` the whole suite
+    never reached.
+    """
+    projected = Quote.FIELD.field("symbol").into_iceberg_field(field_id=7)
+    assert projected.name == "symbol"
+    assert projected.field_id == 7
+    assert projected.required is True
+    assert projected.doc == "Instrument."
+
+
+def test_one_field_projects_the_same_way_the_whole_schema_does(schema: object) -> None:
+    """Two ways to the same NestedField, which is what makes the short one safe."""
+    whole = schema.find_field("venue")
+    alone = Quote.FIELD.field("venue").into_iceberg_field(field_id=whole.field_id)
+    assert alone.name == whole.name
+    assert alone.field_type == whole.field_type
+    assert alone.required == whole.required
+
+
 # -- the schema -------------------------------------------------------------
 
 

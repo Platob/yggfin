@@ -19,9 +19,11 @@ import pyarrow.fs
 from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField
 from rekep.filesystems import resolve
-from rekep.logs.log import Log, LogRules
+from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.transcribe import FixCodec
 from rekep.market.event import HOUR
 from rekep.market.identity import HASH, hash_bytes
+from rekep.text.log import Log, LogRules, MessageCodec
 from rekep.urls import Url
 
 #: Matches the fixed header every log row opens with, leaving the free-form
@@ -31,12 +33,14 @@ from rekep.urls import Url
 #:     ^timestamp                  ^thread_name       ^driver_name ^level ^message
 #:
 #: `level` is optional -- some drivers print none -- and the fractional second
-#: carries millis and micros separated by an underscore. Matching is done on
-#: bytes so lines never have to be decoded just to be classified; a line that
-#: does not match is a wrapped continuation of the row above it.
+#: is **millis, and micros after them when the driver prints any**: the same
+#: capture writes `01.147`, `01,147`, `01.147250` and `01.147_250`, because one
+#: capture is written by several loggers and they do not agree. Matching is
+#: done on bytes so lines never have to be decoded just to be classified; a
+#: line that does not match is a wrapped continuation of the row above it.
 HEADER_PATTERN = re.compile(
     rb"^[ \t]*"
-    rb"(?P<timestamp>\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[.,]\d{3}[._,]\d{3})[ \t]+"
+    rb"(?P<timestamp>\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[.,]\d{3}(?:[._,]?\d{3})?)[ \t]+"
     rb"\[(?P<thread_name>[^\]]*)\][ \t]+"
     rb"\[(?P<driver_name>[^\]]*)\][ \t]*"
     rb"(?:\((?P<level>[A-Za-z]{1,12})\)[ \t]*)?"
@@ -44,9 +48,14 @@ HEADER_PATTERN = re.compile(
     re.DOTALL,
 )
 
-#: Characters `HEADER_PATTERN` pins a timestamp to. The slicing path is sound
-#: only at this width, so anything else is read rather than sliced.
-STAMP_WIDTH = 27
+#: Every width `HEADER_PATTERN` pins a timestamp to: seconds and millis (23),
+#: and those plus micros with or without a separator between them (26 or 27).
+#:
+#: The slicing path reads every component from a fixed offset, so it is sound
+#: at these widths and at no other: a stamp one character shorter slices into
+#: valid ISO holding *other digits* and casts happily to the wrong instant.
+#: Anything else is read rather than sliced.
+STAMP_WIDTHS = (23, 26, 27)
 
 #: A timestamp split into "up to the seconds" and "everything after the first
 #: separator", so a fraction written `167_520` or `167,520` can be put back
@@ -117,10 +126,11 @@ class TextFile(Dataset, io.BufferedIOBase):
     filesystem: pyarrow.fs.FileSystem | None = None
     header_pattern: re.Pattern[bytes] = HEADER_PATTERN
 
-    #: Columns one written line is made of. The rest of `ROW` is derived when
-    #: the line is read back -- the day and the hash are functions of the line,
-    #: the url is the file, the categories are placeholders -- so a write must
-    #: not demand them.
+    #: Columns one written line is made of, and it does not grow: everything
+    #: else `ROW` declares is **derived** when the line is read back -- the hour
+    #: and the hash are functions of the line, the url is the file, and the
+    #: category and its pairs are read out of the message. A write is never
+    #: asked for a column a read derives.
     RENDERED: ClassVar[tuple[str, ...]] = (
         "unix",
         "thread_name",
@@ -136,6 +146,16 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: matches. The default reads a FIX trading log; an empty `LogRules(rules=[])`
     #: skips the matching entirely and leaves every line `UNKNOWN`.
     rules: LogRules = dataclass_field(default_factory=LogRules)
+
+    #: What turns a message into the columns a row carries: which category it
+    #: is, its pairs, and the tags behind them. `FixCodec` reads a FIX-carrying
+    #: trading log; the seam is four verbs (`MessageCodec`), so a codec over
+    #: another protocol is handed over here and nothing above it changes.
+    #:
+    #: A codec whose rule set is empty categorises every line OTHER, which
+    #: parses nothing -- so a file that declares no rules reads exactly as it
+    #: did before any of this existed.
+    codec: MessageCodec = dataclass_field(default_factory=FixCodec)
 
     #: IANA zone the wall clock in the header belongs to (`Europe/Paris`).
     #: None keeps the historical reading: the clock *is* UTC. Naming the real
@@ -172,8 +192,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         """Build from a URI, or from a path when `filesystem` is given.
 
         Anything else the file declares -- `static_values`, `row`,
-        `header_pattern`, `id_epoch_ms` -- is a keyword here, so a call reads
-        as one shape.
+        `header_pattern`, `rules` -- is a keyword here, so a call reads as one
+        shape.
         """
         return cls(url=url, filesystem=filesystem, timezone=timezone, **declared)
 
@@ -385,7 +405,9 @@ class TextFile(Dataset, io.BufferedIOBase):
                     rows[-1] = (timestamp, thread, driver, (message or b"") + b"\n" + line)
                 continue
             rows.append(match.group(*indices))
-            hashes.append(_digest(line))
+            # A fallback digest here differed between environments, so one row
+            # could be stored twice under two keys. `xxhash` is a hard dependency.
+            hashes.append(hash_bytes(line))
             # One row past the size, not at it: a continuation belongs to the
             # row above it, and cutting the batch the moment that row is
             # complete puts it out of reach of the next line. A stack trace
@@ -416,7 +438,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         digest = pyarrow.array(hashes, type=HASH)
         columns: dict[str, Any] = {
             "unix": unix,
-            "hunix": _hour_nanos(unix),
+            "unix_hour": _hour_nanos(unix),
             "etype": self.rules.etype_arrow(message),
             # A line is created when it is stamped. `runix` is when somebody
             # wrote it down *here*, which the parser does not know and must not
@@ -441,14 +463,87 @@ class TextFile(Dataset, io.BufferedIOBase):
             "driver_name": _utf8(drivers),
             "message": message,
         }
+        for name, column in self._message_columns(message, columns["driver_name"], count).items():
+            # `symbol` and `seq` are `Event`'s own, declared as tags 55 and 34,
+            # so a message that says either fills the column the shape already
+            # has rather than a second one beside it. What the message did not
+            # say keeps the default -- `symbol` is NOT NULL.
+            if name in columns:
+                column = pyarrow.compute.coalesce(
+                    cast_arrow_fix(column, columns[name].type), columns[name]
+                )
+            columns[name] = column
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )
         schema = self.schema
+        # `cast_arrow_fix` and not a plain cast, because the session columns
+        # arrive as the text the wire carried: `20260814-09:30:00.123` is an
+        # instant and `Y` is a boolean, and Arrow's own cast raises on both.
         return pyarrow.RecordBatch.from_arrays(
-            [columns[name].cast(schema.field(name).type, safe=False) for name in schema.names],
+            [cast_arrow_fix(columns[name], schema.field(name).type) for name in schema.names],
             schema=schema,
         )
+
+    def _message_columns(self, messages: Any, drivers: Any, count: int) -> dict[str, Any]:
+        """What a message fills: which protocol it is, its two halves, its header.
+
+        **One style per parse.** `parse_arrow_array` samples a column once and
+        reads every row of it that way -- which is right, and which is why a
+        capture cannot be handed to it whole: a batch of a trading log mixes
+        wire messages, bridge messages and prose line by line, and one sample
+        would read two of the three wrong. So the batch is cut into one slice
+        per protocol, each parsed under its own rule, and the slices scattered
+        back into the row order they came in.
+
+        The scatter is two kernels and no Python: the original positions of
+        every slice, concatenated in the order the slices were parsed, are a
+        permutation of the batch -- and sorting *that* is its own inverse, so
+        one `take` puts every row back. A batch of one protocol skips it and
+        parses once.
+
+        The flat columns come off **after** the scatter, once for the batch
+        rather than once per slice: they are a lookup in the assembled
+        `fix_tags`, and doing it per slice would mean scattering thirty more
+        columns as well.
+
+        Nulls stay null and an unparseable line yields an empty map, never an
+        exception: a capture is a record of what happened, and a line nobody
+        can read is still a line that was written.
+        """
+        found = self.codec.categorise(messages, drivers)
+        columns: dict[str, Any] = {"protocol": found}
+        names = sorted(pyarrow.compute.unique(found).to_pylist())
+        if len(names) == 1:
+            columns["fix_tags"], columns["keyval"] = self._parsed(messages, names[0])
+        else:
+            compute = pyarrow.compute
+            positions = _row_indices(count)
+            order, tagged, rest = [], [], []
+            for name in names:
+                mask = compute.equal(found, name)
+                order.append(compute.filter(positions, mask))
+                one, other = self._parsed(compute.filter(messages, mask), name)
+                tagged.append(one)
+                rest.append(other)
+            back = compute.array_sort_indices(pyarrow.concat_arrays(order))
+            columns["fix_tags"] = pyarrow.concat_arrays(tagged).take(back)
+            columns["keyval"] = pyarrow.concat_arrays(rest).take(back)
+        flat, columns["fix_tags"] = self.codec.into_flat_columns(columns["fix_tags"])
+        columns.update(flat)
+        return columns
+
+    def _parsed(self, messages: Any, protocol: str) -> tuple[Any, Any]:
+        """One protocol's slice as its two map columns.
+
+        The version is resolved **once per slice**, off the first line in it,
+        because that is the granularity the answer has: a BeginString is the
+        same for every message a session writes, and asking per row would put a
+        regex back in the hot path for a column whose keys are already numbers.
+        """
+        pairs = self.codec.into_pairs(messages, protocol)
+        version, _ = self.codec.version_of(_first_text(messages), protocol)
+        return self.codec.into_fix_pairs(pairs, version)
 
     def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
         """Cut newline-delimited lines out of fixed-size reads.
@@ -594,11 +689,22 @@ def parsed_field_of(
     reader already selects by position and the data columns keep the order the
     declaration gives them. Shared with `TextFiles`, whose shape is the shape
     of the files it opens.
+
+    A name the row already declares is **refused, by that name**. The shape now
+    carries a column per lifted FIX field, so `text`, `account`, `side` and
+    `price` are all names a caller would plausibly reach for -- and appending a
+    second column called `text` produced a schema with two of them, where the
+    next `schema.field("text")` raised `KeyError: Column text does not exist`.
+    A duplicate that reads as an absence is the worst way to find this out.
     """
     if not static_columns:
         return row
     schema = row.into_arrow_schema()
     for name, scalar in static_columns:
+        if name in schema.names:
+            raise ValueError(
+                f"static value {name!r} is already a column of {row.name}; name it something else"
+            )
         schema = schema.append(pyarrow.field(name, scalar.type, nullable=not scalar.is_valid))
     return Field.from_arrow_schema(schema, row.name)
 
@@ -660,33 +766,59 @@ def _local_micros(timestamps: Sequence[bytes]) -> pyarrow.Array:
     micros -- are never even read: the components are sliced out and joined
     into canonical ISO form, and one cast parses the whole column.
 
-    That is only sound for the width the bundled pattern pins,
-    `STAMP_WIDTH` characters. A custom `header_pattern` matching anything else
-    is not caught by the cast -- `2026-08-14 00:05:01.167520`, one character
-    shorter, slices into valid ISO holding *other digits* and casts happily to
-    `.167200` -- so the width is checked first and anything else goes row by
-    row. Measured on the bundled shape the check is one `utf8_length` pass per
-    batch, under a percent.
+    **The width is what says where those offsets are**, so the fast path keys
+    off the matched span: one of `STAMP_WIDTHS`, the same for every row in the
+    batch, or the column is read row by row instead. A stamp one character
+    shorter is not caught by the cast -- `2026-08-14 00:05:01.167520` slices
+    into valid ISO holding *other digits* and casts happily to `.167200` --
+    which is why the check is on the width and not on the result. Measured on
+    the bundled shape it is one `utf8_length` pass per batch, under a percent.
+
+    A stamp that carries millis and no micros is **padded, not read**: `147`
+    is 147 milliseconds, so the microsecond field is `147000` and the three
+    zeros are arithmetic rather than a guess. Reading `147` as `000147`
+    -- which is what a naive right-align does -- moves the row by 147
+    milliseconds and looks entirely plausible on the way past.
     """
     compute = pyarrow.compute
     raw = pyarrow.array(timestamps, type=pyarrow.binary()).cast(pyarrow.string())
-    fixed = compute.all(compute.equal(compute.utf8_length(raw), STAMP_WIDTH), min_count=0).as_py()
-    if fixed:
-        joined = compute.binary_join_element_wise(
-            compute.utf8_slice_codeunits(raw, 0, 10),
-            " ",
-            compute.utf8_slice_codeunits(raw, 11, 19),
-            ".",
-            compute.utf8_slice_codeunits(raw, 20, 23),
-            compute.utf8_slice_codeunits(raw, 24, 27),
-            "",
-        )
+    lengths = compute.utf8_length(raw)
+    for width in STAMP_WIDTHS:
+        if not compute.all(compute.equal(lengths, width), min_count=0).as_py():
+            continue
         try:
-            return joined.cast(pyarrow.timestamp("us"))
+            return _sliced_micros(raw, width).cast(pyarrow.timestamp("us"))
         except pyarrow.ArrowInvalid:
-            pass
+            break
     micros = [_epoch_nanos(stamp) // 1000 for stamp in timestamps]
     return pyarrow.array(micros, type=pyarrow.int64()).cast(pyarrow.timestamp("us"))
+
+
+def _sliced_micros(raw: pyarrow.Array, width: int) -> pyarrow.Array:
+    """A column of fixed-width stamps as canonical ISO microseconds.
+
+    One canonical spelling out of all of them, so the cast that follows has
+    one shape to parse: `YYYY-MM-DD HH:MM:SS.ffffff`. Where the stamp carries
+    no micros the field is filled with the literal zeros that make millis
+    micros; where it carries them with a separator the separator is at 23 and
+    the digits after it, and where it carries them without one they are at 23
+    already.
+    """
+    compute = pyarrow.compute
+    fraction = (
+        pyarrow.scalar("000")
+        if width == 23
+        else compute.utf8_slice_codeunits(raw, width - 3, width)
+    )
+    return compute.binary_join_element_wise(
+        compute.utf8_slice_codeunits(raw, 0, 10),
+        " ",
+        compute.utf8_slice_codeunits(raw, 11, 19),
+        ".",
+        compute.utf8_slice_codeunits(raw, 20, 23),
+        fraction,
+        "",
+    )
 
 
 def _unix_nanos(local: pyarrow.Array, timezone: str | None) -> pyarrow.Array:
@@ -740,6 +872,29 @@ def _hour_nanos(unix: pyarrow.Array) -> pyarrow.Array:
     )
 
 
+def _row_indices(count: int) -> pyarrow.Array:
+    """`0..count-1`, built in kernels -- where a scatter puts each row back."""
+    ones = pyarrow.repeat(pyarrow.scalar(1, pyarrow.int32()), count)
+    return pyarrow.compute.subtract(
+        pyarrow.compute.cumulative_sum(ones), pyarrow.scalar(1, pyarrow.int32())
+    )
+
+
+def _first_text(messages: pyarrow.Array) -> str | None:
+    """The first line in a column that has anything in it, as text.
+
+    One row read per category per batch, which is what a version resolution
+    costs here. A column of nothing answers None, and a codec reads that as
+    "nobody said", which is an answer.
+    """
+    for value in messages:
+        if value.is_valid:
+            text = value.as_py()
+            if text:
+                return text
+    return None
+
+
 def _zeros(count: int, arrow_type: pyarrow.DataType) -> pyarrow.Array:
     """A column of `count` zeros -- the envelope members a parsed line leaves unset.
 
@@ -750,39 +905,18 @@ def _zeros(count: int, arrow_type: pyarrow.DataType) -> pyarrow.Array:
     return pyarrow.repeat(pyarrow.scalar(0, arrow_type), count)
 
 
-_EPOCH = datetime.date(1970, 1, 1)
 _EPOCH_DATETIME = datetime.datetime(1970, 1, 1)  # noqa: DTZ001 - log timestamps are naive UTC
-_DAY_SECONDS: dict[bytes, int] = {}
 
 
 def _epoch_nanos(timestamp: bytes) -> int:
     """`2026-08-14 00:05:01.167_520` -> nanoseconds since the epoch, naive UTC.
 
-    Per-row fallback for batches the Arrow path will not take. Sliced rather
-    than parsed: the bundled header regex has already pinned every field to a
-    fixed offset. The date half is cached because a log covers few distinct
-    days but many rows. Any other width goes to `_epoch_nanos_slow`, which
-    reads the string rather than assuming where its parts are.
-    """
-    if len(timestamp) != STAMP_WIDTH:
-        return _epoch_nanos_slow(timestamp)
-    try:
-        day = timestamp[:10]
-        seconds = _DAY_SECONDS.get(day)
-        if seconds is None:
-            date = datetime.date(int(day[0:4]), int(day[5:7]), int(day[8:10]))
-            seconds = (date - _EPOCH).days * 86_400
-            _DAY_SECONDS[day] = seconds
-        hours, minutes = int(timestamp[11:13]), int(timestamp[14:16])
-        seconds += hours * 3_600 + minutes * 60 + int(timestamp[17:19])
-        millis, micros = int(timestamp[20:23]), int(timestamp[24:27])
-        return seconds * 1_000_000_000 + millis * 1_000_000 + micros * 1_000
-    except (ValueError, IndexError):
-        return _epoch_nanos_slow(timestamp)
-
-
-def _epoch_nanos_slow(timestamp: bytes) -> int:
-    """Fallback for timestamps a custom `header_pattern` shapes differently.
+    The per-row path, for the batches `_local_micros` will not take in Arrow --
+    which is to say the ones whose stamps are not the width the slicing path
+    assumes. So this one **reads** the string rather than assuming where its
+    parts are: a second, sliced implementation sat here for the widths the
+    Arrow path already handles and no test in the suite reached a line of it,
+    because by the time anything gets here the width has already been ruled out.
 
     The fraction's separators are *removed*, not replaced: the bundled pattern
     itself admits `01,167,520`, and turning each comma into a dot builds
@@ -795,19 +929,3 @@ def _epoch_nanos_slow(timestamp: bytes) -> int:
         text = f"{head}.{re.sub(r'[._,]', '', fraction)}"
     delta = datetime.datetime.fromisoformat(text) - _EPOCH_DATETIME
     return (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000
-
-
-def _digest(raw: bytes) -> int:
-    """The line's hash: a signed `int64`, which is what every identifier here is.
-
-    `hash_bytes` and only that, so a line and an event are hashed by one
-    function: a fallback hash -- which is what this used to have -- made the
-    digest stable within an environment and not across two that disagreed
-    about whether `xxhash` was installed, and a row keyed on it could be
-    stored twice. `xxhash` is a dependency of this package for that reason.
-
-    A whole line is one blob with no split to forge, so it is hashed as it
-    stands rather than framed; the framing is for composed identifiers
-    (`rekep.market.identity`).
-    """
-    return hash_bytes(raw)

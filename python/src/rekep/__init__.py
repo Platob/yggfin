@@ -16,7 +16,6 @@ from rekep.fields import (
     field,
 )
 from rekep.fix import FixMessage, FixRegistry
-from rekep.logs import Log, TextFile, TextFiles
 from rekep.market import (
     Book,
     BookSide,
@@ -29,6 +28,7 @@ from rekep.market import (
     Ranged,
 )
 from rekep.tasks import ParseLogs, ParseMarket, Task, TaskRun
+from rekep.text import Log, TextFile, TextFiles
 from rekep.urls import Url
 
 __version__ = "0.1.0"

@@ -12,7 +12,7 @@ fields:
     epoch: '1970-01-01'
     iceberg:primary_key: 'true'
     iceberg:sort_key: asc
-- name: hunix
+- name: unix_hour
   type: int64
   description: '`unix` truncated to the hour -- what the data is partitioned on.'
   metadata:

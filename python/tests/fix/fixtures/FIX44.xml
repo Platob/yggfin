@@ -1,0 +1,32 @@
+<fix type='FIX' major='4' minor='4' servicepack='0'>
+ <header>
+  <field name='BeginString' required='Y' />
+  <field name='MsgSeqNum' required='Y' />
+  <field name='PossDupFlag' required='N' />
+  <component name='HopGrp' required='N' />
+ </header>
+ <trailer>
+  <field name='CheckSum' required='Y' />
+  <field name='Signature' required='N' />
+ </trailer>
+ <messages>
+  <message name='Heartbeat' msgtype='0' msgcat='admin'>
+   <field name='TestReqID' required='N' />
+  </message>
+ </messages>
+ <fields>
+  <field number='43' name='PossDupFlag' type='BOOLEAN'>
+   <value enum='Y' description='POSSIBLE_DUPLICATE' />
+   <value enum='N' description='ORIGINAL_TRANSMISSION' />
+  </field>
+  <field number='54' name='Side' type='CHAR'>
+   <value enum='1' description='BUY' />
+   <value enum='2' description='SELL' />
+   <value enum='7' description='UNDISCLOSED' />
+  </field>
+  <field number='103' name='OrdRejReason' type='INT' />
+  <field number='828' name='TrdType' type='INT'>
+   <value enum='1' description='BLOCK_TRADE' />
+  </field>
+ </fields>
+</fix>

@@ -15,10 +15,14 @@ def fixture_page(url: str) -> str:
 
     Only `4.4` has field pages, so every other version behaves like one the
     network cannot serve right now -- which is the path a registry walking
-    versions has to take anyway.
+    versions has to take anyway. The QuickFIX spec files are served the same
+    way, by their own file name, because they are the second source and a test
+    that reached the network for one would be a test of GitHub.
     """
     if url.endswith("fix-dictionary.html"):
         name = "fix-dictionary.html"
+    elif url.endswith(".xml"):
+        name = url.rsplit("/", 1)[-1]
     elif "/4.4/" in url:
         name = url.rsplit("/", 1)[-1]
     else:

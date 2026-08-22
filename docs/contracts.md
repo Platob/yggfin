@@ -364,8 +364,8 @@ and a pre-commit hook need without writing Python, so they are a command.
 === "Dump"
 
     ```bash
-    rekep fields dump --pyclass rekep.logs.log:Log --target schemas/rekep/log.yaml
-    rekep fields dump --pyclass rekep.logs.log:Log --format json      # to stdout
+    rekep fields dump --pyclass rekep.text.log:Log --target schemas/rekep/log.yaml
+    rekep fields dump --pyclass rekep.text.log:Log --format json      # to stdout
     rekep fields dump --pyclass trading.quotes:Quote --target schemas/trading/quote.yaml
     ```
 
@@ -386,10 +386,10 @@ and a pre-commit hook need without writing Python, so they are a command.
     Log: 10 columns, builds
       url: string
       unix: int64  [primary key]
-      hunix: date32[day]  [partition identity]
+      unix_hour: date32[day]  [partition identity]
       ...
       primary keys: ['unix', 'hash']
-      partition keys: {'hunix': 'identity'}
+      partition keys: {'unix_hour': 'identity'}
     ```
 
     Parsing is not the check — **building** is. A document can be valid YAML
@@ -402,7 +402,7 @@ and a pre-commit hook need without writing Python, so they are a command.
 
     ```bash
     # a contract that no longer matches the code fails here rather than at a consumer
-    rekep fields dump --pyclass rekep.logs.log:Log --target /tmp/log.yaml
+    rekep fields dump --pyclass rekep.text.log:Log --target /tmp/log.yaml
     diff -u schemas/rekep/log.yaml /tmp/log.yaml
 
     # and every published contract still builds

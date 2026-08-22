@@ -14,8 +14,6 @@ from rekep.convert import Convertible
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
-from rekep.logs.text_file import DEFAULT_BATCH_ROW_SIZE, TextFile
-from rekep.logs.text_files import TextFiles
 from rekep.market.book import Book, BookIterator
 from rekep.market.event import HOUR, MarketEvent
 from rekep.market.fix import FixEvents
@@ -23,6 +21,8 @@ from rekep.market.orders import Execution, Order
 from rekep.market.reference import Reference
 from rekep.tasks.logs import DEFAULT_COMMIT_ROW_SIZE
 from rekep.tasks.task import Task, TaskRun
+from rekep.text.text_file import DEFAULT_BATCH_ROW_SIZE, TextFile
+from rekep.text.text_files import TextFiles
 from rekep.urls import Url
 
 #: The shapes this lands, keyed by the name their table is called after. The
@@ -146,13 +146,7 @@ class ParseMarket(Task):
     # -- running -------------------------------------------------------------
 
     def run(self) -> TaskRun:
-        """Read the capture, land what it means, and say what went where.
-
-        One pass, and the fold is *in* it: `BookIterator` holds the live orders
-        of every instrument rather than the events of every instrument, so what
-        the job holds is the book rather than the capture. The events go to
-        their own tables on the way past.
-        """
+        """Read the capture, land what it means, and say what went where."""
         started = self._timed()
         report = TaskRun(task=self._named())
         targets: dict[str, Dataset] = {}
@@ -376,10 +370,9 @@ class ParseMarket(Task):
     ) -> None:
         """One target's buffer appended and counted, and the buffer let go.
 
-        What landed is the difference in the target's own record count, which
-        Iceberg answers from the snapshot summary; a store that cannot say has
-        every row counted as landed, because reading the table back to
-        decorate a report would cost more than the write it reports on.
+        What landed is the difference in `IcebergDataset.records`, which
+        documents what it costs and when it cannot say; a store that cannot say
+        has every row counted as landed.
         """
         held = buffers.pop(shape, [])
         if not held:

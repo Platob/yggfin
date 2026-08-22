@@ -18,8 +18,9 @@ import pyarrow.fs
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
-from rekep.logs.log import LogRules
-from rekep.logs.text_file import (
+from rekep.fix.transcribe import FixCodec
+from rekep.text.log import LogRules, MessageCodec
+from rekep.text.text_file import (
     DEFAULT_BATCH_ROW_SIZE,
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,
@@ -137,6 +138,11 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: a folder of one capture is one log format, so the rules belong to the
     #: set and not to each file in it.
     rules: LogRules = dataclass_field(default_factory=LogRules)
+
+    #: What turns a message into the columns a row carries, for the same reason
+    #: and in the same way: one capture is one set of message formats, so the
+    #: codec belongs to the set and every file it opens is handed this one.
+    codec: MessageCodec = dataclass_field(default_factory=FixCodec)
 
     def __post_init__(self) -> None:
         """Resolve one filesystem for every root, and rewrite the roots as paths on it."""
@@ -337,6 +343,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 timezone=self.timezone,
                 static_values=self.static_values,
                 rules=self.rules,
+                codec=self.codec,
             )
 
     def _walk(self, directory: str, seen: set[str] | None = None) -> Iterator[pyarrow.fs.FileInfo]:

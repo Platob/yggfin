@@ -17,6 +17,8 @@ from rekep import Convertible, Field, field
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.dataset import MERGE_IN_LIMIT
 
+from ..conftest import catalog_properties
+
 
 @field
 class Quote(Convertible):
@@ -39,16 +41,6 @@ class Quote(Convertible):
 
 
 DAY = datetime.date(2026, 8, 14)
-
-
-def properties(tmp_path: Path, name: str) -> dict[str, str]:
-    warehouse = tmp_path / name
-    warehouse.mkdir(parents=True, exist_ok=True)
-    return {
-        "type": "sql",
-        "uri": f"sqlite:///{(tmp_path / f'{name}.db').as_posix()}",
-        "warehouse": warehouse.as_uri(),
-    }
 
 
 def quotes(start: int, count: int, venue: str = "XPAR", *, days: int = 1) -> pyarrow.Table:
@@ -76,7 +68,7 @@ def pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
     """Two identical tables: one this package writes, one pyiceberg does."""
     built = []
     for name in ("ours", "theirs"):
-        catalog = IcebergCatalog(name=name, properties=properties(tmp_path, name))
+        catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
         dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
         dataset.create_with()
         built.append(dataset)
@@ -204,7 +196,7 @@ def test_the_report_says_what_moved(pair) -> None:
 
 @pytest.fixture
 def stored(tmp_path: Path) -> IcebergDataset:
-    catalog = IcebergCatalog(name="read", properties=properties(tmp_path, "read"))
+    catalog = IcebergCatalog(name="read", properties=catalog_properties(tmp_path, "read"))
     dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
     dataset.write_arrow(quotes(0, 300, days=5), commit_row_size=100)
     return dataset
@@ -258,7 +250,7 @@ def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
     data is on disk and readable, and nothing raises. Compared against
     pyiceberg's own scan of the same snapshot, which is where the values are.
     """
-    catalog = IcebergCatalog(name="evolved", properties=properties(tmp_path, "evolved"))
+    catalog = IcebergCatalog(name="evolved", properties=catalog_properties(tmp_path, "evolved"))
     dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
     dataset.write_arrow(quotes(0, 3), commit_row_size=0)
     table = dataset.get_or_create_table()
@@ -540,6 +532,12 @@ def test_a_stored_duplicate_is_refused_either_side_of_the_limit(pair, keys: int)
     Below the limit the filter names the keys; above it, it is a range that
     brings back rows the chunk never mentions. Both have to reach the same
     verdict about a key the chunk *does* match.
+
+    And refusing at all is deliberately stricter than the library, on exactly
+    the shape it misses: the copies here sit in two different files, and
+    pyiceberg checks the stored rows for duplicates one record batch at a time,
+    so they slip past it and its upsert writes a third. A table whose
+    identifier fields do not identify a row cannot be merged into.
     """
     ours, _ = pair
     doubled = quotes(0, keys)
@@ -547,22 +545,6 @@ def test_a_stored_duplicate_is_refused_either_side_of_the_limit(pair, keys: int)
     ours.write_arrow(doubled, commit_row_size=0)  # every key now stored twice
     with pytest.raises(ValueError, match="[Dd]uplicate"):
         ours.write_arrow(quotes(0, keys, "XETR"), merge_by=True, commit_row_size=0)
-
-
-def test_a_duplicate_the_chunk_does_match_is_still_refused(pair) -> None:
-    """Being lenient about the rest does not make this one safe.
-
-    Deliberately stricter than the library here: pyiceberg checks the stored
-    rows for duplicate keys one record batch at a time, so two copies of a key
-    in two different files slip past it and the upsert writes a third. Refusing
-    is the honest answer -- a table whose identifier fields do not identify a
-    row cannot be merged into.
-    """
-    ours, _ = pair
-    ours.write_arrow(quotes(0, 5), commit_row_size=0)
-    ours.write_arrow(quotes(0, 5), commit_row_size=0)  # every key now stored twice
-    with pytest.raises(ValueError, match="[Dd]uplicate"):
-        ours.write_arrow(quotes(0, 5, "XETR"), merge_by=True, commit_row_size=0)
 
 
 def test_an_update_past_the_in_limit_still_prunes(tmp_path: Path) -> None:
@@ -577,7 +559,7 @@ def test_an_update_past_the_in_limit_still_prunes(tmp_path: Path) -> None:
 
     from rekep.iceberg.dataset import _key_ranges
 
-    catalog = IcebergCatalog(name="wide", properties=properties(tmp_path, "wide"))
+    catalog = IcebergCatalog(name="wide", properties=catalog_properties(tmp_path, "wide"))
     dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
     # One commit per key range, so the files carry disjoint bounds -- which is
     # what makes a range predicate able to skip any of them at all.
@@ -635,7 +617,7 @@ def test_the_factored_delete_filter_matches_what_pyiceberg_matches(
 
     from rekep.iceberg.dataset import _match_filter
 
-    catalog = IcebergCatalog(name="factored", properties=properties(tmp_path, "factored"))
+    catalog = IcebergCatalog(name="factored", properties=catalog_properties(tmp_path, "factored"))
     dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
     schema = dataset.into_struct_field().into_iceberg_schema()
     join = ["symbol", "seq"]
@@ -737,12 +719,24 @@ def test_a_key_that_repeats_nothing_is_never_grouped(monkeypatch: pytest.MonkeyP
     assert str(filter_) == str(original(unique, join))
 
 
-@pytest.mark.parametrize("duplicates", [2, 40, 400])
-def test_a_three_column_key_matches_what_pyiceberg_matches(duplicates: int) -> None:
+@pytest.mark.parametrize(
+    ("duplicates", "days", "grouped"),
+    [(2, 5, True), (40, 5, True), (400, 5, True), (400, 200, False)],
+    ids=["two-books", "forty-books", "a-book-each", "groups-of-four"],
+)
+def test_a_three_column_key_matches_what_pyiceberg_matches(
+    duplicates: int, days: int, grouped: bool
+) -> None:
     """A key of three columns takes each group back through the library to
     spell what is left of it, which is the per-group cost the grouping is only
-    worth past `MERGE_GROUP_GAIN` rows. Both sides of that threshold have to
-    match the reference exactly -- one of them by *being* it."""
+    worth past `MERGE_GROUP_GAIN` rows a group. Both sides of that threshold
+    have to match the reference exactly -- and the last case is what crosses
+    it: 800 rows over 200 days groups four at a time, so the whole filter goes
+    back to `create_match_filter` and matches the reference by *being* it.
+
+    The grouping is on whichever column repeats most, which is `day` here
+    except where there are fewer books than days -- so the parameters move both.
+    """
     from pyiceberg.schema import Schema
     from pyiceberg.table.upsert_util import create_match_filter
     from pyiceberg.types import LongType, NestedField, StringType
@@ -758,14 +752,14 @@ def test_a_three_column_key_matches_what_pyiceberg_matches(duplicates: int) -> N
     updates = pyarrow.table(
         {
             "book": [f"B{index % duplicates}" for index in range(rows)],
-            "day": [index % 5 for index in range(rows)],
+            "day": [index % days for index in range(rows)],
             "seq": list(range(rows)),
         }
     )
     decoys = pyarrow.table(
         {
             "book": [f"B{index % duplicates}" for index in range(rows)],
-            "day": [index % 5 for index in range(rows)],
+            "day": [index % days for index in range(rows)],
             "seq": [index + 10**6 for index in range(rows)],
         }
     )
@@ -773,8 +767,15 @@ def test_a_three_column_key_matches_what_pyiceberg_matches(duplicates: int) -> N
     join = ["book", "day", "seq"]
     ours = _match_filter(updates, join)
     theirs = create_match_filter(updates, join)
-    assert _matched_by(theirs, haystack, schema) == sorted_rows(updates)
-    assert _matched_by(ours, haystack, schema) == _matched_by(theirs, haystack, schema)
+    reference = _matched_by(theirs, haystack, schema)
+    assert reference == sorted_rows(updates), "the reference matches the update set alone"
+    if grouped:
+        assert _matched_by(ours, haystack, schema) == reference
+        assert _terms(ours) < _terms(theirs), "grouped, which is the smaller tree"
+    else:
+        # Past the gain there is nothing to evaluate: the filter *is* the one
+        # the reference was just checked against, term for term.
+        assert str(ours) == str(theirs)
 
 
 def test_a_merge_of_many_updates_agrees_with_the_library(tmp_path: Path) -> None:
@@ -782,10 +783,10 @@ def test_a_merge_of_many_updates_agrees_with_the_library(tmp_path: Path) -> None
     composite key one half of which repeats. Measured on 8,000 stored rows,
     5,000 of them updated: 33.4 s through the per-row filter and 0.46 s
     through the factored one."""
-    ours = IcebergCatalog(name="mine", properties=properties(tmp_path, "mine")).dataset(
+    ours = IcebergCatalog(name="mine", properties=catalog_properties(tmp_path, "mine")).dataset(
         "trading.quotes", struct=Quote.FIELD
     )
-    theirs = IcebergCatalog(name="lib", properties=properties(tmp_path, "lib")).dataset(
+    theirs = IcebergCatalog(name="lib", properties=catalog_properties(tmp_path, "lib")).dataset(
         "trading.quotes", struct=Quote.FIELD
     )
     stored = quotes(0, 600, days=6)
@@ -831,7 +832,7 @@ def nested_rows(keys: range, size: int) -> pyarrow.Table:
 def nested_pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
     built = []
     for name in ("nested-ours", "nested-theirs"):
-        catalog = IcebergCatalog(name=name, properties=properties(tmp_path, name))
+        catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
         dataset = catalog.dataset("trading.nested", struct=Nested.FIELD)
         dataset.create_with()
         built.append(dataset)
@@ -889,7 +890,7 @@ def test_a_signed_zero_key_matches_the_zero_it_equals(
     incoming = pyarrow.Table.from_pydict(
         {"price": [0.0 * -stored_sign, *filler], "size": [2] * keys}, schema=schema
     )
-    catalog = IcebergCatalog(name="zero", properties=properties(tmp_path, "zero"))
+    catalog = IcebergCatalog(name="zero", properties=catalog_properties(tmp_path, "zero"))
     dataset = catalog.dataset("trading.levels", struct=Level.FIELD)
     dataset.write_arrow(stored, commit_row_size=0)
     dataset.write_arrow(incoming, merge_by=["price"], commit_row_size=0)
@@ -1007,7 +1008,7 @@ def events(indexes: range, version: int) -> pyarrow.Table:
 def event_pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
     built = []
     for name in ("ours", "theirs"):
-        catalog = IcebergCatalog(name=name, properties=properties(tmp_path, name))
+        catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
         built.append(catalog.dataset("trading.events", struct=Event.FIELD).create_with())
     return built[0], built[1]
 
@@ -1063,7 +1064,7 @@ def test_a_nan_merge_key_is_refused_by_both(tmp_path: Path, keys: int) -> None:
 
     schema = Level.FIELD.into_arrow_schema()
     prices = [float(index) for index in range(keys)] + [float("nan")]
-    catalog = IcebergCatalog(name="nan", properties=properties(tmp_path, "nan"))
+    catalog = IcebergCatalog(name="nan", properties=catalog_properties(tmp_path, "nan"))
     dataset = catalog.dataset("trading.levels", struct=Level.FIELD)
     stored = pyarrow.Table.from_pydict({"price": prices, "size": [1] * len(prices)}, schema=schema)
     dataset.write_arrow(stored, commit_row_size=0)
@@ -1137,7 +1138,7 @@ def test_a_merge_after_a_rename_compares_the_column_that_was_renamed(tmp_path: P
     read looks changed, and a merge of rows identical to the stored ones
     rewrites the whole table.
     """
-    catalog = IcebergCatalog(name="renamed", properties=properties(tmp_path, "renamed"))
+    catalog = IcebergCatalog(name="renamed", properties=catalog_properties(tmp_path, "renamed"))
     dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
     dataset.write_arrow(quotes(0, 4), commit_row_size=0)
     with dataset.get_or_create_table().update_schema() as update:

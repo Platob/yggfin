@@ -184,7 +184,7 @@ def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]
     field = Log.FIELD
     if not partitioned:
         field = field.into_dataclass("Flat").FIELD
-        field.field("hunix").is_partition_key = False
+        field.field("unix_hour").is_partition_key = False
     built = catalog(root).dataset("bench.logs", struct=field, table_properties=properties)
     return built.create_with()
 
@@ -262,45 +262,6 @@ def read_case(target: IcebergDataset, *, row_filter: Any, columns: Any, schema: 
 
 def header(columns: tuple[str, ...], widths: tuple[int, ...]) -> None:
     print(" ".join(f"{c:>{w}}" for c, w in zip(columns, widths, strict=True)))
-
-
-def sweep_parse(rows: int, days: int, repeat: int) -> None:
-    """Parsing on its own, so the write numbers can be read net of it."""
-    with tempfile.TemporaryDirectory() as tmp:
-        path = pathlib.Path(tmp) / "bench.txt"
-        size = generate(path, rows, days)
-        print(f"\n== parse: {rows:,} rows over {days} days, {size / 2**20:.1f} MiB ==")
-        header(("case", "seconds", "rows/s", "MB/s"), (28, 9, 12, 8))
-        cases: list[tuple[str, Callable[[], Any]]] = [
-            ("read_arrow_table", lambda: TextFile.from_path(path).read_arrow_table()),
-            (
-                "reader, 16k batches",
-                lambda: (
-                    TextFile.from_path(path).read_arrow_reader(batch_row_size=16_384).read_all()
-                ),
-            ),
-            (
-                "reader, 256k batches",
-                lambda: (
-                    TextFile.from_path(path).read_arrow_reader(batch_row_size=262_144).read_all()
-                ),
-            ),
-            (
-                "with timezone",
-                lambda: TextFile.from_url(
-                    path.resolve().as_uri(), timezone="Europe/Paris"
-                ).read_arrow_table(),
-            ),
-            (
-                "no continuation folding",
-                lambda: (
-                    TextFile.from_path(path).read_arrow_reader(fold_continuations=False).read_all()
-                ),
-            ),
-        ]
-        for name, call in cases:
-            best = min(timed(call)[0] for _ in range(repeat))
-            print(f"{name:>28} {best:>9.3f} {rows / best:>12,.0f} {size / 2**20 / best:>8.1f}")
 
 
 def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
@@ -382,9 +343,9 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         target.write_arrow(batches(table, 65_536), commit_row_size=rows // max(days, 1))
         day = datetime.date(2026, 8, 14)
         # A partition the data actually has, read from the data rather than
-        # spelled out: `hunix` is whatever hour the generator's first line fell
+        # spelled out: `unix_hour` is whatever hour the generator's first line fell
         # in, and a filter naming an empty partition measures nothing.
-        hour = table.column("hunix")[0].as_py()
+        hour = table.column("unix_hour")[0].as_py()
         # The unix bound of the third day: a filter on a column that is not the
         # partition, but correlates with it, so only file statistics can prune.
         third_day = (
@@ -400,10 +361,10 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         header(("case", "seconds", "rows", "rows/s", "planned", "skipped"), (30, 9, 12, 12, 8, 8))
         cases = [
             ("everything", None, None, None),
-            ("partition = one hour", f"hunix = {hour}", None, None),
+            ("partition = one hour", f"unix_hour = {hour}", None, None),
             (
                 "partition, 3 columns",
-                f"hunix = {hour}",
+                f"unix_hour = {hour}",
                 ["unix", "driver_name", "message"],
                 None,
             ),
@@ -521,7 +482,7 @@ def sweep_fs(rows: int, days: int) -> None:
         write_case(table.slice(0, 1_000), mode="append", commit_row_size=0)
         chunk = max(table.num_rows // 8, 1)
         half = table.slice(0, table.num_rows // 2)
-        hour = table.column("hunix")[0].as_py()
+        hour = table.column("unix_hour")[0].as_py()
 
         def leg(cached: bool) -> None:
             CONTENT_CACHE.clear()
@@ -572,11 +533,13 @@ def sweep_fs(rows: int, days: int) -> None:
                 counts.clear()
                 seconds, _ = timed(target.read_arrow_table)
                 report("read everything", seconds)
-                seconds, _ = timed(lambda: target.read_arrow_table(row_filter=f"hunix = {hour}"))
+                seconds, _ = timed(
+                    lambda: target.read_arrow_table(row_filter=f"unix_hour = {hour}")
+                )
                 report("read one partition", seconds)
                 seconds, _ = timed(lambda: target.read_arrow_reader(limit=100).read_all())
                 report("read limit=100", seconds)
-                seconds, _ = timed(lambda: target.scan_plan(f"hunix = {hour}"))
+                seconds, _ = timed(lambda: target.scan_plan(f"unix_hour = {hour}"))
                 report("scan_plan one partition", seconds)
                 seconds, _ = timed(target.read_arrow_table)
                 report("read everything, again", seconds)
@@ -693,7 +656,7 @@ def sweep_maintain(rows: int, days: int) -> None:
         header(("partitioning", "run 1", "run 2", "run 3", "rows"), (30, 8, 8, 8, 10))
         for label, built in (
             (
-                "identity (hunix)",
+                "identity (unix_hour)",
                 lambda root: dataset(root, partitioned=True, properties=OPTIMISED),
             ),
             ("none", lambda root: dataset(root, partitioned=False, properties=OPTIMISED)),
@@ -874,9 +837,9 @@ def daily(root: pathlib.Path) -> IcebergDataset:
     every run read the table back and wrote it out again, forever.
     """
     field = Log.FIELD.into_dataclass("Daily").FIELD
-    # `bucket[8]`, because `hunix` is an int64 and Iceberg's `day` transform is
+    # `bucket[8]`, because `unix_hour` is an int64 and Iceberg's `day` transform is
     # for dates. The point is unchanged: a transform, not the value itself.
-    field.field("hunix").is_partition_key = "bucket[8]"
+    field.field("unix_hour").is_partition_key = "bucket[8]"
     built = catalog(root).dataset("bench.daily", struct=field, table_properties=OPTIMISED)
     return built.create_with()
 
@@ -916,15 +879,13 @@ def main() -> int:
     parser.add_argument("--quick", action="store_true")
     parser.add_argument(
         "--only",
-        choices=["parse", "write", "read", "fs", "maintain", "update", "backfill"],
+        choices=["write", "read", "fs", "maintain", "update", "backfill"],
         default=None,
     )
     arguments = parser.parse_args()
     rows = 100_000 if arguments.quick else arguments.rows
     days = 4 if arguments.quick else arguments.days
 
-    if arguments.only in (None, "parse"):
-        sweep_parse(rows, days, 2 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "write"):
         shutil.rmtree(sweep_write(rows, days, arguments.quick), ignore_errors=True)
     if arguments.only in (None, "read"):

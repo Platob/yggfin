@@ -498,17 +498,33 @@ rekep/
 │                  (FixEvents: a FIX message read as the market events it
 │                  carries -- which clock, which shape, which instrument)
 ├── fix/           message.py (FixMessage and the vectorised line parsing:
-│                  separator detection, tag=value and rendered
-│                  Name[i]=Member=value cutting, repeating groups, and
+│                  separator detection -- outer and the second one inside a
+│                  group entry -- tag=value, rendered Name[i]=Member=value and
+│                  a bridge's #NAME= cutting, repeating groups, and
 │                  tag_arrow_array: map keys as integer tags), fields.py
 │                  (the FIX datatype -> Arrow projection and the forgiving
-│                  Boolean reading) and registry.py (FixRegistry: the OnixS
+│                  Boolean reading), registry.py (FixRegistry: the OnixS
 │                  dictionary scraped per version, kept in a directory of
 │                  JSON or a zip of the same -- the extension decides --
 │                  published here as data/fix.zip, with lookup and fuzzy
-│                  search, all names case-insensitive)
-├── logs/          log.py (Log -- a parsed line, which is an `Event`; and
-│                  LogRules, the ordered regexes that decide its `etype`),
+│                  search, all names case-insensitive; `offline` for the
+│                  callers that must never fetch; the QuickFIX spec beside
+│                  it as the second source, for the symbol of every enumerated
+│                  value and the standard header the prose does not carry),
+│                  quickfix.py (that spec, parsed), rules.py (Rule and Rules:
+│                  which protocol a line carries, first match winning, as
+│                  data), columns.py (SESSION and COMMON: the tags worth a
+│                  column of their own -- the session layer, then what the
+│                  components a trading log is made of carry -- and the column
+│                  each lands in) and transcribe.py (FixCodec: the verbs a
+│                  source needs -- categorise, into_pairs, into_fix_pairs,
+│                  version_of and into_flat_columns -- plus the cached
+│                  name->tag index per version and the values that mean a
+│                  field is absent)
+├── text/          a text log, read and written: log.py (Log -- a parsed line,
+│                  which is an `Event`; LogRules, the ordered regexes that
+│                  decide its `etype`; and MessageCodec, the five verbs a
+│                  source turns a message column into columns through),
 │                  text_file.py (TextFile: a log read into Arrow batches and
 │                  written back out as lines, itself a Dataset) and
 │                  text_files.py (TextFiles: a folder of them as one ordered
@@ -529,12 +545,15 @@ publishes -- the FIX one as `data/fix.zip`, which is a `FixRegistry` cache
 and nothing else -- `tasks/` the job documents and the notebook that runs one,
 and `docs/` the site.
 
-Dependencies point one way: `tasks` -> `logs`/`iceberg` -> `dataset` ->
+Dependencies point one way: `tasks` -> `text`/`iceberg` -> `dataset` ->
 `fields` -> `convert` -> `annotations`, and `fix`/`market` sit beside `dataset`
 on the same `fields` base -- `market` reaching into `fix` only for the datatype
-table its tests check the tags against, and `logs` reaching into `market`
-because a parsed line *is* an `Event`. `urls` is a leaf below all of it: `filesystems`, `convert`,
-`logs` and `iceberg/fileio` all reach a store through it, so there is one
+table its tests check the tags against, `text` reaching into `market` because a
+parsed line *is* an `Event`, and `text` reaching into `fix` because a log line
+*carries* a message. That last edge is one seam and not a dependency on the
+protocol: `TextFile` holds a codec and calls three verbs on it, and a second
+codec over another protocol implements the same three. `urls` is a leaf below all of it: `filesystems`, `convert`,
+`text` and `iceberg/fileio` all reach a store through it, so there is one
 answer to "what is this location" rather than one per caller. The one loop back is deliberate and lazy: a
 `Field`'s `into_iceberg_*` imports `rekep.iceberg.fields` at the point of use,
 so the API stays on the class that owns the data without `fields/` depending

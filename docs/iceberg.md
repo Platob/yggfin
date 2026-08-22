@@ -372,16 +372,16 @@ goes.
 
     A filter that names no partition column prunes nothing at the manifest
     list, and the market shapes are keyed on `(unix, hash)` while being
-    partitioned on `hunix` — so the merge scaled with the **table**, not with
+    partitioned on `unix_hour` — so the merge scaled with the **table**, not with
     the chunk being merged.
 
-    But `hunix` *is* `unix`, truncated to the hour: two rows that agree on
+    But `unix_hour` *is* `unix`, truncated to the hour: two rows that agree on
     `unix` agree on it, so the chunk's own values are the values of every row
     that can match. That is a fact about the data rather than about any one
     write, so the field says it once:
 
     ```python
-    hunix: Annotated[int, Field.partition_key(derived_from="unix")] = 0
+    unix_hour: Annotated[int, Field.partition_key(derived_from="unix")] = 0
     """`unix` truncated to the hour -- what the data is partitioned on."""
     ```
 
@@ -1101,7 +1101,7 @@ reading of this one.
 
 | partitioning | run 1 | run 2 | run 3 |
 | --- | --- | --- | --- |
-| identity (`hunix`) | 13 | 0 | 0 |
+| identity (`unix_hour`) | 13 | 0 | 0 |
 | none | 10 | 0 | 0 |
 | transform (`day`), before | 13 | **4** | **4** |
 | transform (`day`), after | 13 | **0** | **0** |

@@ -31,7 +31,7 @@ EPOCH = datetime.date(1970, 1, 1)
 #: Nanoseconds in a day.
 DAY = 86_400_000_000_000
 
-#: Nanoseconds in an hour, which is what `hunix` truncates `unix` to.
+#: Nanoseconds in an hour, which is what `unix_hour` truncates `unix` to.
 HOUR = 3_600_000_000_000
 
 
@@ -94,17 +94,17 @@ class Event(Convertible):
     # An **hour**, and an `int64` rather than a date. A day of ticks is one
     # partition at day granularity, which prunes nothing inside a session --
     # the query everybody actually writes. And the same integer as `unix`
-    # means a filter on the two is one comparison in one type: `WHERE hunix =
-    # X AND unix BETWEEN ...` prunes the partition and then the file, with no
-    # cast between a date and an instant in the middle of it.
+    # means a filter on the two is one comparison in one type:
+    # `WHERE unix_hour = X AND unix BETWEEN ...` prunes the partition and then
+    # the file, with no cast between a date and an instant in the middle of it.
     #
     # `derived_from` is the third thing this buys: a merge joins on `unix` and
     # `hash`, which names no partition column and so prunes nothing at the
     # manifest list -- it scales with the table, not with the chunk. Saying
-    # that `hunix` is a function of `unix` lets a merge name `hunix` anyway,
+    # that `unix_hour` is a function of `unix` lets a merge name it anyway,
     # because rows agreeing on `unix` agree here. Replaying one hour: 20 ms
     # against 93 over 168 hourly partitions, 27 against 164 over 336.
-    hunix: Annotated[int, Field.partition_key(derived_from="unix", metadata=UNIX)] = 0
+    unix_hour: Annotated[int, Field.partition_key(derived_from="unix", metadata=UNIX)] = 0
     """`unix` truncated to the hour -- what the data is partitioned on."""
 
     # Third, not last: a read that spans the tables filters on it before
@@ -177,7 +177,7 @@ class Event(Convertible):
           something other than `UNKNOWN` is left alone, which is how a shape
           that carries more than one kind (a `Quote` on the order table) still
           says so.
-        - **`hunix` is `unix`.** It is denormalised for the partition, so
+        - **`unix_hour` is `unix`.** It is denormalised for the partition, so
           deriving it here is the difference between one authority and two
           columns that disagree on the row nobody looks at. A modulo rather
           than a `datetime` round trip: it is exact for every representable
@@ -187,7 +187,7 @@ class Event(Convertible):
         """
         if self.etype is EventType.UNKNOWN:
             self.etype = type(self).EVENT_TYPE
-        self.hunix = self.unix - self.unix % HOUR
+        self.unix_hour = self.unix - self.unix % HOUR
 
     # -- what kind of event this is -----------------------------------------
 
@@ -366,7 +366,7 @@ class Event(Convertible):
             # A message with no clock at all still belongs somewhere in time,
             # and the only honest answer is where the version before it was.
             self.unix = previous.unix
-            self.hunix = self.unix - self.unix % HOUR
+            self.unix_hour = self.unix - self.unix % HOUR
         if not self.runix:
             self.runix = previous.runix
         if self.eunix is None:
@@ -424,7 +424,7 @@ class Event(Convertible):
             return None
         taken = copy.copy(self)
         taken.unix = unix
-        taken.hunix = unix - unix % HOUR
+        taken.unix_hour = unix - unix % HOUR
         # What it is a picture *of*: the instant of the state, which for a
         # picture of a picture is the original state and not the middle one.
         # Two snapshots of one unchanged book then agree on what they show and
@@ -663,18 +663,9 @@ class MarketEvent(Event):
 def _life_hash(shape: str, parts: tuple[Any, ...]) -> int:
     """`hash_of` over a lifecycle's parts, remembered.
 
-    A lifecycle is what an event stream *repeats*: a book restates its levels
-    on every refresh, an order is amended and cancelled under one identifier,
-    a fill is corrected. So the same handful of tuples are framed and hashed
-    over and over, where a version hash is different by definition and is
-    deliberately not cached beside them -- it would only evict these.
-
     Pure, so the cache cannot be stale: the parts are the identifier, and the
     shape's name is in front of them for the same reason `Event.hash_of` puts
     it there. Bounded, because a feed of one-shot client order ids has no
     repeats to find and should not keep them all.
-
-    A part that cannot be a cache key -- a list, a dict -- raises here and
-    `life_hash` hashes it directly instead. The frame has never minded.
     """
     return hash_of(shape, *parts)

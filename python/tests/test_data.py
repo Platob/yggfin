@@ -136,6 +136,22 @@ def test_the_archive_is_what_publishing_it_produces(tmp_path: Path) -> None:
     assert rebuilt.read_bytes() == DATA.read_bytes()
 
 
+def test_the_archive_says_it_came_from_nowhere_in_particular() -> None:
+    """The other half of "built twice is the same file": the host.
+
+    `ZipInfo` reads `create_system` off `os.name`, so publishing this
+    dictionary from Windows wrote a different byte per member than publishing
+    it from Linux -- and the rebuild above failed on the Windows CI leg alone,
+    where the archive is otherwise identical. Pinned to Unix because the
+    permission bits the member already carries are POSIX ones.
+    """
+    with zipfile.ZipFile(DATA) as archive:
+        systems = {entry.create_system for entry in archive.infolist()}
+        modes = {entry.external_attr >> 16 for entry in archive.infolist()}
+    assert systems == {3}, "every member, whichever host published it"
+    assert modes == {0o644}
+
+
 def test_the_archive_is_worth_being_an_archive() -> None:
     """Derived, then pinned: the dictionary compresses to about a sixth."""
     with zipfile.ZipFile(DATA) as archive:
@@ -183,3 +199,80 @@ def test_every_datatype_the_dictionary_names_is_projected(registry: FixRegistry)
     )
     assert registry.field("MaturityDay", "4.1").arrow_type == pyarrow.int64()
     assert registry.field("LegFutSettDate", "4.3").arrow_type == pyarrow.date32()
+
+
+# -- the second source --------------------------------------------------------
+
+
+def test_the_published_dictionary_carries_the_symbol_beside_the_description(
+    registry: OfflineRegistry,
+) -> None:
+    """Both halves of a value, from the two sources that each have one.
+
+    The site writes `Side <54>` value `1` as "Buy", for a person; the QuickFIX
+    spec writes it as `BUY`, for a program. A consumer of this archive that
+    wants an identifier should not have to invent one by upper-casing prose.
+    """
+    side = registry.field(54, "4.4")
+    assert json.loads(side.fix["values"])["1"] == "Buy"
+    assert json.loads(side.fix["value_names"])["1"] == "BUY"
+    assert json.loads(side.fix["value_names"])["3"] == "BUY_MINUS"
+
+
+def test_every_version_published_here_has_its_symbols(registry: OfflineRegistry) -> None:
+    """Derived from the archive, then pinned: a version that lost them fails here."""
+    counted = {
+        version: sum(1 for member in registry.fields(version) if member.fix.get("value_names"))
+        for version in registry.versions
+    }
+    assert counted == {
+        "4.0": 39,
+        "4.1": 53,
+        "4.2": 104,
+        "4.3": 159,
+        "4.4": 245,
+        "5.0": 290,
+        "5.0.SP1": 327,
+        "5.0.SP2": 355,
+        "FIXT1.1": 9,
+    }
+
+
+def test_a_symbol_is_never_written_where_a_description_goes(registry: OfflineRegistry) -> None:
+    """The failure this shape exists to prevent, checked across the archive.
+
+    `description=` in the spec holds the value's *name*, so a merge that wrote
+    it into `values` would replace every prose reading with SHOUTING_SNAKE.
+    """
+    shouted = 0
+    for version in registry.versions:
+        for member in registry.fields(version):
+            for text in json.loads(member.fix.get("values") or "{}").values():
+                if text and text.isupper() and "_" in text:
+                    shouted += 1
+    assert shouted == 0
+
+
+def test_the_published_dictionary_says_what_every_message_carries(
+    registry: OfflineRegistry,
+) -> None:
+    """The spec's own header and trailer, stored so it works offline."""
+    session = registry.session("4.4")
+    assert [name for name, required in session if required] == [
+        "BeginString",
+        "BodyLength",
+        "MsgType",
+        "SenderCompID",
+        "TargetCompID",
+        "MsgSeqNum",
+        "SendingTime",
+        "CheckSum",
+    ]
+    assert ("PossDupFlag", False) in session
+
+    # And the versions from 5.0 on carry **no** session layer of their own,
+    # because FIXT 1.1 carries it for them -- that is the split the transport
+    # version exists for, and the spec says so with an empty `<header/>`.
+    carried = {version for version in registry.versions if registry.session(version)}
+    assert carried == {"4.0", "4.1", "4.2", "4.3", "4.4", "FIXT1.1"}
+    assert len(registry.session("FIXT1.1")) > len(registry.session("4.0"))

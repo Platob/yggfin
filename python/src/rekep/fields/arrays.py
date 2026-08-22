@@ -14,6 +14,7 @@ a comprehension.
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 import pyarrow
@@ -34,6 +35,34 @@ def sequence(length: int) -> pyarrow.Array:
 def null_mask(array: pyarrow.Array) -> pyarrow.Array | None:
     """Which rows are null, or None when none are -- a builder wants no mask then."""
     return array.is_null() if array.null_count else None
+
+
+def groups_of(keys: pyarrow.Array) -> Iterator[tuple[Any, pyarrow.Array]]:
+    """Each distinct value of `keys`, with where in the column its rows are.
+
+    What a **one-style-per-call** transform needs from a column that mixes
+    styles: the rows it can do in one pass, and the positions to put them back
+    at. One `equal` and one `filter` per distinct value, so the cost counts
+    styles and not rows -- and a column of one style yields one group, which is
+    the case worth not paying for.
+    """
+    positions = sequence(len(keys))
+    for key in pyarrow.compute.unique(keys).sort():
+        yield key, pyarrow.compute.filter(positions, pyarrow.compute.equal(keys, key))
+
+
+def scattered(parts: Sequence[pyarrow.Array], positions: Sequence[pyarrow.Array]) -> pyarrow.Array:
+    """`parts` back in the row order `positions` says each of them came from.
+
+    The inverse of a split, in two kernels and no Python: the positions of
+    every part concatenated are a **permutation** of the whole column, and
+    sorting a permutation is the same thing as inverting it -- so one `take`
+    with the sorted indices puts every row back where it was.
+    """
+    if len(parts) == 1:
+        return parts[0]
+    order = pyarrow.concat_arrays([one.cast(pyarrow.int64()) for one in positions])
+    return pyarrow.concat_arrays(parts).take(pyarrow.compute.array_sort_indices(order))
 
 
 # -- list-likes -------------------------------------------------------------

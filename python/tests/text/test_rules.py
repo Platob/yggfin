@@ -5,8 +5,8 @@ from __future__ import annotations
 import pyarrow
 import pytest
 
-from rekep.logs.log import DEFAULT_RULES, Log, LogRule, LogRules
 from rekep.market import EventType
+from rekep.text.log import DEFAULT_RULES, Log, LogRule, LogRules
 
 #: One line per kind the default rules know, in both spellings a log uses.
 WIRE = {
@@ -44,28 +44,6 @@ def codes(messages: list[str | None], rules: LogRules | None = None) -> list[int
     set is a real answer and must not fall through to the default one."""
     using = LogRules() if rules is None else rules
     return using.etype_arrow(pyarrow.array(messages, type=pyarrow.string())).to_pylist()
-
-
-def lines(**columns: object) -> pyarrow.RecordBatch:
-    """A batch of log rows, the envelope filled the way the declaration requires."""
-    rows = len(next(iter(columns.values())))
-    given = {
-        "unix": [0] * rows,
-        "hunix": [0] * rows,
-        "etype": [0] * rows,
-        "cunix": [0] * rows,
-        "runix": [0] * rows,
-        "hash": [0] * rows,
-        "xhash": [0] * rows,
-        "version": [0] * rows,
-        "state": [0] * rows,
-        "symbol": [""] * rows,
-        "prev_state": [0] * rows,
-        "url": [""] * rows,
-        "thread_name": [""] * rows,
-        "driver_name": [""] * rows,
-    } | columns
-    return Log.FIELD.cast_arrow_batch(pyarrow.RecordBatch.from_pydict(given))
 
 
 @pytest.mark.parametrize("message,expected", WIRE.items(), ids=lambda value: str(value)[:24])
@@ -123,18 +101,6 @@ def test_no_rows_is_no_rows() -> None:
 def test_the_codes_are_the_type_the_column_is() -> None:
     built = LogRules().etype_arrow(pyarrow.array(["35=8|"], type=pyarrow.string()))
     assert built.type == Log.FIELD.field("etype").arrow_type == pyarrow.int32()
-
-
-def test_a_batch_gets_its_etype_column_decided() -> None:
-    batch = lines(message=["35=8|", "heartbeat", "35=D|"])
-    out = LogRules().etype_arrow_batch(batch)
-    assert out.column("etype").to_pylist() == [210, 0, 110]
-    assert out.schema == batch.schema, "and the declared type and comment are kept"
-
-
-def test_a_batch_is_handed_back_untouched_when_there_is_nothing_to_match() -> None:
-    batch = lines(message=["35=8|"])
-    assert LogRules(rules=[]).etype_arrow_batch(batch) is batch
 
 
 def test_the_default_rules_are_read_by_a_wide_column_too() -> None:

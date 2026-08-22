@@ -49,6 +49,14 @@ dev = [
     "ruff>=0.6",
     "rekep[iceberg,toml,yaml]",
 ]
+# What the benchmarks race the shipped implementations against, and nothing
+# else. Neither is imported by `src/`: a candidate that loses a race must not
+# leave a runtime dependency behind, and one that wins earns its place in
+# `[project.dependencies]` by an argument, not by having been benchmarked.
+bench = [
+    "numpy>=1.26",
+    "polars>=1.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rekep"]

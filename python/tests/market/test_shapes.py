@@ -17,7 +17,7 @@ SHAPES = (*EVENTS, Instrument, Level, LevelUpdate, LevelExecution)
 #: selects by position, or a contract already published, does not move with it.
 ENVELOPE = [
     "unix",
-    "hunix",
+    "unix_hour",
     "etype",
     "cunix",
     "runix",
@@ -68,7 +68,7 @@ def test_every_event_is_keyed_by_time_and_content(shape: type) -> None:
     """`hash` identifies the version; leading with time is what an engine prunes on."""
     assert shape.FIELD.primary_keys() == ["unix", "hash"]
     assert shape.FIELD.partition_keys() == {
-        "hunix": "identity",
+        "unix_hour": "identity",
         "instrument_hash": "bucket[16]",
     }
 
@@ -210,11 +210,11 @@ METRICS_BUDGET = 100
 #: the budget, which is a statement about **declaration order**: these are
 #: exactly the columns that a nested member declared before them would push out.
 FILTERED = {
-    Order: ("unix", "hunix", "etype", "state", "instrument_hash", "side", "px", "symbol"),
-    Execution: ("unix", "hunix", "etype", "state", "instrument_hash", "kind", "px", "symbol"),
+    Order: ("unix", "unix_hour", "etype", "state", "instrument_hash", "side", "px", "symbol"),
+    Execution: ("unix", "unix_hour", "etype", "state", "instrument_hash", "kind", "px", "symbol"),
     BookSide: (
         "unix",
-        "hunix",
+        "unix_hour",
         "etype",
         "instrument_hash",
         "side",
@@ -226,7 +226,7 @@ FILTERED = {
     ),
     Book: (
         "unix",
-        "hunix",
+        "unix_hour",
         "etype",
         "instrument_hash",
         "px",

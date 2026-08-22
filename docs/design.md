@@ -138,7 +138,7 @@ stay correct.
 
 ```python
 TextFile.from_path("app.txt.zst")     # Arrow picks the codec off the extension
-logs.read_arrow_table(row_filter="hunix = 1786665600000000000")   # Iceberg plans
+logs.read_arrow_table(row_filter="unix_hour = 1786665600000000000")   # Iceberg plans
 ```
 
 But **probe real behaviour before designing around an assumption.** Several
@@ -258,6 +258,15 @@ quotes.scan_plan("driver_name = 'ULBridge'")["skipped"]   # 0 -- this filter pru
 Reading rows in order to throw them away is the shape of every slow pipeline
 here that was ever profiled.
 
+**So nest nothing a filter needs.** No engine pushes a predicate into a map
+and Iceberg writes no bounds under one, which is why the FIX tags a log is
+queried on — who sent a message, when, what was traded, at what price — are
+[lifted out of `fix_tags`](logs.md#the-message-flattened) into typed columns,
+and stored in one place only. Only where the line carries the tag **once**,
+though: lifting one occurrence out of a repeating group would answer "the
+symbol" with whichever leg came first, so a row that repeats it keeps the lot
+in the map and the column is null.
+
 ## Refuse rather than guess
 
 Where a guess would corrupt data or lose it silently, the answer is an error
@@ -335,13 +344,18 @@ What each side owes the other:
 ## How the pieces depend on each other
 
 ```text
-   logs/  ──┐                          fix/
+   text/  ──┐                          fix/
    iceberg/ ─┴──▶ dataset ──▶ fields ──▶ convert ──▶ annotations
                                 ▲                        ▲
                  the Arrow schema and every cast    type hints and
                  that lands data on it              the docstrings that
                                                     become descriptions
 ```
+
+`text/` reaches sideways into `fix/` as well, and that edge is one **seam**
+rather than a dependency on the protocol: `TextFile` holds a codec and calls
+[five verbs](logs.md#a-second-codec) on it, so a second codec over another
+protocol changes nothing above it.
 
 Dependencies point one way. The one loop back is deliberate and lazy: a
 `Field`'s `into_iceberg_*` imports the Iceberg projection at the point of use,

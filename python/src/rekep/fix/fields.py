@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import datetime
+import functools
 import json
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -149,3 +152,185 @@ def cast_arrow_bool(array: Any) -> Any:
         pyarrow.scalar(True),
         compute.if_else(falsy, pyarrow.scalar(False), pyarrow.scalar(None, pyarrow.bool_())),
     )
+
+
+# -- reading a value ----------------------------------------------------------
+
+#: A FIX timestamp, date or time-of-day, in one pattern. The standard fixes
+#: `UTCTimestamp` as `YYYYMMDD-HH:MM:SS[.sss...]`, `UTCDateOnly` as `YYYYMMDD`
+#: and `UTCTimeOnly` as `HH:MM:SS[.sss...]`; `T` and a space are admitted
+#: because logs rewrite the separator, and a trailing `Z` because feeds add
+#: one. Both halves optional, so one pattern reads all three.
+#:
+#: One source string for both engines: `re` reads a value, RE2 reads a column,
+#: and the two are contracted to agree like every other pattern in this package.
+STAMP_PATTERN = (
+    r"^[ \t]*(?:(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}))?"
+    r"(?:[-T ]?(?P<hour>\d{2}):(?P<minute>\d{2})(?::(?P<second>\d{2}))?"
+    r"(?:\.(?P<fraction>\d{1,9}))?)?"
+    r"[ \t]*Z?[ \t]*$"
+)
+_STAMP = re.compile(STAMP_PATTERN, re.ASCII)
+
+#: `datetime.date(1970, 1, 1).toordinal()`: the epoch, in the proleptic
+#: Gregorian day count Python counts from.
+EPOCH_ORDINAL = 719163
+
+NANOS = 1_000_000_000
+SECONDS_A_DAY = 86_400
+_A_DAY = SECONDS_A_DAY * NANOS
+
+#: Widths that cannot overflow the target: Arrow *raises* on a string it cannot
+#: parse, and a raise mid-batch loses a capture over one malformed field.
+_INTEGER = r"^[+-]?[0-9]{1,18}$"
+_DECIMAL = r"^[+-]?(?:[0-9]{1,17}(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]{1,3})?$"
+
+
+@functools.lru_cache(maxsize=8192)
+def unix_of(text: str | None, day: int | None = None) -> int | None:
+    """A FIX timestamp, date or time-of-day as nanoseconds since the epoch, UTC.
+
+    One reading for all three spellings, because a caller asking "when" should
+    not have to know which a field is declared as -- and feeds disagree with
+    their own dictionary about that more often than is comfortable.
+
+    `day` is the instant a *time-only* value belongs to, which is the one thing
+    it does not carry: `MDEntryTime <273>` without its `MDEntryDate <272>` is a
+    time of day, and the message's own date places it. Without `day` it reads
+    as that time on the epoch's day -- honest, and visibly wrong rather than
+    quietly plausible.
+
+    None for anything that is not a timestamp, an empty string and a date that
+    does not exist included: `0` there would be the epoch, which a sort puts
+    first. Cached because a message asks this of the same string several times
+    over, and pure, so the cache cannot be stale.
+    """
+    if not text:
+        return None
+    match = _STAMP.match(text)
+    if match is None:
+        return None
+    year, month, dayof, hour, minute, second, fraction = match.group(
+        "year", "month", "day", "hour", "minute", "second", "fraction"
+    )
+    if year is None and hour is None:
+        return None
+    if year is None:
+        base = day - day % _A_DAY if day is not None else 0
+    else:
+        try:
+            ordinal = datetime.date(int(year), int(month), int(dayof)).toordinal()
+        except ValueError:
+            return None
+        base = (ordinal - EPOCH_ORDINAL) * _A_DAY
+    if hour is None:
+        return base
+    hours, minutes, secs = int(hour), int(minute), int(second) if second else 0
+    # Range-checked, because `\d{2}` is not: `99:99:99` parsed as a shape and
+    # came out four days past midnight, which is a plausible-looking instant
+    # and a wrong one. `60` is allowed -- the standard admits a leap second.
+    if hours > 23 or minutes > 59 or secs > 60:
+        return None
+    # A fraction's scale is its own width: `.5` is half a second, `.000000001`
+    # is one nanosecond. Padding to nine and reading it as an integer is that.
+    nanos = int(fraction.ljust(9, "0")) if fraction else 0
+    return base + (hours * 3600 + minutes * 60 + secs) * NANOS + nanos
+
+
+def cast_arrow_fix(values: Any, arrow_type: pyarrow.DataType) -> Any:
+    """A column of FIX text as the type its field declares, in kernels.
+
+    The other half of `FixCodec.tag_field`: that says what a tag *is*, this
+    reads a column of it. Nothing is guessed and nothing raises -- a value the
+    type cannot hold is null, because a batch that died on one malformed field
+    would lose every line beside it.
+    """
+    kinds = pyarrow.types
+    if isinstance(values, pyarrow.ChunkedArray):
+        chunks = [cast_arrow_fix(chunk, arrow_type) for chunk in values.chunks]
+        return pyarrow.chunked_array(chunks, type=arrow_type)
+    if values.type.equals(arrow_type):
+        return values
+    if len(values) and values.null_count == len(values):
+        # A session field no message in this batch carried, which is most of
+        # them on most batches. Nothing to read, and the kernels below would
+        # run a regex over a column that is entirely absent.
+        return pyarrow.nulls(len(values), arrow_type)
+    if kinds.is_boolean(arrow_type):
+        return cast_arrow_bool(values).cast(arrow_type)
+    text = pyarrow.compute.utf8_trim_whitespace(values.cast(pyarrow.string(), safe=False))
+    if kinds.is_temporal(arrow_type):
+        return _cast_arrow_stamp(text, arrow_type)
+    if (
+        kinds.is_integer(arrow_type)
+        or kinds.is_floating(arrow_type)
+        or kinds.is_decimal(arrow_type)
+    ):
+        pattern = _INTEGER if kinds.is_integer(arrow_type) else _DECIMAL
+        return _only(text, pattern).cast(arrow_type, safe=False)
+    return text.cast(arrow_type, safe=False)
+
+
+def _only(text: Any, pattern: str) -> Any:
+    """`text`, null wherever it does not match -- so the cast after cannot raise."""
+    compute = pyarrow.compute
+    matched = compute.fill_null(compute.match_substring_regex(text, pattern), False)
+    return compute.if_else(matched, text, pyarrow.scalar(None, pyarrow.string()))
+
+
+def _cast_arrow_stamp(text: Any, arrow_type: pyarrow.DataType) -> Any:
+    """`unix_of` over a whole column: one regex pass, then arithmetic.
+
+    Assembled into ISO 8601 and handed to Arrow's own parser rather than
+    reimplementing the civil-date arithmetic here. A date that parses as a
+    shape but is not one -- `20260230`, `20250229` -- makes that parser raise,
+    so the whole column falls back to the scalar reading, which answers null
+    for exactly those rows. Vectorised for every batch, scalar for the one that
+    carries a broken stamp.
+    """
+    compute = pyarrow.compute
+    parts = compute.extract_regex(text, STAMP_PATTERN)
+
+    def part(name: str, default: str) -> Any:
+        got = compute.struct_field(parts, name)
+        empty = compute.fill_null(compute.equal(compute.binary_length(got), 0), True)
+        return compute.if_else(empty, pyarrow.scalar(default), got)
+
+    def given(name: str) -> Any:
+        got = compute.struct_field(parts, name)
+        return compute.fill_null(compute.greater(compute.binary_length(got), 0), False)
+
+    # A row that matched but said neither a date nor a time is not a stamp --
+    # the empty string matches this pattern, every group of it empty.
+    present = compute.or_(given("year"), given("hour"))
+    date = compute.binary_join_element_wise(
+        part("year", "1970"), part("month", "01"), part("day", "01"), "-"
+    )
+    clock = compute.binary_join_element_wise(
+        part("hour", "00"), part("minute", "00"), part("second", "00"), ":"
+    )
+    stamp = compute.binary_join_element_wise(
+        compute.binary_join_element_wise(date, clock, "T"), part("fraction", "0"), "."
+    )
+    stamp = compute.if_else(present, stamp, pyarrow.scalar(None, pyarrow.string()))
+    try:
+        nanos = stamp.cast(pyarrow.timestamp("ns")).cast(pyarrow.int64())
+    except pyarrow.ArrowInvalid:
+        nanos = pyarrow.array([unix_of(one) for one in text.to_pylist()], pyarrow.int64())
+    return _temporal(nanos, arrow_type)
+
+
+def _temporal(nanos: Any, arrow_type: pyarrow.DataType) -> Any:
+    """Nanoseconds since the epoch as the temporal type asked for."""
+    compute = pyarrow.compute
+    kinds = pyarrow.types
+    if kinds.is_date(arrow_type):
+        days = compute.divide(nanos, pyarrow.scalar(_A_DAY, pyarrow.int64()))
+        return days.cast(pyarrow.int32(), safe=False).cast(arrow_type, safe=False)
+    if kinds.is_time(arrow_type):
+        return (
+            nanos.cast(pyarrow.timestamp("ns"))
+            .cast(pyarrow.time64("ns"))
+            .cast(arrow_type, safe=False)
+        )
+    return nanos.cast(pyarrow.timestamp("ns")).cast(arrow_type, safe=False)

@@ -2,7 +2,7 @@ name: Log
 type: struct
 description: One parsed line of a trading log.
 metadata:
-  namespace: rekep.logs.log
+  namespace: rekep.text.log
 fields:
 - name: unix
   type: int64
@@ -12,7 +12,7 @@ fields:
     epoch: '1970-01-01'
     iceberg:primary_key: 'true'
     iceberg:sort_key: asc
-- name: hunix
+- name: unix_hour
   type: int64
   description: '`unix` truncated to the hour -- what the data is partitioned on.'
   metadata:
@@ -124,3 +124,253 @@ fields:
   type: string
   description: Payload with the header and level stripped, continuation lines folded
     in.
+- name: protocol
+  type: string
+  description: Which protocol the line carries; OTHER is a line that carries none.
+- name: fix_tags
+  type: map
+  nullable: true
+  description: The message's fields under the tags FIX gives them, in wire order.
+  key:
+    type: int32
+  value:
+    type: string
+- name: keyval
+  type: map
+  nullable: true
+  description: The fields no FIX tag answers for, spelled as the log spelled them.
+  key:
+    type: string
+  value:
+    type: string
+- name: begin_string
+  type: string
+  nullable: true
+  description: '`BeginString <8>`: which FIX version the message says it is.'
+- name: body_length
+  type: int64
+  nullable: true
+  description: '`BodyLength <9>`, as the message counted it.'
+- name: msg_type
+  type: string
+  nullable: true
+  description: '`MsgType <35>`: what the message is, on the wire.'
+- name: check_sum
+  type: string
+  nullable: true
+  description: '`CheckSum <10>`: three digits, so a string -- `010` read as `10` no
+    longer verifies.'
+- name: sender_comp_id
+  type: string
+  nullable: true
+  description: '`SenderCompID <49>`: who sent it.'
+- name: sender_sub_id
+  type: string
+  nullable: true
+  description: '`SenderSubID <50>`: which desk of theirs.'
+- name: sender_location_id
+  type: string
+  nullable: true
+  description: '`SenderLocationID <142>`.'
+- name: target_comp_id
+  type: string
+  nullable: true
+  description: '`TargetCompID <56>`: who it was sent to.'
+- name: target_sub_id
+  type: string
+  nullable: true
+  description: '`TargetSubID <57>`.'
+- name: target_location_id
+  type: string
+  nullable: true
+  description: '`TargetLocationID <143>`.'
+- name: on_behalf_of_comp_id
+  type: string
+  nullable: true
+  description: '`OnBehalfOfCompID <115>`: who the sender was speaking for.'
+- name: on_behalf_of_sub_id
+  type: string
+  nullable: true
+  description: '`OnBehalfOfSubID <116>`.'
+- name: on_behalf_of_location_id
+  type: string
+  nullable: true
+  description: '`OnBehalfOfLocationID <144>`.'
+- name: deliver_to_comp_id
+  type: string
+  nullable: true
+  description: '`DeliverToCompID <128>`: who it is ultimately for.'
+- name: deliver_to_sub_id
+  type: string
+  nullable: true
+  description: '`DeliverToSubID <129>`.'
+- name: deliver_to_location_id
+  type: string
+  nullable: true
+  description: '`DeliverToLocationID <145>`.'
+- name: last_msg_seq_num_processed
+  type: int64
+  nullable: true
+  description: '`LastMsgSeqNumProcessed <369>`: how far the sender had read.'
+- name: poss_dup_flag
+  type: bool
+  nullable: true
+  description: '`PossDupFlag <43>`: a retransmission of a message already sent.'
+- name: poss_resend
+  type: bool
+  nullable: true
+  description: '`PossResend <97>`: the same business content under a new sequence.'
+- name: sending_unix
+  type: int64
+  nullable: true
+  description: '`SendingTime <52>`: when it was transmitted.'
+- name: orig_sending_unix
+  type: int64
+  nullable: true
+  description: '`OrigSendingTime <122>`: the original transmission, on a resend.'
+- name: on_behalf_of_sending_unix
+  type: int64
+  nullable: true
+  description: '`OnBehalfOfSendingTime <370>`.'
+- name: appl_ver_id
+  type: string
+  nullable: true
+  description: '`ApplVerID <1128>`.'
+- name: cstm_appl_ver_id
+  type: string
+  nullable: true
+  description: '`CstmApplVerID <1129>`.'
+- name: appl_ext_id
+  type: int64
+  nullable: true
+  description: '`ApplExtID <1156>`.'
+- name: message_encoding
+  type: string
+  nullable: true
+  description: '`MessageEncoding <347>`.'
+- name: xml_data_len
+  type: int64
+  nullable: true
+  description: '`XmlDataLen <212>`.'
+- name: xml_data
+  type: binary
+  nullable: true
+  description: '`XmlData <213>`, as the bytes it is.'
+- name: secure_data_len
+  type: int64
+  nullable: true
+  description: '`SecureDataLen <90>`.'
+- name: secure_data
+  type: binary
+  nullable: true
+  description: '`SecureData <91>`, as the bytes it is.'
+- name: signature_length
+  type: int64
+  nullable: true
+  description: '`SignatureLength <93>`.'
+- name: signature
+  type: binary
+  nullable: true
+  description: '`Signature <89>`, as the bytes it is.'
+- name: security_id
+  type: string
+  nullable: true
+  description: '`SecurityID <48>`, under the scheme `security_id_source` names.'
+- name: security_id_source
+  type: string
+  nullable: true
+  description: '`SecurityIDSource <22>`: which scheme `security_id` is in -- `4` is
+    ISIN.'
+- name: security_type
+  type: string
+  nullable: true
+  description: '`SecurityType <167>`.'
+- name: cfi_code
+  type: string
+  nullable: true
+  description: '`CFICode <461>`: what kind of instrument it is, as ISO 10962 spells
+    it.'
+- name: security_exchange
+  type: string
+  nullable: true
+  description: '`SecurityExchange <207>`: the market the instrument is listed on.'
+- name: currency
+  type: string
+  nullable: true
+  description: '`Currency <15>`, which is what the prices below are in.'
+- name: account
+  type: string
+  nullable: true
+  description: '`Account <1>`.'
+- name: cl_ord_id
+  type: string
+  nullable: true
+  description: '`ClOrdID <11>`: the client''s own identifier for the order.'
+- name: orig_cl_ord_id
+  type: string
+  nullable: true
+  description: '`OrigClOrdID <41>`: which order an amendment or cancel is about.'
+- name: order_id
+  type: string
+  nullable: true
+  description: '`OrderID <37>`: the venue''s identifier for it.'
+- name: exec_id
+  type: string
+  nullable: true
+  description: '`ExecID <17>`: the venue''s identifier for this execution report.'
+- name: side
+  type: string
+  nullable: true
+  description: '`Side <54>`: `1` buy, `2` sell, and the rest of the standard''s codes.'
+- name: ord_type
+  type: string
+  nullable: true
+  description: '`OrdType <40>`: `1` market, `2` limit, ...'
+- name: time_in_force
+  type: string
+  nullable: true
+  description: '`TimeInForce <59>`: `0` day, `1` GTC, `3` IOC, ...'
+- name: ord_status
+  type: string
+  nullable: true
+  description: '`OrdStatus <39>`: where the order stands.'
+- name: exec_type
+  type: string
+  nullable: true
+  description: '`ExecType <150>`: what this report is reporting.'
+- name: order_qty
+  type: double
+  nullable: true
+  description: '`OrderQty <38>`: how much was asked for.'
+- name: price
+  type: double
+  nullable: true
+  description: '`Price <44>`: the limit, when there is one.'
+- name: avg_px
+  type: double
+  nullable: true
+  description: '`AvgPx <6>`: the average of what has filled so far.'
+- name: cum_qty
+  type: double
+  nullable: true
+  description: '`CumQty <14>`: how much has filled.'
+- name: leaves_qty
+  type: double
+  nullable: true
+  description: '`LeavesQty <151>`: how much is still working.'
+- name: last_px
+  type: double
+  nullable: true
+  description: '`LastPx <31>`: the price of this fill.'
+- name: last_qty
+  type: double
+  nullable: true
+  description: '`LastQty <32>`: the size of this fill.'
+- name: transact_unix
+  type: int64
+  nullable: true
+  description: '`TransactTime <60>`: when the business event happened, in nanoseconds.'
+- name: text
+  type: string
+  nullable: true
+  description: '`Text <58>`: whatever the counterparty wrote, often the reject reason.'
