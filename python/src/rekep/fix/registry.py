@@ -638,15 +638,24 @@ def _document(payload: dict[str, Any]) -> str:
 
 
 def _member(name: str) -> zipfile.ZipInfo:
-    """One archive member, stamped at the start of zip time.
+    """One archive member, stamped at the start of zip time and on no host.
 
     A zip records a modification time per member, so an archive built twice
     from the same dictionary is two different files unless the stamp is
     fixed. This one is published in a repository, where "nothing changed"
     has to look like nothing changed.
+
+    The **host** is the other half of that, and it was missed: `ZipInfo`
+    reads `create_system` off `os.name`, so the same dictionary published
+    from Windows and from Linux differed in one byte per member and the
+    rebuild test failed on the Windows leg alone. It is pinned to 3 (Unix)
+    because that is what the permission bits already written just below mean
+    -- `external_attr` is POSIX mode, which a member claiming to come from
+    FAT does not have.
     """
     entry = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
     entry.compress_type = zipfile.ZIP_DEFLATED
+    entry.create_system = 3
     entry.external_attr = 0o644 << 16
     return entry
 

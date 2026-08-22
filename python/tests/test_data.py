@@ -136,6 +136,22 @@ def test_the_archive_is_what_publishing_it_produces(tmp_path: Path) -> None:
     assert rebuilt.read_bytes() == DATA.read_bytes()
 
 
+def test_the_archive_says_it_came_from_nowhere_in_particular() -> None:
+    """The other half of "built twice is the same file": the host.
+
+    `ZipInfo` reads `create_system` off `os.name`, so publishing this
+    dictionary from Windows wrote a different byte per member than publishing
+    it from Linux -- and the rebuild above failed on the Windows CI leg alone,
+    where the archive is otherwise identical. Pinned to Unix because the
+    permission bits the member already carries are POSIX ones.
+    """
+    with zipfile.ZipFile(DATA) as archive:
+        systems = {entry.create_system for entry in archive.infolist()}
+        modes = {entry.external_attr >> 16 for entry in archive.infolist()}
+    assert systems == {3}, "every member, whichever host published it"
+    assert modes == {0o644}
+
+
 def test_the_archive_is_worth_being_an_archive() -> None:
     """Derived, then pinned: the dictionary compresses to about a sixth."""
     with zipfile.ZipFile(DATA) as archive:
