@@ -7,7 +7,14 @@ import pyarrow
 import pytest
 
 from rekep import Convertible, Field, StructField, field
-from rekep.iceberg import iceberg_field, iceberg_partition_spec, iceberg_schema
+from rekep.iceberg import iceberg_field, iceberg_partition_spec, iceberg_schema, metrics_for
+from rekep.iceberg.fields import (
+    COLUMN_METRICS,
+    DEFAULT_INFERRED,
+    INFERRED_METRICS,
+    MAX_INFERRED,
+    _leaves,
+)
 
 
 @field
@@ -219,3 +226,70 @@ def test_ids_ride_under_the_protocol_prefix() -> None:
     assert FIELD_ID == "iceberg:field_id"
     assert field.into_dict()["metadata"] == {FIELD_ID: "7"}
     assert PARQUET_FIELD_ID == b"PARQUET:field_id", "what parquet files carry, not what we write"
+
+
+# -- metrics ----------------------------------------------------------------
+
+
+@field
+class Wide(Convertible):
+    """A shape with more leaves than Iceberg infers bounds for."""
+
+    day: Annotated[datetime.date, Field.partition_key()]
+    """Trading day."""
+
+    note: Annotated[str, Field.primary_key()]
+    """Free text, keyed on."""
+
+
+def _widened(leaves: int) -> StructField:
+    """`Wide` grown to `leaves` members, the two declared ones included."""
+    source = Wide.FIELD
+    grown = pyarrow.struct(
+        list(source.arrow_fields)
+        + [pyarrow.field(f"pad{index}", pyarrow.int64()) for index in range(leaves - 2)]
+    )
+    return StructField(name=source.name, arrow_type=grown, metadata=source.metadata)
+
+
+def test_the_keys_a_reader_filters_on_are_declared_by_name() -> None:
+    declared = metrics_for(Quote.FIELD)
+    assert declared == {
+        "write.metadata.metrics.column.day": "full",
+        "write.metadata.metrics.column.symbol": "truncate(16)",
+    }, "partition and primary keys, each at a width worth storing"
+
+
+def test_a_shape_inside_the_budget_does_not_restate_it() -> None:
+    assert INFERRED_METRICS not in metrics_for(Quote.FIELD)
+    assert INFERRED_METRICS not in metrics_for(_widened(DEFAULT_INFERRED))
+
+
+def test_a_shape_past_the_budget_raises_it_to_its_own_width() -> None:
+    declared = metrics_for(_widened(DEFAULT_INFERRED + 1))
+    assert declared[INFERRED_METRICS] == str(DEFAULT_INFERRED + 1)
+
+
+def test_the_budget_is_raised_no_further_than_the_ceiling() -> None:
+    declared = metrics_for(_widened(MAX_INFERRED + 10))
+    assert declared[INFERRED_METRICS] == str(MAX_INFERRED), "bounds cost bytes per manifest entry"
+
+
+def test_a_nested_member_is_counted_leaf_by_leaf() -> None:
+    inner = pyarrow.struct([("a", pyarrow.int64()), ("b", pyarrow.int64())])
+    grown = pyarrow.struct([("scalar", pyarrow.int64()), ("nested", inner)])
+    assert _leaves(grown) == ["scalar", "nested.a", "nested.b"]
+
+
+def test_a_repeated_member_spends_the_budget_it_cannot_use() -> None:
+    listed = pyarrow.list_(pyarrow.struct([("a", pyarrow.int64()), ("b", pyarrow.int64())]))
+    mapped = pyarrow.map_(pyarrow.string(), pyarrow.string())
+    grown = pyarrow.struct([("legs", listed), ("ids", mapped)])
+    assert _leaves(grown) == ["legs.item.a", "legs.item.b", "ids.key", "ids.value"]
+
+
+def test_the_property_names_are_the_ones_iceberg_reads() -> None:
+    from pyiceberg.table import TableProperties
+
+    assert COLUMN_METRICS == TableProperties.METRICS_MODE_COLUMN_CONF_PREFIX
+    assert INFERRED_METRICS == "write.metadata.metrics.max-inferred-column-defaults"

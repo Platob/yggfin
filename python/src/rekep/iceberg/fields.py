@@ -258,3 +258,97 @@ def _describe_type(data_type: pyarrow.DataType) -> pyarrow.DataType:
     if kinds.is_map(data_type):
         return pyarrow.map_(_describe(data_type.key_field), _describe(data_type.item_field))
     return data_type
+
+
+#: How many **leaf** columns Iceberg collects bounds for by default, in
+#: declaration order, and the property that says so. Past the hundredth leaf a
+#: column is written with no lower or upper bound, so a filter on it reads
+#: every file and still returns the right answer -- which is exactly why
+#: nothing notices.
+INFERRED_METRICS = "write.metadata.metrics.max-inferred-column-defaults"
+DEFAULT_INFERRED = 100
+
+#: The ceiling `metrics_for` raises that to. Bounds cost bytes in every
+#: manifest entry, so this is not unbounded: a shape wider than this should
+#: say which of its columns a reader filters on rather than asking for all.
+MAX_INFERRED = 1_000
+
+#: The prefix under which one column's metrics mode is declared. A column
+#: named here is collected whatever its position, which is the whole point:
+#: the budget above only ever applies to columns nothing asked for.
+COLUMN_METRICS = "write.metadata.metrics.column"
+
+
+def metrics_for(source: StructField) -> dict[str, str]:
+    """Table properties that keep the columns a reader filters on prunable.
+
+    Iceberg counts leaves in **declaration order** and stops at a hundred, so
+    on a wide shape the columns a reader filters on are decided by where they
+    happen to sit -- and a nested member added in front of them silently
+    pushes one over the edge. `Book` reached exactly a hundred leaves the day
+    an instrument grew legs.
+
+    So the shape says which columns it is read by -- its partition, sort and
+    primary keys -- and those are declared by name, which takes them out of
+    the budget entirely. The budget itself is only raised when the shape is
+    genuinely past it, because a property that agrees with the default is a
+    property to keep in step with it.
+
+    pyiceberg 0.11 collects every top-level primitive regardless, so today
+    this changes nothing about what *this* writer records. It is written on
+    the table for the engines that do honour it -- a Spark or Flink job
+    writing into the same table reads these properties, not this code.
+    """
+    declared = {
+        **source.partition_keys(),
+        **source.sort_keys(),
+        **dict.fromkeys(source.primary_keys(), ""),
+    }
+    properties = {
+        f"{COLUMN_METRICS}.{name}": _mode(source.field(name).arrow_type) for name in declared
+    }
+    counted = len(_leaves(source.arrow_type))
+    if counted > DEFAULT_INFERRED:
+        properties[INFERRED_METRICS] = str(min(counted, MAX_INFERRED))
+    return properties
+
+
+def _mode(arrow_type: pyarrow.DataType) -> str:
+    """The metrics mode a column of `arrow_type` is worth collecting under.
+
+    A bound on a long string is the string, in every manifest entry that names
+    the file; sixteen characters is Iceberg's own default and prunes a prefix
+    filter just as well. Anything fixed-width is cheap enough to keep whole.
+    """
+    kinds = pyarrow.types
+    if kinds.is_string(arrow_type) or kinds.is_large_string(arrow_type):
+        return "truncate(16)"
+    if kinds.is_binary(arrow_type) or kinds.is_large_binary(arrow_type):
+        return "truncate(16)"
+    return "full"
+
+
+def _leaves(arrow_type: pyarrow.DataType) -> list[str]:
+    """Every leaf of `arrow_type`, in the pre-order Iceberg counts in.
+
+    A list contributes its item's leaves and a map its key and value, which is
+    what makes a nested member expensive against a budget it can never benefit
+    from: Iceberg collects no bounds for a field under a repeated one.
+    """
+    kinds = pyarrow.types
+    if kinds.is_struct(arrow_type):
+        found: list[str] = []
+        for index in range(arrow_type.num_fields):
+            member = arrow_type.field(index)
+            found += _under(member.name, member.type)
+        return found
+    if kinds.is_list(arrow_type) or kinds.is_large_list(arrow_type):
+        return _under("item", arrow_type.field(0).type)
+    if kinds.is_map(arrow_type):
+        return _under("key", arrow_type.key_type) + _under("value", arrow_type.item_type)
+    return [""]
+
+
+def _under(name: str, arrow_type: pyarrow.DataType) -> list[str]:
+    """`_leaves` of `arrow_type`, each spelled below `name`."""
+    return [f"{name}.{one}" if one else name for one in _leaves(arrow_type)]

@@ -7,6 +7,7 @@ from rekep.iceberg.fields import (
     iceberg_partition_spec,
     iceberg_schema,
     iceberg_sort_order,
+    metrics_for,
     struct_field_of,
 )
 
@@ -18,5 +19,6 @@ __all__ = [
     "iceberg_partition_spec",
     "iceberg_schema",
     "iceberg_sort_order",
+    "metrics_for",
     "struct_field_of",
 ]

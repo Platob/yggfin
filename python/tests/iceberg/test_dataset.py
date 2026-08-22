@@ -92,6 +92,32 @@ def test_a_write_creates_the_table_from_the_declared_shape(dataset: IcebergDatas
     assert [f.name for f in dataset.iceberg_table.spec().fields] == ["day"]
 
 
+def test_the_columns_a_reader_filters_on_are_declared_and_bounded(
+    dataset: IcebergDataset,
+) -> None:
+    dataset.write_arrow_table(quotes(3))
+    table = dataset.iceberg_table
+    assert table.properties["write.metadata.metrics.column.symbol"] == "truncate(16)"
+    assert table.properties["write.metadata.metrics.column.day"] == "full"
+
+    keyed = table.schema().find_field("symbol").field_id
+    written = [task.file for task in table.scan().plan_files()]
+    assert written, "a write landed a file"
+    assert all(keyed in one.lower_bounds for one in written), "the key is prunable"
+
+
+def test_a_declared_property_wins_over_the_metrics_default(tmp_path: Path) -> None:
+    dataset = IcebergDataset(
+        name="trading.quiet",
+        catalog="test",
+        properties=catalog_properties(tmp_path),
+        struct=Quote.FIELD,
+        table_properties={"write.metadata.metrics.column.symbol": "none"},
+    )
+    dataset.get_or_create_table()
+    assert dataset.iceberg_table.properties["write.metadata.metrics.column.symbol"] == "none"
+
+
 def test_creating_is_idempotent(dataset: IcebergDataset) -> None:
     first = dataset.get_or_create_table()
     assert dataset.get_or_create_table().name() == first.name()

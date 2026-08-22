@@ -27,6 +27,7 @@ from rekep.dataset import (
 from rekep.fields import StructField, arrays, field_of
 from rekep.filesystems import resolve
 from rekep.iceberg.catalog import IcebergCatalog
+from rekep.iceberg.fields import metrics_for
 
 #: The branch a read or a write lands on when nothing names one -- pyiceberg's
 #: own default, spelled out here so the two cannot disagree about it.
@@ -283,7 +284,7 @@ class IcebergDataset(Dataset):
         if namespace:
             self.store.create_namespace(namespace)
         schema = field.into_iceberg_schema()
-        defaults = COMMIT_PROPERTIES if self.optimize_commits else {}
+        defaults = {**(COMMIT_PROPERTIES if self.optimize_commits else {}), **metrics_for(field)}
         table = self.iceberg_catalog.create_table(
             self.name,
             schema=schema,
