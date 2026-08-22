@@ -5,6 +5,7 @@ from __future__ import annotations
 import bisect
 import copy
 import dataclasses
+from collections import deque
 from collections.abc import Iterable, Iterator
 from typing import Annotated, Any, ClassVar, Self
 
@@ -14,9 +15,10 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.fields import Field, FieldBuilder, field
 from rekep.market.enums import EventType, Side, State, UpdateAction
-from rekep.market.event import UNIX, MarketEvent
+from rekep.market.event import HOUR, UNIX, MarketEvent
 from rekep.market.fields import MarketFieldBuilder, fix_tag
 from rekep.market.identity import NIL
+from rekep.market.instrument import Instrument
 from rekep.market.orders import Execution, Order
 
 
@@ -444,176 +446,15 @@ class Book(MarketEvent):
     # -- building a book out of events ---------------------------------------
 
     @classmethod
-    def from_events(cls, events: Iterable[MarketEvent]) -> Iterator[Self]:
-        """One book per instant that changed it, folded from **one instrument's** stream.
+    def from_events(cls, events: Iterable[MarketEvent], **declared: Any) -> Iterator[Self]:
+        """One book per instant that changed it, folded from a stream of events.
 
-        The input is orders and executions in time order, for a single
-        instrument, and the output is the book after each instant that moved
-        it -- one row per instant, never one per message, because several
-        events at the same nanosecond are one state of the book and writing
-        three rows with the same `unix` is writing the feed rather than the
-        book.
-
-        **One instrument, and it is checked.** A stream carrying two of them
-        folds into a book that is neither, silently and forever; that is the
-        kind of wrong that a partition exists to prevent, and
-        `instrument_hash` is `bucket[16]` for exactly this reason. Read a
-        partition and hand it here.
-
-        **Sorted, and that is checked too.** A fold is a fold: an event out of
-        order asks the book to un-happen something, and there is no honest
-        answer. Iceberg keeps these tables sorted by `unix` for the same
-        reason, so a partition read back is already in the order this wants.
-
-        What is kept between events is the **live orders**, not the levels: a
-        venue that restates an order has to replace what that order was
-        resting for, and a level cannot say which order contributed what.
-        `Resting` holds them, sorted by price then by descending quantity,
-        which is what makes the best bid and offer a read rather than a scan.
+        A `BookIterator` read for its books and nothing else, which is the
+        common half of it. The other half is
+        `BookIterator(events=...).instruments`, and a job that writes both
+        tables wants the iterator itself rather than this.
         """
-        bid, ask = Resting(side=Side.BID), Resting(side=Side.ASK)
-        instrument, unix, previous, about = None, None, None, None
-        moved = False
-        for event in events:
-            if instrument is None:
-                instrument = event.instrument_hash
-            elif event.instrument_hash != instrument:
-                raise ValueError(
-                    f"a book is one instrument's: got {event.instrument_hash} after "
-                    f"{instrument}. Partition the stream on `instrument_hash` first"
-                )
-            if unix is not None and event.unix < unix:
-                raise ValueError(
-                    f"a book is folded in time order: {event.unix} came after {unix}. "
-                    "Sort the stream on `unix` first"
-                )
-            if unix is not None and event.unix != unix and moved:
-                previous = cls._settled(bid, ask, unix, about, previous)
-                yield previous
-                moved = False
-            unix = event.unix
-            moved = cls._folded(bid, ask, event) or moved
-            # After folding, never before: a book is described by the events
-            # it holds, and reading the event that *triggered* the yield gave
-            # every row the units of the instant after it.
-            about = event
-        if moved and unix is not None and about is not None:
-            yield cls._settled(bid, ask, unix, about, previous)
-
-    @classmethod
-    def _folded(cls, bid: Resting, ask: Resting, event: MarketEvent) -> bool:
-        """One event applied to the side it belongs on. True when the book moved.
-
-        A shape that is itself a book is skipped rather than refused: a stream
-        read off a table may carry the book rows this produced beside the
-        orders that produced them, and folding a book into a book is not a
-        thing that means anything.
-        """
-        if event.is_order():
-            side = bid if event.side.sign > 0 else ask if event.side.sign < 0 else None
-            # The price is *not* checked here: a cancellation carries none, and
-            # gets one from the version it cancels. `Resting.apply` decides,
-            # after completing.
-            return False if side is None else side.apply(event)
-        if event.is_execution():
-            return cls._traded(bid, ask, event)
-        return False
-
-    @classmethod
-    def _traded(cls, bid: Resting, ask: Resting, execution: Execution) -> bool:
-        """A fill taken out of the side it hit, if this report moved shares at all."""
-        if not execution.kind.moves_shares or execution.px is None or execution.qty is None:
-            return False
-        side = cls._hit(bid, ask, execution)
-        if side is None:
-            return False
-        side.take(execution, abs(execution.qty))
-        return True
-
-    @classmethod
-    def _hit(cls, bid: Resting, ask: Resting, execution: Execution) -> Resting | None:
-        """Which side a fill took liquidity out of, by what the report actually says.
-
-        Three readings, strongest first, because a feed gives different ones:
-
-        1. **The report's own side.** An execution's `side` is the side of the
-           order it reports, and a filled buy order was resting on the bid --
-           so its liquidity leaves the bid. Exact whenever a venue sends it.
-        2. **The order it names.** A report with no side but an
-           `order_xhash` that is live on one side names that side.
-        3. **Its price against the touch.** A market-data trade print carries
-           neither, which is most prints: a trade at or below the mid took
-           from the bid, above it from the ask. That is the tick rule, and it
-           is the honest answer when the venue has not given a better one.
-
-        None when the book is empty, which is a print against liquidity this
-        fold never saw -- there is nothing to take it out of.
-        """
-        if execution.side.sign > 0:
-            return bid
-        if execution.side.sign < 0:
-            return ask
-        named = execution.order_xhash
-        if named:
-            if named in bid.orders:
-                return bid
-            if named in ask.orders:
-                return ask
-        best_bid, best_ask = bid.best, ask.best
-        if best_bid is None and best_ask is None:
-            return None
-        if best_bid is None:
-            return ask
-        if best_ask is None:
-            return bid
-        mid = ((best_bid.px or 0.0) + (best_ask.px or 0.0)) / 2
-        return bid if (execution.px or 0.0) <= mid else ask
-
-    @classmethod
-    def _settled(
-        cls, bid: Resting, ask: Resting, unix: int, about: MarketEvent, previous: Self | None
-    ) -> Self:
-        """The book as it stands, as a new row -- and the delta handed over with it.
-
-        A **new** `Book` per instant and never the same one mutated: these are
-        versions, and a caller collecting them into a batch would otherwise
-        get one object repeated. `with_previous` does the versioning, so a
-        book folded here carries the same `prev_hash`/`prev_state` chain as
-        one assembled by `append_event`.
-
-        `about` is the last event folded in, and it is where the book learns
-        what it is a book *of*: the instrument, the symbol and the units are
-        the stream's, not something a book row could work out for itself.
-        """
-        book = cls(
-            unix=unix,
-            instrument=about.instrument,
-            instrument_hash=about.instrument_hash,
-            symbol=about.symbol,
-            px_unit=about.px_unit,
-            qty_unit=about.qty_unit,
-            venue=about.venue,
-            state=State.OPEN if (bid.orders or ask.orders) else State.CLOSED,
-        )
-        # The lifecycle only, and not `identify`: the content hash is derived
-        # at the end of `with_previous` below, once the sides are on the row,
-        # and computing it here as well hashed every book twice.
-        book.xhash = book.life_hash()
-        parents = []
-        for name, resting in (("bid", bid), ("ask", ask)):
-            side = resting.into_side(unix, BookSide.hash_of(book.xhash, name)).identify()
-            for column in ("hash", "px", "qty", "depth", "total_qty"):
-                setattr(book, f"{name}_{column}", getattr(side, column))
-            for column in ("alive", "updates", "executions"):
-                setattr(book, f"{name}_{column}", getattr(side, column))
-            parents.append(side.hash)
-            resting.cleared()
-        book.parent_hash = parents
-        # The prices across the sides are `Book.derive`'s, which
-        # `with_previous` runs once every layer has filled -- so they are not
-        # computed here as well, and the content hash it ends with is of a row
-        # that already has them.
-        return book.with_previous(previous)
+        return iter(BookIterator(events=events, **declared))
 
     def append_event(self, event: Any) -> Self | None:
         """`append_order` or `append_execution`, inferred from what it was handed."""
@@ -1331,6 +1172,440 @@ class Resting:
             )
         )
         return traded - taken
+
+
+# -- folding a book out of a stream ------------------------------------------
+
+
+@dataclasses.dataclass
+class Folding:
+    """One instrument's mutable state inside a `BookIterator`.
+
+    Everything a fold has to remember between events, and nothing that is a
+    row: the two sides, what has been emitted, and the identities that are
+    constant for the whole instrument and so are computed once rather than per
+    book.
+    """
+
+    instrument_hash: int
+    """Which instrument this is the state of."""
+
+    bid: Resting
+    """The bid side's live orders, best first."""
+
+    ask: Resting
+    """The ask side's live orders, best first."""
+
+    xhash: int = NIL
+    """The book's lifecycle. One instrument is one book, so this never moves."""
+
+    sides: tuple[int, int] = (NIL, NIL)
+    """The two sides' lifecycles, `(bid, ask)`, derived from `xhash` once.
+
+    Constant for the whole fold, and it used to be two digests per book: a
+    side's lifecycle is the book's plus which side it is, and neither changes
+    while one instrument is being folded.
+    """
+
+    unix: int | None = None
+    """The instant the events being folded belong to; None before the first."""
+
+    previous: Book | None = None
+    """The last book emitted, which the next one is a version of."""
+
+    about: MarketEvent | None = None
+    """The last event folded in -- where a book learns what it is a book of."""
+
+    instrument: Instrument = dataclasses.field(default_factory=Instrument)
+    """The reference data learnt so far, which the instrument stream publishes."""
+
+    emitted: int | None = None
+    """`unix` of the last book emitted, which is what an hourly snapshot counts from."""
+
+    moved: bool = False
+    """Whether anything has happened since the last book was emitted."""
+
+    def touched(self) -> tuple[bool, bool]:
+        """Which sides have something to say since the last book: `(bid, ask)`."""
+        return (
+            bool(self.bid.updates or self.bid.executions),
+            bool(self.ask.updates or self.ask.executions),
+        )
+
+
+@dataclasses.dataclass
+class BookIterator:
+    """A stream of market events in; a stream of books and a stream of instruments out.
+
+    One iterator over **every** instrument, not one per instrument: the state
+    that has to be per instrument is per instrument (`Folding`, keyed by
+    `instrument_hash`) and everything around it is shared. That is what makes
+    it adaptable -- a partition holding one instrument and a capture holding
+    ten thousand are the same call -- and it is what lets a job write both
+    tables from one pass.
+
+    **Two streams, one source.** `books` and `instruments` are both views of
+    the same fold: whichever is pulled drives the source, and what the other
+    would have seen is held until it is. Pull them alternately, or drain one
+    and then the other -- but draining `books` first holds every instrument
+    version in memory, which for a capture of ten thousand instruments is ten
+    thousand small rows and for one instrument is one.
+
+    **One book per instant that changed it**, never one per message: several
+    events at the same nanosecond are one state of the book, and writing three
+    rows with the same `unix` is writing the feed rather than the book.
+
+    **And one book per hour regardless.** `snapshot_every` makes the fold emit
+    the book as it stood on each boundary it crosses, even where nothing
+    happened -- which is what turns "what was the book at 14:00" into a point
+    lookup instead of a scan backwards for the last row before it. Set it to
+    `0` for a stream of changes only.
+
+    **Sorted, and it is checked.** A fold is a fold: an event out of order
+    asks a book to un-happen something, and there is no honest answer. The
+    stream has to be in `unix` order *across* instruments, which is what an
+    Iceberg table sorted by `unix` hands back -- and what makes the hourly
+    boundary the same instant for every instrument in it.
+    """
+
+    events: Iterable[MarketEvent] = ()
+    """The stream to fold. Read once, lazily."""
+
+    snapshot_every: int = HOUR
+    """Emit the book on every multiple of this; `0` emits only what changed."""
+
+    folding: dict[int, Folding] = dataclasses.field(default_factory=dict)
+    """The per-instrument state, by `instrument_hash`. Mutable, and the point."""
+
+    def __post_init__(self) -> None:
+        self._source: Iterator[MarketEvent] | None = None
+        self._finished = False
+        self._books: deque[Book] = deque()
+        self._instruments: deque[Instrument] = deque()
+        self._unix: int | None = None
+        self._swept: int | None = None
+
+    # -- the two streams -----------------------------------------------------
+
+    def __iter__(self) -> Iterator[Book]:
+        """The books, which is what a fold is usually asked for."""
+        return self.books
+
+    @property
+    def books(self) -> Iterator[Book]:
+        """Every book this stream produces, in the order the events arrived."""
+        return self._drain(self._books)
+
+    @property
+    def instruments(self) -> Iterator[Instrument]:
+        """Every version of every instrument the stream taught the fold.
+
+        A venue sends reference data as it goes -- a symbol first, a CFI code
+        with the next message, a maturity with the one after -- so an
+        instrument is learnt rather than read, and each time it learns
+        something it is a new row. An instrument nothing enriched is one row.
+        """
+        return self._drain(self._instruments)
+
+    def _drain(self, queue: deque[Any]) -> Iterator[Any]:
+        """One of the two streams: hand back what is held, then fold for more."""
+        while True:
+            while queue:
+                yield queue.popleft()
+            if not self._advance():
+                return
+
+    def _advance(self) -> bool:
+        """Fold one more event, or close the stream. False when there is no more.
+
+        `_finished` and not "the source is None", which is the same question
+        asked in a way that answers wrong: the source is also None before the
+        first pull, so closing on it made the next pull start the stream over
+        -- and a finite stream folded forever.
+        """
+        if self._finished:
+            return False
+        if self._source is None:
+            self._source = iter(self.events)
+        event = next(self._source, None)
+        if event is None:
+            self._finished = True
+            self._source = None
+            self._flush()
+            return bool(self._books or self._instruments)
+        self._feed(event)
+        return True
+
+    # -- folding --------------------------------------------------------------
+
+    def _feed(self, event: MarketEvent) -> None:
+        """One event into the state of the instrument it is about."""
+        if self._unix is not None and event.unix < self._unix:
+            raise ValueError(
+                f"a book is folded in time order: {event.unix} came after {self._unix}. "
+                "Sort the stream on `unix` first"
+            )
+        self._unix = event.unix
+        state = self.folding.get(event.instrument_hash)
+        if state is None:
+            state = self.folding[event.instrument_hash] = self._started(event)
+        self._settle(state, event.unix)
+        self._sweep(event.unix, state)
+        self._learn(state, event)
+        state.unix = event.unix
+        state.moved = _folded(state.bid, state.ask, event) or state.moved
+        # After folding, never before: a book is described by the events it
+        # holds, and reading the event that *triggered* the emission gave
+        # every row the units of the instant after it.
+        state.about = event
+
+    def _sweep(self, unix: int, folded: Folding) -> None:
+        """Fill in the hourly rows of every *other* instrument the clock passed.
+
+        The hour is a property of the clock, not of one instrument's stream: a
+        book nothing has happened to for three hours still stood there for
+        three hours, and a table whose hourly rows exist only for whatever was
+        trading is one you have to scan backwards to read.
+
+        `_settle` and not just `_snapshots`, because an instrument whose last
+        event has not been emitted yet has nothing to take a picture *of*: the
+        instant that ended is emitted first, which is also overdue by then.
+
+        Once per boundary rather than once per event, because it is a walk of
+        every instrument being folded: a capture of ten thousand instruments
+        pays it twenty-four times a day, not once a message. `folded` is
+        skipped because `_settle` has just done it, and doing it before that
+        would picture the state the event is about to change.
+
+        **What this costs the output order.** A book is emitted when the
+        instrument it belongs to is settled, so a quiet instrument's row
+        arrives in the stream up to one `snapshot_every` after its own
+        `unix` -- the rows are stamped right and ordered within that window,
+        not globally sorted. Settling every instrument on every event would
+        order them exactly and would cost a walk of the whole book of books
+        per message, which is the trade this makes deliberately.
+        """
+        every = self.snapshot_every
+        if not every:
+            return
+        boundary = unix - unix % every
+        if self._swept is not None and boundary <= self._swept:
+            return
+        self._swept = boundary
+        for state in self.folding.values():
+            if state is not folded:
+                self._settle(state, unix)
+
+    def _flush(self) -> None:
+        """End of stream: emit what every instrument still holds, once.
+
+        `unix + 1` because `_settle` emits the instant that *ended*, and at the
+        end of a stream the last instant has. No hourly snapshot follows: a
+        snapshot fills the gap between two events, and past the last one there
+        is no gap to fill -- only a guess about how long the book stood.
+        """
+        for state in self.folding.values():
+            if state.unix is not None:
+                self._settle(state, state.unix + 1)
+
+    def _started(self, event: MarketEvent) -> Folding:
+        """The state one instrument's fold starts from, identities and all."""
+        lifecycle = Book(
+            unix=event.unix,
+            instrument=event.instrument,
+            instrument_hash=event.instrument_hash,
+            symbol=event.symbol,
+        ).life_hash()
+        return Folding(
+            instrument_hash=event.instrument_hash,
+            bid=Resting(side=Side.BID),
+            ask=Resting(side=Side.ASK),
+            xhash=lifecycle,
+            sides=(BookSide.hash_of(lifecycle, "bid"), BookSide.hash_of(lifecycle, "ask")),
+        )
+
+    def _learn(self, state: Folding, event: MarketEvent) -> None:
+        """Take whatever reference data the event carries, and publish a version.
+
+        Only when it actually learnt something: a feed repeats the instrument
+        on every message, and a row per message would be the feed again rather
+        than the reference data in it.
+        """
+        enriched = state.instrument.enriched_with(event.instrument)
+        if enriched is None:
+            return
+        state.instrument = enriched
+        self._instruments.append(enriched)
+
+    # -- emitting -------------------------------------------------------------
+
+    def _settle(self, state: Folding, unix: int) -> None:
+        """Emit whatever `unix` completes: the instant that ended, then the hours."""
+        if state.unix is not None and unix != state.unix and state.moved:
+            self._emit(state, state.unix)
+            state.moved = False
+        self._snapshots(state, unix)
+
+    def _snapshots(self, state: Folding, unix: int) -> None:
+        """One book on every boundary between the last emission and `unix`.
+
+        Every boundary, and not just the latest: an hourly table whose rows
+        skip the hours nothing happened in is a table you have to scan
+        backwards to read, which is the thing hourly rows exist to avoid. A
+        gap of ten hours is ten rows, each a picture of the same state, each
+        saying so in `sunix`.
+        """
+        every = self.snapshot_every
+        if not every or state.previous is None or state.emitted is None:
+            return
+        boundary = state.emitted - state.emitted % every + every
+        while boundary < unix:
+            taken = state.previous.make_snapshot(boundary)
+            if taken is None:
+                break
+            state.previous = taken.with_previous(state.previous)
+            state.emitted = boundary
+            self._books.append(state.previous)
+            boundary += every
+
+    def _emit(self, state: Folding, unix: int) -> None:
+        """The book as it stands, as a new row, and the delta handed over with it."""
+        state.previous = _settled(state, unix)
+        state.emitted = unix
+        self._books.append(state.previous)
+
+
+def _folded(bid: Resting, ask: Resting, event: MarketEvent) -> bool:
+    """One event applied to the side it belongs on. True when the book moved.
+
+    A shape that is itself a book is skipped rather than refused: a stream
+    read off a table may carry the book rows this produced beside the
+    orders that produced them, and folding a book into a book is not a
+    thing that means anything.
+    """
+    if event.is_order():
+        side = bid if event.side.sign > 0 else ask if event.side.sign < 0 else None
+        # The price is *not* checked here: a cancellation carries none, and
+        # gets one from the version it cancels. `Resting.apply` decides,
+        # after completing.
+        return False if side is None else side.apply(event)
+    if event.is_execution():
+        return _traded(bid, ask, event)
+    return False
+
+
+def _traded(bid: Resting, ask: Resting, execution: Execution) -> bool:
+    """A fill taken out of the side it hit, if this report moved shares at all."""
+    if not execution.kind.moves_shares or execution.px is None or execution.qty is None:
+        return False
+    side = _hit(bid, ask, execution)
+    if side is None:
+        return False
+    side.take(execution, abs(execution.qty))
+    return True
+
+
+def _hit(bid: Resting, ask: Resting, execution: Execution) -> Resting | None:
+    """Which side a fill took liquidity out of, by what the report actually says.
+
+    Three readings, strongest first, because a feed gives different ones:
+
+    1. **The report's own side.** An execution's `side` is the side of the
+       order it reports, and a filled buy order was resting on the bid --
+       so its liquidity leaves the bid. Exact whenever a venue sends it.
+    2. **The order it names.** A report with no side but an
+       `order_xhash` that is live on one side names that side.
+    3. **Its price against the touch.** A market-data trade print carries
+       neither, which is most prints: a trade at or below the mid took
+       from the bid, above it from the ask. That is the tick rule, and it
+       is the honest answer when the venue has not given a better one.
+
+    None when the book is empty, which is a print against liquidity this
+    fold never saw -- there is nothing to take it out of.
+    """
+    if execution.side.sign > 0:
+        return bid
+    if execution.side.sign < 0:
+        return ask
+    named = execution.order_xhash
+    if named:
+        if named in bid.orders:
+            return bid
+        if named in ask.orders:
+            return ask
+    best_bid, best_ask = bid.best, ask.best
+    if best_bid is None and best_ask is None:
+        return None
+    if best_bid is None:
+        return ask
+    if best_ask is None:
+        return bid
+    mid = ((best_bid.px or 0.0) + (best_ask.px or 0.0)) / 2
+    return bid if (execution.px or 0.0) <= mid else ask
+
+
+#: The columns one side contributes to a book row, and the order they are set
+#: in. Named once because they are read twice: built from a side that moved,
+#: and carried across from the row before for one that did not.
+SIDE_COLUMNS = ("hash", "px", "qty", "depth", "total_qty", "alive")
+
+#: The three that are a *delta* rather than a state, and so are never carried:
+#: what changed since the last row is empty on a row where nothing did.
+SIDE_DELTAS = ("updates", "executions")
+
+
+def _settled(state: Folding, unix: int) -> Book:
+    """The book as it stands, as a new row -- and the delta handed over with it.
+
+    A **new** `Book` per instant and never the same one mutated: these are
+    versions, and a caller collecting them into a batch would otherwise get one
+    object repeated. `with_previous` does the versioning, so a book folded here
+    carries the same `prev_hash`/`prev_state` chain as one assembled by
+    `append_event`.
+
+    **A side that did not move is not rebuilt.** Its columns are what they were
+    on the row before, including its `hash`: a `BookSide`'s hash identifies a
+    version of that side, and a side that nothing touched is still that version.
+    Rebuilding it produced an equal row at the cost of a walk of its levels and
+    a digest, on every book, for the side the event was not about -- which on a
+    feed that alternates sides is half of every snapshot.
+    """
+    about = state.about
+    book = Book(
+        unix=unix,
+        instrument=about.instrument,
+        instrument_hash=about.instrument_hash,
+        symbol=about.symbol,
+        px_unit=about.px_unit,
+        qty_unit=about.qty_unit,
+        venue=about.venue,
+        state=State.OPEN if (state.bid.keys or state.ask.keys) else State.CLOSED,
+    )
+    book.xhash = state.xhash
+    parents = []
+    for name, resting, lifecycle, moved in (
+        ("bid", state.bid, state.sides[0], state.bid.updates or state.bid.executions),
+        ("ask", state.ask, state.sides[1], state.ask.updates or state.ask.executions),
+    ):
+        if not moved and state.previous is not None:
+            for column in SIDE_COLUMNS:
+                setattr(book, f"{name}_{column}", getattr(state.previous, f"{name}_{column}"))
+            for column in SIDE_DELTAS:
+                setattr(book, f"{name}_{column}", [])
+            parents.append(getattr(state.previous, f"{name}_hash"))
+            continue
+        side = resting.into_side(unix, lifecycle).identify()
+        for column in SIDE_COLUMNS:
+            setattr(book, f"{name}_{column}", getattr(side, column))
+        for column in SIDE_DELTAS:
+            setattr(book, f"{name}_{column}", getattr(side, column))
+        parents.append(side.hash)
+        resting.cleared()
+    book.parent_hash = parents
+    # The prices across the sides are `Book.derive`'s, which `with_previous`
+    # runs once every layer has filled -- so they are not computed here as
+    # well, and the content hash it ends with is of a row that already has them.
+    return book.with_previous(state.previous)
 
 
 def _action_of(before: float, after: float) -> UpdateAction:

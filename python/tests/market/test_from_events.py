@@ -101,11 +101,39 @@ def test_a_book_is_versioned_like_any_other_event() -> None:
 # -- what it refuses ---------------------------------------------------------
 
 
-def test_a_stream_carrying_two_instruments_is_refused() -> None:
-    """It would fold into a book that is neither, silently and forever."""
-    other = Order(unix=20, instrument=ETH, symbol="ETH-USD", side=Side.BID, px=1.0, qty=1.0)
-    with pytest.raises(ValueError, match="one instrument"):
-        books([*TWO_SIDED, other.with_previous(None)])
+def test_a_stream_carrying_two_instruments_folds_each_on_its_own() -> None:
+    """One iterator over every instrument, with the state that has to be per
+    instrument kept per instrument -- which is what lets a partition holding one
+    and a capture holding ten thousand be the same call."""
+    other = Order(
+        unix=20,
+        instrument=ETH,
+        symbol="ETH-USD",
+        side=Side.BID,
+        px=1.0,
+        qty=1.0,
+        state=State.NEW,
+    ).with_previous(None)
+    found = books([*TWO_SIDED, other])
+    assert [one.symbol for one in found] == ["BTC-USD", "ETH-USD"]
+    assert found[0].bid_depth == 2 and found[1].bid_depth == 1
+    assert found[0].instrument_hash != found[1].instrument_hash
+
+
+def test_one_instrument_s_book_never_sees_another_s_orders() -> None:
+    """The bug the old one-instrument-per-fold guard existed to prevent."""
+    other = Order(
+        unix=20,
+        instrument=ETH,
+        symbol="ETH-USD",
+        side=Side.ASK,
+        px=1.0,
+        qty=99.0,
+        state=State.NEW,
+    ).with_previous(None)
+    btc, eth = books([*TWO_SIDED, other])
+    assert btc.ask_qty == 7.0, "not 99, which is the other instrument's"
+    assert eth.bid_px is None and eth.ask_qty == 99.0
 
 
 def test_a_stream_out_of_order_is_refused() -> None:

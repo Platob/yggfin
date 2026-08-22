@@ -13,7 +13,16 @@ in kernels. `fix.py` is the way in from a venue: a FIX message, or the pairs
 one was rendered as, read as the orders and executions it carries.
 """
 
-from rekep.market.book import Book, BookSide, Level, LevelExecution, LevelUpdate, Resting
+from rekep.market.book import (
+    Book,
+    BookIterator,
+    BookSide,
+    Folding,
+    Level,
+    LevelExecution,
+    LevelUpdate,
+    Resting,
+)
 from rekep.market.enums import (
     AssetKind,
     EventType,
@@ -51,12 +60,14 @@ __all__ = [
     "UNIX",
     "AssetKind",
     "Book",
+    "BookIterator",
     "BookSide",
     "Event",
     "EventType",
     "ExecKind",
     "Execution",
     "FixEvents",
+    "Folding",
     "Instrument",
     "Level",
     "LevelExecution",
