@@ -240,3 +240,121 @@ def test_one_file_is_a_source_as_much_as_a_folder(capture: Path, catalog: dict) 
     """Told apart by asking the filesystem, because a document cannot say."""
     report = parse(capture / "a.log", catalog).run()
     assert report.rows == EXPECTED_ROWS
+
+
+# -- the commit bound ---------------------------------------------------------
+
+
+def test_a_commit_holds_a_commit_size_worth_and_no_more(
+    capture: Path, catalog: dict, tmp_path: Path
+) -> None:
+    """What `commit_row_size` actually promises, read back off the snapshots.
+
+    The buffer is flushed when it *reaches* the size rather than when adding
+    the next batch would pass it, so a commit holds between `commit_row_size`
+    and one batch more -- and that upper bound is what the job's memory is.
+    """
+    for name in ("b.log", "c.log", "d.log", "e.log"):
+        write_capture(capture, name=name, day=f"2026-08-{16 + ord(name[0]) - ord('b')}")
+    task = parse(capture, catalog, batch_row_size=8, commit_row_size=25)
+    report = task.run()
+
+    assert report.rows == EXPECTED_ROWS * 5, "five days of the fixture"
+    for kind in KINDS:
+        dataset = task.target(int(kind))
+        added = [
+            int(dict(summary)["added-records"])
+            for summary in dataset.snapshots().column("summary").to_pylist()
+        ]
+        assert sum(added) == PER_HOUR * HOURS * 5, kind.name
+        assert len(added) > 1, "the fixture is bigger than one commit at this size"
+        for count in added[:-1]:
+            assert count >= task.commit_row_size, (kind.name, added)
+            assert count < task.commit_row_size + task.batch_row_size, (kind.name, added)
+
+
+def test_a_rotated_copy_of_a_file_is_skipped_rather_than_written(
+    capture: Path, catalog: dict
+) -> None:
+    """A capture holds `app.log` and `app.log.1`, and the overlap is the norm."""
+    (capture / "a.log.1").write_bytes((capture / "a.log").read_bytes())
+    task = parse(capture, catalog)
+    report = task.run()
+
+    assert report.rows == EXPECTED_ROWS * 2, "both files were read"
+    assert report.landed == EXPECTED_ROWS and report.skipped == EXPECTED_ROWS
+    for kind in KINDS:
+        assert task.target(int(kind)).read_arrow_table().num_rows == PER_HOUR * HOURS
+
+
+# -- the message layer --------------------------------------------------------
+
+#: The dictionary this repository publishes, so names resolve without a scrape.
+DICTIONARY = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
+
+HEAD = "2026-08-14 00:00:0{slot}.167_520 [t-1] [Bridge] "
+
+#: One line per spelling of a message, plus one carrying none.
+MESSAGES = [
+    "sending 8=FIX.4.2|35=D|49=BUYSIDE|11=ORD-1|55=TTF|54=1|38=1200|10=203|",
+    "toBridge #ISINCODE=XX0000084733#SYMBOL=TTF#SIDE=1#ACCOUNT=<null>#UNKNOWNVENUEFIELD=Z9",
+    "8=FIX.4.2|35=UL|34=2|#SYMBOL=TTF|#SIDE=1|10=044|",
+    "heartbeat emitted seq=7",
+]
+
+
+@pytest.fixture
+def messages(tmp_path: Path) -> Path:
+    """A capture of four lines: FIX, a bridge, a wrapped bridge, and neither."""
+    folder = tmp_path / "messages"
+    folder.mkdir()
+    (folder / "m.log").write_text(
+        "".join(HEAD.format(slot=slot) + line + "\n" for slot, line in enumerate(MESSAGES))
+    )
+    return folder
+
+
+def test_a_line_lands_with_the_message_it_carries(messages: Path, catalog: dict) -> None:
+    """The whole layer, through the shipped job: a line, its tags, its rest."""
+    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
+    task.run()
+
+    rows = task.target(int(EventType.UNKNOWN)).read_arrow_table().sort_by("unix")
+    assert rows.column("category_name").to_pylist() == ["UL", "UL", "OTHER"]
+    assert rows.column("category_id").to_pylist() == [2, 2, 0]
+
+    bridge = dict(rows.column("fix_tags")[0].as_py())
+    assert bridge == {55: "TTF", 54: "1"}, "names the dictionary knows, as tags"
+    assert 1 not in bridge, "`ACCOUNT=<null>` is an absent account, not the text"
+    assert dict(rows.column("keyval")[0].as_py()) == {
+        "ISINCODE": "XX0000084733",
+        "UNKNOWNVENUEFIELD": "Z9",
+    }, "and the names it does not, kept rather than dropped"
+
+    wrapped = dict(rows.column("fix_tags")[1].as_py())
+    assert wrapped[35] == "UL" and wrapped[55] == "TTF", "one message, read as one"
+
+
+def test_a_line_carrying_no_message_says_so_rather_than_saying_nothing(
+    messages: Path, catalog: dict
+) -> None:
+    """Null, not an empty map: "not a message" and "a message that said nothing"."""
+    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
+    task.run()
+    rows = task.target(int(EventType.UNKNOWN)).read_arrow_table().sort_by("unix")
+    assert rows.column("category_name")[2].as_py() == "OTHER"
+    assert rows.column("fix_tags")[2].as_py() is None
+    assert rows.column("keyval")[2].as_py() is None
+
+
+def test_the_wire_tags_land_for_a_line_that_is_about_something(
+    messages: Path, catalog: dict
+) -> None:
+    """A FIX line lands in its own table, with the tags it was written with."""
+    task = parse(messages, catalog, fix_dictionary=str(DICTIONARY))
+    task.run()
+    rows = task.target(int(EventType.ORDER)).read_arrow_table()
+    assert rows.num_rows == 1
+    assert rows.column("category_name").to_pylist() == ["FIX"]
+    tags = dict(rows.column("fix_tags")[0].as_py())
+    assert tags[35] == "D" and tags[11] == "ORD-1" and tags[38] == "1200"
