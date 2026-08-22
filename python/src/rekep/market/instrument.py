@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import dataclasses
 import datetime
 from typing import Annotated, ClassVar
 
 from rekep.convert import Convertible
 from rekep.fields import Field, FieldBuilder, field
-from rekep.market.enums import AssetKind, OptionKind
+from rekep.market.enums import AssetKind, OptionKind, Ranged
 from rekep.market.fields import MarketFieldBuilder, fix_tag
 from rekep.market.identity import NIL, hash_of
 
@@ -90,6 +91,41 @@ class Instrument(Convertible):
         """
         if not self.xhash:
             self.xhash = self.identify()
+
+    def enriched_with(self, other: Instrument) -> Instrument | None:
+        """This instrument plus whatever `other` knows and it does not, or None.
+
+        None when it learnt nothing, and that is what makes it usable on a
+        stream: a feed repeats the instrument on every message, so a row per
+        message would be the feed again rather than the reference data in it.
+        A row comes out only where something was actually learnt.
+
+        **Filling, never correcting.** What this instrument already says
+        stands: reference data arrives in the order a venue felt like sending
+        it, and a later message that omits a field has not retracted it. A
+        producer that means to correct something replaces the row.
+
+        **The identity does not move.** An instrument enriched with a tick or
+        a maturity is the same instrument, and an `xhash` that changed when a
+        field was learnt would break every join to it -- which is why
+        `identify` keys on what is issued rather than on what is known.
+        """
+        filled = {}
+        for member in dataclasses.fields(self):
+            if member.name == "xhash":
+                continue
+            mine, theirs = getattr(self, member.name), getattr(other, member.name)
+            if theirs in (None, "", NIL) or theirs == mine:
+                continue
+            # A code that is `UNKNOWN` is not knowledge, and the zero every
+            # `Ranged` starts at is what says so.
+            if isinstance(mine, Ranged) and (not theirs or mine):
+                continue
+            if mine in (None, "", NIL) or not mine:
+                filled[member.name] = theirs
+        if not filled:
+            return None
+        return dataclasses.replace(self, **filled, xhash=self.xhash or other.xhash)
 
     def identify(self) -> int:
         """The identity `self` is entitled to, from the strongest key it carries.

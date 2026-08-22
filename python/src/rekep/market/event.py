@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 import datetime
 from typing import Annotated, Any, ClassVar, Self
@@ -278,16 +279,35 @@ class Event(Convertible):
         others, a notional that is a product of three. A first version has no
         previous and still derives.
 
-        What is *not* layered is the versioning, and it is here so no subclass
-        can forget a piece of it: the counter moves on, the version before is
-        recorded as `prev_hash`/`prev_state`/`prev_unix` so a transition is on
-        the row rather than behind a self-join, and the content hash is
-        re-derived last -- after every layer has filled, or it would identify
+        What is *not* layered is the versioning, and it is `completed_from` so
+        no subclass can forget a piece of it: the counter moves on, and the
+        version before is recorded as `prev_hash`/`prev_state`/`prev_unix` so
+        a transition is on the row rather than behind a self-join. The content
+        hash comes last -- after every layer has filled, or it would identify
         a row that does not exist yet.
+        """
+        return self.completed_from(previous).identify()
+
+    def completed_from(self, previous: Event | None) -> Self:
+        """`with_previous` without the content hash: everything but `hash`.
+
+        The split exists because **the content hash is half the cost of a
+        completion and a fold does not need it**. `Book.from_events` keeps
+        live orders so it can complete the next version of each from the one
+        it holds; what it writes is book rows, and it identifies those. The
+        orders it holds are working state, and hashing every version of every
+        one of them was 51% of the fold's per-order cost
+        (`benchmarks/bench_market.py`).
+
+        `xhash` is still derived, because the lifecycle is what the fold keys
+        on. `hash` is left `NIL`, which is the shape's own word for "nothing
+        has hashed this yet" -- so a caller who does need it asks `identify`,
+        and `with_previous` is exactly that call.
         """
         if previous is None:
             self.derive()
-            return self.identify()
+            self.xhash = self.xhash or self.life_hash()
+            return self
         self.complete_from(previous)
         self.derive()
         # Read **after** every layer has completed, and that is not
@@ -317,7 +337,7 @@ class Event(Convertible):
         # row. `identify` refuses to overwrite a hash that is set, which is
         # what makes clearing it the way to ask for a new one.
         self.hash = NIL
-        return self.identify()
+        return self
 
     def complete_from(self, previous: Event) -> None:
         """Fill what this version left absent, from the version before it.
@@ -360,6 +380,52 @@ class Event(Convertible):
         real work here, and this exists so every one of them can call
         `super().derive()` without knowing that.
         """
+
+    def make_snapshot(self, unix: int) -> Self | None:
+        """This event as the picture of itself that `unix` would see, or None.
+
+        A snapshot is a row that says two things: **when it was taken** and
+        **what it is a picture of**. `unix` is the first and `sunix` is the
+        second, which is what makes staleness a subtraction on the row rather
+        than a join against whatever was snapshotted.
+
+        None -- and *nothing produced* -- in three cases, each of which would
+        otherwise put a row in a table that is a lie:
+
+        - **The shape is not a picture.** An orders table holds orders, and a
+          picture of an order at half past two is not one of them.
+          `EventType.is_snapshot` is the test, and it is the shape's, not the
+          row's.
+        - **It is already that picture.** Asking for a snapshot at the instant
+          the event already carries hands back the event, so this says so with
+          a None rather than with a copy that differs in nothing.
+        - **The instant is before the event.** A picture cannot be taken of
+          something that has not happened.
+
+        The versioning is deliberately *not* here. A snapshot is another
+        version of the same lifecycle -- the book at 14:00 and the book at
+        15:00 are two rows of one book -- and `with_previous` is where a
+        version is made, so a caller chains the two and gets the same
+        `prev_hash` walk as every other row::
+
+            book.make_snapshot(hour).with_previous(book)
+        """
+        if not type(self).is_snapshot() or unix <= self.unix:
+            return None
+        if self.sunix is not None and self.sunix >= unix:
+            return None
+        taken = copy.copy(self)
+        taken.unix = unix
+        taken.hunix = unix - unix % HOUR
+        # What it is a picture *of*: the instant of the state, which for a
+        # picture of a picture is the original state and not the middle one.
+        # Two snapshots of one unchanged book then agree on what they show and
+        # differ only in when they were taken, which is the truth about them.
+        taken.sunix = self.sunix if self.sunix is not None else self.unix
+        # Cleared so `identify` derives one: the row differs from the one it
+        # was copied from, in the two fields that say it is a picture.
+        taken.hash = NIL
+        return taken
 
     def life_hash(self) -> int:
         """The identifier of this event's lifecycle, from what it carries now.

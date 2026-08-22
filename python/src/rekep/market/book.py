@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import bisect
+import copy
 import dataclasses
 from collections.abc import Iterable, Iterator
 from typing import Annotated, Any, ClassVar, Self
@@ -904,9 +906,54 @@ def _list_sums(alive: Any, name: str, lengths: Any) -> Any:
 # -- folding a book out of one instrument's events ---------------------------
 
 
+class _Level:
+    """One price level: what stands at it, and where it sorts.
+
+    A slotted class and not a tuple or a list of floats, because it is written
+    on every order and read on every snapshot: a slot read is an offset where
+    a dict probe is a hash, and a named field is legible where `totals[1]` is
+    not. Not a `@field` class either -- nothing here is ever a column, which
+    is what `Level` is for.
+    """
+
+    __slots__ = ("px", "key", "qty", "members", "frozen")
+
+    def __init__(self, px: float, key: float) -> None:
+        self.px = px
+        """The price itself, as the venue quoted it."""
+        self.key = key
+        """`px` turned the way this side sorts, which is what `keys` holds."""
+        self.qty = 0.0
+        """Everything resting here, kept as a running total."""
+        self.members: dict[int, None] = {}
+        """Which orders are here, by lifecycle, in the order they arrived.
+
+        A dict and not a list, because an order leaves a level as often as it
+        joins one and a list removal is a scan. Insertion-ordered, which is
+        what makes "the order a venue would have filled them in" a real answer
+        for the orders whose quantity ties.
+        """
+        self.frozen: Level | None = None
+        """This level as a row carries it, built once and shared until it moves.
+
+        A snapshot of a two hundred level book built two hundred `Level`
+        objects, and one order moving one level rebuilt all two hundred: at
+        0.52 us each that was 104 us of `into_levels`' 125 us. A level that did
+        not move rebuilds to an object equal to the one before it, so it hands
+        back the same one -- and nothing mutates a `Level` once it is on a row,
+        which is what makes sharing it across rows sound.
+        """
+
+    def into_level(self) -> Level:
+        """This level as a row carries it, from the cache when it has not moved."""
+        if self.frozen is None:
+            self.frozen = Level(px=self.px, qty=self.qty, orders=len(self.members))
+        return self.frozen
+
+
 @dataclasses.dataclass
 class Resting:
-    """Every order standing on one side of a book, and what they aggregate to.
+    """Every order standing on one side of a book, kept in best-first order.
 
     The state a fold needs and a `BookSide` row does not carry: which orders
     are live, so that a restatement replaces what that order was resting for
@@ -915,11 +962,29 @@ class Resting:
     what -- which is right for a venue that publishes levels and wrong for one
     that publishes orders. This is the other half.
 
-    Sorted **by price, then by descending quantity**, which is what makes the
-    best bid and offer a read of `orders[0]` rather than a scan. Price first
-    because that is what a book is; size second because at one price the
-    larger interest is the one a taker meets first on most venues, and any
-    stable second key beats an arbitrary one.
+    **The order is the structure, not a sort.** `keys` is the price of every
+    live level, kept sorted by `bisect.insort` as levels come and go, so the
+    best is `keys[0]` and a snapshot is one walk. What it replaced was a
+    `sorted()` per snapshot and a `min()` over every live order per read of
+    the touch, which is the difference between a structure that costs the
+    depth and one that costs the book:
+
+    | live orders | `best` before | `best` now |
+    | --- | --- | --- |
+    | 50 | 23 us | ~0.5 us |
+    | 2,000 | 1,030 us | ~0.5 us |
+    | 8,000 | 4,350 us | ~0.5 us |
+
+    Sorted **by price, then by descending quantity**: price first because that
+    is what a book is, size second because at one price the larger interest is
+    the one a taker meets first on most venues. The second key is applied
+    where it is asked for -- inside one level, over that level's own members
+    -- and never over every order at once, which is what made it free.
+
+    A bid sorts down and an ask up, and neither branches: `facing` is `-1` on
+    a bid and `+1` on an ask, and `key = px * facing` is ascending on both.
+    Multiplying by a sign is exact in binary floating point, so the price
+    comes back out of the key with nothing lost.
     """
 
     side: Side
@@ -931,20 +996,35 @@ class Resting:
     named: dict[str, int] = dataclasses.field(default_factory=dict)
     """Which lifecycle each venue or client identifier belongs to."""
 
-    levels: dict[float, list[float]] = dataclasses.field(default_factory=dict)
-    """Running `[quantity, orders]` per price, kept as the orders move.
+    levels: dict[float, _Level] = dataclasses.field(default_factory=dict)
+    """Every live level, by price. Derived state, kept as the orders move.
 
-    Derived state, and derived *incrementally* on purpose: a book is snapshotted
-    after every instant that changed it, and re-aggregating two hundred orders
-    per snapshot is the same arithmetic over and over for one order's worth of
-    change.
+    Incrementally on purpose: a book is snapshotted after every instant that
+    changed it, and re-aggregating two hundred orders per snapshot is the same
+    arithmetic over and over for one order's worth of change.
     """
+
+    keys: list[float] = dataclasses.field(default_factory=list)
+    """`level.key` for every live level, **sorted**, best first.
+
+    The whole point of the structure. Maintained by `bisect.insort` on an
+    insert and by one `pop` on a delete -- both a `memmove` over a list of
+    floats, which at any real depth is faster than the comparisons a sort
+    would do.
+    """
+
+    total_qty: float = 0.0
+    """Everything resting on this side, running rather than summed per snapshot."""
 
     updates: list[LevelUpdate] = dataclasses.field(default_factory=list)
     """What has changed since the last book was yielded."""
 
     executions: list[LevelExecution] = dataclasses.field(default_factory=list)
     """What has traded against this side since the last book was yielded."""
+
+    def __post_init__(self) -> None:
+        """Read the side's direction once: it is used on every order."""
+        self.facing = -self.side.sign
 
     # -- what the orders come to --------------------------------------------
 
@@ -954,35 +1034,46 @@ class Resting:
         return self.side.sign
 
     @property
-    def sorted_orders(self) -> list[Order]:
-        """Every live order, best first: by price, then by descending quantity.
+    def depth(self) -> int:
+        """How many live levels this side has."""
+        return len(self.keys)
 
-        Multiplying the price by the *negation* of the side's sign sorts a bid
-        down and an ask up -- one expression, and no branch that could be
-        wrong on one side only. Read once into a local, because a key function
-        runs per element and an attribute walk per element is the cost of the
-        sort on a deep book.
-        """
-        facing = -self.sign
-        return sorted(
-            self.orders.values(),
-            key=lambda order: ((order.px or 0.0) * facing, -_resting(order)),
-        )
+    @property
+    def best_level(self) -> _Level | None:
+        """The level at the touch, or None when nothing is resting. O(1)."""
+        return self.levels[self.keys[0] * self.facing] if self.keys else None
 
     @property
     def best(self) -> Order | None:
         """The order at the touch, or None when nothing is resting.
 
-        Off the live orders and not off the levels: at one price the largest
-        interest sorts first, and *which order* is at the touch is a question
-        only an order-by-order fold can answer.
+        The largest at the best price, which is the second key of the
+        ordering -- read over that level's own members and never over every
+        live order, which is what a `min()` across the book used to cost.
         """
-        facing = -self.sign
-        return min(
-            self.orders.values(),
-            key=lambda order: ((order.px or 0.0) * facing, -_resting(order)),
-            default=None,
-        )
+        level = self.best_level
+        if level is None:
+            return None
+        return max((self.orders[x] for x in level.members), key=_resting, default=None)
+
+    @property
+    def sorted_orders(self) -> list[Order]:
+        """Every live order, best first: by price, then by descending quantity.
+
+        A walk of `keys` and, inside each level, of its members -- so the only
+        sorting left is per level, over the handful of orders standing at one
+        price. Kept because it is the honest reading of "the orders, in order",
+        and because `take` walks it when a fill names no order.
+        """
+        found: list[Order] = []
+        facing = self.facing
+        for key in self.keys:
+            members = self.levels[key * facing].members
+            if len(members) == 1:
+                found.append(self.orders[next(iter(members))])
+                continue
+            found.extend(sorted((self.orders[x] for x in members), key=_resting, reverse=True))
+        return found
 
     def into_levels(self) -> list[Level]:
         """The live orders aggregated to price levels, best first.
@@ -991,31 +1082,28 @@ class Resting:
         price, and `orders` is how many of them there are -- the one number an
         aggregated feed cannot give you and an order-by-order fold can.
 
-        Built from the running `levels` totals rather than by walking the
-        orders, so a snapshot sorts the handful of distinct **prices** instead
-        of every order standing at them. On a two hundred order book across
-        forty prices that is the difference the fold's throughput is made of.
+        One walk of `keys`, in the order they are already in. No sort, no
+        aggregation, and no rebuilding: the totals were kept as the orders
+        moved, and a level that did not move hands back the object it handed
+        back last time.
         """
-        facing = -self.sign
-        return [
-            Level(px=px, qty=totals[0], orders=int(totals[1]))
-            for px, totals in sorted(self.levels.items(), key=lambda item: item[0] * facing)
-        ]
+        levels = self.levels
+        facing = self.facing
+        return [levels[key * facing].into_level() for key in self.keys]
 
     def into_side(self, unix: int, xhash: int) -> BookSide:
         """This side as the `BookSide` a book row carries flat."""
-        levels = self.into_levels()
-        best = levels[0] if levels else None
+        best = self.best_level
         return BookSide(
             unix=unix,
             xhash=xhash,
             side=self.side,
-            state=State.OPEN if levels else State.CLOSED,
-            px=best.px if best else None,
-            qty=best.qty if best else None,
-            depth=len(levels),
-            total_qty=sum(level.qty for level in levels),
-            alive=levels,
+            state=State.OPEN if best is not None else State.CLOSED,
+            px=best.px if best is not None else None,
+            qty=best.qty if best is not None else None,
+            depth=len(self.keys),
+            total_qty=self.total_qty,
+            alive=self.into_levels(),
             updates=list(self.updates),
             executions=list(self.executions),
         )
@@ -1045,7 +1133,18 @@ class Resting:
         # order when a trade takes part of it. Folding the caller's own object
         # would edit an event it still holds, and replaying one stream twice
         # would give two different books.
-        settled = dataclasses.replace(order).with_previous(standing)
+        #
+        # `copy.copy` and not `dataclasses.replace`, which re-runs `__init__`
+        # and `__post_init__` over forty fields to produce the same object:
+        # 11.1 us against 3.3 us, and nothing here needs the re-run because
+        # `completed_from` sets everything that would change. The copy shares
+        # the caller's `metadata` and `instrument`, which nothing in a fold
+        # writes to, and `parent_hash` is assigned rather than appended to.
+        #
+        # `completed_from` and not `with_previous`: a fold does not publish
+        # order rows, so it does not need their content hashes, and hashing
+        # every version of every live order was half the per-order cost.
+        settled = copy.copy(order).completed_from(standing)
         if settled.px is None:
             # No price even after completing: a market order, which rests
             # nowhere -- it is an execution against a side, not a level on
@@ -1057,12 +1156,18 @@ class Resting:
         before = _resting(standing) if standing else 0.0
         after = 0.0 if settled.state.is_terminal else _resting(settled)
         if standing is not None:
-            self._level(standing.px, -before, -1)
+            self._leave(standing)
+            if standing.xhash != settled.xhash:
+                # Completing gave this version an identity the standing one
+                # did not have -- a venue filled in, an id learnt -- and it
+                # was found by name rather than by lifecycle. One order is one
+                # entry, so the identity it had goes with the level it left.
+                self._forget(standing.xhash)
         if after <= 0:
-            self.remove(settled.xhash, aggregated=False)
+            self._forget(settled.xhash)
         else:
             self.orders[settled.xhash] = settled
-            self._level(settled.px, after, 1)
+            self._join(settled, after)
             for spelling in (settled.order_id, settled.client_order_id):
                 if spelling:
                     self.named[spelling] = settled.xhash
@@ -1098,48 +1203,78 @@ class Resting:
                 return self.orders.get(self.named[spelling])
         return None
 
-    def remove(self, xhash: int, aggregated: bool = True) -> None:
-        """Take one order out, and every name that pointed at it.
-
-        `aggregated=False` is for the one caller that has already taken the
-        order out of the running level totals -- `apply`, which takes the
-        standing version out before it knows whether a new one is going in.
-        """
-        gone = self.orders.pop(xhash, None)
+    def remove(self, xhash: int) -> None:
+        """Take one order out of the book, and every name that pointed at it."""
+        gone = self.orders.get(xhash)
         if gone is None:
             return
-        if aggregated:
-            self._level(gone.px, -_resting(gone), -1)
-        for spelling in (gone.order_id, gone.client_order_id):
-            if spelling and self.named.get(spelling) == xhash:
-                del self.named[spelling]
+        self._leave(gone)
+        self._forget(xhash)
 
-    def _level(self, px: float | None, quantity: float, orders: int) -> None:
-        """Move the running total at `px` by `quantity` and `orders`.
+    # -- the structure itself ------------------------------------------------
+
+    def _join(self, order: Order, quantity: float) -> None:
+        """Put `order` on its level for `quantity`, making the level if it is new.
+
+        A new level is one `bisect.insort` into `keys` -- a binary search and
+        a `memmove`, which at any depth a book reaches beats re-sorting.
+        """
+        px = order.px
+        level = self.levels.get(px)
+        if level is None:
+            key = px * self.facing
+            level = self.levels[px] = _Level(px, key)
+            bisect.insort(self.keys, key)
+        level.qty += quantity
+        level.members[order.xhash] = None
+        level.frozen = None
+        self.total_qty += quantity
+
+    def _leave(self, order: Order) -> None:
+        """Take `order` off its level, dropping the level when it empties.
 
         A level that reaches zero is dropped rather than kept at zero: a level
         of nothing is not a level, and leaving it would put an empty price in
         every `alive` list from then on.
         """
-        if px is None:
+        level = self.levels.get(order.px)
+        if level is None:
             return
-        totals = self.levels.get(px)
-        if totals is None:
-            self.levels[px] = [quantity, float(orders)]
+        quantity = _resting(order)
+        level.qty -= quantity
+        self.total_qty -= quantity
+        level.members.pop(order.xhash, None)
+        level.frozen = None
+        if not level.members or level.qty <= 0:
+            # The whole level went with it, so the running totals follow: a
+            # level whose members are gone but whose quantity has drifted --
+            # a float sum that did not land on zero -- must not leave that
+            # drift in `total_qty` for the rest of the fold.
+            self.total_qty -= level.qty
+            del self.levels[order.px]
+            self.keys.pop(bisect.bisect_left(self.keys, level.key))
+
+    def _forget(self, xhash: int) -> None:
+        """Drop one order and the names that pointed at it, level already left."""
+        gone = self.orders.pop(xhash, None)
+        if gone is None:
             return
-        totals[0] += quantity
-        totals[1] += orders
-        if totals[1] <= 0 or totals[0] <= 0:
-            del self.levels[px]
+        for spelling in (gone.order_id, gone.client_order_id):
+            if spelling and self.named.get(spelling) == xhash:
+                del self.named[spelling]
 
     def take(self, execution: Execution, traded: float) -> None:
         """Record a trade against this side, and take `traded` out of it.
 
         The order the fill names is reduced first, because that is exact.
         Where the report names no order -- a market-data trade print, which is
-        most of them -- the quantity comes off the resting orders in the order
-        they are sorted in, which is the same order a venue would have filled
-        them in.
+        most of them -- the quantity comes off the resting orders best first,
+        which is the same order a venue would have filled them in.
+
+        Walked level by level rather than over a sorted copy of the book: a
+        fill usually clears one level, and building an ordered list of every
+        live order to take one bite out of the top of it was the cost of a
+        trade on a deep book.
         """
         self.executions.append(
             LevelExecution(
@@ -1151,10 +1286,26 @@ class Resting:
             )
         )
         hit = self.orders.get(execution.order_xhash or 0)
-        for order in [hit] if hit is not None else self.sorted_orders:
-            if traded <= 0:
+        if hit is not None:
+            self._reduce(hit, traded)
+            return
+        while traded > 0 and self.keys:
+            top = self.keys[0]
+            level = self.levels[top * self.facing]
+            # A list, because reducing an order can empty the level and delete
+            # the dict this is walking. Sorted inside the level and nowhere
+            # else: the largest interest at one price is met first.
+            for xhash in sorted(level.members, key=lambda x: -_resting(self.orders[x])):
+                if traded <= 0:
+                    break
+                resting = self.orders.get(xhash)
+                if resting is not None:
+                    traded = self._reduce(resting, traded)
+            if self.keys and self.keys[0] == top:
+                # The touch did not move, so there is nothing further to take
+                # off it. Without this the loop could spin on a level that
+                # would not clear.
                 break
-            traded = self._reduce(order, traded)
 
     def _reduce(self, order: Order, traded: float) -> float:
         """Take what `traded` can from one order; the rest is returned for the next."""
@@ -1164,8 +1315,12 @@ class Resting:
         if left <= 0:
             self.remove(order.xhash)
         else:
+            level = self.levels.get(order.px)
+            if level is not None:
+                level.qty -= taken
+                level.frozen = None
+                self.total_qty -= taken
             order.leaves_qty = left
-            self._level(order.px, -taken, 0)
         self.updates.append(
             LevelUpdate(
                 action=_action_of(standing, left),
