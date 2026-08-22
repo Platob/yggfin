@@ -2133,3 +2133,132 @@ def test_a_filtered_read_is_the_same_either_way(tmp_path: Path) -> None:
         found = target.read_arrow_table(row_filter="size >= 40").to_pylist()
         answers.append(sorted(found, key=str))
     assert answers[0] == answers[1]
+
+
+# -- a column derived from the keys -----------------------------------------
+
+
+@field
+class Beat(Convertible):
+    """A row keyed on a textual instant, partitioned on the hour it falls in."""
+
+    at: Annotated[str, Field.primary_key()]
+    """The instant, spelled out -- a key with no arithmetic to band."""
+
+    hour: Annotated[str, Field.partition_key(derived_from="at")] = ""
+    """`at` truncated to the hour -- what the data is partitioned on."""
+
+    payload: str = "x"
+    """Payload."""
+
+
+def beats(hour: int, count: int = 200) -> pyarrow.Table:
+    stamp = f"2026-08-14T{hour:02d}"
+    return pyarrow.Table.from_pydict(
+        {
+            "at": [
+                f"{stamp}:{index // 60:02d}:{index % 60:02d}.{index:04d}" for index in range(count)
+            ],
+            "hour": [stamp] * count,
+            "payload": ["x"] * count,
+        },
+        schema=Beat.FIELD.into_arrow_schema(),
+    )
+
+
+def test_a_derivation_is_usable_only_where_its_sources_are_keys() -> None:
+    from rekep.iceberg.dataset import _derivable
+
+    chunk = beats(0)
+    declared = {"hour": ("at",), "day": ("at", "venue"), "absent": ("at",)}
+    assert _derivable(chunk, ["at"], declared) == ["hour"], "day needs a key nothing joins on"
+    assert _derivable(chunk, ["at", "hour"], declared) == [], "already a key, already named"
+    assert _derivable(chunk, ["at"], None) == []
+
+
+def test_a_derived_column_is_named_in_the_filter() -> None:
+    from rekep.iceberg.dataset import _key_ranges
+
+    chunk = beats(5)
+    plain = _key_ranges(chunk, ["at"])
+    named = _key_ranges(chunk, ["at"], Beat.FIELD.derived_keys())
+    assert "hour" not in str(plain), "the merge joins on `at` and knows nothing else"
+    assert "hour" in str(named), "and `hour` is `at`, so it may say so"
+
+
+def test_a_derived_column_with_nulls_contributes_no_term() -> None:
+    """A term that cannot name every value would exclude a row it should match,
+    and this filter is only ever allowed to be too wide."""
+    from rekep.iceberg.dataset import _key_ranges
+
+    chunk = beats(5)
+    holed = chunk.set_column(
+        chunk.schema.get_field_index("hour"),
+        pyarrow.field("hour", pyarrow.string()),
+        pyarrow.array([None] + ["2026-08-14T05"] * (chunk.num_rows - 1), pyarrow.string()),
+    )
+    assert "hour" not in str(_key_ranges(holed, ["at"], Beat.FIELD.derived_keys()))
+
+
+def test_a_replay_prunes_to_the_partitions_the_keys_fall_in(tmp_path: Path) -> None:
+    """The whole point. A text key has no arithmetic to find gaps with, so two
+    distant hours become one range covering every hour between them and the
+    filter reads every hour between them -- while the partition column they are
+    a function of names exactly the two."""
+    catalog = IcebergCatalog(name="beats", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("trading.beats", struct=Beat.FIELD)
+    for hour in range(12):
+        dataset.insert_arrow_table(beats(hour), True)
+    assert dataset.refresh().data_files().num_rows == 12
+
+    from rekep.iceberg.dataset import _key_ranges
+
+    replay = pyarrow.concat_tables([beats(2), beats(9)])
+    unaware = dataset.scan_plan(_key_ranges(replay, ["at"]))
+    aware = dataset.scan_plan(_key_ranges(replay, ["at"], dataset.derived_columns()))
+    assert unaware["files"] == 8, "one text range, and every hour between the two"
+    assert aware["files"] == 2, "the two hours, and not the six between them"
+    assert dataset.insert_arrow_table(replay, True) == 0, "and every key is already stored"
+
+
+def test_a_derivation_never_loses_a_row_the_merge_had_to_find(tmp_path: Path) -> None:
+    """Pruning is only ever allowed to be a superset: the same merge, declared
+    and not, has to update the same rows."""
+    catalog = IcebergCatalog(name="same", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("trading.beats", struct=Beat.FIELD)
+    for hour in range(6):
+        dataset.insert_arrow_table(beats(hour), True)
+
+    def repainted(colour: str) -> pyarrow.Table:
+        rows = beats(3)
+        return rows.set_column(
+            rows.schema.get_field_index("payload"),
+            rows.schema.field("payload"),
+            pyarrow.array([colour] * rows.num_rows),
+        )
+
+    assert dataset.derived_columns() == {"hour": ("at",)}
+    assert dataset.merge_arrow_table(repainted("y"), True) == (200, 0), "matched, none inserted"
+
+    bare = catalog.dataset("trading.beats", struct=_undeclared())
+    assert bare.derived_columns() == {}
+    assert bare.merge_arrow_table(repainted("z"), True) == (200, 0), "the same rows, the long way"
+    held = dataset.refresh().read_arrow_table(row_filter="hour = '2026-08-14T03'")
+    assert set(held.column("payload").to_pylist()) == {"z"}, "and the last write is what stands"
+
+
+def _undeclared() -> StructField:
+    """`Beat` with the derivation struck out, to merge the long way round."""
+    plain = StructField.from_dict(Beat.FIELD.into_dict())
+    plain.field("hour").derived_from = None
+    return plain
+
+
+def test_a_table_read_back_declares_no_derivation(tmp_path: Path) -> None:
+    """Iceberg records a partition spec, not why a column holds what it does."""
+    catalog = IcebergCatalog(name="read", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("trading.beats", struct=Beat.FIELD)
+    dataset.insert_arrow_table(beats(0), True)
+    reread = catalog.dataset("trading.beats")
+    assert reread.into_struct_field().partition_keys() == {"hour": "identity"}
+    assert reread.derived_columns() == {}, "unsaid, which costs pruning and never a row"

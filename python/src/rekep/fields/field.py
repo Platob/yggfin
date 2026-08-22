@@ -6,7 +6,7 @@ import dataclasses
 import functools
 import itertools
 import re
-from collections.abc import Callable, Iterator, Mapping, MutableMapping
+from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
 from typing import Any, ClassVar
 
 import pyarrow
@@ -45,6 +45,12 @@ FIELD_ID = "iceberg:field_id"
 
 #: The partition transform that means "the value itself".
 IDENTITY = "identity"
+
+#: The columns a field is a *function* of. A denormalised partition column --
+#: `hunix`, which is `unix` truncated to the hour -- carries no information its
+#: sources do not, and saying so is what lets a merge name it in a scan filter
+#: it only knows the sources of.
+DERIVED_FROM = "iceberg:derived_from"
 
 #: Which columns a table is kept sorted by, and which way. Declaration order is
 #: the sort order -- a second key would have to be a number every declaration
@@ -344,6 +350,30 @@ class Field(Convertible):
         return self.iceberg.get("partition_key", "")
 
     @property
+    def derived_from(self) -> tuple[str, ...]:
+        """Columns this field is a function of, or nothing when it stands alone.
+
+        A denormalised column holds no information its sources do not: two rows
+        agreeing on every source agree here too. That is a fact about the data
+        and not about any one write, which is why it is declared on the field
+        rather than passed to a merge -- and it is what lets a merge that knows
+        only the sources still name this column in the filter it scans with,
+        which is the difference between pruning partitions and reading bounds.
+        """
+        declared = self.iceberg.get("derived_from", "")
+        return tuple(name for name in declared.split(",") if name)
+
+    @derived_from.setter
+    def derived_from(self, value: str | Sequence[str] | None) -> None:
+        names = [value] if isinstance(value, str) else list(value or ())
+        if not names:
+            self.iceberg.pop("derived_from", None)
+            return
+        if self.name and self.name in names:
+            raise ValueError(f"field {self.name!r} cannot be derived from itself")
+        self.iceberg["derived_from"] = ",".join(names)
+
+    @property
     def is_sort_key(self) -> bool:
         """Whether the data is kept sorted on this field.
 
@@ -417,10 +447,21 @@ class Field(Convertible):
         return built
 
     @classmethod
-    def partition_key(cls, transform: bool | str = True, **declared: Any) -> Field:
-        """A declaration partitioning the data on its member."""
+    def partition_key(
+        cls,
+        transform: bool | str = True,
+        derived_from: str | Sequence[str] = (),
+        **declared: Any,
+    ) -> Field:
+        """A declaration partitioning the data on its member.
+
+        `derived_from` names the columns this one is a function of, for a
+        partition column that is a denormalisation of something already stored.
+        """
         built = Field(**declared)
         built.is_partition_key = transform
+        if derived_from:
+            built.derived_from = derived_from
         return built
 
     @classmethod
@@ -1002,6 +1043,10 @@ class StructField(Field):
     def sort_keys(self) -> dict[str, str]:
         """Members the data is sorted on, mapped to their direction, in order."""
         return {member.name: member.sort_direction for member in self.fields if member.is_sort_key}
+
+    def derived_keys(self) -> dict[str, tuple[str, ...]]:
+        """Members that are a function of other members, mapped to those."""
+        return {member.name: member.derived_from for member in self.fields if member.derived_from}
 
     def _member_changed(self, member: Field) -> None:
         self.arrow_type = pyarrow.struct(

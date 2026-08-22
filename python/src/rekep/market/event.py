@@ -96,7 +96,14 @@ class Event(Convertible):
     # means a filter on the two is one comparison in one type: `WHERE hunix =
     # X AND unix BETWEEN ...` prunes the partition and then the file, with no
     # cast between a date and an instant in the middle of it.
-    hunix: Annotated[int, Field.partition_key(metadata=UNIX)] = 0
+    #
+    # `derived_from` is the third thing this buys: a merge joins on `unix` and
+    # `hash`, which names no partition column and so prunes nothing at the
+    # manifest list -- it scales with the table, not with the chunk. Saying
+    # that `hunix` is a function of `unix` lets a merge name `hunix` anyway,
+    # because rows agreeing on `unix` agree here. Replaying one hour: 20 ms
+    # against 93 over 168 hourly partitions, 27 against 164 over 336.
+    hunix: Annotated[int, Field.partition_key(derived_from="unix", metadata=UNIX)] = 0
     """`unix` truncated to the hour -- what the data is partitioned on."""
 
     # Third, not last: a read that spans the tables filters on it before
