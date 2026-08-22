@@ -4,11 +4,13 @@ import datetime
 import os
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Annotated
 
 import pyarrow
 import pyarrow.fs
+import pyarrow.parquet
 import pytest
 from pyiceberg.expressions import EqualTo
 
@@ -2262,3 +2264,121 @@ def test_a_table_read_back_declares_no_derivation(tmp_path: Path) -> None:
     reread = catalog.dataset("trading.beats")
     assert reread.into_struct_field().partition_keys() == {"hour": "identity"}
     assert reread.derived_columns() == {}, "unsaid, which costs pruning and never a row"
+
+
+# -- the sort order the shape declares ---------------------------------------
+
+
+@field
+class Ticked(Convertible):
+    """A row the shape says is laid out in time order."""
+
+    at: Annotated[int, Field.primary_key(), Field.sort_key()]
+    """When."""
+
+    seq: Annotated[int, Field.sort_key()] = 0
+    """Second key, so the order is lexicographic and not one column."""
+
+    payload: str = "x"
+    """Payload."""
+
+
+def ticked(pairs: Sequence[tuple[int, int]]) -> pyarrow.Table:
+    return pyarrow.Table.from_pydict(
+        {
+            "at": [at for at, _ in pairs],
+            "seq": [seq for _, seq in pairs],
+            "payload": ["x"] * len(pairs),
+        },
+        schema=Ticked.FIELD.into_arrow_schema(),
+    )
+
+
+def test_the_columns_sorted_by_are_the_ones_declared(tmp_path: Path) -> None:
+    catalog = IcebergCatalog(name="sorted", properties=catalog_properties(tmp_path))
+    assert catalog.dataset("t.a", struct=Ticked.FIELD).sort_columns() == ["at", "seq"]
+    assert catalog.dataset("t.b", struct=Ticked.FIELD, sort_by=["seq"]).sort_columns() == ["seq"]
+    assert catalog.dataset("t.c", struct=Ticked.FIELD, sort_by=[]).sort_columns() == []
+    assert catalog.dataset("t.d").sort_columns() == [], "nothing declared, nothing to sort by"
+
+
+def test_a_chunk_already_in_order_is_not_sorted_again(tmp_path: Path) -> None:
+    """The common case on a capture, and the question is 20x cheaper than the
+    answer -- so it is asked."""
+    catalog = IcebergCatalog(name="sorted", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.a", struct=Ticked.FIELD)
+    tidy = ticked([(1, 0), (1, 1), (2, 0), (3, 0)])
+    assert dataset.sorted(tidy) is tidy, "handed straight back, not copied"
+    assert dataset.sorted(ticked([(2, 0), (1, 0)])) is not tidy
+
+
+@pytest.mark.parametrize(
+    ("pairs", "ordered"),
+    [
+        ([(1, 0), (2, 0), (3, 0)], True),
+        (
+            [(1, 0), (1, 1), (1, 2)],
+            True,
+        ),
+        ([(1, 1), (1, 0)], False),
+        ([(2, 0), (1, 9)], False),
+        ([(1, 0), (1, 0)], True),
+        ([(1, 0)], True),
+    ],
+)
+def test_sortedness_is_lexicographic_over_every_key(
+    pairs: Sequence[tuple[int, int]], ordered: bool
+) -> None:
+    from rekep.iceberg.dataset import _in_sort_order
+
+    assert _in_sort_order(ticked(pairs), ["at", "seq"]) is ordered
+
+
+def test_a_null_in_a_sort_column_is_answered_no() -> None:
+    """A comparison against a null is null, and where Arrow puts one in a sort
+    is not something to reimplement -- so the chunk is sorted rather than
+    guessed about."""
+    from rekep.iceberg.dataset import _in_sort_order
+
+    rows = ticked([(1, 0), (2, 0)])
+    holed = rows.set_column(
+        rows.schema.get_field_index("seq"),
+        pyarrow.field("seq", pyarrow.int64()),
+        pyarrow.array([None, 1], pyarrow.int64()),
+    )
+    assert _in_sort_order(holed, ["at", "seq"]) is False
+
+
+def test_a_shuffled_write_lands_in_the_declared_order(tmp_path: Path) -> None:
+    """The whole point: a sort order Iceberg records and the writer ignores is
+    a wish. A filter can only skip a *row group*, so this is what it buys."""
+    catalog = IcebergCatalog(name="layout", properties=catalog_properties(tmp_path))
+    rows = 40_000
+    shuffled = pyarrow.Table.from_pydict(
+        {
+            "at": [(index * 7919) % rows for index in range(rows)],
+            "seq": [0] * rows,
+            "payload": ["x"] * rows,
+        },
+        schema=Ticked.FIELD.into_arrow_schema(),
+    )
+
+    def decoded(sort_by: Sequence[str] | None, name: str) -> tuple[int, int]:
+        dataset = catalog.dataset(name, struct=Ticked.FIELD, sort_by=sort_by)
+        dataset.get_or_create_table().transaction().set_properties(
+            **{"write.parquet.row-group-limit": "8192"}
+        ).commit_transaction()
+        dataset.refresh().append_arrow(shuffled, merge_by=True, commit_row_size=0)
+        groups = touched = 0
+        floor = rows - rows // 10
+        for task in dataset.refresh().iceberg_table.scan().plan_files():
+            meta = pyarrow.parquet.ParquetFile(local(task.file.file_path)).metadata
+            for index in range(meta.num_row_groups):
+                groups += 1
+                touched += meta.row_group(index).column(0).statistics.max >= floor
+        return touched, groups
+
+    declared, whole = decoded(None, "t.declared"), decoded([], "t.opted_out")
+    assert whole[0] == whole[1], "unsorted, every row group holds the whole range"
+    assert declared[0] < declared[1], "sorted, a filter skips most of them"
+    assert declared[0] <= 2

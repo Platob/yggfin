@@ -116,6 +116,7 @@ quotes = IcebergDataset(
     commit_row_size=1_000_000, # rows per commit when a write does not say
     optimize_commits=True,     # commit properties tuned for a stream
     plan_merges=True,          # plan a merge's scan instead of handing it over
+    sort_by=None,              # None: the shape's own sort keys. [] opts out
 )
 ```
 
@@ -139,6 +140,22 @@ with its docs, keys and partitions intact.
     ids keeps them: a parquet footer's `PARQUET:field_id`, or our own
     `iceberg:field_id` when the shape came from a table or from a
     [contract](contracts.md) that pins them.
+
+!!! note "The declared sort order reaches the data"
+
+    A table records a sort order and every engine writing through it is meant
+    to honour it — so this one does. `sort_by` defaults to the shape's own
+    `Field.sort_key()` declarations, because a recorded order the writer
+    ignores is a wish: a filter can only skip a **row group**, and a row group
+    only helps if it covers a narrow slice of the column. On a shuffled 600k
+    row commit, a top-5% filter decoded **one row group of five** sorted
+    against five of five unsorted.
+
+    A chunk that is *already* in that order is handed straight back. The
+    question is far cheaper than the answer — on a million rows, 1.7 ms to
+    check against 38.7 ms to sort — so a stream that arrives in time order,
+    which is every capture and every log, pays almost nothing for the default.
+    Pass `sort_by=[]` to opt out entirely, or name other columns to override.
 
 !!! note "A wide shape says which columns must keep bounds"
 
