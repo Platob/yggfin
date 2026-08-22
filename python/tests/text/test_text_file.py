@@ -1034,6 +1034,24 @@ def test_a_static_value_of_none_is_refused(plain: Path) -> None:
         log.read_arrow_table()
 
 
+def test_a_static_value_that_is_already_a_column_is_refused_by_name(plain: Path) -> None:
+    """A duplicate column reads as an absent one, which is the worst way to find out.
+
+    The shape carries a column per lifted FIX field now, so `text`, `account`,
+    `side` and `price` are all names a caller would plausibly reach for -- and
+    appending a second `text` gave a schema with two of them, where the next
+    `schema.field("text")` raised `KeyError: Column text does not exist`.
+    """
+    for taken in ("text", "account", "side", "price", "symbol", "message"):
+        log = TextFile.from_path(plain, static_values={taken: "x"})
+        with pytest.raises(ValueError, match=f"static value '{taken}' is already a column"):
+            log.into_struct_field()
+    # And a name the shape does not have is still perfectly fine.
+    assert TextFile.from_path(plain, static_values={"desk": "x"}).into_struct_field().names[-1] == (
+        "desk"
+    )
+
+
 def test_a_static_column_is_part_of_the_declared_shape(plain: Path) -> None:
     log = TextFile.from_path(plain, static_values={"bridge": "bridge-1"})
     assert log.into_struct_field().names[-1] == "bridge"

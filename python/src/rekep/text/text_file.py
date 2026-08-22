@@ -687,11 +687,22 @@ def parsed_field_of(
     reader already selects by position and the data columns keep the order the
     declaration gives them. Shared with `TextFiles`, whose shape is the shape
     of the files it opens.
+
+    A name the row already declares is **refused, by that name**. The shape now
+    carries a column per lifted FIX field, so `text`, `account`, `side` and
+    `price` are all names a caller would plausibly reach for -- and appending a
+    second column called `text` produced a schema with two of them, where the
+    next `schema.field("text")` raised `KeyError: Column text does not exist`.
+    A duplicate that reads as an absence is the worst way to find this out.
     """
     if not static_columns:
         return row
     schema = row.into_arrow_schema()
     for name, scalar in static_columns:
+        if name in schema.names:
+            raise ValueError(
+                f"static value {name!r} is already a column of {row.name}; name it something else"
+            )
         schema = schema.append(pyarrow.field(name, scalar.type, nullable=not scalar.is_valid))
     return Field.from_arrow_schema(schema, row.name)
 
