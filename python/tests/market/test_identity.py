@@ -308,3 +308,22 @@ def test_a_narrow_identifier_column_widens() -> None:
 def test_a_chunked_column_converts_chunk_by_chunk() -> None:
     chunked = pyarrow.chunked_array([pyarrow.array([1], type=pyarrow.int32())])
     assert arrow_of(chunked).type == HASH
+
+
+def test_a_lifecycle_part_no_cache_can_key_on_is_still_hashed() -> None:
+    """The cache is a cache: a subclass whose lifecycle names a list gets the
+    identifier it would have got without one."""
+    import dataclasses
+
+    from rekep.market import Order
+    from rekep.market.identity import hash_of
+
+    @dataclasses.dataclass
+    class Listed(Order):
+        """An order whose lifecycle is spelled as a list."""
+
+        def life_parts(self) -> tuple[object, ...]:
+            return ([1, 2, 3],)
+
+    one = Listed(unix=1, symbol="BTC-USD")
+    assert one.life_hash() == hash_of("Listed", [1, 2, 3])

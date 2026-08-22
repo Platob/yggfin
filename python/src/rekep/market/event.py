@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import dataclasses
 import datetime
+import functools
 from typing import Annotated, Any, ClassVar, Self
 
 import pyarrow
@@ -460,7 +461,20 @@ class Event(Convertible):
         answer, because a version completed from another inherits its.
         """
         parts = self.life_parts()
-        return self.hash_of(*parts) if parts else NIL
+        if not parts:
+            return NIL
+        # Cached on the parts rather than computed per event, because a
+        # lifecycle is the thing that *repeats*: forty resting levels restated
+        # on every refresh, one order amended five times, a trade corrected.
+        # A version hash is not cached beside it -- it is different by
+        # definition, so it would only evict these.
+        try:
+            return _life_hash(type(self).__name__, parts)
+        except TypeError:
+            # A part no cache can key on -- a list of identifiers a subclass
+            # returns. The frame does not mind what a part is, so it is hashed
+            # directly and simply not remembered.
+            return self.hash_of(*parts)
 
     def life_parts(self) -> tuple[Any, ...]:
         """What makes this event's lifecycle the one it is, across every version.
@@ -643,3 +657,24 @@ class MarketEvent(Event):
     def version_parts(self) -> tuple[Any, ...]:
         """A market version moves when its price or its quantity moves."""
         return (*super().version_parts(), self.side, self.px, self.qty)
+
+
+@functools.lru_cache(maxsize=65_536)
+def _life_hash(shape: str, parts: tuple[Any, ...]) -> int:
+    """`hash_of` over a lifecycle's parts, remembered.
+
+    A lifecycle is what an event stream *repeats*: a book restates its levels
+    on every refresh, an order is amended and cancelled under one identifier,
+    a fill is corrected. So the same handful of tuples are framed and hashed
+    over and over, where a version hash is different by definition and is
+    deliberately not cached beside them -- it would only evict these.
+
+    Pure, so the cache cannot be stale: the parts are the identifier, and the
+    shape's name is in front of them for the same reason `Event.hash_of` puts
+    it there. Bounded, because a feed of one-shot client order ids has no
+    repeats to find and should not keep them all.
+
+    A part that cannot be a cache key -- a list, a dict -- raises here and
+    `life_hash` hashes it directly instead. The frame has never minded.
+    """
+    return hash_of(shape, *parts)
