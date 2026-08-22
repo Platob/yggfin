@@ -492,6 +492,7 @@ uv run python benchmarks/bench_text_file.py                  # every sweep
 uv run python benchmarks/bench_text_file.py --quick          # 200k rows, one config
 uv run python benchmarks/bench_text_file.py --only variants  # what moves the parser
 uv run python benchmarks/bench_text_file.py --only folders   # a capture of many files
+uv run python benchmarks/bench_text_file.py --only messages  # the message layer
 ```
 
 The hot loop is deliberately spartan — per row it is a regex match, an append
@@ -637,3 +638,98 @@ zstd at 737–773 MB/s on the same bytes, for 11.0 MiB and 2.3 MiB out of 136.3.
 
 Walking the 500 paths costs **2.6–2.8 ms** on a local disk, one listing per
 directory, keyed on base names rather than whole paths.
+
+### The message layer
+
+`bench_text_file.py --only messages`. A different question from the four tables
+above: not *how fast is the parser* but **what should each stage of it be made
+of**. One million lines of a mixed capture — 60% prose, 25% wire FIX, 15%
+bridge messages — streamed at `DEFAULT_BATCH_ROW_SIZE`, and every stage timed
+as four implementations over the same rows. Best of three, both runs quoted.
+
+Two things about the method, because they are what makes the table worth
+reading. Every implementation is asserted to give **the scalar parser's own
+pairs**, pair for pair, before it is timed — so a row here is a row that gave
+the right answer. And memory is **process RSS**, sampled, not Arrow's
+allocator: two of the four candidates allocate where Arrow cannot see them, and
+a column that could only report one of the three allocators would decide the
+question by leaving out the answer. It is read from `/proc`, so it is a Linux
+figure and it is sampled, which is why it is quoted as a range rather than to
+the megabyte.
+
+!!! note "Its own machine"
+
+    This sweep was run on a different machine from the tables above, and on a
+    longer-lined fixture: a quarter of these rows carry a whole FIX message.
+    Its rows/s are comparable *within* the sweep and not against them — which
+    is the only comparison it is for.
+
+**Stage one, line → header split.** What already ships, re-measured on this
+fixture so the stages below have a baseline taken on the same rows:
+**233k–240k rows/s**, 48.2–49.5 MB/s, 156–160 MiB resident for the whole
+streamed pass.
+
+**Stage two, message → pairs.** `n/a` is not a failure: the named path builds
+its keys with `extract_regex` and has no `list_element` for offsets arithmetic
+to replace, so there is nothing there for a numpy cut to be.
+
+| category | implementation | rows/s | pairs/s | added RSS |
+| --- | --- | --- | --- | --- |
+| OTHER | `FixMessage.from_text` | 255k–258k | 0 | ~0 |
+| OTHER | **`parse_arrow_array`** | **2.96M–2.97M** | 0 | 3.0–4.4 MiB |
+| OTHER | numpy over the buffers | n/a | — | — |
+| OTHER | polars | 3.01M–3.09M | 0 | 4.7–7.6 MiB |
+| FIX | `FixMessage.from_text` | 96.4k–97.9k | 1.45M–1.47M | 137–145 MiB |
+| FIX | **`parse_arrow_array`** | **224k–226k** | **3.36M–3.39M** | 13.8–17.7 MiB |
+| FIX | numpy over the buffers | 195k–198k | 2.92M–2.97M | 164–170 MiB |
+| FIX | polars | 143k–154k | 2.15M–2.31M | 237–258 MiB |
+| UL | `FixMessage.from_text` | 37.3k–39.8k | 411k–437k | 105–106 MiB |
+| UL | **`parse_arrow_array`** | **101k–103k** | **1.11M–1.14M** | 6.8–77.9 MiB |
+| UL | numpy over the buffers | n/a | — | — |
+| UL | polars | 113k–135k | 1.24M–1.49M | 262–274 MiB |
+
+**The Arrow kernels win the stage, and the two candidates lose differently.**
+The numpy cut — the same `parse_arrow_array` with `split_pattern` + two
+`list_element` calls replaced by `searchsorted` and a ragged gather over the
+flattened token buffer — is **13% slower** and holds **ten times** the memory,
+because a gather materialises both halves where Arrow's cut re-uses the
+buffer it already has. That is the whole result of the experiment: offsets
+arithmetic is not automatically cheaper than a kernel that is already offsets
+arithmetic.
+
+Polars is the interesting loss. It is the fastest thing here on the bridge
+column — **1.1–1.3× `parse_arrow_array`** — and it pays for it with a quarter
+of a gigabyte, because `split` → `explode` → `group_by` materialises one row
+per token and then regroups. On the wire column it is 30% *slower*. A win on
+one category out of three, at 4–40× the memory, with a second regex dialect to
+keep in step with the scalar parser, is not an argument for a runtime
+dependency — so polars stays in the `bench` group, which is what that group is
+for.
+
+**And the OTHER row is why the categories exist at all.** Sixty per cent of a
+capture parses to nothing whichever implementation reads it. The scalar parser
+spends 255k rows/s discovering that; the vectorised one spends 2.96M. Deciding
+what a line *is* before parsing it is worth an order of magnitude on the
+majority of every capture, and it is the reason a rule set runs first.
+
+**Stage three, name → tag.** The keys of the bridge column (720,896 of them),
+resolved against the real published dictionary (`data/fix.zip`, 1,566 names).
+The decoration is stripped outside the clock — `NOPARTYIDS[0].PARTYID` says
+where a field sits, not what it is — so what is raced is the resolution alone.
+82% resolve; the rest are the venue's own names, which is the realistic case.
+
+| implementation | keys/s | added RSS |
+| --- | --- | --- |
+| `_tag_numbers` — what ships | 3.18M–3.32M | 0–1.9 MiB |
+| Python dict over `to_pylist()` | 8.85M–9.22M | ~0 |
+| **`pyarrow.compute.index_in`** | **74.8M–78.7M** | ~0 |
+| polars join | 47.8M–54.5M | 4.1–8.4 MiB |
+
+**`index_in` is 24× the shipped path and 8× a Python dict**, and it wins while
+building its own value set inside the clock — 1,566 strings per call, which is
+exactly the work a cached index removes. The shipped `_tag_numbers` is last
+because it does that rebuild *and* a `cast` that raises before it starts; it
+was written for the case where every key is already a number, where it is one
+kernel, and this table is the other case. A name→tag index is therefore an
+Arrow value set, built once per batch and probed with one kernel — never a
+dictionary rebuilt per call and never a probe per row.

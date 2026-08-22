@@ -18,6 +18,7 @@ cd python
 uv run python benchmarks/bench_text_file.py                  # parsing a log
 uv run python benchmarks/bench_text_file.py --only variants  # what moves the parser
 uv run python benchmarks/bench_text_file.py --only folders   # a capture of many files
+uv run python benchmarks/bench_text_file.py --only messages  # the message layer
 uv run python benchmarks/bench_cast.py                       # casting data onto a shape
 uv run python benchmarks/bench_fix.py                        # FIX, scalar and vectorised
 uv run python benchmarks/bench_market.py                     # identifiers, and a book's prices
@@ -32,12 +33,17 @@ uv run python benchmarks/bench_iceberg.py --only fs          # what the store is
 `--quick` runs a small fixture and one configuration, which is what to use when
 you are changing a benchmark rather than reading one.
 
+`--only messages` needs two packages nothing else here does — `uv sync --group
+bench` installs them. They are candidates it races the shipped implementations
+against, and they are in a group of their own precisely so that losing a race
+costs nothing: neither is imported anywhere under `src/`.
+
 ## Where the results are
 
 | page | what it measures | script |
 | --- | --- | --- |
 | [Types](types.md#benchmarks) | casting a batch, a nested column, a stream onto a shape — against `Array.cast` on the same data | `bench_cast.py` |
-| [Logs](logs.md#benchmarks) | parsing one log; parsing a folder of them; shipping the bytes | `bench_text_file.py` |
+| [Logs](logs.md#benchmarks) | parsing one log; parsing a folder of them; shipping the bytes; the message layer, implementation by implementation | `bench_text_file.py` |
 | [FIX](fix.md#benchmarks) | the scalar parser, the vectorised one, and turning keys into tags | `bench_fix.py` |
 | [Market](market.md#benchmarks) | building identifier columns, deriving a book's flat prices, reading a venue's FIX, folding a book, and the ceiling on compiling any of it | `bench_market.py` |
 | [Tasks](tasks.md#benchmarks) | parsing a capture, fanning it out, and what a replay costs | `bench_tasks.py` |
@@ -77,6 +83,13 @@ table precisely because it holds the whole capture; `chained by hand` is in the
 folder table because it is what a set costs without its one optimisation;
 `blake2b line hash` is in the parser table because it is the hash `xxhash`
 replaced; `Table.upsert` is in the merge table because it is the alternative.
+
+**Race a stage before choosing what it is made of.** The
+[message layer](logs.md#the-message-layer) is the worked example: every stage
+of it is timed as four implementations over one capture, each asserted to give
+the scalar parser's own answer before it is timed, and what ships is what the
+table says rather than what was written first. Two of the four exist only in
+the `bench` dependency group, so a candidate that loses leaves nothing behind.
 
 **Prefer a count to a second.** Seconds on a local disk say very little about a
 job on an object store, and they move ±30–40% on a shared machine. Counts do

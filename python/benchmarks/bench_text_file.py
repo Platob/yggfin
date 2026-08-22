@@ -4,30 +4,60 @@ Run from `python/`::
 
     uv run python benchmarks/bench_text_file.py            # every sweep
     uv run python benchmarks/bench_text_file.py --quick    # one config, small file
-    uv run python benchmarks/bench_text_file.py --only folders   # a capture of many files
+    uv run python benchmarks/bench_text_file.py --only folders    # a capture of many files
+    uv run python benchmarks/bench_text_file.py --only messages   # the message layer
 
 The generated log matches the parser's target layout, with a stack trace folded
 in every ~200 lines so continuation handling is part of what is measured.
 Memory is reported from Arrow's own allocator (`pyarrow.total_allocated_bytes`),
 which is where the batches actually live -- `tracemalloc` cannot see them.
+
+`--only messages` is the exception, and it says so in its own table: it races
+implementations that allocate outside Arrow (numpy buffers, polars frames), so
+there it is process RSS that is sampled instead. Those two candidates come from
+the `bench` dependency group (`uv sync --group bench`) and nothing in `src/`
+imports either -- a candidate that loses a race must not leave a runtime
+dependency behind.
 """
 
 from __future__ import annotations
 
 import argparse
+import collections
 import contextlib
 import gzip
+import os
 import pathlib
+import random
+import re
 import sys
 import tempfile
+import threading
 import time
 import tracemalloc
+import warnings
 
 import pyarrow
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
+from rekep.fix import SOH, FixMessage, FixRegistry, parse_arrow_array  # noqa: E402
+
+# The message sweep races variants of `parse_arrow_array` against the thing
+# itself, so it is built out of the same pieces: the token classifier, the
+# offsets healing, the checksum cut and the column sampling, imported rather
+# than copied. A benchmark that reimplemented them would be racing two
+# parsers rather than two cuts.
+from rekep.fix.message import (  # noqa: E402
+    _PAIR_TOKEN,
+    CHECKSUM,
+    _boundaries,
+    _column_style,
+    _tag_numbers,
+    _until_checksum,
+)
 from rekep.logs import TextFile, TextFiles  # noqa: E402
+from rekep.logs.text_file import DEFAULT_BATCH_ROW_SIZE  # noqa: E402
 
 DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
 LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
@@ -354,12 +384,589 @@ def _hashing(blake: bool):
         text_file._digest = original
 
 
+# -- the message layer -------------------------------------------------------
+
+
+#: What a FIX-carrying capture is made of, by share of lines. Three categories
+#: and not two: the cost of a line the pipeline will *not* parse is the number
+#: that says whether classifying first is worth anything, so the majority case
+#: has to be in the mix rather than assumed away.
+CATEGORY_SHARES: tuple[tuple[str, int], ...] = (("OTHER", 60), ("FIX", 25), ("UL", 15))
+
+#: The separator the generated messages use, stated rather than detected: a
+#: benchmark that let each implementation sample the column would be timing
+#: `detect_separator` in some of them and not in others.
+CAPTURE_SEPARATOR = "|"
+
+#: Where a bridge message starts inside a log line -- the first `#NAME=`, the
+#: way `8=FIX` is where a wire message starts. `toBridge #ISINCODE=x` carries
+#: the driver's own prefix, and without a start marker the first key would be
+#: `toBridge #ISINCODE`.
+BRIDGE_START = re.compile(r"#[A-Za-z][A-Za-z0-9_.\-]*(?:\[\d+\])?=")
+
+
+def capture(path: pathlib.Path, rows: int, seed: int = 5) -> tuple[int, list[str]]:
+    """Write a mixed capture, and say which category each row is.
+
+    `CATEGORY_SHARES` is dealt out deterministically -- a seeded shuffle of one
+    hundred slots, repeated -- so the mix is exact rather than approximately
+    right, and two runs of the benchmark read the same file.
+
+    **No continuations.** Every line is a record here, so row `i` of the parsed
+    stream is line `i` and the per-category split needs no classifier at all.
+    That is deliberate: the classifier is what the next phase adds, and a
+    benchmark that had to guess a category would be timing that guess too.
+    """
+    generate = random.Random(seed)
+    slots = [name for name, share in CATEGORY_SHARES for _ in range(share)]
+    generate.shuffle(slots)
+    categories: list[str] = []
+    with path.open("wb") as out:
+        for i in range(rows):
+            category = slots[i % len(slots)]
+            categories.append(category)
+            second, micro = divmod(i, 1_000_000)
+            out.write(
+                b"2026-08-14 %02d:%02d:%02d.%03d_%03d [250-e7256476:9effef3e6a:%05d] [%s] %s"
+                % (
+                    second // 3600 % 24,
+                    second // 60 % 60,
+                    second % 60,
+                    micro // 1000,
+                    micro % 1000,
+                    72500 + i % 8,
+                    DRIVERS[i % len(DRIVERS)],
+                    LEVELS[i % len(LEVELS)],
+                )
+            )
+            out.write(_capture_line(category, i, generate).encode() + b"\n")
+    return path.stat().st_size, categories
+
+
+def _capture_line(category: str, i: int, generate: random.Random) -> str:
+    """One message payload of each category, in the spellings the logs use."""
+    if category == "FIX":
+        fields = [
+            "8=FIX.4.2",
+            "9=176",
+            "35=D",
+            f"34={1000 + i}",
+            "49=BUYSIDE",
+            "56=XPAR",
+            "52=20260814-00:05:01.147",
+            f"11=ORD-{i:010d}",
+            f"55=S{i % 512}",
+            "54=1",
+            f"38={generate.randint(1, 10_000)}",
+            "40=2",
+            f"44={generate.random() * 100:.4f}",
+            "59=0",
+            "10=203",
+        ]
+        body = CAPTURE_SEPARATOR.join(fields)
+        return f"sending >> {body}{CAPTURE_SEPARATOR} << queued seq={1000 + i}"
+    if category == "UL":
+        entries = SOH.join(["PARTYID=BUYSIDE", "PARTYIDSOURCE=D", "PARTYROLE=1"])
+        other = SOH.join(["PARTYID=XPAR", "PARTYIDSOURCE=G", "PARTYROLE=17"])
+        fields = [
+            "#ISINCODE=XX0000084733",
+            "#CFICODE=FXXXSX",
+            f"#SYMBOL=S{i % 512}",
+            "#SIDE=1",
+            f"#ORDERQTY={generate.randint(1, 10_000)}",
+            f"#PRICE={generate.random() * 100:.4f}",
+            "#NOPARTYIDS=2",
+            f"#NOPARTYIDS[0]={entries}",
+            f"#NOPARTYIDS[1]={other}",
+            "#TRANSACTTIME=20260814-00:05:01.148",
+            "#UNKNOWNVENUEFIELD=Z9",
+        ]
+        return "toBridge " + CAPTURE_SEPARATOR.join(fields)
+    return f"After Enrichment -> ACCOUNT=ACCT-{i % 500:06d} CLIENTID=MCFP2 VENUE=XPAR qty={i % 997}"
+
+
+def messages(rows: int, repeat: int, quick: bool) -> None:
+    """The hot path of the message layer, per category, implementation by implementation.
+
+    Three stages, each raced over the same capture: the line/header split that
+    already ships, the cut from a message to its `(key, value)` pairs, and the
+    resolution of a rendered key to a FIX tag. The point is not that one of
+    them is fast -- it is which implementation each stage should be made of,
+    answered against numbers rather than by default.
+
+    Everything is streamed at `DEFAULT_BATCH_ROW_SIZE`: stage one reads the
+    whole capture without holding it, and stages two and three race over one
+    batch of that size *per category*, filled from the same stream, because a
+    batch is the unit the parser is handed.
+    """
+    # A deprecation notice printed between two rows of a table is a table
+    # nobody can paste anywhere; the behaviour it warns about is not one this
+    # sweep depends on.
+    warnings.filterwarnings("ignore", message=".*empty_as_null.*")
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "capture.txt"
+        nbytes, categories = capture(path, rows)
+        counted = collections.Counter(categories)
+        shares = " ".join(f"{name} {counted[name] / rows:.0%}" for name, _ in CATEGORY_SHARES)
+        print(f"\n{rows:,} rows, {nbytes / 2**20:.1f} MiB, {shares}, best of {repeat}")
+
+        _split_stage(path, rows, nbytes, repeat)
+        columns = _category_columns(
+            path, categories, DEFAULT_BATCH_ROW_SIZE if not quick else 8_192
+        )
+        _pairs_stage(columns, repeat)
+        _tags_stage(columns, repeat)
+
+
+def _split_stage(path: pathlib.Path, rows: int, nbytes: int, repeat: int) -> None:
+    """Stage one: line -> header split, which already ships. The baseline.
+
+    Timed here rather than carried over from the table above because the
+    fixture is a different one -- a quarter of these lines are messages, which
+    are longer than the payloads that sweep generates -- and a baseline read
+    off another fixture is not a baseline.
+    """
+    print("\n  line -> header split")
+    print(f"    {'implementation':>34} {'rows/s':>12} {'MB/s':>8} {'peak RSS':>10}")
+    fastest, peak = float("inf"), 0
+    for _ in range(repeat):
+        before = _rss_bytes()
+        with _peak_rss() as sampled:
+            started = time.perf_counter()
+            seen = 0
+            with TextFile.from_path(path) as log:
+                for batch in log.into_arrow_batches(batch_row_size=DEFAULT_BATCH_ROW_SIZE):
+                    seen += batch.num_rows
+            elapsed = time.perf_counter() - started
+        assert seen == rows, f"{seen} rows parsed out of {rows}"
+        fastest, peak = min(fastest, elapsed), max(peak, sampled() - before)
+    print(
+        f"    {'TextFile.into_arrow_batches':>34} {rows / fastest:>12,.0f} "
+        f"{nbytes / 2**20 / fastest:>8.1f} {_mib(peak):>10}"
+    )
+
+
+def _category_columns(
+    path: pathlib.Path, categories: list[str], batch_row_size: int
+) -> dict[str, pyarrow.Array]:
+    """One batch of messages per category, taken off the same streamed capture.
+
+    Bounded by construction: the stream is dropped as soon as every category
+    has `batch_row_size` rows, so what is held is three batches and not a
+    capture. The UL column is handed over **cut at its first `#NAME=` and with
+    the `#` off every key** -- one string operation, identical for every
+    implementation below, done here rather than inside the clock so the race is
+    over the cut and not over three spellings of the same strip. The parser
+    does not admit a `#` key yet; where it does, this pre-pass disappears into
+    the token pattern and costs nothing.
+    """
+    collected: dict[str, list[str]] = {name: [] for name, _ in CATEGORY_SHARES}
+    row = 0
+    with TextFile.from_path(path) as log:
+        for batch in log.into_arrow_batches(batch_row_size=DEFAULT_BATCH_ROW_SIZE):
+            for message in batch.column("message").to_pylist():
+                bucket = collected[categories[row]]
+                if len(bucket) < batch_row_size:
+                    bucket.append(message)
+                row += 1
+            if all(len(one) >= batch_row_size for one in collected.values()):
+                break
+    collected["UL"] = [_bridged(line) for line in collected["UL"]]
+    return {name: pyarrow.array(lines, pyarrow.string()) for name, lines in collected.items()}
+
+
+def _bridged(line: str) -> str:
+    """A bridge line from its first `#NAME=`, with the `#` off every key."""
+    start = BRIDGE_START.search(line)
+    if start is None:
+        return line
+    return re.sub(rf"(^|{re.escape(CAPTURE_SEPARATOR)})#", r"\1", line[start.start() :])
+
+
+def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
+    """Stage two: message -> pairs, four implementations over the same column.
+
+    The scalar parser is the reference and every other implementation is
+    asserted equal to it, pair for pair, before anything is timed -- so a row
+    in this table is a row that gave the right answer.
+
+    `numpy` is a variant of the Arrow path with one thing changed: the
+    `split_pattern` + two `list_element` cut replaced by offsets arithmetic
+    over the flattened token buffer. It exists for the tag-mode cut and only
+    there, because the named path builds its keys with `extract_regex` and has
+    no `list_element` to replace.
+    """
+    print("\n  message -> pairs")
+    header = ("category", "implementation", "rows/s", "pairs/s", "peak RSS")
+    print(f"    {header[0]:>9} {header[1]:>26} {header[2]:>12} {header[3]:>12} {header[4]:>10}")
+    for name, column in columns.items():
+        reference = [
+            FixMessage.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()
+        ]
+        pairs = sum(len(one) for one in reference)
+        candidates: list[tuple[str, object]] = [
+            ("FixMessage.from_text", lambda c=column: _scalar_pairs(c)),
+            ("parse_arrow_array", lambda c=column: parse_arrow_array(c, CAPTURE_SEPARATOR)),
+            ("numpy over the buffers", lambda c=column: _numpy_pairs(c)),
+            ("polars", lambda c=column: _polars_pairs(c)),
+        ]
+        for label, run in candidates:
+            try:
+                answer = run()
+            except _NotApplicable as why:
+                print(f"    {name:>9} {label:>26} {'n/a':>12} {'':>12} {str(why):>10}")
+                continue
+            assert _as_pairs(answer) == reference, (
+                f"{label} disagrees with the scalar parser on {name}"
+            )
+            fastest, peak = _best_of(run, repeat)
+            print(
+                f"    {name:>9} {label:>26} {len(column) / fastest:>12,.0f} "
+                f"{pairs / fastest:>12,.0f} {_mib(peak):>10}"
+            )
+
+
+class _NotApplicable(Exception):
+    """An implementation that has nothing to replace on this column."""
+
+
+def _scalar_pairs(column: pyarrow.Array) -> list[list[tuple[str, str]]]:
+    return [FixMessage.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()]
+
+
+def _numpy_pairs(column: pyarrow.Array) -> pyarrow.MapArray:
+    """`parse_arrow_array`'s tag-mode body with the cut done in numpy.
+
+    Every kernel here is the shipped one; the two `list_element` calls are what
+    is replaced. The cut does **not** trim whitespace, which the shipped one
+    does -- so this is the faster half of a choice already raced in
+    `bench_fix.py`, and it only agrees where the tokens carry no padding. The
+    assertion above is what keeps that honest.
+    """
+    import numpy
+
+    compute = pyarrow.compute
+    values = column.cast(pyarrow.string(), safe=False)
+    begun = compute.struct_field(
+        compute.extract_regex(values, r"(?s)(?:^|[^0-9])(?P<msg>8=FIXT?.*)"), "msg"
+    )
+    values = compute.if_else(compute.is_null(begun), values, begun)
+    tokens = compute.split_pattern(values, CAPTURE_SEPARATOR)
+    flat = tokens.values
+    named = _column_style(column)[1]
+    if named:
+        raise _NotApplicable("no cut")
+    matched = compute.fill_null(compute.match_substring_regex(flat, _PAIR_TOKEN), False)
+    kept = compute.filter(flat, matched)
+    tags, entries = _numpy_cut(kept, numpy)
+    counted = compute.cumulative_sum(matched.cast(pyarrow.int32()))
+    bounds = pyarrow.concat_arrays([pyarrow.array([0], pyarrow.int32()), counted])
+    offsets = bounds.take(_boundaries(tokens))
+    parents = compute.filter(compute.list_parent_indices(tokens), matched)
+    tags, entries, offsets = _until_checksum(tags, entries, offsets, parents)
+    return pyarrow.MapArray.from_arrays(offsets, tags, entries)
+
+
+def _numpy_cut(kept: pyarrow.Array, numpy) -> tuple[pyarrow.Array, pyarrow.Array]:
+    """`token -> (key, value)` as index arithmetic over the flattened buffer.
+
+    One pass to find every `=` byte, a `searchsorted` to give each token its
+    own first one, and one ragged gather per half -- the `repeat` + `cumsum`
+    index the rest of this package builds an interleave from, in numpy rather
+    than in Arrow.
+    """
+    if not len(kept):
+        empty = pyarrow.array([], pyarrow.string())
+        return empty, empty
+    _, offsets_buffer, data_buffer = kept.buffers()[:3]
+    offsets = numpy.frombuffer(offsets_buffer, dtype=numpy.int32, count=len(kept) + 1)
+    data = numpy.frombuffer(data_buffer, dtype=numpy.uint8)
+    starts = offsets[:-1].astype(numpy.int64)
+    ends = offsets[1:].astype(numpy.int64)
+    marks = numpy.flatnonzero(data[: int(ends[-1])] == 0x3D)
+    first = marks[numpy.searchsorted(marks, starts, side="left")]
+    return (
+        _gathered(data, starts, first - starts, numpy),
+        _gathered(data, first + 1, ends - first - 1, numpy),
+    )
+
+
+def _gathered(data, starts, lengths, numpy) -> pyarrow.Array:
+    """A string array of `data[start : start + length]` per row, in one take."""
+    bounds = numpy.concatenate(([0], numpy.cumsum(lengths)))
+    index = (
+        numpy.arange(int(bounds[-1]), dtype=numpy.int64)
+        - numpy.repeat(bounds[:-1], lengths)
+        + numpy.repeat(starts, lengths)
+    )
+    return pyarrow.StringArray.from_buffers(
+        len(starts),
+        pyarrow.py_buffer(bounds.astype(numpy.int32).tobytes()),
+        pyarrow.py_buffer(data[index].tobytes()),
+    )
+
+
+#: `_TOKEN_VECTOR` and `_MEMBER_VECTOR` in the Rust regex crate's spelling of
+#: the same grammar -- named groups as `(?<name>)`, the dot-matches-newline
+#: flag scoped to the group it is needed in. Written out rather than reused so
+#: the polars row is polars' own work and not a translation cost.
+_POLARS_TOKEN = r"^[ \t\r\n\x0b\x0c]*(?<key>\d+)[ \t\r\n\x0b\x0c]*=(?<rest>(?s:.*))$"
+_POLARS_TOKEN_NAMED = (
+    r"^[ \t\r\n\x0b\x0c]*(?<key>\d+|[A-Za-z][A-Za-z0-9_.\-]*)"
+    r"(?:\[(?<index>\d+)\])?"
+    r"(?:\.(?<member>[A-Za-z0-9_.\-]+))?"
+    r"[ \t\r\n\x0b\x0c]*=(?<rest>(?s:.*))$"
+)
+_POLARS_MEMBER = (
+    r"^[ \t\r\n\x0b\x0c]*(?<member>\d+|[A-Za-z][A-Za-z0-9_.\-]*)"
+    r"[ \t\r\n\x0b\x0c]*=(?<value>(?s:.*))$"
+)
+
+
+def _polars_pairs(column: pyarrow.Array) -> object:
+    """The same cut as one polars expression chain, ending in one list per row.
+
+    `str.split` then `str.extract_groups`, which is the shape the question was
+    asked in -- and then the two things the Arrow path also does and a race
+    that skipped them would be flattering: the checksum cut, and the regroup
+    back to one row per line. A token that matches nothing is dropped, and a
+    line left with no pairs comes back as an empty list, which is what the map
+    column holds for it.
+    """
+    import polars
+
+    named = _column_style(column)[1]
+    frame = polars.DataFrame({"line": polars.from_arrow(column)}).with_row_index("row")
+    if not named:
+        frame = frame.with_columns(
+            polars.coalesce(
+                polars.col("line").str.extract(r"(?s)(?:^|[^0-9])(8=FIXT?.*)", 1),
+                polars.col("line"),
+            ).alias("line")
+        )
+    cut = (
+        frame.with_columns(polars.col("line").str.split(CAPTURE_SEPARATOR).alias("token"))
+        .explode("token")
+        .with_columns(
+            polars.col("token")
+            .str.extract_groups(_POLARS_TOKEN_NAMED if named else _POLARS_TOKEN)
+            .alias("cut")
+        )
+        .unnest("cut")
+        .filter(polars.col("key").is_not_null())
+    )
+    if named:
+        inner = polars.col("rest").str.extract_groups(_POLARS_MEMBER)
+        grouped = polars.col("index").is_not_null() & polars.col("member").is_null()
+        cut = cut.with_columns(inner.alias("inner")).with_columns(
+            polars.when(grouped & polars.col("inner").struct.field("member").is_not_null())
+            .then(polars.col("inner").struct.field("member"))
+            .otherwise(polars.col("member"))
+            .alias("member"),
+            polars.when(grouped & polars.col("inner").struct.field("member").is_not_null())
+            .then(polars.col("inner").struct.field("value"))
+            .otherwise(polars.col("rest"))
+            .alias("rest"),
+        )
+        cut = cut.with_columns(
+            polars.concat_str(
+                polars.col("key"),
+                polars.when(polars.col("index").is_not_null())
+                .then(polars.concat_str(polars.lit("["), polars.col("index"), polars.lit("]")))
+                .otherwise(polars.lit("")),
+                polars.when(polars.col("member").is_not_null())
+                .then(polars.concat_str(polars.lit("."), polars.col("member")))
+                .otherwise(polars.lit("")),
+            ).alias("key")
+        )
+    checksum = (polars.col("key") == CHECKSUM).cast(polars.Int32)
+    cut = cut.with_columns(checksum.cum_sum().over("row").alias("seen")).filter(
+        polars.col("seen") - checksum == 0
+    )
+    pairs = cut.group_by("row").agg(
+        polars.struct(
+            polars.col("key"),
+            polars.col("rest").str.strip_chars(" \t\r\n\x0b\x0c").alias("value"),
+        ).alias("pairs")
+    )
+    return (
+        frame.select("row")
+        .join(pairs, on="row", how="left")
+        .sort("row")
+        .with_columns(
+            polars.col("pairs").fill_null(polars.lit([], dtype=polars.List(polars.Struct)))
+        )
+    )
+
+
+def _as_pairs(answer: object) -> list[list[tuple[str, str]]]:
+    """Whatever an implementation returned, as the scalar parser's own pairs."""
+    if isinstance(answer, list):
+        return answer
+    if isinstance(answer, pyarrow.Array):
+        return [
+            [] if row is None else [(key, value) for key, value in row]
+            for row in answer.to_pylist()
+        ]
+    rows = answer.get_column("pairs").to_list()
+    return [
+        [] if row is None else [(entry["key"], entry["value"]) for entry in row] for row in rows
+    ]
+
+
+def _tags_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
+    """Stage three: a rendered name -> the tag FIX gave it, over a whole column.
+
+    The keys come off the bridge column's own pairs, reduced to their trailing
+    name segment **outside the clock** -- `NOPARTYIDS[0].PARTYID` says where a
+    field sits, not what it is, and stripping the decoration is the same one
+    kernel for every implementation. What is raced is the resolution itself.
+
+    The dictionary is the real one (`data/fix.zip`), because how many names are
+    in it is exactly what separates a hash probe from a join.
+    """
+    keys = _bridge_keys(columns["UL"])
+    names = _dictionary()
+    if not names:
+        print("\n  pairs -> tags: skipped, no FIX dictionary at data/fix.zip")
+        return
+    print(f"\n  pairs -> tags ({len(keys):,} keys, {len(names):,} names)")
+    print(f"    {'implementation':>34} {'keys/s':>12} {'resolved':>10} {'peak RSS':>10}")
+    lowered = pyarrow.compute.utf8_lower(keys)
+    candidates = (
+        ("_tag_numbers (what ships)", lambda: _tag_numbers(lowered, names, pyarrow.int32())),
+        ("python dict over to_pylist", lambda: _python_tags(lowered, names)),
+        ("pyarrow.compute.index_in", lambda: _index_in_tags(lowered, names)),
+        ("polars join", lambda: _polars_tags(lowered, names)),
+    )
+    reference = None
+    for label, run in candidates:
+        answer = run()
+        if reference is None:
+            reference = answer.to_pylist()
+        assert answer.to_pylist() == reference, f"{label} resolves differently"
+        fastest, peak = _best_of(run, repeat)
+        resolved = len(reference) - reference.count(None)
+        print(
+            f"    {label:>34} {len(keys) / fastest:>12,.0f} "
+            f"{resolved / len(reference):>10.0%} {_mib(peak):>10}"
+        )
+
+
+def _bridge_keys(column: pyarrow.Array) -> pyarrow.Array:
+    """Every key the bridge column parses to, decoration stripped."""
+    maps = parse_arrow_array(column, CAPTURE_SEPARATOR)
+    listed = maps.cast(
+        pyarrow.list_(pyarrow.struct([("key", pyarrow.string()), ("value", pyarrow.string())]))
+    )
+    keys = pyarrow.compute.struct_field(pyarrow.compute.list_flatten(listed), 0)
+    return pyarrow.compute.extract_regex(keys, r"(?P<name>[A-Za-z0-9_\-]+)(?:\[\d+\])?$").field(
+        "name"
+    )
+
+
+def _dictionary() -> dict[str, int]:
+    """`{name: tag}` out of the dictionary this repository publishes."""
+    archive = pathlib.Path(__file__).resolve().parent.parent.parent / "data" / "fix.zip"
+    if not archive.exists():
+        return {}
+    return FixRegistry(cache_dir=archive).tags()
+
+
+def _python_tags(lowered: pyarrow.Array, names: dict[str, int]) -> pyarrow.Array:
+    return pyarrow.array([names.get(key) for key in lowered.to_pylist()], pyarrow.int32())
+
+
+def _index_in_tags(lowered: pyarrow.Array, names: dict[str, int]) -> pyarrow.Array:
+    compute = pyarrow.compute
+    known = pyarrow.array(list(names), pyarrow.string())
+    tags = pyarrow.array(list(names.values()), pyarrow.int32())
+    return compute.take(tags, compute.index_in(lowered, value_set=known))
+
+
+def _polars_tags(lowered: pyarrow.Array, names: dict[str, int]) -> pyarrow.Array:
+    import polars
+
+    frame = polars.DataFrame({"key": polars.from_arrow(lowered)})
+    table = polars.DataFrame(
+        {"name": list(names), "tag": polars.Series(list(names.values()), dtype=polars.Int32)}
+    )
+    joined = frame.join(table, left_on="key", right_on="name", how="left")
+    return joined.get_column("tag").to_arrow().cast(pyarrow.int32())
+
+
+def _best_of(run, repeat: int) -> tuple[float, int]:
+    """Fastest of `repeat` timed calls, and the most RSS any of them added.
+
+    The untimed warm-up counts toward the peak and not toward the clock. That
+    is the one call that pays for a first touch -- an allocator that has not
+    grown yet, a lazily imported module, a kernel's own one-off state -- and
+    leaving it out reported 0.0 MiB for a path that had plainly allocated,
+    because every later run was answered out of an arena the first one grew.
+    """
+    fastest, peak = float("inf"), 0
+    for attempt in range(repeat + 1):
+        before = _rss_bytes()
+        with _peak_rss() as sampled:
+            started = time.perf_counter()
+            run()
+            elapsed = time.perf_counter() - started
+        if attempt:
+            fastest = min(fastest, elapsed)
+        peak = max(peak, sampled() - before)
+    return fastest, peak
+
+
+@contextlib.contextmanager
+def _peak_rss():
+    """The highest resident set size seen while the body runs, sampled.
+
+    Arrow's own allocator is what every table above reports and it is exact --
+    but it cannot see a numpy buffer or a polars frame, and this sweep races
+    three allocators against each other. RSS is the one figure all three land
+    in. It is *sampled*, so a spike shorter than the interval is missed, and it
+    is read from `/proc`, so it is a Linux number: elsewhere the column reads
+    `n/a` rather than a zero that would look like an answer.
+    """
+    peak = [_rss_bytes()]
+    stop = threading.Event()
+
+    def watch() -> None:
+        while not stop.wait(0.001):
+            peak[0] = max(peak[0], _rss_bytes())
+
+    watcher = threading.Thread(target=watch, daemon=True)
+    watcher.start()
+    try:
+        yield lambda: peak[0]
+    finally:
+        stop.set()
+        watcher.join()
+        peak[0] = max(peak[0], _rss_bytes())
+
+
+def _rss_bytes() -> int:
+    """Resident bytes right now, or 0 where the OS does not say."""
+    try:
+        with open("/proc/self/statm") as handle:
+            return int(handle.read().split()[1]) * os.sysconf("SC_PAGE_SIZE")
+    except (OSError, ValueError, IndexError, AttributeError):
+        return 0
+
+
+def _mib(peak: int) -> str:
+    """A byte count as MiB, or `n/a` where nothing measured it."""
+    return f"{peak / 2**20:.1f}" if peak > 0 else "n/a"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rows", type=int, default=1_000_000)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--repeat", type=int, default=3)
-    parser.add_argument("--only", choices=("sweep", "variants", "folders"), default=None)
+    parser.add_argument(
+        "--only", choices=("sweep", "variants", "folders", "messages"), default=None
+    )
     arguments = parser.parse_args()
     rows = 200_000 if arguments.quick else arguments.rows
     repeat = 1 if arguments.quick else arguments.repeat
@@ -369,6 +976,8 @@ def main() -> int:
         variants(rows, repeat)
     if arguments.only in (None, "folders"):
         folders(rows, repeat)
+    if arguments.only in (None, "messages"):
+        messages(rows, repeat, arguments.quick)
     return 0
 
 
