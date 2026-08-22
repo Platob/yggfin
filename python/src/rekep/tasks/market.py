@@ -44,7 +44,8 @@ class ParseMarket(Task):
     The second half of the pipeline `parse_logs` starts: that one sorts a
     capture into a table per kind of line, keeping the line; this one reads
     those lines as FIX and lands what they *mean* -- an orders table, an
-    executions table, and a book table folded from them.
+    executions table, a book table folded from them, and an instrument table
+    of what the capture taught it about the instruments themselves.
 
     **Reading is a `Dataset`**, whichever kind. Point `source` at a folder of
     logs and it is read as text; point it at a document naming a store
@@ -52,13 +53,12 @@ class ParseMarket(Task):
     which is how this chains onto `parse_logs` without re-reading the capture.
     Either way the task sees Arrow batches with a `message` column in them.
 
-    **Books are folded per instrument, and that is why they are last.**
-    `Book.from_events` needs one instrument's events in time order, so the
-    orders and executions are grouped by `instrument_hash` and each group
-    folded on its own. That grouping is the reason the book pass is not
-    streaming the way the other two are: a fold has to see a whole
-    instrument's stream, and the memory it costs is the live orders of every
-    instrument in the capture rather than the capture itself.
+    **One pass, and the fold is in it.** `BookIterator` keeps a mutable state
+    per instrument -- its live orders and its sorted prices -- rather than the
+    events of every instrument, so what the job holds is the book rather than
+    the capture, and a book is built only when the instant it belongs to has
+    closed. The orders and executions go to their own tables on the way past,
+    which is why the capture is read once and not twice.
 
     Set `books: false` to skip it, which is what a job landing raw events for
     something else to fold should do.
@@ -91,7 +91,7 @@ class ParseMarket(Task):
     """Namespace the targets are created under."""
 
     table: str = "{shape}"
-    """Target name per shape; `{shape}` is `orders`, `executions` or `books`."""
+    """Target name per shape: `orders`, `executions`, `books` or `instruments`."""
 
     properties: dict[str, str] = dataclasses.field(default_factory=dict)
     """How to reach the catalog -- `type`, `uri`, `warehouse`, credentials."""

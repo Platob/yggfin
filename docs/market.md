@@ -505,11 +505,17 @@ building them. `BookIterator` is that pass.
 from rekep.market import BookIterator
 
 folding = BookIterator(events=events, snapshot_every=HOUR)
-for book in folding.books():          # one stream of books, every instrument
+for book in folding.books:          # one stream of books, every instrument
     ...
-for known in folding.instruments():   # one stream of instrument versions
+for known in folding.instruments:   # one stream of instrument versions
     ...
 ```
+
+Either stream drives the fold and both are fed by it, so what one pulls the
+other holds until it is read. Take the books first and the instruments after:
+draining the instruments would drive the same source the books are being pulled
+from, and what is then held is a row per instrument per thing learnt about it —
+bounded by the capture's instruments and not by its length.
 
 **One iterator, two streams, mutable state per instrument.** Internally each
 instrument has its own resting orders and sorted price lists, kept and mutated
@@ -917,8 +923,17 @@ which file a row lands in, it decides where inside the file it lands. What that
 buys is the column's min/max in the manifest — unsorted, every file's `unix`
 range spans the whole hour and a range filter reads all of them; sorted, the
 ranges are disjoint and it reads the few that overlap. Iceberg records the order
-on the table and every engine that writes through it honours it, so nothing
-sorts on read.
+on the table, and this writer applies it: `sort_by` defaults to whatever the
+shape declares, so nothing sorts on read
+([why](iceberg.md#a-dataset)).
+
+**And `hunix` says it is `unix`.** A merge joins on `(unix, hash)`, which names
+no partition column, so its scan pruned nothing at the manifest list and grew
+with the table. `Field.partition_key(derived_from="unix")` says the one thing
+that fixes it — two rows agreeing on `unix` agree on `hunix` — and a merge may
+then name the partition it is going to land in. Replaying one hour over 336 of
+them: **27 ms against 164**
+([how](iceberg.md#how-a-merge-is-planned)).
 
 `Instrument.xhash` is derived rather than demanded, because a producer that only
 has what the venue sent still has to emit rows that join. In order: a registered

@@ -143,9 +143,9 @@ in exactly the case a new log format shows up.
 
 ## Reading market logs
 
-`ParseMarket` is the second half. It reads FIX messages and lands the events
-they carry: an orders table, an executions table, and a book table folded from
-both.
+`ParseMarket` is the second half. It reads FIX messages and lands what they
+mean: an orders table, an executions table, a book table folded from both, and
+an instrument table of what the capture taught it along the way.
 
 === "From a document"
 
@@ -175,7 +175,7 @@ both.
     ).run()
     ```
 
-Three tables come out, each created from the declaration of the shape it holds
+Four tables come out, each created from the declaration of the shape it holds
 — which is the same declaration published under `schemas/rekep/`:
 
 | table | shape | holds |
@@ -183,6 +183,7 @@ Three tables come out, each created from the declaration of the shape it holds
 | `market.orders` | [`Order`](market.md) | what somebody asked for, version by version |
 | `market.executions` | `Execution` | what actually moved |
 | `market.books` | `Book` | the book after each instant that changed it |
+| `market.instruments` | `Reference` | what the capture taught it about each instrument |
 
 **The source is a `Dataset`, whichever kind.** Point it at a folder and it is
 read as text; point it at a *document naming a store* and it is read from
@@ -202,13 +203,27 @@ same dispatch a task's own `kind` gets, and the mechanism that keeps the
 Iceberg dependency optional: the module is imported by a document that asks for
 it, and by nothing else.
 
-**Books are folded last, and per instrument.** `Book.from_events` needs one
-instrument's events in time order, so the orders and executions are grouped by
-`instrument_hash` and each group folded on its own. That is the one pass that
-is not streaming the way the other two are: a fold has to see a whole
-instrument's stream, and what it costs is the live orders of every instrument
-in the capture rather than the capture itself. Set `books: false` for a job
-landing raw events for something else to fold.
+**One pass, and the fold is in it.** [`BookIterator`](market.md#two-streams-one-pass)
+keeps a mutable state per instrument — its live orders and its sorted prices —
+rather than the events of every instrument, so what the job holds is the book
+and not the capture, and a book is built only once the instant it belongs to
+has closed. The orders and executions go to their own tables on the way past,
+which is why the capture is read once rather than twice. Set `books: false` for
+a job landing raw events for something else to fold.
+
+**A book on every hour, moved or not.** `snapshot_every` is an hour by default,
+which is what makes *"the book at 14:00"* a point lookup on a table partitioned
+by the hour instead of a scan backwards for the last row before it. Set it to
+`0` for deltas alone.
+
+**Parallel by line, not by instrument.** `workers` shards the *translation* —
+reading a line as the events it carries is per-line work with no state, so it
+shards perfectly — while the parent keeps the fold, which needs one
+instrument's events in order. Processes and not threads, and measured rather
+than assumed: every hot path here is pure Python, so four threads came out at
+**0.86×** against a 0.98× ceiling for four threads doing nothing. `workers=0`
+is one process per CPU; `shard_row_size` is what bounds the memory the fan-out
+adds.
 
 !!! warning "A schema is handed over, never inferred"
 
