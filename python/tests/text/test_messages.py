@@ -23,7 +23,7 @@ RECORDS = [line for line in SAMPLE_BYTES.split(b"\n") if HEADER_PATTERN.match(li
 CONTINUATIONS = [
     line for line in SAMPLE_BYTES.split(b"\n") if line and not HEADER_PATTERN.match(line)
 ]
-EXPECTED_RECORDS = 10
+EXPECTED_RECORDS = 11
 EXPECTED_CONTINUATIONS = 3
 
 #: Which category each record is, in file order. The whole point of the
@@ -39,6 +39,7 @@ EXPECTED_CATEGORIES = [
     "OTHER",
     "OTHER",
     "OTHER",
+    "UL",
 ]
 
 #: Derived from the bridge line, then pinned: eleven tokens, two of which carry
@@ -48,7 +49,7 @@ EXPECTED_BRIDGE_PAIRS = 15
 #: Row indexes worth naming. `WRAPPED` is a bridge message inside a FIX
 #: envelope -- a wire header and a `#NAME=` body on one line, which answers to
 #: both tells and so is the one the rule order exists for.
-PIPED, CARET, SOHED, BRIDGE, WRAPPED, REJECTED = 2, 3, 4, 5, 6, 7
+PIPED, CARET, SOHED, BRIDGE, WRAPPED, REJECTED, HASHED = 2, 3, 4, 5, 6, 7, 10
 
 
 def test_the_sample_is_the_shape_the_tests_assume() -> None:
@@ -147,6 +148,31 @@ def test_a_bridge_message_in_a_fix_envelope_keeps_both_halves(table: pyarrow.Tab
     assert tags[8] == "FIX.4.2" and tags[35] == "UL", "the wire header survives"
     assert tags[55] == "TTF" and tags[54] == "1" and tags[38] == "1200", "and so do the names"
     assert dict(table.column("keyval")[WRAPPED].as_py()) == {"ISINCODE": "XX0000084733"}
+
+
+def test_a_bridge_message_separated_by_its_own_markers_reads_the_same(
+    table: pyarrow.Table,
+) -> None:
+    """`#A=1#B=2` puts nothing between its tokens, so the next `#` ends the value.
+
+    Read the character there as the separator -- which is what a bridge with a
+    `|` between its tokens wants -- and it is the tail of the value in front of
+    it: `#A=1#B=2` came back as `A=''` and `B` glued to whatever followed. It
+    parsed, which is how it would have travelled.
+    """
+    tags = dict(table.column("fix_tags")[HASHED].as_py())
+    assert tags[55] == "TTF" and tags[54] == "1" and tags[38] == "1200"
+    assert tags[453] == "1", "and a group counted in it survives"
+    assert dict(table.column("keyval")[HASHED].as_py()) == {
+        "ISINCODE": "XX0000084733",
+        "UNKNOWNVENUEFIELD": "Z9",
+    }
+
+
+def test_a_nested_entry_survives_a_marker_separated_line(table: pyarrow.Table) -> None:
+    """Two separators on one line, and neither is the other's."""
+    tags = [tag for tag, _ in table.column("fix_tags")[HASHED].as_py()]
+    assert tags[tags.index(453) :] == [453, 448, 452], "the entry members, in wire order"
 
 
 def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> None:

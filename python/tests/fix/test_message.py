@@ -4,6 +4,7 @@ import pyarrow
 import pytest
 
 from rekep.fix import (
+    MARKER,
     SOH,
     FixMessage,
     detect_entry_separator,
@@ -285,6 +286,41 @@ def test_one_marked_key_in_prose_is_not_a_message_start() -> None:
     assert FixMessage.from_text("Account=A|note=see #ref for details").get("Account") == "A"
 
 
+def test_a_bridge_that_writes_nothing_between_its_tokens_is_separated_by_the_marker() -> None:
+    """`#A=1#B=2` has no delimiter, so the `#` of the next key ends the value.
+
+    The character there is the tail of the value in front of it, and reading it
+    as the separator gave `A` an empty value and glued `B` to whatever came
+    next -- silently, because the result still parsed.
+    """
+    assert detect_separator("#A=1#B=2") == MARKER
+    assert FixMessage.from_text("#A=1#B=2").pairs == [("A", "1"), ("B", "2")]
+    assert FixMessage.from_text("toBridge #A=1#B=2#C=3").pairs == [
+        ("A", "1"),
+        ("B", "2"),
+        ("C", "3"),
+    ]
+
+
+@pytest.mark.parametrize("between", ["|", ";", "^A", SOH])
+def test_a_candidate_between_the_tokens_is_still_the_separator(between: str) -> None:
+    """Only a candidate, though: anything else is a value, not a delimiter."""
+    assert detect_separator(f"#A=1{between}#B=2") == between
+    assert FixMessage.from_text(f"#A=1{between}#B=2").pairs == [("A", "1"), ("B", "2")]
+
+
+def test_both_separators_on_one_line_and_neither_is_the_other_s() -> None:
+    """A marker-separated line can still nest an entry behind a second one."""
+    line = "toBridge #NOPARTYIDS[0]=PARTYID=x" + SOH + "PARTYROLE=1#SIDE=1"
+    assert detect_separator(line) == MARKER
+    assert detect_entry_separator(line, MARKER) == SOH
+    assert FixMessage.from_text(line).pairs == [
+        ("NOPARTYIDS[0].PARTYID", "x"),
+        ("NOPARTYIDS[0].PARTYROLE", "1"),
+        ("SIDE", "1"),
+    ]
+
+
 def test_the_outer_separator_is_read_off_the_second_marked_key() -> None:
     """A nested SOH would otherwise win the candidate scan and eat the line."""
     assert detect_separator(BRIDGE_LINE) == "|"
@@ -342,6 +378,9 @@ def test_a_malformed_member_is_kept_rather_than_dropped() -> None:
     [
         BRIDGE_LINE,
         "#A=1|#B=2",
+        "#A=1#B=2",
+        "toBridge #A=1#B=2#C=3",
+        "#NOPARTYIDS[0]=PARTYID=x" + SOH + "PARTYROLE=1#SIDE=1",
         "#NOPARTYIDS[0]=PARTYID=x" + SOH + "PARTYROLE=1|#SIDE=1",
         "#NOPARTYIDS[0]=PARTYID=x" + SOH + "garbage|#SIDE=1",
         "Side=1 | Price=41.25",

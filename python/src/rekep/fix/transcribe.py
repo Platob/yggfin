@@ -25,7 +25,9 @@ from rekep.fix.message import (
     _BEGIN,
     _MEMBER_NAME_VECTOR,
     BRIDGE_SEPARATOR_VECTOR,
+    MARKER,
     SEPARATOR_VECTOR,
+    SEPARATORS,
     parse_arrow_array,
 )
 from rekep.fix.registry import FixRegistry
@@ -239,6 +241,14 @@ class FixCodec(Convertible):
         it is worth passing: a category is one kind of message, so running the
         other pattern over it is a whole regex pass that can only return nulls.
         None runs both, for a caller that does not know.
+
+        What the **bridge** half extracts is the character in front of the next
+        key, which is the separator only when it is one of the candidates: a
+        bridge that writes `#A=1#B=2` puts nothing between its tokens, and the
+        character there is the tail of a value. So a non-candidate is mapped to
+        the marker, `detect_separator`'s rule and for its reason -- and it also
+        keeps every `#`-separated row in **one** group rather than one group
+        per value it happens to end with.
         """
         compute = pyarrow.compute
         text = messages.cast(pyarrow.string(), safe=False)
@@ -248,6 +258,11 @@ class FixCodec(Convertible):
         if named is not False:
             bridge = compute.struct_field(
                 compute.extract_regex(text, BRIDGE_SEPARATOR_VECTOR), "sep"
+            )
+            bridge = compute.if_else(
+                compute.is_in(bridge, value_set=pyarrow.array(SEPARATORS, pyarrow.string())),
+                bridge,
+                pyarrow.scalar(MARKER),
             )
             found = bridge if found is None else compute.coalesce(found, bridge)
         return compute.fill_null(found, "")

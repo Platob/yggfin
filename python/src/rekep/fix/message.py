@@ -26,6 +26,15 @@ SOH = "\x01"
 #: caret-A log reads every tag with an `A` glued to the front.
 SEPARATORS = (SOH, "|", "^A", "^", ";")
 
+#: What a bridge writes in front of every key, and -- where it writes nothing
+#: else -- what separates them: `#A=1#B=2` has no delimiter between its tokens
+#: at all, so the marker of the next key is the end of the value before it.
+#:
+#: Not a member of `SEPARATORS`, deliberately. That list is the blind scan's
+#: candidates and the entry separator's, and a `#` anywhere in a line nobody
+#: has established is a bridge message is a hash, not a delimiter.
+MARKER = "#"
+
 #: What a BeginString *value* may hold: anything that is not a separator
 #: candidate and not whitespace -- so the value stops exactly where the
 #: separator starts. Spelled out for `_WS`'s reason, and shared, because the
@@ -232,8 +241,11 @@ def detect_separator(text: str) -> str:
     the candidate list.
 
     A bridge message has the same tell read the other way round: what sits
-    immediately **before** its second `#NAME=` is the separator. That reading
-    is not an optimisation, it is the only correct one on a line whose group
+    immediately **before** its second `#NAME=` is the separator, when that is
+    one of the candidates -- and the `#` itself when it is not, because a
+    bridge that writes `#A=1#B=2` has no delimiter between its tokens and the
+    marker of the next key is where the value before it ends. That reading is
+    not an optimisation, it is the only correct one on a line whose group
     entries nest a second separator -- `...|#NOPARTYIDS[0]=PARTYID=x<SOH>...`
     holds a SOH, and the candidate scan below would have answered SOH and
     parsed the whole line as one field.
@@ -251,9 +263,7 @@ def detect_separator(text: str) -> str:
     if bridge is not None:
         second = _BRIDGE_NEXT.search(text, bridge.end())
         if second is not None:
-            following = _separator_before(text, second.start())
-            if following is not None:
-                return following
+            return _separator_before(text, second.start())
     for candidate in SEPARATORS:
         if candidate in text:
             return candidate
@@ -270,14 +280,26 @@ def _separator_at(text: str, index: int) -> str | None:
     return None if following.isspace() else following
 
 
-def _separator_before(text: str, index: int) -> str | None:
-    """The separator ending just before `index`, `^A` read as the pair it is."""
+def _separator_before(text: str, index: int) -> str:
+    """The separator ending just before `index`; `MARKER` where the tokens abut.
+
+    A bridge writes `#A=1|#B=2` and it writes `#A=1#B=2`, and the difference
+    between them is one character that may equally be the tail of the value in
+    front of it. There is no reading of that character that is right both
+    times, so only a **candidate** is taken as a separator and anything else is
+    not taken at all: where the tokens abut, the `#` marking the next key is
+    what separates them, which is the one answer that cannot swallow a value.
+
+    Reading it as the separator anyway is what `#A=1#B=2` used to do -- `1` was
+    the separator, `A` came back empty and `B` came back attached to whatever
+    followed. It parsed, which is how it would have travelled.
+    """
     if index < 1:
-        return None
+        return MARKER
     if text[index - 2 : index] == "^A":
         return "^A"
     preceding = text[index - 1]
-    return None if preceding.isspace() else preceding
+    return preceding if preceding in SEPARATORS else MARKER
 
 
 def detect_entry_separator(text: str, separator: str) -> str | None:

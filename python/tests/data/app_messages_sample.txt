@@ -11,3 +11,4 @@ java.lang.IllegalStateException: no binding for token 'venue.mic'
 	at com.example.objkey.TagWrapper.evaluate(TagWrapper.java:214)
 	at com.example.pipeline.Stage.run(Stage.java:171)
 2026-08-14 00:05:02.001 [250-e7256476:9effef3e6a:72505] [MCFID_BuySide_Timestamps_And_Fields] no level printed by this driver
+2026-08-14 00:05:02.002 [250-e7256476:9effef3e6a:72504] [ULBridge] (INFO) toBridge #ISINCODE=XX0000084733#SYMBOL=TTF#SIDE=1#ORDERQTY=1200#NOPARTYIDS=1#NOPARTYIDS[0]=PARTYID=BUYSIDEPARTYROLE=1#UNKNOWNVENUEFIELD=Z9

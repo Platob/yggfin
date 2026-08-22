@@ -115,7 +115,10 @@ a machine that was never online has the dictionary too.
     - **a `#` marks where a key starts.** It is dropped — it says *where* a key
       is, not which field it is — and only in named mode, because a bridge's
       `#54=x` is a rendered key that happens to be spelled with digits and not
-      tag 54.
+      tag 54. Where the bridge writes nothing else between its tokens
+      (`#A=1#B=2`) that marker is also the **separator**: the character in
+      front of the next key is the tail of the value before it, so only one of
+      the candidates is read as a delimiter and anything else is not.
     - **the message starts at its first `#NAME=`**, exactly as a wire message
       starts at `8=FIX`, so the driver's own `toBridge ` prefix never glues
       itself onto the first key. Two `#NAME=` tokens or more, because a lone
@@ -134,6 +137,15 @@ a machine that was never online has the dictionary too.
     That is also why the outer separator is read off the *second* `#NAME=` on
     such a line rather than from the candidate list: a nested SOH would
     otherwise win the scan and the whole line would parse as one field.
+
+    ```python
+    detect_separator("#A=1|#B=2")   # '|'  — a candidate, so a delimiter
+    detect_separator("#A=1#B=2")    # '#'  — nothing between them, so the marker
+    ```
+
+    Reading that `1` as the separator is what the parser used to do, and it
+    gave `A` an empty value and glued `B` to whatever followed — silently,
+    because the result still parsed.
 
 ## The dictionary
 
