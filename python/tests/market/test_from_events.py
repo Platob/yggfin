@@ -476,6 +476,34 @@ def test_the_running_levels_are_what_walking_the_orders_would_give() -> None:
             ), f"turn {turn}, step {step}"
 
 
+def test_the_two_parallel_lists_never_drift_apart() -> None:
+    """`keys` and `alive` are the same levels in the same order, and a snapshot
+    walks the second on the strength of the first. Only two places move a level;
+    this is what says both of them move both lists."""
+    import random
+
+    generate = random.Random(17)
+    for turn in range(200):
+        side = Resting(side=Side.BID if turn % 2 else Side.ASK)
+        for step in range(25):
+            side.apply(
+                order(
+                    10 + step,
+                    side.side,
+                    100.0 + generate.randrange(-4, 5),
+                    float(generate.randrange(0, 9)),
+                    f"O{generate.randrange(7)}",
+                    state=State.CANCELLED if generate.random() < 0.25 else State.NEW,
+                )
+            )
+            if generate.random() < 0.3 and side.orders:
+                side.take(trade(10 + step, 100.0, float(generate.randrange(1, 6))), 4.0)
+            assert len(side.keys) == len(side.alive) == len(side.levels), f"{turn}/{step}"
+            assert [one.key for one in side.alive] == side.keys
+            assert side.keys == sorted(side.keys), "and sorted, which is the whole point"
+            assert [one.px for one in side.alive] == [one.px for one in side.into_levels()]
+
+
 def test_a_level_that_reaches_zero_is_dropped_rather_than_kept_at_zero() -> None:
     """Leaving it would put an empty price in every `alive` list from then on."""
     side = Resting(side=Side.BID)

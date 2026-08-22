@@ -422,10 +422,27 @@ class Event(Convertible):
         # Two snapshots of one unchanged book then agree on what they show and
         # differ only in when they were taken, which is the truth about them.
         taken.sunix = self.sunix if self.sunix is not None else self.unix
+        taken.forget_delta()
         # Cleared so `identify` derives one: the row differs from the one it
         # was copied from, in the two fields that say it is a picture.
         taken.hash = NIL
         return taken
+
+    def forget_delta(self) -> None:
+        """Drop what *changed*, keeping what *is*. A snapshot has no delta.
+
+        A picture of a book shows the book; it does not show the update that
+        produced the book an hour ago. Carrying those forward made a consumer
+        summing the delta columns count one level insertion once per hourly row
+        until something else happened -- four times over a three-hour quiet
+        patch.
+
+        Nothing at this layer, because the envelope has no delta. A shape that
+        does overrides it, and **assigns** rather than clearing in place: a
+        snapshot is a `copy.copy`, so its lists are the subject's own until
+        something replaces them, and `.clear()` would empty the row being
+        pictured.
+        """
 
     def life_hash(self) -> int:
         """The identifier of this event's lifecycle, from what it carries now.

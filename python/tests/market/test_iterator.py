@@ -292,3 +292,44 @@ def test_a_trade_counts_as_the_side_moving() -> None:
     first, _, third = BookIterator(events=events, snapshot_every=0).books
     assert third.bid_qty == 3.0 and third.bid_hash != first.bid_hash
     assert len(third.bid_executions) == 1
+
+
+# -- a picture has no delta ---------------------------------------------------
+
+
+def test_a_snapshot_shows_the_book_and_not_what_changed_to_produce_it() -> None:
+    """Carrying the delta forward made a consumer summing those columns count one
+    level insertion once per hourly row -- four times over a three-hour quiet
+    patch -- for an insertion that happened once."""
+    events = [
+        order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1"),
+        order(BASE + 3 * HOUR + 60, BTC, Side.BID, 99.0, 1.0, "B2"),
+    ]
+    found = list(BookIterator(events=events))
+    for one in found:
+        if one.sunix is None:
+            continue
+        assert one.bid_updates == [] and one.bid_executions == []
+        assert one.ask_updates == [] and one.ask_executions == []
+        assert [level.px for level in one.bid_alive] == [100.0], "the state is still there"
+
+
+def test_forgetting_the_delta_does_not_empty_the_row_it_pictures() -> None:
+    """A snapshot is a `copy.copy`, so its lists are the subject's own until
+    something replaces them: clearing in place would empty the book below it."""
+    events = [
+        order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1"),
+        order(BASE + HOUR + 60, BTC, Side.BID, 99.0, 1.0, "B2"),
+    ]
+    first, snapshot, _ = BookIterator(events=events).books
+    assert len(first.bid_updates) == 1, "the row that was pictured still has its delta"
+    assert snapshot.bid_updates == []
+
+
+def test_a_side_snapshot_forgets_its_delta_too() -> None:
+    from rekep.market import BookSide
+
+    side = BookSide(unix=BASE, xhash=7, side=Side.BID).with_previous(None)
+    side.updates = [object()]  # type: ignore[list-item]
+    taken = side.make_snapshot(BASE + HOUR)
+    assert taken.updates == [] and len(side.updates) == 1
