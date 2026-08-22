@@ -117,6 +117,18 @@ class FixRegistry(Convertible):
     retries: int = 6
     backoff: float = 2.0
 
+    #: Whether this registry may reach the site at all. False is the default
+    #: and what a person at a prompt wants: ask for `4.4`, get `4.4`.
+    #:
+    #: True is what a **pipeline** wants, and it is not the same wish. A parse
+    #: that meets its first bridge line must not answer it by starting a
+    #: seven-thousand-page scrape in the middle of a batch -- so an offline
+    #: registry serves whatever the store already holds and reports the rest as
+    #: unavailable, down the same path an outage takes. Which is why this is
+    #: one flag rather than a second registry: every caller here already
+    #: handles "cannot be had right now".
+    offline: bool = False
+
     #: Sent with every request, so the traffic says what it is.
     user_agent: ClassVar[str] = "rekep-fix-registry (+https://github.com/Platob/rekep)"
 
@@ -139,10 +151,17 @@ class FixRegistry(Convertible):
         The store is asked first, the site second, and the store again when
         the site cannot be had -- three steps that are the same whether the
         store is a directory or an archive.
+
+        An **offline** registry stops after the first step and answers with
+        what it holds, empty included: raising here would report a network
+        failure that was never attempted, and a caller that asked an offline
+        registry what it has is owed the answer "nothing" rather than an error.
         """
         stored = self._stored_versions()
         if stored:
             return stored
+        if self.offline:
+            return self._known_versions()
         try:
             versions = self._scrape_versions()
         except OSError:
@@ -589,6 +608,8 @@ class FixRegistry(Convertible):
         site sends one, a doubling pause when it does not -- and only the last
         attempt raises.
         """
+        if self.offline:
+            raise OSError(f"{url} was not fetched: this registry is offline")
         request = urllib.request.Request(url, headers={"User-Agent": self.user_agent})
         pause = self.backoff
         for _ in range(self.retries):

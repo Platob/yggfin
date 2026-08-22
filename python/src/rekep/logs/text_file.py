@@ -31,12 +31,14 @@ from rekep.urls import Url
 #:     ^timestamp                  ^thread_name       ^driver_name ^level ^message
 #:
 #: `level` is optional -- some drivers print none -- and the fractional second
-#: carries millis and micros separated by an underscore. Matching is done on
-#: bytes so lines never have to be decoded just to be classified; a line that
-#: does not match is a wrapped continuation of the row above it.
+#: is **millis, and micros after them when the driver prints any**: the same
+#: capture writes `01.147`, `01,147`, `01.147250` and `01.147_250`, because one
+#: capture is written by several loggers and they do not agree. Matching is
+#: done on bytes so lines never have to be decoded just to be classified; a
+#: line that does not match is a wrapped continuation of the row above it.
 HEADER_PATTERN = re.compile(
     rb"^[ \t]*"
-    rb"(?P<timestamp>\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[.,]\d{3}[._,]\d{3})[ \t]+"
+    rb"(?P<timestamp>\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[.,]\d{3}(?:[._,]?\d{3})?)[ \t]+"
     rb"\[(?P<thread_name>[^\]]*)\][ \t]+"
     rb"\[(?P<driver_name>[^\]]*)\][ \t]*"
     rb"(?:\((?P<level>[A-Za-z]{1,12})\)[ \t]*)?"
@@ -44,9 +46,14 @@ HEADER_PATTERN = re.compile(
     re.DOTALL,
 )
 
-#: Characters `HEADER_PATTERN` pins a timestamp to. The slicing path is sound
-#: only at this width, so anything else is read rather than sliced.
-STAMP_WIDTH = 27
+#: Every width `HEADER_PATTERN` pins a timestamp to: seconds and millis (23),
+#: and those plus micros with or without a separator between them (26 or 27).
+#:
+#: The slicing path reads every component from a fixed offset, so it is sound
+#: at these widths and at no other: a stamp one character shorter slices into
+#: valid ISO holding *other digits* and casts happily to the wrong instant.
+#: Anything else is read rather than sliced.
+STAMP_WIDTHS = (23, 26, 27)
 
 #: A timestamp split into "up to the seconds" and "everything after the first
 #: separator", so a fraction written `167_520` or `167,520` can be put back
@@ -660,33 +667,59 @@ def _local_micros(timestamps: Sequence[bytes]) -> pyarrow.Array:
     micros -- are never even read: the components are sliced out and joined
     into canonical ISO form, and one cast parses the whole column.
 
-    That is only sound for the width the bundled pattern pins,
-    `STAMP_WIDTH` characters. A custom `header_pattern` matching anything else
-    is not caught by the cast -- `2026-08-14 00:05:01.167520`, one character
-    shorter, slices into valid ISO holding *other digits* and casts happily to
-    `.167200` -- so the width is checked first and anything else goes row by
-    row. Measured on the bundled shape the check is one `utf8_length` pass per
-    batch, under a percent.
+    **The width is what says where those offsets are**, so the fast path keys
+    off the matched span: one of `STAMP_WIDTHS`, the same for every row in the
+    batch, or the column is read row by row instead. A stamp one character
+    shorter is not caught by the cast -- `2026-08-14 00:05:01.167520` slices
+    into valid ISO holding *other digits* and casts happily to `.167200` --
+    which is why the check is on the width and not on the result. Measured on
+    the bundled shape it is one `utf8_length` pass per batch, under a percent.
+
+    A stamp that carries millis and no micros is **padded, not read**: `147`
+    is 147 milliseconds, so the microsecond field is `147000` and the three
+    zeros are arithmetic rather than a guess. Reading `147` as `000147`
+    -- which is what a naive right-align does -- moves the row by 147
+    milliseconds and looks entirely plausible on the way past.
     """
     compute = pyarrow.compute
     raw = pyarrow.array(timestamps, type=pyarrow.binary()).cast(pyarrow.string())
-    fixed = compute.all(compute.equal(compute.utf8_length(raw), STAMP_WIDTH), min_count=0).as_py()
-    if fixed:
-        joined = compute.binary_join_element_wise(
-            compute.utf8_slice_codeunits(raw, 0, 10),
-            " ",
-            compute.utf8_slice_codeunits(raw, 11, 19),
-            ".",
-            compute.utf8_slice_codeunits(raw, 20, 23),
-            compute.utf8_slice_codeunits(raw, 24, 27),
-            "",
-        )
+    lengths = compute.utf8_length(raw)
+    for width in STAMP_WIDTHS:
+        if not compute.all(compute.equal(lengths, width), min_count=0).as_py():
+            continue
         try:
-            return joined.cast(pyarrow.timestamp("us"))
+            return _sliced_micros(raw, width).cast(pyarrow.timestamp("us"))
         except pyarrow.ArrowInvalid:
-            pass
+            break
     micros = [_epoch_nanos(stamp) // 1000 for stamp in timestamps]
     return pyarrow.array(micros, type=pyarrow.int64()).cast(pyarrow.timestamp("us"))
+
+
+def _sliced_micros(raw: pyarrow.Array, width: int) -> pyarrow.Array:
+    """A column of fixed-width stamps as canonical ISO microseconds.
+
+    One canonical spelling out of all of them, so the cast that follows has
+    one shape to parse: `YYYY-MM-DD HH:MM:SS.ffffff`. Where the stamp carries
+    no micros the field is filled with the literal zeros that make millis
+    micros; where it carries them with a separator the separator is at 23 and
+    the digits after it, and where it carries them without one they are at 23
+    already.
+    """
+    compute = pyarrow.compute
+    fraction = (
+        pyarrow.scalar("000")
+        if width == 23
+        else compute.utf8_slice_codeunits(raw, width - 3, width)
+    )
+    return compute.binary_join_element_wise(
+        compute.utf8_slice_codeunits(raw, 0, 10),
+        " ",
+        compute.utf8_slice_codeunits(raw, 11, 19),
+        ".",
+        compute.utf8_slice_codeunits(raw, 20, 23),
+        fraction,
+        "",
+    )
 
 
 def _unix_nanos(local: pyarrow.Array, timezone: str | None) -> pyarrow.Array:

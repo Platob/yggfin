@@ -84,6 +84,70 @@ def test_header_pattern_rejects_continuations(line: bytes) -> None:
     assert HEADER_PATTERN.match(line) is None
 
 
+# -- millis, or micros ------------------------------------------------------
+
+
+#: Every fractional-second spelling the header admits, and the nanosecond it
+#: means. Derived once, pinned here, because "millis read as micros" produces a
+#: perfectly plausible instant 147 milliseconds off.
+FRACTIONS = {
+    "2026-08-14 00:05:01.147_250": 1_786_665_901_147_250_000,
+    "2026-08-14 00:05:01.147250": 1_786_665_901_147_250_000,
+    "2026-08-14 00:05:01,147,250": 1_786_665_901_147_250_000,
+    "2026-08-14 00:05:01.147": 1_786_665_901_147_000_000,
+    "2026-08-14 00:05:01,147": 1_786_665_901_147_000_000,
+}
+
+
+@pytest.mark.parametrize(("stamp", "unix"), FRACTIONS.items(), ids=lambda v: str(v)[:28])
+def test_a_stamp_lands_on_the_instant_it_spells(tmp_path: Path, stamp: str, unix: int) -> None:
+    path = tmp_path / "one.txt"
+    path.write_text(f"{stamp} [t] [d] (INFO) hello\n")
+    with TextFile.from_path(path) as log:
+        assert log.read_arrow_table().column("unix").to_pylist() == [unix]
+
+
+def test_millis_are_padded_and_never_right_aligned(tmp_path: Path) -> None:
+    """`147` is 147 milliseconds. Read as `000147` it is 147 ms early, and looks fine."""
+    path = tmp_path / "millis.txt"
+    path.write_text("2026-08-14 00:05:01.147 [t] [d] (INFO) hello\n")
+    with TextFile.from_path(path) as log:
+        (unix,) = log.read_arrow_table().column("unix").to_pylist()
+    assert unix % 1_000_000_000 == 147_000_000
+    assert unix != 1_786_665_901_000_147_000
+
+
+def test_a_batch_mixing_both_widths_reads_every_row(tmp_path: Path) -> None:
+    """The slicing path is per batch, so a mixed batch takes the read path."""
+    path = tmp_path / "mixed.txt"
+    path.write_text("".join(f"{stamp} [t] [d] (INFO) hello\n" for stamp in FRACTIONS))
+    with TextFile.from_path(path) as log:
+        assert log.read_arrow_table().column("unix").to_pylist() == list(FRACTIONS.values())
+
+
+def test_a_written_batch_reparses_to_the_same_instants(tmp_path: Path) -> None:
+    """One canonical spelling out, and it has to read back as what went in."""
+    source = tmp_path / "mixed.txt"
+    source.write_text("".join(f"{stamp} [t] [d] (INFO) hello\n" for stamp in FRACTIONS))
+    with TextFile.from_path(source) as log:
+        rows = log.read_arrow_table()
+    copy = tmp_path / "copy.txt"
+    out = TextFile.from_path(copy)
+    out.write_arrow(rows)
+    with TextFile.from_path(copy) as again:
+        written = again.read_arrow_table()
+    assert written.column("unix").to_pylist() == rows.column("unix").to_pylist()
+    assert {line.split(b" [")[0][20:] for line in copy.read_bytes().splitlines()} == {
+        b"147_250",
+        b"147_000",
+    }, "micros, with the separator, whichever spelling came in"
+
+
+def test_a_fraction_the_pattern_does_not_admit_is_a_continuation(tmp_path: Path) -> None:
+    """Nanoseconds are not a spelling here, and a line that is not a record folds."""
+    assert HEADER_PATTERN.match(b"2026-08-14 00:05:01.147250123 [t] [d] (INFO) x") is None
+
+
 # -- construction -----------------------------------------------------------
 
 

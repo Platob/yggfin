@@ -3,7 +3,14 @@
 import pyarrow
 import pytest
 
-from rekep.fix import SOH, FixMessage, detect_separator, parse_arrow_array, tag_arrow_array
+from rekep.fix import (
+    SOH,
+    FixMessage,
+    detect_entry_separator,
+    detect_separator,
+    parse_arrow_array,
+    tag_arrow_array,
+)
 
 PIPE = "8=FIX.4.2|9=2058|35=8|49=BRK|54=1|58=hello world|10=045"
 SOHED = PIPE.replace("|", SOH)
@@ -225,6 +232,153 @@ def test_get_returns_the_default_when_nothing_matches() -> None:
     assert parsed.get("absent") is None
     assert parsed.get("absent", "d") == "d"
     assert parsed.values("absent") == []
+
+
+# -- a bridge's own spellings -----------------------------------------------
+
+
+#: One bridge message, as the sample capture writes one: `#`-marked keys, a
+#: whole group entry nested in a single token behind a second separator, and a
+#: field no dictionary has.
+BRIDGE_LINE = "toBridge " + "|".join(
+    [
+        "#ISINCODE=XX0000084733",
+        "#SYMBOL=TTF",
+        "#SIDE=1",
+        "#NOPARTYIDS=2",
+        "#NOPARTYIDS[0]=" + SOH.join(["PARTYID=BUYSIDE", "PARTYIDSOURCE=D", "PARTYROLE=1"]),
+        "#NOPARTYIDS[1]=" + SOH.join(["PARTYID=XPAR", "PARTYIDSOURCE=G", "PARTYROLE=17"]),
+        "#UNKNOWNVENUEFIELD=Z9",
+    ]
+)
+
+#: Derived from the line, then pinned: seven tokens, two of which carry three
+#: members each, so a parser that lost a member cannot move both sides.
+EXPECTED_BRIDGE_PAIRS = 11
+
+
+def test_the_bridge_fixture_is_the_shape_the_tests_assume() -> None:
+    assert BRIDGE_LINE.count("|") + 1 == 7
+    assert len(FixMessage.from_text(BRIDGE_LINE).pairs) == EXPECTED_BRIDGE_PAIRS
+
+
+def test_a_marked_key_drops_its_marker() -> None:
+    """`#` says where a key starts, not which field it is."""
+    parsed = FixMessage.from_text("#SIDE=1|#SYMBOL=TTF")
+    assert parsed.pairs == [("SIDE", "1"), ("SYMBOL", "TTF")]
+
+
+def test_a_marked_key_is_log_noise_in_tag_mode() -> None:
+    """A bridge's `#54=x` is a rendered key spelled with digits, not tag 54."""
+    assert FixMessage.from_text("8=FIX.4.2|#54=1|55=TTF|", named=False).get(54) is None
+    assert FixMessage.from_text("8=FIX.4.2|#54=1|55=TTF|", named=False).get(55) == "TTF"
+
+
+def test_the_driver_s_own_prefix_never_glues_onto_the_first_key() -> None:
+    """The same rule `8=FIX` gets, for the same reason."""
+    parsed = FixMessage.from_text(BRIDGE_LINE)
+    assert parsed.pairs[0] == ("ISINCODE", "XX0000084733")
+
+
+def test_one_marked_key_in_prose_is_not_a_message_start() -> None:
+    """Two `#NAME=` or it is a sentence, which is what `BRIDGE` says."""
+    assert FixMessage.from_text("Account=A|note=see #ref for details").get("Account") == "A"
+
+
+def test_the_outer_separator_is_read_off_the_second_marked_key() -> None:
+    """A nested SOH would otherwise win the candidate scan and eat the line."""
+    assert detect_separator(BRIDGE_LINE) == "|"
+    assert detect_entry_separator(BRIDGE_LINE, "|") == SOH
+
+
+def test_a_nested_group_entry_becomes_its_members() -> None:
+    """Under the canonical keys the one-member-per-token spelling produces."""
+    found = dict(FixMessage.from_text(BRIDGE_LINE).pairs)
+    assert found["NOPARTYIDS[0].PARTYID"] == "BUYSIDE"
+    assert found["NOPARTYIDS[0].PARTYIDSOURCE"] == "D"
+    assert found["NOPARTYIDS[0].PARTYROLE"] == "1"
+    assert found["NOPARTYIDS[1].PARTYROLE"] == "17"
+
+
+def test_a_nested_entry_and_a_printed_one_parse_to_the_same_pairs() -> None:
+    """No new key spelling: the two spellings of a group are one shape."""
+    nested = "#NOPARTYIDS[0]=" + SOH.join(["PARTYID=BUYSIDE", "PARTYROLE=1"]) + "|#SIDE=1"
+    printed = "#NOPARTYIDS[0]=PARTYID=BUYSIDE|#NOPARTYIDS[0].PARTYROLE=1|#SIDE=1"
+    assert FixMessage.from_text(nested).pairs == FixMessage.from_text(printed).pairs
+
+
+def test_a_group_entry_reads_back_as_entries() -> None:
+    entries = FixMessage.from_text(BRIDGE_LINE).indexed_group("NOPARTYIDS")
+    assert [dict(entry)["PARTYID"] for entry in entries] == ["BUYSIDE", "XPAR"]
+
+
+def test_a_second_separator_is_only_read_inside_an_indexed_token() -> None:
+    """`Text=a;b` is a value with a semicolon in it, not two fields."""
+    assert detect_entry_separator("Text=a;b|Side=1", "|") is None
+    assert FixMessage.from_text("Text=a;b|Side=1").pairs == [("Text", "a;b"), ("Side", "1")]
+
+
+def test_a_stated_entry_separator_is_used_as_given() -> None:
+    line = "#NOPARTYIDS[0]=PARTYID=x;PARTYROLE=1|#SIDE=1"
+    assert dict(FixMessage.from_text(line, "|", entry_separator=";").pairs) == {
+        "NOPARTYIDS[0].PARTYID": "x",
+        "NOPARTYIDS[0].PARTYROLE": "1",
+        "SIDE": "1",
+    }
+
+
+def test_a_malformed_member_is_kept_rather_than_dropped() -> None:
+    """A parser that loses the malformed half of a line loses the record."""
+    line = "#NOPARTYIDS[0]=PARTYID=x" + SOH + "garbage|#SIDE=1"
+    assert FixMessage.from_text(line).pairs == [
+        ("NOPARTYIDS[0].PARTYID", "x"),
+        ("NOPARTYIDS[0]", "garbage"),
+        ("SIDE", "1"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        BRIDGE_LINE,
+        "#A=1|#B=2",
+        "#NOPARTYIDS[0]=PARTYID=x" + SOH + "PARTYROLE=1|#SIDE=1",
+        "#NOPARTYIDS[0]=PARTYID=x" + SOH + "garbage|#SIDE=1",
+        "Side=1 | Price=41.25",
+        "8=FIX.4.2|35=D|55=TTF|10=203|",
+        "prose with nothing in it",
+    ],
+    ids=lambda value: value[:26],
+)
+def test_the_two_parsers_agree_on_every_bridge_spelling(line: str) -> None:
+    """The contract this module is built on, asserted on the shapes it added."""
+    column = pyarrow.array([line])
+    assert parse_arrow_array(column).to_pylist()[0] == FixMessage.from_text(line).pairs
+
+
+def test_a_column_of_bridge_lines_agrees_row_for_row() -> None:
+    """One style per call, so the sampled reading has to hold for every row."""
+    lines = [BRIDGE_LINE, "#A=1|#B=2", "#NOPARTYIDS[0]=PARTYID=x" + SOH + "PARTYROLE=1|#SIDE=1"]
+    column = pyarrow.array(lines)
+    expected = [FixMessage.from_text(line, "|").pairs for line in lines]
+    assert parse_arrow_array(column).to_pylist() == expected
+
+
+def test_a_bridge_column_with_no_nesting_pays_for_no_expansion() -> None:
+    """The skip is the point: a column without entries takes the old path."""
+    lines = ["#A=1|#B=2", "#C=3|#D=4"]
+    column = pyarrow.array(lines)
+    assert parse_arrow_array(column).to_pylist() == [
+        [("A", "1"), ("B", "2")],
+        [("C", "3"), ("D", "4")],
+    ]
+
+
+def test_a_null_line_among_bridge_lines_stays_null() -> None:
+    column = pyarrow.array([BRIDGE_LINE, None, "#A=1|#B=2"])
+    parsed = parse_arrow_array(column).to_pylist()
+    assert parsed[1] is None
+    assert len(parsed[0]) == EXPECTED_BRIDGE_PAIRS
 
 
 # -- whole columns -----------------------------------------------------------
