@@ -75,6 +75,19 @@ def test_repeated_tags_keep_every_value_in_order() -> None:
     assert parsed.get(55) == "AAA"
 
 
+def test_a_message_iterates_as_its_pairs() -> None:
+    """`__iter__` is what makes a message usable in a `for`, and it had no test.
+
+    Coverage found it: one `return iter(self.pairs)` the whole suite never
+    reached, on the one method a caller writing `for tag, value in message`
+    depends on.
+    """
+    parsed = FixMessage.from_text("8=FIX.4.2|35=8|54=1|10=045")
+    assert list(parsed) == parsed.pairs
+    assert dict(parsed)["54"] == "1"
+    assert len(parsed) == len(list(parsed))
+
+
 # -- repeating groups --------------------------------------------------------
 
 MDS = "8=FIX.4.2|35=W|268=2|269=0|270=1.1|271=5|269=1|270=1.2|271=7|55=EURUSD|10=000"

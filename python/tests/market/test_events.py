@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyarrow
 import pytest
 
 from rekep.market import (
@@ -106,6 +107,22 @@ def test_a_snapshot_keeps_both_when_it_was_taken_and_what_it_is_of() -> None:
     assert built.unix == taken and built.sunix == subject
     assert built.unix - built.sunix == 1_000_000_000, "staleness, without a join"
     assert Order().sunix is None, "and nothing that is not a snapshot carries one"
+
+
+def test_a_shape_hashes_whole_columns_the_way_it_hashes_one_row() -> None:
+    """`Event.hash_arrow` is `Event.hash_of` over columns, and it had no test.
+
+    The free function underneath is pinned in `test_identity.py`; the
+    classmethod that puts the class name in front of it -- which is what keeps
+    an `Order` and a `Book` off one identifier -- was the uncovered line.
+    """
+    symbols = pyarrow.array(["AAPL", "MSFT"])
+    ids = pyarrow.array(["cl-1", "cl-2"])
+    assert Order.hash_arrow(symbols, ids).to_pylist() == [
+        Order.hash_of("AAPL", "cl-1"),
+        Order.hash_of("MSFT", "cl-2"),
+    ]
+    assert Order.hash_arrow(symbols, ids).to_pylist() != Book.hash_arrow(symbols, ids).to_pylist()
 
 
 def test_an_unhashed_event_carries_the_nil_identifier_rather_than_a_null() -> None:

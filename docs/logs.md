@@ -436,7 +436,7 @@ a read and a write, with nothing in between.
     with TextFile.from_path("app.txt.gz", static_values={"bridge": "bridge-1"}) as log:
         logs.append_arrow(
             log.read_arrow_reader(),   # streamed, never materialised
-            merge_by=True,             # insert only new (unix, h64)
+            merge_by=True,             # insert only new (unix, hash)
             commit_row_size=1_000_000, # one snapshot per million rows
         )
     ```

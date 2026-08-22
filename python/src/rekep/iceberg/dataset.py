@@ -2524,13 +2524,6 @@ def _always_true() -> Any:
     return AlwaysTrue()
 
 
-def _literal(value: Any) -> str:
-    """One partition value as its filter literal."""
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return str(value)
-    return f"'{value}'"
-
-
 def _path_of(location: str) -> str:
     """A file location without its scheme, as one of the spellings to try.
 

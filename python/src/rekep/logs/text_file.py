@@ -172,8 +172,8 @@ class TextFile(Dataset, io.BufferedIOBase):
         """Build from a URI, or from a path when `filesystem` is given.
 
         Anything else the file declares -- `static_values`, `row`,
-        `header_pattern`, `id_epoch_ms` -- is a keyword here, so a call reads
-        as one shape.
+        `header_pattern`, `rules` -- is a keyword here, so a call reads as one
+        shape.
         """
         return cls(url=url, filesystem=filesystem, timezone=timezone, **declared)
 
@@ -750,39 +750,18 @@ def _zeros(count: int, arrow_type: pyarrow.DataType) -> pyarrow.Array:
     return pyarrow.repeat(pyarrow.scalar(0, arrow_type), count)
 
 
-_EPOCH = datetime.date(1970, 1, 1)
 _EPOCH_DATETIME = datetime.datetime(1970, 1, 1)  # noqa: DTZ001 - log timestamps are naive UTC
-_DAY_SECONDS: dict[bytes, int] = {}
 
 
 def _epoch_nanos(timestamp: bytes) -> int:
     """`2026-08-14 00:05:01.167_520` -> nanoseconds since the epoch, naive UTC.
 
-    Per-row fallback for batches the Arrow path will not take. Sliced rather
-    than parsed: the bundled header regex has already pinned every field to a
-    fixed offset. The date half is cached because a log covers few distinct
-    days but many rows. Any other width goes to `_epoch_nanos_slow`, which
-    reads the string rather than assuming where its parts are.
-    """
-    if len(timestamp) != STAMP_WIDTH:
-        return _epoch_nanos_slow(timestamp)
-    try:
-        day = timestamp[:10]
-        seconds = _DAY_SECONDS.get(day)
-        if seconds is None:
-            date = datetime.date(int(day[0:4]), int(day[5:7]), int(day[8:10]))
-            seconds = (date - _EPOCH).days * 86_400
-            _DAY_SECONDS[day] = seconds
-        hours, minutes = int(timestamp[11:13]), int(timestamp[14:16])
-        seconds += hours * 3_600 + minutes * 60 + int(timestamp[17:19])
-        millis, micros = int(timestamp[20:23]), int(timestamp[24:27])
-        return seconds * 1_000_000_000 + millis * 1_000_000 + micros * 1_000
-    except (ValueError, IndexError):
-        return _epoch_nanos_slow(timestamp)
-
-
-def _epoch_nanos_slow(timestamp: bytes) -> int:
-    """Fallback for timestamps a custom `header_pattern` shapes differently.
+    The per-row path, for the batches `_local_micros` will not take in Arrow --
+    which is to say the ones whose stamps are not the width the slicing path
+    assumes. So this one **reads** the string rather than assuming where its
+    parts are: a second, sliced implementation sat here for the widths the
+    Arrow path already handles and no test in the suite reached a line of it,
+    because by the time anything gets here the width has already been ruled out.
 
     The fraction's separators are *removed*, not replaced: the bundled pattern
     itself admits `01,167,520`, and turning each comma into a dot builds

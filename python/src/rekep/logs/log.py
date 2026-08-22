@@ -127,19 +127,3 @@ class LogRules(Convertible):
             hit = compute.fill_null(compute.match_substring_regex(text, rule.pattern), False)
             found = compute.if_else(hit, pyarrow.scalar(int(rule.etype), self.CODE), found)
         return found.cast(self.CODE, safe=False)
-
-    def etype_arrow_batch(self, batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
-        """`batch` with its `etype` column decided from its `message` column.
-
-        An empty rule set hands the batch straight back rather than writing a
-        column of zeros over one somebody else decided.
-        """
-        if not self.rules:
-            return batch
-        index = batch.schema.get_field_index("etype")
-        declared = batch.schema.field(index)
-        return batch.set_column(
-            index,
-            declared,
-            self.etype_arrow(batch.column("message")).cast(declared.type, safe=False),
-        )

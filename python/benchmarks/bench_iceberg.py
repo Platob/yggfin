@@ -264,45 +264,6 @@ def header(columns: tuple[str, ...], widths: tuple[int, ...]) -> None:
     print(" ".join(f"{c:>{w}}" for c, w in zip(columns, widths, strict=True)))
 
 
-def sweep_parse(rows: int, days: int, repeat: int) -> None:
-    """Parsing on its own, so the write numbers can be read net of it."""
-    with tempfile.TemporaryDirectory() as tmp:
-        path = pathlib.Path(tmp) / "bench.txt"
-        size = generate(path, rows, days)
-        print(f"\n== parse: {rows:,} rows over {days} days, {size / 2**20:.1f} MiB ==")
-        header(("case", "seconds", "rows/s", "MB/s"), (28, 9, 12, 8))
-        cases: list[tuple[str, Callable[[], Any]]] = [
-            ("read_arrow_table", lambda: TextFile.from_path(path).read_arrow_table()),
-            (
-                "reader, 16k batches",
-                lambda: (
-                    TextFile.from_path(path).read_arrow_reader(batch_row_size=16_384).read_all()
-                ),
-            ),
-            (
-                "reader, 256k batches",
-                lambda: (
-                    TextFile.from_path(path).read_arrow_reader(batch_row_size=262_144).read_all()
-                ),
-            ),
-            (
-                "with timezone",
-                lambda: TextFile.from_url(
-                    path.resolve().as_uri(), timezone="Europe/Paris"
-                ).read_arrow_table(),
-            ),
-            (
-                "no continuation folding",
-                lambda: (
-                    TextFile.from_path(path).read_arrow_reader(fold_continuations=False).read_all()
-                ),
-            ),
-        ]
-        for name, call in cases:
-            best = min(timed(call)[0] for _ in range(repeat))
-            print(f"{name:>28} {best:>9.3f} {rows / best:>12,.0f} {size / 2**20 / best:>8.1f}")
-
-
 def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
     """Streaming a parsed log into a table, in every shape worth trying."""
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-log-"))
@@ -916,15 +877,13 @@ def main() -> int:
     parser.add_argument("--quick", action="store_true")
     parser.add_argument(
         "--only",
-        choices=["parse", "write", "read", "fs", "maintain", "update", "backfill"],
+        choices=["write", "read", "fs", "maintain", "update", "backfill"],
         default=None,
     )
     arguments = parser.parse_args()
     rows = 100_000 if arguments.quick else arguments.rows
     days = 4 if arguments.quick else arguments.days
 
-    if arguments.only in (None, "parse"):
-        sweep_parse(rows, days, 2 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "write"):
         shutil.rmtree(sweep_write(rows, days, arguments.quick), ignore_errors=True)
     if arguments.only in (None, "read"):
