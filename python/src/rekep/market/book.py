@@ -20,6 +20,7 @@ from rekep.market.fields import MarketFieldBuilder, fix_tag
 from rekep.market.identity import NIL
 from rekep.market.instrument import Instrument
 from rekep.market.orders import Execution, Order
+from rekep.market.reference import Reference
 
 
 @field
@@ -1219,6 +1220,9 @@ class Folding:
     instrument: Instrument = dataclasses.field(default_factory=Instrument)
     """The reference data learnt so far, which the instrument stream publishes."""
 
+    known: Reference | None = None
+    """The last reference row emitted, which the next one is a version of."""
+
     emitted: int | None = None
     """`unix` of the last book emitted, which is what an hourly snapshot counts from."""
 
@@ -1275,7 +1279,15 @@ class BookIterator:
     """Emit the book on every multiple of this; `0` emits only what changed."""
 
     folding: dict[int, Folding] = dataclasses.field(default_factory=dict)
-    """The per-instrument state, by `instrument_hash`. Mutable, and the point."""
+    """The per-instrument state, by `instrument_hash`. Mutable, and the point.
+
+    Keyed by the identity the instrument was **first** seen under, which is not
+    always the one a later message identifies it by: a venue sends the ISIN on
+    some messages and only the symbol on others, and `Instrument.identify`
+    prefers the registered identifier. Every identity an instrument has been
+    seen under is aliased onto this key, so one instrument is one fold however
+    the message spelled it.
+    """
 
     def __post_init__(self) -> None:
         self._source: Iterator[MarketEvent] | None = None
@@ -1284,6 +1296,7 @@ class BookIterator:
         self._instruments: deque[Instrument] = deque()
         self._unix: int | None = None
         self._swept: int | None = None
+        self._aliases: dict[int, int] = {}
 
     # -- the two streams -----------------------------------------------------
 
@@ -1297,13 +1310,15 @@ class BookIterator:
         return self._drain(self._books)
 
     @property
-    def instruments(self) -> Iterator[Instrument]:
-        """Every version of every instrument the stream taught the fold.
+    def instruments(self) -> Iterator[Reference]:
+        """Every version of what the stream taught the fold about an instrument.
 
-        A venue sends reference data as it goes -- a symbol first, a CFI code
-        with the next message, a maturity with the one after -- so an
-        instrument is learnt rather than read, and each time it learns
-        something it is a new row. An instrument nothing enriched is one row.
+        `Reference` rows and not bare `Instrument`s: reference data is learnt
+        rather than read -- a venue sends a symbol first, a CFI code with the
+        next message, a maturity with the one after -- so each time it says
+        something new that is a new *version*, stamped with when it was learnt
+        and chained to the one before it like every other row here. An
+        instrument nothing enriched is one row.
         """
         return self._drain(self._instruments)
 
@@ -1346,9 +1361,7 @@ class BookIterator:
                 "Sort the stream on `unix` first"
             )
         self._unix = event.unix
-        state = self.folding.get(event.instrument_hash)
-        if state is None:
-            state = self.folding[event.instrument_hash] = self._started(event)
+        state = self._state_of(event)
         self._settle(state, event.unix)
         self._sweep(event.unix, state)
         self._learn(state, event)
@@ -1408,6 +1421,32 @@ class BookIterator:
             if state.unix is not None:
                 self._settle(state, state.unix + 1)
 
+    def _state_of(self, event: MarketEvent) -> Folding:
+        """The fold this event belongs to, by any identity its instrument has.
+
+        A venue that starts sending an ISIN halfway through a capture changes
+        what `Instrument.identify` returns, and a fold keyed on that alone
+        opened a second book for the same instrument. Every identity is aliased
+        onto the first one seen, which is also what the rows carry -- so the
+        partition an instrument's rows land in does not move either.
+        """
+        known = self._aliases.get(event.instrument_hash)
+        if known is not None:
+            return self.folding[known]
+        for identity in event.instrument.identities():
+            known = self._aliases.get(identity)
+            if known is not None:
+                # Learnt under another spelling: alias this one too, so the
+                # next message carrying it is one probe rather than a walk.
+                self._aliases[event.instrument_hash] = known
+                return self.folding[known]
+        canonical = event.instrument_hash
+        state = self.folding[canonical] = self._started(event)
+        self._aliases[canonical] = canonical
+        for identity in event.instrument.identities():
+            self._aliases.setdefault(identity, canonical)
+        return state
+
     def _started(self, event: MarketEvent) -> Folding:
         """The state one instrument's fold starts from, identities and all."""
         lifecycle = Book(
@@ -1424,6 +1463,11 @@ class BookIterator:
             sides=(BookSide.hash_of(lifecycle, "bid"), BookSide.hash_of(lifecycle, "ask")),
         )
 
+    def _remember(self, state: Folding, known: Instrument) -> None:
+        """Alias every identity the enriched instrument now has onto its fold."""
+        for identity in known.identities():
+            self._aliases.setdefault(identity, state.instrument_hash)
+
     def _learn(self, state: Folding, event: MarketEvent) -> None:
         """Take whatever reference data the event carries, and publish a version.
 
@@ -1435,7 +1479,11 @@ class BookIterator:
         if enriched is None:
             return
         state.instrument = enriched
-        self._instruments.append(enriched)
+        self._remember(state, enriched)
+        state.known = Reference(
+            unix=event.unix, instrument=enriched, instrument_hash=state.instrument_hash
+        ).with_previous(state.known)
+        self._instruments.append(state.known)
 
     # -- emitting -------------------------------------------------------------
 
@@ -1466,6 +1514,14 @@ class BookIterator:
             state.previous = taken.with_previous(state.previous)
             state.emitted = boundary
             self._books.append(state.previous)
+            # What was known then, beside what stood then: both tables get the
+            # hour, so "at 14:00" is a row in each rather than a replay of one
+            # and a scan backwards through the other.
+            if state.known is not None:
+                pictured = state.known.make_snapshot(boundary)
+                if pictured is not None:
+                    state.known = pictured.with_previous(state.known)
+                    self._instruments.append(state.known)
             boundary += every
 
     def _emit(self, state: Folding, unix: int) -> None:
@@ -1571,11 +1627,18 @@ def _settled(state: Folding, unix: int) -> Book:
     feed that alternates sides is half of every snapshot.
     """
     about = state.about
+    # The instrument the fold has *accumulated*, not whatever the last message
+    # happened to spell: a book row says what it is a book of, and the last
+    # message may have named the instrument more poorly than an earlier one.
+    # `instrument_hash` is the fold's canonical key for the same reason -- a
+    # row whose partition moved when a venue started sending an ISIN would
+    # split one instrument's history across two of them.
+    known = state.instrument if state.instrument.xhash else about.instrument
     book = Book(
         unix=unix,
-        instrument=about.instrument,
-        instrument_hash=about.instrument_hash,
-        symbol=about.symbol,
+        instrument=known,
+        instrument_hash=state.instrument_hash,
+        symbol=known.symbol or about.symbol,
         px_unit=about.px_unit,
         qty_unit=about.qty_unit,
         venue=about.venue,

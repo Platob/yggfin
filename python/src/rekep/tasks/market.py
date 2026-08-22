@@ -8,26 +8,30 @@ from typing import Any, ClassVar
 
 import pyarrow
 
+from rekep.convert import Convertible
 from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
 from rekep.logs.text_file import DEFAULT_BATCH_ROW_SIZE, TextFile
 from rekep.logs.text_files import TextFiles
-from rekep.market.book import Book
-from rekep.market.event import MarketEvent
+from rekep.market.book import Book, BookIterator
+from rekep.market.event import HOUR, MarketEvent
 from rekep.market.fix import FixEvents
 from rekep.market.orders import Execution, Order
+from rekep.market.reference import Reference
 from rekep.tasks.logs import DEFAULT_COMMIT_ROW_SIZE
 from rekep.tasks.task import Task, TaskRun
 from rekep.urls import Url
 
 #: The shapes this lands, keyed by the name their table is called after. The
-#: order is the order they are written in, and it is the order they depend on:
-#: an execution names the order it happened to, and a book is folded from both.
-SHAPES: dict[str, type[MarketEvent]] = {
+#: order is the order they depend on: an execution names the order it happened
+#: to, a book is folded from both, and an instrument is what all three are
+#: about.
+SHAPES: dict[str, type[Convertible]] = {
     "orders": Order,
     "executions": Execution,
     "books": Book,
+    "instruments": Reference,
 }
 
 
@@ -93,6 +97,14 @@ class ParseMarket(Task):
     books: bool = True
     """Whether to fold and land books as well as the events they are folded from."""
 
+    snapshot_every: int = HOUR
+    """Emit a book on every multiple of this even where nothing moved; `0` for none.
+
+    An hour by default, which is what makes "the book at 14:00" a point lookup
+    on a table partitioned by the hour rather than a scan backwards for the
+    last row before it.
+    """
+
     merge_by: bool = True
     """Skip rows a target already holds; False appends everything, duplicates included."""
 
@@ -108,34 +120,73 @@ class ParseMarket(Task):
     # -- running -------------------------------------------------------------
 
     def run(self) -> TaskRun:
-        """Read the capture, land what it means, and say what went where."""
+        """Read the capture, land what it means, and say what went where.
+
+        One pass, and the fold is *in* it: `BookIterator` holds the live orders
+        of every instrument rather than the events of every instrument, so what
+        the job holds is the book rather than the capture. The events go to
+        their own tables on the way past.
+        """
         started = self._timed()
         report = TaskRun(task=self._named())
         targets: dict[str, Dataset] = {}
-        buffers: dict[str, list[MarketEvent]] = {}
-        folding: dict[int, list[MarketEvent]] = {}
+        buffers: dict[str, list[Any]] = {}
 
-        for batch in self.into_arrow_batches():
-            report.rows += batch.num_rows
-            for event in self.into_events(batch):
-                name = "orders" if event.is_order() else "executions"
-                buffers.setdefault(name, []).append(event)
-                if self.books:
-                    folding.setdefault(event.instrument_hash, []).append(event)
-                if len(buffers[name]) >= self.commit_row_size:
-                    self._flush(name, buffers, targets, report)
+        events = self._tapped(report, buffers, targets)
+        if not self.books:
+            for _ in events:
+                pass
+        else:
+            folding = BookIterator(events=events, snapshot_every=self.snapshot_every)
+            for book in folding.books:
+                self._hold("books", book, buffers, targets, report)
+            # After, and not interleaved: draining the instruments would drive
+            # the same source the books are being pulled from. What it holds is
+            # a row per instrument per thing learnt about it -- bounded by the
+            # capture's instruments, not by its length.
+            for known in folding.instruments:
+                self._hold("instruments", known, buffers, targets, report)
         for name in list(buffers):
             self._flush(name, buffers, targets, report)
 
-        for held in folding.values():
-            for book in Book.from_events(held):
-                buffers.setdefault("books", []).append(book)
-                if len(buffers["books"]) >= self.commit_row_size:
-                    self._flush("books", buffers, targets, report)
-        self._flush("books", buffers, targets, report)
-
         report.seconds = self._timed() - started
         return report
+
+    def _tapped(
+        self, report: TaskRun, buffers: dict[str, list[Any]], targets: dict[str, Dataset]
+    ) -> Iterator[MarketEvent]:
+        """Every event the source carries, landed in its own table on the way past.
+
+        A tap and not a second pass: the orders and the executions are rows in
+        their own right *and* what the book is folded from, and reading the
+        capture twice to have both would double the only part of this job that
+        touches the disk.
+        """
+        for batch in self.into_arrow_batches():
+            report.rows += batch.num_rows
+            for event in self.into_events(batch):
+                self._hold(
+                    "orders" if event.is_order() else "executions",
+                    event,
+                    buffers,
+                    targets,
+                    report,
+                )
+                yield event
+
+    def _hold(
+        self,
+        shape: str,
+        row: Any,
+        buffers: dict[str, list[Any]],
+        targets: dict[str, Dataset],
+        report: TaskRun,
+    ) -> None:
+        """One row buffered for its target, committed once the buffer is worth it."""
+        held = buffers.setdefault(shape, [])
+        held.append(row)
+        if len(held) >= self.commit_row_size:
+            self._flush(shape, buffers, targets, report)
 
     # -- the pieces a caller may want on their own ---------------------------
 
@@ -212,7 +263,7 @@ class ParseMarket(Task):
             struct=self.target_field(shape),
         )
 
-    def into_arrow_table(self, shape: str, events: Iterable[MarketEvent]) -> pyarrow.Table:
+    def into_arrow_table(self, shape: str, events: Iterable[Convertible]) -> pyarrow.Table:
         """A run of events as the table its target is written from.
 
         The schema is handed to `from_pylist` and never inferred from the
@@ -238,7 +289,7 @@ class ParseMarket(Task):
     def _flush(
         self,
         shape: str,
-        buffers: dict[str, list[MarketEvent]],
+        buffers: dict[str, list[Any]],
         targets: dict[str, Dataset],
         report: TaskRun,
     ) -> None:

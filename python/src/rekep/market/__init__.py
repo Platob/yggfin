@@ -51,6 +51,7 @@ from rekep.market.identity import (
 )
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order
+from rekep.market.reference import Reference
 
 __all__ = [
     "DAY",
@@ -81,6 +82,7 @@ __all__ = [
     "Order",
     "OrderKind",
     "Ranged",
+    "Reference",
     "Resting",
     "Side",
     "State",

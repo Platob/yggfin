@@ -141,9 +141,12 @@ def test_a_message_that_knows_more_publishes_another_version() -> None:
         order(BASE + 10, BTC_RICH, Side.BID, 99.0, 5.0, "B2"),
     ]
     bare, rich = BookIterator(events=events).instruments
-    assert bare.cfi is None and bare.kind is AssetKind.UNKNOWN
-    assert rich.cfi == "FFICSX" and rich.kind is AssetKind.FUTURE and rich.currency == "USD"
+    assert bare.instrument.cfi is None and bare.instrument.kind is AssetKind.UNKNOWN
+    assert rich.instrument.cfi == "FFICSX" and rich.instrument.kind is AssetKind.FUTURE
+    assert rich.instrument.currency == "USD"
     assert rich.xhash == bare.xhash, "the same instrument, and an identity that did not move"
+    assert rich.version == bare.version + 1 and rich.prev_hash == bare.hash
+    assert rich.hash != bare.hash, "two versions of what is known, and two rows"
 
 
 def test_learning_never_retracts_what_was_already_known() -> None:
@@ -154,7 +157,7 @@ def test_learning_never_retracts_what_was_already_known() -> None:
         order(BASE + 10, BTC, Side.BID, 99.0, 5.0, "B2"),
     ]
     (only,) = BookIterator(events=events).instruments
-    assert only.cfi == "FFICSX"
+    assert only.instrument.cfi == "FFICSX"
 
 
 # -- the hourly grid ----------------------------------------------------------

@@ -11,7 +11,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep.market import Book, Execution, Order
+from rekep.market import Book, EventType, Execution, Order, Reference
 from rekep.tasks import ParseMarket, Task
 
 pytest.importorskip("pyiceberg")
@@ -63,6 +63,8 @@ LINES = [
 ORDERS = 5
 EXECUTIONS = 1
 INSTANTS = 4
+#: One instrument, learnt once: every message names it the same way.
+INSTRUMENTS = 1
 
 
 @pytest.fixture
@@ -97,6 +99,7 @@ def test_one_pass_lands_the_events_and_the_book_they_fold_into(
         "market.orders": ORDERS,
         "market.executions": EXECUTIONS,
         "market.books": INSTANTS,
+        "market.instruments": INSTRUMENTS,
     }
 
 
@@ -181,7 +184,7 @@ def test_a_replay_lands_nothing(capture: Path, catalog: dict) -> None:
     task.run()
     again = task.run()
     assert again.landed == 0
-    assert again.skipped == ORDERS + EXECUTIONS + INSTANTS
+    assert again.skipped == ORDERS + EXECUTIONS + INSTANTS + INSTRUMENTS
 
 
 def test_a_capture_that_grew_costs_the_growth(capture: Path, catalog: dict) -> None:
@@ -192,7 +195,12 @@ def test_a_capture_that_grew_costs_the_growth(capture: Path, catalog: dict) -> N
     )
     after = task.run()
     assert after.rows == len(LINES) + 1
-    assert after.written == {"market.orders": 1, "market.executions": 0, "market.books": 1}
+    assert after.written == {
+        "market.orders": 1,
+        "market.executions": 0,
+        "market.books": 1,
+        "market.instruments": 0,
+    }
 
 
 def test_appending_everything_is_what_false_means(capture: Path, catalog: dict) -> None:
@@ -291,3 +299,87 @@ def test_a_message_that_is_not_market_data_produces_nothing(catalog: dict) -> No
     task = ParseMarket(source="", properties=dict(catalog))
     batch = pyarrow.RecordBatch.from_pydict({"message": ["8=FIX.4.4|35=0|10=1", None, ""]})
     assert list(task.into_events(batch)) == []
+
+
+# -- the instrument table ----------------------------------------------------
+
+
+def test_the_instruments_the_capture_taught_it_are_a_table_of_their_own(
+    capture: Path, catalog: dict
+) -> None:
+    task = parse(capture, catalog)
+    task.run()
+    stored = task.target("instruments").read_arrow_table()
+    assert stored.num_rows == INSTRUMENTS
+    assert stored.column("symbol").to_pylist() == ["BTC-USD"]
+    assert stored.schema.names == Reference.FIELD.names
+    assert stored.column("etype").to_pylist() == [int(EventType.INSTRUMENT)]
+    assert stored.column("unix").to_pylist()[0] > 0, "stamped with when it was learnt"
+
+
+def test_an_instrument_is_landed_once_however_often_the_feed_repeats_it(
+    capture: Path, catalog: dict
+) -> None:
+    """A row per message would be the feed again rather than the reference data."""
+    report = parse(capture, catalog).run()
+    assert report.written["market.instruments"] == 1
+    assert report.rows == len(LINES), "though every one of them named it"
+
+
+def test_a_message_that_knows_more_lands_another_version(tmp_path: Path, catalog: dict) -> None:
+    folder = tmp_path / "richer"
+    folder.mkdir()
+    (folder / "bridge.log").write_text(
+        "\n".join(
+            [
+                LINES[0],
+                # the same instrument, with reference data attached
+                LINES[1].replace(ABOUT, f"{ABOUT}|167=FUT|461=FFICSX|48=US1234567890|22=4"),
+            ]
+        )
+        + "\n"
+    )
+    task = parse(folder, catalog)
+    task.run()
+    stored = task.target("instruments").read_arrow_table().sort_by("version")
+    rows = stored.to_pylist()
+    assert len(rows) == 2, "one bare, one enriched -- two versions of what is known"
+    assert {one["xhash"] for one in rows} == {rows[0]["xhash"]}, "and one identity"
+    assert [one["instrument"]["isin_code"] for one in rows] == [None, "US1234567890"]
+    assert [one["version"] for one in rows] == [0, 1]
+    assert rows[1]["prev_hash"] == rows[0]["hash"], "chained, like every other row here"
+
+
+# -- the hourly grid, through the whole job ----------------------------------
+
+
+def test_the_books_carry_the_hourly_grid_the_fold_produced(tmp_path: Path, catalog: dict) -> None:
+    """A gap of hours with no messages still has a row per hour in the table."""
+    from rekep.market.event import HOUR
+
+    folder = tmp_path / "gapped"
+    folder.mkdir()
+    later = (
+        refresh(0, entry("0", "1", 100.0, 9, 0, "B1"))
+        .replace(f"{DAY}-10:30:00.500", f"{DAY}-13:30:00.500")
+        .replace("273=10:30:00.000", "273=13:30:00.000")
+    )
+    (folder / "bridge.log").write_text("\n".join([LINES[0], later]) + "\n")
+
+    task = parse(folder, catalog)
+    task.run()
+    books = task.target("books").read_arrow_table().sort_by("unix")
+    hours = sorted({one // HOUR for one in books.column("unix").to_pylist()})
+    assert len(hours) == 4, f"10:00 through 13:00 inclusive, got {hours}"
+    taken = books.column("sunix").to_pylist()
+    assert sum(one is not None for one in taken) == 3, "three of them are pictures"
+
+
+def test_turning_the_grid_off_leaves_only_the_instants_that_moved(
+    capture: Path, catalog: dict
+) -> None:
+    task = parse(capture, catalog, snapshot_every=0)
+    report = task.run()
+    assert report.written["market.books"] == INSTANTS
+    stored = task.target("books").read_arrow_table()
+    assert all(one is None for one in stored.column("sunix").to_pylist())

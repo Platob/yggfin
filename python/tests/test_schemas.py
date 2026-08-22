@@ -13,7 +13,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, Log
-from rekep.market import Book, BookSide, Execution, Instrument, Order
+from rekep.market import Book, BookSide, Execution, Instrument, Order, Reference
 
 #: The contract directory is at the repo root, beside `python/` -- it is
 #: published to whoever exchanges data with this repo, not shipped in the wheel.
@@ -25,13 +25,14 @@ CONTRACTS = sorted(
 
 #: Pinned so an empty or moved directory fails here rather than passing every
 #: test below by iterating over nothing.
-EXPECTED_CONTRACTS = 8
+EXPECTED_CONTRACTS = 9
 
 #: The market shapes are tables, so each is published; `Event`, `MarketEvent`,
 #: `Level` and `LevelUpdate` are not, so they are not -- an abstract base is
 #: nothing two sides exchange, and a level travels inside the side that holds it.
 PUBLISHED = {
     "instrument.yaml": Instrument,
+    "reference.yaml": Reference,
     "order.yaml": Order,
     "execution.yaml": Execution,
     "bookside.yaml": BookSide,

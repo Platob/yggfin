@@ -266,8 +266,27 @@ class Instrument(Convertible):
         Each branch leads with a constant naming the scheme, so a symbol that
         happens to read like an ISIN cannot collide with the ISIN.
         """
+        found = self.identities()
+        return found[0] if found else NIL
+
+    def identities(self) -> tuple[int, ...]:
+        """Every identity this instrument could be known by, strongest first.
+
+        `identify` picks one and that is the row's; this is the whole set, and
+        a fold needs it. A venue sends what it felt like sending, so the same
+        instrument arrives under a registered identifier on one message and
+        under its symbol on the next -- and a fold keying on `identify` alone
+        started a second book for it halfway through the capture.
+
+        Deduplicated in order, so an instrument whose `SecurityID <48>` *is*
+        its ISIN has one identity and not the same one twice, and one known by
+        a CUSIP with an ISIN beside it is reachable by either.
+        """
+        found = []
         if self.security_id and self.security_id_source:
-            return hash_of("id", self.security_id_source, self.security_id)
+            found.append(hash_of("id", self.security_id_source, self.security_id))
+        if self.isin_code:
+            found.append(hash_of("id", IdSource.ISIN.into_fix(), self.isin_code))
         if self.symbol:
-            return hash_of("symbol", self.exchange or "", self.symbol)
-        return NIL
+            found.append(hash_of("symbol", self.exchange or "", self.symbol))
+        return tuple(dict.fromkeys(found))
