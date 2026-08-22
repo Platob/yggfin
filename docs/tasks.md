@@ -36,9 +36,11 @@ about, and land each line in the Iceberg table for its kind — `order_logs`,
     # parse-trading-logs: 600 read, 600 written in 1.06s -- logs.order_logs=100, ...
     ```
 
-    `tasks/parse_logs/parse_logs.yml` in this repository is a commented example of every
-    field, and `tasks/parse_logs/parse_logs.ipynb` is a notebook that builds a small
-    capture and runs it end to end.
+    `tasks/parse_logs/parse_logs.yml` in this repository holds every field, set
+    to what this page describes; what each one means is on `ParseLogs` itself,
+    so the document stays a configuration rather than a second copy of the
+    reference. `tasks/parse_logs/parse_logs.ipynb` builds a small capture and
+    runs it end to end.
 
 === "In Python"
 
@@ -181,9 +183,10 @@ an instrument table of what the capture taught it along the way.
     # parse-market-logs: 5 read, 16 written in 0.95s -- market.books=8, market.orders=7, ...
     ```
 
-    `tasks/parse_market/parse_market.yml` is a commented example of every field,
-    and `tasks/parse_market/parse_market.ipynb` builds a small capture and runs
-    it end to end.
+    `tasks/parse_market/parse_market.yml` holds every field, with the meanings
+    on `ParseMarket` rather than repeated in it, and
+    `tasks/parse_market/parse_market.ipynb` builds a small capture and runs it
+    end to end.
 
 === "In Python"
 

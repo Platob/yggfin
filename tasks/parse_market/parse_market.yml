@@ -1,91 +1,50 @@
 # Read a capture of market logs and land what the messages *mean*: an orders
-# table, an executions table, and a book table folded from both.
+# table, an executions table, and a book table folded from both. This file *is*
+# the job:
 #
-# This file *is* the job. Nothing here is code:
-#
-#     from rekep import Task
 #     Task.from_yaml("tasks/parse_market/parse_market.yml").run()
 #
-# or from a shell, without writing any Python at all:
-#
-#     python -c "from rekep import Task; print(Task.from_yaml('tasks/parse_market/parse_market.yml').run())"
-#
-# Every line below is a field of `rekep.tasks.ParseMarket`, so the class's
-# docstrings are the reference for what each one means.
+# Every key is a field of `rekep.tasks.ParseMarket`, whose docstrings say what
+# each one means; `docs/tasks.md` is the prose.
 
 kind: parse_market
 name: parse-market-logs
 
-# -- what to read ------------------------------------------------------------
+# -- what to read -------------------------------------------------------------
 
-# Either a location, as here -- a folder or a file, local or remote, whichever
-# way it is spelled...
+# Either a location, as here -- a folder or a file, local or remote...
 source: ../data/capture
 pattern: "*.log*"
 recursive: true
 
-# ... or a dataset document, which is how this chains onto `parse_logs`
-# without re-reading the capture. Replace the three lines above with:
+# ... or a dataset document, which is how this chains onto `parse_logs` without
+# re-reading the capture. Replace the three lines above with:
 #
 #     source:
 #       kind: iceberg
 #       name: logs.order_logs
 #       catalog: rekep
-#       properties:
-#         type: sql
-#         uri: sqlite:///../data/catalog.db
-#         warehouse: file://../data/warehouse
-#
-# `kind` names the store, and `Dataset.from_dict` finds the class for it --
-# including one behind an optional dependency, which is imported only by a
-# document that asks for it.
+#       properties: {type: sql, uri: sqlite:///../data/catalog.db, warehouse: file://../data/warehouse}
 
-# Which column of the source carries the FIX text. A log's is `message`, which
-# is what `parse_logs` lands too, so both spellings of the input agree.
-column: message
+column: message  # which column of the source carries the FIX text
+timezone: Europe/Paris  # only read when the source is text; a table has real instants
+venue: XCME  # which feed this came off, when the messages themselves do not say
 
-# The IANA zone the wall clock in a log header belongs to. Only used when the
-# source is text; a stored table already has real instants.
-timezone: Europe/Paris
+# -- where it lands ------------------------------------------------------------
 
-# Which feed this came off, when the messages themselves do not say. It lands
-# on every row, because a row that cannot say where it came from cannot be
-# reconciled against the venue that sent it.
-venue: XCME
-
-# -- where it lands -----------------------------------------------------------
-
-# `{shape}` is `orders`, `executions` or `books`, so this produces
-# `market.orders`, `market.executions` and `market.books`. Each is created on
-# the first write to it, partitioned by the hour and by a sixteen-way bucket of
-# `instrument_hash`, and sorted by `unix` -- which is exactly the layout
-# `Book.from_events` wants to read back.
 catalog: rekep
 namespace: market
-table: "{shape}"
+table: "{shape}"  # `market.orders`, `market.executions`, `market.books`
 
 properties:
   type: sql
   uri: sqlite:///../data/catalog.db
   warehouse: file://../data/warehouse
 
-# -- how it runs --------------------------------------------------------------
+# -- how it runs ---------------------------------------------------------------
 
-# Fold and land books as well as the events they are folded from. Set it to
-# false for a job landing raw events for something else to fold: a fold has to
-# see a whole instrument's stream, so it holds the live orders of every
-# instrument in the capture, where the other two passes stream.
-books: true
-
-# Skip rows a target already holds. This is an *append's* merge: nothing stored
-# is ever rewritten and no delete file is produced, so re-running this over a
-# capture that grew by a day costs the day.
-merge_by: true
-
-# Rows the reader puts in one batch, and rows a target buffers before it
-# commits. The second is what bounds the streaming passes' memory.
+books: true  # fold and land books too; false leaves the folding to something else
+merge_by: true  # skip rows a target already holds, so a replay costs the read alone
 batch_row_size: 65536
-commit_row_size: 250000
-
-# Stop after this many source rows. Uncomment for a dry run over a large capture.
-# limit: 1000
+commit_row_size: 250000  # rows buffered per target, and so what bounds the memory
+# limit: 1000  # stop after this many source rows; uncomment for a dry run

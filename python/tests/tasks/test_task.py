@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from rekep.tasks import ParseLogs, Task, TaskRun
+from rekep.fix.rules import Rules
+from rekep.tasks import ParseLogs, ParseMarket, Task, TaskRun
+from rekep.text.log import LogRules
+
+#: The job documents this repository ships, beside `python/`.
+TASKS = Path(__file__).resolve().parents[3] / "tasks"
 
 
 def test_a_document_says_which_task_it_is() -> None:
@@ -80,3 +87,24 @@ def test_a_report_that_skipped_nothing_does_not_say_so() -> None:
 def test_a_report_round_trips_as_a_document() -> None:
     run = TaskRun(task="t", rows=10, written={"a": 3}, skipped=7, seconds=0.5)
     assert TaskRun.from_json(run.into_json()) == run
+
+
+# -- the documents this repository ships --------------------------------------
+
+
+@pytest.mark.parametrize("kind,shape", [("parse_logs", ParseLogs), ("parse_market", ParseMarket)])
+def test_a_shipped_document_is_a_job(kind: str, shape: type) -> None:
+    """They are the worked example, so a key renamed in Python has to fail here."""
+    task = Task.from_yaml(str(TASKS / kind / f"{kind}.yml"))
+    assert isinstance(task, shape)
+    assert task.kind == kind and task.name
+    assert shape.from_dict(task.into_dict()) == task
+
+
+def test_the_shipped_rules_are_the_shipped_defaults() -> None:
+    """`parse_logs.yml` tells a reader to delete either block to take the
+    defaults, which is only true while the block *is* them."""
+    task = Task.from_yaml(str(TASKS / "parse_logs" / "parse_logs.yml"))
+    assert task.rules == LogRules()
+    assert task.categories == Rules.DEFAULT
+    assert set(task.null_values) == {"", "null", "<null>", "n/a"}

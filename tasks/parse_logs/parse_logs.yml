@@ -1,46 +1,25 @@
 # Parse a capture of trading logs into one Iceberg table per kind of event it
-# holds -- in one pass, streamingly.
+# holds -- in one pass, streamingly. This file *is* the job:
 #
-# This file *is* the job. Nothing here is code:
-#
-#     from rekep import Task
 #     Task.from_yaml("tasks/parse_logs/parse_logs.yml").run()
 #
-# or from a shell, without writing any Python at all:
-#
-#     python -c "from rekep import Task; print(Task.from_yaml('tasks/parse_logs/parse_logs.yml').run())"
-#
-# Every line below is a field of `rekep.tasks.ParseLogs`, so the class's
-# docstrings are the reference for what each one means.
+# Every key is a field of `rekep.tasks.ParseLogs`, whose docstrings say what
+# each one means; `docs/tasks.md` is the prose.
 
 kind: parse_logs
 name: parse-trading-logs
 
-# -- what to read ------------------------------------------------------------
+# -- what to read -------------------------------------------------------------
 
-# A folder or a single file. A bare path, a `file://` URI, `s3://bucket/prefix`
-# and a Windows drive letter are all read the same way; which of the two it is
-# is decided by asking the filesystem, not by the shape of the string.
-source: ../data/capture
-
-# Which files in the folder, and whether to descend into it.
+source: ../data/capture  # a folder or a file; a bare path, `file://` or `s3://`
 pattern: "*.log*"
 recursive: true
+timezone: Europe/Paris  # the zone the header's wall clock is in; UTC when absent
 
-# The IANA zone the wall clock in the log header belongs to. Leave it out and
-# the clock is read as UTC, which is a guess that is wrong by the offset for
-# any log that is not. Naming it is what makes `unix` a real instant.
-timezone: Europe/Paris
+# -- what each line is about ---------------------------------------------------
 
-# -- what each line is about --------------------------------------------------
-
-# Tried in order, first match wins, and a line nothing matches is `UNKNOWN` --
-# still parsed, still keyed, still partitioned, and landed in `unknown_logs`.
-# Dropping it would make the job lossy exactly when a log format changes.
-#
-# Delete this whole block to take the defaults, which read a FIX trading log by
-# both spellings every one of them uses: the wire `35=` message type, and the
-# name a rendered log prints.
+# Tried in order, first match wins, and a line nothing matches is UNKNOWN --
+# still parsed, still keyed, still landed. Delete the block for these defaults.
 rules:
   rules:
     - pattern: '35=8(\D|$)|ExecutionReport'
@@ -62,26 +41,18 @@ rules:
       etype: INSTRUMENT
       label: reference data
 
-# -- what each line *carries* -------------------------------------------------
+# -- what each line carries ----------------------------------------------------
 
-# The other question about a line, and a different one: `rules` says what the
-# line is *about*, `categories` says what kind of message it holds and how to
-# read it. Tried in order, first match wins, and a line nothing matches is
-# OTHER -- parsed as nothing, with `fix_tags` and `keyval` null rather than
-# empty, because "not a message" and "a message that said nothing" are
-# different facts.
-#
-# Delete this block to take the defaults: a BeginString anywhere is FIX, two or
-# more `#NAME=` tokens are a UL bridge message, everything else is OTHER -- and
-# a bridge message wrapped in a FIX envelope leads the list, because it answers
-# to both tells and the more specific reading has to get there first.
+# The other question, and a different one: which kind of message the line holds
+# and how to read it. Same shape, and a line nothing matches is OTHER -- with
+# `fix_tags` and `keyval` null rather than empty. Delete the block for these
+# defaults; the wrapped bridge leads because it answers to both tells.
 categories:
   rules:
     - name: UL
       category_id: 2
       pattern: '(?s)(?:^|[^0-9])8=FIXT?.*[^0-9]35=UL(?:[^A-Za-z0-9]|$)'
       codec: ul
-      fix_version: "4.4"
     - name: FIX
       category_id: 1
       pattern: '(?:^|[^0-9])8=FIXT?'
@@ -90,71 +61,32 @@ categories:
       category_id: 2
       pattern: '(?s)#[A-Za-z][A-Za-z0-9_.\-]*(?:\[\d+\])?[ \t\r\n\f\x0b]*=.*#[A-Za-z][A-Za-z0-9_.\-]*(?:\[\d+\])?[ \t\r\n\f\x0b]*='
       codec: ul
-      fix_version: "4.4"
     - name: OTHER
       category_id: 0
       codec: none
 
-# Which FIX version a *name* is resolved against when the message carries no
-# BeginString to say. A rule may name its own, which wins over this one; tag 8
-# wins over both, because that is the message saying so itself.
-fix_version: "4.4"
+fix_version: "4.4"  # what a name resolves against absent tag 8; a rule may name its own
+fix_dictionary: ../data/fix.zip  # read and never scraped; absent is `~/.config/fix`
+null_values: ["", "null", "<null>", "n/a"]  # spellings that mean the field is absent
 
-# Where the FIX dictionary lives. Left out, it is the user's own cache
-# (`~/.config/fix`); `data/fix.zip` is the dictionary this repository
-# publishes. Either way it is read and **never scraped**: a parse that answered
-# its first bridge line by fetching seven thousand pages mid-batch would turn a
-# job into an outage. A cold cache costs the tags, never the capture.
-fix_dictionary: ../data/fix.zip
+# -- where it lands ------------------------------------------------------------
 
-# Values that mean the field is absent, dropped before either map sees them.
-# `ACCOUNT=<null>` is an absent account, and keeping the text makes every
-# consumer downstream re-implement this same check -- differently, and one of
-# them wrong. An empty list keeps every pair.
-null_values:
-  - ""
-  - "null"
-  - "<null>"
-  - "n/a"
-
-# -- where it lands -----------------------------------------------------------
-
-# `{event_type}` is the lower-cased `EventType` name, so this produces
-# `logs.order_logs`, `logs.execution_logs`, ... `logs.unknown_logs`. Each is
-# created on the first write to it, partitioned by `unix_hour` -- the hour the line
-# happened in.
 catalog: rekep
 namespace: logs
-table: "{event_type}_logs"
+table: "{event_type}_logs"  # `logs.order_logs`, ... `logs.unknown_logs`
 
-# How to reach the catalog. This one is a local SQLite catalog with a local
-# warehouse, which needs nothing running; a REST or Glue catalog is the same
-# three keys pointed somewhere else.
-properties:
+properties:  # a local SQLite catalog; REST or Glue is the same keys pointed elsewhere
   type: sql
   uri: sqlite:///../data/catalog.db
   warehouse: file://../data/warehouse
 
-# Columns every row carries that the file itself never states -- which bridge
-# wrote the capture, which desk, which environment. Nothing is hardcoded in the
-# shape; a source names its own.
-static_values:
+static_values:  # columns every row carries that the file itself never states
   bridge: bridge-1
   environment: prod
 
-# -- how it runs --------------------------------------------------------------
+# -- how it runs ---------------------------------------------------------------
 
-# Skip rows a target already holds. This is an *append's* merge: nothing stored
-# is ever rewritten and no delete file is produced, so re-running this over a
-# capture that grew by a day costs the day. Set it to false to append
-# everything, duplicates included.
-merge_by: true
-
-# Rows the parser puts in one batch, and rows a target buffers before it
-# commits. The second is what bounds the job's memory: roughly
-# `targets * commit_row_size` rows, so about 1.5M rows across six targets here.
+merge_by: true  # skip rows a target already holds, so a replay costs the read alone
 batch_row_size: 65536
-commit_row_size: 250000
-
-# Stop after this many rows. Uncomment for a dry run over a large capture.
-# limit: 1000
+commit_row_size: 250000  # rows buffered per target, and so what bounds the memory
+# limit: 1000  # stop after this many rows; uncomment for a dry run
