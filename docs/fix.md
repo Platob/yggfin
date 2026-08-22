@@ -9,11 +9,14 @@ joined by SOH — which every log prints as something visible instead:
 ```
 
 `rekep.fix` parses those lines — one at a time or whole columns in Arrow
-kernels — and carries a dictionary of every FIX version's fields, scraped once
-from the [OnixS FIX Dictionary](https://www.onixs.biz/fix-dictionary.html) and
-cached under `~/.config/fix/` so everything after works offline. That scrape is
-[committed here](#the-dump-in-this-repository) as well, as `data/fix.zip`, so
-a machine that was never online has the dictionary too.
+kernels — and carries a dictionary of every FIX version's fields, gathered once
+from [two sources](#two-sources-and-what-each-has) and cached under
+`~/.config/fix/` so everything after works offline: the [OnixS FIX
+Dictionary](https://www.onixs.biz/fix-dictionary.html) for the prose, and the
+[QuickFIX spec](https://github.com/quickfix/quickfix/tree/master/spec) for the
+symbol of every enumerated value. That cache is [committed
+here](#the-dump-in-this-repository) as well, as `data/fix.zip`, so a machine
+that was never online has the dictionary too.
 
 ## Parsing lines
 
@@ -167,7 +170,8 @@ side.arrow_type                      # string  (char is a string, not one char)
 side.description                     # 'Side of order.'
 side.fix["tag"]                      # '54'
 side.fix["type"]                     # 'char'
-side.fix["values"]                   # '{"1":"Buy","2":"Sell",...}'
+side.fix["values"]                   # '{"1":"Buy","2":"Sell",...}'      the prose
+side.fix["value_names"]              # '{"1":"BUY","2":"SELL",...}'      the symbol
 
 registry.lookup("Side")              # every version's definition, newest first
 registry.lookup(54, "4.2")           # by tag, one version
@@ -189,6 +193,51 @@ registry.search("Sied")              # nothing matches -> Levenshtein fallback
     `retries` attempts *fails the version*. It is not treated as a page that
     does not exist, because that writes a field with no type and no comment
     into the cache and answers every later call from it.
+
+### Two sources, and what each has
+
+The dictionary is prose written for people. The [QuickFIX
+spec](https://github.com/quickfix/quickfix/tree/master/spec) is the same
+standard written for programs, and it has the half the prose cannot carry: the
+**symbol** of every enumerated value.
+
+```xml
+<value enum='1' description='MATCH' />
+```
+
+`description` there is the value's *name*, not a description — so merging it
+into the descriptions would replace `Buy` with `BUY` and lose the reading. Both
+are kept instead, one key each: `fix["values"]` stays the prose and
+`fix["value_names"]` carries the symbol. A consumer wanting an identifier no
+longer has to invent one by upper-casing a sentence.
+
+The spec is one file per version against the site's one page per field, so it
+also answers two things a scrape cannot afford to ask for twice:
+
+```python
+registry.session("4.4")   # (('BeginString', True), ..., ('CheckSum', True))
+registry.enrich()         # add the symbols to a dictionary already stored
+```
+
+`session` is the standard header and trailer with the standard's own `required`
+flag — which is what [`rekep/fix/columns.py`](logs.md#the-message-layer)
+declares by hand, and what `tests/fix/test_columns.py` holds that declaration
+to. From FIX 5.0 on it is **empty**, because the session layer moved to FIXT
+1.1 and the application versions no longer define one.
+
+`enrich` is the cheap half of a scrape on its own: a dictionary gathered before
+this package read the spec has every description and no symbol, and getting the
+symbols is one request per version rather than seven thousand pages. It only
+touches versions the store already holds — it adds to a dictionary, it never
+fetches one.
+
+!!! note "The spec is the *enriching* source"
+
+    Its failure is not the caller's. A scrape that could not reach GitHub still
+    has a whole dictionary, only without the symbols; the site is the one whose
+    failure fails the version. A tag only the spec knows still becomes a field,
+    typed and named, with no description — because a field nobody wrote up is
+    still a field.
 
 ### The dump in this repository
 

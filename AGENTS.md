@@ -508,7 +508,10 @@ rekep/
 │                  JSON or a zip of the same -- the extension decides --
 │                  published here as data/fix.zip, with lookup and fuzzy
 │                  search, all names case-insensitive; `offline` for the
-│                  callers that must never fetch), rules.py (Rule and Rules:
+│                  callers that must never fetch; the QuickFIX spec beside
+│                  it as the second source, for the symbol of every enumerated
+│                  value and the standard header the prose does not carry),
+│                  quickfix.py (that spec, parsed), rules.py (Rule and Rules:
 │                  which protocol a line carries, first match winning, as
 │                  data), columns.py (SESSION and COMMON: the tags worth a
 │                  column of their own -- the session layer, then what the

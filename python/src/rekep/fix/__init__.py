@@ -21,6 +21,14 @@ from rekep.fix.message import (
     parse_arrow_array,
     tag_arrow_array,
 )
+from rekep.fix.quickfix import (
+    QUICKFIX_URL,
+    SPEC_VERSIONS,
+    SpecField,
+    parse_session,
+    parse_spec,
+    spec_name,
+)
 from rekep.fix.registry import BASE_URL, CACHE_DIRECTORY, FixRegistry
 from rekep.fix.rules import CODECS, NO_PROTOCOL, Rule, Rules
 from rekep.fix.transcribe import FIX_TAGS, KEYVAL, NULL_VALUES, FixCodec, TagIndex
@@ -43,10 +51,13 @@ __all__ = [
     "MARKER",
     "NO_PROTOCOL",
     "NULL_VALUES",
+    "QUICKFIX_URL",
     "Rule",
     "Rules",
     "SESSION",
     "SOH",
+    "SPEC_VERSIONS",
+    "SpecField",
     "TagIndex",
     "arrow_type_of",
     "cast_arrow_bool",
@@ -55,6 +66,9 @@ __all__ = [
     "detect_separator",
     "fix_field",
     "parse_arrow_array",
+    "parse_session",
+    "parse_spec",
+    "spec_name",
     "tag_arrow_array",
     "unix_of",
 ]

@@ -38,7 +38,14 @@ CAPTURE = FIXTURES / "capture"
 
 #: Derived from the by-tag fixture, then pinned: four fields are listed, and a
 #: broken link regex cannot move both sides of the assertion together.
-EXPECTED_FIELDS = 4
+EXPECTED_LISTED = 4
+
+#: The spec fixture names one tag the site's page does not, so a scrape that
+#: reads both sources ends with five. Two constants and not one, because "what
+#: the site listed" and "what the dictionary holds" stopped being the same
+#: number the moment a second source arrived.
+EXPECTED_SPEC_ONLY = 1
+EXPECTED_FIELDS = EXPECTED_LISTED + EXPECTED_SPEC_ONLY
 
 
 class FixtureRegistry(FixRegistry):
@@ -139,9 +146,10 @@ def test_version_ordering_reads_the_sp_suffix() -> None:
 
 
 def test_a_version_scrapes_every_listed_field(registry: FixtureRegistry) -> None:
+    """Both sources, in tag order: the site lists four and the spec names a fifth."""
     fields = registry.fields("4.4")
     assert len(fields) == EXPECTED_FIELDS
-    assert [int(member.fix["tag"]) for member in fields] == [43, 54, 103, 205]
+    assert [int(member.fix["tag"]) for member in fields] == [43, 54, 103, 205, 828]
 
 
 def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegistry) -> None:
@@ -543,3 +551,113 @@ def test_levenshtein_stops_at_its_ceiling() -> None:
     assert _levenshtein("sied", "side", 2) == 2
     assert _levenshtein("abcdef", "zzzzzz", 2) is None
     assert _levenshtein("a", "abcdefgh", 2) is None, "the length gap alone settles it"
+
+
+# -- the second source --------------------------------------------------------
+
+
+def test_a_scrape_takes_the_symbol_from_the_spec_and_the_prose_from_the_site(
+    tmp_path: Path,
+) -> None:
+    """Both, never one over the other: the spec's `description=` is a symbol.
+
+    `Side <54>` value `1` is `BUY` in the spec and "Buy" in the dictionary, and
+    a merge that wrote the first where the second goes would replace prose with
+    shouting -- which is the whole reason they are two keys.
+    """
+    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    side = next(field for field in registry.fields("4.4") if field.fix["tag"] == "54")
+    assert json.loads(side.fix["values"])["1"] == "Buy"
+    assert json.loads(side.fix["value_names"])["1"] == "BUY"
+    assert side.description, "and the description the site alone has is still there"
+
+
+def test_a_field_only_the_spec_knows_is_still_a_field(tmp_path: Path) -> None:
+    """The by-tag page lists four; the spec names one of them and one more."""
+    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    by_tag = {field.fix["tag"]: field for field in registry.fields("4.4")}
+    assert "828" not in {"43", "54", "103", "205"}, "the fixture's extra tag"
+    assert by_tag["828"].name == "TrdType"
+    assert by_tag["828"].arrow_type == pyarrow.int64(), "typed from the spec"
+    assert not by_tag["828"].description, "and with no prose, because there is none"
+
+
+def test_a_field_with_no_enumeration_gains_no_symbols(tmp_path: Path) -> None:
+    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    listed = {field.fix["tag"]: field for field in registry.fields("4.4")}
+    assert "value_names" not in listed["103"].fix
+
+
+def test_a_spec_that_cannot_be_had_costs_the_symbols_and_never_the_scrape(
+    tmp_path: Path,
+) -> None:
+    """The enriching source: its failure is not the caller's."""
+
+    class NoSpec(FixtureRegistry):
+        def _fetch(self, url: str) -> str:
+            if url.endswith(".xml"):
+                raise OSError(f"503 {url}")
+            return super()._fetch(url)
+
+    fields = NoSpec(cache_dir=tmp_path / "fix").fields("4.4")
+    assert len(fields) == EXPECTED_LISTED, "every field the site listed is still here"
+    assert all("value_names" not in field.fix for field in fields)
+
+
+def test_the_session_layer_travels_with_the_dictionary(tmp_path: Path) -> None:
+    """The one fact a stored dictionary could not otherwise answer."""
+    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    registry.fields("4.4")
+    stored = OfflineRegistry(cache_dir=tmp_path / "fix")
+    assert [name for name, _ in stored.session("4.4")] == [
+        "BeginString",
+        "MsgSeqNum",
+        "PossDupFlag",
+        "CheckSum",
+        "Signature",
+    ]
+    assert [name for name, required in stored.session("4.4") if required] == [
+        "BeginString",
+        "MsgSeqNum",
+        "CheckSum",
+    ]
+
+
+def test_a_version_stored_without_a_session_layer_says_so_rather_than_raising(
+    tmp_path: Path,
+) -> None:
+    """A dictionary gathered before this existed simply has no such key."""
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry._store_fields("4.4", [fix_field("Side", 54, "char")])
+    assert registry.session("4.4") == ()
+
+
+def test_enriching_adds_the_symbols_to_a_dictionary_already_stored(tmp_path: Path) -> None:
+    """The cheap half of a scrape on its own: one request, not seven thousand.
+
+    A dictionary gathered before this package read the spec has every
+    description and no symbol, and re-reading the site to gain them would be
+    absurd.
+    """
+    plain = FixRegistry(cache_dir=tmp_path / "fix")
+    plain._store_fields("4.4", [fix_field("Side", 54, "char", values={"1": "Buy"})])
+    assert "value_names" not in plain.field(54, "4.4").fix
+
+    enriched = FixtureRegistry(cache_dir=tmp_path / "fix")
+    assert enriched.enrich("4.4") == {"4.4": 1}, "the one stored field that enumerates"
+    after = OfflineRegistry(cache_dir=tmp_path / "fix")
+    assert json.loads(after.field(54, "4.4").fix["value_names"])["1"] == "BUY"
+    assert json.loads(after.field(54, "4.4").fix["values"])["1"] == "Buy", "prose untouched"
+    assert after.session("4.4"), "and the session layer lands with it"
+
+
+def test_enriching_a_version_nothing_stored_does_nothing(tmp_path: Path) -> None:
+    """It adds to a dictionary; it never fetches one."""
+    assert FixtureRegistry(cache_dir=tmp_path / "fix").enrich("4.4") == {}
+    assert not (tmp_path / "fix" / "4.4.json").exists()
+
+
+def test_enriching_offline_is_a_no_op_rather_than_a_failure(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry._store_fields("4.4", [fix_field("Side", 54, "char", values={"1": "Buy"})])
+    assert OfflineRegistry(cache_dir=tmp_path / "fix").enrich("4.4") == {"4.4": 0}
