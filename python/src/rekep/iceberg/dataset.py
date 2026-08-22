@@ -38,6 +38,13 @@ MAIN = "main"
 #: mentions yet; deleting those would break it, so orphans have to be old.
 ORPHAN_AGE = datetime.timedelta(days=3)
 
+#: No grace period at all: sweep whatever is unreferenced, however new. What a
+#: caller asks for when nothing else is writing -- a maintenance window, or a
+#: test -- and it has to be taken literally, because the alternative compares
+#: this machine's clock against the store's and spares a file on the runs where
+#: they disagree.
+_NO_GRACE = datetime.timedelta(0)
+
 #: How big one commit's output files get. Narrower than it sounds: pyiceberg
 #: derives rows-per-file from the *in-memory* size of the table being written
 #: and only ever splits a single commit -- it has no cross-commit state, so it
@@ -1307,6 +1314,12 @@ class IcebergDataset(Dataset):
         mentions yet. Three days by default; lowering it is safe when nothing
         else is writing, and nowhere else.
 
+        **Zero spares nothing**, and it is taken literally rather than compared
+        against a clock: a file written a moment ago can carry an mtime a
+        moment in the *future*, because the store stamps from its own clock and
+        this process reads its own. Comparing anyway left a file a caller had
+        just asked to have taken, on whichever run the two disagreed.
+
         Listed through `pyarrow.fs`, like every other file this package touches,
         so an object store is walked by the same handle the reads use -- and
         compared **relative to the directory**, resolved once through that same
@@ -1385,7 +1398,15 @@ class IcebergDataset(Dataset):
                 # is how you would find out it had been swept.
                 if info.base_name == HADOOP_POINTER:
                     continue
-                if info.mtime and info.mtime > cutoff:
+                # A positive age is a **grace period**, for the one hazard a
+                # sweep cannot otherwise see: a writer with files on disk that
+                # no snapshot names yet. Zero says there is no such writer, and
+                # it has to mean it -- a file written a moment ago can carry an
+                # mtime a moment in the *future*, because a filesystem stamps
+                # from its own clock and the two need not agree. Comparing
+                # anyway spared a file the caller had just asked to have taken,
+                # on whichever run the two clocks happened to disagree.
+                if older_than > _NO_GRACE and info.mtime and info.mtime > cutoff:
                     continue
                 # Keyed by path, because one nested directory inside another is
                 # listed under both and a file deleted twice raises the second

@@ -2032,6 +2032,38 @@ def test_a_sweep_still_finds_an_orphan_beside_an_unreducible_live_file(
     assert dataset.refresh().read_arrow_table().num_rows == 7
 
 
+def test_a_sweep_asked_for_no_grace_period_takes_a_file_written_now(
+    dataset: IcebergDataset,
+) -> None:
+    """`orphan_age=0` means what it says, whichever clock stamped the file.
+
+    A file written a moment ago can carry an mtime a moment in the *future*:
+    the filesystem stamps from its own clock and this process reads its own,
+    and on a Windows runner the two disagreed often enough to spare a file the
+    caller had just asked to have taken. The grace period is for a writer with
+    uncommitted files on disk, and zero says there is not one.
+    """
+    import os
+
+    import pyarrow.parquet
+
+    dataset.write_arrow_table(quotes(3))
+    root = local(dataset.iceberg_table.location())
+    junk = root / "data" / f"day={datetime.date(2026, 8, 14)}" / "written-just-now.parquet"
+    pyarrow.parquet.write_table(quotes(1), junk)
+    # Stamped ahead on purpose, because that is the disagreement itself and
+    # waiting for two real clocks to drift is a test that fails on one host in
+    # ten. A minute is longer than any skew and shorter than the grace period
+    # the first assertion asks for.
+    ahead = junk.stat().st_mtime + 60
+    os.utime(junk, (ahead, ahead))
+
+    spared = dataset.orphan_files(datetime.timedelta(minutes=30))
+    assert junk.name not in {Path(path).name for path, _ in spared}, "a grace period spares it"
+    swept = {Path(path).name for path, _ in dataset.orphan_files(datetime.timedelta(0))}
+    assert junk.name in swept, "and no grace period does not"
+
+
 def test_a_sweep_does_not_delete_another_writers_files(tmp_path: Path) -> None:
     """A dataset that has been open a while has not seen the other writers.
 
