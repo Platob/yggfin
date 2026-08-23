@@ -28,7 +28,7 @@ ENVELOPE = [
     "sunix",
     "hash",
     "xhash",
-    "linked_xhash",
+    "linked_events",
     "version",
     "state",
     "code",

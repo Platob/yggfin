@@ -30,7 +30,7 @@ ENVELOPE = [
     "sunix",
     "hash",
     "xhash",
-    "linked_xhash",
+    "linked_events",
     "version",
     "state",
     "code",
@@ -196,11 +196,22 @@ def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
 
 
 def test_every_event_uses_one_typed_list_for_lifecycle_links() -> None:
-    link = Execution.into_field().field("linked_xhash")
+    link = Execution.into_field().field("linked_events")
     assert link.arrow_type.equals(
-        pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False))
+        pyarrow.list_(
+            pyarrow.field(
+                "item",
+                pyarrow.struct(
+                    [
+                        pyarrow.field("unix", pyarrow.int64(), nullable=False),
+                        pyarrow.field("xhash", pyarrow.int64(), nullable=False),
+                    ]
+                ),
+                nullable=False,
+            )
+        )
     )
-    assert link.nullable
+    assert not link.nullable
     assert "order_xhash" not in Execution.into_field().names
     assert "order_xcode" not in Execution.into_field().names
     assert (
@@ -232,7 +243,12 @@ def test_a_book_keeps_only_compact_best_first_level_lists() -> None:
         assert Book.into_field().field(f"{side}_levels").item.arrow_type == (
             Level.into_field().arrow_type
         )
-    assert not names & {"bid_hash", "ask_hash", "bid_alive", "ask_alive"}
+    assert not names & {"bid_hash", "ask_hash"}
+    assert {"deltas", "executions", "bid_alive", "ask_alive"} <= names
+    for name in ("bid_levels", "ask_levels", "deltas", "executions", "bid_alive", "ask_alive"):
+        assert not Book.into_field().field(name).nullable
+    assert not Book.into_field().field("bid_depth").nullable
+    assert not Book.into_field().field("ask_depth").nullable
 
 
 def test_a_price_and_a_quantity_may_be_absent_because_zero_is_a_price() -> None:

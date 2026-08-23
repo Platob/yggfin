@@ -3,7 +3,7 @@ type: struct
 description: One version of the facts known about a tradable instrument.
 metadata:
   namespace: rekep.market.instrument
-  version: '1'
+  version: '2'
 fields:
 - name: unix
   type: int64
@@ -68,12 +68,16 @@ fields:
     had.
   metadata:
     iceberg:partition_key: bucket[16]
-- name: linked_xhash
+- name: linked_events
   type: list
-  nullable: true
-  description: Related lifecycle identities, ordered with the primary match first.
+  description: Related event times and lifecycle identities, primary match first.
   item:
-    type: int64
+    type: struct
+    fields:
+    - name: unix
+      type: int64
+    - name: xhash
+      type: int64
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.

@@ -6,9 +6,11 @@ import concurrent.futures
 import dataclasses
 import html
 import importlib.resources
+import io
 import json
 import os
 import pathlib
+import posixpath
 import re
 import time
 import urllib.error
@@ -18,8 +20,11 @@ from collections.abc import Sequence
 from functools import cache, cached_property
 from typing import Any, Self
 
+import pyarrow.fs
+
 from rekep.convert import Convertible
 from rekep.fields import Field
+from rekep.filesystems import local_path, read_bytes, resolve, write_bytes
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
@@ -30,6 +35,7 @@ from rekep.fix.quickfix import (
     parse_spec,
     spec_name,
 )
+from rekep.urls import HTTP, LOCAL, Url
 
 #: The dictionary that is scraped: OnixS publishes every FIX version as one
 #: page per version listing the tags, and one page per field carrying the
@@ -111,6 +117,9 @@ class FixRegistry(Convertible):
     #: plain JSON.
     cache_dir: str | os.PathLike[str] = CACHE_DIRECTORY
 
+    #: Optional filesystem for `cache_dir`, whose value is then a path on it.
+    filesystem: pyarrow.fs.FileSystem | None = None
+
     #: Seconds one page fetch may take, and how many fetch at once. The site
     #: is a static dictionary; eight lanes drain a version in seconds without
     #: leaning on it.
@@ -141,8 +150,8 @@ class FixRegistry(Convertible):
 
     def __post_init__(self) -> None:
         """Normalise the two locations once, so everything downstream agrees."""
-        self.base_url = str(self.base_url).rstrip("/")
-        self.cache_dir = pathlib.Path(self.cache_dir)
+        self.base_url = Url.from_string(str(self.base_url)).into_string().rstrip("/")
+        self.spec_url = Url.from_string(str(self.spec_url)).into_string().rstrip("/")
 
     @classmethod
     @cache
@@ -638,9 +647,15 @@ class FixRegistry(Convertible):
     def _stored_spellings(self) -> tuple[str, ...]:
         """Every version this store has fields for, spelled as it stored them."""
         if self.archived:
-            names = _archived_names(self.cache_dir)
+            names = _archived_names(self._cache_path)
         else:
-            names = {path.name: path.name for path in pathlib.Path(self.cache_dir).glob("*.json")}
+            filesystem, directory = self._cache
+            selector = pyarrow.fs.FileSelector(directory, recursive=False, allow_not_found=True)
+            names = {
+                posixpath.basename(info.path): info.path
+                for info in filesystem.get_file_info(selector)
+                if info.type == pyarrow.fs.FileType.File and info.path.endswith(".json")
+            }
         return tuple(sorted(name[: -len(".json")] for name in names if name != "versions.json"))
 
     def _stored_fields(self, version: str) -> list[Field] | None:
@@ -686,14 +701,58 @@ class FixRegistry(Convertible):
         not exist yet has to say what it will be before anything is written
         to it, and `data/fix.zip` says it.
         """
-        return pathlib.Path(self.cache_dir).suffix.lower() == ".zip"
+        location = Url.from_string(os.fspath(self.cache_dir))
+        return pathlib.PurePosixPath(location.path).suffix.lower() == ".zip"
 
-    def into_zip(self, target: str | os.PathLike[str]) -> pathlib.Path:
+    @cached_property
+    def _cache_source(self) -> tuple[pyarrow.fs.FileSystem, str] | None:
+        """The configured cache before an archive is localized."""
+        location = os.fspath(self.cache_dir)
+        if self.filesystem is not None:
+            return self.filesystem, location
+        if Url.from_string(location).scheme in HTTP:
+            return None
+        return resolve(location)
+
+    @cached_property
+    def _cache(self) -> tuple[pyarrow.fs.FileSystem, str]:
+        """The filesystem and path used by cache operations, resolved once."""
+        source = self._cache_source
+        location = os.fspath(self.cache_dir)
+        if source is None:
+            if not self.archived:
+                raise ValueError("an HTTP FIX registry cache must be an archive")
+            return pyarrow.fs.LocalFileSystem(), local_path(location)
+        filesystem, path = source
+        if self.archived and not isinstance(filesystem, pyarrow.fs.LocalFileSystem):
+            path = local_path(path, filesystem, missing_ok=True)
+            return pyarrow.fs.LocalFileSystem(), path
+        return filesystem, path
+
+    @property
+    def _cache_path(self) -> str:
+        """OS path of an archive after any required one-time localization."""
+        filesystem, path = self._cache
+        if not isinstance(filesystem, pyarrow.fs.LocalFileSystem):  # pragma: no cover - invariant
+            raise RuntimeError("a FIX registry archive was not localized")
+        return path
+
+    def _sync_archive(self) -> None:
+        """Copy a modified localized archive back to its Arrow filesystem."""
+        source = self._cache_source
+        if source is None:
+            if Url.from_string(os.fspath(self.cache_dir)).scheme in HTTP:
+                raise OSError("an HTTP FIX registry archive is read-only")
+            return
+        filesystem, path = source
+        if isinstance(filesystem, pyarrow.fs.LocalFileSystem):
+            return
+        write_bytes(pathlib.Path(self._cache_path).read_bytes(), path, filesystem)
+
+    def into_zip(self, target: str | os.PathLike[str]) -> pathlib.Path | str:
         """Write everything this registry holds into one archive, and name it."""
-        path = pathlib.Path(target)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        scratch = path.with_name(f"{path.name}.tmp")
-        with zipfile.ZipFile(scratch, "w", zipfile.ZIP_DEFLATED) as archive:
+        output = io.BytesIO()
+        with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
             listed = self._stored_versions()
             if listed:
                 archive.writestr(_member("versions.json"), _document({"versions": list(listed)}))
@@ -701,15 +760,15 @@ class FixRegistry(Convertible):
                 stored = self._read_cache(f"{version}.json")
                 if stored is not None:
                     archive.writestr(_member(f"{version}.json"), _document(stored))
-        scratch.replace(path)
-        return path
+        write_bytes(output.getvalue(), target)
+        return _written_target(target)
 
     def into_projection(
         self,
         target: str | os.PathLike[str],
         keys: Sequence[int | str],
         fields: Sequence[Field] = (),
-    ) -> pathlib.Path:
+    ) -> pathlib.Path | str:
         """Write a deterministic offline registry containing only `keys`."""
         if not keys:
             raise ValueError("a FIX registry projection needs at least one field")
@@ -744,13 +803,10 @@ class FixRegistry(Convertible):
         if overlap:
             raise ValueError(f"projected FIX versions already exist: {sorted(overlap)}")
 
-        path = pathlib.Path(target)
-        source = pathlib.Path(self.cache_dir)
-        if path.resolve() == source.resolve():
+        if _resource_identity(target) == _resource_identity(self.cache_dir, self.filesystem):
             raise ValueError("a registry projection cannot replace its source")
-        path.parent.mkdir(parents=True, exist_ok=True)
-        scratch = path.with_name(f"{path.name}.tmp")
-        with zipfile.ZipFile(scratch, "w", zipfile.ZIP_DEFLATED) as archive:
+        output = io.BytesIO()
+        with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
             versions = (*extra_by_version, *self.versions)
             archive.writestr(_member("versions.json"), _document({"versions": list(versions)}))
             for version in versions:
@@ -780,34 +836,38 @@ class FixRegistry(Convertible):
                     if selected:
                         payload["session"] = selected
                 archive.writestr(_member(f"{version}.json"), _document(payload))
-        scratch.replace(path)
-        return path
+        write_bytes(output.getvalue(), target)
+        return _written_target(target)
 
     def _read_cache(self, name: str) -> dict[str, Any] | None:
         if self.archived:
-            return _read_archived(self.cache_dir, name)
-        path = pathlib.Path(self.cache_dir) / name
+            return _read_archived(self._cache_path, name)
+        filesystem, directory = self._cache
+        path = posixpath.join(directory, name)
         try:
-            return json.loads(path.read_text("utf-8"))
+            with filesystem.open_input_stream(path) as stream:
+                return json.loads(stream.read().decode("utf-8"))
         except FileNotFoundError:
             return None
-        except (OSError, ValueError):
+        except (OSError, ValueError, pyarrow.ArrowException):
             # A torn write or someone else's file: scrape over it rather than
             # refuse to run offline forever.
             return None
 
     def _write_cache(self, name: str, payload: dict[str, Any]) -> None:
         if self.archived:
-            _write_archived(self.cache_dir, name, _document(payload))
+            _write_archived(self._cache_path, name, _document(payload))
+            self._sync_archive()
             return
-        directory = pathlib.Path(self.cache_dir)
-        directory.mkdir(parents=True, exist_ok=True)
-        path = directory / name
+        filesystem, directory = self._cache
+        filesystem.create_dir(directory, recursive=True)
+        path = posixpath.join(directory, name)
         # Written beside then renamed, so a reader never sees half a file and
         # a crash never costs the cache that was already there.
-        scratch = path.with_suffix(".tmp")
-        scratch.write_text(_document(payload), "utf-8")
-        scratch.replace(path)
+        scratch = f"{path}.tmp"
+        with filesystem.open_output_stream(scratch) as stream:
+            stream.write(_document(payload).encode())
+        filesystem.move(scratch, path)
 
     def _fetch(self, url: str) -> str:
         """One page, as text, retried while the site says "later"."""
@@ -828,11 +888,26 @@ class FixRegistry(Convertible):
 
     def _read(self, request: urllib.request.Request) -> str:
         """One page fetch, once. The single place the network is touched."""
-        with urllib.request.urlopen(request, timeout=self.timeout) as response:  # noqa: S310
-            return response.read().decode("utf-8", "replace")
+        return read_bytes(request, timeout=self.timeout).decode("utf-8", "replace")
 
 
 # -- the store, as a directory or as a zip ------------------------------------
+
+
+def _resource_identity(
+    resource: str | os.PathLike[str], filesystem: pyarrow.fs.FileSystem | None = None
+) -> str:
+    """Canonical identity used when comparing two registry resources."""
+    location = os.fspath(resource)
+    if filesystem is not None:
+        return f"{id(filesystem)}:{location}"
+    return Url.from_string(location).into_string()
+
+
+def _written_target(target: str | os.PathLike[str]) -> pathlib.Path | str:
+    """A local output as a `Path`, and a remote one as its canonical URI."""
+    parsed = Url.from_string(os.fspath(target))
+    return pathlib.Path(parsed.store_path) if parsed.scheme in LOCAL else parsed.into_string()
 
 
 def _document(payload: dict[str, Any]) -> str:

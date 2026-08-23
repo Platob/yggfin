@@ -140,7 +140,7 @@ def test_dot_does_not_cross_a_newline_unless_the_pattern_requests_it() -> None:
 
 
 def test_the_legacy_positional_rule_signature_keeps_its_bindings() -> None:
-    rule = Rule("OWN", "message", "^Driver$", "|", ";", "ul", "4.2")
+    rule = Rule("OWN", "message", "^Driver$", "|", ";", "ul", ["fallback"])
     assert (
         rule.protocol,
         rule.pattern,
@@ -148,9 +148,8 @@ def test_the_legacy_positional_rule_signature_keeps_its_bindings() -> None:
         rule.separator,
         rule.entry_separator,
         rule.codec,
-        rule.fix_version,
         rule.patterns,
-    ) == ("OWN", "message", "^Driver$", "|", ";", "ul", "4.2", [])
+    ) == ("OWN", "message", "^Driver$", "|", ";", "ul", ["fallback"])
     assert rule.matches("message", "Driver")
 
 

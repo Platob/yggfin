@@ -15,7 +15,7 @@ from rekep.market.fix import SECURITY_TYPES, _classified, _month_year
 
 
 def instrument_of(line: str) -> Instrument:
-    (only, *rest) = FixEvents.from_text(line, venue="XCME")
+    (only, *rest) = FixEvents.from_text(line, venue="XCME", fix_version="4.4")
     assert not rest, "the fixture is meant to be one event"
     instrument = only.into_instrument()
     assert instrument is not None
@@ -204,7 +204,9 @@ def test_an_instrument_that_is_not_multileg_carries_no_legs() -> None:
 
 def test_the_legs_are_not_repeated_into_the_metadata() -> None:
     """A field a column holds is not an extra, and a leg's fields are columns."""
-    (order,) = FixEvents.from_text(f"{SPREAD}|9999=mine", venue="XCME")
+    (order,) = FixEvents.from_text(
+        f"{SPREAD}|9999=mine", venue="XCME", fix_version="4.4"
+    )
     assert order.metadata == {"9999": "mine"}
 
 
@@ -216,7 +218,7 @@ def test_a_group_rendered_with_indexes_reads_the_same_as_one_in_wire_order() -> 
         "NoLegs[1].LegSymbol=ESH7|NoLegs[1].LegSide=2|NoLegs[1].LegRatioQty=1|"
         "TransactTime=20260821-10:30:00.000"
     )
-    (order,) = FixEvents.from_text(rendered, venue="XCME")
+    (order,) = FixEvents.from_text(rendered, venue="XCME", fix_version="4.4")
     instrument = order.into_instrument()
     assert instrument is not None
     assert [(one.symbol, one.side, one.ratio) for one in instrument.legs] == [

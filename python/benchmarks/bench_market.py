@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import argparse
+import builtins
+import contextlib
 import copy
+import dataclasses
+import heapq
 import pathlib
 import random
 import sys
 import time
-from collections.abc import Callable
+import tracemalloc
+from collections import Counter
+from collections.abc import Callable, Iterator
 
 import pyarrow
 import pyarrow.compute
@@ -56,6 +62,99 @@ def report(label: str, seconds: float, rows: int, against: float | None = None) 
     per_row = seconds / rows * 1e9
     ratio = f"  {against / seconds:6.1f}x" if against else ""
     print(f"  {label:<44} {seconds * 1000:8.2f} ms  {per_row:7.1f} ns/row{ratio}")
+
+
+@contextlib.contextmanager
+def counted_operations() -> Iterator[Counter[str]]:
+    """Count expensive fold operations without adding hooks to production code."""
+    import rekep.market.book as book_module
+    import rekep.market.event as event_module
+    import rekep.market.identity as identity_module
+    from rekep.market import Book as BookRow
+    from rekep.market import Event, Level, Order
+
+    counts: Counter[str] = Counter()
+    restored: list[tuple[object, str, object]] = []
+    absent = object()
+
+    def patch(owner: object, name: str, replacement: object) -> None:
+        previous = getattr(owner, name, absent)
+        restored.append((owner, name, previous))
+        setattr(owner, name, replacement)
+
+    def calls(name: str, function: Callable[..., object]) -> Callable[..., object]:
+        def counted(*args: object, **kwargs: object) -> object:
+            counts[name] += 1
+            return function(*args, **kwargs)
+
+        return counted
+
+    patch(event_module, "hash_of", calls("hash_of", event_module.hash_of))
+    patch(identity_module, "frame", calls("frame", identity_module.frame))
+    patch(identity_module, "hash_bytes", calls("hash_bytes", identity_module.hash_bytes))
+    patch(Event, "life_hash", calls("life_hash", Event.life_hash))
+
+    patch(BookRow, "__init__", calls("book_objects", BookRow.__init__))
+    patch(Level, "__init__", calls("level_objects", Level.__init__))
+
+    original_copy = copy.copy
+
+    def counted_copy(value: object) -> object:
+        if isinstance(value, Order):
+            counts["order_copies"] += 1
+        elif isinstance(value, BookRow):
+            counts["book_copies"] += 1
+        return original_copy(value)
+
+    patch(copy, "copy", counted_copy)
+    original_replace = dataclasses.replace
+
+    def counted_replace(value: object, /, **changes: object) -> object:
+        counts["dataclasses_replace"] += 1
+        return original_replace(value, **changes)
+
+    patch(dataclasses, "replace", counted_replace)
+
+    for name in ("heappush", "heappop", "heapreplace", "nlargest", "nsmallest"):
+        function = getattr(heapq, name)
+        patch(heapq, name, calls(f"heap_{name}", function))
+    for name in ("bisect_left", "bisect_right", "insort_left", "insort_right"):
+        function = getattr(book_module.bisect, name)
+        patch(book_module.bisect, name, calls(f"bisect_{name}", function))
+
+    side = getattr(book_module, "_Side", None)
+    if side is not None and hasattr(side, "standing"):
+        patch(side, "standing", calls("standing_probes", side.standing))
+        patch(side, "_join", calls("level_joins", side._join))
+        patch(side, "_leave", calls("level_leaves", side._leave))
+        original_sorted_orders = side.__dict__["sorted_orders"]
+
+        def counted_sorted_orders(instance: object) -> object:
+            counts["full_order_scan_calls"] += 1
+            counts["full_orders_scanned"] += len(instance.orders)
+            return original_sorted_orders.__get__(instance, side)
+
+        patch(side, "sorted_orders", property(counted_sorted_orders))
+
+    original_snapshot = Event.make_snapshot
+
+    def counted_snapshot(event: Event, *args: object, **kwargs: object) -> object:
+        taken = original_snapshot(event, *args, **kwargs)
+        if isinstance(event, BookRow) and taken is not None:
+            counts["snapshot_materializations"] += 1
+        return taken
+
+    patch(Event, "make_snapshot", counted_snapshot)
+    patch(book_module, "sorted", calls("sort_calls", builtins.sorted))
+
+    try:
+        yield counts
+    finally:
+        for owner, name, previous in reversed(restored):
+            if previous is absent:
+                delattr(owner, name)
+            else:
+                setattr(owner, name, previous)
 
 
 # -- 1 and 2: identifiers ---------------------------------------------------
@@ -170,7 +269,9 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
         ],
     ).with_previous(None)
     assert instrument is not None
-    log = instrument.into_log()
+    # The registry leg is deliberately FIX.4.4; protocol reads never infer a
+    # version when neither BeginString nor FIXT application-version tags exist.
+    log = instrument.into_log(begin_string="FIX.4.4")
 
     def through_registry() -> list[Instrument]:
         built = []
@@ -231,6 +332,7 @@ def envelope(rows: int) -> dict[str, object]:
         "runix": [UNIX] * rows,
         "hash": [index + 1 for index in range(rows)],
         "xhash": [index + 1 for index in range(rows)],
+        "linked_events": [[] for _ in range(rows)],
         "version": [1] * rows,
         "state": [210] * rows,
         "code": [f"S{index % 5000}" for index in range(rows)],
@@ -245,10 +347,17 @@ def envelope(rows: int) -> dict[str, object]:
 
 
 def books(rows: int, depth: int) -> pyarrow.RecordBatch:
-    """A batch of books, both sides flat and only their levels filled in."""
+    """A batch of snapshots, both sides flat and only their levels filled in."""
     given = envelope(rows) | {
+        "sunix": [UNIX] * rows,
+        "bid_depth": [depth] * rows,
+        "ask_depth": [depth] * rows,
         "bid_levels": [levels(depth, 100.0)] * rows,
         "ask_levels": [levels(depth, 100.5)] * rows,
+        "deltas": [[] for _ in range(rows)],
+        "executions": [[] for _ in range(rows)],
+        "bid_alive": [[] for _ in range(rows)],
+        "ask_alive": [[] for _ in range(rows)],
     }
     return Book.into_field().cast_arrow_batch(pyarrow.RecordBatch.from_pydict(given))
 
@@ -424,10 +533,221 @@ def stream(events: int) -> list[object]:
     return built
 
 
+def shaped_stream(events: int, live_levels: int, orders_per_level: int) -> Iterator[object]:
+    """A streaming steady-state order book with a controlled live shape."""
+    from rekep.market import Instrument, Order, Side, State
+
+    if events < 1 or live_levels < 1 or orders_per_level < 1:
+        raise ValueError("events, live_levels and orders_per_level must be positive")
+    capacity = live_levels * orders_per_level
+    instrument = Instrument(symbol="MATRIX", exchange="XCME")
+    for index in range(events):
+        slot = index % capacity
+        cycle = index // capacity
+        level = slot // orders_per_level
+        unix = UNIX + index * 1_000_000
+        event = Order(
+            unix=unix,
+            cunix=unix,
+            code="MATRIX",
+            side=Side.BID,
+            px=100.0 - level * 0.01,
+            qty=1.0 + cycle % 2,
+            order_id=f"M{slot}",
+            state=State.NEW,
+        )
+        built = event.attach_instrument(instrument).with_previous(None)
+        if built is None:
+            raise AssertionError("a first normalized order cannot be unchanged")
+        yield built
+
+
+def fold_shape(
+    events: int, live_levels: int, orders_per_level: int
+) -> tuple[Counter[str], object]:
+    """Stream one replay shape and retain only output counts and final state."""
+    from rekep.market import BookIterator
+
+    folding = BookIterator.from_events(
+        shaped_stream(events, live_levels, orders_per_level),
+        snapshot_every=0,
+        max_order_age_ns=None,
+    )
+    counts: Counter[str] = Counter()
+    for book in folding.books:
+        counts["books"] += 1
+        counts["deltas"] += len(book.deltas)
+        counts["executions"] += len(book.executions)
+        counts["materialized_levels"] += len(book.bid_levels) + len(book.ask_levels)
+        counts["snapshots"] += book.sunix is not None
+    state = next(iter(folding.folding.values()))
+    counts["live_orders"] = len(state.bid.orders) + len(state.ask.orders)
+    counts["live_levels"] = state.bid.depth + state.ask.depth
+    return counts, folding
+
+
+def bench_standing(rows: int, repeat: int) -> None:
+    """Direct lifecycle lookup at shallow and deep live-book sizes."""
+    probes = max(rows, 1_000)
+    print(f"\nStanding lookup -- {probes:,} probes")
+    for live in (100, min(max(rows, 1_000), 10_000)):
+        _, folding = fold_shape(live, live, 1)
+        state = next(iter(folding.folding.values()))
+        target = next(iter(state.bid.orders.values()))
+        seconds, found = timed(
+            lambda state=state, target=target: sum(
+                state.bid.standing(target) is target for _ in range(probes)
+            ),
+            repeat,
+        )
+        assert found == probes
+        report(f"standing, {live:,} live orders", seconds, probes)
+
+
+def bench_operation_counts(rows: int) -> None:
+    """One representative replay with allocations and hot operations counted."""
+    import rekep.market.event as event_module
+
+    events = min(max(rows, 2_000), 10_000)
+    event_module._life_hash.cache_clear()
+    tracemalloc.start()
+    try:
+        with counted_operations() as operations:
+            output, folding = fold_shape(events, 100, 10)
+            state = next(iter(folding.folding.values()))
+            snapshot_unix = UNIX + events * 1_000_000 + 1
+            if not folding._snapshot_book(state, snapshot_unix):
+                raise AssertionError("the representative live book did not snapshot")
+            snapshot = folding._books.pop()
+            output["snapshots"] += 1
+            output["snapshot_alive"] += len(snapshot.bid_alive) + len(snapshot.ask_alive)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    operations.update(output)
+    operations["peak_kib"] = round(peak / 1024)
+    print(f"\nFold operations -- {events:,} events, 100 levels, 10 orders/level")
+    for name in (
+        "books",
+        "snapshots",
+        "snapshot_alive",
+        "deltas",
+        "executions",
+        "live_orders",
+        "live_levels",
+        "materialized_levels",
+        "hash_of",
+        "hash_bytes",
+        "frame",
+        "life_hash",
+        "standing_probes",
+        "level_joins",
+        "level_leaves",
+        "full_order_scan_calls",
+        "full_orders_scanned",
+        "book_objects",
+        "level_objects",
+        "order_copies",
+        "book_copies",
+        "dataclasses_replace",
+        "sort_calls",
+        "heap_heappush",
+        "heap_heappop",
+        "bisect_bisect_left",
+        "bisect_bisect_right",
+        "bisect_insort_left",
+        "bisect_insort_right",
+        "snapshot_materializations",
+        "peak_kib",
+    ):
+        print(f"  {name:<44} {operations[name]:>12,}")
+
+
+def bench_snapshot(rows: int, repeat: int) -> None:
+    """Materialize and restore a full recovery row outside the delta hot path."""
+    from rekep.market import BookIterator
+
+    live = min(max(rows, 1_000), 10_000)
+    live_levels = min(live, 100)
+    orders_per_level = (live + live_levels - 1) // live_levels
+    _, folding = fold_shape(live, live_levels, orders_per_level)
+    state = next(iter(folding.folding.values()))
+    boundary = [UNIX + live * 1_000_000]
+
+    def materialize() -> Book:
+        boundary[0] += 1
+        if not folding._snapshot_book(state, boundary[0]):
+            raise AssertionError("the live book did not produce a recovery snapshot")
+        return folding._books.popleft()
+
+    snapshot_seconds, snapshot = timed(materialize, repeat)
+    assert not snapshot.deltas and not snapshot.executions
+    assert len(snapshot.bid_alive) + len(snapshot.ask_alive) == live
+
+    def recover() -> BookIterator:
+        return BookIterator(
+            snapshots=(snapshot,), snapshot_every=0, max_order_age_ns=None
+        )
+
+    recovery_seconds, recovered = timed(recover, repeat)
+    restored = next(iter(recovered.folding.values()))
+    assert len(restored.bid.orders) + len(restored.ask.orders) == live
+    print(f"\nSnapshot/recovery -- {live:,} live orders, {live_levels:,} levels")
+    report("snapshot materialization", snapshot_seconds, live)
+    report("snapshot recovery", recovery_seconds, live)
+
+
+def bench_replay_matrix(rows: int, repeat: int, *, quick: bool, full: bool) -> None:
+    """Replay throughput across selected event counts and live-book shapes."""
+    if quick:
+        configurations = (
+            (1_000, 10, 1),
+            (2_000, 100, 1),
+            (2_000, 100, 10),
+        )
+        matrix_repeat = 1
+    elif full:
+        # A useful cross-section of the requested axes without a 27-run Cartesian
+        # product whose repeated million-event legs obscure the profile.
+        configurations = tuple(
+            (events, levels, per_level)
+            for events in (10_000, 100_000, 1_000_000)
+            for levels, per_level in ((10, 100), (100, 10), (1_000, 1), (10_000, 1))
+            if levels * per_level <= events
+        )
+        matrix_repeat = 1
+    else:
+        events = max(rows, 10_000)
+        configurations = (
+            (events, 10, 100),
+            (events, 100, 10),
+            (events, 1_000, 1),
+        )
+        matrix_repeat = min(repeat, 2)
+
+    print("\nReplay matrix -- events; live levels; orders/level")
+    for events, levels, per_level in configurations:
+        seconds, result = timed(
+            lambda events=events, levels=levels, per_level=per_level: fold_shape(
+                events, levels, per_level
+            ),
+            matrix_repeat,
+        )
+        counts, _ = result
+        expected_orders = min(events, levels * per_level)
+        expected_levels = min(levels, (expected_orders + per_level - 1) // per_level)
+        assert counts["live_orders"] == expected_orders
+        assert counts["live_levels"] == expected_levels
+        print(
+            f"  {events:>9,}; {levels:>6,}; {per_level:>3,}  "
+            f"{events / seconds:>11,.0f} events/s  "
+            f"{counts['books'] / seconds:>11,.0f} books/s  "
+            f"{seconds / events * 1e9:>9,.0f} ns/event"
+        )
+
+
 def bench_lifecycle(rows: int, repeat: int) -> None:
     """Cached state comparison and indexed explicit-expiry lookup."""
-    import heapq
-
     from rekep.market import Order, Side, State
 
     previous = next(one for one in stream(4) if isinstance(one, Order) and one.px == one.px)
@@ -471,7 +791,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 eunix=expiry if index % 100 == 0 else None,
             )
         )
-    indexed = sum(len(bucket) for bucket in side._expiring.values())
+    indexed = len(side._deadlines)
     assert len(side.orders) == live and indexed == (live + 99) // 100
 
     def probe_expiry() -> int:
@@ -496,6 +816,13 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
     print(f"\nCapacity tie -- {live:,} orders at one price, one eviction")
     report("sorted whole price level", sorted_seconds, live)
     report("max within price level", max_seconds, live, against=sorted_seconds)
+
+    started = time.perf_counter()
+    due = side.expire(expiry)
+    due_seconds = time.perf_counter() - started
+    assert len(due) == indexed and len(side.orders) == live - indexed
+    print(f"\nExplicit expiry due set -- {indexed:,} of {live:,} live orders")
+    report("expire, small due set", due_seconds, indexed)
 
     capped = _Side(Side.BID)
     for index in range(live):
@@ -590,7 +917,7 @@ def bench_fold(events: int, repeat: int) -> None:
     produced = len(books)
     assert produced, "the fold produced no books at all"
     rejected = sum(
-        one.state is State.INTERNAL_REJECTED for book in books for one in book.order_events or ()
+        one.state is State.INTERNAL_REJECTED for book in books for one in book.deltas
     )
     assert rejected == (events + 19) // 20, "the benchmark lost its malformed-order leg"
     seconds, _ = timed(fold, repeat)
@@ -610,7 +937,7 @@ def bench_fold(events: int, repeat: int) -> None:
     expired = sum(
         event.state is State.INTERNAL_EXPIRED
         for book in limited
-        for event in book.order_events or ()
+        for event in book.deltas
     )
     assert expired, "the bound emitted no auditable expiry"
     assert all(
@@ -639,6 +966,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rows", type=int, default=20_000)
     parser.add_argument("--quick", action="store_true")
+    parser.add_argument(
+        "--matrix",
+        action="store_true",
+        help="run the selected 10K/100K/1M replay matrix (quick keeps its small matrix)",
+    )
     parser.add_argument("--repeat", type=int, default=5)
     parsed = parser.parse_args()
     rows = 2_000 if parsed.quick else parsed.rows
@@ -658,10 +990,15 @@ def main() -> None:
         bench_book(rows // 10, depth, repeat)
     bench_codes(rows, repeat)
     bench_lifecycle(rows, repeat)
-    bench_fix_parser(rows // 20, repeat)
+    bench_standing(rows, repeat)
+    # Tiny Arrow arrays benchmark call overhead instead of parser throughput.
+    bench_fix_parser(max(rows // 20, 10_000), repeat)
     bench_fix(rows // 20, repeat)
     bench_ceiling(rows // 20, repeat)
     bench_fold(rows // 10, repeat)
+    bench_operation_counts(rows)
+    bench_snapshot(rows, repeat)
+    bench_replay_matrix(rows, repeat, quick=parsed.quick, full=parsed.matrix)
 
 
 if __name__ == "__main__":

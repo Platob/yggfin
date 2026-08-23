@@ -6,7 +6,7 @@
 | --- | --- |
 | `log.yaml` | Parsed source lines, including typed FIX fields. |
 | `instrument.yaml` | Versioned and hourly instrument state. |
-| `book.yaml` | Book deltas and recovery snapshots. |
+| `book.yaml` | Book deltas, executions, and recovery state. |
 | `order.yaml` | Flattened auditable order events. |
 | `execution.yaml` | Flattened auditable executions. |
 
@@ -33,9 +33,17 @@ example `orig_cl_ord_id` with `fix:name: OrigClOrdID`.
 
 ## Evolution
 
-Add nullable fields. Dropping or retyping a field is a new contract version.
-Producers cast before writing; consumers load the same contract and may use
-`merge_schema=True` to retain additive fields from a newer producer.
+Ordinary evolution is additive and nullable. Dropping or retyping a field is a
+new contract version. Producers cast before writing; consumers load the same
+contract and may use `merge_schema=True` to retain additive fields from a newer
+producer.
+
+The `linked_events` and Book-state refactor is an intentional breaking cutover:
+it replaces stored names and types and makes collections and depths required.
+Existing Iceberg tables must be explicitly migrated or recreated before using
+these contracts; the core model does not keep parallel legacy columns. In
+particular, an old lifecycle-only link has no event time from which to recover
+`linked_events` losslessly.
 
 ## Publishing
 

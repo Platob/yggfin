@@ -8,7 +8,6 @@ parameters:
   timezone: Europe/Paris
   start: null
   end: null
-  fix_version: "4.4"
   fix_dictionary: data/fix
   null_values: ["", "null", "<null>", "n/a"]
   rules: null

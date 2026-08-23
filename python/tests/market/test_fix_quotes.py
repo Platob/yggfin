@@ -12,7 +12,7 @@ FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
 
 
 def events(line: str) -> list[Order]:
-    return list(FixEvents.from_text(line))
+    return list(FixEvents.from_text(line, fix_version="4.4"))
 
 
 def mass_quote(registry: FixRegistry) -> str:
@@ -81,7 +81,8 @@ def test_named_quote_fields_resolve_through_the_builtin_registry() -> None:
                 ("OfferPx", 101),
                 ("BidSize", 10),
                 ("OfferSize", 12),
-            ]
+            ],
+            fix_version="4.4",
         )
     )
     assert (bid.px, bid.qty, ask.px, ask.qty) == (100.0, 10.0, 101.0, 12.0)

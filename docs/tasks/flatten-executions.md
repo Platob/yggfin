@@ -1,7 +1,7 @@
 # Flatten executions
 
 `tasks/flatten_executions/flatten_executions.ipynb`
-streams `Book.execution_events` into the existing `Execution` contract and
+streams `Book.executions` into the existing `Execution` contract and
 writes `market.executions`. It retains order links and event identity, then
 appends the carrying `Book.hash` to `parent_hash`.
 

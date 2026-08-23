@@ -131,7 +131,9 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
         [{"px": 10.0, "qty": 5.0, "order_xhash": [1], "exec_xhash": []}],
         [{"px": 11.0, "qty": 6.0, "order_xhash": [], "exec_xhash": []}],
     ]
-    given = Book.summarise_arrow_batch(batch(Book, 2, bid_levels=levels, ask_levels=levels))
+    given = Book.summarise_arrow_batch(
+        batch(Book, 2, sunix=[1, 2], bid_levels=levels, ask_levels=levels)
+    )
     dataset.write_arrow_table(pyarrow.Table.from_batches([given]))
     read = dataset.read_arrow_table()
 

@@ -264,7 +264,6 @@ class Instrument(Event):
         logs: Iterable[Any],
         *,
         registry: FixRegistry | None = None,
-        fix_version: str | None = None,
         **declared: Any,
     ) -> Iterator[Instrument]:
         """Version instrument facts and symbol-only fallbacks from sorted logs."""
@@ -273,7 +272,6 @@ class Instrument(Event):
             for log in logs:
                 for instrument in log.into_instruments(
                     registry=registry,
-                    fix_version=fix_version,
                 ):
                     yield log.unix, instrument, log.seq
 
@@ -491,7 +489,7 @@ def _observed_at(
         sunix=None,
         hash=NIL,
         xhash=instrument.xhash if xhash is None else xhash,
-        linked_xhash=None,
+        linked_events=[],
         version=0,
         state=State.OPEN,
         seq=seq,

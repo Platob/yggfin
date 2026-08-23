@@ -37,7 +37,7 @@
 
   <rect class="origin" x="1135" y="30" width="420" height="90" rx="14"/>
   <text class="label" x="1345" y="63">Shared Event envelope</text>
-  <text class="small" x="1345" y="88">unix | seq | hash | xhash | linked_xhash</text>
+  <text class="small" x="1345" y="88">unix | seq | hash | xhash | linked_events</text>
   <text class="small" x="1345" y="108">state | error | parent_hash</text>
   <path class="inherit" d="M1050 75 H1135"/>
 
@@ -62,7 +62,7 @@
   <rect class="market" x="525" y="475" width="345" height="195" rx="15"/>
   <text class="label" x="698" y="508">Book contract</text>
   <text class="small" x="698" y="536">instrument_xhash | bid_levels | ask_levels</text>
-  <text class="small" x="698" y="558">order_events | execution_events</text>
+  <text class="small" x="698" y="558">deltas | executions | bid_alive | ask_alive</text>
   <text class="small" x="698" y="580">best values | VWAP | imbalance</text>
   <image href="logos/apache-iceberg.svg" x="565" y="610" width="102" height="28"/>
   <text class="small" x="755" y="631">market.books</text>
@@ -79,7 +79,7 @@
   <text class="label" x="1453" y="383">Execution contract</text>
   <text class="small" x="1453" y="411">execution ids + order ids</text>
   <text class="small" x="1453" y="433">px | qty | notional | currency</text>
-  <text class="small" x="1453" y="455">order lifecycle in linked_xhash</text>
+  <text class="small" x="1453" y="455">timed order link in linked_events</text>
   <image href="logos/apache-iceberg.svg" x="1370" y="493" width="94" height="26"/>
   <text class="small" x="1485" y="532">market.executions</text>
 
@@ -93,10 +93,10 @@
   <text class="edge-label" x="700" y="740">prior Book snapshots recover live orders</text>
 
   <path class="flow" d="M870 545 C930 520 975 470 1040 452"/>
-  <text class="edge-label" x="955" y="494">order_events</text>
+  <text class="edge-label" x="955" y="494">deltas</text>
 
   <path class="flow" d="M870 575 C1010 660 1240 650 1330 500"/>
-  <text class="edge-label" x="1115" y="665">execution_events + order links</text>
+  <text class="edge-label" x="1115" y="665">executions + timed order links</text>
 
   <path class="inherit" d="M1345 120 V145 H223 V245"/>
   <path class="inherit" d="M1345 145 H698 V175"/>

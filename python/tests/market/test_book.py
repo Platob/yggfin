@@ -46,9 +46,8 @@ def test_level_is_the_only_persisted_side_shape() -> None:
     ]
     names = {member.name for member in Book.into_field().fields}
     assert {"bid_levels", "ask_levels"} <= names
+    assert {"bid_alive", "ask_alive"} <= names
     assert not names & {
-        "bid_alive",
-        "ask_alive",
         "bid_updates",
         "ask_updates",
         "bid_executions",
@@ -68,7 +67,9 @@ def test_level_declares_the_fix_price_and_quantity_fields() -> None:
 def test_levels_derive_best_depth_and_total_for_each_side() -> None:
     bids = [level(10.0, 5.0, [1, 2]), level(9.5, 7.0, [3])]
     asks = [level(10.2, 3.0, [4])]
-    out = Book.summarise_arrow_batch(book(1, bid_levels=[bids], ask_levels=[asks]))
+    out = Book.summarise_arrow_batch(
+        book(1, sunix=[1], bid_levels=[bids], ask_levels=[asks])
+    )
     assert out.column("bid_px")[0].as_py() == 10.0
     assert out.column("bid_qty")[0].as_py() == 5.0
     assert out.column("bid_depth")[0].as_py() == 2
@@ -78,17 +79,17 @@ def test_levels_derive_best_depth_and_total_for_each_side() -> None:
 
 
 def test_empty_levels_mean_a_known_empty_side() -> None:
-    out = Book.summarise_arrow_batch(book(1, bid_levels=[[]]))
+    out = Book.summarise_arrow_batch(book(1, sunix=[1], bid_levels=[[]]))
     assert out.column("bid_px")[0].as_py() is None
     assert out.column("bid_qty")[0].as_py() is None
     assert out.column("bid_depth")[0].as_py() == 0
     assert out.column("bid_total_qty")[0].as_py() == 0.0
 
 
-def test_null_levels_leave_delta_summaries_unchanged() -> None:
+def test_empty_delta_levels_leave_flat_summaries_unchanged() -> None:
     given = book(
         1,
-        bid_levels=[None],
+        bid_levels=[[]],
         bid_px=[10.0],
         bid_qty=[2.0],
         bid_depth=[3],
@@ -103,7 +104,7 @@ def test_null_levels_leave_delta_summaries_unchanged() -> None:
 
 def test_a_thousand_levels_still_sum_exactly() -> None:
     levels = [level(100.0 - index, 0.1) for index in range(1000)]
-    out = Book.summarise_arrow_batch(book(1, bid_levels=[levels]))
+    out = Book.summarise_arrow_batch(book(1, sunix=[1], bid_levels=[levels]))
     assert out.column("bid_total_qty")[0].as_py() == pytest.approx(100.0, abs=1e-9)
     assert out.column("bid_depth")[0].as_py() == 1000
 
@@ -137,6 +138,7 @@ def test_one_sided_and_zero_sized_books_have_no_synthetic_price() -> None:
 def test_summarise_is_idempotent_and_keeps_the_contract() -> None:
     given = book(
         1,
+        sunix=[1],
         bid_levels=[[level(1.0, 2.0, [1])]],
         ask_levels=[[level(1.5, 4.0, [2])]],
     )

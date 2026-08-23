@@ -66,6 +66,46 @@ PIPED, CARET, SOHED, BRIDGE, WRAPPED, REJECTED, HASHED = 2, 3, 4, 5, 6, 7, 10
 WIRE = RECORDS[PIPED].decode().split("sending >> ")[1].split(" << ")[0]
 EXPECTED_WIRE_FIELDS = 15
 
+CARET_RAW_PAIRS = [
+    (8, "FIX4"),
+    (9, "61"),
+    (35, "0"),
+    (34, "1093"),
+    (49, "XPAR"),
+    (56, "BUYSIDE"),
+    (52, "20260814-00:05:01.148"),
+    (10, "017"),
+]
+
+BRIDGE_RAW_PAIRS = [
+    ("ISINCODE", "XX0000084733"),
+    ("CFICODE", "FXXXSX"),
+    ("SYMBOL", "TTF"),
+    ("SIDE", "1"),
+    ("ORDERQTY", "1200"),
+    ("PRICE", "41.2500"),
+    ("NOPARTYIDS", "2"),
+    ("NOPARTYIDS[0].PARTYID", "BUYSIDE"),
+    ("NOPARTYIDS[0].PARTYIDSOURCE", "D"),
+    ("NOPARTYIDS[0].PARTYROLE", "1"),
+    ("NOPARTYIDS[1].PARTYID", "XPAR"),
+    ("NOPARTYIDS[1].PARTYIDSOURCE", "G"),
+    ("NOPARTYIDS[1].PARTYROLE", "17"),
+    ("TRANSACTTIME", "20260814-00:05:01.148"),
+    ("UNKNOWNVENUEFIELD", "Z9"),
+]
+
+HASHED_RAW_PAIRS = [
+    ("ISINCODE", "XX0000084733"),
+    ("SYMBOL", "TTF"),
+    ("SIDE", "1"),
+    ("ORDERQTY", "1200"),
+    ("NOPARTYIDS", "1"),
+    ("NOPARTYIDS[0].PARTYID", "BUYSIDE"),
+    ("NOPARTYIDS[0].PARTYROLE", "1"),
+    ("UNKNOWNVENUEFIELD", "Z9"),
+]
+
 
 def test_the_sample_is_the_shape_the_tests_assume() -> None:
     assert len(RECORDS) == EXPECTED_RECORDS
@@ -77,7 +117,7 @@ def test_the_sample_is_the_shape_the_tests_assume() -> None:
 
 @pytest.fixture(scope="module")
 def codec() -> FixCodec:
-    return FixCodec(registry=FixRegistry(cache_dir=DATA, offline=True), fix_version="4.4")
+    return FixCodec(registry=FixRegistry(cache_dir=DATA, offline=True))
 
 
 @pytest.fixture(scope="module")
@@ -126,15 +166,22 @@ def test_every_field_of_a_wire_message_lands_in_one_of_the_three_places(
     assert resolved + rest + _lifted(table, PIPED) == EXPECTED_WIRE_FIELDS
 
 
-def test_the_caret_and_the_soh_lines_parse_to_the_same_shape(table: pyarrow.Table) -> None:
-    """One capture, three separators, and a batch is sampled once by contract."""
-    for row in (CARET, SOHED):
-        assert table.column("begin_string")[row].as_py().startswith("FIX")
-        assert table.column("seq")[row].as_py() > 0
-        assert table.column("check_sum")[row].as_py() is not None, "every one ends at its CheckSum"
-    assert table.column("msg_type")[CARET].as_py() == "0"
+def test_the_caret_and_the_soh_lines_keep_their_distinct_version_semantics(
+    table: pyarrow.Table,
+) -> None:
+    """Known `FIX.4.4` decodes; malformed `FIX4` remains lossless raw input."""
+    assert table.column("begin_string")[SOHED].as_py() == "FIX.4.4"
+    assert table.column("seq")[SOHED].as_py() == 1094
+    assert table.column("check_sum")[SOHED].as_py() == "118"
     assert table.column("msg_type")[SOHED].as_py() == "8"
-    assert table.column("fix_tags")[CARET].as_py() == [], "a heartbeat is session and nothing else"
+    assert table.column("fix_tags")[SOHED].as_py() == []
+
+    assert _pairs(table.column("fix_tags")[CARET]) == CARET_RAW_PAIRS
+    assert table.column("fix_miss_tags")[CARET].as_py() == [
+        str(tag) for tag, _ in CARET_RAW_PAIRS
+    ]
+    assert table.column("keyval")[CARET].as_py() == []
+    _assert_no_semantic_columns(table, CARET)
 
 
 def test_no_flat_tag_is_left_in_the_list_it_was_lifted_out_of(table: pyarrow.Table) -> None:
@@ -145,6 +192,8 @@ def test_no_flat_tag_is_left_in_the_list_it_was_lifted_out_of(table: pyarrow.Tab
     """
     assert _lifted(table, PIPED), "so the loop below has something to be true about"
     for row in range(table.num_rows):
+        if row == CARET:
+            continue
         pairs = _pairs(table.column("fix_tags")[row])
         if pairs is None:
             continue
@@ -155,31 +204,33 @@ def test_no_flat_tag_is_left_in_the_list_it_was_lifted_out_of(table: pyarrow.Tab
 def test_every_field_of_the_bridge_line_lands_in_one_of_the_four_places(
     table: pyarrow.Table,
 ) -> None:
-    """Nothing drops across columns, residual pairs, or components."""
-    resolved = len(table.column("fix_tags")[BRIDGE].as_py())
-    rest = len(table.column("keyval")[BRIDGE].as_py())
-    assert resolved + rest + _lifted(table, BRIDGE) + _component_fields(table, BRIDGE) == (
-        EXPECTED_BRIDGE_PAIRS
-    )
-
-
-def test_the_bridge_line_resolves_the_names_the_dictionary_knows(table: pyarrow.Table) -> None:
-    """A name is a tag, and a tag the flat layer names is a column of its own."""
-    assert table.column("symbol")[BRIDGE].as_py() == "TTF"
-    assert table.column("side")[BRIDGE].as_py() == "1"
-    assert table.column("order_qty")[BRIDGE].as_py() == 1200.0
+    """A versionless named message remains complete and in wire order."""
     assert table.column("fix_tags")[BRIDGE].as_py() == []
+    assert _pairs(table.column("keyval")[BRIDGE]) == BRIDGE_RAW_PAIRS
+    assert len(BRIDGE_RAW_PAIRS) == EXPECTED_BRIDGE_PAIRS
+    _assert_no_semantic_columns(table, BRIDGE)
 
 
-def test_the_bridge_group_is_structured_in_wire_order(table: pyarrow.Table) -> None:
-    assert table.column("transact_time")[BRIDGE].as_py() == datetime(
-        2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC
-    )
-    parties = table.column("parties")[BRIDGE].as_py()
-    assert [party["party_id"] for party in parties] == ["BUYSIDE", "XPAR"]
-    assert [party["party_id_source"] for party in parties] == ["D", "G"]
-    assert [party["party_role"] for party in parties] == [1, 17]
-    assert [party["buffer"] for party in parties] == [None, None]
+def test_the_versionless_bridge_line_does_not_guess_a_dictionary(
+    table: pyarrow.Table,
+) -> None:
+    """Known-looking names are still raw without message-local version evidence."""
+    raw = dict(_pairs(table.column("keyval")[BRIDGE]))
+    assert raw["SYMBOL"] == "TTF"
+    assert raw["SIDE"] == "1"
+    assert raw["ORDERQTY"] == "1200"
+    assert raw["PRICE"] == "41.2500"
+    assert table.column("fix_tags")[BRIDGE].as_py() == []
+    _assert_no_semantic_columns(table, BRIDGE)
+
+
+def test_the_versionless_bridge_group_stays_raw_in_wire_order(table: pyarrow.Table) -> None:
+    pairs = _pairs(table.column("keyval")[BRIDGE])
+    assert pairs[6:13] == BRIDGE_RAW_PAIRS[6:13]
+    assert pairs[13] == ("TRANSACTTIME", "20260814-00:05:01.148")
+    assert table.column("transact_time")[BRIDGE].as_py() is None
+    assert table.column("parties")[BRIDGE].as_py() is None
+    _assert_no_semantic_columns(table, BRIDGE)
 
 
 @pytest.mark.parametrize("reverse", [False, True])
@@ -231,25 +282,24 @@ def test_a_bridge_message_separated_by_its_own_markers_reads_the_same(
     it: `#A=1#B=2` came back as `A=''` and `B` glued to whatever followed. It
     parsed, which is how it would have travelled.
     """
-    assert table.column("symbol")[HASHED].as_py() == "TTF"
-    assert table.column("side")[HASHED].as_py() == "1"
-    assert table.column("order_qty")[HASHED].as_py() == 1200.0
+    assert _pairs(table.column("keyval")[HASHED]) == HASHED_RAW_PAIRS
     assert table.column("fix_tags")[HASHED].as_py() == []
-    assert table.column("parties")[HASHED].as_py() == [
-        {
-            "party_id": "BUYSIDE",
-            "party_id_source": None,
-            "party_role": 1,
-            "buffer": None,
-        }
+    assert table.column("fix_miss_tags")[HASHED].as_py() == [
+        key for key, _ in HASHED_RAW_PAIRS
     ]
-    assert table.column("isincode")[HASHED].as_py() == "XX0000084733"
-    assert dict(_pairs(table.column("keyval")[HASHED])) == {"UNKNOWNVENUEFIELD": "Z9"}
+    _assert_no_semantic_columns(table, HASHED)
 
 
 def test_a_nested_entry_survives_a_marker_separated_line(table: pyarrow.Table) -> None:
     """Two separators on one line, and neither is the other's."""
-    assert table.column("parties")[HASHED].as_py()[0]["party_id"] == "BUYSIDE"
+    pairs = _pairs(table.column("keyval")[HASHED])
+    assert pairs[4:7] == [
+        ("NOPARTYIDS", "1"),
+        ("NOPARTYIDS[0].PARTYID", "BUYSIDE"),
+        ("NOPARTYIDS[0].PARTYROLE", "1"),
+    ]
+    assert table.column("parties")[HASHED].as_py() is None
+    _assert_no_semantic_columns(table, HASHED)
 
 
 def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> None:
@@ -259,13 +309,13 @@ def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> No
     assert Rules.into_default().categorise("8=FIX.4.2|35=ULX|#A=1|#B=2").protocol == "FIX"
 
 
-def test_a_name_no_dictionary_has_is_kept_and_never_guessed(table: pyarrow.Table) -> None:
-    assert table.column("isincode")[BRIDGE].as_py() == "XX0000084733"
-    assert dict(_pairs(table.column("keyval")[BRIDGE])) == {"UNKNOWNVENUEFIELD": "Z9"}
+def test_versionless_names_are_all_kept_and_never_guessed(table: pyarrow.Table) -> None:
+    assert _pairs(table.column("keyval")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert table.column("fix_miss_tags")[BRIDGE].as_py() == [
-        "ISINCODE",
-        "UNKNOWNVENUEFIELD",
+        key for key, _ in BRIDGE_RAW_PAIRS
     ]
+    assert table.column("isincode")[BRIDGE].as_py() is None
+    _assert_no_semantic_columns(table, BRIDGE)
 
 
 def test_a_line_carrying_no_message_has_no_pairs_at_all(table: pyarrow.Table) -> None:
@@ -317,9 +367,11 @@ def test_a_wire_message_lands_what_it_traded_in_columns(table: pyarrow.Table) ->
     assert table.column("time_in_force")[PIPED].as_py() == "0"
 
 
-def test_a_checksum_keeps_the_leading_zero_that_makes_it_verify(table: pyarrow.Table) -> None:
-    """Three digits, so a string: `017` read as `17` is a checksum that fails."""
-    assert table.column("check_sum")[CARET].as_py() == "017"
+def test_a_malformed_version_keeps_its_checksum_raw_and_lossless(table: pyarrow.Table) -> None:
+    """Unknown `FIX4` cannot type fields, but raw CheckSum still keeps its zero."""
+    assert dict(_pairs(table.column("fix_tags")[CARET]))[10] == "017"
+    assert table.column("check_sum")[CARET].as_py() is None
+    _assert_no_semantic_columns(table, CARET)
 
 
 def test_a_stamp_lands_as_the_microsecond_utc_instant_it_spells(table: pyarrow.Table) -> None:
@@ -418,23 +470,30 @@ def test_a_hop_stays_in_the_pair_list_because_one_row_of_it_is_not_one_value(
     assert parsed.column("sender_comp_id")[0].as_py() == "BUYSIDE", "and the scalars still lifted"
 
 
-def test_a_bridge_name_the_dictionary_answers_for_is_lifted_like_a_tag(
+def test_versionless_bridge_names_remain_raw_even_when_the_dictionary_knows_them(
     tmp_path: Path, codec: FixCodec
 ) -> None:
-    """The flat layer is the tags, however the line spelled them."""
+    """A dictionary match is not permission to infer a message's FIX version."""
     parsed = _one_line(
         tmp_path / "named.txt",
         codec,
         "ULBridge",
         "toBridge #ISINCODE=XX00#SYMBOL=TTF#SIDE=1#ACCOUNT=<null>#SENDERCOMPID=BRIDGE1",
     )
-    assert parsed.column("sender_comp_id")[0].as_py() == "BRIDGE1"
-    assert parsed.column("symbol")[0].as_py() == "TTF"
-    assert parsed.column("side")[0].as_py() == "1"
-    assert parsed.column("account")[0].as_py() is None, "and the account said it had none"
-    assert parsed.column("fix_tags")[0].as_py() == [], "a name it answers for is a column"
-    assert parsed.column("isincode")[0].as_py() == "XX00"
-    assert parsed.column("keyval")[0].as_py() == []
+    assert _pairs(parsed.column("keyval")[0]) == [
+        ("ISINCODE", "XX00"),
+        ("SYMBOL", "TTF"),
+        ("SIDE", "1"),
+        ("SENDERCOMPID", "BRIDGE1"),
+    ]
+    assert parsed.column("fix_tags")[0].as_py() == []
+    assert parsed.column("fix_miss_tags")[0].as_py() == [
+        "ISINCODE",
+        "SYMBOL",
+        "SIDE",
+        "SENDERCOMPID",
+    ]
+    _assert_no_semantic_columns(parsed, 0)
 
 
 # -- millis and micros in one capture ----------------------------------------
@@ -477,7 +536,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
             Rules.into_default().rule(NO_PROTOCOL),
         ]
     ).into_yaml(path)
-    own = FixCodec(registry=codec.registry, rules=Rules.from_yaml(path), fix_version="4.4")
+    own = FixCodec(registry=codec.registry, rules=Rules.from_yaml(path))
     with TextFile.from_path(SAMPLE, codec=own) as log:
         table = log.read_arrow_table()
     found = table.column("protocol").to_pylist()
@@ -518,7 +577,7 @@ def test_a_sparse_codec_gets_typed_nulls_for_optional_declared_columns(
         ) -> tuple[dict[str, object], object]:
             return {}, tags
 
-    sparse = SparseCodec(registry=codec.registry, fix_version="4.4")
+    sparse = SparseCodec(registry=codec.registry)
     parsed = _one_line(tmp_path / "sparse.txt", sparse, "FixSession", "8=FIX.4.4|35=D|34=7|55=TTF|")
 
     assert parsed.column("seq")[0].as_py() is None
@@ -579,20 +638,33 @@ def test_repeating_quote_entries_stay_in_wire_order(tmp_path: Path, codec: FixCo
 def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
     tmp_path: Path,
 ) -> None:
-    cold = FixCodec(registry=FixRegistry(cache_dir=tmp_path, offline=True), fix_version="4.4")
+    cold = FixCodec(registry=FixRegistry(cache_dir=tmp_path, offline=True))
     with TextFile.from_path(SAMPLE, codec=cold) as log:
         table = log.read_arrow_table()
     assert table.num_rows == EXPECTED_RECORDS
-    assert table.column("symbol")[PIPED].as_py() == "TTF"
-    assert table.column("msg_type")[PIPED].as_py() == "D"
-    assert table.column("fix_tags")[PIPED].as_py() == []
+    assert _pairs(table.column("fix_tags")[PIPED]) == [
+        (8, "FIX.4.2"),
+        (9, "176"),
+        (35, "D"),
+        (34, "1092"),
+        (49, "BUYSIDE"),
+        (56, "XPAR"),
+        (52, "20260814-00:05:01.147"),
+        (11, "ORD-0000038106"),
+        (55, "TTF"),
+        (54, "1"),
+        (38, "1200"),
+        (40, "2"),
+        (44, "41.2500"),
+        (59, "0"),
+        (10, "203"),
+    ]
     assert len(table.column("fix_miss_tags")[PIPED].as_py()) == EXPECTED_WIRE_FIELDS
-    assert table.column("fix_tags")[BRIDGE].as_py() == [], "a name resolves to nothing"
-    assert table.column("isincode")[BRIDGE].as_py() == "XX0000084733"
-    assert _lifted(table, BRIDGE) == 2, "ISIN is also the row's symbol fallback"
-    assert table.column("symbol")[BRIDGE].as_py() == "XX0000084733"
-    assert len(table.column("keyval")[BRIDGE].as_py()) == EXPECTED_BRIDGE_PAIRS - 1
+    assert table.column("fix_tags")[BRIDGE].as_py() == []
+    assert _pairs(table.column("keyval")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert len(table.column("fix_miss_tags")[BRIDGE].as_py()) == EXPECTED_BRIDGE_PAIRS
+    for row in (PIPED, CARET, SOHED, BRIDGE, WRAPPED, HASHED):
+        _assert_no_semantic_columns(table, row)
 
 
 # -- the same, over a set ----------------------------------------------------
@@ -606,7 +678,10 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
     table = files.read_arrow_table()
     assert table.num_rows == EXPECTED_RECORDS * 2
     assert table.column("protocol").to_pylist() == EXPECTED_PROTOCOLS * 2
-    assert table.column("symbol")[BRIDGE].as_py() == "TTF"
+    assert _pairs(table.column("keyval")[BRIDGE]) == BRIDGE_RAW_PAIRS
+    assert _pairs(table.column("keyval")[EXPECTED_RECORDS + BRIDGE]) == BRIDGE_RAW_PAIRS
+    _assert_no_semantic_columns(table, BRIDGE)
+    _assert_no_semantic_columns(table, EXPECTED_RECORDS + BRIDGE)
     sequences = table.column("seq").to_pylist()
     assert sequences[PIPED] == 1092, "the flat layer of the first file"
     assert sequences[EXPECTED_RECORDS + PIPED] == 1092, "and of the second, read the same way"
@@ -620,16 +695,31 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
 def test_absent_values_never_reach_a_column(tmp_path: Path, codec: FixCodec) -> None:
     message = "toBridge #SYMBOL=TTF|#SIDE=<null>|#ACCOUNT=|#TEXT=N/A|#ORDERQTY=1200"
     table = _one_line(tmp_path / "absent.txt", codec, "ULBridge", message)
-    assert table.column("symbol")[0].as_py() == "TTF"
-    assert table.column("order_qty")[0].as_py() == 1200.0
-    assert _lifted(table, 0) == 2, "and the three that said nothing filled nothing"
     assert table.column("fix_tags")[0].as_py() == []
-    assert table.column("keyval")[0].as_py() == []
+    assert _pairs(table.column("keyval")[0]) == [
+        ("SYMBOL", "TTF"),
+        ("ORDERQTY", "1200"),
+    ]
+    assert table.column("fix_miss_tags")[0].as_py() == ["SYMBOL", "ORDERQTY"]
+    _assert_no_semantic_columns(table, 0)
 
-    keeping = FixCodec(registry=codec.registry, fix_version="4.4", null_values=frozenset())
+    keeping = FixCodec(registry=codec.registry, null_values=frozenset())
     kept = _one_line(tmp_path / "kept.txt", keeping, "ULBridge", message)
-    assert _lifted(kept, 0) == 5, "each spelling a value now, and each value a column"
-    assert kept.column("side")[0].as_py() == "<null>"
+    assert _pairs(kept.column("keyval")[0]) == [
+        ("SYMBOL", "TTF"),
+        ("SIDE", "<null>"),
+        ("ACCOUNT", ""),
+        ("TEXT", "N/A"),
+        ("ORDERQTY", "1200"),
+    ]
+    assert kept.column("fix_miss_tags")[0].as_py() == [
+        "SYMBOL",
+        "SIDE",
+        "ACCOUNT",
+        "TEXT",
+        "ORDERQTY",
+    ]
+    _assert_no_semantic_columns(kept, 0)
 
 
 # -- helpers -----------------------------------------------------------------
@@ -638,6 +728,13 @@ def test_absent_values_never_reach_a_column(tmp_path: Path, codec: FixCodec) -> 
 def _lifted(table: pyarrow.Table, row: int) -> int:
     """How many flat columns that row filled."""
     return sum(table.column(name)[row].as_py() is not None for name in FLAT_NAMES)
+
+
+def _assert_no_semantic_columns(table: pyarrow.Table, row: int) -> None:
+    """Unknown-version rows retain pairs without publishing interpreted values."""
+    assert _lifted(table, row) == 0
+    assert _component_fields(table, row) == 0
+    assert table.column("parties")[row].as_py() is None
 
 
 def _component_fields(table: pyarrow.Table, row: int) -> int:

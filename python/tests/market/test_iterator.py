@@ -7,7 +7,6 @@ import dataclasses
 import pyarrow
 import pytest
 
-import rekep.market.book as book_module
 from rekep.market import (
     AssetKind,
     Book,
@@ -98,6 +97,7 @@ def test_sorted_logs_feed_instruments_and_books_without_a_task_adapter() -> None
         ord_type="2",
         price=100.0,
         order_qty=2.0,
+        begin_string="FIX.4.4",
     )
 
     (instrument,) = Instrument.from_logs([log], snapshot_every=0)
@@ -573,7 +573,7 @@ def test_a_side_that_did_not_move_carries_no_levels_delta() -> None:
         order(BASE + 20, BTC, Side.ASK, 100.4, 2.0, "A2"),
     ]
     first, second, third = BookIterator.from_events(events, snapshot_every=0).books
-    assert first.bid_levels and second.bid_levels is None and third.bid_levels is None
+    assert first.bid_levels and second.bid_levels == [] and third.bid_levels == []
     assert second.ask_levels and third.ask_levels, "the ask changed on both later rows"
 
 
@@ -583,7 +583,7 @@ def test_a_side_that_did_not_move_carries_no_delta() -> None:
         order(BASE + 10, BTC, Side.ASK, 100.5, 7.0, "A1"),
     ]
     _, second = BookIterator.from_events(events, snapshot_every=0).books
-    assert second.bid_levels is None
+    assert second.bid_levels == []
     assert len(second.ask_levels) == 1
 
 
@@ -595,19 +595,11 @@ def test_a_side_that_did_not_move_still_reports_its_state() -> None:
     ]
     _, second = BookIterator.from_events(events, snapshot_every=0).books
     assert second.bid_px == 100.0 and second.bid_qty == 5.0 and second.bid_depth == 1
-    assert second.bid_levels is None, "an unchanged side has no levels delta"
+    assert second.bid_levels == [], "an unchanged side has no levels delta"
     assert second.spread == pytest.approx(0.5), "and the prices across the sides follow"
 
 
-def test_only_dirty_sides_recompute_their_summary(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls = []
-    summarise = book_module._summarise_side
-
-    def traced(book: Book, name: str, side: _Side) -> None:
-        calls.append(name)
-        summarise(book, name, side)
-
-    monkeypatch.setattr(book_module, "_summarise_side", traced)
+def test_each_delta_reads_both_incremental_side_summaries() -> None:
     events = [
         order(BASE, BTC, Side.BID, 100.0, 5.0, "B1"),
         order(BASE + 10, BTC, Side.ASK, 100.5, 7.0, "A1"),
@@ -617,7 +609,6 @@ def test_only_dirty_sides_recompute_their_summary(monkeypatch: pytest.MonkeyPatc
 
     found = list(BookIterator.from_events(events, snapshot_every=0))
 
-    assert calls == ["bid", "ask", "ask", "ask", "bid"]
     assert [
         (
             row.bid_px,
@@ -660,7 +651,7 @@ def test_a_trade_counts_as_the_side_moving() -> None:
     first, _, third = BookIterator.from_events(events, snapshot_every=0).books
     assert first.bid_qty == 5.0 and third.bid_qty == 3.0
     assert len(third.bid_levels) == 1
-    assert third.bid_levels[0].exec_xhash == [third.execution_events[0].xhash]
+    assert third.bid_levels[0].exec_xhash == [third.executions[0].xhash]
 
 
 def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
@@ -694,7 +685,7 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
     found = list(BookIterator.from_events(events, snapshot_every=0))
 
     assert len(found) == 3 and found[-1].bid_qty == 3.0
-    assert found[-1].execution_events[0].state is State.CANCELLED
+    assert found[-1].executions[0].state is State.CANCELLED
 
 
 # -- a picture has no delta ---------------------------------------------------
@@ -712,12 +703,12 @@ def test_a_snapshot_shows_the_book_and_not_what_changed_to_produce_it() -> None:
     for one in found:
         if one.sunix is None:
             continue
-        assert all(not level.exec_xhash for level in one.bid_levels or ())
-        assert all(not level.exec_xhash for level in one.ask_levels or ())
+        assert all(not level.exec_xhash for level in one.bid_levels)
+        assert all(not level.exec_xhash for level in one.ask_levels)
         assert [level.px for level in one.bid_levels] == [100.0], "the state is still there"
-        assert [order.order_id for order in one.order_events] == ["B1"]
-        assert one.linked_xhash == [order.xhash for order in one.order_events]
-        assert one.execution_events == []
+        assert one.deltas == [] and one.executions == []
+        assert [order.order_id for order in one.bid_alive] == ["B1"]
+        assert one.linked_events == [(order.unix, order.xhash) for order in one.bid_alive]
 
 
 def test_forgetting_the_delta_does_not_empty_the_row_it_pictures() -> None:
@@ -743,9 +734,9 @@ def test_only_snapshots_carry_the_full_state_needed_to_resume() -> None:
     ]
     changed, snapshot, latest = BookIterator.from_events(events).books
 
-    assert changed.bid_levels and latest.bid_levels is None
-    assert [one.order_id for one in snapshot.order_events] == ["B1"]
-    assert snapshot.execution_events == []
+    assert changed.bid_levels and latest.bid_levels == []
+    assert snapshot.deltas == [] and snapshot.executions == []
+    assert [one.order_id for one in snapshot.bid_alive] == ["B1"]
 
 
 def test_a_snapshot_restores_names_levels_and_live_quantities() -> None:
@@ -760,7 +751,7 @@ def test_a_snapshot_restores_names_levels_and_live_quantities() -> None:
 
     assert resumed.bid_depth == 2 and resumed.bid_total_qty == 8.0
     assert resumed.bid_px == 100.0 and resumed.ask_px is None
-    assert [one.order_id for one in resumed.order_events] == ["B2"]
+    assert [one.order_id for one in resumed.deltas] == ["B2"]
 
 
 def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> None:
@@ -778,12 +769,12 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
     )
     side = _Side(side=Side.BID)
     assert side.apply(placed)
-    # Exercise the linear fallback, not the normal indexed lookup.
+    # There is deliberately no linear fallback when the required index is corrupt.
     side.named.clear()
 
     found = side.standing(Order(client_order_id="client-1"))
 
-    assert found is not None and found.xhash == placed.xhash
+    assert found is None
 
 
 def test_a_restored_order_continues_the_persisted_version_chain() -> None:
@@ -794,8 +785,8 @@ def test_a_restored_order_continues_the_persisted_version_chain() -> None:
 
     (resumed,) = BookIterator.from_events([amended], snapshots=[seed], snapshot_every=0)
 
-    (audited,) = resumed.order_events
-    seeded = next(one for one in seed.order_events if one.order_id == "B1")
+    (audited,) = resumed.deltas
+    seeded = next(one for one in seed.bid_alive if one.order_id == "B1")
     assert audited.prev_hash == seeded.hash == placed.hash
     assert audited.version == seeded.version + 1
 
@@ -808,7 +799,7 @@ def test_recovery_refuses_a_live_level_it_cannot_reconstruct(anonymous: bool) ->
     levels = seed.bid_levels
     if anonymous:
         levels = [dataclasses.replace(level, order_xhash=[]) for level in levels]
-    broken = dataclasses.replace(seed, bid_levels=levels, order_events=[])
+    broken = dataclasses.replace(seed, bid_levels=levels, bid_alive=[])
 
     with pytest.raises(ValueError, match="linked (live )?Order"):
         BookIterator(snapshots=[broken])
@@ -841,18 +832,18 @@ def test_recovery_rebuilds_the_explicit_expiry_index() -> None:
     snapshot = next(
         one for one in BookIterator.from_events([placed, clock]).books if one.sunix is not None
     )
-    assert snapshot.bid_levels and snapshot.order_events and placed.eunix is not None
+    assert snapshot.bid_levels and snapshot.bid_alive and placed.eunix is not None
 
     restored = _Side.from_snapshot(
         Side.BID,
         snapshot.bid_levels,
-        snapshot.order_events,
+        snapshot.bid_alive,
     )
 
-    assert restored._expiry_keys == [placed.eunix]
+    assert restored._deadlines[0][0] == placed.eunix
     (expired,) = restored.expire(placed.eunix)
     assert expired.xhash == placed.xhash and restored.orders == {}
-    assert restored._expiry_keys == [] and restored._expiring == {}
+    assert restored._deadlines == [] and restored._deadline_tokens == {}
 
 
 def test_recovery_applies_the_side_bound_as_an_auditable_delta() -> None:
@@ -866,7 +857,7 @@ def test_recovery_applies_the_side_bound_as_an_auditable_delta() -> None:
 
     (bounded,) = BookIterator(snapshots=[seed], snapshot_every=0, max_side_alive=2).books
 
-    expired = [one for one in bounded.order_events if one.state is State.INTERNAL_EXPIRED]
+    expired = [one for one in bounded.deltas if one.state is State.INTERNAL_EXPIRED]
     assert [one.order_id for one in expired] == ["B3"]
     assert bounded.bid_depth == 2 and bounded.bid_total_qty == 2.0
 
@@ -924,7 +915,7 @@ def test_a_reference_alone_canonicalizes_the_book_and_nested_order() -> None:
 
     (book,) = folding
     instrument = known
-    (nested,) = book.order_events
+    (nested,) = book.deltas
     assert instrument.xhash == book.instrument_xhash == nested.instrument_xhash
     assert book.instrument_xhash == canonical.xhash
     assert nested.xhash == Order.hash_of(canonical.xhash, nested.mic, "B1", nested.side)
@@ -949,7 +940,7 @@ def test_alias_canonicalization_rewrites_execution_links_and_parent_versions() -
             px=100.0,
             qty=1.0,
             exec_id="X1",
-            linked_xhash=[placed.xhash],
+            linked_events=[(placed.unix, placed.xhash)],
             parent_hash=[placed.hash],
         )
         .attach_instrument(richer)
@@ -963,9 +954,9 @@ def test_alias_canonicalization_rewrites_execution_links_and_parent_versions() -
         ).books
     )
 
-    nested_order = books[0].order_events[0]
-    nested_fill = books[-1].execution_events[0]
-    assert nested_fill.primary_linked_xhash == nested_order.xhash
+    nested_order = books[0].deltas[0]
+    nested_fill = books[-1].executions[0]
+    assert nested_fill.primary_linked_event == (nested_order.unix, nested_order.xhash)
     assert nested_order.hash in nested_fill.parent_hash
 
 
@@ -988,7 +979,7 @@ def test_stale_orders_expire_into_an_auditable_terminal_event(explicit: bool) ->
     )
 
     latest = list(iterator)[-1]
-    expired = [one for one in latest.order_events if one.order_id == "B1"]
+    expired = [one for one in latest.deltas if one.order_id == "B1"]
     assert len(expired) == 1 and expired[0].state is State.INTERNAL_EXPIRED
     assert expired[0].eunix == BASE + 10
     assert expired[0].error and latest.bid_depth == 0
@@ -1012,12 +1003,12 @@ def test_an_inactive_instrument_snapshots_before_its_expiry_is_applied() -> None
     expired = next(
         one
         for one in btc_books
-        if any(event.state is State.INTERNAL_EXPIRED for event in one.order_events)
+        if any(event.state is State.INTERNAL_EXPIRED for event in one.deltas)
     )
     recovered = btc_books[-1]
     assert snapshot.unix == BASE + HOUR and snapshot.bid_qty == 5.0
     assert expired.unix == eth_clock.unix and expired.bid_depth == 0
-    assert expired.order_events[-1].state is State.INTERNAL_EXPIRED
+    assert expired.deltas[-1].state is State.INTERNAL_EXPIRED
     assert recovered is expired and recovered.sunix is None
     assert len({(book.unix, book.instrument_xhash) for book in btc_books}) == len(btc_books)
 
@@ -1065,7 +1056,7 @@ def test_expiry_is_applied_before_a_crossed_snapshot_boundary(
     expired = [
         event
         for book in found
-        for event in book.order_events
+        for event in book.deltas
         if event.order_id == "B1" and event.state is State.INTERNAL_EXPIRED
     ]
     assert len(expired) == 1
@@ -1096,7 +1087,7 @@ def test_an_inactive_instrument_expires_before_its_crossed_snapshot() -> None:
     expired = [
         event
         for book in btc_books
-        for event in book.order_events
+        for event in book.deltas
         if event.order_id == "B1" and event.state is State.INTERNAL_EXPIRED
     ]
     assert len(expired) == 1
@@ -1116,7 +1107,7 @@ def test_an_incomplete_limit_order_is_rejected_but_not_lost() -> None:
 
     (book,) = BookIterator.from_events([incomplete], snapshot_every=0)
 
-    (audited,) = book.order_events
+    (audited,) = book.deltas
     assert audited.state is State.INTERNAL_REJECTED and "required price" in audited.error
     assert book.bid_depth == 0 and book.bid_px is None
 
@@ -1126,7 +1117,7 @@ def test_a_new_order_without_a_side_is_rejected_instead_of_silently_ignored() ->
 
     (book,) = BookIterator.from_events([incomplete], snapshot_every=0)
 
-    (audited,) = book.order_events
+    (audited,) = book.deltas
     assert audited.state is State.INTERNAL_REJECTED and "side is missing" in audited.error
     assert book.bid_depth == book.ask_depth == 0
 
@@ -1155,10 +1146,10 @@ def test_pending_new_is_validated_but_pending_cancel_may_omit_terms() -> None:
 
     books = list(BookIterator.from_events([incomplete, standing, cancel], snapshot_every=0))
 
-    assert books[0].order_events[0].state is State.INTERNAL_REJECTED
+    assert books[0].deltas[0].state is State.INTERNAL_REJECTED
     assert books[-1].bid_qty == 5.0
-    assert books[-1].order_events[0].state is State.PENDING_CANCEL
-    assert books[-1].order_events[0].error is None
+    assert books[-1].deltas[0].state is State.PENDING_CANCEL
+    assert books[-1].deltas[0].error is None
 
 
 def test_a_rejected_replace_never_removes_the_standing_order() -> None:
@@ -1177,8 +1168,8 @@ def test_a_rejected_replace_never_removes_the_standing_order() -> None:
     latest = list(BookIterator.from_events([standing, malformed], snapshot_every=0))[-1]
 
     assert latest.bid_px == 100.0 and latest.bid_qty == 5.0
-    assert latest.order_events[0].state is State.INTERNAL_REJECTED
-    assert latest.order_events[0].error == "upstream detail"
+    assert latest.deltas[0].state is State.INTERNAL_REJECTED
+    assert latest.deltas[0].error == "upstream detail"
 
 
 def test_negative_prices_are_valid_but_nonpositive_quantities_are_not() -> None:
@@ -1206,8 +1197,8 @@ def test_negative_prices_are_valid_but_nonpositive_quantities_are_not() -> None:
     latest = list(BookIterator.from_events([priced, bad_fill], snapshot_every=0))[-1]
 
     assert latest.bid_qty == 5.0
-    assert latest.execution_events[0].state is State.INTERNAL_REJECTED
-    assert "quantity" in latest.execution_events[0].error
+    assert latest.executions[0].state is State.INTERNAL_REJECTED
+    assert "quantity" in latest.executions[0].error
 
 
 def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
@@ -1232,14 +1223,14 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
             filled_qty=400.0,
             state=State.FILLED,
             exec_id="E1",
-            linked_xhash=[placed.xhash],
+            linked_events=[(placed.unix, placed.xhash)],
         )
     )
 
     latest = list(BookIterator.from_events([placed, remaining, fill], snapshot_every=0))[-1]
 
     assert latest.bid_qty == 800.0 and latest.bid_total_qty == 800.0
-    assert latest.order_events[0].px == 100.0 and latest.order_events[0].qty == 800.0
-    assert latest.order_events[0].prev_qty == 1_200.0
-    assert latest.order_events[0].version == 1 and latest.order_events[0].prev_hash == placed.hash
-    assert latest.execution_events[0].qty == 400.0
+    assert latest.deltas[0].px == 100.0 and latest.deltas[0].qty == 800.0
+    assert latest.deltas[0].prev_qty == 1_200.0
+    assert latest.deltas[0].version == 1 and latest.deltas[0].prev_hash == placed.hash
+    assert latest.executions[0].qty == 400.0

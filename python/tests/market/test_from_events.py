@@ -86,7 +86,7 @@ def test_an_instant_that_moved_nothing_still_keeps_its_audit_delta() -> None:
     first, audited = books([*TWO_SIDED, acked])
     assert [first.unix, audited.unix] == [10, 20]
     assert audited.bid_qty == first.bid_qty and audited.ask_qty == first.ask_qty
-    assert audited.execution_events == [acked]
+    assert audited.executions == [acked]
 
 
 def test_an_empty_stream_is_an_empty_iterator() -> None:
@@ -162,8 +162,8 @@ def test_a_market_order_rests_nowhere_and_moves_no_book() -> None:
     ).attach_instrument(BTC)
     first, audited = books([*TWO_SIDED, unpriced])
     assert audited.bid_qty == first.bid_qty and audited.ask_qty == first.ask_qty
-    assert len(audited.order_events) == 1
-    assert audited.order_events[0].qty == 5.0 and audited.order_events[0].px is None
+    assert len(audited.deltas) == 1
+    assert audited.deltas[0].qty == 5.0 and audited.deltas[0].px is None
 
 
 # -- what it carries ---------------------------------------------------------
@@ -185,8 +185,8 @@ def test_the_units_come_from_the_events_folded_and_not_the_one_after_them() -> N
 
 def test_a_book_links_to_the_events_that_built_its_delta() -> None:
     (only,) = books(TWO_SIDED)
-    assert only.parent_hash == [event.hash for event in only.order_events]
-    assert only.linked_xhash == [event.xhash for event in only.order_events]
+    assert only.parent_hash == [event.hash for event in only.deltas]
+    assert only.linked_events == [(event.unix, event.xhash) for event in only.deltas]
 
 
 # -- the levels, and the orders under them -----------------------------------
@@ -325,13 +325,23 @@ def test_a_fill_takes_liquidity_out_of_the_side_it_names() -> None:
 
 def test_a_fill_that_names_an_order_takes_it_out_of_that_order_s_side() -> None:
     resting_order = TWO_SIDED[0]
-    _, second = books([*TWO_SIDED, trade(20, 100.0, 2.0, linked_xhash=[resting_order.xhash])])
+    _, second = books(
+        [
+            *TWO_SIDED,
+            trade(20, 100.0, 2.0, linked_events=[(resting_order.unix, resting_order.xhash)]),
+        ]
+    )
     assert second.bid_qty == 3.0
 
 
 def test_a_fill_tries_linked_lifecycles_in_order() -> None:
     placed = TWO_SIDED[0]
-    _, second = books([*TWO_SIDED, trade(20, 100.5, 2.0, linked_xhash=[-1, placed.xhash])])
+    _, second = books(
+        [
+            *TWO_SIDED,
+            trade(20, 100.5, 2.0, linked_events=[(0, -1), (placed.unix, placed.xhash)]),
+        ]
+    )
     assert second.bid_qty == 3.0 and second.ask_qty == 7.0
 
 
@@ -367,24 +377,24 @@ def test_an_acknowledgement_takes_nothing_out() -> None:
     acked = initial(Execution(unix=20, code="BTC-USD", px=100.0, qty=99.0, state=State.ACCEPTED))
     first, audited = books([*TWO_SIDED, acked])
     assert audited.bid_qty == first.bid_qty and audited.ask_qty == first.ask_qty
-    assert audited.execution_events == [acked]
+    assert audited.executions == [acked]
 
 
 def test_a_trade_is_recorded_on_the_side_it_hit() -> None:
     _, second = books([*TWO_SIDED, trade(20, 100.0, 2.0)])
     (changed,) = second.bid_levels
     assert (changed.px, changed.qty) == (100.0, 3.0)
-    assert changed.exec_xhash == [second.execution_events[0].xhash]
-    assert second.ask_levels is None
+    assert changed.exec_xhash == [second.executions[0].xhash]
+    assert second.ask_levels == []
 
 
 def test_a_later_fill_does_not_mutate_the_prior_flattened_order() -> None:
     placed = order(10, Side.BID, 100.0, 5.0, "B1")
-    fill = trade(20, 100.0, 2.0, linked_xhash=[placed.xhash])
+    fill = trade(20, 100.0, 2.0, linked_events=[(placed.unix, placed.xhash)])
 
     first, second = books([placed, fill])
 
-    assert first.order_events[0].qty == 5.0
+    assert first.deltas[0].qty == 5.0
     assert second.bid_qty == 3.0
 
 
@@ -395,14 +405,14 @@ def test_a_trade_bigger_than_the_level_walks_the_orders_in_the_order_they_sit() 
     assert second.bid_depth == 1 and second.bid_px == 99.5 and second.bid_qty == 2.0
     assert len(second.bid_levels) == 2
     assert all(
-        level.exec_xhash == [second.execution_events[0].xhash] for level in second.bid_levels
+        level.exec_xhash == [second.executions[0].xhash] for level in second.bid_levels
     )
 
 
 def test_a_print_against_a_book_this_fold_never_saw_takes_nothing() -> None:
     (audited,) = books([trade(10, 100.0, 5.0)])
     assert audited.bid_depth == audited.ask_depth == 0
-    assert len(audited.execution_events) == 1
+    assert len(audited.executions) == 1
 
 
 # -- the delta is per version ------------------------------------------------
@@ -416,7 +426,7 @@ def test_the_updates_on_a_row_are_what_produced_that_row() -> None:
 
 def test_a_side_that_did_not_move_carries_no_delta_on_the_next_row() -> None:
     _, second = books([*TWO_SIDED, order(20, Side.BID, 100.0, 9.0, "B3")])
-    assert second.ask_levels is None and second.ask_depth == 1, "unchanged, and still there"
+    assert second.ask_levels == [] and second.ask_depth == 1, "unchanged, and still there"
 
 
 def test_a_book_whose_side_emptied_has_no_mid_rather_than_the_last_one() -> None:
@@ -440,12 +450,12 @@ def test_a_book_whose_side_emptied_has_no_mid_rather_than_the_last_one() -> None
 # -- the whole way, from a venue's own lines ---------------------------------
 
 REFRESHES = [
-    "35=X|49=XCME|52=20260821-10:30:00.100|55=BTC-USD|207=XCME|15=USD|268=2|"
+    "8=FIX.4.4|35=X|49=XCME|52=20260821-10:30:00.100|55=BTC-USD|207=XCME|15=USD|268=2|"
     "279=0|269=0|270=100.0|271=5|278=L1|272=20260821|273=10:30:00.010|"
     "279=0|269=1|270=100.5|271=7|278=L2|273=10:30:00.010",
-    "35=X|49=XCME|52=20260821-10:30:00.200|55=BTC-USD|207=XCME|15=USD|268=1|"
+    "8=FIX.4.4|35=X|49=XCME|52=20260821-10:30:00.200|55=BTC-USD|207=XCME|15=USD|268=1|"
     "279=1|269=0|270=100.0|271=9|278=L1|272=20260821|273=10:30:00.020",
-    "35=X|49=XCME|52=20260821-10:30:00.300|55=BTC-USD|207=XCME|15=USD|268=1|"
+    "8=FIX.4.4|35=X|49=XCME|52=20260821-10:30:00.300|55=BTC-USD|207=XCME|15=USD|268=1|"
     "279=0|269=2|270=100.5|271=3|272=20260821|273=10:30:00.030",
 ]
 
@@ -617,18 +627,18 @@ def test_expiry_without_a_max_age_reads_only_the_explicit_index() -> None:
     assert list(side.orders) == [standing.xhash]
 
 
-def test_replacement_and_removal_keep_one_live_expiry_entry() -> None:
+def test_replacement_and_removal_keep_one_active_expiry_entry() -> None:
     side = _Side(side=Side.BID)
     side.apply(order(10, Side.BID, 100.0, 5.0, "B1", eunix=20))
     identity = next(iter(side.orders))
 
     for expiry in range(21, 41):
         side.apply(order(expiry - 9, Side.BID, 100.0, 5.0, "B1", eunix=expiry, state=State.OPEN))
-        assert side._expiry_keys == [expiry]
-        assert list(side._expiring[expiry]) == [identity]
+        token = side._deadline_tokens[identity]
+        assert (expiry, identity, token) in side._deadlines
 
     side.remove(identity)
-    assert side._expiry_keys == [] and side._expiring == {}
+    assert side._deadline_tokens == {}
 
 
 @pytest.mark.parametrize(
@@ -655,7 +665,11 @@ def test_a_side_bound_keeps_best_price_then_earliest_time(side: Side, prices: li
     assert all(one.state is State.INTERNAL_EXPIRED and one.version == 1 for one in expired)
     assert all(one.error and "max_side_alive=2" in one.error for one in expired)
     assert all(one.state is State.INTERNAL_EXPIRED for one in expired)
-    assert set(resting._expiring[1_000]) == {one.xhash for one in resting.orders.values()}
+    assert set(resting._deadline_tokens) == set(resting.orders)
+    assert all(
+        (1_000, xhash, resting._deadline_tokens[xhash]) in resting._deadlines
+        for xhash in resting.orders
+    )
 
 
 def test_a_side_bound_breaks_exact_price_time_ties_independent_of_arrival() -> None:
@@ -705,7 +719,7 @@ def test_bounded_evictions_are_auditable_and_never_enter_the_book_again() -> Non
     expired = [
         event
         for book in found
-        for event in book.order_events
+        for event in book.deltas
         if event.state is State.INTERNAL_EXPIRED
     ]
 
@@ -725,7 +739,7 @@ def test_a_new_order_evicted_immediately_keeps_both_versions_in_order() -> None:
 
     latest = list(BookIterator.from_events(events, snapshot_every=0, max_side_alive=1))[-1]
 
-    placed, expired = latest.order_events
+    placed, expired = latest.deltas
     assert placed.order_id == expired.order_id == "B2"
     assert expired.state is State.INTERNAL_EXPIRED and expired.prev_hash == placed.hash
     assert expired.version == placed.version + 1
@@ -741,7 +755,7 @@ def test_a_zero_side_bound_keeps_only_the_audit() -> None:
 
     (book,) = iterator
 
-    assert [one.state for one in book.order_events] == [State.NEW, State.INTERNAL_EXPIRED]
+    assert [one.state for one in book.deltas] == [State.NEW, State.INTERNAL_EXPIRED]
     assert book.ask_depth == 0 and iterator.folding[BTC.xhash].ask.orders == {}
 
 
@@ -753,7 +767,7 @@ def test_immediate_orders_are_audited_but_never_rest(tif: TimeInForce) -> None:
 
     assert immediate.eunix == immediate.unix
     assert book.bid_depth == 0 and book.bid_total_qty == 0.0
-    assert book.order_events == [immediate]
+    assert book.deltas == [immediate]
 
 
 def test_negative_side_bound_is_refused() -> None:

@@ -81,7 +81,7 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 ## Market data
 
 - Events are immutable versions. `hash` identifies a version; `xhash` a
-  lifecycle; `linked_xhash` relates lifecycles.
+  lifecycle; `linked_events` relates lifecycles with their event times.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
   little-endian `int64` lengths, `-1` for null, typed payload bytes, XXH3-64,
   and two's-complement `int64` storage. Numbers are never formatted as text.

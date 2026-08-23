@@ -47,6 +47,11 @@ Appending to a missing table creates it. `merge_by=True` skips keys already
 stored; write/upsert replaces them. Input batches accumulate to the requested
 commit size. Schema additions are nullable and additive.
 
+The current market-contract cutover is not an additive Iceberg evolution:
+renamed Book payloads, typed `linked_events`, and required collections need an
+explicit table migration or recreation. Dataset writes do not guess a missing
+link time or keep the retired columns alive.
+
 Every verb accepts `branch`; reads also accept `snapshot_id`. A producer that
 does not provide Iceberg ids is numbered at creation, while a contract that
 already carries ids keeps them.
@@ -68,8 +73,7 @@ logs.optimize(branch="main")
 
 Compaction settles once a partition has no newer data. Cleanup expires
 snapshots and removes only old files unreferenced by any live snapshot.
-`optimize` evolves schema, compacts, then cleans, returning counts for each
-action.
+`optimize` compacts, then cleans, returning counts for each action.
 
 ## Testing and benchmark
 

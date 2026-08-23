@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 import re
+from collections.abc import Iterable, Mapping
 from functools import cached_property
 from typing import Any
 
@@ -76,13 +78,10 @@ _IS_TAG = r"^[0-9]{1,9}$"
 #: keeps every pair.
 NULL_VALUES: frozenset[str] = frozenset({"", "null", "<null>", "n/a"})
 
-#: Where each of the three answers to "which version" came from. Recorded
-#: rather than inferred later: `4.4` resolved off a BeginString and `4.4`
-#: because nobody said otherwise are the same string and not the same fact.
+#: Where an inferred version came from. Unknown evidence stays distinct from
+#: either transport or application evidence.
 BEGIN_STRING_SOURCE = "begin_string"
 APPLICATION_VERSION_SOURCE = "application_version"
-RULE_SOURCE = "rule"
-DEFAULT_SOURCE = "default"
 NO_SOURCE = "none"
 
 _APPL_VERSIONS = {
@@ -185,11 +184,6 @@ class FixCodec(Convertible):
     #: name. Point it at `data/fix/` or `data/fix.zip` for the dictionary this repository
     #: publishes, or hand over `FixRegistry()` to let it scrape.
     registry: FixRegistry = dataclasses.field(default_factory=lambda: FixRegistry(offline=True))
-
-    #: Which FIX version to resolve names against when neither the message nor
-    #: the rule says. None means every version the dictionary holds, newest
-    #: winning -- which is what a name means when nobody said which version.
-    fix_version: str | None = None
 
     #: Values that mean the field is absent, dropped from the pairs before
     #: anything else looks at them. Empty keeps every pair.
@@ -362,7 +356,7 @@ class FixCodec(Convertible):
             tags, keyval, misses = self.into_fix_pairs(pairs, version)
             components, tags = self.into_component_columns(tags, version)
             flat, tags = self.into_flat_columns(tags, version)
-            named, keyval = self.into_named_columns(keyval)
+            named, keyval = self.into_named_columns(keyval, version)
             return tags, keyval, misses, {**components, **flat, **named}
         if isinstance(pairs, pyarrow.ChunkedArray):
             pairs = pairs.combine_chunks()
@@ -371,7 +365,7 @@ class FixCodec(Convertible):
             tags, keyval, misses = self.into_fix_pairs(pairs, version)
             components, tags = self.into_component_columns(tags, version)
             flat, tags = self.into_flat_columns(tags, version)
-            named, keyval = self.into_named_columns(keyval)
+            named, keyval = self.into_named_columns(keyval, version)
             return tags, keyval, misses, {**components, **flat, **named}
 
         compute = pyarrow.compute
@@ -414,34 +408,36 @@ class FixCodec(Convertible):
                 column = column.cast(FLAT_TYPES[tag], safe=False)
             flat[FLAT_COLUMNS[tag]] = column
 
-        named_names = compute.utf8_lower(reduced)
-        named_keys = pyarrow.array(list(NAMED_COLUMNS), pyarrow.string())
-        named_index = compute.index_in(named_names, value_set=named_keys)
-        # Unknown keys share an irrelevant sentinel. Known named fields retain
-        # distinct integer codes, avoiding composite string construction.
-        uniqueness_key = compute.fill_null(named_index, pyarrow.scalar(-1, pyarrow.int32()))
-        named_candidate = compute.and_(unknown, compute.is_valid(named_index))
-        named_lift = (
-            compute.and_(named_candidate, _once(parents, uniqueness_key))
-            if compute.any(named_candidate, min_count=0).as_py()
-            else pyarrow.repeat(False, len(keys))
-        )
-        named_found = compute.filter(named_names, named_lift)
-        named_where = compute.filter(parents, named_lift)
-        named_values = compute.filter(items, named_lift)
         named = {
             field.name: pyarrow.nulls(rows, field.arrow_type) for field in NAMED_COLUMNS.values()
         }
-        for name in compute.unique(named_found).to_pylist():
-            at = compute.equal(named_found, name)
-            selected = compute.filter(named_values, at)
-            selected_rows = compute.filter(named_where, at)
-            column = (
-                selected
-                if len(selected_rows) == rows
-                else compute.take(selected, compute.index_in(row_ids, value_set=selected_rows))
+        named_lift = pyarrow.repeat(False, len(keys))
+        if version is not None:
+            named_names = compute.utf8_lower(reduced)
+            named_keys = pyarrow.array(list(NAMED_COLUMNS), pyarrow.string())
+            named_index = compute.index_in(named_names, value_set=named_keys)
+            # Unknown keys share an irrelevant sentinel. Known named fields retain
+            # distinct integer codes, avoiding composite string construction.
+            uniqueness_key = compute.fill_null(named_index, pyarrow.scalar(-1, pyarrow.int32()))
+            named_candidate = compute.and_(unknown, compute.is_valid(named_index))
+            named_lift = (
+                compute.and_(named_candidate, _once(parents, uniqueness_key))
+                if compute.any(named_candidate, min_count=0).as_py()
+                else named_lift
             )
-            named[name] = cast_arrow_fix(column, NAMED_COLUMNS[name].arrow_type)
+            named_found = compute.filter(named_names, named_lift)
+            named_where = compute.filter(parents, named_lift)
+            named_values = compute.filter(items, named_lift)
+            for name in compute.unique(named_found).to_pylist():
+                at = compute.equal(named_found, name)
+                selected = compute.filter(named_values, at)
+                selected_rows = compute.filter(named_where, at)
+                column = (
+                    selected
+                    if len(selected_rows) == rows
+                    else compute.take(selected, compute.index_in(row_ids, value_set=selected_rows))
+                )
+                named[name] = cast_arrow_fix(column, NAMED_COLUMNS[name].arrow_type)
 
         quote_structure = _quote_group_structure(parents, tags)
         fix_keep = compute.and_(
@@ -536,12 +532,16 @@ class FixCodec(Convertible):
         )
         return columns, rest
 
-    def into_named_columns(self, pairs: Any) -> tuple[dict[str, Any], Any]:
+    def into_named_columns(
+        self, pairs: Any, version: str | None = None
+    ) -> tuple[dict[str, Any], Any]:
         """Configured rendered names lifted from the residual ordered pairs."""
         rows = len(pairs)
         columns = {
             field.name: pyarrow.nulls(rows, field.arrow_type) for field in NAMED_COLUMNS.values()
         }
+        if version is None:
+            return columns, pairs
         if isinstance(pairs, pyarrow.ChunkedArray):
             pairs = pairs.combine_chunks()
         if not rows or pairs.null_count == rows:
@@ -612,34 +612,12 @@ class FixCodec(Convertible):
             pairs = self.into_pairs(pyarrow.array([message]), parse_protocol)
             begin_column, application_column, default_column = _version_columns(pairs)
             begin = begin_column[0].as_py()
-            if begin is not None:
-                named = self.version_named(begin)
-                if _version_key(begin).startswith("FIXT"):
-                    application = application_column[0].as_py()
-                    if application is not None:
-                        resolved = _APPL_VERSIONS.get(application) or self.version_named(
-                            application
-                        )
-                        if resolved is not None:
-                            return resolved, APPLICATION_VERSION_SOURCE
-                        return self._fallback_version(protocol)
-                    default = default_column[0].as_py()
-                    if default is not None:
-                        resolved = _APPL_VERSIONS.get(default) or self.version_named(default)
-                        if resolved is not None:
-                            return resolved, APPLICATION_VERSION_SOURCE
-                    return self._fallback_version(protocol)
-                if named is not None:
-                    return named, BEGIN_STRING_SOURCE
-        return self._fallback_version(protocol)
-
-    def _fallback_version(self, protocol: str) -> tuple[str | None, str]:
-        """Rule, configured default, or no application version."""
-        rule = self.rules.rule(protocol)
-        if rule.fix_version:
-            return rule.fix_version, RULE_SOURCE
-        if self.fix_version:
-            return self.fix_version, DEFAULT_SOURCE
+            return _version_from_evidence(
+                begin,
+                application_column[0].as_py(),
+                default_column[0].as_py(),
+                self._spellings,
+            )
         return None, NO_SOURCE
 
     def versions_of(self, messages: Any, protocol: str = NO_PROTOCOL) -> pyarrow.Array:
@@ -654,8 +632,6 @@ class FixCodec(Convertible):
         parts, positions = [], []
         for category, where in groups:
             pairs = self.into_pairs(pyarrow.compute.take(messages, where), category.as_py())
-            # Categorisation selects only the grammar. An omitted public
-            # protocol still uses the configured default, as `version_of` does.
             parts.append(self.versions_of_pairs(pairs, NO_PROTOCOL))
             positions.append(where)
         return scattered(parts, positions)
@@ -668,11 +644,7 @@ class FixCodec(Convertible):
         is_fixt = compute.fill_null(
             compute.match_substring_regex(compute.utf8_upper(begins), r"^FIXT"), False
         )
-        fallback, _ = self._fallback_version(protocol)
-        if fallback is None:
-            versions = pyarrow.nulls(len(pairs), pyarrow.string())
-        else:
-            versions = pyarrow.repeat(pyarrow.scalar(fallback), len(pairs))
+        versions = pyarrow.nulls(len(pairs), pyarrow.string())
         valid = compute.filter(begins, compute.is_valid(begins))
         for begin in compute.unique(valid).to_pylist():
             named = self.version_named(begin)
@@ -719,52 +691,51 @@ class FixCodec(Convertible):
 
     def index_of(self, version: str | None = None) -> TagIndex:
         """The name index for one version, built once and held."""
-        wanted = version if version is not None else self.fix_version
-        if wanted not in self._indexes:
-            self._indexes[wanted] = TagIndex.from_tags(self._tags(wanted))
-        return self._indexes[wanted]
+        if version not in self._indexes:
+            self._indexes[version] = TagIndex.from_tags(self._tags(version))
+        return self._indexes[version]
 
     def tag_field(self, tag: int, version: str | None = None) -> Field | None:
         """The dictionary's own declaration of one tag, or None when it has none."""
+        if version is None:
+            return None
         try:
-            return self.registry.field(tag, version if version is not None else self.fix_version)
+            return self.registry.field(tag, version)
         except (KeyError, OSError, ValueError):
             return None
 
     def flat_fields(self, version: str | None = None) -> dict[int, Field]:
         """Promoted registry fields, with contract fallbacks only for a cold registry."""
-        wanted = version if version is not None else self.fix_version
-        if wanted not in self._flat_fields:
-            if not self.registry.fields_available(wanted):
-                self._flat_fields[wanted] = {tag: FLAT_DEFAULTS[tag] for tag in FLAT_COLUMNS}
+        if version not in self._flat_fields:
+            if version is None:
+                self._flat_fields[version] = {}
+            elif not self.registry.fields_available(version):
+                self._flat_fields[version] = {tag: FLAT_DEFAULTS[tag] for tag in FLAT_COLUMNS}
             else:
-                self._flat_fields[wanted] = {
+                self._flat_fields[version] = {
                     tag: field
                     for tag in FLAT_COLUMNS
-                    if (field := self.tag_field(tag, wanted)) is not None
+                    if (field := self.tag_field(tag, version)) is not None
                 }
-        return self._flat_fields[wanted]
+        return self._flat_fields[version]
 
     def parties_of(self, version: str | None = None) -> Parties:
         """Version-aware Parties extractor, cached with the tag index."""
-        wanted = version if version is not None else self.fix_version
-        if wanted not in self._parties:
+        if version not in self._parties:
             components = []
-            try:
-                candidates = (wanted,) if wanted is not None else self.registry.versions
-                for candidate in candidates:
-                    declared = self.registry.components(candidate)
+            if version is not None:
+                try:
+                    declared = self.registry.components(version)
                     if any(component.name.lower() == "parties" for component in declared):
                         components.extend(declared)
-                        break
-            except (KeyError, OSError, ValueError):
-                components = []
-            self._parties[wanted] = Parties(
+                except (KeyError, OSError, ValueError):
+                    components = []
+            self._parties[version] = Parties(
                 components=components,
-                names=self._tags(wanted),
+                names=self._tags(version),
                 fallback=False,
             )
-        return self._parties[wanted]
+        return self._parties[version]
 
     # -- held state ---------------------------------------------------------
 
@@ -783,18 +754,87 @@ class FixCodec(Convertible):
     @cached_property
     def _spellings(self) -> dict[str, str]:
         """`{version key: canonical spelling}` for every version the store holds."""
-        try:
-            versions = self.registry.versions
-        except (OSError, ValueError):
-            return {}
-        return {_version_key(version): version for version in versions}
+        return dict(version_spellings(self.registry))
 
     def _tags(self, version: str | None) -> dict[str, int]:
-        """`{name: tag}` for one version, or for all of them; empty when unknown."""
+        """`{name: tag}` for one explicit version; empty when unknown."""
+        if version is None:
+            return {}
         try:
             return self.registry.tags(version)
         except (KeyError, OSError, ValueError):
             return {}
+
+
+@functools.cache
+def version_spellings(registry: FixRegistry) -> Mapping[str, str]:
+    """Canonical registry spellings indexed once by wire-version spelling."""
+    try:
+        return {_version_key(version): version for version in registry.versions}
+    except (OSError, ValueError):
+        return {}
+
+
+def infer_version_from_pairs(
+    pairs: Iterable[tuple[Any, Any]], registry: FixRegistry | None = None
+) -> tuple[str | None, str]:
+    """Infer one FIX application version from tags 8, 1128 and 1137."""
+    evidence: dict[str, str] = {}
+    for key, value in pairs:
+        text = str(key)
+        member = re.search(_MEMBER_NAME_VECTOR, text, re.ASCII)
+        name = member.group("name").lower() if member is not None else text.lower()
+        if name in {"10", "checksum"}:
+            break
+        selected = {
+            "8": "begin",
+            "beginstring": "begin",
+            "1128": "application",
+            "applverid": "application",
+            "1137": "default",
+            "defaultapplverid": "default",
+        }.get(name)
+        rendered = str(value).strip() if value is not None else ""
+        if selected is not None and rendered:
+            evidence.setdefault(selected, rendered)
+    selected_registry = registry or FixRegistry.from_builtin()
+    return _version_from_evidence(
+        evidence.get("begin"),
+        evidence.get("application"),
+        evidence.get("default"),
+        version_spellings(selected_registry),
+    )
+
+
+def _version_from_evidence(
+    begin: str | None,
+    application: str | None,
+    default_application: str | None,
+    spellings: Mapping[str, str],
+) -> tuple[str | None, str]:
+    """Resolve parsed transport/application evidence without choosing a default."""
+    if begin is None:
+        return None, NO_SOURCE
+    if not _version_key(begin).startswith("FIXT"):
+        resolved = spellings.get(_version_key(begin))
+        return (
+            (resolved, BEGIN_STRING_SOURCE) if resolved is not None else (None, NO_SOURCE)
+        )
+    if application is not None:
+        resolved = _APPL_VERSIONS.get(str(application).strip()) or spellings.get(
+            _version_key(application)
+        )
+        return (
+            (resolved, APPLICATION_VERSION_SOURCE) if resolved is not None else (None, NO_SOURCE)
+        )
+    if default_application is not None:
+        resolved = _APPL_VERSIONS.get(str(default_application).strip()) or spellings.get(
+            _version_key(default_application)
+        )
+        return (
+            (resolved, APPLICATION_VERSION_SOURCE) if resolved is not None else (None, NO_SOURCE)
+        )
+    return None, NO_SOURCE
 
 
 def _version_columns(

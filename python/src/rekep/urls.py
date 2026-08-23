@@ -36,6 +36,9 @@ SCHEME = re.compile(
 #: Schemes that name a file on this machine.
 LOCAL = frozenset({"", "file", "local"})
 
+#: Schemes whose byte transport is HTTP rather than a `pyarrow.fs` filesystem.
+HTTP = frozenset({"http", "https"})
+
 #: Schemes pyarrow serves with `S3FileSystem`, which is the one whose URI
 #: parsing this module has to correct.
 S3 = frozenset({"s3", "s3a", "s3n"})

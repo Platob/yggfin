@@ -100,8 +100,8 @@ the short 1.5 s test bound; the normal workflow default is one day.
 | misc, `10:30:00.800Z` | `MISC` | `HealthMonitor` | heartbeat retained verbatim |
 | unknown, `10:30:00.900Z` | `OTHER` | `ExperimentalAdapter` | opaque payload retained verbatim |
 
-The raw Security Definition remains lossless. `parse_logs` reconstructs it
-through the configured 4.4 registry once, versions the Instrument, and stores
+The raw Security Definition remains lossless. `parse_logs` infers 4.4 from its
+`BeginString`, prepares that registry once, versions the Instrument, and stores
 the normalized result beside the raw line. `flatten_instruments` then performs
 only the exact `Log` to `Instrument` projection.
 
@@ -121,8 +121,9 @@ only the exact `Log` to `Instrument` projection.
 | `10:30:00.400Z` | `AAPL` | `CLOSED` | none / none; rejected delta retained | `107443134474959791` |
 | `10:30:00.600Z` | `MSFT` | `OPEN` | none / `200 x 8` | `-1076024249053620757` |
 
-The BTC book links both level lifecycles in `linked_xhash` and both source
-versions in `parent_hash`. Bid and ask levels remain best-price ordered.
+The BTC book relates both level lifecycles with their source times in
+`linked_events` and both source versions in `parent_hash`. Bid and ask levels
+remain best-price ordered.
 
 ### Orders
 
@@ -137,11 +138,12 @@ versions in `parent_hash`. Bid and ask levels remain best-price ordered.
 | Execution | State | Side, price, quantity | Order link | `hash` |
 | --- | --- | --- | --- | ---: |
 | BTC depth trade | `FILLED` | trade, `100.5`, `3` | source depth lifecycle | `2597774428527752844` |
-| `EA1` | `FILLED` | buy, `150`, `4` | `OA1 / CA1`, `linked_xhash=[8198264325293535046]` | `-1633321435522966350` |
-| `EM1` | `FILLED` | sell, `200`, `8` | `OM1 / CM1`, `linked_xhash=[5138554158671491395]` | `-365983740112302740` |
+| `EA1` | `FILLED` | buy, `150`, `4` | `OA1 / CA1`, timed order link | `-1633321435522966350` |
+| `EM1` | `FILLED` | sell, `200`, `8` | `OM1 / CM1`, timed order link | `-365983740112302740` |
 
 Flattening appends the carrying `Book.hash` to each event's `parent_hash`;
-`linked_xhash` remains lifecycle linkage between executions and orders.
+`linked_events` retains the event time and lifecycle linkage between executions
+and orders.
 
 ## Schema lineage
 
@@ -151,7 +153,7 @@ Flattening appends the carrying `Book.hash` to each event's `parent_hash`;
 | --- | ---: | --- | --- | --- |
 | `Log` | 107 | `unix, hash` | `unix_hour` | `fix_tags`, `fix_miss_tags`, `keyval`, `parties` |
 | `Instrument` | 39 | `unix, hash` | `unix_hour`, `xhash` | `alt_ids`, `legs` |
-| `Book` | 49 | `unix, hash` | `unix_hour`, `instrument_xhash` | levels, order events, execution events |
+| `Book` | contract-defined | `unix, hash` | `unix_hour`, `instrument_xhash` | levels, deltas, executions, live snapshot orders |
 | `Order` | 46 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage and metadata |
 | `Execution` | 46 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage and metadata |
 

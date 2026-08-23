@@ -426,6 +426,10 @@ class TextFile(Dataset, io.BufferedIOBase):
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )
         schema = self.schema
+        linked_events = schema.field("linked_events")
+        columns.setdefault(
+            "linked_events", pyarrow.repeat(pyarrow.scalar([], type=linked_events.type), count)
+        )
         missing_required = [
             field.name for field in schema if field.name not in columns and not field.nullable
         ]

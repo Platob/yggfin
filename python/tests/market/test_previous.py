@@ -224,10 +224,10 @@ def test_current_and_previous_quantity_describe_the_order_transition() -> None:
     assert completed.qty == 6.0 and completed.prev_qty == 10.0
 
 
-def test_hidden_quantity_is_carried_without_replacing_current_quantity() -> None:
+def test_displayed_quantity_is_preserved_when_remaining_quantity_shrinks() -> None:
     first = resting(hidden_qty=4.0)
     part = changed(_order(unix=20, order_id="ORD-1", qty=5.0), first)
-    assert part.qty == 5.0 and part.hidden_qty == 4.0 and part.prev_qty == 10.0
+    assert part.qty == 5.0 and part.hidden_qty == 0.0 and part.prev_qty == 10.0
 
 
 @pytest.mark.parametrize(
@@ -249,6 +249,12 @@ def test_what_was_asked_for_is_on_the_version_before_and_not_lost() -> None:
 def test_a_fully_filled_order_keeps_its_prior_quantity_on_the_transition() -> None:
     done = changed(_order(unix=20, order_id="ORD-1", state=State.FILLED), resting())
     assert done.qty == 0.0 and done.prev_qty == 10.0
+
+
+def test_a_terminal_order_without_history_preserves_its_source_quantity() -> None:
+    done = _order(unix=20, order_id="ORD-1", qty=100.0, state=State.CANCELLED)
+    done.with_previous(None)
+    assert done.qty == 0.0 and done.prev_qty == 100.0
 
 
 def test_a_cancelled_order_does_not_store_a_cumulative_fill_quantity() -> None:
@@ -286,14 +292,16 @@ def fill(px: float, qty: float, unix: int, **given: object) -> Execution:
 def test_a_fill_links_itself_to_the_order_it_followed() -> None:
     first = resting()
     done = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(first)
-    assert done.linked_xhash == [first.xhash]
+    assert done.linked_events == [(first.unix, first.xhash)]
 
 
 def test_the_matched_order_precedes_other_lifecycle_links() -> None:
     first = resting()
-    done = fill(100.0, 4.0, 20, exec_id="EX-1", linked_xhash=[-1]).with_previous(first)
+    done = fill(100.0, 4.0, 20, exec_id="EX-1", linked_events=[(0, -1)]).with_previous(
+        first
+    )
     assert done is not None
-    assert done.linked_xhash == [first.xhash, -1]
+    assert done.linked_events == [(first.unix, first.xhash), (0, -1)]
 
 
 def test_what_is_done_accumulates_across_fills() -> None:
@@ -657,7 +665,7 @@ def test_an_order_recovers_its_lifecycle_across_an_execution() -> None:
 
     after.with_previous(done)
 
-    assert done.linked_xhash == [first.xhash]
+    assert done.linked_events == [(first.unix, first.xhash)]
     assert after.xcode == first.xcode == "CL-1"
     assert after.xhash == first.xhash
 
@@ -683,7 +691,7 @@ def test_an_order_recovers_its_root_across_an_amendment_and_execution() -> None:
 
     assert amended.xcode == first.xcode == "CL-1"
     assert done.prev_client_order_id == "CL-1"
-    assert done.linked_xhash == [first.xhash]
+    assert done.linked_events == [(amended.unix, first.xhash)]
     assert after.xcode == "CL-1" and after.xhash == first.xhash
 
 

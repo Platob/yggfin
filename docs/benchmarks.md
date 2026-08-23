@@ -26,6 +26,12 @@ reader pays for—planned files, manifests, requests, and rows—beside elapsed
 time. Raw workflow warehouses are temporary; the compact measured fixture is
 recorded on [End-to-end run](workflow-run.md).
 
+The market benchmark keeps its quick replay matrix small. Pass `--matrix` for
+the selected 10K/100K/1M event cross-section over 10 to 10K live levels and 1,
+10, or 100 orders per level. Its representative fold also reports identity
+calls, copies, standing probes, heap operations, sorting, snapshot
+materializations, emitted payloads, and peak traced memory.
+
 ## Latest quick run
 
 Measured 2026-08-23 on Windows 11, Python 3.12.13, and PyArrow 25.0.1. These
@@ -39,7 +45,10 @@ figures are directional; the scripts assert their outputs before timing them.
 | Normalized Instrument Log decode | 500 rows | 912 → 17,544 rows/s; 19.2x |
 | Recursive Arrow reshape | 50,000 rows | 109.8M rows/s |
 | Book summary, 10 levels/side | 200 books | 99,640 books/s |
-| Stateful book fold | 2,000 events | 660 ms; 3,030 books/s |
+| Stateful book fold | 10,000 events | 1.958 s; 5,105 books/s |
+| Replay shape matrix | 1,000-2,000 events | 3,950-5,297 events/s |
+| Large replay, 100 levels x 10 orders | 10K / 100K / 1M events | 4,815 / 4,330 / 4,504 events/s |
+| Snapshot / recovery | 2,000 orders, 100 levels | 54.2 ms / 15.6 ms |
 | Iceberg append | 5,000 rows, 4 partitions | 15,097–18,490 rows/s |
 | Iceberg merge, all new | 5,000 rows | 12,301–13,387 rows/s |
 | Iceberg merge, half stored | 5,000 rows | 410–412 rows/s |
@@ -52,10 +61,11 @@ Package-authored instrument rows now decode their promoted fields and ordered
 pair buffer directly. External and legacy rows still use the FIX registry;
 the measured normalized path fell from 1,095.9 to 57.0 µs/row.
 
-The focused fold improved from 2.416 s (828 books/s) to 660 ms (3,030
-books/s), about 3.68x. A changed bid now rebuilds only bid levels and bid
-summaries; ask values are carried from the preceding Book before cross-side
-prices are derived. The same optimization applies in the other direction.
+On the same 10,000-event fold, replay improved from 9.762 s (1,024 books/s) to
+1.958 s (5,105 books/s), about 5.0x. A changed bid now rebuilds only bid levels
+and bid summaries; ask values are carried from the preceding Book before
+cross-side prices are derived. The same optimization applies in the other
+direction.
 
 The [notebook smoke run](workflow-run.md) exercises all five stages, all three
 log routes, registry-backed instrument enrichment, book recovery rows,

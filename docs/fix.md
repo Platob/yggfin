@@ -19,18 +19,31 @@ The separator is detected from the message. SOH, pipe, caret forms, and
 rendered `Name=Value` logs use the same ordered representation. Vectorized
 Arrow helpers split whole columns and resolve distinct rendered names once.
 
+## Version selection
+
+Normal parsing has no default FIX version. Each message first inspects
+`BeginString <8>` and, for FIXT, `ApplVerID <1128>` then
+`DefaultApplVerID <1137>`. A known application version selects its prepared
+registry index. If the evidence is absent, inconsistent, or unavailable, the
+message remains valid raw FIX with ordered numeric tags; parsing never silently
+chooses 4.2, 4.4, or the newest registry. Direct registry and codec callers may
+still supply an explicit version.
+
 ## Registry
 
 The reviewable `data/fix/` directory and `data/fix.zip` archive contain the
 same versioned registry. It combines OnixS field definitions with QuickFIX
-symbols and headers. Runtime parsing is offline by default.
+symbols and headers. Resource locations use the project's URL resolver and
+`pyarrow.fs`; a remote resource is materialized only when a downstream parser
+requires an OS-local path, then reused from the local cache. Resolution and
+network work happen before the message loop.
 
 The registry supplies:
 
 - canonical name and numeric tag;
 - FIX datatype and Arrow projection;
 - description, valid values, and component/message usage;
-- cross-version lookup using the latest known definition where needed.
+- explicit-version and inferred-version lookup through cached indexes.
 
 Protocol-specific code should normalize values, not duplicate registry tables.
 

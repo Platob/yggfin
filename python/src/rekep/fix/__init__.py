@@ -53,6 +53,7 @@ from rekep.fix.transcribe import (
     NULL_VALUES,
     FixCodec,
     TagIndex,
+    infer_version_from_pairs,
 )
 
 __all__ = [
@@ -100,6 +101,7 @@ __all__ = [
     "detect_entry_separator",
     "detect_separator",
     "fix_field",
+    "infer_version_from_pairs",
     "parse_arrow_array",
     "parse_components",
     "parse_session",

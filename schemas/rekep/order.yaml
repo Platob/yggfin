@@ -3,7 +3,7 @@ type: struct
 description: 'One version of one order: what was asked for, and how far it has got.'
 metadata:
   namespace: rekep.market.orders
-  version: '1'
+  version: '2'
 fields:
 - name: unix
   type: int64
@@ -65,12 +65,16 @@ fields:
 - name: xhash
   type: int64
   description: Identity of the thing across every version of it -- the lifecycle.
-- name: linked_xhash
+- name: linked_events
   type: list
-  nullable: true
-  description: Related lifecycle identities, ordered with the primary match first.
+  description: Related event times and lifecycle identities, primary match first.
   item:
-    type: int64
+    type: struct
+    fields:
+    - name: unix
+      type: int64
+    - name: xhash
+      type: int64
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -282,25 +286,12 @@ fields:
 - name: qty
   type: double
   nullable: true
-  description: Quantity ordered. This represents the number of shares for equities
-    or par, face or nominal value for FI instruments. (Prior to FIX 4.2 this field
-    was of type int)
-  metadata:
-    fix:tag: '38'
-    fix:type: Qty
-    fix:version: 5.0.SP2
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
-    fix:used_in: '["Confirmation","Allocation Report","Confirmation Request","Allocation
-      Instruction","Quote Request Reject","Quote Request","Execution Report","New
-      Order - Single","New Order - List","Order Cancel Request","Order Cancel/Replace
-      Request","Don''t Know Trade"]'
-    fix:name: OrderQty
+  description: Current remaining quantity after this transition; null when indeterminable.
 - name: prev_qty
   type: double
   nullable: true
-  description: Quantity on the immediately preceding lifecycle version; null on the
-    first.
+  description: Quantity before this transition, reconstructed when no prior Order
+    was observed.
 - name: qty_unit
   type: string
   description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
@@ -353,28 +344,6 @@ fields:
     enum:byte_width: '4'
     enum:padding: nul-right
     enum:fix_aliases: '{"0":"DAY","1":"GTC","2":"OPEN","3":"IOC","4":"FOK","5":"GTX","6":"GTD","7":"CLOS","8":"GTCR","9":"ATCR","A":"GFT","B":"GFA","C":"GFM"}'
-- name: exposure_duration
-  type: int64
-  nullable: true
-  description: Duration for which an order remains exposed.
-  metadata:
-    fix:tag: '1629'
-    fix:type: int
-    fix:version: FIX.Latest
-    fix:versions: '["FIX.Latest"]'
-    fix:types: '{"FIX.Latest":"int"}'
-    fix:name: ExposureDuration
-- name: exposure_duration_unit
-  type: int32
-  nullable: true
-  description: Time unit in which ExposureDuration is expressed.
-  metadata:
-    fix:tag: '1916'
-    fix:type: int
-    fix:version: FIX.Latest
-    fix:versions: '["FIX.Latest"]'
-    fix:types: '{"FIX.Latest":"int"}'
-    fix:name: ExposureDurationUnit
 - name: stop_px
   type: double
   nullable: true

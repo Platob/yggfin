@@ -362,12 +362,12 @@ def _hashing(blake: bool):
         digest = hashlib.blake2b(raw, digest_size=8).digest()
         return int.from_bytes(digest, "little", signed=True)
 
-    original = text_file._digest
-    text_file._digest = fallback
+    original = text_file.hash_bytes
+    text_file.hash_bytes = fallback
     try:
         yield
     finally:
-        text_file._digest = original
+        text_file.hash_bytes = original
 
 
 # -- the message layer -------------------------------------------------------

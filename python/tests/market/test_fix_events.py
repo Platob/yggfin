@@ -42,6 +42,7 @@ FILLED = (
 
 
 def events(line: str, **carried: object) -> list[object]:
+    carried.setdefault("fix_version", "4.4")
     return list(FixEvents.from_text(line, **carried))
 
 
@@ -60,7 +61,9 @@ def test_a_fraction_is_scaled_by_its_own_width() -> None:
 
 
 def test_epoch_fix_time_is_not_mistaken_for_an_absent_clock() -> None:
-    reader = FixEvents.from_text("35=D|52=19700101-00:00:00", runix=123)
+    reader = FixEvents.from_text(
+        "35=D|52=19700101-00:00:00", runix=123, fix_version="4.4"
+    )
     assert reader.unix == 0
 
 
@@ -174,7 +177,7 @@ def test_the_order_carries_what_remains_and_the_fill_what_moved() -> None:
 
 def test_the_order_comes_first_because_the_fill_points_at_it() -> None:
     order, fill = events(FILLED)
-    assert fill.linked_xhash == [order.xhash]
+    assert fill.linked_events == [(order.unix, order.xhash)]
     assert fill.parent_hash == [order.hash]
 
 
@@ -319,8 +322,6 @@ def test_good_for_time_derives_an_exact_expiry(unit: str | None, factor: int) ->
     (order,) = events(f"35=D|55=AAPL|11=CL-1|59=A|1629=2{unit_pair}|60=20260821-10:00:00")
     assert order.tif is TimeInForce.GFT
     assert order.eunix == order.unix + 2 * factor
-    assert order.exposure_duration == 2
-    assert order.exposure_duration_unit == (None if unit is None else int(unit))
     assert order.metadata["1629"] == "2"
     if unit is not None:
         assert order.metadata["1916"] == unit
@@ -332,8 +333,8 @@ def test_good_for_time_derives_an_exact_expiry(unit: str | None, factor: int) ->
 def test_good_for_time_refuses_non_positive_or_calendar_durations(duration: str, unit: str) -> None:
     (order,) = events(f"35=D|55=AAPL|11=CL-1|59=A|1629={duration}|1916={unit}|60=20260821-10:00:00")
     assert order.eunix is None
-    assert order.exposure_duration == int(duration)
-    assert order.exposure_duration_unit == int(unit)
+    assert order.metadata["1629"] == duration
+    assert order.metadata["1916"] == unit
 
 
 def test_expire_time_wins_over_good_for_time() -> None:
@@ -578,7 +579,8 @@ def test_events_build_from_named_pairs_with_nothing_loaded() -> None:
             ("Price", 10.5),
             ("TransactTime", datetime.datetime(2026, 8, 21, 10, 0, 0)),
             ("MyOwnField", "kept"),
-        ]
+        ],
+        fix_version="4.4",
     )
     assert order.side is Side.BUY and order.px == 10.5 and order.qty == 100.0
     assert order.unix == unix_of("20260821-10:00:00")
@@ -600,7 +602,8 @@ def test_pairs_and_a_wire_line_produce_the_same_events() -> None:
                     ("OrderQty", "100"),
                     ("Price", "10.5"),
                     ("TransactTime", "20260821-10:00:00"),
-                ]
+                ],
+                fix_version="4.4",
             )
         )
     )
@@ -673,12 +676,29 @@ def test_a_session_message_yields_nothing_rather_than_failing(line: str) -> None
 
 def test_a_fragment_with_no_msgtype_is_read_from_the_fields_it_has() -> None:
     """A decoder that only works on complete headers is no use on a log."""
-    (order,) = list(FixEvents(message=FixMessage.from_pairs([("11", "CL-1"), ("54", "1")])))
+    (order,) = list(
+        FixEvents(
+            message=FixMessage.from_pairs([("11", "CL-1"), ("54", "1")]),
+            fix_version="4.4",
+        )
+    )
     assert isinstance(order, Order)
-    reported = list(FixEvents(message=FixMessage.from_pairs([("17", "EX-1"), ("150", "F")])))
+    reported = list(
+        FixEvents(
+            message=FixMessage.from_pairs([("17", "EX-1"), ("150", "F")]),
+            fix_version="4.4",
+        )
+    )
     assert [type(one) for one in reported] == [Order, Execution], (
         "an execution report says the order's state as well, header or no header"
     )
+
+
+def test_a_fragment_with_no_version_remains_raw() -> None:
+    reader = FixEvents(message=FixMessage.from_pairs([("11", "CL-1"), ("54", "1")]))
+    assert reader.version is None
+    assert list(reader) == []
+    assert list(reader.into_instruments()) == []
 
 
 # -- the instrument an entry is about ----------------------------------------

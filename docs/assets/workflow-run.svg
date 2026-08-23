@@ -118,14 +118,14 @@
 
   <rect class="task" x="980" y="660" width="245" height="84" rx="14"/>
   <text class="label" x="1103" y="692">flatten_orders</text>
-  <text class="small" x="1103" y="717">Book.order_events</text>
+  <text class="small" x="1103" y="717">Book.deltas</text>
   <rect class="table" x="980" y="805" width="245" height="84" rx="14"/>
   <image href="logos/apache-iceberg.svg" x="1000" y="818" width="94" height="26"/>
   <text class="label" x="1103" y="871">market.orders</text>
 
   <rect class="task" x="1300" y="660" width="270" height="84" rx="14"/>
   <text class="label" x="1435" y="692">flatten_executions</text>
-  <text class="small" x="1435" y="717">Book.execution_events</text>
+  <text class="small" x="1435" y="717">Book.executions</text>
   <rect class="table" x="1300" y="805" width="270" height="84" rx="14"/>
   <image href="logos/apache-iceberg.svg" x="1320" y="818" width="94" height="26"/>
   <text class="label" x="1435" y="871">market.executions</text>

@@ -53,9 +53,6 @@ class Rule(Convertible):
     codec: str = "none"
     """How to read the line: `fix`, `ul`, or `none` for "do not"."""
 
-    fix_version: str | None = None
-    """Fallback FIX application version for messages this rule matches."""
-
     patterns: list[str] = dataclasses.field(default_factory=list)
     """Additional message regexes; matching any one satisfies the rule."""
 

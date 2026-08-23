@@ -38,7 +38,20 @@ DAY = 86_400_000_000_000
 #: Nanoseconds in an hour, which is what `unix_hour` truncates `unix` to.
 HOUR = 3_600_000_000_000
 
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
+
+_LINKED_EVENTS_TYPE = pyarrow.list_(
+    pyarrow.field(
+        "item",
+        pyarrow.struct(
+            [
+                pyarrow.field("unix", pyarrow.int64(), nullable=False),
+                pyarrow.field("xhash", pyarrow.int64(), nullable=False),
+            ]
+        ),
+        nullable=False,
+    )
+)
 
 
 @scalar(slots=True, weakref_slot=True)
@@ -117,8 +130,10 @@ class Event(MarketConvertible):
     xhash: int = NIL
     """Identity of the thing across every version of it -- the lifecycle."""
 
-    linked_xhash: list[int] | None = None
-    """Related lifecycle identities, ordered with the primary match first."""
+    linked_events: Annotated[
+        list[tuple[int, int]], Field(arrow_type=_LINKED_EVENTS_TYPE)
+    ] = dataclasses.field(default_factory=list)
+    """Related event times and lifecycle identities, primary match first."""
 
     version: int = 0
     """Which version of `xhash` this is, counting up from the first."""
@@ -144,7 +159,7 @@ class Event(MarketConvertible):
     prev_unix: Annotated[int | None, Field(metadata=UNIX)] = None
     """When the previous version happened, so dwell time is a subtraction."""
 
-    # Version digests are distinct from `linked_xhash` lifecycle relations.
+    # Version digests are distinct from `linked_events` lifecycle relations.
     parent_hash: list[int] | None = None
     """Every event this one was built from, in the order they were combined."""
 
@@ -156,10 +171,40 @@ class Event(MarketConvertible):
 
     def __post_init__(self) -> None:
         """Make the members agree, so everything downstream can assume they do."""
+        links = self.linked_events
+        if links is None:
+            self.linked_events = []
+        elif links:
+            normalized = list(dict.fromkeys(links))
+            if not isinstance(links, list) or normalized != links:
+                self.linked_events = normalized
+        elif not isinstance(links, list):
+            self.linked_events = []
         self.normalize_float_members()
         if self.etype is EventType.UNKNOWN:
             self.etype = type(self).into_event_type()
         self.unix_hour = self.unix - self.unix % HOUR
+        self._drop_self_link()
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
+        """Rebuild named Arrow link structs as the public tuple representation."""
+        values = dict(mapping)
+        links = values.get("linked_events")
+        if links is not None:
+            values["linked_events"] = [
+                (link["unix"], link["xhash"]) if isinstance(link, Mapping) else tuple(link)
+                for link in links
+            ]
+        return MarketConvertible.from_dict.__func__(cls, values)
+
+    def into_dict(self) -> dict[str, Any]:
+        """Spell tuple links as named structs at the Arrow boundary."""
+        values = MarketConvertible.into_dict(self)
+        values["linked_events"] = [
+            {"unix": unix, "xhash": xhash} for unix, xhash in self.linked_events
+        ]
+        return values
 
     # -- what kind of event this is -----------------------------------------
 
@@ -324,7 +369,7 @@ class Event(MarketConvertible):
             # its own life, because a version counter counts one lifecycle.
             if previous.hash and previous.hash not in (self.parent_hash or ()):
                 self.parent_hash = [*(self.parent_hash or ()), previous.hash]
-            self.link_to(previous.xhash)
+            self.link_to(previous)
         # Cleared, not kept: every layer has just filled fields the hash is
         # made of, so the identity this row arrived with was of a different
         # row. `identify` refuses to overwrite a hash that is set, which is
@@ -332,9 +377,26 @@ class Event(MarketConvertible):
         self.hash = NIL
         return self
 
+    def _completed_from_same_lifecycle(self, previous: Event) -> Self:
+        """Complete a version whose lifecycle hash already matches its predecessor."""
+        self.complete_from(previous)
+        self.derive()
+        self._materialize_life_code()
+        self.xhash = previous.xhash
+        self._drop_self_link()
+        self.xcode = previous.xcode or self.xcode
+        self.version = previous.version + 1
+        self.prev_hash = previous.hash or None
+        self.prev_state = previous.state
+        self.prev_unix = previous.unix
+        self._remember_previous(previous)
+        self.hash = NIL
+        return self
+
     def complete_from(self, previous: Event) -> None:
         """Fill what this version left absent, from the version before it."""
-        self.link_to(*(previous.linked_xhash or ()))
+        if previous.linked_events:
+            self.link_to(*previous.linked_events)
         if not self.cunix:
             self.cunix = previous.cunix or previous.unix
         if not self.unix:
@@ -360,23 +422,38 @@ class Event(MarketConvertible):
     def _remember_previous(self, previous: Event) -> None:
         """Store shape-specific transition values after lifecycle matching."""
 
-    def link_to(self, *xhashes: int | None, primary: bool = False) -> Self:
-        """Relate lifecycle identities once, optionally ahead of existing links."""
-        given = list(dict.fromkeys(xhash for xhash in xhashes if xhash))
-        existing = list(self.linked_xhash or ())
+    def link_to(
+        self, *events: Event | tuple[int, int], primary: bool = False
+    ) -> Self:
+        """Relate events once, optionally ahead of existing links."""
+        if not events:
+            return self
+        given = []
+        for event in events:
+            link = (event.unix, event.xhash) if isinstance(event, Event) else tuple(event)
+            if len(link) != 2:
+                raise ValueError("a linked event is a (unix, xhash) pair")
+            unix, xhash = link
+            if xhash:
+                given.append((int(unix), int(xhash)))
+        given = list(dict.fromkeys(given))
+        existing = list(self.linked_events)
         ordered = given + existing if primary else existing + given
-        self.linked_xhash = list(dict.fromkeys(ordered)) or None
+        self.linked_events = list(dict.fromkeys(ordered))
+        self._drop_self_link()
         return self
 
     @property
-    def primary_linked_xhash(self) -> int | None:
-        """First related lifecycle, when one is known."""
-        return self.linked_xhash[0] if self.linked_xhash else None
+    def primary_linked_event(self) -> tuple[int, int] | None:
+        """First related event, when one is known."""
+        return self.linked_events[0] if self.linked_events else None
 
     def _drop_self_link(self) -> None:
         """A relation never points back to its own lifecycle."""
-        if self.xhash and self.linked_xhash:
-            self.linked_xhash = [one for one in self.linked_xhash if one != self.xhash] or None
+        if self.xhash and self.linked_events:
+            self.linked_events = [
+                linked for linked in self.linked_events if linked[1] != self.xhash
+            ]
 
     def derive(self) -> None:
         """Fill what this row's own fields already determine.
@@ -463,7 +540,7 @@ class Event(MarketConvertible):
         their versions are, and then the counter, the instant and the state --
         the three things every event has that a new version moves.
         """
-        links = tuple(self.linked_xhash or ())
+        links = tuple(self.linked_events)
         return (
             self.xhash,
             self.version,
@@ -471,7 +548,7 @@ class Event(MarketConvertible):
             self.state,
             self.mic,
             len(links),
-            *links,
+            *(part for link in links for part in link),
             self.error,
         )
 
@@ -686,9 +763,9 @@ class MarketEvent(Event):
     def from_books_arrow_batch(cls, books: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
         """Flatten this event shape from one batch of carrying books."""
         if cls.is_order():
-            column = "order_events"
+            column = "deltas"
         elif cls.is_execution():
-            column = "execution_events"
+            column = "executions"
         else:
             raise TypeError(f"{cls.__name__} is not a book event shape")
         from rekep.fields.arrays import struct_columns

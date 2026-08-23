@@ -72,6 +72,7 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
 ) -> None:
     log = Log(
         unix=1,
+        begin_string="FIX.4.4",
         msg_type="d",
         symbol="AAPL",
         fix_tags=[(969, "0.01"), (561, "100"), (107, "Apple Inc")],
@@ -98,12 +99,11 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
     (instrument,) = Instrument.from_logs(
         [log],
         registry=registry,
-        fix_version="4.4",
         snapshot_every=0,
     )
 
     assert (instrument.tick, instrument.lot, instrument.label) == (0.01, 100.0, "Apple Inc")
-    assert transcription == {"registry": registry, "fix_version": "4.4"}
+    assert transcription == {"registry": registry}
 
 
 def test_instrument_log_interop_preserves_the_full_version_through_arrow(

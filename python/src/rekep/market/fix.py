@@ -23,6 +23,7 @@ from rekep.enums import (
     TimeInForce,
 )
 from rekep.fields import StructField
+from rekep.fix import infer_version_from_pairs
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import FixMessage
 from rekep.fix.quickfix import (
@@ -35,7 +36,7 @@ from rekep.fix.quickfix import (
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import MarketEvent
 from rekep.market.instrument import Instrument, Leg
-from rekep.market.orders import Execution, Order
+from rekep.market.orders import Execution, Order, _quantity_transition
 
 TMarketEvent = TypeVar("TMarketEvent", bound=MarketEvent)
 
@@ -55,6 +56,8 @@ CARRIED_FIELDS: tuple[str, ...] = (
     "TradeDate",
     "ExpireTime",
     "ExpireDate",
+    "ExposureDuration",
+    "ExposureDurationUnit",
     "OrdStatus",
     "OrdType",
     "ExecType",
@@ -281,10 +284,33 @@ FIX_STATES: dict[str, dict[str, State]] = {
     },
 }
 
+# ExecType describes the report when OrdStatus is absent. Trade corrections
+# and cancellations (G/H) describe an Execution lifecycle, not the Order, and
+# therefore cannot safely stand in for the missing order status.
+EXEC_ORDER_STATES: Mapping[str, State] = types.MappingProxyType(
+    {
+        "0": State.NEW,
+        "1": State.PARTIALLY_FILLED,
+        "2": State.FILLED,
+        "3": State.DONE_FOR_DAY,
+        "4": State.CANCELLED,
+        "5": State.REPLACED,
+        "6": State.PENDING_CANCEL,
+        "7": State.STOPPED,
+        "8": State.REJECTED,
+        "9": State.SUSPENDED,
+        "A": State.PENDING_NEW,
+        "B": State.CALCULATED,
+        "C": State.EXPIRED,
+        "E": State.PENDING_REPLACE,
+    }
+)
+
 # Standardisation is intentionally many-to-one for order kinds and lifecycle
 # states. Keep the wire spelling beside the standard code for an audit.
 RAW_METADATA_FIELDS = frozenset(FIX_STATES) | {
     "OrdType",
+    "CxlQty",
     "ExpireTime",
     "ExpireDate",
     "ExposureDuration",
@@ -326,6 +352,8 @@ def market_tags(
 ) -> Mapping[str, int]:
     """Market field names to tags, overridden by a selected registry version."""
     standard = _standard_market_tags()
+    if version is None:
+        return standard
     registry = registry or FixRegistry.from_builtin()
     try:
         configured = registry.tags(version)
@@ -422,33 +450,19 @@ class FixEvents(Convertible):
 
     @functools.cached_property
     def version(self) -> str | None:
-        """Configured version, or the registry spelling matching BeginString."""
-        if self.fix_version is not None or self.registry is None:
+        """Configured version, or the application version inferred from the message."""
+        if self.fix_version is not None:
             return self.fix_version
-        begin = self.message.begin_string
-        if begin is None:
-            for key, value in self.message.pairs:
-                if _field_key(key) == "beginstring":
-                    begin = value
-                    break
-        if begin is None:
-            return None
-        wanted = _version_key(begin)
         try:
-            return next(
-                (
-                    candidate
-                    for candidate in self.registry.versions
-                    if _version_key(candidate) == wanted
-                ),
-                None,
-            )
+            return infer_version_from_pairs(self.message.pairs, self.registry)[0]
         except (OSError, ValueError):
             return None
 
     @functools.cached_property
     def tags(self) -> Mapping[str, int]:
         """The field-name index selected for this message."""
+        if self.version is None:
+            return types.MappingProxyType({})
         return market_tags(self.registry, self.version)
 
     @functools.cached_property
@@ -512,6 +526,8 @@ class FixEvents(Convertible):
 
     def __iter__(self) -> Iterator[MarketEvent]:
         """Every market event the message carries, in the order it carries them."""
+        if self.version is None:
+            return
         kind = self._message_kind
         if kind in ENTRIED:
             yield from self._entries(kind)
@@ -532,6 +548,8 @@ class FixEvents(Convertible):
 
     def into_instrument_observations(self) -> Iterator[tuple[int, Instrument]]:
         """Distinct `(entry time, instrument)` facts without constructing events."""
+        if self.version is None:
+            return
         seen: dict[int, list[Instrument]] = {}
         for reader in self._instrument_readers():
             instrument = reader.instrument
@@ -717,25 +735,45 @@ class FixEvents(Convertible):
         get = self.get
         unix = self.unix
         tif = TimeInForce.from_fix(get("TimeInForce"), TimeInForce.DAY)
-        exposure_duration = _integer(get("ExposureDuration"))
-        exposure_duration_unit = _integer(get("ExposureDurationUnit"))
-        qty = _order_qty(get("OrderQty"), get("LeavesQty"), get("CumQty"))
+        duration = _integer(get("ExposureDuration"))
+        exec_type = get("ExecType")
+        if state is State.UNKNOWN:
+            state = EXEC_ORDER_STATES.get(exec_type, State.UNKNOWN)
+        order_qty = _number(get("OrderQty"))
+        cumulative = _number(get("CumQty"))
+        leaves = _number(get("LeavesQty"))
+        if state is State.REPLACED:
+            state = (
+                State.FILLED
+                if leaves == 0 and order_qty is not None and cumulative == order_qty
+                else State.PARTIALLY_FILLED
+                if cumulative is not None and cumulative > 0
+                else State.NEW
+            )
+        transition = _quantity_transition(
+            state,
+            execution_state=self.state_of("ExecType"),
+            order_qty=order_qty,
+            cum_qty=cumulative,
+            leaves_qty=leaves,
+            last_qty=_number(get("LastQty")),
+            cancel_qty=_number(get("CxlQty")),
+        )
         return self._finish(
             Order(
                 unix=unix,
                 cunix=unix,
                 runix=self.runix or unix,
-                eunix=self._expires(tif, unix, exposure_duration),
-                state=state,
+                eunix=self._expires(tif, unix, duration),
+                state=transition.state,
                 side=Side.from_fix(get("Side"), Side.UNKNOWN),
                 px=_number(get("Price")),
-                qty=qty,
+                qty=transition.current_qty,
+                prev_qty=transition.previous_qty,
                 kind=MarketKind.from_fix(get("OrdType"), MarketKind.UNKNOWN, tag=40),
                 tif=tif,
-                exposure_duration=exposure_duration,
-                exposure_duration_unit=exposure_duration_unit,
                 stop_px=_number(get("StopPx")),
-                hidden_qty=_hidden_qty(qty, _number(get("MaxFloor"))),
+                hidden_qty=_hidden_qty(transition.current_qty, _number(get("MaxFloor"))),
                 vwap=_number(get("AvgPx")),
                 order_id=get("OrderID"),
                 client_order_id=get("ClOrdID"),
@@ -794,7 +832,9 @@ class FixEvents(Convertible):
                 exec_id=get("ExecID"),
                 exec_ref_id=get("ExecRefID"),
                 trade_id=get("TradeID") or get("TrdMatchID"),
-                linked_xhash=[order.xhash] if order is not None and order.xhash else None,
+                linked_events=(
+                    [(order.unix, order.xhash)] if order is not None and order.xhash else []
+                ),
                 parent_hash=[order.hash] if order is not None and order.hash else [],
                 order_id=get("OrderID"),
                 client_order_id=get("ClOrdID"),
@@ -1287,18 +1327,6 @@ def _hidden_qty(qty: float | None, displayed: float | None) -> float | None:
     if qty is None or displayed is None:
         return None
     return max(qty - displayed, 0.0)
-
-
-def _order_qty(total: Any, leaves: Any, filled: Any) -> float | None:
-    """Current live quantity: explicit leaves, derived leaves, then requested total."""
-    total_qty = _number(total)
-    leaves_qty = _number(leaves)
-    if leaves_qty is not None:
-        return leaves_qty
-    filled_qty = _number(filled)
-    if total_qty is not None and filled_qty is not None:
-        return max(total_qty - filled_qty, 0.0)
-    return total_qty
 
 
 def _integer(text: Any) -> int | None:

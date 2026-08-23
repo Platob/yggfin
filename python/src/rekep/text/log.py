@@ -23,7 +23,7 @@ from rekep.market.event import Event
 from rekep.market.identity import NIL
 
 _EVENT_CODE = pyarrow.int32()
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
 _INSTRUMENT_DRIVER = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 _INSTRUMENT_KIND = "rekep.kind"
@@ -626,7 +626,7 @@ class Log(Event):
             sunix=self.sunix,
             hash=self.hash,
             xhash=self.xhash,
-            linked_xhash=None if self.linked_xhash is None else list(self.linked_xhash),
+            linked_events=list(self.linked_events),
             version=self.version,
             state=self.state,
             code=self.code,

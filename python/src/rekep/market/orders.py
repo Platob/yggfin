@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 from typing import Annotated, Any
 
@@ -14,6 +15,98 @@ from rekep.market.fields import fix_tag
 from rekep.market.identity import NIL
 
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class _QuantityTransition:
+    """Previous and current live quantity asserted by one order transition."""
+
+    previous_qty: float | None
+    current_qty: float | None
+    state: State
+
+
+def _quantity_transition(
+    state: State,
+    *,
+    execution_state: State = State.UNKNOWN,
+    previous_qty: float | None = None,
+    order_qty: float | None = None,
+    cum_qty: float | None = None,
+    leaves_qty: float | None = None,
+    last_qty: float | None = None,
+    cancel_qty: float | None = None,
+) -> _QuantityTransition:
+    """Normalize source quantities into the order's before and after state."""
+    previous = _quantity(previous_qty)
+    total = _quantity(order_qty)
+    cumulative = _quantity(cum_qty)
+    leaves = _quantity(leaves_qty)
+    last = _quantity(last_qty)
+    cancelled = _quantity(cancel_qty)
+
+    normalized = state
+    if normalized is State.UNKNOWN and execution_state is State.FILLED:
+        completely_filled = leaves == 0 or (
+            total is not None and cumulative is not None and cumulative >= total
+        )
+        normalized = State.FILLED if completely_filled else State.PARTIALLY_FILLED
+
+    if normalized.is_terminal:
+        if previous is None:
+            if leaves is not None and last is not None:
+                previous = leaves + last
+            elif total is not None and cumulative is not None:
+                previous = (
+                    total if normalized is State.FILLED else max(total - cumulative, 0.0)
+                )
+            elif cancelled is not None:
+                previous = cancelled
+            elif total is not None:
+                previous = total
+            elif last is not None:
+                previous = last
+            elif cumulative is not None:
+                previous = cumulative
+        return _QuantityTransition(previous, 0.0, normalized)
+
+    if leaves is not None:
+        current = leaves
+    elif total is not None and cumulative is not None:
+        current = max(total - cumulative, 0.0)
+    elif previous is not None and last is not None and normalized >= State.PARTIAL:
+        current = max(previous - last, 0.0)
+    elif total is not None and last is not None and normalized >= State.PARTIAL:
+        current = max(total - last, 0.0)
+    elif previous is not None:
+        current = previous
+    else:
+        current = total
+
+    if (
+        normalized is State.PARTIALLY_FILLED
+        and execution_state is State.FILLED
+        and current == 0
+    ):
+        normalized = State.FILLED
+
+    if previous is None and normalized >= State.PARTIAL:
+        if leaves is not None and last is not None:
+            previous = leaves + last
+        elif current is not None and last is not None:
+            previous = current + last
+        elif leaves is not None and cumulative is not None:
+            previous = leaves + cumulative
+        elif total is not None and current != total:
+            previous = total
+    return _QuantityTransition(previous, current, normalized)
+
+
+def _quantity(value: float | None) -> float | None:
+    """One finite source quantity, with negative remaining values clamped."""
+    if value is None:
+        return None
+    return max(float(value), 0.0)
+
+
 @scalar(slots=True)
 class Order(MarketEvent):
     """One version of one order: what was asked for, and how far it has got."""
@@ -24,16 +117,14 @@ class Order(MarketEvent):
         """Event kind fixed by this shape."""
         return EventType.ORDER
 
+    qty: float | None = None
+    """Current remaining quantity after this transition; null when indeterminable."""
+
+    prev_qty: float | None = None
+    """Quantity before this transition, reconstructed when no prior Order was observed."""
+
     tif: Annotated[TimeInForce, fix_tag("TimeInForce")] = TimeInForce.UNKNOWN
     """How long it lives. `GTD` expires at `eunix`, where every expiry here lives."""
-
-    exposure_duration: Annotated[int | None, fix_tag("ExposureDuration")] = None
-    """FIX GFT duration; null when absent."""
-
-    exposure_duration_unit: Annotated[
-        int | None, fix_tag("ExposureDurationUnit"), Field(arrow_type=pyarrow.int32())
-    ] = None
-    """FIX GFT duration unit; null means the FIX default of seconds."""
 
     stop_px: Annotated[float | None, fix_tag("StopPx")] = None
     """Trigger price of a stop order; `px` is the limit that applies once triggered."""
@@ -77,14 +168,19 @@ class Order(MarketEvent):
             self,
             previous,
             "stop_px",
-            "hidden_qty",
             "vwap",
             "order_id",
-            "exposure_duration",
-            "exposure_duration_unit",
         )
         if self.qty is None and isinstance(previous, Execution):
             self.qty = previous.leaves_qty
+        if self.hidden_qty is None and isinstance(previous, Order):
+            displayed = (
+                None
+                if previous.qty is None or previous.hidden_qty is None
+                else max(previous.qty - previous.hidden_qty, 0.0)
+            )
+            if displayed is not None and self.qty is not None:
+                self.hidden_qty = max(self.qty - displayed, 0.0)
         _carry_code(self, previous, "tif")
         named = getattr(previous, "client_order_id", None)
         if self.client_order_id is None:
@@ -109,9 +205,17 @@ class Order(MarketEvent):
         if self.expires_on_arrival:
             self.eunix = self.unix
         if self.state.is_terminal:
+            if self.prev_qty is None and self.qty is not None:
+                self.prev_qty = self.qty
             self.qty = 0.0
             self.hidden_qty = 0.0
         MarketEvent.derive(self)
+
+    def _remember_previous(self, previous: Event) -> None:
+        """Prefer an observed prior Order quantity over source reconstruction."""
+        MarketEvent._remember_previous(self, previous)
+        if isinstance(previous, Order):
+            self.prev_qty = previous.qty
 
     @property
     def expires_on_arrival(self) -> bool:
@@ -151,9 +255,10 @@ class Order(MarketEvent):
 
     def _parent_order_life_code(self, previous: Event) -> str:
         """An order code whose scoped hash matches a parent Execution's order."""
-        target = previous.primary_linked_xhash
-        if not target:
+        linked = previous.primary_linked_event
+        if linked is None:
             return ""
+        target = linked[1]
         candidates = dict.fromkeys(
             (
                 self.order_id,
@@ -269,7 +374,7 @@ class Execution(MarketEvent):
             and self.exec_ref_id in (previous.exec_id, previous.exec_ref_id, previous.xcode)
         )
         if previous.is_order():
-            self.link_to(previous.xhash, primary=True)
+            self.link_to(previous, primary=True)
         if same_report_life and previous.xcode:
             self.xcode = previous.xcode
             self.xhash = NIL

@@ -21,6 +21,7 @@ import zipfile
 from pathlib import Path
 
 import pyarrow
+import pyarrow.fs
 import pytest
 
 from rekep.fields import Field
@@ -330,6 +331,62 @@ def test_the_published_folder_is_the_archive_uncompressed() -> None:
     assert unpacked.versions == zipped.versions
     assert unpacked.field("Side", "4.4") == zipped.field("Side", "4.4")
     assert unpacked.component("Parties", "4.4") == zipped.component("Parties", "4.4")
+
+
+def test_a_file_url_reads_the_original_archive_without_materializing() -> None:
+    archive = (PUBLISHED / "fix.zip").resolve()
+    registry = FixRegistry(cache_dir=archive.as_uri(), offline=True)
+
+    assert Path(registry._cache_path) == archive
+    assert registry.field("Side", "4.4").fix["tag"] == "54"
+
+
+def test_an_arrow_filesystem_directory_is_a_registry_store() -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    filesystem.create_dir("registry")
+    for source in (PUBLISHED / "fix").glob("*.json"):
+        with filesystem.open_output_stream(f"registry/{source.name}") as stream:
+            stream.write(source.read_bytes())
+
+    registry = FixRegistry(cache_dir="registry", filesystem=filesystem, offline=True)
+
+    assert registry.versions
+    assert registry.field("Side", "4.4").fix["tag"] == "54"
+
+
+def test_a_scrape_is_cached_in_an_arrow_filesystem_directory() -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    registry = FixtureRegistry(cache_dir="registry", filesystem=filesystem)
+
+    assert registry.field("Side", "4.4").fix["tag"] == "54"
+
+    offline = OfflineRegistry(
+        cache_dir="registry", filesystem=filesystem, offline=True
+    )
+    assert offline.field("Side", "4.4").fix["tag"] == "54"
+
+
+def test_a_remote_archive_is_materialized_once_and_reused() -> None:
+    class CountingFilesystem(pyarrow.fs._MockFileSystem):
+        reads = 0
+
+        def open_input_stream(self, path, *args, **kwargs):
+            self.reads += 1
+            return super().open_input_stream(path, *args, **kwargs)
+
+    filesystem = CountingFilesystem()
+    filesystem.create_dir("registry")
+    with filesystem.open_output_stream("registry/fix.zip") as stream:
+        stream.write((PUBLISHED / "fix.zip").read_bytes())
+    registry = FixRegistry(
+        cache_dir="registry/fix.zip", filesystem=filesystem, offline=True
+    )
+
+    first = registry._cache_path
+    assert registry.field("Side", "4.4").fix["tag"] == "54"
+    assert registry._cache_path == first
+    assert registry.field("Side", "4.4").fix["tag"] == "54"
+    assert filesystem.reads == 1
 
 
 def test_a_zip_answers_everything_the_directory_answers(dumped: Path, tmp_path: Path) -> None:
