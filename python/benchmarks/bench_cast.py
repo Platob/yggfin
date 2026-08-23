@@ -1,19 +1,4 @@
-"""Benchmark casting a batch onto a field: rows/s, against Arrow's own cast.
-
-Run from `python/`::
-
-    uv run python benchmarks/bench_cast.py            # full sweep
-    uv run python benchmarks/bench_cast.py --quick    # one size, fewer repeats
-
-Every case is a shape a real stream arrives in -- a wider integer, columns in
-another order, a column the source never produced, a struct that grew a member,
-a list of structs, a map -- and each is measured against what pyarrow's own
-`cast` does with the same data, so a recursive walk that is slower than one C++
-call shows up here rather than in a pipeline.
-
-Each case is timed `--repeat` times and the **best** run is reported: the worst
-runs measure the machine, not the code.
-"""
+"""Benchmark casting a batch onto a field: rows/s, against Arrow's own cast."""
 
 from __future__ import annotations
 

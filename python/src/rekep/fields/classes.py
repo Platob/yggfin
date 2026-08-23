@@ -4,33 +4,27 @@ from __future__ import annotations
 
 import datetime
 import decimal
+import functools
 import re
-from typing import Annotated, Any, ClassVar
+from collections.abc import Mapping
+from types import MappingProxyType
+from typing import Annotated, Any
 
 import pyarrow
 
 from rekep.convert import Convertible
 from rekep.fields.builder import FieldBuilder
-from rekep.fields.field import DESCRIPTION, NAMESPACE, Field, StructField, field
+from rekep.fields.field import DESCRIPTION, NAMESPACE, Field, StructField, scalar
 
 
 class ClassBuilder:
-    """Builds a `@field` *class* back out of a field.
+    """Builds a `@scalar` *class* back out of a field."""
 
-    The inverse of `FieldBuilder`, for schemas that arrive from outside -- a
-    parquet footer, another team's contract -- so they can be handled with the
-    same machinery as a hand-declared class.
-
-    The round trip is lossless by construction: every generated member is
-    `Annotated[..., Field(...)]` carrying the exact original type whenever the
-    default projection would differ, plus the original metadata. Nested structs
-    become nested classes; generated classes are keyword-only, because Arrow
-    field order owes nothing to Python's defaults-last rule.
-    """
-
-    #: Base class generated classes extend when none is given. `Convertible`
-    #: is what makes an instance of one serialise itself.
-    BASE: ClassVar[type] = Convertible
+    @classmethod
+    @functools.cache
+    def into_base(cls) -> type:
+        """Base generated classes extend when none is given."""
+        return Convertible
 
     def dataclass(
         self, source: StructField, name: str | None = None, base: type | None = None
@@ -55,8 +49,14 @@ class ClassBuilder:
         module = metadata.get(NAMESPACE)
         if module:
             namespace["__module__"] = module
-        built = type(name or source.name or "ArrowFields", (base or self.BASE,), namespace)
-        return field(kw_only=True)(built)
+        declared = {
+            key: value for key, value in metadata.items() if key not in (DESCRIPTION, NAMESPACE)
+        }
+        # Set even when empty: a generated subclass must not inherit contract
+        # metadata from `base` that the source schema never declared.
+        namespace["into_field_metadata"] = _class_value(declared)
+        built = type(name or source.name or "ArrowFields", (base or self.into_base(),), namespace)
+        return scalar(kw_only=True)(built)
 
     def annotation(self, member: Field) -> Any:
         """The Python annotation that projects back to exactly `member`."""
@@ -114,3 +114,14 @@ def _class_name(field_name: str) -> str:
     """`order_book` -> `OrderBook`: a field name as a class name."""
     cleaned = re.sub(r"\W", "_", field_name)
     return "".join(part.capitalize() or "_" for part in cleaned.split("_")) or "Anonymous"
+
+
+def _class_value(value: Any) -> classmethod:
+    """A cached classmethod returning one generated declaration value."""
+    declared = MappingProxyType(dict(value)) if isinstance(value, Mapping) else value
+
+    @functools.cache
+    def into_value(_owner: type) -> Any:
+        return declared
+
+    return classmethod(into_value)

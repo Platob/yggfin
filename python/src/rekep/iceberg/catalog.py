@@ -21,22 +21,7 @@ PYARROW_FILE_IO = "rekep.iceberg.fileio.ArrowFileIO"
 
 @dataclasses.dataclass(eq=False)
 class IcebergCatalog(Convertible):
-    """One pyiceberg catalog, with the verbs a stack needs.
-
-    Configuration is data -- a name and the properties pyiceberg loads it with
-    -- so a catalog is a document too::
-
-        catalog = IcebergCatalog(
-            name="local",
-            properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file:///data"},
-        )
-        catalog.create_namespace("trading")
-        catalog.dataset("trading.quotes", struct=Quote.FIELD).create_with()
-
-    Every verb is idempotent in the direction that matters: creating what is
-    there is not an error, dropping what is not there is not either, unless
-    the caller asks for the opposite.
-    """
+    """One pyiceberg catalog, with the verbs a stack needs."""
 
     name: str = "default"
     properties: dict[str, str] = dataclasses.field(default_factory=dict)
@@ -54,7 +39,22 @@ class IcebergCatalog(Convertible):
         require("pyiceberg", "iceberg")
         from pyiceberg.catalog import load_catalog
 
-        return load_catalog(self.name, **{"py-io-impl": PYARROW_FILE_IO, **self.properties})
+        from rekep.iceberg.fileio import inferred_properties
+
+        properties = inferred_properties(self.properties)
+        return load_catalog(self.name, **{"py-io-impl": PYARROW_FILE_IO, **properties})
+
+    def close(self) -> None:
+        """Release a loaded catalog without opening an unused one."""
+        catalog = self.__dict__.pop("catalog", None)
+        if catalog is not None:
+            catalog.close()
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            pass
 
     # -- namespaces ---------------------------------------------------------
 
@@ -152,6 +152,7 @@ class IcebergCatalog(Convertible):
 
         built = IcebergDataset(name=name, catalog=self.name, properties=self.properties, **kwargs)
         built.__dict__["store"] = self
+        built.__dict__["_owns_store"] = False
         return built
 
     def datasets(self, namespace: str | None = None) -> Iterator[Any]:

@@ -17,7 +17,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep.fix.columns import COLUMNS, COMMON, FLAT, SESSION, STAMPS, TAGS
+from rekep.fix.columns import COLUMNS, COMMON, FLAT, QUOTE, SESSION, STAMPS, TAGS
 from rekep.fix.registry import FixRegistry
 
 #: The dictionary this repository publishes, beside `python/`.
@@ -27,6 +27,7 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 #: rather than quietly changing the shape of every stored log.
 EXPECTED_SESSION = 33
 EXPECTED_COMMON = 26
+EXPECTED_QUOTE = 18
 
 
 @pytest.fixture(scope="module")
@@ -37,7 +38,13 @@ def registry() -> FixRegistry:
 def test_the_table_is_the_shape_the_schema_assumes() -> None:
     assert len(SESSION) == EXPECTED_SESSION
     assert len(COMMON) == EXPECTED_COMMON
-    assert len(FLAT) == len(COLUMNS) == len(TAGS) == EXPECTED_SESSION + EXPECTED_COMMON
+    assert len(QUOTE) == EXPECTED_QUOTE
+    assert (
+        len(FLAT)
+        == len(COLUMNS)
+        == len(TAGS)
+        == (EXPECTED_SESSION + EXPECTED_COMMON + EXPECTED_QUOTE)
+    )
     assert len({name for _, name in FLAT}) == len(FLAT), "no two tags claim one column"
     assert len({tag for tag, _ in FLAT}) == len(FLAT), "and no tag is listed twice"
 
@@ -86,8 +93,7 @@ def test_no_common_field_is_really_session_layer(registry: FixRegistry) -> None:
 def test_a_lifted_stamp_is_a_field_the_dictionary_calls_a_timestamp(
     registry: FixRegistry,
 ) -> None:
-    """`STAMPS` is read by the codec, so a tag in it that is not one would
-    decode a string as an instant and land nulls."""
+    """The physical UTC projection and registry timestamp types agree."""
     for tag in STAMPS:
         assert registry.field(tag).arrow_type == pyarrow.timestamp("ns"), tag
     timestamps = {

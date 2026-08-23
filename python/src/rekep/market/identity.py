@@ -1,64 +1,9 @@
-"""What an event is identified by, and the exact bytes that identity is computed from.
-
-Every identifier here is a signed **`int64`**, and every one of them is
-`xxh3-64` over a frame this module specifies down to the byte. Both halves are
-deliberate.
-
-**`int64`, not sixteen fixed bytes.** `fixed_size_binary[16]` is the better
-identifier on paper -- 128 bits collide at a scale nothing reaches -- and it is
-the worse one in practice, because half the ecosystem below Arrow reads it as
-something else: Doris surfaces it as `char(16)` of raw bytes that render as
-mojibake, Spark cannot *create* one (only write into one), and Iceberg's own
-`uuid` reaches Spark as a string. An `int64` is the same column in every engine
-there is, and is a join key, a sort key and a bucket source in all of them.
-
-What that costs is collision margin, and the cost is smaller than it looks: the
-primary key is `(unix, hash)`, so two identifiers only collide *in the table*
-if they also fall on the same nanosecond. The birthday bound applies per
-instant rather than across the capture, and a nanosecond holding enough
-distinct events to matter is not a nanosecond.
-
-**The frame is a specification, not an implementation detail.** An identifier
-that a Java or a Rust producer computes has to be the same number, so the bytes
-that go into the digest are written here rather than left to whatever
-`str.join` happened to do::
-
-    frame := part*
-    part  := int64 length, little-endian, then that many bytes
-           | int64 -1,     little-endian, and nothing        (an absent part)
-
-    a part's bytes:
-        text          UTF-8
-        bytes         themselves
-        bool          one byte, 0x01 or 0x00
-        int           int64,   little-endian
-        float         float64, little-endian (IEEE-754)
-        anything else Arrow's rendering of it, UTF-8
-
-    digest := xxh3-64 of the frame, seed 0, read as a signed int64
-              (two's complement -- the unsigned value reinterpreted, not clamped)
-
-Length-prefixing rather than a separator is what makes it injective: a
-separator alone stops `("AB", "C")` and `("A", "BC")` colliding, but not a part
-that contains the separator -- and a number's own bytes contain any given byte
-about six times in a hundred. `-1` for an absent part is why a missing client
-order id and an empty one are different facts.
-
-A number is its own bytes and never its text, because text needs a *formatter*
-and there are two here -- a scalar builder and a vectorised one. They
-disagreed: Python writes `10.0`, `1e-07` and `38983288990.155754` where Arrow
-writes `10`, `1e-7` and `3.8983288990155754e+10`.
-
-The frame records what a part *is* and not what type it arrived as, so two
-parts with the same bytes are one part: `0` and `0.0` are eight zero bytes
-either way. A type tag would remove that and cost a kernel pass per part in the
-vectorised builder, for a case a call site never has -- a position holds a
-price or a version, never one and then the other.
-"""
+"""Cross-language signed `int64` identities over a byte-exact frame."""
 
 from __future__ import annotations
 
 import struct
+import sys
 import uuid
 from typing import Any
 
@@ -68,6 +13,9 @@ import xxhash
 
 #: The Arrow type every identifier in this package is.
 HASH = pyarrow.int64()
+
+#: The immutable wire protocol implemented here and in `docs/identity.md`.
+IDENTITY_PROTOCOL = "rekep-identity-v1"
 
 #: An identifier nothing has computed yet. Zero rather than null, because
 #: `hash` and `xhash` are NOT NULL columns: a row that reaches a store still
@@ -82,48 +30,36 @@ ABSENT_LENGTH = -1
 #: How a part's length is written: eight bytes, little-endian, signed.
 LENGTH = struct.Struct("<q")
 
+#: The fixed-width float payload, compiled once like `LENGTH`.
+FLOAT = struct.Struct("<d")
+
+#: Every NaN spelling maps here, so payload bits cannot vary by producer.
+CANONICAL_NAN = bytes.fromhex("000000000000f87f")
+
 #: The framed length of an absent part, precomputed because it is the one
 #: constant the framing writes over and over.
 ABSENT_FRAME = LENGTH.pack(ABSENT_LENGTH)
 
 
 def hash_of(*parts: Any) -> int:
-    """The identifier `parts` name, as a signed `int64`.
-
-    Each part is framed behind its own byte length, and the frame is hashed --
-    the layout is in this module's docstring, and it is a specification another
-    language implements rather than a detail of this one::
-
-        hash_of("Order", "XNAS", "AAPL", "cl-1")
-    """
+    """Return the v1 signed `int64` identity named by `parts`."""
     return hash_bytes(frame(parts))
 
 
 def hash_bytes(raw: bytes) -> int:
-    """The identifier one blob has: xxh3-64, signed.
-
-    Not `hash_of`: that frames several parts so their split cannot be forged.
-    One blob -- a log line, a wire message -- has no split to forge, so it is
-    hashed as it stands, and a caller who wants the framed form asks for it by
-    name.
-
-    Signed because Arrow's `int64` is, and by reinterpretation rather than by
-    clamping: the same sixty-four bits, read as two's complement, which is what
-    every other language will do with them too.
-    """
+    """Hash one unframed blob with XXH3-64 seed 0 and return signed bits."""
     value = xxhash.xxh3_64_intdigest(raw)
     return value - (1 << 64) if value >= (1 << 63) else value
 
 
-#: Every length prefix a part shorter than 256 bytes takes, packed once. A
-#: part is a symbol, a venue or an eight-byte number, so this is nearly all of
-#: them -- and `LENGTH.pack` is a call where a tuple index is not: 2.43 us a
-#: frame against 1.90, measured over seven parts.
+#: Cached prefixes cover nearly every market identity part.
 _PREFIXES = tuple(LENGTH.pack(size) for size in range(256))
 
 
 def frame(parts: tuple[Any, ...]) -> bytes:
-    """`parts` as the bytes the digest is taken over -- the layout, in one place."""
+    """Convert and length-prefix `parts` into the v1 identity frame."""
+    if not parts:
+        raise TypeError("an identifier needs at least one part to frame")
     out = []
     for part in parts:
         raw = part_bytes(part)
@@ -136,91 +72,47 @@ def frame(parts: tuple[Any, ...]) -> bytes:
     return b"".join(out)
 
 
-def _int_bytes(part: int) -> bytes:
-    """An `int` exactly: eight little-endian bytes, or its text past int64."""
-    try:
-        return LENGTH.pack(part)
-    except struct.error:
-        # Wider than an int64, which Arrow has no scalar for either.
-        return str(part).encode()
-
-
-#: The exact types `part_bytes` settles without a subclass walk, spelled the
-#: same way the walk below spells them -- this is a fast path and never a
-#: second definition of the layout.
-_EXACT: dict[type, Any] = {
-    str: str.encode,
-    int: _int_bytes,
-    float: struct.Struct("<d").pack,
-    bool: lambda part: b"\x01" if part else b"\x00",
-    bytes: lambda part: part,
-}
-
-
 def part_bytes(part: Any) -> bytes | None:
-    """One part as the bytes both builders hash it as; None is an absent part.
-
-    A number is its own bytes, little-endian, and never its text: text needs a
-    formatter, a scalar builder and a vectorised one are two of them, and they
-    disagree. The bytes have nothing to disagree about, they are exact where a
-    rendering is lossy, and the vectorised path reinterprets the column's own
-    buffer rather than rendering anything at all.
-    """
+    """Convert one supported scalar into its portable v1 payload."""
     if part is None:
         return None
-    # Exact type first, and only then the `isinstance` walk below. The four
-    # types that are almost every part -- a string, an int, a float, a bool --
-    # are settled in one dict probe instead of up to five subclass checks,
-    # which is a third of the cost of hashing in the book fold. Keyed on the
-    # exact type, so a subclass (a `Ranged` code, which *is* an int) still
-    # takes the walk and still means what it meant.
-    exact = _EXACT.get(type(part))
-    if exact is not None:
-        return exact(part)
+    # Exact builtins are the hot path; enum subclasses follow the same explicit
+    # conversions below rather than acquiring a second wire representation.
+    kind = type(part)
+    if kind is str:
+        return part.encode("utf-8")
+    if kind is int:
+        return _int64_bytes(part)
+    if kind is float:
+        return CANONICAL_NAN if part != part else FLOAT.pack(part)
+    if kind is bool:
+        return b"\x01" if part else b"\x00"
+    if kind is bytes:
+        return part
     if isinstance(part, bytes | bytearray | memoryview):
         return bytes(part)
     if isinstance(part, str):
-        return part.encode()
+        return part.encode("utf-8")
     if isinstance(part, bool):  # before int: a bool is one
         return b"\x01" if part else b"\x00"
     if isinstance(part, int):
-        try:
-            return LENGTH.pack(part)
-        except struct.error:
-            # Wider than an int64, which Arrow has no scalar for either.
-            return str(part).encode()
+        return _int64_bytes(part)
     if isinstance(part, float):
-        return struct.pack("<d", part)
+        return CANONICAL_NAN if part != part else FLOAT.pack(part)
     if isinstance(part, uuid.UUID):
         return part.bytes
-    try:
-        rendered = pyarrow.scalar(part).cast(pyarrow.string()).as_py()
-    except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, TypeError):
-        # Something Arrow has no scalar for. `str` is then the only spelling
-        # there is, and a column of it would have to be built as text anyway.
-        return str(part).encode()
-    return b"" if rendered is None else rendered.encode()
+    raise TypeError(
+        "identity parts must be None, UTF-8 str, bytes-like, bool, signed int64, "
+        f"float, or UUID; got {type(part).__qualname__}"
+    )
 
 
 def hash_arrow(*columns: Any) -> pyarrow.Array:
-    """One identifier per row, from whole columns -- the vectorised `hash_of`.
-
-    The same frame, built with kernels: one length per column, one join over
-    every length and column at once, and then one digest per row taken straight
-    out of the joined buffer rather than out of Python objects.
-
-    Everything is joined as **binary** with an empty separator, because the
-    lengths are the framing -- there is no separator in the layout at all. A
-    length is the column's own `binary_length` reinterpreted as its eight
-    bytes, so it costs offsets arithmetic and no formatting.
-
-    A scalar argument broadcasts, which is how a shape name or a venue is put
-    in front of the columns that vary::
-
-        hash_arrow("Order", batch.column("symbol"), batch.column("client_order_id"))
-    """
+    """Return one v1 identity per row from scalar or Arrow parts."""
     if not columns:
         raise TypeError("an identifier needs at least one part to hash")
+    if sys.byteorder != "little":
+        raise RuntimeError("hash_arrow requires a little-endian Arrow host; use hash_of")
     framed: list[Any] = []
     rows = 1
     for column in columns:
@@ -251,16 +143,26 @@ def arrow_of(values: Any) -> pyarrow.Array:
 # -- helpers ----------------------------------------------------------------
 
 
-def _binary(column: Any) -> Any:
-    """One part as `binary`, which is the one type every part can become.
+def _int64_bytes(value: int) -> bytes:
+    """One signed `int64`, refusing values Rust cannot represent as `i64`."""
+    try:
+        return LENGTH.pack(value)
+    except struct.error:
+        raise OverflowError(f"identity integer {value} does not fit signed int64") from None
 
-    A scalar stays a scalar so the kernel broadcasts it instead of this
-    building a column of one repeated value per batch.
-    """
+
+def _binary(column: Any) -> Any:
+    """Convert a supported Arrow part to the same payload as `part_bytes`."""
     if isinstance(column, pyarrow.ChunkedArray):
         column = column.combine_chunks()
     if isinstance(column, pyarrow.Array):
         kinds = pyarrow.types
+        if isinstance(column, pyarrow.ExtensionArray):
+            return _binary(column.storage)
+        if kinds.is_dictionary(column.type):
+            return _binary(column.dictionary_decode())
+        if kinds.is_null(column.type):
+            return pyarrow.nulls(len(column), type=pyarrow.binary())
         if kinds.is_binary(column.type):
             return column
         if kinds.is_fixed_size_binary(column.type) or kinds.is_large_binary(column.type):
@@ -273,10 +175,23 @@ def _binary(column: Any) -> Any:
         if kinds.is_boolean(column.type):
             return _reinterpreted(column.cast(pyarrow.uint8()), 1)
         if kinds.is_integer(column.type):
-            return _reinterpreted(column.cast(pyarrow.int64()), 8)
+            try:
+                widened = column.cast(pyarrow.int64())
+            except pyarrow.ArrowInvalid:
+                raise OverflowError("Arrow identity integers must fit signed int64") from None
+            return _reinterpreted(widened, 8)
         if kinds.is_floating(column.type):
-            return _reinterpreted(column.cast(pyarrow.float64()), 8)
-        return column.cast(pyarrow.string(), safe=False).cast(pyarrow.binary(), safe=False)
+            wide = column.cast(pyarrow.float64())
+            binary = _reinterpreted(wide, 8)
+            nan = pyarrow.compute.is_nan(wide)
+            if pyarrow.compute.any(nan).as_py():
+                return pyarrow.compute.if_else(
+                    nan,
+                    pyarrow.scalar(CANONICAL_NAN, type=pyarrow.binary()),
+                    binary,
+                )
+            return binary
+        raise TypeError(f"unsupported Arrow identity part type: {column.type}")
     if isinstance(column, pyarrow.Scalar):
         if pyarrow.types.is_binary(column.type):
             return column
@@ -318,16 +233,7 @@ def _reinterpreted(column: pyarrow.Array, width: int) -> pyarrow.Array:
 
 
 def _digested(joined: pyarrow.Array) -> pyarrow.Array:
-    """One xxh3-64 per row of a binary column, straight out of its buffers.
-
-    The offsets and the data are read as memory rather than as Python objects:
-    `to_pylist()` would allocate a `bytes` per row from data the buffer already
-    holds, which measured as most of the cost of building an identifier column.
-
-    The digests are packed as unsigned and the buffer is typed `int64`, so the
-    signed reading is the reinterpretation itself -- no branch per row, and the
-    same two's complement any other language would get.
-    """
+    """One xxh3-64 per row of a binary column, straight out of its buffers."""
     digest = xxhash.xxh3_64_intdigest
     rows = len(joined)
     out = bytearray(8 * rows)

@@ -1,8 +1,18 @@
-"""What a test that needs a catalog builds: a local one, reaching nothing."""
+"""Shared test isolation: local catalogs and no cloud discovery."""
 
 from __future__ import annotations
 
 from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _keep_aws_discovery_off_the_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Give Arrow inert credentials so unit tests never probe EC2 metadata."""
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "rekep-test")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "rekep-test")
+    monkeypatch.setenv("AWS_EC2_METADATA_DISABLED", "true")
 
 
 def catalog_properties(tmp_path: Path, name: str = "warehouse") -> dict[str, str]:

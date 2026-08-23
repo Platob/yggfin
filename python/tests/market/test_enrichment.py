@@ -10,14 +10,16 @@ import datetime
 
 import pytest
 
-from rekep.market import AssetKind, FixEvents, IdSource, Instrument, OptionKind, Side
+from rekep.market import AssetKind, Currency, FixEvents, IdSource, Instrument, OptionKind, Side
 from rekep.market.fix import SECURITY_TYPES, _classified, _month_year
 
 
 def instrument_of(line: str) -> Instrument:
     (only, *rest) = FixEvents.from_text(line, venue="XCME")
     assert not rest, "the fixture is meant to be one event"
-    return only.instrument
+    instrument = only.into_instrument()
+    assert instrument is not None
+    return instrument
 
 
 HEAD = "35=D|49=XCME|52=20260821-10:30:00.000|11=CL-1|60=20260821-10:30:00.000"
@@ -182,7 +184,7 @@ def test_a_leg_is_read_with_the_same_rules_as_the_instrument_it_is_of() -> None:
     assert near.maturity == datetime.date(2026, 12, 1), "its month-year, read the same way"
     assert far.maturity == datetime.date(2027, 3, 20)
     assert far.strike == 4500.0 and far.option_kind is OptionKind.CALL
-    assert near.currency == "USD" and near.exchange == "XCME"
+    assert near.currency is Currency.USD and near.exchange == "XCME"
 
 
 def test_a_leg_identifies_the_way_an_instrument_does_so_it_joins_to_one() -> None:
@@ -215,7 +217,9 @@ def test_a_group_rendered_with_indexes_reads_the_same_as_one_in_wire_order() -> 
         "TransactTime=20260821-10:30:00.000"
     )
     (order,) = FixEvents.from_text(rendered, venue="XCME")
-    assert [(one.symbol, one.side, one.ratio) for one in order.instrument.legs] == [
+    instrument = order.into_instrument()
+    assert instrument is not None
+    assert [(one.symbol, one.side, one.ratio) for one in instrument.legs] == [
         ("ESZ6", Side.BUY, 2.0),
         ("ESH7", Side.SELL, 1.0),
     ]

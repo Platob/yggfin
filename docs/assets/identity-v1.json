@@ -1,0 +1,144 @@
+{
+  "protocol": "rekep-identity-v1",
+  "algorithm": "XXH3-64",
+  "seed": 0,
+  "raw_vectors": [
+    {
+      "name": "empty_blob",
+      "raw_hex": "",
+      "digest_hex": "2d06800538d394c2",
+      "signed_i64": 3244421341483603138
+    },
+    {
+      "name": "fix_line",
+      "raw_hex": "383d4649582e342e3401393d31320133353d4401",
+      "digest_hex": "d0b7fe76441a7d5c",
+      "signed_i64": -3406974809180308132
+    },
+    {
+      "name": "binary_blob",
+      "raw_hex": "0001ff",
+      "digest_hex": "8af97d207880c972",
+      "signed_i64": -8432571248860411534
+    }
+  ],
+  "vectors": [
+    {
+      "name": "absent",
+      "parts": [{"type": "null"}],
+      "frame_hex": "ffffffffffffffff",
+      "digest_hex": "5111c7e47d784413",
+      "signed_i64": 5841669975847748627
+    },
+    {
+      "name": "empty_utf8",
+      "parts": [{"type": "utf8", "value": ""}],
+      "frame_hex": "0000000000000000",
+      "digest_hex": "c77b3abb6f87acd9",
+      "signed_i64": -4072596861322023719
+    },
+    {
+      "name": "unicode_utf8",
+      "parts": [{"type": "utf8", "value": "€🙂"}],
+      "frame_hex": "0700000000000000e282acf09f9982",
+      "digest_hex": "ed1a87d01bdc6748",
+      "signed_i64": -1361626609435777208
+    },
+    {
+      "name": "raw_bytes",
+      "parts": [{"type": "bytes", "hex": "0001ff"}],
+      "frame_hex": "03000000000000000001ff",
+      "digest_hex": "b9299ac31850a5a9",
+      "signed_i64": -5104378539930507863
+    },
+    {
+      "name": "bool_true",
+      "parts": [{"type": "bool", "value": true}],
+      "frame_hex": "010000000000000001",
+      "digest_hex": "984217a4c02255fc",
+      "signed_i64": -7475386435116050948
+    },
+    {
+      "name": "bool_false",
+      "parts": [{"type": "bool", "value": false}],
+      "frame_hex": "010000000000000000",
+      "digest_hex": "313c2dd2ec996e80",
+      "signed_i64": 3547760990396968576
+    },
+    {
+      "name": "i64_min",
+      "parts": [{"type": "i64", "value": "-9223372036854775808"}],
+      "frame_hex": "08000000000000000000000000000080",
+      "digest_hex": "15945eae2b0b7ddf",
+      "signed_i64": 1554971873489157599
+    },
+    {
+      "name": "i64_max",
+      "parts": [{"type": "i64", "value": "9223372036854775807"}],
+      "frame_hex": "0800000000000000ffffffffffffff7f",
+      "digest_hex": "c92693b085ec0f18",
+      "signed_i64": -3952309236600664296
+    },
+    {
+      "name": "f64_positive_zero",
+      "parts": [{"type": "f64", "bits": "0000000000000000"}],
+      "frame_hex": "08000000000000000000000000000000",
+      "digest_hex": "7dd1b9ecded9d928",
+      "signed_i64": 9066231951875758376
+    },
+    {
+      "name": "f64_negative_zero",
+      "parts": [{"type": "f64", "bits": "8000000000000000"}],
+      "frame_hex": "08000000000000000000000000000080",
+      "digest_hex": "15945eae2b0b7ddf",
+      "signed_i64": 1554971873489157599
+    },
+    {
+      "name": "f64_pi",
+      "parts": [{"type": "f64", "bits": "400921fb54442d18"}],
+      "frame_hex": "0800000000000000182d4454fb210940",
+      "digest_hex": "fca1553931748b69",
+      "signed_i64": -242819200770077847
+    },
+    {
+      "name": "f64_nan_canonicalized",
+      "parts": [{"type": "f64", "bits": "7ff0000000000001"}],
+      "frame_hex": "0800000000000000000000000000f87f",
+      "digest_hex": "b1a7b1ded3b5fa77",
+      "signed_i64": -5645348037292852617
+    },
+    {
+      "name": "f64_positive_infinity",
+      "parts": [{"type": "f64", "bits": "7ff0000000000000"}],
+      "frame_hex": "0800000000000000000000000000f07f",
+      "digest_hex": "ddb269a4c75347a1",
+      "signed_i64": -2471797089033304159
+    },
+    {
+      "name": "f64_negative_infinity",
+      "parts": [{"type": "f64", "bits": "fff0000000000000"}],
+      "frame_hex": "0800000000000000000000000000f0ff",
+      "digest_hex": "c27bca85ece294ac",
+      "signed_i64": -4432726731662388052
+    },
+    {
+      "name": "uuid",
+      "parts": [{"type": "uuid", "value": "00112233-4455-6677-8899-aabbccddeeff"}],
+      "frame_hex": "100000000000000000112233445566778899aabbccddeeff",
+      "digest_hex": "6e3ed861950d46f7",
+      "signed_i64": 7944024706352236279
+    },
+    {
+      "name": "composite",
+      "parts": [
+        {"type": "utf8", "value": "Order"},
+        {"type": "null"},
+        {"type": "i64", "value": "-7"},
+        {"type": "bytes", "hex": "001f"}
+      ],
+      "frame_hex": "05000000000000004f72646572ffffffffffffffff0800000000000000f9ffffffffffffff0200000000000000001f",
+      "digest_hex": "66b75de4321389be",
+      "signed_i64": 7401487747280767422
+    }
+  ]
+}

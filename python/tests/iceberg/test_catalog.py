@@ -5,12 +5,12 @@ from typing import Annotated
 
 import pytest
 
-from rekep import Convertible, Field, field
+from rekep import Convertible, Field, scalar
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.catalog import PYARROW_FILE_IO
 
 
-@field
+@scalar
 class Quote(Convertible):
     """One quote."""
 
@@ -43,6 +43,26 @@ def test_arrow_is_the_default_file_io(catalog: IcebergCatalog) -> None:
     assert catalog.catalog.properties["py-io-impl"] == PYARROW_FILE_IO
 
 
+def test_s3_location_settings_are_normalized_before_the_catalog_uses_them(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The catalog creates table locations; FileIO normalization is too late."""
+    import pyiceberg.catalog
+
+    seen = {}
+
+    def loaded(name: str, **properties: str) -> object:
+        seen.update(properties)
+        return object()
+
+    monkeypatch.setattr(pyiceberg.catalog, "load_catalog", loaded)
+    warehouse = "s3://key:secret@bucket/wh?endpoint_override=minio%3A9000&scheme=http"
+    _ = IcebergCatalog(properties={"warehouse": warehouse}).catalog
+
+    assert seen["warehouse"] == "s3://key:secret@bucket/wh"
+    assert seen["s3.endpoint"] == "http://minio:9000"
+
+
 def test_a_named_file_io_wins(tmp_path: Path) -> None:
     named = IcebergCatalog(name="test", properties={"type": "in-memory", "py-io-impl": "x.Y"})
     assert named.properties["py-io-impl"] == "x.Y"
@@ -50,6 +70,58 @@ def test_a_named_file_io_wins(tmp_path: Path) -> None:
 
 def test_the_catalog_is_loaded_once(catalog: IcebergCatalog) -> None:
     assert catalog.catalog is catalog.catalog
+
+
+def test_close_is_lazy_and_idempotent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Teardown must neither open a catalog nor close one twice."""
+    import pyiceberg.catalog
+
+    loaded = 0
+
+    class Opened:
+        closed = 0
+
+        def close(self) -> None:
+            self.closed += 1
+
+    opened = Opened()
+
+    def load(*_args, **_kwargs) -> Opened:
+        nonlocal loaded
+        loaded += 1
+        return opened
+
+    monkeypatch.setattr(pyiceberg.catalog, "load_catalog", load)
+    catalog = IcebergCatalog()
+    catalog.close()
+    assert loaded == 0
+
+    assert catalog.catalog is opened
+    catalog.close()
+    catalog.close()
+    assert (loaded, opened.closed) == (1, 1)
+
+
+def test_a_dataset_only_closes_the_catalog_it_owns(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A catalog sweep lends one connection to every dataset it creates."""
+    catalog = IcebergCatalog()
+    closed = 0
+
+    def close() -> None:
+        nonlocal closed
+        closed += 1
+
+    monkeypatch.setattr(catalog, "close", close)
+    shared = catalog.dataset("trading.quotes")
+    shared.close()
+    assert closed == 0
+
+    owned = IcebergDataset(name="trading.quotes")
+    owned.__dict__["store"] = catalog
+    owned.__dict__["_owns_store"] = True
+    owned.close()
+    owned.close()
+    assert closed == 1
 
 
 # -- namespaces -------------------------------------------------------------
@@ -91,7 +163,7 @@ def test_namespace_properties_round_trip(catalog: IcebergCatalog) -> None:
 
 def test_a_namespace_hands_out_its_own_datasets(catalog: IcebergCatalog) -> None:
     space = catalog.create_namespace("trading")
-    dataset = space.dataset("quotes", struct=Quote.FIELD)
+    dataset = space.dataset("quotes", struct=Quote.into_field())
     assert isinstance(dataset, IcebergDataset)
     assert dataset.name == "trading.quotes"
 
@@ -102,8 +174,8 @@ def test_a_namespace_hands_out_its_own_datasets(catalog: IcebergCatalog) -> None
 def test_tables_are_listed_per_namespace_and_across_them(catalog: IcebergCatalog) -> None:
     catalog.create_namespace("trading")
     catalog.create_namespace("risk")
-    catalog.dataset("trading.quotes", struct=Quote.FIELD).create_with()
-    catalog.dataset("risk.limits", struct=Quote.FIELD).create_with()
+    catalog.dataset("trading.quotes", struct=Quote.into_field()).create_with()
+    catalog.dataset("risk.limits", struct=Quote.into_field()).create_with()
     assert catalog.tables("trading") == ["trading.quotes"]
     assert sorted(catalog.tables()) == ["risk.limits", "trading.quotes"]
 
@@ -115,7 +187,7 @@ def test_tables_reach_nested_namespaces(catalog: IcebergCatalog) -> None:
     `trading.eu.paris.quotes`, and reported no skip.
     """
     for name in ("ops.quotes", "trading.quotes", "trading.eu.quotes", "trading.eu.paris.quotes"):
-        catalog.dataset(name, struct=Quote.FIELD).create_with()
+        catalog.dataset(name, struct=Quote.into_field()).create_with()
     assert sorted(catalog.tables()) == [
         "ops.quotes",
         "trading.eu.paris.quotes",
@@ -137,7 +209,7 @@ def test_a_sweep_loads_one_catalog(catalog: IcebergCatalog) -> None:
     import pyiceberg.catalog
 
     for index in range(6):
-        catalog.dataset(f"trading.q{index}", struct=Quote.FIELD).create_with()
+        catalog.dataset(f"trading.q{index}", struct=Quote.into_field()).create_with()
     loaded = 0
     original = pyiceberg.catalog.load_catalog
 
@@ -156,7 +228,7 @@ def test_a_sweep_loads_one_catalog(catalog: IcebergCatalog) -> None:
 
 
 def test_a_table_is_dropped_and_purged(catalog: IcebergCatalog) -> None:
-    dataset = catalog.dataset("trading.quotes", struct=Quote.FIELD)
+    dataset = catalog.dataset("trading.quotes", struct=Quote.into_field())
     dataset.create_with()
     assert catalog.table_exists("trading.quotes")
     catalog.drop_table("trading.quotes")
@@ -165,14 +237,14 @@ def test_a_table_is_dropped_and_purged(catalog: IcebergCatalog) -> None:
 
 
 def test_a_table_is_renamed(catalog: IcebergCatalog) -> None:
-    catalog.dataset("trading.quotes", struct=Quote.FIELD).create_with()
+    catalog.dataset("trading.quotes", struct=Quote.into_field()).create_with()
     catalog.rename_table("trading.quotes", "trading.ticks")
     assert catalog.tables("trading") == ["trading.ticks"]
 
 
 def test_every_table_comes_back_as_a_dataset(catalog: IcebergCatalog) -> None:
-    catalog.dataset("trading.quotes", struct=Quote.FIELD).create_with()
-    catalog.dataset("trading.ticks", struct=Quote.FIELD).create_with()
+    catalog.dataset("trading.quotes", struct=Quote.into_field()).create_with()
+    catalog.dataset("trading.ticks", struct=Quote.into_field()).create_with()
     found = {dataset.name for dataset in catalog.datasets("trading")}
     assert found == {"trading.quotes", "trading.ticks"}
     for dataset in catalog.datasets("trading"):

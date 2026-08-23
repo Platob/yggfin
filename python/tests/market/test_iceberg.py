@@ -14,34 +14,34 @@ import pyarrow
 import pytest
 
 from rekep.fields import StructField
-from rekep.market import Book, BookSide, Execution, Instrument, MarketEvent, Order
+from rekep.market import Book, Execution, Instrument, MarketEvent, Order
 
 from ..conftest import catalog_properties
 from .conftest import batch
 
 pytest.importorskip("pyiceberg")
 
-SHAPES = (MarketEvent, Order, Execution, BookSide, Book, Instrument)
+SHAPES = (MarketEvent, Order, Execution, Book, Instrument)
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
 def test_every_shape_projects_onto_iceberg(shape: type) -> None:
-    schema = shape.FIELD.into_iceberg_schema()
-    assert [member.name for member in schema.fields] == shape.FIELD.names
+    schema = shape.into_field().into_iceberg_schema()
+    assert [member.name for member in schema.fields] == shape.into_field().names
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
 def test_the_primary_key_becomes_the_identifier_fields(shape: type) -> None:
-    schema = shape.FIELD.into_iceberg_schema()
+    schema = shape.into_field().into_iceberg_schema()
     assert schema.identifier_field_ids == [
-        schema.find_field(name).field_id for name in shape.FIELD.primary_keys()
+        schema.find_field(name).field_id for name in shape.into_field().primary_keys()
     ]
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
 def test_every_column_comment_travels(shape: type) -> None:
-    schema = shape.FIELD.into_iceberg_schema()
-    for member in shape.FIELD.fields:
+    schema = shape.into_field().into_iceberg_schema()
+    for member in shape.into_field().fields:
         assert schema.find_field(member.name).doc == member.description, member.name
 
 
@@ -50,7 +50,7 @@ def test_an_identifier_is_a_long_in_every_engine() -> None:
     raw bytes, Spark cannot create one, and Iceberg's `uuid` reaches Spark as a
     string. A `long` is the same column everywhere, and a join and sort key in
     all of them."""
-    schema = MarketEvent.FIELD.into_iceberg_schema()
+    schema = MarketEvent.into_field().into_iceberg_schema()
     assert str(schema.find_field("hash").field_type) == "long"
     assert str(schema.find_field("xhash").field_type) == "long"
     back = StructField.from_iceberg_schema(schema)
@@ -58,7 +58,7 @@ def test_an_identifier_is_a_long_in_every_engine() -> None:
 
 
 def test_a_ranged_code_is_an_iceberg_int() -> None:
-    schema = MarketEvent.FIELD.into_iceberg_schema()
+    schema = MarketEvent.into_field().into_iceberg_schema()
     assert str(schema.find_field("state").field_type) == "int"
     assert str(schema.find_field("side").field_type) == "int"
 
@@ -66,7 +66,7 @@ def test_a_ranged_code_is_an_iceberg_int() -> None:
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
 def test_a_nested_key_is_not_an_identifier_field(shape: type) -> None:
     """Iceberg only takes top-level identifier fields, so nothing must offer it one."""
-    schema = shape.FIELD.into_iceberg_schema()
+    schema = shape.into_field().into_iceberg_schema()
     for field_id in schema.identifier_field_ids:
         assert "." not in (schema.find_column_name(field_id) or "")
 
@@ -74,21 +74,21 @@ def test_a_nested_key_is_not_an_identifier_field(shape: type) -> None:
 def test_the_partition_is_the_hour_then_the_instrument() -> None:
     """The hour is an identity every engine reads alike; the instrument is bucketed,
     because an identity on a 64-bit hash is one directory per instrument."""
-    schema = Order.FIELD.into_iceberg_schema()
-    spec = Order.FIELD.into_iceberg_partition_spec(schema)
-    assert [partition.name for partition in spec.fields] == ["unix_hour", "instrument_hash_bucket"]
+    schema = Order.into_field().into_iceberg_schema()
+    spec = Order.into_field().into_iceberg_partition_spec(schema)
+    assert [partition.name for partition in spec.fields] == ["unix_hour", "instrument_xhash_bucket"]
     assert str(spec.fields[0].transform) == "identity"
     assert str(spec.fields[1].transform) == "bucket[16]"
     assert schema.find_column_name(spec.fields[0].source_id) == "unix_hour"
-    assert schema.find_column_name(spec.fields[1].source_id) == "instrument_hash"
+    assert schema.find_column_name(spec.fields[1].source_id) == "instrument_xhash"
     for partition in spec.fields:
         assert "[" not in partition.name, "a partition name becomes a directory name"
 
 
 def test_the_table_is_laid_out_in_time_inside_the_partition() -> None:
     """A sort order is what turns a `unix BETWEEN` into a few files, not a full scan."""
-    schema = Order.FIELD.into_iceberg_schema()
-    order = Order.FIELD.into_iceberg_sort_order(schema)
+    schema = Order.into_field().into_iceberg_schema()
+    order = Order.into_field().into_iceberg_sort_order(schema)
     assert len(order.fields) == 1
     sorted_on = order.fields[0]
     assert schema.find_column_name(sorted_on.source_id) == "unix"
@@ -105,7 +105,7 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
         name=f"market.{shape.__name__.lower()}",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=shape.FIELD,
+        struct=shape.into_field(),
     )
     given = batch(shape, 3)
     dataset.write_arrow_table(pyarrow.Table.from_batches([given]))
@@ -125,10 +125,13 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
         name="market.books",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=Book.FIELD,
+        struct=Book.into_field(),
     )
-    levels = [[{"px": 10.0, "qty": 5.0, "orders": 1}], [{"px": 11.0, "qty": 6.0, "orders": None}]]
-    given = Book.summarise_arrow_batch(batch(Book, 2, bid_alive=levels, ask_alive=levels))
+    levels = [
+        [{"px": 10.0, "qty": 5.0, "order_xhash": [1], "exec_xhash": []}],
+        [{"px": 11.0, "qty": 6.0, "order_xhash": [], "exec_xhash": []}],
+    ]
+    given = Book.summarise_arrow_batch(batch(Book, 2, bid_levels=levels, ask_levels=levels))
     dataset.write_arrow_table(pyarrow.Table.from_batches([given]))
     read = dataset.read_arrow_table()
 
@@ -136,9 +139,9 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
     assert read.column("bid_px").to_pylist() == [10.0, 11.0], "derived, written and read back"
     assert read.column("bid_depth").type == pyarrow.int32()
     assert pyarrow.types.is_list(
-        read.schema.field("bid_alive").type
-    ) or pyarrow.types.is_large_list(read.schema.field("bid_alive").type)
-    assert read.column("bid_alive")[0][0]["qty"].as_py() == 5.0
+        read.schema.field("bid_levels").type
+    ) or pyarrow.types.is_large_list(read.schema.field("bid_levels").type)
+    assert read.column("bid_levels")[0][0]["qty"].as_py() == 5.0
 
 
 def test_the_metrics_budget_covers_every_flat_column_of_a_book() -> None:
@@ -153,7 +156,7 @@ def test_the_metrics_budget_covers_every_flat_column_of_a_book() -> None:
     than the 100 leaves the budget stops at could not have kept the last of
     these columns inside it.
     """
-    schema = Book.FIELD.into_iceberg_schema()
+    schema = Book.into_field().into_iceberg_schema()
     flat = [
         member.name
         for member in schema.fields

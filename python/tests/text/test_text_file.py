@@ -8,12 +8,15 @@ import pyarrow.fs
 import pytest
 
 from rekep import Dataset, Field, Log
-from rekep.fix.columns import COLUMNS, COMMON, FLAT, SESSION, STAMPS
+from rekep.fix import FixCodec, FixRegistry
+from rekep.fix.columns import COLUMNS, COMMON, FLAT, QUOTE, SESSION, STAMPS
+from rekep.market import MIC, Event
 from rekep.market.event import HOUR
 from rekep.text import HEADER_PATTERN, TextFile
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()
+DICTIONARY = Path(__file__).resolve().parents[3] / "data" / "fix"
 
 #: Expectations are derived from the sample, then pinned, so that a regression
 #: in HEADER_PATTERN cannot quietly move both sides of an assertion together.
@@ -280,7 +283,7 @@ def test_reads_whole_log_whatever_the_encoding(
 
 
 #: What a parsed line adds to the `Event` envelope, in declaration order: the
-#: line itself, the two maps of what its message said, then the FIX fields
+#: line itself, the two ordered pair lists, then the FIX fields
 #: flattened out of them. Written out whole rather than counted, because this
 #: tail is what a reader selects by name and a column that was renamed, moved
 #: or quietly dropped is invisible to a count.
@@ -291,7 +294,10 @@ LINE_COLUMNS = [
     "message",
     "protocol",
     "fix_tags",
+    "fix_miss_tags",
     "keyval",
+    "parties",
+    "isincode",
     "begin_string",
     "body_length",
     "msg_type",
@@ -311,9 +317,9 @@ LINE_COLUMNS = [
     "last_msg_seq_num_processed",
     "poss_dup_flag",
     "poss_resend",
-    "sending_unix",
-    "orig_sending_unix",
-    "on_behalf_of_sending_unix",
+    "sending_time",
+    "orig_sending_time",
+    "on_behalf_of_sending_time",
     "appl_ver_id",
     "cstm_appl_ver_id",
     "appl_ext_id",
@@ -324,6 +330,7 @@ LINE_COLUMNS = [
     "secure_data",
     "signature_length",
     "signature",
+    "symbol",
     "security_id",
     "security_id_source",
     "security_type",
@@ -342,36 +349,45 @@ LINE_COLUMNS = [
     "exec_type",
     "order_qty",
     "price",
-    "avg_px",
+    "vwap",
     "cum_qty",
     "leaves_qty",
     "last_px",
     "last_qty",
-    "transact_unix",
+    "transact_time",
     "text",
+    "quote_id",
+    "quote_req_id",
+    "quote_type",
+    "quote_status",
+    "quote_reject_reason",
+    "quote_resp_type",
+    "quote_cancel_type",
+    "bid_px",
+    "offer_px",
+    "bid_size",
+    "offer_size",
+    "def_bid_size",
+    "def_offer_size",
+    "valid_until_time",
+    "no_quote_sets",
+    "no_quote_entries",
+    "quote_set_id",
+    "quote_entry_id",
 ]
 
-#: The two lifted tags that land on a column the `Event` envelope **already**
-#: declares -- `Symbol <55>` on `symbol` and `MsgSeqNum <34>` on `seq` -- and
-#: so are columns of `Log` without being part of the tail above. Pinned here
-#: because they are the pair a count of the tail silently loses.
-ENVELOPE_COLUMNS = {55: "symbol", 34: "seq"}
-EXPECTED_FLAT_COLUMNS = 59
-EXPECTED_LINE_COLUMNS = 64
-EXPECTED_LOG_COLUMNS = 81
+EXPECTED_FLAT_COLUMNS = 77
+EXPECTED_LINE_COLUMNS = 86
+EXPECTED_LOG_COLUMNS = 107
 
 
 def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
-    assert schema.names == Log.FIELD.into_arrow_schema().names
+    assert schema.names == Log.into_field().into_arrow_schema().names
     assert len(schema.names) == EXPECTED_LOG_COLUMNS
     assert schema.names[:3] == ["unix", "unix_hour", "etype"], "the envelope leads"
     assert len(LINE_COLUMNS) == EXPECTED_LINE_COLUMNS
     assert schema.names[-len(LINE_COLUMNS) :] == LINE_COLUMNS
-    for column in ENVELOPE_COLUMNS.values():
-        assert column in schema.names[: -len(LINE_COLUMNS)], (
-            "declared by the envelope, not the tail"
-        )
     assert schema.field("unix").type == pyarrow.int64()
     assert schema.field("unix_hour").type == pyarrow.int64()
     assert schema.field("hash").type == pyarrow.int64()
@@ -386,21 +402,17 @@ def test_the_flat_columns_are_the_ones_the_column_layer_names() -> None:
     field added on one side only is either a tag lifted out of `fix_tags` into a
     column nothing declares, or a column no message can ever fill.
 
-    Two of the fifty-nine are the envelope's own, so what the tail carries is
-    the rest of them: a count alone would pass over either one moving.
+    All fifty-nine retain their canonical FIX names in metadata.
     """
-    assert FLAT == SESSION + COMMON, "the session layer, then the components"
+    assert FLAT == SESSION + COMMON + QUOTE, "session, common market fields, then quotes"
     assert [column for _, column in FLAT] == list(COLUMNS.values())
     assert len(COLUMNS) == EXPECTED_FLAT_COLUMNS
-    assert {tag: COLUMNS[tag] for tag in ENVELOPE_COLUMNS} == ENVELOPE_COLUMNS
-    lifted = [column for tag, column in FLAT if tag not in ENVELOPE_COLUMNS]
-    assert len(lifted) == EXPECTED_FLAT_COLUMNS - len(ENVELOPE_COLUMNS)
-    assert LINE_COLUMNS[-len(lifted) :] == lifted
-    assert set(ENVELOPE_COLUMNS.values()).isdisjoint(LINE_COLUMNS)
+    added = [name for name in COLUMNS.values() if name not in Event.into_field().names]
+    assert LINE_COLUMNS[-len(added) :] == added
 
 
 def test_a_flat_field_is_a_column_of_its_own_type_and_not_text(plain: Path) -> None:
-    """Lifted out of the map as text and then decoded, so a reader filters on
+    """Lifted out of the pairs and decoded, so a reader filters on
     the value and not on its spelling: `9=176` is a number, `43=Y` is a boolean,
     and `38=1200` is a quantity. `CheckSum` is the one that stays text, because
     `010` read as `10` no longer verifies.
@@ -417,84 +429,184 @@ def test_a_flat_field_is_a_column_of_its_own_type_and_not_text(plain: Path) -> N
         "check_sum": pyarrow.string(),
     }
     assert {name: schema.field(name).type for name in declared} == declared
-    assert "msg_seq_num" not in schema.names, "tag 34 is `seq`, and one column answers for it"
-    assert all(schema.field(column).nullable for _, column in FLAT if column != "symbol"), (
-        "a message that never carried the field says so with a null"
-    )
-    assert not schema.field("symbol").nullable, (
-        "`Event` declares it NOT NULL, so a line naming no instrument says so with an empty string"
-    )
+    assert all(schema.field(column).nullable for _, column in FLAT)
+    assert not schema.field("code").nullable and not schema.field("xcode").nullable
 
 
-def test_an_instant_a_message_carries_is_int64_nanoseconds(plain: Path) -> None:
-    """Not an Arrow timestamp, and the store is why: pyiceberg refuses
-    `timestamp[ns]` outright, and `timestamp[us]` would truncate a value whose
-    text has just been lifted out of the map -- unrecoverably. Every other
-    instant here is int64 nanos too, so `unix - sending_unix` is a subtraction.
-    """
+def test_an_instant_a_message_carries_is_a_microsecond_utc_timestamp(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
     stamps = sorted(COLUMNS[tag] for tag in STAMPS)
     assert stamps == [
-        "on_behalf_of_sending_unix",
-        "orig_sending_unix",
-        "sending_unix",
-        "transact_unix",
+        "on_behalf_of_sending_time",
+        "orig_sending_time",
+        "sending_time",
+        "transact_time",
+        "valid_until_time",
     ]
     for column in stamps:
-        assert schema.field(column).type == schema.field("unix").type == pyarrow.int64(), column
+        assert schema.field(column).type == pyarrow.timestamp("us", tz="UTC"), column
 
 
-def test_the_maps_are_nullable_and_the_values_in_them_are_not(plain: Path) -> None:
-    """A null map is a line carrying no message and an empty one is a message
-    that said nothing, so a store spelling both the same way cannot tell a
-    bridge that sent an empty payload from a stack trace. Inside, a pair without
-    a value is not a pair -- and a `value` field spelled nullable is a different
-    Arrow type, which is what these comparisons pin.
-    """
+def test_the_pair_lists_are_nullable_and_their_members_are_not(plain: Path) -> None:
+    """Lists preserve duplicate keys; null and empty keep distinct meanings."""
     schema = TextFile(url=plain.as_uri()).schema
-    assert schema.field("fix_tags").type == pyarrow.map_(
-        pyarrow.int32(), pyarrow.field("value", pyarrow.string(), nullable=False)
+    assert schema.field("fix_tags").type == pyarrow.list_(
+        pyarrow.field(
+            "item",
+            pyarrow.struct(
+                [
+                    pyarrow.field("key", pyarrow.int32(), nullable=False),
+                    pyarrow.field("value", pyarrow.string(), nullable=False),
+                ]
+            ),
+            nullable=False,
+        )
     )
-    assert schema.field("keyval").type == pyarrow.map_(
-        pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
+    assert schema.field("keyval").type == pyarrow.list_(
+        pyarrow.field(
+            "item",
+            pyarrow.struct(
+                [
+                    pyarrow.field("key", pyarrow.string(), nullable=False),
+                    pyarrow.field("value", pyarrow.string(), nullable=False),
+                ]
+            ),
+            nullable=False,
+        )
+    )
+    assert schema.field("fix_miss_tags").type == pyarrow.list_(
+        pyarrow.field("item", pyarrow.string(), nullable=False)
     )
     assert schema.field("fix_tags").nullable
+    assert schema.field("fix_miss_tags").nullable
     assert schema.field("keyval").nullable
 
 
 # -- what a message fills ---------------------------------------------------
 
 
-def test_a_lifted_tag_fills_the_column_the_envelope_already_declares(wire: Path) -> None:
-    """`Symbol <55>` is `Event.symbol` and `MsgSeqNum <34>` is `Event.seq`, so a
-    message saying either fills the column the shape already has rather than a
-    second one beside it. What the message did not say keeps the declared
-    default, which for `symbol` is NOT NULL and so is an empty string.
-    """
+def test_exact_fix_columns_also_fill_the_generic_envelope(wire: Path) -> None:
+    """Snake columns keep FIX identity while generic identifiers are derived."""
     table = TextFile.from_path(wire).read_arrow_table()
-    assert table.column("symbol").to_pylist() == ["TTF", "", ""]
+    assert table.column("symbol").to_pylist() == ["TTF", None, None]
     assert table.column("seq").to_pylist() == [7, 8, None]
+    assert table.column("code").to_pylist() == ["ORD-1", "", ""]
+    assert table.column("xcode").to_pylist() == ["ORD-1", "", ""]
     assert table.column("msg_type").to_pylist() == ["D", "AB", None]
     assert table.column("check_sum").to_pylist() == ["203", "011", None]
+    assert table.column("mic").to_pylist() == [int(MIC.from_str("XPAR"))] * 2 + [None]
+    assert table.column("error").to_pylist() == ["ok", None, None]
 
 
-def test_a_tag_that_repeats_in_a_line_stays_in_the_map(wire: Path) -> None:
+def test_session_direction_selects_the_venue_side_when_both_ids_look_like_mics(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "direction.txt"
+    path.write_text(
+        "2026-08-14 00:05:01.147 [t] [d] sending 8=FIX.4.4|35=D|49=BUY1|56=XPAR|\n"
+        "2026-08-14 00:05:02.147 [t] [d] received 8=FIX.4.4|35=8|49=XPAR|56=BUY1|\n"
+    )
+    rows = TextFile.from_path(path).read_arrow_table()
+    assert rows.column("mic").to_pylist() == [int(MIC.from_str("XPAR"))] * 2
+
+
+def test_explicit_market_ids_keep_precedence_and_wire_order(tmp_path: Path) -> None:
+    path = tmp_path / "markets.txt"
+    path.write_text(
+        "2026-08-14 00:05:01.147 [t] [d] "
+        "8=FIX.4.4|35=D|30=XAMS|100=XPAR|275=XEUR|1301=XNAS|30=XLON|10=1|\n"
+        "2026-08-14 00:05:02.147 [t] [d] 8=FIX.4.4|35=D|100=XPAR|10=2|\n"
+    )
+    rows = TextFile.from_path(path).read_arrow_table()
+
+    assert rows.column("mic").to_pylist() == [
+        int(MIC.from_str("XAMS")),
+        int(MIC.from_str("XPAR")),
+    ]
+    assert rows.column("fix_tags")[0].as_py() == [
+        {"key": 30, "value": "XAMS"},
+        {"key": 100, "value": "XPAR"},
+        {"key": 275, "value": "XEUR"},
+        {"key": 1301, "value": "XNAS"},
+        {"key": 30, "value": "XLON"},
+    ]
+
+
+def test_generic_codes_follow_the_parsed_identifier_fallbacks(tmp_path: Path) -> None:
+    path = tmp_path / "keys.txt"
+    messages = [
+        "8=FIX.4.4|35=8|37=VENUE|11=CURRENT|41=ORIGINAL|17=EXEC|"
+        "453=1|448=BUYSIDE|447=D|452=1|10=1|",
+        "8=FIX.4.4|35=G|11=CURRENT|41=ORIGINAL|17=EXEC|10=2|",
+        "8=FIX.4.4|35=8|17=EXEC|10=3|",
+        "8=FIX.4.4|35=X|55=TTF|10=4|",
+        "8=FIX.4.4|35=d|37=   |11=<null>|48=SEC-1|55=|10=5|",
+        "heartbeat",
+    ]
+    path.write_text(
+        "".join(
+            f"2026-08-14 00:05:0{index}.147 [t] [d] (INFO) {message}\n"
+            for index, message in enumerate(messages)
+        )
+    )
+
+    codec = FixCodec(registry=FixRegistry(cache_dir=DICTIONARY, offline=True))
+    table = TextFile.from_path(path, codec=codec).read_arrow_table()
+
+    assert table.column("code").to_pylist() == [
+        "VENUE",
+        "CURRENT",
+        "EXEC",
+        "TTF",
+        "SEC-1",
+        "",
+    ]
+    assert table.column("xcode").to_pylist() == [
+        "VENUE",
+        "ORIGINAL",
+        "EXEC",
+        "TTF",
+        "SEC-1",
+        "",
+    ]
+    assert table.column("security_id").to_pylist()[4] == "SEC-1"
+    assert table.column("xhash").to_pylist()[:5] == [
+        Log.hash_of(value) for value in ("VENUE", "ORIGINAL", "EXEC", "TTF", "SEC-1")
+    ]
+    assert table.column("parties")[0].as_py() == [
+        {
+            "party_id": "BUYSIDE",
+            "party_id_source": "D",
+            "party_role": 1,
+            "buffer": None,
+        }
+    ]
+    assert table.column("xhash")[-1].as_py() == table.column("hash")[-1].as_py()
+
+
+def test_a_tag_that_repeats_in_a_line_stays_in_the_pair_list(wire: Path) -> None:
     """Lifting the first `55` of a multi-leg quote would answer "the symbol"
     with whichever leg came first -- a wrong answer that looks like a right one.
 
     So that row keeps every pair of the tags that repeat, `555` included, and
-    its `symbol` stays at the default; the tags occurring once on the *same*
+    its `Symbol` stays null; the tags occurring once on the *same*
     line still lift, which is what makes this a per-tag rule and not a per-row
-    one. The last line carries no message at all, so its map is null and not
+    one. The last line carries no message at all, so its pair list is null and not
     empty.
     """
     table = TextFile.from_path(wire).read_arrow_table()
     assert table.column("fix_tags").to_pylist() == [
         [],
-        [(555, "2"), (600, "TTF"), (55, "SPREAD"), (555, "2"), (55, "OTHER")],
+        [
+            {"key": 555, "value": "2"},
+            {"key": 600, "value": "TTF"},
+            {"key": 55, "value": "SPREAD"},
+            {"key": 555, "value": "2"},
+            {"key": 55, "value": "OTHER"},
+        ],
         None,
     ]
-    assert table.column("symbol").to_pylist()[1] == "", "no one symbol, and the column says so"
+    assert table.column("symbol").to_pylist()[1] is None
     assert table.column("sender_comp_id").to_pylist() == ["BUY", "BUY", None], "49 lifted on both"
 
 
@@ -513,18 +625,13 @@ def test_a_lifted_field_arrives_decoded_and_not_as_the_text_the_wire_carried(wir
 
 
 def test_a_stamp_a_message_carries_lands_on_the_instant_it_spells(wire: Path) -> None:
-    """`52=20260814-09:30:00.123456789` is not something a cast to `int64` finds
-    its way to, so it is read here -- to the nanosecond `unix` itself counts.
-    """
-    sent = datetime.datetime(2026, 8, 14, 9, 30, tzinfo=datetime.UTC)
+    """Nanosecond wire fractions truncate to the declared microsecond width."""
+    sent = datetime.datetime(2026, 8, 14, 9, 30, 0, 123456, tzinfo=datetime.UTC)
     traded = datetime.datetime(2026, 8, 14, 9, 29, 59, 500_000, tzinfo=datetime.UTC)
-    sending_unix = int(sent.timestamp()) * 1_000_000_000 + 123_456_789
-    transact_unix = int(traded.timestamp()) * 1_000_000_000 + 500_000_000
-    assert (sending_unix, transact_unix) == (1_786_699_800_123_456_789, 1_786_699_799_500_000_000)
 
     table = TextFile.from_path(wire).read_arrow_table()
-    assert table.column("sending_unix").to_pylist() == [sending_unix, None, None]
-    assert table.column("transact_unix").to_pylist() == [transact_unix, None, None]
+    assert table.column("sending_time").to_pylist() == [sent, None, None]
+    assert table.column("transact_time").to_pylist() == [traded, None, None]
 
 
 # -- arrow reader -----------------------------------------------------------
@@ -952,6 +1059,28 @@ def test_a_repeated_hour_resolves_rather_than_raising() -> None:
     assert _unix_nanos(ambiguous, "Europe/Paris")[0].as_py() is not None
 
 
+def test_timezone_boundaries_keep_the_declared_earliest_and_latest_policy() -> None:
+    """A fall-back chooses the first instant; a spring gap clamps to the first valid one."""
+    import pyarrow
+
+    from rekep.text.text_file import _unix_nanos
+
+    local = pyarrow.array(
+        [
+            datetime.datetime(2026, 10, 25, 2, 30),
+            datetime.datetime(2026, 3, 29, 2, 30),
+        ],
+        type=pyarrow.timestamp("us"),
+    )
+    expected = [
+        datetime.datetime(2026, 10, 25, 0, 30, tzinfo=datetime.UTC),
+        datetime.datetime(2026, 3, 29, 1, 0, tzinfo=datetime.UTC),
+    ]
+    assert _unix_nanos(local, "Europe/Paris").to_pylist() == [
+        int(value.timestamp() * 1_000_000_000) for value in expected
+    ]
+
+
 def test_a_pre_epoch_timestamp_lands_in_the_hour_that_contains_it() -> None:
     """Arrow has no modulo and its integer divide rounds toward zero, so this
     is the branch a two-kernel truncation gets wrong: `-1` would come out in
@@ -972,7 +1101,7 @@ def test_static_values_land_at_the_end_in_insertion_order(plain: Path) -> None:
     log = TextFile.from_path(plain, static_values={"bridge": "bridge-1", "shard": 7})
     table = log.read_arrow_table()
     assert table.schema.names[-2:] == ["bridge", "shard"]
-    assert table.schema.names[:-2] == Log.FIELD.into_arrow_schema().names
+    assert table.schema.names[:-2] == Log.into_field().into_arrow_schema().names
     assert table.column("bridge").to_pylist() == ["bridge-1"] * table.num_rows
     assert table.column("shard").to_pylist() == [7] * table.num_rows
 
@@ -980,7 +1109,7 @@ def test_static_values_land_at_the_end_in_insertion_order(plain: Path) -> None:
 def test_nothing_names_the_source_but_the_caller(plain: Path) -> None:
     """No column is hardcoded: a capture says what it is, or says nothing."""
     assert TextFile.from_path(plain).read_arrow_table().schema.names == (
-        Log.FIELD.into_arrow_schema().names
+        Log.into_field().into_arrow_schema().names
     )
 
 
@@ -1054,7 +1183,7 @@ def test_a_text_file_is_a_dataset(plain: Path) -> None:
     log = TextFile.from_path(plain)
     assert isinstance(log, Dataset)
     assert log.exists
-    assert log.into_struct_field() is Log.FIELD
+    assert log.into_struct_field() is Log.into_field()
     assert log.read_arrow_table().num_rows == EXPECTED_RECORDS
 
 
@@ -1064,7 +1193,7 @@ def test_a_missing_file_does_not_exist_yet(tmp_path: Path) -> None:
 
 def test_reading_casts_only_when_asked(plain: Path) -> None:
     log = TextFile.from_path(plain)
-    assert log.read_arrow_reader().schema.equals(Log.FIELD.into_arrow_schema())
+    assert log.read_arrow_reader().schema.equals(Log.into_field().into_arrow_schema())
     narrow = pyarrow.schema([("message", pyarrow.large_string())])
     assert log.read_arrow_reader(narrow).schema.field("message").type == pyarrow.large_string()
 

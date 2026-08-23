@@ -1,0 +1,14 @@
+name: flatten_orders
+notebook: flatten_orders.ipynb
+parameters:
+  source: market.books
+  target: market.orders
+  start: null
+  end: null
+  catalog: rekep
+  catalog_properties:
+    type: sql
+    uri: sqlite:///data/catalog.db
+    warehouse: file://data/warehouse
+  merge_by: true
+  commit_row_size: 250000

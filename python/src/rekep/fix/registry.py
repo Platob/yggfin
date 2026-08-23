@@ -5,6 +5,7 @@ from __future__ import annotations
 import concurrent.futures
 import dataclasses
 import html
+import importlib.resources
 import json
 import os
 import pathlib
@@ -14,15 +15,17 @@ import urllib.error
 import urllib.request
 import zipfile
 from collections.abc import Sequence
-from functools import cached_property
-from typing import Any, ClassVar
+from functools import cache, cached_property
+from typing import Any, Self
 
 from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
+    SpecComponent,
     SpecField,
+    parse_components,
     parse_session,
     parse_spec,
     spec_name,
@@ -32,6 +35,9 @@ from rekep.fix.quickfix import (
 #: page per version listing the tags, and one page per field carrying the
 #: name, datatype, description and enumerated values.
 BASE_URL = "https://www.onixs.biz/fix-dictionary"
+
+# Sent with every request so scrape traffic identifies its client.
+_USER_AGENT = "rekep-fix-registry (+https://github.com/Platob/rekep)"
 
 #: Where the scrape persists, one JSON per version plus the version list, so
 #: everything after the first scrape works offline -- including on a machine
@@ -79,24 +85,12 @@ _NOTE = re.compile(r"\(([^)]*)\)\s*$")
 
 _TAGS = re.compile(r"<[^>]+>")
 _SPACES = re.compile(r"\s+")
+_DEFAULT = object()
 
 
 @dataclasses.dataclass(eq=False)
 class FixRegistry(Convertible):
-    """The OnixS FIX dictionary as `Field`s, one scrape then offline forever.
-
-    `fields("4.4")` answers from `~/.config/fix/4.4.json` when it is there and
-    scrapes the site into it when it is not -- the by-tag page for the tag
-    list, then one page per field, concurrently, for the datatype, the
-    description and the enumerated values. Every field comes back as this
-    package's generic `Field`: the Arrow type follows the FIX datatype
-    (`rekep.fix.fields`), the description is the column comment, and the FIX
-    identity rides the `fix:` metadata prefix.
-
-    `lookup` finds a field by tag or by name across versions, newest first;
-    `search` matches name, tag or description case-insensitively and falls
-    back to Levenshtein distance when nothing does.
-    """
+    """The OnixS FIX dictionary as `Field`s, one scrape then offline forever."""
 
     #: Where the dictionary lives; override to scrape a mirror.
     base_url: str = BASE_URL
@@ -145,34 +139,23 @@ class FixRegistry(Convertible):
     #: handles "cannot be had right now".
     offline: bool = False
 
-    #: Sent with every request, so the traffic says what it is.
-    user_agent: ClassVar[str] = "rekep-fix-registry (+https://github.com/Platob/rekep)"
-
     def __post_init__(self) -> None:
         """Normalise the two locations once, so everything downstream agrees."""
         self.base_url = str(self.base_url).rstrip("/")
         self.cache_dir = pathlib.Path(self.cache_dir)
 
+    @classmethod
+    @cache
+    def from_builtin(cls) -> Self:
+        """The packaged field projection, offline and shared by declarations."""
+        stored = importlib.resources.files(__package__).joinpath("registry.zip")
+        return cls(cache_dir=os.fspath(stored), offline=True)
+
     # -- versions ------------------------------------------------------------
 
     @cached_property
     def versions(self) -> tuple[str, ...]:
-        """Every FIX version the dictionary carries, newest first.
-
-        Application versions descend (`5.0.SP2` down to `4.0`) and the
-        transport (`FIXT1.1`) comes last: a lookup that walks versions in this
-        order answers with the newest definition, which is the one that
-        subsumes the others.
-
-        The store is asked first, the site second, and the store again when
-        the site cannot be had -- three steps that are the same whether the
-        store is a directory or an archive.
-
-        An **offline** registry stops after the first step and answers with
-        what it holds, empty included: raising here would report a network
-        failure that was never attempted, and a caller that asked an offline
-        registry what it has is owed the answer "nothing" rather than an error.
-        """
+        """Every FIX version the dictionary carries, newest first."""
         stored = self._stored_versions()
         if stored:
             return stored
@@ -219,39 +202,42 @@ class FixRegistry(Convertible):
     # -- fields --------------------------------------------------------------
 
     def fields(self, version: str, *, refresh: bool = False) -> list[Field]:
-        """Every field of one FIX version, from the cache or from one scrape.
-
-        The first call for a version is the expensive one -- one page per
-        field -- and the last: the result lands in the cache file the next
-        call answers from. `refresh=True` scrapes again over a stale cache.
-
-        The version is resolved to its canonical spelling first (`fixt1.1`
-        is `FIXT1.1` wherever either has been seen), so the cache file, the
-        site's case-sensitive directory and the lookup indexes are always
-        addressed the one way the version is spelled -- a refresh through a
-        lowercased spelling would otherwise scrape a 404, or fork the cache
-        into a second file and leave a stale index serving the old fields.
-        """
+        """Every field of one FIX version, from the cache or from one scrape."""
         version = self._spelling(version)
         if not refresh:
             stored = self._stored_fields(version)
             if stored is not None:
                 return stored
-        fields = self._scrape_version(version)
-        self._store_fields(version, fields, parse_session(self._spec_document(version)))
+        document = self._spec_document(version)
+        fields = self._scrape_version(version, document)
+        self._store_fields(
+            version,
+            fields,
+            parse_session(document),
+            tuple(parse_components(document).values()),
+        )
         self._indexes.pop(version, None)
         return fields
 
-    def _spelling(self, version: str) -> str:
-        """The canonical spelling of `version`, and a refusal of non-names.
+    def fields_available(self, version: str | None = None) -> bool:
+        """Whether at least one selected version's fields can be read now."""
+        try:
+            candidates = self._versions(version)
+        except (KeyError, OSError, ValueError):
+            return False
+        for candidate in candidates:
+            if self._stored_fields(candidate) is not None:
+                return True
+            if not self.offline:
+                try:
+                    self.fields(candidate)
+                except (OSError, ValueError):
+                    continue
+                return True
+        return False
 
-        Resolved case-blind against what is already known -- the fetched
-        version list when there is one, else the cache files on disk -- and
-        never by a network round trip a plain cache read did not need. The
-        character check is what keeps `fields()` from being handed a *path*:
-        the version lands in a cache file name, and `..` or a separator in it
-        would read and write outside the cache directory.
-        """
+    def _spelling(self, version: str) -> str:
+        """The canonical spelling of `version`, and a refusal of non-names."""
         wanted = str(version).strip()
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._\-]*", wanted):
             raise ValueError(f"{version!r} does not name a FIX version")
@@ -288,27 +274,48 @@ class FixRegistry(Convertible):
             return ()
         return tuple((str(name), bool(required)) for name, required in cached.get("session", ()))
 
+    def components(self, version: str, *, refresh: bool = False) -> list[SpecComponent]:
+        """Every reusable component of one FIX version, in spec order."""
+        version = self._spelling(version)
+        stored = self._stored_components(version)
+        if stored is not None and not refresh:
+            return stored
+        if self.offline:
+            return stored or []
+        if self._stored_fields(version) is None:
+            self.fields(version, refresh=refresh)
+        else:
+            self.enrich(version)
+        refreshed = self._stored_components(version)
+        return refreshed if refreshed is not None else (stored or [])
+
+    def component(self, name: str, version: str | None = None) -> SpecComponent:
+        """The newest declaration of one component, matched case-insensitively."""
+        wanted = str(name).strip().lower()
+        candidates = (self._spelling(version),) if version is not None else self.versions
+        for candidate in candidates:
+            try:
+                components = self.components(candidate)
+            except (OSError, ValueError):
+                continue
+            for component in components:
+                if component.name.lower() == wanted:
+                    return component
+        where = version or "any version"
+        raise KeyError(f"no FIX component {name!r} in {where}")
+
     def enrich(self, *versions: str) -> dict[str, int]:
-        """Add the spec's value symbols to versions already stored: `{version: fields}`.
-
-        The cheap half of a scrape, on its own. A dictionary gathered before
-        this package read the spec has every description and no symbol, and
-        getting the symbols is one request per version -- so re-reading seven
-        thousand pages to gain them would be absurd. Only what is already
-        stored is touched: this adds to a dictionary, it never fetches one.
-
-        No versions named means every version the store holds.
-        """
+        """Add the spec's value symbols to versions already stored: `{version: fields}`."""
         counted: dict[str, int] = {}
         for version in versions or self._stored_spellings():
-            stored = self._stored_fields(self._spelling(version))
+            version = self._spelling(version)
+            stored = self._stored_fields(version)
             if stored is None:
                 continue
             document = self._spec_document(version)
             spec = parse_spec(document)
             if not spec:
                 counted[version] = 0
-                continue
             enriched = 0
             for member in stored:
                 tag = member.fix.get("tag")
@@ -316,8 +323,12 @@ class FixRegistry(Convertible):
                 if known and known.values:
                     member.fix["value_names"] = json.dumps(known.values, separators=(",", ":"))
                     enriched += 1
-            self._store_fields(self._spelling(version), stored, parse_session(document))
-            self._indexes.pop(self._spelling(version), None)
+            session = parse_session(document) or self.session(version)
+            components = list(parse_components(document).values())
+            if not components:
+                components = self._stored_components(version)
+            self._store_fields(version, stored, session, components)
+            self._indexes.pop(version, None)
             counted[version] = enriched
         return counted
 
@@ -349,20 +360,30 @@ class FixRegistry(Convertible):
             raise KeyError(f"no FIX field {key!r} in {where}")
         return found[0]
 
+    def scalar(
+        self,
+        key: int | str,
+        *,
+        version: str | None = None,
+        name: str = "",
+        arrow_type: Any = _DEFAULT,
+        nullable: bool | None = None,
+        metadata: dict[str, str] | None = None,
+    ) -> Field:
+        """A fresh scalar declaration, exact by version or merged across versions."""
+        source = self.field(key, version) if version is not None else self._scalar_of(key)
+        # Protocol identity is the registry's. Other declarations can add
+        # metadata, but cannot silently retag or retype a standard field.
+        declared = {**(metadata or {}), **source.metadata, "fix:name": source.name}
+        return Field(
+            name=name or source.name,
+            arrow_type=source.arrow_type if arrow_type is _DEFAULT else arrow_type,
+            nullable=nullable,
+            metadata=declared,
+        )
+
     def tags(self, version: str | None = None) -> dict[str, int]:
-        """Every field name to its tag number, lowercased, newest version winning.
-
-        The `names` mapping `rekep.fix.tag_arrow_array` resolves rendered
-        keys through: build it once and hand it to every call, because it
-        walks whole versions. Lowercased here so the lookup there is one
-        dictionary probe, never a scan.
-
-        A version named explicitly loads through `fields`, so a cache or
-        network failure *raises* -- an empty mapping here would quietly
-        un-resolve every rendered key downstream, which is the worst way to
-        learn the cache is cold. The walk over all versions keeps skipping
-        the ones that cannot be had, like `lookup` does.
-        """
+        """Every field name to its tag number, lowercased, newest version winning."""
         mapping: dict[str, int] = {}
         if version is not None:
             (candidate,) = self._versions(version)
@@ -383,16 +404,7 @@ class FixRegistry(Convertible):
         limit: int = 10,
         fuzzy: bool = True,
     ) -> list[Field]:
-        """Fields matching `text` by tag, name or description, best first.
-
-        Case-insensitive throughout. Ranked: an exact tag or name first, then
-        a name prefix, then a name substring, then a description substring --
-        and within one rank, newer versions first. When nothing matches at
-        all and `fuzzy` is on, the nearest names by Levenshtein distance come
-        back instead, so `"Sied"` still finds `Side` -- the fallback only
-        runs when the cheap passes found nothing, which keeps the common case
-        one dictionary probe.
-        """
+        """Fields matching `text` by tag, name or description, best first."""
         wanted = str(text).strip().lower()
         if not wanted:
             return []
@@ -415,6 +427,27 @@ class FixRegistry(Convertible):
     @cached_property
     def _indexes(self) -> dict[str, tuple[dict[int, Field], dict[str, Field]] | None]:
         return {}
+
+    @cached_property
+    def _scalars(self) -> dict[tuple[str, int | str], Field]:
+        return {}
+
+    def _scalar_of(self, key: int | str) -> Field:
+        """The cached cross-version declaration behind `scalar`."""
+        identity = ("tag", int(key)) if _is_tag(key) else ("name", str(key).strip().lower())
+        built = self._scalars.get(identity)
+        if built is not None:
+            return built
+        found = self.lookup(key)
+        if not found:
+            raise KeyError(f"no FIX field {key!r} in any version")
+        # A version may annotate the canonical name (`Field(Deprecated)`) while
+        # retaining its tag. Once the newest name resolves, the tag is the
+        # cross-version identity and must bring that version back into history.
+        if not _is_tag(key):
+            found = self.lookup(int(found[0].fix["tag"]))
+        built = self._scalars[identity] = _merged_scalar(found)
+        return built
 
     def _index(self, version: str) -> tuple[dict[int, Field], dict[str, Field]] | None:
         """`(by tag, by lowercased name)` for one version, built once.
@@ -451,7 +484,7 @@ class FixRegistry(Convertible):
 
     # -- scraping ------------------------------------------------------------
 
-    def _scrape_version(self, version: str) -> list[Field]:
+    def _scrape_version(self, version: str, document: str | None = None) -> list[Field]:
         """One version, whole: the spec, the by-tag list, then every field page.
 
         Two sources merged, each supplying what the other has not. The spec is
@@ -460,7 +493,7 @@ class FixRegistry(Convertible):
         the spec knows still becomes a field -- typed and named, with no
         description -- because a field nobody wrote up is still a field.
         """
-        spec = self._spec(version)
+        spec = self._spec(version, document)
         listed = self._scrape_tags(version)
         with concurrent.futures.ThreadPoolExecutor(self.max_workers) as pool:
             read = pool.map(lambda tag: self._scrape_field(version, tag), listed)
@@ -492,14 +525,14 @@ class FixRegistry(Convertible):
             fields.append(built)
         return fields
 
-    def _spec(self, version: str) -> dict[int, SpecField]:
+    def _spec(self, version: str, document: str | None = None) -> dict[int, SpecField]:
         """The QuickFIX spec for one version, or nothing when it cannot be had.
 
         Empty rather than raised, because this is the *enriching* source: a
         scrape that failed here still has a whole dictionary, only without the
         value symbols. The site is the one whose failure is fatal.
         """
-        return parse_spec(self._spec_document(version))
+        return parse_spec(self._spec_document(version) if document is None else document)
 
     def _spec_document(self, version: str) -> str:
         """One spec file, or empty text when it cannot be had."""
@@ -617,17 +650,21 @@ class FixRegistry(Convertible):
             return None
         return [Field.from_dict(member) for member in cached["fields"]]
 
-    def _store_fields(
-        self, version: str, fields: list[Field], session: Sequence[tuple[str, bool]] = ()
-    ) -> None:
-        """Keep one whole version, replacing whatever was there.
+    def _stored_components(self, version: str) -> list[SpecComponent] | None:
+        """Stored component declarations; None means this predates them."""
+        cached = self._read_cache(f"{version}.json")
+        if cached is None or "components" not in cached:
+            return None
+        return [SpecComponent.from_dict(component) for component in cached["components"]]
 
-        `session` is the spec's standard header and trailer, kept beside the
-        fields so the one fact a *stored* dictionary could not otherwise answer
-        -- which fields every message carries, and which of them it must --
-        travels with it. Absent when the spec could not be read; a document
-        written before this existed simply has no such key.
-        """
+    def _store_fields(
+        self,
+        version: str,
+        fields: list[Field],
+        session: Sequence[tuple[str, bool]] = (),
+        components: Sequence[SpecComponent] | None = None,
+    ) -> None:
+        """Keep one version's fields and optional spec declarations."""
         payload: dict[str, Any] = {
             "version": version,
             "url": f"{self.base_url}/{version}/",
@@ -635,6 +672,8 @@ class FixRegistry(Convertible):
         }
         if session:
             payload["session"] = [[name, required] for name, required in session]
+        if components is not None:
+            payload["components"] = [component.into_dict() for component in components]
         self._write_cache(f"{version}.json", payload)
 
     # -- the cache files and the wire -----------------------------------------
@@ -650,18 +689,7 @@ class FixRegistry(Convertible):
         return pathlib.Path(self.cache_dir).suffix.lower() == ".zip"
 
     def into_zip(self, target: str | os.PathLike[str]) -> pathlib.Path:
-        """Write everything this registry holds into one archive, and name it.
-
-        The counterpart of pointing a registry at a `.zip`: a directory that
-        was scraped becomes one file to publish or copy, and reading it back
-        is `FixRegistry(cache_dir=that_file)`.
-
-        Deflated, because a FIX dictionary is text that repeats itself: the
-        published one goes from 2.86 MB to 0.47 MB. At zlib's own level,
-        which is what the measurement says to use: level 9 is 2% smaller for
-        twice the time, and level 1 is 26% bigger
-        (`benchmarks/bench_fix_registry.py`).
-        """
+        """Write everything this registry holds into one archive, and name it."""
         path = pathlib.Path(target)
         path.parent.mkdir(parents=True, exist_ok=True)
         scratch = path.with_name(f"{path.name}.tmp")
@@ -673,6 +701,85 @@ class FixRegistry(Convertible):
                 stored = self._read_cache(f"{version}.json")
                 if stored is not None:
                     archive.writestr(_member(f"{version}.json"), _document(stored))
+        scratch.replace(path)
+        return path
+
+    def into_projection(
+        self,
+        target: str | os.PathLike[str],
+        keys: Sequence[int | str],
+        fields: Sequence[Field] = (),
+    ) -> pathlib.Path:
+        """Write a deterministic offline registry containing only `keys`."""
+        if not keys:
+            raise ValueError("a FIX registry projection needs at least one field")
+        extra_by_version: dict[str, list[Field]] = {}
+        for member in fields:
+            version = member.fix.get("version")
+            if not version:
+                raise ValueError(f"projected FIX field {member.name!r} has no fix:version")
+            extra_by_version.setdefault(version, []).append(member)
+        wanted: set[int] = set()
+        missing = []
+        for key in keys:
+            found = self.lookup(key)
+            if not found:
+                found = [
+                    member
+                    for members in extra_by_version.values()
+                    for member in members
+                    if (
+                        int(member.fix["tag"]) == int(key)
+                        if _is_tag(key)
+                        else member.name.lower() == str(key).strip().lower()
+                    )
+                ]
+            if not found:
+                missing.append(key)
+                continue
+            wanted.update(int(member.fix["tag"]) for member in found)
+        if missing:
+            raise KeyError(f"no FIX fields {missing!r} in this registry")
+        overlap = set(extra_by_version).intersection(self.versions)
+        if overlap:
+            raise ValueError(f"projected FIX versions already exist: {sorted(overlap)}")
+
+        path = pathlib.Path(target)
+        source = pathlib.Path(self.cache_dir)
+        if path.resolve() == source.resolve():
+            raise ValueError("a registry projection cannot replace its source")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        scratch = path.with_name(f"{path.name}.tmp")
+        with zipfile.ZipFile(scratch, "w", zipfile.ZIP_DEFLATED) as archive:
+            versions = (*extra_by_version, *self.versions)
+            archive.writestr(_member("versions.json"), _document({"versions": list(versions)}))
+            for version in versions:
+                if version in extra_by_version:
+                    projected = sorted(
+                        extra_by_version[version], key=lambda member: int(member.fix["tag"])
+                    )
+                    payload = {
+                        "version": version,
+                        "url": f"{self.base_url}/{version}/",
+                        "fields": [member.into_dict() for member in projected],
+                    }
+                    archive.writestr(_member(f"{version}.json"), _document(payload))
+                    continue
+                selected = [
+                    member for member in self.fields(version) if int(member.fix["tag"]) in wanted
+                ]
+                payload: dict[str, Any] = {
+                    "version": version,
+                    "url": f"{self.base_url}/{version}/",
+                    "fields": [member.into_dict() for member in selected],
+                }
+                session = self.session(version)
+                if session:
+                    names = {member.name for member in selected}
+                    selected = [[name, required] for name, required in session if name in names]
+                    if selected:
+                        payload["session"] = selected
+                archive.writestr(_member(f"{version}.json"), _document(payload))
         scratch.replace(path)
         return path
 
@@ -703,19 +810,10 @@ class FixRegistry(Convertible):
         scratch.replace(path)
 
     def _fetch(self, url: str) -> str:
-        """One page, as text, retried while the site says "later".
-
-        A whole-version scrape is thousands of pages and the site paces it:
-        `429 Too Many Requests` arrives partway through, and every page
-        refused while it lasts used to become a field with no type and no
-        description, cached with nothing to say it was ever refused. So a
-        transient answer waits and is asked again -- `Retry-After` when the
-        site sends one, a doubling pause when it does not -- and only the last
-        attempt raises.
-        """
+        """One page, as text, retried while the site says "later"."""
         if self.offline:
             raise OSError(f"{url} was not fetched: this registry is offline")
-        request = urllib.request.Request(url, headers={"User-Agent": self.user_agent})
+        request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
         pause = self.backoff
         for _ in range(self.retries):
             try:
@@ -743,21 +841,7 @@ def _document(payload: dict[str, Any]) -> str:
 
 
 def _member(name: str) -> zipfile.ZipInfo:
-    """One archive member, stamped at the start of zip time and on no host.
-
-    A zip records a modification time per member, so an archive built twice
-    from the same dictionary is two different files unless the stamp is
-    fixed. This one is published in a repository, where "nothing changed"
-    has to look like nothing changed.
-
-    The **host** is the other half of that, and it was missed: `ZipInfo`
-    reads `create_system` off `os.name`, so the same dictionary published
-    from Windows and from Linux differed in one byte per member and the
-    rebuild test failed on the Windows leg alone. It is pinned to 3 (Unix)
-    because that is what the permission bits already written just below mean
-    -- `external_attr` is POSIX mode, which a member claiming to come from
-    FAT does not have.
-    """
+    """One archive member, stamped at the start of zip time and on no host."""
     entry = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
     entry.compress_type = zipfile.ZIP_DEFLATED
     entry.create_system = 3
@@ -766,16 +850,7 @@ def _member(name: str) -> zipfile.ZipInfo:
 
 
 def _archived_names(archive: str | os.PathLike[str]) -> dict[str, str]:
-    """`{file name: member name}` for the JSON in an archive, or nothing.
-
-    Keyed by the file's own name so a zip made of a *folder* -- `zip -r
-    fix.zip fix/`, which prefixes every member with `fix/` -- reads the same
-    as one made of the files. The shallowest member wins where two share a
-    name, because that is the one a person unzipping and looking would find.
-    A file that is not a zip, or is not there, holds no versions rather than
-    raising: the caller's next step is to scrape, exactly as for an empty
-    directory.
-    """
+    """`{file name: member name}` for the JSON in an archive, or nothing."""
     try:
         with zipfile.ZipFile(archive) as opened:
             members = opened.namelist()
@@ -885,20 +960,7 @@ def _split_note(label: str) -> tuple[str, str]:
 
 
 def _sections(page: str, start: int) -> tuple[str, str, str]:
-    """A field page cut into its three parts: prose, values, messages.
-
-    Cut back to front, each part running from its own marker to the next: the
-    messages off the `Used In` heading, the enumeration off the `Valid values`
-    line, and the prose off the `Description` heading. Cutting first is what
-    keeps the parts out of each other -- MsgType lists its own messages *as
-    values*, so a `msgType_` link is only a message when it is below `Used In`,
-    and a `k = v` line of prose is only a value when it is below `Valid
-    values`.
-
-    A page that opens no `Description` is the older layout: its prose starts at
-    the type line, and the first heading, list or table after it is the only
-    end the page gives.
-    """
+    """A field page cut into its three parts: prose, values, messages."""
     body = page[start:]
     used_in = ""
     carried = _USED_IN.search(body)
@@ -953,6 +1015,78 @@ def _used_in(markup: str) -> list[str]:
         if name and name not in names:
             names.append(name)
     return names
+
+
+# -- projected declarations -------------------------------------------------
+
+
+def _merged_scalar(fields: Sequence[Field]) -> Field:
+    """Newest field identity with every version's non-conflicting knowledge."""
+    latest = fields[0]
+    typed = next((member for member in fields if member.fix.get("type")), latest)
+    metadata = dict(latest.metadata)
+    metadata["fix:versions"] = _json([member.fix["version"] for member in fields])
+    metadata["fix:types"] = _json(
+        {member.fix["version"]: member.fix["type"] for member in fields if member.fix.get("type")}
+    )
+
+    names = {member.fix["version"]: member.name for member in fields}
+    if len(set(names.values())) > 1:
+        metadata["fix:names"] = _json(names)
+    tags = {member.fix["version"]: member.fix["tag"] for member in fields}
+    if len(set(tags.values())) > 1:
+        metadata["fix:tags"] = _json(tags)
+
+    for key in ("values", "value_names"):
+        combined: dict[str, str] = {}
+        # Oldest first, so a newer correction of one code wins without losing
+        # a value that disappeared from the newest prose/spec page.
+        for member in reversed(fields):
+            combined.update(_json_mapping(member.fix.get(key)))
+        if combined:
+            metadata[f"fix:{key}"] = _json(combined)
+
+    used: list[str] = []
+    for member in fields:
+        for message in _json_sequence(member.fix.get("used_in")):
+            if message not in used:
+                used.append(message)
+    if used:
+        metadata["fix:used_in"] = _json(used)
+
+    description = next((member.description for member in fields if member.description), "")
+    if description:
+        metadata["description"] = description
+    if typed.fix.get("type"):
+        metadata["fix:type"] = typed.fix["type"]
+    return Field(
+        name=latest.name,
+        arrow_type=typed.arrow_type,
+        nullable=True,
+        metadata=metadata,
+    )
+
+
+def _json(value: Any) -> str:
+    return json.dumps(value, separators=(",", ":"))
+
+
+def _json_mapping(value: str | None) -> dict[str, str]:
+    try:
+        decoded = json.loads(value or "{}")
+    except (TypeError, ValueError):
+        return {}
+    return (
+        {str(key): str(item) for key, item in decoded.items()} if isinstance(decoded, dict) else {}
+    )
+
+
+def _json_sequence(value: str | None) -> list[str]:
+    try:
+        decoded = json.loads(value or "[]")
+    except (TypeError, ValueError):
+        return []
+    return [str(item) for item in decoded] if isinstance(decoded, list) else []
 
 
 # -- ordering and matching ---------------------------------------------------

@@ -19,7 +19,7 @@ import rekep
 import rekep.fix.columns
 import rekep.fix.rules
 import rekep.market.fix
-from rekep import Field, Log, field
+from rekep import Field, Log, scalar
 from rekep.fields import PARTITION_KEY, PRIMARY_KEY, SORT_KEY
 from rekep.fix import (
     BASE_URL,
@@ -28,6 +28,7 @@ from rekep.fix import (
     COMMON,
     FLAT,
     NO_PROTOCOL,
+    QUOTE,
     SESSION,
     FixRegistry,
     Rule,
@@ -41,6 +42,7 @@ PYPROJECT = pathlib.Path(__file__).parent.parent / "pyproject.toml"
 #: -- so a module reachable only through an `__init__` still has to import.
 PACKAGES = (
     "rekep",
+    "rekep.enums",
     "rekep.fields",
     "rekep.fix",
     "rekep.iceberg",
@@ -65,7 +67,15 @@ def test_everything_exported_is_importable(package: str) -> None:
         assert hasattr(module, name), f"{package}.__all__ names {name!r}, which is not there"
 
 
-@field
+def test_scalar_is_the_only_public_decorator_name() -> None:
+    """The old decorator spelling must not linger as a compatibility API."""
+    assert callable(scalar)
+    assert "scalar" in rekep.__all__
+    assert "field" not in rekep.__all__
+    assert not hasattr(rekep, "field")
+
+
+@scalar
 class Row:
     """One row, declaring each protocol key exactly once."""
 
@@ -83,10 +93,10 @@ def test_the_protocol_keys_are_the_ones_a_declaration_writes() -> None:
     a rename of the metadata key would leave the constant behind, still
     exported, still wrong, and nothing would fail.
     """
-    metadata = dict(Row.FIELD.field("unix").metadata)
+    metadata = dict(Row.into_field().field("unix").metadata)
     assert metadata[SORT_KEY] == "asc"
     assert metadata[PRIMARY_KEY] == "true"
-    assert dict(Row.FIELD.field("hour").metadata)[PARTITION_KEY] == "identity"
+    assert dict(Row.into_field().field("hour").metadata)[PARTITION_KEY] == "identity"
 
 
 def test_the_registry_defaults_are_the_exported_ones() -> None:
@@ -106,7 +116,7 @@ def test_the_published_column_list_is_the_one_the_parser_lifts_by() -> None:
     not have, and nothing inside would notice.
     """
     assert dict(FLAT) == dict(rekep.fix.columns.COLUMNS)
-    assert (len(SESSION), len(COMMON), len(FLAT)) == (33, 26, 59)
+    assert (len(SESSION), len(COMMON), len(QUOTE), len(FLAT)) == (33, 26, 18, 77)
     assert len(dict(FLAT)) == len(FLAT), "one tag, one column"
 
 

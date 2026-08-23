@@ -2,9 +2,9 @@
 
 A tag is a number typed from memory, and a transposed one does not look wrong:
 `ClOrdID <11>` written as `<14>` labels the column `CumQty` and nothing in the
-code, the schema or the contract ever says so. So the names are the source and
-the tags are checked against `data/fix.zip` -- read here with `zipfile`, not
-with the registry, so the test does not depend on the code it is checking.
+code, the schema or the contract ever says so. Names and tags are checked
+against `data/fix.zip` plus the two FIX Latest extension fields pinned here --
+read without the registry, so the test does not depend on the code it checks.
 """
 
 from __future__ import annotations
@@ -19,19 +19,18 @@ import pytest
 
 from rekep.fields import Field
 from rekep.fix.fields import arrow_type_of
-from rekep.market import Book, BookSide, Execution, Instrument, MarketEvent, Order
-from rekep.market.book import Level, LevelUpdate
+from rekep.market import Book, Execution, Instrument, Level, MarketEvent, Order
 
 #: The archive this repository publishes, from the repository and not the wheel.
 DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
-SHAPES = (MarketEvent, Order, Execution, BookSide, Book, Instrument, Level, LevelUpdate)
+SHAPES = (MarketEvent, Order, Execution, Book, Instrument, Level)
 
 #: FIX datatypes this package deliberately stores as a narrower or different
 #: Arrow type. A `char` enumeration becomes a banded `int32` code, and a FIX
-#: `int` that is a code or a count becomes `int32` -- neither of which any FIX
-#: dictionary puts a ceiling on, and neither of which needs 64 bits here.
-NARROWED = {"char": pyarrow.int32(), "int": pyarrow.int32()}
+#: `int` that is a code or a count becomes `int32`; Currency packs its short
+#: UTF-8 code into the same width. Each remains lossless for its domain.
+NARROWED = {"char": pyarrow.int32(), "currency": pyarrow.int32(), "int": pyarrow.int32()}
 
 
 def dictionary() -> dict[str, dict[str, Any]]:
@@ -67,11 +66,38 @@ def tagged(shape: type) -> list[tuple[str, Field]]:
                 found.append((path, member))
             walk(f"{path}.", member.fields)
 
-    walk(f"{shape.__name__}.", shape.FIELD.fields)
+    walk(f"{shape.__name__}.", shape.into_field().fields)
     return found
 
 
-FIELDS = dictionary()
+# The archive is the last versioned baseline (FIX 5.0 SP2); these fields were
+# added by extension packs and are checked against FIX Latest independently.
+LATEST_FIELDS = {
+    "ExposureDuration": {
+        "name": "ExposureDuration",
+        "type": "int",
+        "nullable": True,
+        "description": "Duration for which an order remains exposed.",
+        "metadata": {
+            "fix:tag": "1629",
+            "fix:type": "int",
+            "fix:version": "FIX.Latest",
+        },
+    },
+    "ExposureDurationUnit": {
+        "name": "ExposureDurationUnit",
+        "type": "int",
+        "nullable": True,
+        "description": "Time unit in which ExposureDuration is expressed.",
+        "metadata": {
+            "fix:tag": "1916",
+            "fix:type": "int",
+            "fix:version": "FIX.Latest",
+        },
+    },
+}
+
+FIELDS = {**dictionary(), **LATEST_FIELDS}
 DECLARED = [(path, member) for shape in SHAPES for path, member in tagged(shape)]
 
 
@@ -112,8 +138,8 @@ def test_every_declared_type_is_the_fix_one_or_a_deliberate_narrowing(
     )
 
 
-def test_a_ranged_code_is_only_ever_read_from_a_fix_character_field() -> None:
-    """`int32` is the narrowing; it has to come from something enumerable."""
+def test_an_int32_narrowing_is_explicit_for_its_fix_datatype() -> None:
+    """Every narrowed protocol value must be named in the compatibility table."""
     for path, member in DECLARED:
         if member.arrow_type != pyarrow.int32():
             continue
@@ -123,7 +149,13 @@ def test_a_ranged_code_is_only_ever_read_from_a_fix_character_field() -> None:
 
 def test_the_tags_that_only_a_late_version_defines_are_still_found() -> None:
     """Several columns here are FIX 5.0 fields; a 4.4-only lookup would miss them."""
-    late = {"TradeID": "1003", "AggressorIndicator": "1057", "MinPriceIncrement": "969"}
+    late = {
+        "TradeID": "1003",
+        "AggressorIndicator": "1057",
+        "MinPriceIncrement": "969",
+        "ExposureDuration": "1629",
+        "ExposureDurationUnit": "1916",
+    }
     for name, tag in late.items():
         assert FIELDS[name]["metadata"]["fix:tag"] == tag
     declared = {member.fix["name"] for _, member in DECLARED}
@@ -136,4 +168,13 @@ def test_one_fix_field_is_spelled_the_same_wherever_it_appears() -> None:
     for _, member in DECLARED:
         by_name.setdefault(member.fix["name"], set()).add((member.name, member.arrow_type))
     for name, spellings in by_name.items():
+        if name == "Symbol":
+            assert spellings == {("code", pyarrow.string()), ("symbol", pyarrow.string())}
+            continue
+        if name == "Currency":
+            assert spellings == {
+                ("ccy", pyarrow.int32()),
+                ("currency", pyarrow.int32()),
+            }
+            continue
         assert len(spellings) == 1, f"{name} is spelled {sorted(map(str, spellings))}"

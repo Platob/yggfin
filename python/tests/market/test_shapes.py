@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
+import dataclasses
+import json
+import weakref
+
 import pyarrow
 import pytest
 
 from rekep.fields import Field
-from rekep.market import Book, BookSide, Event, Execution, Instrument, MarketEvent, Order
-from rekep.market.book import Level, LevelExecution, LevelUpdate
+from rekep.market import Book, Event, Execution, Instrument, Level, MarketEvent, Order
+from rekep.text import Log
 
-EVENTS = (Order, Execution, BookSide, Book)
-SHAPES = (*EVENTS, Instrument, Level, LevelUpdate, LevelExecution)
+EVENTS = (Order, Execution, Book)
+SHAPES = (*EVENTS, Instrument, Level)
+HOT_ROWS = (Event, MarketEvent, Log, Instrument, Order, Execution, Book, Level)
 
 #: The envelope every event carries, in the order it carries it. Pinned, because
 #: a column inserted in the middle moves every one after it -- and a reader that
@@ -25,29 +30,36 @@ ENVELOPE = [
     "sunix",
     "hash",
     "xhash",
+    "linked_xhash",
     "version",
     "state",
-    "symbol",
+    "code",
+    "xcode",
     "seq",
     "prev_hash",
     "prev_state",
     "prev_unix",
     "parent_hash",
+    "mic",
+    "error",
 ]
 
-#: What `MarketEvent` adds on top, also in order. `instrument_hash` leads because
+#: What `MarketEvent` adds on top, also in order. `instrument_xhash` leads because
 #: it is the partition column: an engine that prunes on it reads it first, and a
 #: declaration order is a physical order everywhere the schema travels.
 PRICED = [
-    "instrument_hash",
+    "instrument_xhash",
+    "kind",
     "side",
     "px",
+    "prev_px",
     "px_unit",
+    "ccy",
     "qty",
+    "prev_qty",
     "qty_unit",
     "notional",
-    "venue",
-    "instrument",
+    "prev_notional",
     "metadata",
 ]
 
@@ -55,34 +67,34 @@ PRICED = [
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
 def test_every_event_leads_with_the_same_envelope(shape: type) -> None:
     """One reader must be able to read the envelope of any of them, at one offset."""
-    assert shape.FIELD.names[: len(ENVELOPE)] == ENVELOPE
+    assert shape.into_field().names[: len(ENVELOPE)] == ENVELOPE
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
 def test_every_event_carries_the_priced_slots_next(shape: type) -> None:
-    assert shape.FIELD.names[len(ENVELOPE) : len(ENVELOPE) + len(PRICED)] == PRICED
+    assert shape.into_field().names[len(ENVELOPE) : len(ENVELOPE) + len(PRICED)] == PRICED
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
 def test_every_event_is_keyed_by_time_and_content(shape: type) -> None:
     """`hash` identifies the version; leading with time is what an engine prunes on."""
-    assert shape.FIELD.primary_keys() == ["unix", "hash"]
-    assert shape.FIELD.partition_keys() == {
+    assert shape.into_field().primary_keys() == ["unix", "hash"]
+    assert shape.into_field().partition_keys() == {
         "unix_hour": "identity",
-        "instrument_hash": "bucket[16]",
+        "instrument_xhash": "bucket[16]",
     }
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
 def test_every_event_is_laid_out_in_time_inside_its_partition(shape: type) -> None:
     """Sorted by `unix` is what makes a time range a few files rather than all of them."""
-    assert shape.FIELD.sort_keys() == {"unix": "asc"}
+    assert shape.into_field().sort_keys() == {"unix": "asc"}
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
 def test_a_market_event_lands_in_the_bucket_of_its_instrument(shape: type) -> None:
     """One instrument's stream has to be one partition, or a book cannot be built."""
-    partition = shape.FIELD.field("instrument_hash")
+    partition = shape.into_field().field("instrument_xhash")
     assert partition.partition_transform == "bucket[16]"
     assert not partition.nullable, "a bucket transform on a null reads every bucket"
 
@@ -90,7 +102,7 @@ def test_a_market_event_lands_in_the_bucket_of_its_instrument(shape: type) -> No
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
 def test_no_primary_key_is_nullable(shape: type) -> None:
     """Iceberg refuses an optional identifier field, and so does the declaration."""
-    for member in shape.FIELD.fields:
+    for member in shape.into_field().fields:
         if member.is_primary_key:
             assert not member.nullable, member.name
 
@@ -98,13 +110,13 @@ def test_no_primary_key_is_nullable(shape: type) -> None:
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
 def test_every_column_says_what_it_is(shape: type) -> None:
     """A doc is the column comment everywhere it travels; a blank one ships blind."""
-    missing = [member.name for member in shape.FIELD.fields if not member.description]
+    missing = [member.name for member in shape.into_field().fields if not member.description]
     assert not missing, f"{shape.__name__} has undocumented columns: {missing}"
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
 def test_every_nested_column_says_what_it_is_too(shape: type) -> None:
-    for member in shape.FIELD.fields:
+    for member in shape.into_field().fields:
         for inner in member.fields:
             if inner.name in ("item", "key", "value"):
                 continue
@@ -113,7 +125,7 @@ def test_every_nested_column_says_what_it_is_too(shape: type) -> None:
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
 def test_a_schema_still_names_the_class_it_came_from(shape: type) -> None:
-    schema = shape.FIELD.into_arrow_schema()
+    schema = shape.into_field().into_arrow_schema()
     assert Field.from_arrow_schema(schema).name == shape.__name__
     assert schema.metadata[b"namespace"].decode() == shape.__module__
 
@@ -121,80 +133,124 @@ def test_a_schema_still_names_the_class_it_came_from(shape: type) -> None:
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
 def test_a_declaration_survives_being_written_down_and_read_back(shape: type) -> None:
     """The one property a contract has to have: what it says is what it loads as."""
-    dumped = shape.FIELD.into_dict()
-    assert Field.from_dict(dumped).into_arrow_field() == shape.FIELD.into_arrow_field()
+    dumped = shape.into_field().into_dict()
+    assert Field.from_dict(dumped).into_arrow_field() == shape.into_field().into_arrow_field()
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
 def test_a_declaration_rebuilds_as_a_class(shape: type) -> None:
-    rebuilt = Field.from_arrow_schema(shape.FIELD.into_arrow_schema()).into_dataclass()
+    rebuilt = Field.from_arrow_schema(shape.into_field().into_arrow_schema()).into_dataclass()
     assert rebuilt.__name__ == shape.__name__
 
 
 def test_a_market_event_is_an_event_and_an_order_is_both() -> None:
     """The hierarchy is real inheritance, so `isinstance` and the schema agree."""
     assert issubclass(Order, MarketEvent) and issubclass(MarketEvent, Event)
-    assert issubclass(BookSide, MarketEvent) and issubclass(Book, MarketEvent)
-    assert set(ENVELOPE) <= set(Event.FIELD.names)
+    assert issubclass(Book, MarketEvent)
+    assert set(ENVELOPE) <= set(Event.into_field().names)
 
 
 def test_a_subclass_builds_its_own_projection_rather_than_its_bases() -> None:
     """The descriptor is per class; sharing one would give `Order` a `Book`'s columns."""
-    assert Order.FIELD is not MarketEvent.FIELD
-    assert "tif" in Order.FIELD.names and "tif" not in Execution.FIELD.names
-    assert "bid_px" in Book.FIELD.names and "bid_px" not in BookSide.FIELD.names
+    assert Order.into_field() is not MarketEvent.into_field()
+    assert "tif" in Order.into_field().names and "tif" not in Execution.into_field().names
+    assert "bid_px" in Book.into_field().names and "bid_px" not in Execution.into_field().names
+
+
+@pytest.mark.parametrize("shape", HOT_ROWS, ids=lambda cls: cls.__name__)
+def test_hot_persisted_rows_are_slotted_and_round_trip_through_arrow(shape: type) -> None:
+    row = shape()
+    assert not hasattr(row, "__dict__")
+    assert weakref.ref(row)() is row
+    schema = shape.into_field().into_arrow_schema()
+    stored = pyarrow.Table.from_pylist([row.into_dict()], schema=schema).to_pylist()[0]
+    assert shape.from_dict(stored) == row
+
+
+def test_transient_instrument_uses_a_slot_but_not_a_market_column() -> None:
+    instrument = Instrument(symbol="AAPL", multiplier=2.0)
+    order = Order(px=3.0, qty=4.0).attach_instrument(instrument)
+    assert order.into_instrument() is instrument
+    assert order.into_notional() == 24.0
+    assert "_MarketEvent__instrument" not in order.into_dict()
+    assert "_MarketEvent__instrument" not in dataclasses.asdict(order)
+    assert "_MarketEvent__instrument" not in {field.name for field in dataclasses.fields(Order)}
+    assert "_MarketEvent__instrument" not in Order.into_field().names
 
 
 def test_an_order_carries_what_it_asked_for_and_how_far_it_got() -> None:
-    assert {"kind", "tif", "stop_px", "display_qty"} <= set(Order.FIELD.names)
-    assert {"filled_qty", "leaves_qty", "avg_px"} <= set(Order.FIELD.names)
-    assert "prev_client_order_id" in Order.FIELD.names
+    assert {"kind", "tif", "stop_px", "hidden_qty", "vwap", "indicative"} <= set(
+        Order.into_field().names
+    )
+    assert not {"display_qty", "filled_qty", "leaves_qty"} & set(Order.into_field().names)
+    assert "prev_client_order_id" in Order.into_field().names
 
 
-def test_an_execution_links_to_its_order_with_a_flat_typed_column() -> None:
-    """A list cannot be a join key without an explode, so the one parent is flat."""
-    link = Execution.FIELD.field("order_xhash")
-    assert link.arrow_type == pyarrow.int64() and link.nullable
-    assert Execution.FIELD.field("parent_hash").arrow_type.equals(
+def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
+    ccy = MarketEvent.into_field().field("ccy")
+    assert ccy.nullable and ccy.arrow_type == pyarrow.int32()
+    assert ccy.fix["name"] == "Currency" and ccy.fix["tag"] == "15"
+    assert json.loads(ccy.fix["types"])["5.0.SP2"] == "Currency"
+    assert json.loads(ccy.fix["types"])["4.0"] == "char"
+    assert MarketEvent.into_field().field("px_unit").arrow_type == pyarrow.string()
+
+
+def test_every_event_uses_one_typed_list_for_lifecycle_links() -> None:
+    link = Execution.into_field().field("linked_xhash")
+    assert link.arrow_type.equals(
         pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False))
+    )
+    assert link.nullable
+    assert "order_xhash" not in Execution.into_field().names
+    assert "order_xcode" not in Execution.into_field().names
+    assert (
+        Execution.into_field()
+        .field("parent_hash")
+        .arrow_type.equals(pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False)))
     )
 
 
-def test_a_book_side_carries_the_state_the_delta_and_the_trace() -> None:
-    assert BookSide.FIELD.field("alive").item.arrow_type == Level.FIELD.arrow_type
-    assert BookSide.FIELD.field("updates").item.arrow_type == LevelUpdate.FIELD.arrow_type
-    assert BookSide.FIELD.field("executions").item.arrow_type == LevelExecution.FIELD.arrow_type
-    for name in ("alive", "updates", "executions"):
-        assert BookSide.FIELD.field(name).nullable, name
+def test_an_execution_carries_each_source_order_identifier() -> None:
+    assert {"order_id", "client_order_id", "prev_client_order_id"} <= set(
+        Execution.into_field().names
+    )
 
 
-def test_a_book_keeps_the_sides_flat_and_still_says_which_versions_it_used() -> None:
-    """Unnested for the bounds budget; `bid_hash`/`ask_hash` keep the provenance."""
-    names = set(Book.FIELD.names)
+def test_a_level_carries_state_and_both_lifecycle_links() -> None:
+    assert Level.into_field().names == ["px", "qty", "order_xhash", "exec_xhash"]
+    for name in ("order_xhash", "exec_xhash"):
+        member = Level.into_field().field(name)
+        assert not member.nullable
+        assert member.item.arrow_type == pyarrow.int64()
+
+
+def test_a_book_keeps_only_compact_best_first_level_lists() -> None:
+    names = set(Book.into_field().names)
     assert "bid" not in names and "ask" not in names, "the sides are columns, not structs"
     for side in ("bid", "ask"):
-        assert {f"{side}_hash", f"{side}_px", f"{side}_qty", f"{side}_depth"} <= names
-        assert {f"{side}_alive", f"{side}_updates", f"{side}_executions"} <= names
-        assert Book.FIELD.field(f"{side}_hash").arrow_type == pyarrow.int64()
-    assert Book.FIELD.field("bid_alive").item.arrow_type == Level.FIELD.arrow_type
+        assert {f"{side}_px", f"{side}_qty", f"{side}_depth", f"{side}_levels"} <= names
+        assert Book.into_field().field(f"{side}_levels").item.arrow_type == (
+            Level.into_field().arrow_type
+        )
+    assert not names & {"bid_hash", "ask_hash", "bid_alive", "ask_alive"}
 
 
 def test_a_price_and_a_quantity_may_be_absent_because_zero_is_a_price() -> None:
     for shape in EVENTS:
-        assert shape.FIELD.field("px").nullable, shape.__name__
-        assert shape.FIELD.field("qty").nullable, shape.__name__
+        assert shape.into_field().field("px").nullable, shape.__name__
+        assert shape.into_field().field("qty").nullable, shape.__name__
 
 
 def test_a_level_is_not_an_event_because_it_has_no_life_of_its_own() -> None:
-    assert "hash" not in Level.FIELD.names
-    assert Level.FIELD.field("px").arrow_type == pyarrow.float64()
-    assert not Level.FIELD.field("px").nullable, "a live level has a price"
-    assert LevelUpdate.FIELD.field("px").nullable, "a deletion does not"
+    assert "hash" not in Level.into_field().names
+    assert Level.into_field().field("px").arrow_type == pyarrow.float64()
+    assert not Level.into_field().field("px").nullable
+    assert not Level.into_field().field("qty").nullable, "zero quantity marks a deletion"
 
 
 def test_the_metadata_map_keeps_what_the_venue_sent_in_order() -> None:
     """A struct would need the keys known in advance, and a venue does not agree."""
-    carried = MarketEvent.FIELD.field("metadata")
+    carried = MarketEvent.into_field().field("metadata")
     assert pyarrow.types.is_map(carried.arrow_type)
     assert carried.key.arrow_type == pyarrow.string()
 
@@ -210,30 +266,38 @@ METRICS_BUDGET = 100
 #: the budget, which is a statement about **declaration order**: these are
 #: exactly the columns that a nested member declared before them would push out.
 FILTERED = {
-    Order: ("unix", "unix_hour", "etype", "state", "instrument_hash", "side", "px", "symbol"),
-    Execution: ("unix", "unix_hour", "etype", "state", "instrument_hash", "kind", "px", "symbol"),
-    BookSide: (
+    Order: (
         "unix",
         "unix_hour",
         "etype",
-        "instrument_hash",
+        "state",
+        "code",
+        "xcode",
+        "instrument_xhash",
         "side",
         "px",
-        "qty",
-        "symbol",
-        "depth",
-        "total_qty",
+    ),
+    Execution: (
+        "unix",
+        "unix_hour",
+        "etype",
+        "state",
+        "code",
+        "xcode",
+        "instrument_xhash",
+        "px",
     ),
     Book: (
         "unix",
         "unix_hour",
         "etype",
-        "instrument_hash",
+        "instrument_xhash",
         "px",
         "spread",
         "micro_px",
         "imbalance",
-        "symbol",
+        "code",
+        "xcode",
         "bid_px",
         "ask_px",
         "bid_total_qty",
@@ -261,10 +325,10 @@ def leaves(arrow_type: pyarrow.DataType, prefix: str = "") -> list[str]:
 
 def test_the_leaf_walk_finds_the_nesting_it_is_supposed_to() -> None:
     """Otherwise the budget test below passes by counting too few columns."""
-    counted = leaves(Book.FIELD.arrow_type)
+    counted = leaves(Book.into_field().arrow_type)
     assert len(counted) > 60, "a book is wide, or this walk is wrong"
-    assert "bid_alive.item.px" in counted, "the walk reached inside a list of structs"
-    assert "instrument.symbol" in counted and "metadata.key" in counted
+    assert "bid_levels.item.px" in counted, "the walk reached inside a list of structs"
+    assert "instrument" not in Book.into_field().names and "metadata.key" in counted
 
 
 @pytest.mark.parametrize(
@@ -274,7 +338,7 @@ def test_every_column_a_reader_filters_on_is_inside_the_metrics_budget(
     shape: type, names: tuple[str, ...]
 ) -> None:
     """A filter column past the cutoff prunes nothing and looks like it works."""
-    counted = leaves(shape.FIELD.arrow_type)
+    counted = leaves(shape.into_field().arrow_type)
     for name in names:
         assert name in counted, f"{shape.__name__} has no leaf {name}"
         assert counted.index(name) + 1 <= METRICS_BUDGET, (

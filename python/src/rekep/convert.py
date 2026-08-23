@@ -17,7 +17,8 @@ import types
 import typing
 import uuid
 from collections.abc import Iterator, Mapping, Sequence
-from typing import Any, ClassVar, Self, Union, get_args, get_origin, get_type_hints
+from types import MappingProxyType
+from typing import Any, Self, Union, get_args, get_origin, get_type_hints
 
 import pyarrow.fs
 
@@ -39,55 +40,8 @@ SEPARATORS = re.compile(r"[\\/]")
 #: bytes back instead of writing them -- None, `str` or `bytes`.
 Target = typing.Union[str, os.PathLike[str], typing.IO[bytes], typing.IO[str], type, None]  # noqa: UP007
 
-
-class Convertible:
-    """Gives a class paired `from_*` builders and `into_*` converters.
-
-    Every conversion is a named method, so it can be called directly, read in a
-    traceback, and overridden by a subclass::
-
-        Book.from_yaml("book.yaml")     # build
-        book.into_toml("book.toml")     # convert
-
-    `from_` and `into_` are the generic forms: they infer which named method the
-    argument means and redirect to it, so a caller holding a path from config or
-    a type from a signature does not have to branch::
-
-        Book.from_("book.yaml")         # -> from_yaml
-        book.into_("book.toml")         # -> into_toml
-        log.into_(pyarrow.Table)        # -> into_arrow_table
-
-    The rule is that a *type* argument asks "convert to this", so it is consumed
-    by the dispatch, while a *value* argument is a source or a destination and
-    is passed through. Subclasses declare what may be redirected to in
-    `REDIRECTS`, keyed by file extension or by type.
-
-    A `Convertible` **dataclass** is serialisable as it stands: the declaration
-    is the schema, so `into_dict` walks the fields recursively -- nested
-    dataclasses become nested mappings -- and `from_dict` walks them in reverse,
-    decoding each value back to what it was declared as.
-
-        @dataclasses.dataclass
-        class Venue(Convertible):
-            mic: str
-            timeout: float | None = None
-
-    Two rules keep the three text formats interchangeable. Fields that are None
-    are omitted rather than written as null, because TOML has no null and
-    because a missing key falls back to the dataclass default on the way in.
-    Unknown keys are ignored on load, so a file carrying extra sections still
-    parses.
-
-    JSON always works, and so does reading TOML; writing TOML needs the `toml`
-    extra and YAML needs `yaml`, each raising an `ImportError` naming the extra
-    if it is missing. Every text method accepts an open file, a path or a URI,
-    and an optional `filesystem` for storage Arrow cannot infer from the string
-    alone. Pass nothing -- or `str`/`bytes` -- to be handed the encoded bytes.
-    """
-
-    #: Dispatch key -> `from_`/`into_` method stem. Keys are extensions
-    #: (".yaml") matched against a path, or types matched against the argument.
-    REDIRECTS: ClassVar[Mapping[Any, str]] = {
+_REDIRECTS = MappingProxyType(
+    {
         ".yaml": "yaml",
         ".yml": "yaml",
         ".toml": "toml",
@@ -95,6 +49,19 @@ class Convertible:
         dict: "dict",
         Mapping: "dict",
     }
+)
+
+
+class Convertible:
+    """Gives a class paired `from_*` builders and `into_*` converters."""
+
+    __slots__ = ()
+
+    @classmethod
+    @functools.cache
+    def into_redirects(cls) -> Mapping[Any, str]:
+        """Dispatch keys for generic `from_` and `into_` inference."""
+        return _REDIRECTS
 
     @classmethod
     def from_(cls, source: Any, *args: Any, **kwargs: Any) -> Self:
@@ -114,23 +81,13 @@ class Convertible:
 
     @classmethod
     def from_file(cls, source: Target, filesystem: pyarrow.fs.FileSystem | None = None) -> Self:
-        """Build from a document, its format taken from the name's extension.
-
-        `from_` infers over everything it can be handed -- a type, a mapping,
-        an open file -- so a path whose extension it does not know raises about
-        inference. This one is only ever given a file, so it can say the thing
-        the caller needs instead: which extensions there are. That is the whole
-        difference, and it is why the command line reads a contract through
-        here.
-
-        A path, a URI, or a path on `filesystem`, exactly as every other
-        reader here takes one.
-        """
+        """Build from a document, its format taken from the name's extension."""
+        redirects = cls.into_redirects()
         for key in cls._keys(source):
-            stem = cls.REDIRECTS.get(key) if isinstance(key, str) else None
+            stem = redirects.get(key) if isinstance(key, str) else None
             if stem:
                 return getattr(cls, f"from_{stem}")(source, filesystem)
-        formats = sorted(key for key in cls.REDIRECTS if isinstance(key, str))
+        formats = sorted(key for key in redirects if isinstance(key, str))
         raise ValueError(
             f"{_name_of(source) or source!r} is not a document this can read: "
             f"name it {', '.join(formats)}"
@@ -140,12 +97,12 @@ class Convertible:
     def redirect_of(cls, value: Any, redirects: Mapping[Any, str] | None = None) -> str:
         """Method stem `value` redirects to, most specific key first.
 
-        `redirects` is the mapping to read, defaulting to this class's
-        `REDIRECTS`: a class with a second family of methods to infer between
+        `redirects` is the mapping to read, defaulting to `into_redirects()`.
+        A class with a second family of methods to infer between
         (casting, writing) passes its own rather than reimplementing the
         lookup.
         """
-        redirects = cls.REDIRECTS if redirects is None else redirects
+        redirects = cls.into_redirects() if redirects is None else redirects
         for key in cls._keys(value):
             stem = redirects.get(key)
             if stem is not None:
@@ -178,7 +135,7 @@ class Convertible:
         """This instance's values as plain containers, nested ones included."""
         if not dataclasses.is_dataclass(self):
             raise TypeError(f"{type(self).__name__} must be a dataclass to be serialised")
-        return _encode(self)
+        return _encode_dataclass(self)
 
     def into_yaml(
         self, target: Target = None, filesystem: pyarrow.fs.FileSystem | None = None
@@ -282,36 +239,14 @@ def _dumps_itself(cls: Any) -> bool:
 
 
 def _encode(value: Any) -> Any:
-    """Reduce `value` to containers every one of the three encoders accepts.
-
-    A dataclass **field** whose value is None is dropped rather than emitted:
-    TOML cannot express it, and on the way back a missing key is what lets the
-    dataclass default apply. Inside a container it is kept, because there is
-    nothing for it to fall back to -- a positional element has no default, and
-    dropping one shifts every element after it and makes a fixed-width tuple
-    unloadable. TOML then refuses the value by name, which is the honest answer
-    from the one format that cannot hold it.
-
-    A nested value whose class defines its own `into_dict` is dumped by it: a
-    `Field` holds an Arrow type, which only the field knows how to write.
-    """
+    """Reduce `value` to containers every one of the three encoders accepts."""
     kind = type(value)
     if kind in _VERBATIM:
         return value
     if _dumps_itself(kind):
         return _encode(value.into_dict())
     if dataclasses.is_dataclass(kind):
-        # The `_VERBATIM` probe is repeated here rather than left to the call
-        # -- a row of forty columns is forty calls that do nothing else, and
-        # nearly every member of nearly every row is a number or a string.
-        # Measured on a market capture, 1.05 million calls for 16,000 rows.
-        encoded = {}
-        for name in _members(kind):
-            attribute = getattr(value, name)
-            if attribute is None:
-                continue
-            encoded[name] = attribute if type(attribute) in _VERBATIM else _encode(attribute)
-        return encoded
+        return _encode_dataclass(value)
     if isinstance(value, enum.Enum):  # before str: a str-valued enum is also a str
         return _encode(value.value)
     if isinstance(value, Mapping):
@@ -325,6 +260,19 @@ def _encode(value: Any) -> Any:
     if isinstance(value, (pathlib.PurePath, uuid.UUID, decimal.Decimal)):
         return str(value)
     return value
+
+
+def _encode_dataclass(value: Any) -> dict[str, Any]:
+    """A dataclass without redispatching through an overridden `into_dict`."""
+    # The `_VERBATIM` probe is repeated here rather than left to the call: a
+    # row of forty columns is forty calls that do nothing else.
+    encoded = {}
+    for name in _members(type(value)):
+        attribute = getattr(value, name)
+        if attribute is None:
+            continue
+        encoded[name] = attribute if type(attribute) in _VERBATIM else _encode(attribute)
+    return encoded
 
 
 def _owns(cls: Any, method: str) -> bool:
@@ -422,6 +370,15 @@ def _decode_union(value: Any, args: tuple[Any, ...]) -> Any:
 
 
 def _decode_tuple(value: Any, args: tuple[Any, ...]) -> tuple[Any, ...]:
+    if isinstance(value, Mapping) and args and not (len(args) == 2 and args[1] is Ellipsis):
+        names = (
+            ("key", "value")
+            if len(args) == 2 and set(value) == {"key", "value"}
+            else tuple(f"f{index}" for index in range(len(args)))
+        )
+        if set(value) != set(names):
+            raise ValueError(f"tuple expects struct members {names}, got {tuple(value)}")
+        value = tuple(value[name] for name in names)
     if not args:
         return tuple(value)
     if len(args) == 2 and args[1] is Ellipsis:

@@ -129,6 +129,11 @@ def test_digits_read_as_an_integer_and_everything_else_reads_null() -> None:
     assert read.count(None) == 3, "a value the type cannot hold costs its own row and no other"
 
 
+def test_a_leading_plus_is_a_valid_fix_integer() -> None:
+    read = cast_arrow_fix(pyarrow.array(["+1", "-2", "3"]), pyarrow.int64())
+    assert read.to_pylist() == [1, -2, 3]
+
+
 def test_a_number_wider_than_the_target_reads_null_where_arrow_itself_raises() -> None:
     """The width guard, against the reference: Arrow raises, this nulls the one row."""
     spelled = ["9" * 18, "9" * 19, "7"]

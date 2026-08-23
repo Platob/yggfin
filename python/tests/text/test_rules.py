@@ -14,10 +14,18 @@ WIRE = {
     "8=FIX.4.4\x0135=D\x0111=cl-1\x01": EventType.ORDER,
     "8=FIX.4.4\x0135=F\x0141=cl-1\x01": EventType.ORDER,
     "8=FIX.4.4\x0135=G\x0141=cl-1\x01": EventType.ORDER,
-    "8=FIX.4.4\x0135=X\x01268=2\x01": EventType.BOOK_SIDE,
+    "8=FIX.4.4\x0135=X\x01268=2\x01": EventType.BOOK,
     "8=FIX.4.4\x0135=W\x01268=2\x01": EventType.BOOK,
     "8=FIX.4.4\x0135=S\x01117=q1\x01": EventType.QUOTE,
     "8=FIX.4.4\x0135=R\x01131=r1\x01": EventType.QUOTE,
+    "8=FIX.4.4\x0135=Z\x01117=q1\x01": EventType.QUOTE,
+    "8=FIX.4.4\x0135=a\x01117=q1\x01": EventType.QUOTE,
+    "8=FIX.4.4\x0135=b\x01117=q1\x01": EventType.QUOTE,
+    "8=FIX.4.4\x0135=i\x01117=q1\x01": EventType.QUOTE,
+    "8=FIX.4.4\x0135=AG\x01131=r1\x01": EventType.QUOTE,
+    "8=FIX.4.4\x0135=AH\x01131=r1\x01": EventType.QUOTE,
+    "8=FIX.4.4\x0135=AI\x01117=q1\x01": EventType.QUOTE,
+    "8=FIX.4.4\x0135=AJ\x01117=q1\x01": EventType.QUOTE,
     "8=FIX.4.4\x0135=d\x0155=AAPL\x01": EventType.INSTRUMENT,
 }
 RENDERED = {
@@ -25,9 +33,12 @@ RENDERED = {
     "sent NewOrderSingle AAPL 100@10.0": EventType.ORDER,
     "OrderCancelRequest cl-1": EventType.ORDER,
     "OrderCancelReplaceRequest cl-1": EventType.ORDER,
-    "MarketDataIncrementalRefresh 12 entries": EventType.BOOK_SIDE,
+    "MarketDataIncrementalRefresh 12 entries": EventType.BOOK,
     "MarketDataSnapshotFullRefresh AAPL": EventType.BOOK,
     "QuoteRequest from desk": EventType.QUOTE,
+    "received MassQuoteAcknowledgement": EventType.QUOTE,
+    "sent QuoteStatusReport": EventType.QUOTE,
+    "sent RFQRequest": EventType.QUOTE,
     "SecurityDefinition AAPL": EventType.INSTRUMENT,
 }
 NOTHING = [
@@ -67,6 +78,11 @@ def test_a_null_message_is_unknown_and_not_null() -> None:
     assert codes([None, "heartbeat"]) == [0, 0]
 
 
+def test_an_empty_pattern_matches_empty_text_but_not_a_null_message() -> None:
+    rules = LogRules(rules=[LogRule("", EventType.ORDER)])
+    assert codes([None, ""], rules) == [int(EventType.UNKNOWN), int(EventType.ORDER)]
+
+
 def test_the_first_rule_that_matches_wins() -> None:
     """Which is what lets a specific rule sit in front of a general one."""
     rules = LogRules(
@@ -100,7 +116,7 @@ def test_no_rows_is_no_rows() -> None:
 
 def test_the_codes_are_the_type_the_column_is() -> None:
     built = LogRules().etype_arrow(pyarrow.array(["35=8|"], type=pyarrow.string()))
-    assert built.type == Log.FIELD.field("etype").arrow_type == pyarrow.int32()
+    assert built.type == Log.into_field().field("etype").arrow_type == pyarrow.int32()
 
 
 def test_the_default_rules_are_read_by_a_wide_column_too() -> None:
@@ -113,6 +129,14 @@ def test_every_default_rule_says_what_it_is_for() -> None:
     for rule in DEFAULT_RULES:
         assert rule.pattern and rule.label, rule
         assert rule.etype is not EventType.UNKNOWN, "a rule matching nothing in particular"
+
+
+def test_default_log_rules_and_pattern_lists_are_isolated() -> None:
+    first, second = LogRules(), LogRules()
+    first.rules[0].patterns.append("first only")
+    assert "first only" not in second.rules[0].patterns
+    assert first.rules[0] is not second.rules[0]
+    assert first.rules[0].patterns is not second.rules[0].patterns
 
 
 def test_rules_round_trip_as_a_document() -> None:

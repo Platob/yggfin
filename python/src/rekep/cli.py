@@ -1,18 +1,4 @@
-"""The `rekep` command: publish a declaration, and check one loads.
-
-Two things a contract needs from outside Python. `fields dump` writes a class's
-shape as a document -- which is what keeps `schemas/` in step with the code
-that declares it, in CI or in a pre-commit hook rather than by hand. `fields
-load` reads one back and builds it, which is the check that matters: a contract
-that no longer parses is a contract two systems no longer share.
-
-    rekep fields dump --pyclass rekep.text.log:Log --target schemas/rekep/log.yaml
-    rekep fields load --target schemas/rekep/log.yaml
-
-Both are thin: everything they do is `Field.from_file`, `field_of` and the
-`into_*` methods, so the command line can never do something the library
-cannot, or do it differently.
-"""
+"""The `rekep` command: publish a declaration, and check one loads."""
 
 from __future__ import annotations
 
@@ -54,17 +40,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def dump(arguments: argparse.Namespace) -> int:
-    """Write a Python class's declaration as a document.
-
-    The format is `--format`, or the target's extension when it says one, or
-    YAML -- which is the only default a `--target`-less call can have, and the
-    one the contracts in this repository are written in. `--format` wins over
-    the extension where they disagree: it was typed, and the extension was
-    merely there.
-
-    Only the document ever reaches stdout, so a dump with no target pipes; the
-    line saying where a file went is on stderr.
-    """
+    """Write a Python class's declaration as a document."""
     shape = field_of(_imported(arguments.pyclass))
     spelling = arguments.format or _format_of(arguments.target)
     payload = getattr(shape, f"into_{spelling}")(arguments.target)

@@ -1,27 +1,15 @@
-"""The QuickFIX spec as a second source: what the standard says, machine-readable.
-
-The dictionary this package scrapes is prose written for people -- `Side <54>`
-value `1` is "Buy". QuickFIX publishes the same standard as XML written for
-programs, where that value is `BUY`: a symbol, stable across versions, and the
-name any other FIX tool will have used. Neither is the other's replacement, so
-both are kept -- `fix["values"]` stays the description and `fix["value_names"]`
-carries the symbol.
-
-    <value enum='1' description='MATCH' />
-
-`description` there is the symbol, not a description, which is exactly why
-merging it *into* the descriptions would replace prose with shouting.
-
-One file per version rather than one page per field, so enriching a whole
-version is a single request against the seven hundred a scrape costs.
-"""
+"""The QuickFIX spec as a second source: what the standard says, machine-readable."""
 
 from __future__ import annotations
 
 import dataclasses
+import functools
 import re
+from collections.abc import Mapping
 from typing import Any
 from xml.etree import ElementTree
+
+from rekep.convert import Convertible
 
 #: Where the spec files live. Override to point at a fork or a mirror.
 QUICKFIX_URL = "https://raw.githubusercontent.com/quickfix/quickfix/master/spec"
@@ -54,6 +42,138 @@ class SpecField:
     name: str
     datatype: str
     values: dict[str, str] = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass(frozen=True)
+class SpecMember(Convertible):
+    """One ordered member of a QuickFIX component declaration."""
+
+    @classmethod
+    @functools.cache
+    def into_kind(cls) -> str:
+        """Stored member kind; empty on the base."""
+        return ""
+
+    name: str
+    required: bool = False
+
+    def into_dict(self) -> dict[str, Any]:
+        """The member as a declaration that names its concrete kind."""
+        return {"kind": type(self).into_kind(), "name": self.name, "required": self.required}
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> SpecMember:
+        """Build the concrete member named by a stored declaration."""
+        kind = str(mapping.get("kind") or "")
+        member = _MEMBER_KINDS.get(kind)
+        if member is None:
+            raise ValueError(f"unknown FIX component member kind {kind!r}")
+        if cls is not SpecMember and member is not cls:
+            raise ValueError(f"{cls.__name__} cannot read a {kind!r} member")
+        return member._from_dict(mapping)
+
+    @classmethod
+    def _from_dict(cls, mapping: Mapping[str, Any]) -> SpecMember:
+        return cls(name=_stored_name(mapping), required=bool(mapping.get("required", False)))
+
+
+@dataclasses.dataclass(frozen=True)
+class SpecFieldRef(SpecMember):
+    """A field used by a component, resolved to its FIX tag."""
+
+    @classmethod
+    @functools.cache
+    def into_kind(cls) -> str:
+        """Stored member kind."""
+        return "field"
+
+    tag: int = 0
+
+    def into_dict(self) -> dict[str, Any]:
+        return {**super().into_dict(), "tag": self.tag}
+
+    @classmethod
+    def _from_dict(cls, mapping: Mapping[str, Any]) -> SpecFieldRef:
+        return cls(
+            name=_stored_name(mapping),
+            required=bool(mapping.get("required", False)),
+            tag=_stored_tag(mapping),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class SpecComponentRef(SpecMember):
+    """A reference to another component, expanded only by its consumer."""
+
+    @classmethod
+    @functools.cache
+    def into_kind(cls) -> str:
+        """Stored member kind."""
+        return "component"
+
+
+@dataclasses.dataclass(frozen=True)
+class SpecGroup(SpecMember):
+    """A repeating group: its count field and ordered entry declaration."""
+
+    @classmethod
+    @functools.cache
+    def into_kind(cls) -> str:
+        """Stored member kind."""
+        return "group"
+
+    tag: int = 0
+    members: tuple[SpecMember, ...] = ()
+
+    def into_dict(self) -> dict[str, Any]:
+        return {
+            **super().into_dict(),
+            "tag": self.tag,
+            "members": [member.into_dict() for member in self.members],
+        }
+
+    @classmethod
+    def _from_dict(cls, mapping: Mapping[str, Any]) -> SpecGroup:
+        members = mapping.get("members", ())
+        if not isinstance(members, list | tuple):
+            raise TypeError("a FIX group declaration's members must be a sequence")
+        return cls(
+            name=_stored_name(mapping),
+            required=bool(mapping.get("required", False)),
+            tag=_stored_tag(mapping),
+            members=tuple(SpecMember.from_dict(member) for member in members),
+        )
+
+
+_MEMBER_KINDS: dict[str, type[SpecMember]] = {
+    SpecFieldRef.into_kind(): SpecFieldRef,
+    SpecComponentRef.into_kind(): SpecComponentRef,
+    SpecGroup.into_kind(): SpecGroup,
+}
+
+
+@dataclasses.dataclass(frozen=True)
+class SpecComponent(Convertible):
+    """One reusable FIX component, with its members in wire order."""
+
+    name: str
+    members: tuple[SpecMember, ...] = ()
+
+    def into_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "members": [member.into_dict() for member in self.members],
+        }
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> SpecComponent:
+        members = mapping.get("members", ())
+        if not isinstance(members, list | tuple):
+            raise TypeError("a FIX component declaration's members must be a sequence")
+        return cls(
+            name=_stored_name(mapping),
+            members=tuple(SpecMember.from_dict(member) for member in members),
+        )
 
 
 def spec_name(version: str) -> str:
@@ -94,6 +214,22 @@ def parse_spec(document: str) -> dict[int, SpecField]:
     return found
 
 
+def parse_components(document: str) -> dict[str, SpecComponent]:
+    """Reusable components in one QuickFIX document, preserving their tree."""
+    root = _root(document)
+    if root is None:
+        return {}
+    tags = {field.name: field.tag for field in parse_spec(document).values()}
+    found: dict[str, SpecComponent] = {}
+    for element in root.findall("./components/component"):
+        name = _element_name(element, "component")
+        if name in found:
+            raise ValueError(f"FIX component {name!r} is declared twice")
+        found[name] = SpecComponent(name, _component_members(element, tags, (name,)))
+    _check_component_refs(found)
+    return found
+
+
 def parse_session(document: str) -> tuple[tuple[str, bool], ...]:
     """`((name, required), ...)` for the standard header, then the trailer.
 
@@ -123,3 +259,97 @@ def _root(document: str) -> Any:
         return ElementTree.fromstring(document)  # noqa: S314
     except ElementTree.ParseError:
         return None
+
+
+def _component_members(
+    element: Any, tags: Mapping[str, int], path: tuple[str, ...]
+) -> tuple[SpecMember, ...]:
+    """The ordered declaration directly inside one component or group."""
+    members: list[SpecMember] = []
+    for child in element:
+        kind = str(child.tag)
+        name = _element_name(child, ".".join(path))
+        required = child.get("required") == "Y"
+        if kind == SpecFieldRef.into_kind():
+            members.append(SpecFieldRef(name, required, _field_tag(name, tags, path)))
+        elif kind == SpecComponentRef.into_kind():
+            members.append(SpecComponentRef(name, required))
+        elif kind == SpecGroup.into_kind():
+            members.append(
+                SpecGroup(
+                    name,
+                    required,
+                    _field_tag(name, tags, path),
+                    _component_members(child, tags, (*path, name)),
+                )
+            )
+        else:
+            raise ValueError(
+                f"FIX component {'.'.join(path)!r} contains unknown member kind {kind!r}"
+            )
+    return tuple(members)
+
+
+def _element_name(element: Any, owner: str) -> str:
+    """A declaration's required name, refusing an anonymous member."""
+    name = str(element.get("name") or "").strip()
+    if not name:
+        raise ValueError(f"FIX {owner} contains a member with no name")
+    return name
+
+
+def _field_tag(name: str, tags: Mapping[str, int], path: tuple[str, ...]) -> int:
+    """The tag of a referenced field, which every usable declaration needs."""
+    tag = tags.get(name)
+    if tag is None:
+        raise ValueError(f"FIX component {'.'.join(path)!r} references unknown field {name!r}")
+    return tag
+
+
+def _check_component_refs(components: Mapping[str, SpecComponent]) -> None:
+    """Refuse missing and recursive component references by their full path."""
+    done: set[str] = set()
+
+    def visit(name: str, path: tuple[str, ...]) -> None:
+        if name in path:
+            chain = " -> ".join((*path, name))
+            raise ValueError(f"recursive FIX component reference: {chain}")
+        if name in done:
+            return
+        component = components.get(name)
+        if component is None:
+            owner = " -> ".join(path) or "component declaration"
+            raise ValueError(f"FIX component {owner} references unknown component {name!r}")
+        for reference in _component_refs(component.members):
+            visit(reference, (*path, name))
+        done.add(name)
+
+    for name in components:
+        visit(name, ())
+
+
+def _component_refs(members: tuple[SpecMember, ...]) -> tuple[str, ...]:
+    """Component names referenced anywhere under `members`."""
+    found: list[str] = []
+    for member in members:
+        if isinstance(member, SpecComponentRef):
+            found.append(member.name)
+        elif isinstance(member, SpecGroup):
+            found.extend(_component_refs(member.members))
+    return tuple(found)
+
+
+def _stored_name(mapping: Mapping[str, Any]) -> str:
+    """A stored declaration's non-empty name."""
+    name = str(mapping.get("name") or "").strip()
+    if not name:
+        raise ValueError("a stored FIX component declaration has no name")
+    return name
+
+
+def _stored_tag(mapping: Mapping[str, Any]) -> int:
+    """A stored field reference's positive FIX tag."""
+    tag = int(mapping.get("tag") or 0)
+    if tag <= 0:
+        raise ValueError(f"a stored FIX component member has invalid tag {tag!r}")
+    return tag

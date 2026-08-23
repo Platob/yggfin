@@ -4,6 +4,8 @@ site_url: https://platob.github.io/rekep/
 repo_url: https://github.com/Platob/rekep
 repo_name: Platob/rekep
 docs_dir: docs
+exclude_docs: |
+  assets/README.md
 
 theme:
   name: material
@@ -31,6 +33,7 @@ nav:
   - Home: index.md
   - Architecture:
       - Design rules: design.md
+      - Binary identities: identity.md
       - Schema contracts: contracts.md
   - Guides:
       - Types: types.md
@@ -38,7 +41,14 @@ nav:
       - FIX: fix.md
       - Market: market.md
       - Iceberg: iceberg.md
-      - Tasks: tasks.md
+      - Notebook workflow:
+          - Overview: tasks.md
+          - End-to-end run: workflow-run.md
+          - Parse logs: tasks/parse-logs.md
+          - Flatten instruments: tasks/flatten-instruments.md
+          - Parse market: tasks/parse-market.md
+          - Flatten orders: tasks/flatten-orders.md
+          - Flatten executions: tasks/flatten-executions.md
   - Benchmarks: benchmarks.md
 
 # Every page carries its own measurements, so the links into them are anchors

@@ -1,6 +1,7 @@
 """FIX: messages out of log lines, and the dictionary that says what they mean."""
 
-from rekep.fix.columns import COMMON, FLAT, SESSION
+from rekep.fix.columns import COMMON, FLAT, QUOTE, SESSION
+from rekep.fix.components import PARTIES, Parties, Party
 from rekep.fix.fields import (
     FIX_SCALARS,
     arrow_type_of,
@@ -24,14 +25,35 @@ from rekep.fix.message import (
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
     SPEC_VERSIONS,
+    SpecComponent,
+    SpecComponentRef,
     SpecField,
+    SpecFieldRef,
+    SpecGroup,
+    SpecMember,
+    parse_components,
     parse_session,
     parse_spec,
     spec_name,
 )
 from rekep.fix.registry import BASE_URL, CACHE_DIRECTORY, FixRegistry
-from rekep.fix.rules import CODECS, NO_PROTOCOL, Rule, Rules
-from rekep.fix.transcribe import FIX_TAGS, KEYVAL, NULL_VALUES, FixCodec, TagIndex
+from rekep.fix.rules import (
+    CODECS,
+    MARKET_CATEGORY,
+    MISC_CATEGORY,
+    NO_PROTOCOL,
+    UNKNOWN_CATEGORY,
+    Rule,
+    Rules,
+)
+from rekep.fix.transcribe import (
+    FIX_MISS_TAGS,
+    FIX_TAGS,
+    KEYVAL,
+    NULL_VALUES,
+    FixCodec,
+    TagIndex,
+)
 
 __all__ = [
     "BASE_URL",
@@ -42,6 +64,7 @@ __all__ = [
     "CODECS",
     "COMMON",
     "FIX_SCALARS",
+    "FIX_MISS_TAGS",
     "FIX_TAGS",
     "FLAT",
     "FixCodec",
@@ -49,16 +72,28 @@ __all__ = [
     "FixRegistry",
     "KEYVAL",
     "MARKER",
+    "MARKET_CATEGORY",
+    "MISC_CATEGORY",
     "NO_PROTOCOL",
     "NULL_VALUES",
+    "PARTIES",
     "QUICKFIX_URL",
+    "QUOTE",
     "Rule",
     "Rules",
     "SESSION",
     "SOH",
     "SPEC_VERSIONS",
+    "SpecComponent",
+    "SpecComponentRef",
     "SpecField",
+    "SpecFieldRef",
+    "SpecGroup",
+    "SpecMember",
     "TagIndex",
+    "UNKNOWN_CATEGORY",
+    "Parties",
+    "Party",
     "arrow_type_of",
     "cast_arrow_bool",
     "cast_arrow_fix",
@@ -66,6 +101,7 @@ __all__ = [
     "detect_separator",
     "fix_field",
     "parse_arrow_array",
+    "parse_components",
     "parse_session",
     "parse_spec",
     "spec_name",

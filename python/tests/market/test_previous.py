@@ -7,17 +7,18 @@ and each test says which one it is pinning.
 
 from __future__ import annotations
 
+import copy
+
 import pytest
 
 from rekep.market import (
+    MIC,
     AssetKind,
-    Book,
-    BookSide,
-    ExecKind,
+    Event,
     Execution,
     Instrument,
+    MarketKind,
     Order,
-    OrderKind,
     Side,
     State,
     TimeInForce,
@@ -25,25 +26,47 @@ from rekep.market import (
 from rekep.market.identity import NIL
 
 EQUITY = Instrument(symbol="AAPL", exchange="XNAS", kind=AssetKind.EQUITY)
+XNAS = MIC.from_str("XNAS")
+
+
+def _order(_instrument: Instrument = EQUITY, **given: object) -> Order:
+    """An order with its persisted instrument key and transient reference."""
+    values = {"code": _instrument.symbol, "instrument_xhash": _instrument.xhash, **given}
+    return Order(**values).attach_instrument(_instrument)
+
+
+def _execution(_instrument: Instrument = EQUITY, **given: object) -> Execution:
+    """An execution with its persisted instrument key and transient reference."""
+    values = {"code": _instrument.symbol, "instrument_xhash": _instrument.xhash, **given}
+    return Execution(**values).attach_instrument(_instrument)
+
+
+def changed(event: Event, previous: Event | None = None) -> Event:
+    """Complete a version expected to change a stored fact."""
+    completed = event.with_previous(previous)
+    assert completed is not None
+    return completed
 
 
 def resting(**given: object) -> Order:
     """A live limit order, complete, as a venue's first acknowledgement of one."""
+    instrument = given.pop("instrument", EQUITY)
+    assert isinstance(instrument, Instrument)
     declared = {
         "unix": 10,
-        "symbol": "AAPL",
-        "instrument": EQUITY,
         "side": Side.BUY,
         "px": 100.0,
         "qty": 10.0,
-        "kind": OrderKind.LIMIT_ORDER,
+        "kind": MarketKind.LIMIT_ORDER,
         "tif": TimeInForce.DAY,
         "state": State.NEW,
         "order_id": "ORD-1",
         "client_order_id": "CL-1",
-        "venue": "XNAS",
+        "mic": XNAS,
     }
-    return Order(**{**declared, **given}).with_previous(None)
+    completed = changed(_order(instrument, **{**declared, **given}))
+    assert isinstance(completed, Order)
+    return completed
 
 
 # -- the envelope ------------------------------------------------------------
@@ -53,29 +76,33 @@ def test_a_first_version_still_gets_its_identity() -> None:
     """`with_previous(None)` is a first version, and that is the one thing left to do."""
     first = resting()
     assert first.xhash != NIL and first.hash != NIL
+    assert first.xcode == "ORD-1"
+    assert first.xhash == Order.hash_of(EQUITY.xhash, first.mic, first.xcode, first.side)
     assert first.version == 0 and first.prev_hash is None
 
 
 def test_the_lifecycle_and_the_counter_carry_across_versions() -> None:
     first = resting()
-    later = Order(unix=20, order_id="ORD-1", state=State.OPEN).with_previous(first)
+    later = changed(_order(unix=20, order_id="ORD-1", state=State.OPEN), first)
     assert later.xhash == first.xhash, "the same order"
+    assert later.xcode == first.xcode == "ORD-1"
     assert later.hash != first.hash, "a different version of it"
     assert later.version == first.version + 1
 
 
 def test_the_transition_is_on_the_row_rather_than_behind_a_self_join() -> None:
     first = resting()
-    later = Order(unix=20, order_id="ORD-1", state=State.PARTIALLY_FILLED).with_previous(first)
+    later = changed(_order(unix=20, order_id="ORD-1", state=State.PARTIALLY_FILLED), first)
     assert later.prev_hash == first.hash
     assert later.prev_state is State.NEW and later.prev_unix == first.unix
     assert later.unix - later.prev_unix == 10, "dwell time, without a join"
 
 
 def test_a_previous_version_that_was_never_hashed_is_a_null_and_not_a_nil() -> None:
-    unhashed = Order(unix=10, symbol="AAPL", state=State.NEW)
+    unhashed = _order(unix=10, state=State.NEW)
     assert unhashed.hash == NIL
-    assert Order(unix=20).with_previous(unhashed).prev_hash is None
+    later = changed(_order(unix=20, state=State.OPEN), unhashed)
+    assert later.prev_hash is None
 
 
 def test_the_creation_time_is_got_or_set_and_never_recomputed() -> None:
@@ -83,22 +110,47 @@ def test_the_creation_time_is_got_or_set_and_never_recomputed() -> None:
     Recomputing it would make "how old is this order" mean "how long since the
     last message about it"."""
     first = resting(cunix=5)
-    third = Order(unix=30, order_id="ORD-1").with_previous(
-        Order(unix=20, order_id="ORD-1").with_previous(first)
-    )
+    second = changed(_order(unix=20, order_id="ORD-1", state=State.OPEN), first)
+    third = changed(_order(unix=30, order_id="ORD-1", state=State.PARTIALLY_FILLED), second)
     assert third.cunix == 5 and third.unix == 30
 
 
-def test_a_version_that_says_nothing_about_the_state_keeps_the_one_it_had() -> None:
-    """Not mentioning a state is not saying it is unknown."""
+def test_a_duplicate_observation_returns_none() -> None:
+    """A later timestamp alone does not create another stored version."""
     first = resting()
-    silent = Order(unix=20, order_id="ORD-1").with_previous(first)
-    assert silent.state is State.NEW
+    duplicate = _order(unix=20, order_id="ORD-1").with_previous(first)
+    assert duplicate is None
+
+
+def test_a_new_source_sequence_is_observation_metadata() -> None:
+    first = resting(seq=7)
+    duplicate = _order(unix=20, seq=8, order_id="ORD-1").with_previous(first)
+    assert duplicate is None
+
+
+def test_state_comparison_keeps_late_members_and_snapshot_time() -> None:
+    """The cached projection may omit clocks only for ordinary observations."""
+    first = resting()
+    observed = copy.copy(first)
+    observed.unix += 1
+    assert observed.same_as(first), "an ordinary observation time is not stored state"
+
+    observed.reason = "late declared field changed"
+    assert not observed.same_as(first), "the projection reaches the last order member"
+
+    snapshot = copy.copy(first)
+    snapshot.sunix = first.unix
+    later_snapshot = copy.copy(snapshot)
+    later_snapshot.unix += 1
+    assert not later_snapshot.same_as(snapshot), "snapshot time is part of its stored state"
+
+    nonfinite = resting(px=float("nan"))
+    assert not copy.copy(nonfinite).same_as(nonfinite), "NaN keeps its scalar inequality"
 
 
 def test_a_message_with_no_clock_lands_where_the_version_before_it_was() -> None:
     first = resting()
-    timeless = Order(order_id="ORD-1", state=State.OPEN).with_previous(first)
+    timeless = changed(_order(order_id="ORD-1", state=State.OPEN), first)
     assert timeless.unix == first.unix
     assert timeless.unix_hour == first.unix_hour, "and the partition follows the time"
 
@@ -106,9 +158,30 @@ def test_a_message_with_no_clock_lands_where_the_version_before_it_was() -> None
 def test_what_the_message_did_send_always_wins() -> None:
     """This completes a row; it does not correct one."""
     first = resting()
-    restated = Order(unix=20, order_id="ORD-1", px=101.0, qty=3.0, state=State.OPEN)
-    later = restated.with_previous(first)
+    restated = _order(unix=20, order_id="ORD-1", px=101.0, qty=3.0, state=State.OPEN)
+    later = changed(restated, first)
     assert later.px == 101.0 and later.qty == 3.0
+
+
+def test_priced_transition_values_are_kept_without_a_self_join() -> None:
+    first = resting()
+    later = changed(_order(unix=20, order_id="ORD-1", px=101.0, qty=8.0, state=State.OPEN), first)
+    assert (later.prev_px, later.prev_qty, later.prev_notional) == (
+        first.px,
+        first.qty,
+        first.notional,
+    )
+
+
+def test_transition_values_do_not_turn_a_duplicate_observation_into_a_version() -> None:
+    first = resting()
+    assert _order(unix=20, order_id="ORD-1").with_previous(first) is None
+
+
+def test_quote_sides_with_one_source_identifier_are_distinct_lifecycles() -> None:
+    bid = resting(order_id="QUOTE-1", indicative=True, side=Side.BUY)
+    ask = resting(order_id="QUOTE-1", indicative=True, side=Side.SELL)
+    assert bid.xhash != ask.xhash
 
 
 # -- the market slots --------------------------------------------------------
@@ -117,11 +190,11 @@ def test_what_the_message_did_send_always_wins() -> None:
 def test_the_price_and_the_instrument_are_carried_because_a_venue_stops_repeating_them() -> None:
     """A row with a null price drops out of every filter on price."""
     first = resting()
-    later = Order(unix=20, order_id="ORD-1", state=State.OPEN).with_previous(first)
+    later = changed(_order(unix=20, order_id="ORD-1", state=State.OPEN), first)
     assert later.px == 100.0 and later.qty == 10.0
-    assert later.side is Side.BUY and later.symbol == "AAPL"
-    assert later.instrument.xhash == EQUITY.xhash
-    assert later.instrument_hash == first.instrument_hash, "and it stays in its partition"
+    assert later.side is Side.BUY and later.code == "AAPL"
+    assert later.into_instrument() is EQUITY
+    assert later.instrument_xhash == first.instrument_xhash, "and it stays in its partition"
 
 
 def test_a_notional_is_a_product_of_three_and_absent_without_all_three() -> None:
@@ -129,9 +202,9 @@ def test_a_notional_is_a_product_of_three_and_absent_without_all_three() -> None
     nobody notices until settlement."""
     assert resting().notional == 1000.0, "a cash equity really does trade one for one"
     future = Instrument(symbol="ESZ6", kind=AssetKind.FUTURE)
-    assert resting(instrument=future, symbol="ESZ6").notional is None
+    assert resting(instrument=future, code="ESZ6").notional is None
     priced = Instrument(symbol="ESZ6", kind=AssetKind.FUTURE, multiplier=50.0)
-    assert resting(instrument=priced, symbol="ESZ6").notional == 50_000.0
+    assert resting(instrument=priced, code="ESZ6").notional == 50_000.0
 
 
 def test_a_notional_the_producer_computed_is_not_recomputed() -> None:
@@ -142,19 +215,19 @@ def test_a_notional_the_producer_computed_is_not_recomputed() -> None:
 
 
 def test_a_fresh_order_rests_its_whole_quantity() -> None:
-    assert resting().leaves_qty == 10.0
+    assert resting().qty == 10.0
 
 
-def test_what_is_left_is_what_was_asked_minus_what_was_done() -> None:
-    """A venue that sends `CumQty <14>` and not `LeavesQty <151>` has still said
-    how much is working."""
-    part = Order(unix=20, order_id="ORD-1", filled_qty=4.0, state=State.PARTIALLY_FILLED)
-    assert part.with_previous(resting()).leaves_qty == 6.0
+def test_current_and_previous_quantity_describe_the_order_transition() -> None:
+    part = _order(unix=20, order_id="ORD-1", qty=6.0, state=State.PARTIALLY_FILLED)
+    completed = changed(part, resting())
+    assert completed.qty == 6.0 and completed.prev_qty == 10.0
 
 
-def test_what_the_venue_said_is_left_is_not_second_guessed() -> None:
-    part = Order(unix=20, order_id="ORD-1", filled_qty=4.0, leaves_qty=5.0)
-    assert part.with_previous(resting()).leaves_qty == 5.0
+def test_hidden_quantity_is_carried_without_replacing_current_quantity() -> None:
+    first = resting(hidden_qty=4.0)
+    part = changed(_order(unix=20, order_id="ORD-1", qty=5.0), first)
+    assert part.qty == 5.0 and part.hidden_qty == 4.0 and part.prev_qty == 10.0
 
 
 @pytest.mark.parametrize(
@@ -163,57 +236,64 @@ def test_what_the_venue_said_is_left_is_not_second_guessed() -> None:
 def test_a_terminal_order_rests_nothing_at_all(state: State) -> None:
     """It is done, and a book folding it has to take its liquidity out rather than
     leave it standing."""
-    done = Order(unix=20, order_id="ORD-1", state=state).with_previous(resting())
-    assert done.qty == 0.0 and done.leaves_qty == 0.0
+    done = changed(_order(unix=20, order_id="ORD-1", state=state), resting())
+    assert done.qty == 0.0 and done.hidden_qty == 0.0 and done.prev_qty == 10.0
 
 
 def test_what_was_asked_for_is_on_the_version_before_and_not_lost() -> None:
     first = resting()
-    done = Order(unix=20, order_id="ORD-1", state=State.CANCELLED).with_previous(first)
+    done = changed(_order(unix=20, order_id="ORD-1", state=State.CANCELLED), first)
     assert done.prev_hash == first.hash and first.qty == 10.0
 
 
-def test_a_fully_filled_order_filled_what_it_asked_for() -> None:
-    """`FILLED` means all of it, so a report that says the state and not `CumQty`
-    has still said how much was done."""
-    done = Order(unix=20, order_id="ORD-1", state=State.FILLED).with_previous(resting())
-    assert done.filled_qty == 10.0
+def test_a_fully_filled_order_keeps_its_prior_quantity_on_the_transition() -> None:
+    done = changed(_order(unix=20, order_id="ORD-1", state=State.FILLED), resting())
+    assert done.qty == 0.0 and done.prev_qty == 10.0
 
 
-def test_a_cancelled_order_does_not_claim_to_have_filled_anything() -> None:
-    done = Order(unix=20, order_id="ORD-1", state=State.CANCELLED).with_previous(resting())
-    assert done.filled_qty is None, "nothing said how much, and nothing may invent it"
+def test_a_cancelled_order_does_not_store_a_cumulative_fill_quantity() -> None:
+    done = changed(_order(unix=20, order_id="ORD-1", state=State.CANCELLED), resting())
+    assert "filled_qty" not in done.into_field().names
 
 
 def test_the_identifier_that_was_replaced_is_the_one_the_version_before_had() -> None:
     """FIX requires a new `ClOrdID <11>` per version and calls the old one
     `OrigClOrdID <41>`; when this version did not say, the version before is it."""
-    replaced = Order(unix=20, client_order_id="CL-2", state=State.OPEN).with_previous(resting())
+    replaced = changed(_order(unix=20, client_order_id="CL-2", state=State.OPEN), resting())
     assert replaced.prev_client_order_id == "CL-1"
 
 
 def test_a_version_that_reuses_the_identifier_names_nothing_replaced() -> None:
-    same = Order(unix=20, client_order_id="CL-1", state=State.OPEN).with_previous(resting())
+    same = changed(_order(unix=20, client_order_id="CL-1", state=State.OPEN), resting())
     assert same.prev_client_order_id is None
 
 
 def test_the_order_kind_and_time_in_force_are_carried() -> None:
-    later = Order(unix=20, order_id="ORD-1", state=State.OPEN).with_previous(resting())
-    assert later.kind is OrderKind.LIMIT_ORDER and later.tif is TimeInForce.DAY
+    later = changed(_order(unix=20, order_id="ORD-1", state=State.OPEN), resting())
+    assert later.kind is MarketKind.LIMIT_ORDER and later.tif is TimeInForce.DAY
 
 
 # -- what an execution works out ---------------------------------------------
 
 
 def fill(px: float, qty: float, unix: int, **given: object) -> Execution:
-    declared = {"unix": unix, "kind": ExecKind.TRADED, "px": px, "qty": qty}
-    return Execution(**{**declared, **given})
+    instrument = given.pop("instrument", EQUITY)
+    assert isinstance(instrument, Instrument)
+    declared = {"unix": unix, "state": State.FILLED, "px": px, "qty": qty}
+    return _execution(instrument, **{**declared, **given})
 
 
 def test_a_fill_links_itself_to_the_order_it_followed() -> None:
     first = resting()
     done = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(first)
-    assert done.order_xhash == first.xhash
+    assert done.linked_xhash == [first.xhash]
+
+
+def test_the_matched_order_precedes_other_lifecycle_links() -> None:
+    first = resting()
+    done = fill(100.0, 4.0, 20, exec_id="EX-1", linked_xhash=[-1]).with_previous(first)
+    assert done is not None
+    assert done.linked_xhash == [first.xhash, -1]
 
 
 def test_what_is_done_accumulates_across_fills() -> None:
@@ -229,22 +309,220 @@ def test_the_average_is_reweighted_and_never_copied_forward() -> None:
     """Copying it would leave every partial fill reporting the first one's price."""
     one = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(resting())
     two = fill(101.0, 6.0, 30, exec_id="EX-2").with_previous(one)
-    assert one.avg_px == 100.0
-    assert two.avg_px == pytest.approx((100.0 * 4 + 101.0 * 6) / 10)
+    assert one.vwap == 100.0
+    assert two.vwap == pytest.approx((100.0 * 4 + 101.0 * 6) / 10)
+
+
+def test_zero_is_a_price_when_reweighting_the_average() -> None:
+    one = fill(0.0, 1.0, 20, exec_id="EX-1").with_previous(resting())
+    two = fill(10.0, 1.0, 30, exec_id="EX-2").with_previous(one)
+    assert two.vwap == 5.0
+
+
+def test_an_unknown_prior_total_stays_unknown_when_another_fill_arrives() -> None:
+    previous = _execution(
+        unix=20,
+        px=100.0,
+        qty=1.0,
+        state=State.FILLED,
+        exec_id="EX-1",
+        filled_qty=None,
+        leaves_qty=9.0,
+        vwap=100.0,
+    ).with_previous(None)
+    later = fill(110.0, 1.0, 30, exec_id="EX-2").with_previous(previous)
+
+    assert later.filled_qty is None and later.vwap is None
+    assert later.leaves_qty == 8.0
+
+
+def test_a_fill_without_a_price_cannot_update_an_existing_average() -> None:
+    previous = _execution(
+        unix=20,
+        qty=1.0,
+        state=State.FILLED,
+        exec_id="EX-1",
+        filled_qty=1.0,
+        leaves_qty=9.0,
+        vwap=100.0,
+    ).with_previous(None)
+    later = _execution(unix=30, qty=1.0, state=State.FILLED, exec_id="EX-2").with_previous(previous)
+    assert later.filled_qty == 2.0 and later.vwap is None
 
 
 def test_an_acknowledgement_changes_no_running_total() -> None:
     """Adding its quantity is how a fills table starts overcounting."""
     one = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(resting())
-    acked = Execution(unix=30, kind=ExecKind.ACK, qty=99.0, exec_id="EX-3").with_previous(one)
+    acked = _execution(unix=30, state=State.NEW, qty=99.0, exec_id="EX-3").with_previous(one)
     assert acked.filled_qty == 4.0 and acked.leaves_qty == 6.0
-    assert acked.avg_px == 100.0
+    assert acked.vwap == 100.0
 
 
 def test_a_correction_is_another_version_of_one_execution_not_a_second_one() -> None:
     one = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(resting())
-    fixed = fill(100.5, 4.0, 25, exec_id="EX-1", kind=ExecKind.TRADE_CORRECT).with_previous(one)
+    fixed = fill(
+        100.5,
+        4.0,
+        25,
+        exec_id="EX-2",
+        exec_ref_id="EX-1",
+        state=State.REPLACED,
+    ).with_previous(one)
+    assert fixed.exec_id == "EX-2" and fixed.xcode == "EX-1"
     assert fixed.xhash == one.xhash and fixed.version == one.version + 1
+
+
+def test_a_correction_replaces_the_referenced_fill_in_running_totals() -> None:
+    one = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(resting())
+    fixed = fill(
+        100.5,
+        4.0,
+        25,
+        exec_id="EX-2",
+        exec_ref_id="EX-1",
+        state=State.REPLACED,
+    ).with_previous(one)
+
+    assert (fixed.filled_qty, fixed.leaves_qty) == (4.0, 6.0)
+    assert fixed.vwap == 100.5
+
+
+def test_a_cancel_removes_the_referenced_fill_from_running_totals() -> None:
+    one = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(resting())
+    two = fill(102.0, 2.0, 25, exec_id="EX-2").with_previous(one)
+    cancelled = _execution(
+        unix=30,
+        exec_id="EX-3",
+        exec_ref_id="EX-2",
+        state=State.CANCELLED,
+    ).with_previous(two)
+
+    assert (cancelled.filled_qty, cancelled.leaves_qty) == (4.0, 6.0)
+    assert cancelled.vwap == 100.0
+
+
+@pytest.mark.parametrize(
+    ("state", "px", "qty"),
+    [
+        (State.CANCELLED, None, None),
+        (State.REPLACED, 101.0, 3.0),
+    ],
+)
+def test_an_unknown_referenced_price_makes_an_amended_average_unknown(
+    state: State, px: float | None, qty: float | None
+) -> None:
+    previous = _execution(
+        unix=20,
+        px=None,
+        qty=2.0,
+        state=State.FILLED,
+        exec_id="EX-1",
+        filled_qty=6.0,
+        leaves_qty=4.0,
+        vwap=100.0,
+    ).with_previous(None)
+    amended = _execution(
+        unix=30,
+        px=px,
+        qty=qty,
+        state=state,
+        exec_id="EX-2",
+        exec_ref_id="EX-1",
+    ).with_previous(previous)
+
+    assert amended.vwap is None
+
+
+def test_a_preidentified_execution_is_rehashed_after_completion_supplies_scope() -> None:
+    order = resting()
+    done = fill(100.0, 1.0, 20, exec_id="EX-1").with_previous(None)
+    stale = done.xhash
+
+    done.with_previous(order)
+
+    expected = Execution.hash_of(order.instrument_xhash, order.mic, "EX-1", done.side)
+    assert stale != expected and done.xhash == expected
+    assert done.version == 0 and done.parent_hash == [order.hash]
+
+
+def test_a_preidentified_correction_rejoins_its_scoped_execution() -> None:
+    one = fill(100.0, 1.0, 20, exec_id="EX-1").with_previous(resting())
+    fixed = fill(
+        100.5,
+        1.0,
+        25,
+        exec_id="EX-2",
+        exec_ref_id="EX-1",
+        state=State.REPLACED,
+    )
+    fixed.with_previous(None)
+
+    fixed.with_previous(one)
+
+    assert fixed.xhash == one.xhash and fixed.version == one.version + 1
+
+
+def test_successive_corrections_keep_the_original_execution_lifecycle() -> None:
+    one = fill(100.0, 1.0, 20, exec_id="EX-1").with_previous(resting())
+    two = fill(
+        100.5,
+        1.0,
+        25,
+        exec_id="EX-2",
+        exec_ref_id="EX-1",
+        state=State.REPLACED,
+    ).with_previous(one)
+    three = fill(
+        101.0,
+        1.0,
+        30,
+        exec_id="EX-3",
+        exec_ref_id="EX-2",
+        state=State.REPLACED,
+    ).with_previous(two)
+
+    assert one.xcode == two.xcode == three.xcode == "EX-1"
+    assert one.xhash == two.xhash == three.xhash
+    assert three.version == two.version + 1
+
+
+def test_a_successive_correction_can_inherit_its_omitted_kind() -> None:
+    one = fill(100.0, 1.0, 20, exec_id="EX-1").with_previous(resting())
+    two = fill(
+        100.5,
+        1.0,
+        25,
+        exec_id="EX-2",
+        exec_ref_id="EX-1",
+        state=State.REPLACED,
+    ).with_previous(one)
+    three = fill(
+        101.0,
+        1.0,
+        30,
+        exec_id="EX-3",
+        exec_ref_id="EX-2",
+        state=State.UNKNOWN,
+    ).with_previous(two)
+
+    assert three.state is State.REPLACED
+    assert three.xcode == two.xcode == one.xcode == "EX-1"
+    assert three.xhash == two.xhash and three.version == two.version + 1
+
+
+def test_a_normal_trade_does_not_follow_a_stray_execrefid() -> None:
+    one = fill(100.0, 1.0, 20, exec_id="EX-1").with_previous(resting())
+    other = fill(
+        101.0,
+        1.0,
+        25,
+        exec_id="EX-2",
+        exec_ref_id="EX-1",
+        state=State.FILLED,
+    ).with_previous(one)
+
+    assert other.xcode == "EX-2" and other.xhash != one.xhash
+    assert other.version == 0 and other.parent_hash == [one.hash]
 
 
 def test_a_chain_crossing_classes_still_carries_forward() -> None:
@@ -252,9 +530,9 @@ def test_a_chain_crossing_classes_still_carries_forward() -> None:
     either of them is regularly the other."""
     order = resting()
     done = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(order)
-    after = Order(unix=25, order_id="ORD-1", state=State.PARTIALLY_FILLED).with_previous(done)
-    assert after.filled_qty == 4.0 and after.leaves_qty == 6.0
-    assert after.avg_px == 100.0
+    after = _order(unix=25, order_id="ORD-1", state=State.PARTIALLY_FILLED).with_previous(done)
+    assert after.qty == 6.0
+    assert after.vwap == 100.0
 
 
 def test_the_abstract_slots_do_not_cross_between_shapes() -> None:
@@ -262,60 +540,8 @@ def test_the_abstract_slots_do_not_cross_between_shapes() -> None:
     asked for, a fill's are what traded. Carrying one into the other made a partly
     filled order claim it had asked for exactly what had just traded."""
     done = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(resting())
-    after = Order(unix=25, order_id="ORD-1", state=State.PARTIALLY_FILLED).with_previous(done)
-    assert after.qty is None and after.px is None
-    assert after.leaves_qty == 6.0, "but what is left means the same on both, and carries"
-
-
-# -- an append that changed nothing ------------------------------------------
-
-
-def test_an_append_that_moved_a_level_returns_the_new_version() -> None:
-    side = BookSide(side=Side.BID, xhash=1)
-    moved = side.append_order(resting())
-    assert moved is side and side.version == 1 and side.total_qty == 10.0
-
-
-def test_an_append_that_moved_nothing_returns_none_and_leaves_the_side_alone() -> None:
-    """A caller that writes what it gets back writes one row per real change
-    rather than one per message."""
-    side = BookSide(side=Side.BID, xhash=1)
-    side.append_order(resting())
-    before = (side.version, side.hash, side.total_qty, len(side.updates or []))
-    gone = Order(unix=20, side=Side.BUY, px=90.0, state=State.CANCELLED).with_previous(resting())
-    assert side.append_order(gone) is None, "a level that was never there"
-    assert (side.version, side.hash, side.total_qty, len(side.updates or [])) == before
-
-
-def test_an_acknowledgement_does_not_version_a_side() -> None:
-    side = BookSide(side=Side.BID, xhash=1)
-    side.append_order(resting())
-    before = side.version
-    acked = Execution(unix=20, side=Side.BUY, px=100.0, qty=1.0, kind=ExecKind.ACK)
-    assert side.append_execution(acked) is None
-    assert side.version == before and side.total_qty == 10.0
-
-
-def test_a_fill_with_no_price_moves_nothing() -> None:
-    side = BookSide(side=Side.BID, xhash=1)
-    side.append_order(resting())
-    blind = Execution(unix=20, side=Side.BUY, qty=1.0, kind=ExecKind.TRADED)
-    assert side.append_execution(blind) is None
-
-
-def test_a_book_that_did_not_move_is_not_versioned_either() -> None:
-    book = Book(xhash=7)
-    assert book.append_order(resting()) is book and book.version == 1
-    acked = Execution(unix=20, side=Side.BUY, px=100.0, qty=1.0, kind=ExecKind.ACK)
-    assert book.append_execution(acked) is None
-    assert book.version == 1 and book.bid_total_qty == 10.0
-
-
-def test_append_event_dispatches_and_reports_the_same_way() -> None:
-    side = BookSide(side=Side.BID, xhash=1)
-    assert side.append_event(resting()) is side
-    acked = Execution(unix=20, side=Side.BUY, px=100.0, qty=1.0, kind=ExecKind.ACK)
-    assert side.append_event(acked) is None
+    after = _order(unix=25, order_id="ORD-1", state=State.PARTIALLY_FILLED).with_previous(done)
+    assert after.qty == 6.0 and after.px is None
 
 
 # -- a version of it, or a different thing built from it ---------------------
@@ -326,35 +552,30 @@ def test_a_fill_is_not_a_version_of_the_order_it_happened_to() -> None:
     order = resting()
     done = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(order)
     assert done.xhash != order.xhash
+    assert done.xcode == "EX-1" and done.xcode != order.xcode
     assert done.version == 0, "version zero of its own life"
     assert done.prev_hash is None, "nothing came before it"
     assert done.parent_hash == [order.hash], "but it was built from the order"
 
 
-def test_a_code_is_never_carried_from_a_shape_that_spells_it_differently() -> None:
-    """`kind` is a different enum per shape -- an order's is `OrderKind`, a fill's
-    is `ExecKind` -- and a version chain crosses shapes, because one
-    `ExecutionReport <8>` yields both. Carried by name alone, an order following a
-    fill took `ExecKind.TRADED`, which is `310`, which reads back as
-    `OrderKind.STOP_ORDER`; and a fill following an order took an `OrderKind` and
-    raised on the first `moves_shares`."""
+def test_specialized_order_codes_do_not_cross_shapes_but_generic_state_does() -> None:
+    """Order pricing is shape-specific; lifecycle state is deliberately shared."""
     order = resting()
     done = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(order)
-    after = Order(unix=25, order_id="ORD-1", state=State.PARTIALLY_FILLED).with_previous(done)
-    assert after.kind is OrderKind.UNKNOWN, "and never an ExecKind wearing an int"
-    crossed = Execution(unix=30, exec_id="EX-2", px=1.0, qty=1.0).with_previous(order)
-    assert crossed.kind is ExecKind.UNKNOWN
-    assert crossed.kind.moves_shares is False, "which is a question only an ExecKind answers"
+    after = _order(unix=25, order_id="ORD-1", state=State.PARTIALLY_FILLED).with_previous(done)
+    assert after.kind is MarketKind.UNKNOWN
+    crossed = _execution(unix=30, exec_id="EX-2", px=1.0, qty=1.0).with_previous(order)
+    assert crossed.state is State.NEW
 
 
 def test_a_code_is_carried_between_versions_of_the_same_shape() -> None:
     """Which is the whole point of carrying it -- a venue stops repeating it."""
     order = resting()
-    later = Order(unix=20, order_id="ORD-1", state=State.OPEN).with_previous(order)
-    assert later.kind is OrderKind.LIMIT_ORDER and later.tif is TimeInForce.DAY
+    later = _order(unix=20, order_id="ORD-1", state=State.OPEN).with_previous(order)
+    assert later.kind is MarketKind.LIMIT_ORDER and later.tif is TimeInForce.DAY
     one = fill(100.0, 4.0, 20, exec_id="EX-1").with_previous(order)
     two = fill(100.5, 1.0, 30, exec_id="EX-1").with_previous(one)
-    assert two.kind is ExecKind.TRADED
+    assert two.state is State.FILLED
 
 
 def test_a_lifecycle_is_read_after_completing_and_not_before() -> None:
@@ -362,24 +583,157 @@ def test_a_lifecycle_is_read_after_completing_and_not_before() -> None:
     its own instrument or venue until the version before it has given them to it --
     and those are part of what its lifecycle is."""
     first = resting()
-    bare = Order(unix=20, order_id="ORD-1", state=State.OPEN)
+    bare = _order(unix=20, order_id="ORD-1", state=State.OPEN)
     assert bare.life_hash() != first.life_hash(), "before completing, it looks like another"
     assert bare.with_previous(first).xhash == first.xhash
 
 
 def test_asking_what_a_lifecycle_is_does_not_change_it() -> None:
     """`life_hash` reads; `identify` and `with_previous` are what write."""
-    bare = Order(unix=20, order_id="ORD-1")
+    bare = _order(unix=20, order_id="ORD-1")
     assert bare.life_hash() != NIL
-    assert bare.xhash == NIL, "asking left it exactly as it was"
+    assert bare.xhash == NIL and bare.xcode == "", "asking left it exactly as it was"
+
+
+def test_an_amendment_keeps_the_readable_lifecycle_code_while_its_code_moves() -> None:
+    first = resting(order_id=None, client_order_id="CL-1")
+    later = resting(
+        unix=20,
+        order_id=None,
+        client_order_id="CL-2",
+        prev_client_order_id="CL-1",
+    ).with_previous(first)
+    assert later.xcode == first.xcode == "CL-1"
+    assert later.xhash == first.xhash
+
+
+def test_a_later_order_id_does_not_split_a_client_identified_lifecycle() -> None:
+    first = resting(order_id=None, client_order_id="CL-1")
+    later = _order(
+        unix=20,
+        order_id="ORD-1",
+        client_order_id="CL-1",
+        state=State.OPEN,
+    ).with_previous(None)
+    assert later.xcode == "ORD-1", "the isolated parsed row prefers the stronger identifier"
+    later.with_previous(first)
+    assert later.order_id == "ORD-1", "the stronger exact FIX field is retained"
+    assert later.xcode == first.xcode == "CL-1", "the readable lifecycle anchor is immutable"
+    assert later.xhash == first.xhash and later.version == 1
+
+
+def test_a_preidentified_order_keeps_its_flat_scope_across_completion() -> None:
+    first = resting(order_id="ORD-1", mic=XNAS)
+    later = changed(
+        _order(
+            unix=20,
+            order_id="ORD-1",
+            state=State.OPEN,
+            instrument_xhash=first.instrument_xhash,
+            mic=XNAS,
+        )
+    )
+    before = later.xhash
+
+    completed = changed(later, first)
+
+    assert completed.xcode == "ORD-1"
+    assert before != first.xhash, "the isolated row did not yet know its side"
+    assert first.xhash == completed.xhash
+    assert completed.version == 1
+
+
+def test_an_order_recovers_its_lifecycle_across_an_execution() -> None:
+    first = resting(order_id=None, client_order_id="CL-1")
+    done = fill(
+        100.0,
+        1.0,
+        15,
+        exec_id="EX-1",
+        order_id="ORD-1",
+        client_order_id="CL-1",
+    ).with_previous(first)
+    after = _order(unix=20, order_id="ORD-1", state=State.OPEN).with_previous(None)
+
+    after.with_previous(done)
+
+    assert done.linked_xhash == [first.xhash]
+    assert after.xcode == first.xcode == "CL-1"
+    assert after.xhash == first.xhash
+
+
+def test_an_order_recovers_its_root_across_an_amendment_and_execution() -> None:
+    first = resting(order_id=None, client_order_id="CL-1")
+    amended = _order(
+        unix=12,
+        client_order_id="CL-2",
+        prev_client_order_id="CL-1",
+        state=State.OPEN,
+    ).with_previous(first)
+    done = fill(
+        100.0,
+        1.0,
+        15,
+        exec_id="EX-1",
+        order_id="ORD-1",
+        client_order_id="CL-2",
+    ).with_previous(amended)
+
+    after = _order(unix=20, order_id="ORD-1", state=State.OPEN).with_previous(done)
+
+    assert amended.xcode == first.xcode == "CL-1"
+    assert done.prev_client_order_id == "CL-1"
+    assert done.linked_xhash == [first.xhash]
+    assert after.xcode == "CL-1" and after.xhash == first.xhash
+
+
+def test_order_and_client_identifier_namespaces_never_cross_match() -> None:
+    first = resting(order_id="VENUE-1", client_order_id="42")
+    other = _order(
+        unix=20,
+        order_id="42",
+        client_order_id="OTHER",
+        state=State.OPEN,
+    ).with_previous(first)
+    assert other.xcode == "42"
+    assert other.xhash != first.xhash and other.version == 0
+    assert other.parent_hash == [first.hash]
+
+
+def test_conflicting_order_ids_override_a_reused_client_id() -> None:
+    first = resting(order_id="ORD-A", client_order_id="CLIENT")
+    other = _order(
+        unix=20,
+        order_id="ORD-B",
+        client_order_id="CLIENT",
+        state=State.OPEN,
+    ).with_previous(first)
+
+    assert other.xcode == "ORD-B" and other.xhash != first.xhash
+    assert other.version == 0 and other.parent_hash == [first.hash]
+
+
+def test_equal_lifecycle_hashes_reconcile_to_the_existing_xcode() -> None:
+    first = Event(code="A").with_previous(None)
+    later = Event(code="B", xcode="B", xhash=first.xhash).with_previous(first)
+
+    assert later.version == 1 and later.xhash == first.xhash
+    assert later.xcode == first.xcode == "A"
+
+
+def test_the_same_readable_lifecycle_code_is_scoped_before_it_is_hashed() -> None:
+    here = _order(instrument_xhash=1, mic=XNAS, xcode="ORD-1").with_previous(None)
+    there = _order(instrument_xhash=2, mic=XNAS, xcode="ORD-1").with_previous(None)
+    elsewhere = _execution(instrument_xhash=1, mic=XNAS, xcode="ORD-1").with_previous(None)
+    assert len({here.xhash, there.xhash, elsewhere.xhash}) == 3
 
 
 def test_an_event_with_nothing_to_identify_it_inherits_the_lifecycle() -> None:
     """The only one available to it."""
-    first = resting()
-    nameless = Order(unix=20, state=State.OPEN)
+    first = changed(Event(code="A", state=State.NEW))
+    nameless = Event(unix=20, state=State.OPEN)
     assert nameless.life_hash() == NIL, "on its own it can identify nothing"
-    anonymous = nameless.with_previous(first)
+    anonymous = changed(nameless, first)
     assert anonymous.xhash == first.xhash and anonymous.version == 1
 
 

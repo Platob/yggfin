@@ -9,7 +9,9 @@ import enum
 import pathlib
 import types
 import uuid
-from typing import Any, ClassVar, Union, get_args, get_origin, get_type_hints
+from functools import cache
+from types import MappingProxyType
+from typing import Any, Union, get_args, get_origin, get_type_hints
 
 import pyarrow
 
@@ -24,22 +26,8 @@ from rekep.annotations import (
 )
 from rekep.fields.field import DESCRIPTION, NAMESPACE, Field, StructField
 
-
-class FieldBuilder:
-    """Projects Python type hints onto fields, one case at a time.
-
-    The cases are: `Annotated` unwraps to what it declares, `X | None` becomes a
-    nullable field and **anything else becomes a non-nullable one**, a dataclass
-    becomes a struct, a sequence becomes a list of a field (so item nullability
-    survives), a mapping becomes a map, an enum becomes its value type, and a
-    leaf is looked up in `SCALARS`.
-
-    Subclass and extend `SCALARS`, or override `scalar`, to teach it a type it
-    does not know, and point a class at it with `FIELD_BUILDER`.
-    """
-
-    #: Leaf Python type -> Arrow type. Matched exactly first, then by subclass.
-    SCALARS: ClassVar[dict[type, pyarrow.DataType]] = {
+_SCALARS = MappingProxyType(
+    {
         bool: pyarrow.bool_(),
         int: pyarrow.int64(),
         float: pyarrow.float64(),
@@ -53,6 +41,17 @@ class FieldBuilder:
         uuid.UUID: pyarrow.string(),
         pathlib.PurePath: pyarrow.string(),
     }
+)
+
+
+class FieldBuilder:
+    """Projects Python type hints onto fields, one case at a time."""
+
+    @classmethod
+    @cache
+    def into_scalars(cls) -> MappingProxyType:
+        """Leaf Python types and their Arrow storage types."""
+        return _SCALARS
 
     def __init__(self) -> None:
         #: Classes currently being built, so a cycle is reported not chased.
@@ -68,7 +67,9 @@ class FieldBuilder:
         from it can name the class it came from, and `into_dataclass` can
         rebuild that class in its own module.
         """
-        metadata = {NAMESPACE: cls.__module__}
+        metadata_of = getattr(cls, "into_field_metadata", None)
+        declared = metadata_of() if callable(metadata_of) else {}
+        metadata = {NAMESPACE: cls.__module__, **dict(declared)}
         summary = docstring_summary(cls)
         if summary:
             metadata[DESCRIPTION] = summary
@@ -158,11 +159,12 @@ class FieldBuilder:
         """Arrow type for a leaf, or None when this builder does not know it."""
         if not isinstance(annotation, type):
             return None
-        if annotation in self.SCALARS:
-            return self.SCALARS[annotation]
+        scalars = self.into_scalars()
+        if annotation in scalars:
+            return scalars[annotation]
         if issubclass(annotation, enum.Enum):
             return self._enum(annotation)
-        for python_type, arrow_type in self.SCALARS.items():
+        for python_type, arrow_type in scalars.items():
             if issubclass(annotation, python_type):
                 return arrow_type
         return None

@@ -68,6 +68,6 @@ def batch(shape: Any, rows: int = 1, **columns: Any) -> pyarrow.RecordBatch:
     exercises the same path a producer takes and a column this file does not
     know about is filled as nullable rather than missing.
     """
-    declared = shape if isinstance(shape, Field) else shape.FIELD
+    declared = shape if isinstance(shape, Field) else shape.into_field()
     given = required(declared, rows) | columns
     return declared.cast_arrow_batch(pyarrow.RecordBatch.from_pydict(given))

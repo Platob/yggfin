@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Arrow schema compatibility tree</title>
+  <desc id="desc">One cached scalar declaration produces Arrow, portable contracts, Iceberg, and compatible consumers.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3d6aa2"/>
+    </marker>
+    <style>
+      .root{fill:#dcecff;stroke:#315f96;stroke-width:3;rx:16}
+      .node{fill:#f8fbff;stroke:#3d6aa2;stroke-width:2;rx:12}
+      .edge{fill:none;stroke:#3d6aa2;stroke-width:2.4;marker-end:url(#arrow)}
+      .title{font:600 18px system-ui,sans-serif;fill:#243b58;text-anchor:middle}
+      .text{font:14px system-ui,sans-serif;fill:#415a77;text-anchor:middle}
+    </style>
+  </defs>
+  <rect class="root" x="410" y="25" width="380" height="88"/>
+  <text class="title" x="600" y="61">@scalar class.into_field()</text>
+  <text class="text" x="600" y="87">one cached declaration</text>
+  <rect class="root" x="410" y="165" width="380" height="95"/>
+  <text class="title" x="600" y="202">pyarrow.Schema</text>
+  <text class="text" x="600" y="228">types | nullability | metadata</text>
+  <rect class="node" x="55" y="345" width="220" height="90"/>
+  <text class="title" x="165" y="380">YAML contracts</text>
+  <text class="text" x="165" y="407">portable boundary</text>
+  <rect class="node" x="345" y="345" width="220" height="90"/>
+  <text class="title" x="455" y="380">Polars / Python</text>
+  <text class="text" x="455" y="407">Arrow interchange</text>
+  <rect class="node" x="635" y="345" width="220" height="90"/>
+  <text class="title" x="745" y="380">Iceberg / Parquet</text>
+  <text class="text" x="745" y="407">ids | partitions | pruning</text>
+  <rect class="node" x="925" y="345" width="220" height="90"/>
+  <text class="title" x="1035" y="380">Notebook tasks</text>
+  <text class="text" x="1035" y="407">Papermill / Airflow</text>
+  <rect class="node" x="180" y="520" width="250" height="72"/>
+  <text class="title" x="305" y="552">Analytics engines</text>
+  <text class="text" x="305" y="576">Spark | Doris | DuckDB</text>
+  <rect class="node" x="770" y="520" width="250" height="72"/>
+  <text class="title" x="895" y="552">Native producers</text>
+  <text class="text" x="895" y="576">Rust | Java | C++</text>
+  <path class="edge" d="M600 113 V165"/>
+  <path class="edge" d="M510 260 C400 300 250 305 165 345"/>
+  <path class="edge" d="M560 260 C520 300 480 315 455 345"/>
+  <path class="edge" d="M640 260 C680 300 720 315 745 345"/>
+  <path class="edge" d="M690 260 C800 300 950 305 1035 345"/>
+  <path class="edge" d="M455 435 C420 475 350 490 305 520"/>
+  <path class="edge" d="M745 435 C790 475 850 490 895 520"/>
+</svg>

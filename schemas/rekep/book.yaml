@@ -3,6 +3,7 @@ type: struct
 description: Both sides of one book, flat, and the prices that only exist across them.
 metadata:
   namespace: rekep.market.book
+  version: '1'
 fields:
 - name: unix
   type: int64
@@ -26,8 +27,9 @@ fields:
     needs.
   metadata:
     enum:name: EventType
-    enum:type: int
-    enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","310":"BOOK_SIDE","320":"BOOK","400":"REFERENCE","410":"INSTRUMENT"}'
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'
 - name: cunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
@@ -56,13 +58,18 @@ fields:
     epoch: '1970-01-01'
 - name: hash
   type: int64
-  description: 'Digest of this version''s content: the same version, twice, is one
-    row.'
+  description: Digest of `(unix, instrument_xhash)`, unique for one book instant.
   metadata:
     iceberg:primary_key: 'true'
 - name: xhash
   type: int64
   description: Identity of the thing across every version of it -- the lifecycle.
+- name: linked_xhash
+  type: list
+  nullable: true
+  description: Related lifecycle identities, ordered with the primary match first.
+  item:
+    type: int64
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -72,21 +79,43 @@ fields:
     is over.'
   metadata:
     enum:name: State
-    enum:type: int
-    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","600":"FAILED","610":"REJECTED"}'
-- name: symbol
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
+- name: code
   type: string
-  description: Main readable identifier of the subject, as the venue spells it.
+  description: Ticker symbol. Common, "human understood" representation of the security.
+    SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange
+    traded Collective Investment Vehicles) Use "[N/A]" for products which do not have
+    a symbol.
   metadata:
-    fix:name: Symbol
     fix:tag: '55'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
+      Status Request","Quote Acknowledgement","Security Definition Request","Security
+      Definition","New Order - Single","Security Status Request","New Order - List","Security
+      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
+      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
+      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
+      Data - Incremental Refresh","Quote Cancel"]'
+    fix:name: Symbol
+- name: xcode
+  type: string
+  description: Readable identifier shared by every version of this lifecycle.
 - name: seq
   type: int64
   nullable: true
-  description: Sequence the venue gave the message, which orders what a clock cannot.
+  description: Integer message sequence number.
   metadata:
-    fix:name: MsgSeqNum
     fix:tag: '34'
+    fix:type: SeqNum
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"SeqNum"}'
+    fix:name: MsgSeqNum
 - name: prev_hash
   type: int64
   nullable: true
@@ -96,8 +125,9 @@ fields:
   description: The state this version moved out of -- a transition, without the self-join.
   metadata:
     enum:name: State
-    enum:type: int
-    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","600":"FAILED","610":"REJECTED"}'
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
 - name: prev_unix
   type: int64
   nullable: true
@@ -111,34 +141,137 @@ fields:
   description: Every event this one was built from, in the order they were combined.
   item:
     type: int64
-- name: instrument_hash
+- name: mic
+  type: int32
+  nullable: true
+  description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
+  metadata:
+    enum:name: MIC
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}'
+    enum:encoding: ascii-big-endian
+    enum:max_bytes: '4'
+    enum:pattern: '[A-Z0-9]{4}'
+- name: error
+  type: string
+  nullable: true
+  description: Why this event was rejected or could not be interpreted, when known.
+- name: instrument_xhash
   type: int64
-  description: Which instrument this is about -- `instrument.xhash`, flat, for the
-    partition.
+  description: Instrument lifecycle identity used to join and partition market rows.
   metadata:
     iceberg:partition_key: bucket[16]
+- name: kind
+  type: int32
+  description: Standard market semantic, independent of its protocol spelling.
+  metadata:
+    enum:name: MarketKind
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","100":"MARKET","110":"MARKET_ORDER","120":"MARKET_IF_TOUCHED","130":"MARKET_TO_LIMIT","200":"LIMIT","210":"LIMIT_ORDER","220":"LIMIT_ON_CLOSE","230":"LIMIT_OR_BETTER","300":"STOP","310":"STOP_ORDER","320":"STOP_LIMIT","400":"PEGGED","410":"PEGGED_ORDER","420":"PREVIOUSLY_QUOTED","430":"PREVIOUSLY_INDICATED","500":"EXECUTION","510":"ORDER_STATUS","520":"TRADE","530":"TRADE_CORRECT","540":"TRADE_CANCEL","550":"LOCKED","560":"RELEASED","600":"CLEARING","610":"CLEARING_HOLD","620":"RELEASED_TO_CLEARING","700":"ACTIVATION","710":"TRIGGERED"}'
+    enum:fix_values: '{"40":{"1":110,"5":110,"6":110,"A":110,"C":110,"G":110,"J":120,"K":130,"T":130,"2":210,"8":210,"F":210,"I":210,"B":220,"7":230,"3":310,"R":310,"4":320,"S":320,"9":410,"L":410,"M":410,"P":410,"D":420,"H":420,"Q":420,"E":430},"150":{"0":510,"3":510,"4":510,"5":510,"6":510,"7":510,"8":510,"9":510,"A":510,"B":510,"C":510,"D":510,"E":510,"F":520,"G":530,"H":540,"I":510,"J":610,"K":620,"L":710,"M":550,"N":560}}'
 - name: side
   type: int32
-  description: Which way the interest points; `side.sign` turns it into `+1` or `-1`.
+  description: Side of order.
   metadata:
-    fix:name: Side
     fix:tag: '54'
+    fix:type: char
+    fix:version: 5.0.SP2
+    fix:values: '{"1":"Buy","2":"Sell","3":"Buy minus","4":"Sell plus","5":"Sell short","6":"Sell
+      short exempt","7":"Undisclosed (valid for IOI and List Order messages only)","8":"Cross
+      (orders where counterparty is an exchange, valid for all messages except IOIs)","9":"Cross
+      short","A":"Cross short exempt","B":"\"As Defined\" (for use with multileg instruments)","C":"\"Opposite\"
+      (for use with multileg instruments)","D":"Subscribe (e.g. CIV)","E":"Redeem
+      (e.g. CIV)","F":"Lend (FINANCING - identifies direction of collateral)","G":"Borrow
+      (FINANCING - identifies direction of collateral)"}'
+    fix:used_in: '["IOI","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","OrderMassStatusRequest","QuoteStatusReport","QuoteResponse","Confirmation","AllocationReport","SettlementInstructionRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","AllocationInstructionAlert","ExecutionAcknowledgement","OrderMassActionReport","OrderMassActionRequest","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","AllocationInstruction","OrderMassCancelRequest","DontKnowTradeDK","OrderMassCancelReport","Quote","Execution
+      Report","New Order Multileg","Multileg Order Cancel/Replace","Trade Capture
+      Report Request","Trade Capture Report","Order Mass Status Request","Quote Request
+      Reject","Quote Status Report","Quote Response","Allocation Report","Settlement
+      Instruction Request","Collateral Request","Collateral Assignment","Collateral
+      Response","Collateral Report","Collateral Inquiry","New Order Single","New Order
+      List","Order Cancel Request","Order Cancel/Replace Request","Order Status Request","Allocation
+      Instruction","Bid Request","Bid Response","List Strike Price","Order Mass Cancel
+      Request","Don''t Know Trade","Order Mass Cancel Report","Quote Request","New
+      Order Cross","Cross Order Cancel/Replace Request","Settlement Instructions","Cross
+      Order Cancel Request","Indications of Interest","New Order - Multileg","Multileg
+      Order Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
+      Order - Cross","Indication of Interest","Quote Status Request","Security Definition
+      Request","Security Definition"]'
+    fix:value_names: '{"1":"BUY","2":"SELL","3":"BUY_MINUS","4":"SELL_PLUS","5":"SELL_SHORT","6":"SELL_SHORT_EXEMPT","7":"UNDISCLOSED","8":"CROSS","9":"CROSS_SHORT","B":"AS_DEFINED","C":"OPPOSITE","A":"CROSS_SHORT_EXEMPT","D":"SUBSCRIBE","E":"REDEEM","F":"LEND","G":"BORROW","H":"SELL_UNDISCLOSED"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+    fix:name: Side
     enum:name: Side
-    enum:type: int
-    enum:values: '{"0":"UNKNOWN","100":"BUY","110":"BUY_MINUS","120":"BORROW","130":"SUBSCRIBE","200":"SELL","210":"SELL_PLUS","220":"SELL_SHORT","230":"SELL_SHORT_EXEMPT","240":"LEND","250":"REDEEM","300":"CROSS","310":"CROSS_SHORT","320":"CROSS_SHORT_EXEMPT","330":"AS_DEFINED","340":"OPPOSITE","350":"UNDISCLOSED"}'
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","1112889600":"BUY","1113148750":"BUY_MINUS","1112494674":"BORROW","1398096467":"SUBSCRIBE","1397050444":"SELL","1397510220":"SELL_PLUS","1397248596":"SELL_SHORT","1397245272":"SELL_SHORT_EXEMPT","1279610436":"LEND","1380271181":"REDEEM","1129467731":"CROSS","1129468744":"CROSS_SHORT","1129468741":"CROSS_SHORT_EXEMPT","1095976006":"AS_DEFINED","1330663503":"OPPOSITE","1431192659":"UNDISCLOSED"}'
+    enum:encoding: ascii-big-endian
+    enum:aliases: '{"ASK":"SELL","AS_DEFINED":"ASDF","BID":"BUY","BORROW":"BORR","BUY_MINUS":"BYMN","CROSS":"CROS","CROSS_SHORT":"CRSH","CROSS_SHORT_EXEMPT":"CRSE","LONG":"BUY","OFFER":"SELL","OPPOSITE":"OPPO","REDEEM":"REDM","SELL_PLUS":"SLPL","SELL_SHORT":"SHRT","SELL_SHORT_EXEMPT":"SHEX","SHORT":"SELL_SHORT","SUBSCRIBE":"SUBS","UNDISCLOSED":"UNDS"}'
+    enum:byte_width: '4'
+    enum:padding: nul-right
+    enum:fix_aliases: '{"1":"BUY","2":"SELL","3":"BYMN","4":"SLPL","5":"SHRT","6":"SHEX","7":"UNDS","8":"CROS","9":"CRSH","A":"CRSE","B":"ASDF","C":"OPPO","D":"SUBS","E":"REDM","F":"LEND","G":"BORR"}'
 - name: px
   type: double
   nullable: true
   description: The mid, `(bid_px + ask_px) / 2`; null until both sides have a price.
+- name: prev_px
+  type: double
+  nullable: true
+  description: Price on the immediately preceding lifecycle version; null on the first.
 - name: px_unit
   type: string
   description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when
     unstated.'
+- name: ccy
+  type: int32
+  nullable: true
+  description: 'Identifies currency used for price. Absence of this field is interpreted
+    as the default for the security. It is recommended that systems provide the currency
+    value whenever possible. See Appendix 6-A: Valid Currency Codes for information
+    on obtaining'
+  metadata:
+    fix:tag: '15'
+    fix:type: Currency
+    fix:version: 5.0.SP2
+    fix:used_in: '["IOI","Advertisement","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReport","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportAck","AllocationReport","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","AllocationInstructionAlert","SecurityDefinitionUpdateReport","MarketDefinition","MarketDefinitionUpdateReport","SecurityDefinitionRequest","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","SecurityStatus","OrderCancelReplaceRequest","AllocationInstruction","BidRequest","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","SecurityListRequest","DerivativeSecurityListRequest","Execution
+      Report","Derivative Security List","New Order Multileg","Multileg Order Cancel/Replace","Trade
+      Capture Report","Quote Request Reject","Quote Status Report","Quote Response","Position
+      Maintenance Request","Position Maintenance Report","Request For Positions","Request
+      for Positions Ack","Position Report","Allocation Report","Assignment Report","Collateral
+      Request","Collateral Assignment","Collateral Response","Mass Quote Acknowledgement","Collateral
+      Report","Collateral Inquiry","Collateral Inquiry Ack","Security Definition Request","Security
+      Definition","New Order Single","Security Status Request","New Order List","Security
+      Status","Order Cancel/Replace Request","Mass Quote","Allocation Instruction","Bid
+      Request","List Strike Price","Quote Request","New Order Cross","Cross Order
+      Cancel/Replace Request","Market Data - Snapshot/Full Refresh","Security List
+      Request","Market Data - Incremental Refresh","Security List","Derivative Security
+      List Request","Indications of Interest","New Order - Multileg","Multileg Order
+      Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
+      Order - Cross","Indication of Interest"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency","4.2":"Currency","4.1":"char","4.0":"char"}'
+    fix:name: Currency
+    enum:name: Currency
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","1431520304":"USD","1163219504":"EUR","1195528240":"GBP","1246779696":"JPY","1128810032":"CHF","1128350768":"CAD","1096107056":"AUD","1314538544":"NZD","1129208112":"CNY","1212892208":"HKD","1397179440":"SGD","1397050160":"SEK","1313819440":"NOK","1145785136":"DKK","1347178032":"PLN","1129990960":"CZK","1213548080":"HUF","1297632816":"MXN","1112689712":"BRL","1514230320":"ZAR","1229869616":"INR","1263687472":"KRW","1415005232":"TWD","1480676656":"XAU","1480673072":"XAG","1481659440":"XPT","1481655344":"XPD","1481921328":"XTS","1482184752":"XXX"}'
+    enum:encoding: ascii-currency-decimals
+    enum:byte_width: '4'
+    enum:layout: CCCn
+    enum:decimal_byte: ascii-digit
+    enum:aliases: '{"$":"USD0","US$":"USD0","\u00a3":"GBP0","\u00a5":"JPY0","\u20ac":"EUR0"}'
 - name: qty
   type: double
   nullable: true
   description: The size at the touch, `bid_qty + ask_qty`; null until both sides have
     one.
+- name: prev_qty
+  type: double
+  nullable: true
+  description: Quantity on the immediately preceding lifecycle version; null on the
+    first.
 - name: qty_unit
   type: string
   description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
@@ -147,264 +280,11 @@ fields:
   nullable: true
   description: '`px * qty * multiplier` in the instrument''s currency, as the producer
     computed it.'
-- name: venue
-  type: string
+- name: prev_notional
+  type: double
   nullable: true
-  description: Where this event happened, which is not always where the instrument
-    is listed.
-  metadata:
-    fix:name: LastMkt
-    fix:tag: '30'
-- name: instrument
-  type: struct
-  description: What was traded. The flat `symbol` above is what a filter uses; this
-    is the rest.
-  fields:
-  - name: xhash
-    type: int64
-    description: Stable identity of the instrument, which outlives every symbol it
-      has had.
-  - name: symbol
-    type: string
-    description: Identifier as the venue spells it -- readable, and never an identity.
-    metadata:
-      fix:name: Symbol
-      fix:tag: '55'
-  - name: kind
-    type: int32
-    description: What it settles as, read from the first character of the CFI code.
-    metadata:
-      enum:name: AssetKind
-      enum:type: int
-      enum:values: '{"0":"UNKNOWN","100":"CASH","110":"EQUITY","120":"DEBT","130":"FUND","140":"CURRENCY","150":"COMMODITY","160":"INDEX","200":"DERIVATIVE","210":"FUTURE","220":"OPTION","230":"SWAP","240":"WARRANT","250":"FORWARD","300":"STRUCTURED","310":"SPREAD","320":"MULTILEG","330":"BASKET","400":"FINANCING","410":"REPO","420":"LOAN"}'
-  - name: security_id
-    type: string
-    nullable: true
-    description: Identifier in the scheme `security_id_source` names -- an ISIN, a
-      CUSIP, a FIGI.
-    metadata:
-      fix:name: SecurityID
-      fix:tag: '48'
-  - name: security_id_source
-    type: string
-    nullable: true
-    description: Which scheme `security_id` is in, as FIX numbers them (`4` is ISIN).
-    metadata:
-      fix:name: SecurityIDSource
-      fix:tag: '22'
-  - name: isin_code
-    type: string
-    nullable: true
-    description: ISO 6166 identifier, wherever the message carried it; null when it
-      did not.
-    metadata:
-      iso: '6166'
-  - name: alt_ids
-    type: map
-    nullable: true
-    description: Every other identifier the message carried, keyed by `IdSource`'s
-      name.
-    key:
-      type: string
-    value:
-      type: string
-  - name: security_type
-    type: string
-    nullable: true
-    description: What the venue calls it, from FIX's own list -- `CS`, `FUT`, `OPT`,
-      `MLEG`.
-    metadata:
-      fix:name: SecurityType
-      fix:tag: '167'
-  - name: cfi
-    type: string
-    nullable: true
-    description: Full ISO 10962 classification; `kind` is its first character, decoded.
-    metadata:
-      fix:name: CFICode
-      fix:tag: '461'
-  - name: exchange
-    type: string
-    nullable: true
-    description: ISO 10383 market identifier the instrument is listed on.
-    metadata:
-      fix:name: SecurityExchange
-      fix:tag: '207'
-  - name: currency
-    type: string
-    nullable: true
-    description: ISO 4217 currency the instrument is priced in.
-    metadata:
-      fix:name: Currency
-      fix:tag: '15'
-  - name: multiplier
-    type: double
-    nullable: true
-    description: Units of the underlying one contract represents; 1 for cash instruments.
-    metadata:
-      fix:name: ContractMultiplier
-      fix:tag: '231'
-  - name: tick
-    type: double
-    nullable: true
-    description: Smallest price change the venue accepts, which is what makes a spread
-      countable.
-    metadata:
-      fix:name: MinPriceIncrement
-      fix:tag: '969'
-  - name: lot
-    type: double
-    nullable: true
-    description: Quantity increment the venue trades in.
-    metadata:
-      fix:name: RoundLot
-      fix:tag: '561'
-  - name: maturity
-    type: date32[day]
-    nullable: true
-    description: When the contract expires; null for anything that does not.
-    metadata:
-      fix:name: MaturityDate
-      fix:tag: '541'
-  - name: strike
-    type: double
-    nullable: true
-    description: Exercise price of an option.
-    metadata:
-      fix:name: StrikePrice
-      fix:tag: '202'
-  - name: option_kind
-    type: int32
-    description: Which way the option points; `UNKNOWN` for everything that is not
-      one.
-    metadata:
-      fix:name: PutOrCall
-      fix:tag: '201'
-      enum:name: OptionKind
-      enum:type: int
-      enum:values: '{"0":"UNKNOWN","100":"PUT","200":"CALL"}'
-  - name: label
-    type: string
-    nullable: true
-    description: Human description, as reference data publishes it.
-    metadata:
-      fix:name: SecurityDesc
-      fix:tag: '107'
-  - name: legs
-    type: list
-    nullable: true
-    description: The legs of a multileg instrument, in the order the venue sent them.
-    item:
-      type: struct
-      fields:
-      - name: xhash
-        type: int64
-        description: The instrument this leg is of, derived the same way any other
-          one is.
-      - name: symbol
-        type: string
-        description: Identifier as the venue spells the leg.
-        metadata:
-          fix:name: LegSymbol
-          fix:tag: '600'
-      - name: side
-        type: int32
-        description: Which way the strategy takes this leg; `side.sign` turns it into
-          `+1`/`-1`.
-        metadata:
-          fix:name: LegSide
-          fix:tag: '624'
-          enum:name: Side
-          enum:type: int
-          enum:values: '{"0":"UNKNOWN","100":"BUY","110":"BUY_MINUS","120":"BORROW","130":"SUBSCRIBE","200":"SELL","210":"SELL_PLUS","220":"SELL_SHORT","230":"SELL_SHORT_EXEMPT","240":"LEND","250":"REDEEM","300":"CROSS","310":"CROSS_SHORT","320":"CROSS_SHORT_EXEMPT","330":"AS_DEFINED","340":"OPPOSITE","350":"UNDISCLOSED"}'
-      - name: ratio
-        type: double
-        nullable: true
-        description: How many of this leg one unit of the strategy is; the leg's weight.
-        metadata:
-          fix:name: LegRatioQty
-          fix:tag: '623'
-      - name: kind
-        type: int32
-        description: What the leg settles as, read from `LegCFICode <608>` or `LegSecurityType
-          <609>`.
-        metadata:
-          enum:name: AssetKind
-          enum:type: int
-          enum:values: '{"0":"UNKNOWN","100":"CASH","110":"EQUITY","120":"DEBT","130":"FUND","140":"CURRENCY","150":"COMMODITY","160":"INDEX","200":"DERIVATIVE","210":"FUTURE","220":"OPTION","230":"SWAP","240":"WARRANT","250":"FORWARD","300":"STRUCTURED","310":"SPREAD","320":"MULTILEG","330":"BASKET","400":"FINANCING","410":"REPO","420":"LOAN"}'
-      - name: security_id
-        type: string
-        nullable: true
-        description: Identifier in the scheme `security_id_source` names.
-        metadata:
-          fix:name: LegSecurityID
-          fix:tag: '602'
-      - name: security_id_source
-        type: string
-        nullable: true
-        description: Which scheme `security_id` is in, as FIX numbers them.
-        metadata:
-          fix:name: LegSecurityIDSource
-          fix:tag: '603'
-      - name: cfi
-        type: string
-        nullable: true
-        description: ISO 10962 classification of the leg.
-        metadata:
-          fix:name: LegCFICode
-          fix:tag: '608'
-      - name: security_type
-        type: string
-        nullable: true
-        description: What the venue calls this leg, from FIX's own list.
-        metadata:
-          fix:name: LegSecurityType
-          fix:tag: '609'
-      - name: exchange
-        type: string
-        nullable: true
-        description: Where the leg is listed, when it differs from the strategy's
-          venue.
-        metadata:
-          fix:name: LegSecurityExchange
-          fix:tag: '616'
-      - name: currency
-        type: string
-        nullable: true
-        description: ISO 4217 currency the leg is priced in.
-        metadata:
-          fix:name: LegCurrency
-          fix:tag: '556'
-      - name: multiplier
-        type: double
-        nullable: true
-        description: Units of the underlying one leg contract represents.
-        metadata:
-          fix:name: LegContractMultiplier
-          fix:tag: '614'
-      - name: maturity
-        type: date32[day]
-        nullable: true
-        description: When the leg expires; null for anything that does not.
-        metadata:
-          fix:name: LegMaturityDate
-          fix:tag: '611'
-      - name: strike
-        type: double
-        nullable: true
-        description: Exercise price, where the leg is an option.
-        metadata:
-          fix:name: LegStrikePrice
-          fix:tag: '612'
-      - name: option_kind
-        type: int32
-        description: Which way the leg points, where it is an option.
-        metadata:
-          fix:name: LegPutOrCall
-          fix:tag: '1358'
-          enum:name: OptionKind
-          enum:type: int
-          enum:values: '{"0":"UNKNOWN","100":"PUT","200":"CALL"}'
+  description: Notional on the immediately preceding lifecycle version; null on the
+    first.
 - name: metadata
   type: map
   nullable: true
@@ -426,10 +306,6 @@ fields:
   nullable: true
   description: '`(bid_qty - ask_qty) / (bid_qty + ask_qty)`, in `[-1, 1]`; positive
     is bid-heavy.'
-- name: bid_hash
-  type: int64
-  nullable: true
-  description: Which version of the buy side this book was built from.
 - name: bid_px
   type: double
   nullable: true
@@ -446,10 +322,6 @@ fields:
   type: double
   nullable: true
   description: Sum of `qty` over every live buy level.
-- name: ask_hash
-  type: int64
-  nullable: true
-  description: Which version of the sell side this book was built from.
 - name: ask_px
   type: double
   nullable: true
@@ -466,223 +338,1192 @@ fields:
   type: double
   nullable: true
   description: Sum of `qty` over every live sell level.
-- name: bid_alive
+- name: bid_levels
   type: list
   nullable: true
-  description: Every live buy level, best first.
+  description: Changed buy levels on deltas; every live buy level on snapshots, best
+    first.
   item:
     type: struct
     fields:
     - name: px
       type: double
-      description: Price of the level.
+      description: Price of the Market Data Entry.
       metadata:
-        fix:name: MDEntryPx
         fix:tag: '270'
+        fix:type: Price
+        fix:version: 5.0.SP2
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+        fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price"}'
+        fix:used_in: '["Market Data - Snapshot/Full Refresh","Market Data - Incremental
+          Refresh"]'
+        fix:name: MDEntryPx
     - name: qty
       type: double
-      description: Quantity resting at that price.
+      description: Quantity or volume represented by the Market Data Entry.
       metadata:
-        fix:name: MDEntrySize
         fix:tag: '271'
-    - name: orders
-      type: int32
-      nullable: true
-      description: How many orders make up the level; null when the venue does not
-        say.
-      metadata:
-        fix:name: NumberOfOrders
-        fix:tag: '346'
-- name: bid_updates
+        fix:type: Qty
+        fix:version: 5.0.SP2
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+        fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty"}'
+        fix:used_in: '["Market Data - Snapshot/Full Refresh","Market Data - Incremental
+          Refresh"]'
+        fix:name: MDEntrySize
+    - name: order_xhash
+      type: list
+      description: Live order lifecycles at this price, in arrival order.
+      item:
+        type: int64
+    - name: exec_xhash
+      type: list
+      description: Execution lifecycles that changed this level in this delta.
+      item:
+        type: int64
+- name: ask_levels
   type: list
   nullable: true
-  description: The changes that produced this version of the buy side.
+  description: Changed sell levels on deltas; every live sell level on snapshots,
+    best first.
   item:
     type: struct
     fields:
-    - name: action
-      type: int32
-      description: What this does to the book; `>= UpdateAction.REMOVE` takes liquidity
-        out.
-      metadata:
-        fix:name: MDUpdateAction
-        fix:tag: '279'
-        enum:name: UpdateAction
-        enum:type: int
-        enum:values: '{"0":"UNKNOWN","100":"APPLY","110":"NEW","120":"CHANGE","130":"OVERLAY","200":"REMOVE","210":"DELETE","220":"DELETE_THRU","230":"DELETE_FROM"}'
     - name: px
       type: double
-      nullable: true
-      description: Price the update applies at.
+      description: Price of the Market Data Entry.
       metadata:
-        fix:name: MDEntryPx
         fix:tag: '270'
+        fix:type: Price
+        fix:version: 5.0.SP2
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+        fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price"}'
+        fix:used_in: '["Market Data - Snapshot/Full Refresh","Market Data - Incremental
+          Refresh"]'
+        fix:name: MDEntryPx
     - name: qty
       type: double
-      nullable: true
-      description: Quantity after the update; null on a deletion.
+      description: Quantity or volume represented by the Market Data Entry.
       metadata:
-        fix:name: MDEntrySize
         fix:tag: '271'
-    - name: orders
-      type: int32
-      nullable: true
-      description: How many orders make up the level after the update.
-      metadata:
-        fix:name: NumberOfOrders
-        fix:tag: '346'
-    - name: position
-      type: int32
-      nullable: true
-      description: Depth the update applies at, counting from the top; for venues
-        that index.
-      metadata:
-        fix:name: MDEntryPositionNo
-        fix:tag: '290'
-- name: bid_executions
+        fix:type: Qty
+        fix:version: 5.0.SP2
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+        fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty"}'
+        fix:used_in: '["Market Data - Snapshot/Full Refresh","Market Data - Incremental
+          Refresh"]'
+        fix:name: MDEntrySize
+    - name: order_xhash
+      type: list
+      description: Live order lifecycles at this price, in arrival order.
+      item:
+        type: int64
+    - name: exec_xhash
+      type: list
+      description: Execution lifecycles that changed this level in this delta.
+      item:
+        type: int64
+- name: order_events
   type: list
   nullable: true
-  description: The trades that took liquidity out of the buy side.
+  description: Order inputs on deltas; every live order on recovery snapshots.
   item:
     type: struct
     fields:
     - name: unix
       type: int64
-      description: When it traded, in whole nanoseconds since the epoch.
+      description: When the event happened, in whole nanoseconds since the epoch.
       metadata:
         unit: nanosecond
         epoch: '1970-01-01'
-    - name: px
-      type: double
-      description: What it traded at.
+        iceberg:sort_key: asc
+    - name: unix_hour
+      type: int64
+      description: '`unix` truncated to the hour -- what the data is partitioned on.'
       metadata:
-        fix:name: LastPx
-        fix:tag: '31'
-    - name: qty
-      type: double
-      description: How much traded.
+        unit: nanosecond
+        epoch: '1970-01-01'
+        iceberg:derived_from: unix
+    - name: etype
+      type: int32
+      description: Which kind of event this is -- the one column a union of the tables
+        needs.
       metadata:
-        fix:name: LastQty
-        fix:tag: '32'
-    - name: xhash
+        enum:name: EventType
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'
+    - name: cunix
+      type: int64
+      description: When the event was created, upstream of anything that carried it.
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: runix
+      type: int64
+      description: When the event was written down here; deliberately not part of
+        `hash`.
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: eunix
       type: int64
       nullable: true
-      description: Lifecycle of the execution this came from -- the join into that
-        table.
-    - name: aggressor
+      description: When the event stops being true -- an order's expiry, a quote's
+        staleness.
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: sunix
+      type: int64
+      nullable: true
+      description: '`unix` of the event this is a snapshot of; null when it is not
+        one.'
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: hash
+      type: int64
+      description: 'Digest of this version''s content: the same version, twice, is
+        one row.'
+    - name: xhash
+      type: int64
+      description: Identity of the thing across every version of it -- the lifecycle.
+    - name: linked_xhash
+      type: list
+      nullable: true
+      description: Related lifecycle identities, ordered with the primary match first.
+      item:
+        type: int64
+    - name: version
+      type: int64
+      description: Which version of `xhash` this is, counting up from the first.
+    - name: state
+      type: int32
+      description: 'Where the lifecycle stands, as a banded code: `>= State.TERMINAL`
+        is over.'
+      metadata:
+        enum:name: State
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
+    - name: code
+      type: string
+      description: Ticker symbol. Common, "human understood" representation of the
+        security. SecurityID <48> value can be specified if no symbol exists (e.g.
+        non-exchange traded Collective Investment Vehicles) Use "[N/A]" for products
+        which do not have a symbol.
+      metadata:
+        fix:tag: '55'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+        fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
+          Status Request","Quote Acknowledgement","Security Definition Request","Security
+          Definition","New Order - Single","Security Status Request","New Order -
+          List","Security Status","Order Cancel Request","Order Cancel/Replace Request","Order
+          Status Request","Mass Quote","Allocation","List Strike Price","Don''t Know
+          Trade","Quote Request","Quote","Market Data Request","Market Data - Snapshot/Full
+          Refresh","Market Data - Incremental Refresh","Quote Cancel"]'
+        fix:name: Symbol
+    - name: xcode
+      type: string
+      description: Readable identifier shared by every version of this lifecycle.
+    - name: seq
+      type: int64
+      nullable: true
+      description: Integer message sequence number.
+      metadata:
+        fix:tag: '34'
+        fix:type: SeqNum
+        fix:version: 5.0.SP2
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+        fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"SeqNum"}'
+        fix:name: MsgSeqNum
+    - name: prev_hash
+      type: int64
+      nullable: true
+      description: The version this one replaced; null on the first.
+    - name: prev_state
+      type: int32
+      description: The state this version moved out of -- a transition, without the
+        self-join.
+      metadata:
+        enum:name: State
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
+    - name: prev_unix
+      type: int64
+      nullable: true
+      description: When the previous version happened, so dwell time is a subtraction.
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: parent_hash
+      type: list
+      nullable: true
+      description: Every event this one was built from, in the order they were combined.
+      item:
+        type: int64
+    - name: mic
+      type: int32
+      nullable: true
+      description: ISO 10383 venue code, packed losslessly into `int32`; null when
+        absent.
+      metadata:
+        enum:name: MIC
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}'
+        enum:encoding: ascii-big-endian
+        enum:max_bytes: '4'
+        enum:pattern: '[A-Z0-9]{4}'
+    - name: error
+      type: string
+      nullable: true
+      description: Why this event was rejected or could not be interpreted, when known.
+    - name: instrument_xhash
+      type: int64
+      description: Instrument lifecycle identity used to join and partition market
+        rows.
+    - name: kind
+      type: int32
+      description: Standard market semantic, independent of its protocol spelling.
+      metadata:
+        enum:name: MarketKind
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","100":"MARKET","110":"MARKET_ORDER","120":"MARKET_IF_TOUCHED","130":"MARKET_TO_LIMIT","200":"LIMIT","210":"LIMIT_ORDER","220":"LIMIT_ON_CLOSE","230":"LIMIT_OR_BETTER","300":"STOP","310":"STOP_ORDER","320":"STOP_LIMIT","400":"PEGGED","410":"PEGGED_ORDER","420":"PREVIOUSLY_QUOTED","430":"PREVIOUSLY_INDICATED","500":"EXECUTION","510":"ORDER_STATUS","520":"TRADE","530":"TRADE_CORRECT","540":"TRADE_CANCEL","550":"LOCKED","560":"RELEASED","600":"CLEARING","610":"CLEARING_HOLD","620":"RELEASED_TO_CLEARING","700":"ACTIVATION","710":"TRIGGERED"}'
+        enum:fix_values: '{"40":{"1":110,"5":110,"6":110,"A":110,"C":110,"G":110,"J":120,"K":130,"T":130,"2":210,"8":210,"F":210,"I":210,"B":220,"7":230,"3":310,"R":310,"4":320,"S":320,"9":410,"L":410,"M":410,"P":410,"D":420,"H":420,"Q":420,"E":430},"150":{"0":510,"3":510,"4":510,"5":510,"6":510,"7":510,"8":510,"9":510,"A":510,"B":510,"C":510,"D":510,"E":510,"F":520,"G":530,"H":540,"I":510,"J":610,"K":620,"L":710,"M":550,"N":560}}'
+    - name: side
+      type: int32
+      description: Side of order.
+      metadata:
+        fix:tag: '54'
+        fix:type: char
+        fix:version: 5.0.SP2
+        fix:values: '{"1":"Buy","2":"Sell","3":"Buy minus","4":"Sell plus","5":"Sell
+          short","6":"Sell short exempt","7":"Undisclosed (valid for IOI and List
+          Order messages only)","8":"Cross (orders where counterparty is an exchange,
+          valid for all messages except IOIs)","9":"Cross short","A":"Cross short
+          exempt","B":"\"As Defined\" (for use with multileg instruments)","C":"\"Opposite\"
+          (for use with multileg instruments)","D":"Subscribe (e.g. CIV)","E":"Redeem
+          (e.g. CIV)","F":"Lend (FINANCING - identifies direction of collateral)","G":"Borrow
+          (FINANCING - identifies direction of collateral)"}'
+        fix:used_in: '["IOI","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","OrderMassStatusRequest","QuoteStatusReport","QuoteResponse","Confirmation","AllocationReport","SettlementInstructionRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","AllocationInstructionAlert","ExecutionAcknowledgement","OrderMassActionReport","OrderMassActionRequest","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","AllocationInstruction","OrderMassCancelRequest","DontKnowTradeDK","OrderMassCancelReport","Quote","Execution
+          Report","New Order Multileg","Multileg Order Cancel/Replace","Trade Capture
+          Report Request","Trade Capture Report","Order Mass Status Request","Quote
+          Request Reject","Quote Status Report","Quote Response","Allocation Report","Settlement
+          Instruction Request","Collateral Request","Collateral Assignment","Collateral
+          Response","Collateral Report","Collateral Inquiry","New Order Single","New
+          Order List","Order Cancel Request","Order Cancel/Replace Request","Order
+          Status Request","Allocation Instruction","Bid Request","Bid Response","List
+          Strike Price","Order Mass Cancel Request","Don''t Know Trade","Order Mass
+          Cancel Report","Quote Request","New Order Cross","Cross Order Cancel/Replace
+          Request","Settlement Instructions","Cross Order Cancel Request","Indications
+          of Interest","New Order - Multileg","Multileg Order Cancel/Replace Request","New
+          Order - Single","New Order - List","Allocation","New Order - Cross","Indication
+          of Interest","Quote Status Request","Security Definition Request","Security
+          Definition"]'
+        fix:value_names: '{"1":"BUY","2":"SELL","3":"BUY_MINUS","4":"SELL_PLUS","5":"SELL_SHORT","6":"SELL_SHORT_EXEMPT","7":"UNDISCLOSED","8":"CROSS","9":"CROSS_SHORT","B":"AS_DEFINED","C":"OPPOSITE","A":"CROSS_SHORT_EXEMPT","D":"SUBSCRIBE","E":"REDEEM","F":"LEND","G":"BORROW","H":"SELL_UNDISCLOSED"}'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+        fix:name: Side
+        enum:name: Side
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","1112889600":"BUY","1113148750":"BUY_MINUS","1112494674":"BORROW","1398096467":"SUBSCRIBE","1397050444":"SELL","1397510220":"SELL_PLUS","1397248596":"SELL_SHORT","1397245272":"SELL_SHORT_EXEMPT","1279610436":"LEND","1380271181":"REDEEM","1129467731":"CROSS","1129468744":"CROSS_SHORT","1129468741":"CROSS_SHORT_EXEMPT","1095976006":"AS_DEFINED","1330663503":"OPPOSITE","1431192659":"UNDISCLOSED"}'
+        enum:encoding: ascii-big-endian
+        enum:aliases: '{"ASK":"SELL","AS_DEFINED":"ASDF","BID":"BUY","BORROW":"BORR","BUY_MINUS":"BYMN","CROSS":"CROS","CROSS_SHORT":"CRSH","CROSS_SHORT_EXEMPT":"CRSE","LONG":"BUY","OFFER":"SELL","OPPOSITE":"OPPO","REDEEM":"REDM","SELL_PLUS":"SLPL","SELL_SHORT":"SHRT","SELL_SHORT_EXEMPT":"SHEX","SHORT":"SELL_SHORT","SUBSCRIBE":"SUBS","UNDISCLOSED":"UNDS"}'
+        enum:byte_width: '4'
+        enum:padding: nul-right
+        enum:fix_aliases: '{"1":"BUY","2":"SELL","3":"BYMN","4":"SLPL","5":"SHRT","6":"SHEX","7":"UNDS","8":"CROS","9":"CRSH","A":"CRSE","B":"ASDF","C":"OPPO","D":"SUBS","E":"REDM","F":"LEND","G":"BORR"}'
+    - name: px
+      type: double
+      nullable: true
+      description: Price per unit of quantity (e.g. per share)
+      metadata:
+        fix:tag: '44'
+        fix:type: Price
+        fix:version: 5.0.SP2
+        fix:used_in: '["IOI","Advertisement","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","QuoteStatusReport","QuoteResponse","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","NewOrderSingle","OrderCancelReplaceRequest","NewOrderCross","CrossOrderCancelReplaceRequest","Execution
+          Report","New Order Multileg","Multileg Order Cancel/Replace","Quote Request
+          Reject","Quote Status Report","Quote Response","Collateral Request","Collateral
+          Assignment","Collateral Response","Collateral Report","Collateral Inquiry","New
+          Order Single","New Order List","Order Cancel/Replace Request","Bid Response","List
+          Strike Price","Quote Request","New Order Cross","Cross Order Cancel/Replace
+          Request","Indications of Interest","New Order - Multileg","Multileg Order
+          Cancel/Replace Request","New Order - Single","New Order - List","New Order
+          - Cross","Indication of Interest"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+        fix:name: Price
+    - name: prev_px
+      type: double
+      nullable: true
+      description: Price on the immediately preceding lifecycle version; null on the
+        first.
+    - name: px_unit
+      type: string
+      description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty
+        when unstated.'
+    - name: ccy
+      type: int32
+      nullable: true
+      description: 'Identifies currency used for price. Absence of this field is interpreted
+        as the default for the security. It is recommended that systems provide the
+        currency value whenever possible. See Appendix 6-A: Valid Currency Codes for
+        information on obtaining'
+      metadata:
+        fix:tag: '15'
+        fix:type: Currency
+        fix:version: 5.0.SP2
+        fix:used_in: '["IOI","Advertisement","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReport","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportAck","AllocationReport","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","AllocationInstructionAlert","SecurityDefinitionUpdateReport","MarketDefinition","MarketDefinitionUpdateReport","SecurityDefinitionRequest","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","SecurityStatus","OrderCancelReplaceRequest","AllocationInstruction","BidRequest","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","SecurityListRequest","DerivativeSecurityListRequest","Execution
+          Report","Derivative Security List","New Order Multileg","Multileg Order
+          Cancel/Replace","Trade Capture Report","Quote Request Reject","Quote Status
+          Report","Quote Response","Position Maintenance Request","Position Maintenance
+          Report","Request For Positions","Request for Positions Ack","Position Report","Allocation
+          Report","Assignment Report","Collateral Request","Collateral Assignment","Collateral
+          Response","Mass Quote Acknowledgement","Collateral Report","Collateral Inquiry","Collateral
+          Inquiry Ack","Security Definition Request","Security Definition","New Order
+          Single","Security Status Request","New Order List","Security Status","Order
+          Cancel/Replace Request","Mass Quote","Allocation Instruction","Bid Request","List
+          Strike Price","Quote Request","New Order Cross","Cross Order Cancel/Replace
+          Request","Market Data - Snapshot/Full Refresh","Security List Request","Market
+          Data - Incremental Refresh","Security List","Derivative Security List Request","Indications
+          of Interest","New Order - Multileg","Multileg Order Cancel/Replace Request","New
+          Order - Single","New Order - List","Allocation","New Order - Cross","Indication
+          of Interest"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency","4.2":"Currency","4.1":"char","4.0":"char"}'
+        fix:name: Currency
+        enum:name: Currency
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","1431520304":"USD","1163219504":"EUR","1195528240":"GBP","1246779696":"JPY","1128810032":"CHF","1128350768":"CAD","1096107056":"AUD","1314538544":"NZD","1129208112":"CNY","1212892208":"HKD","1397179440":"SGD","1397050160":"SEK","1313819440":"NOK","1145785136":"DKK","1347178032":"PLN","1129990960":"CZK","1213548080":"HUF","1297632816":"MXN","1112689712":"BRL","1514230320":"ZAR","1229869616":"INR","1263687472":"KRW","1415005232":"TWD","1480676656":"XAU","1480673072":"XAG","1481659440":"XPT","1481655344":"XPD","1481921328":"XTS","1482184752":"XXX"}'
+        enum:encoding: ascii-currency-decimals
+        enum:byte_width: '4'
+        enum:layout: CCCn
+        enum:decimal_byte: ascii-digit
+        enum:aliases: '{"$":"USD0","US$":"USD0","\u00a3":"GBP0","\u00a5":"JPY0","\u20ac":"EUR0"}'
+    - name: qty
+      type: double
+      nullable: true
+      description: Quantity ordered. This represents the number of shares for equities
+        or par, face or nominal value for FI instruments. (Prior to FIX 4.2 this field
+        was of type int)
+      metadata:
+        fix:tag: '38'
+        fix:type: Qty
+        fix:version: 5.0.SP2
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+        fix:used_in: '["Confirmation","Allocation Report","Confirmation Request","Allocation
+          Instruction","Quote Request Reject","Quote Request","Execution Report","New
+          Order - Single","New Order - List","Order Cancel Request","Order Cancel/Replace
+          Request","Don''t Know Trade"]'
+        fix:name: OrderQty
+    - name: prev_qty
+      type: double
+      nullable: true
+      description: Quantity on the immediately preceding lifecycle version; null on
+        the first.
+    - name: qty_unit
+      type: string
+      description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
+    - name: notional
+      type: double
+      nullable: true
+      description: '`px * qty * multiplier` in the instrument''s currency, as the
+        producer computed it.'
+    - name: prev_notional
+      type: double
+      nullable: true
+      description: Notional on the immediately preceding lifecycle version; null on
+        the first.
+    - name: metadata
+      type: map
+      nullable: true
+      description: Protocol fields carried verbatim, exactly as the venue sent them.
+      key:
+        type: string
+      value:
+        type: string
+    - name: tif
+      type: int32
+      description: Specifies how long the order remains in effect. Absence of this
+        field is interpreted as DAY. NOTE not applicable to CIV Orders.
+      metadata:
+        fix:tag: '59'
+        fix:type: char
+        fix:version: 5.0.SP2
+        fix:values: '{"0":"Day (or session)","1":"Good Till Cancel (GTC)","2":"At
+          the Opening (OPG)","3":"Immediate Or Cancel (IOC)","4":"Fill Or Kill (FOK)","5":"Good
+          Till Crossing (GTX)","6":"Good Till Date (GTD)","7":"At the Close","8":"Good
+          Through Crossing","9":"At Crossing"}'
+        fix:used_in: '["ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelReplaceRequest","NewOrderCross","CrossOrderCancelReplaceRequest","Execution
+          Report","New Order Multileg","Multileg Order Cancel/Replace","New Order
+          Single","New Order List","Order Cancel/Replace Request","New Order Cross","Cross
+          Order Cancel/Replace Request","Market Data - Snapshot/Full Refresh","Market
+          Data - Incremental Refresh","New Order - Multileg","Multileg Order Cancel/Replace
+          Request","New Order - Single","New Order - List","New Order - Cross"]'
+        fix:value_names: '{"0":"DAY","1":"GOOD_TILL_CANCEL","2":"AT_THE_OPENING","3":"IMMEDIATE_OR_CANCEL","4":"FILL_OR_KILL","5":"GOOD_TILL_CROSSING","6":"GOOD_TILL_DATE","7":"AT_THE_CLOSE","8":"GOOD_THROUGH_CROSSING","9":"AT_CROSSING","A":"GOOD_FOR_TIME","B":"GOOD_FOR_AUCTION","C":"GOOD_FOR_MONTH"}'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+        fix:name: TimeInForce
+        enum:name: TimeInForce
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","1229802820":"IMMEDIATE","1229931264":"IOC","1179601664":"FOK","1397052243":"SESSION","1145133312":"DAY","1330660686":"AT_OPEN","1129074515":"AT_CLOSE","1196709888":"GTX","1196704594":"GOOD_THROUGH_CROSSING","1096041298":"AT_CROSSING","1195786496":"GFA","1380275028":"RESTING","1196704512":"GTC","1196704768":"GTD","1195791360":"GFT","1195789568":"GFM"}'
+        enum:encoding: ascii-big-endian
+        enum:aliases: '{"AT_CLOSE":"CLOS","AT_CROSSING":"ATCR","AT_OPEN":"OPEN","FILL_OR_KILL":"FOK","GOOD_THROUGH_CROSSING":"GTCR","GOOD_TILL_CANCELLED":"GTC","GOOD_TILL_DATE":"GTD","GOOD_TIL_CANCELLED":"GTC","GOOD_TIL_DATE":"GTD","IMMEDIATE":"IMMD","IMMEDIATE_OR_CANCEL":"IOC","RESTING":"REST","SESSION":"SESS"}'
+        enum:byte_width: '4'
+        enum:padding: nul-right
+        enum:fix_aliases: '{"0":"DAY","1":"GTC","2":"OPEN","3":"IOC","4":"FOK","5":"GTX","6":"GTD","7":"CLOS","8":"GTCR","9":"ATCR","A":"GFT","B":"GFA","C":"GFM"}'
+    - name: exposure_duration
+      type: int64
+      nullable: true
+      description: Duration for which an order remains exposed.
+      metadata:
+        fix:tag: '1629'
+        fix:type: int
+        fix:version: FIX.Latest
+        fix:versions: '["FIX.Latest"]'
+        fix:types: '{"FIX.Latest":"int"}'
+        fix:name: ExposureDuration
+    - name: exposure_duration_unit
+      type: int32
+      nullable: true
+      description: Time unit in which ExposureDuration is expressed.
+      metadata:
+        fix:tag: '1916'
+        fix:type: int
+        fix:version: FIX.Latest
+        fix:versions: '["FIX.Latest"]'
+        fix:types: '{"FIX.Latest":"int"}'
+        fix:name: ExposureDurationUnit
+    - name: stop_px
+      type: double
+      nullable: true
+      description: Price per unit of quantity (e.g. per share)
+      metadata:
+        fix:tag: '99'
+        fix:type: Price
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelReplaceRequest","NewOrderCross","CrossOrderCancelReplaceRequest","Execution
+          Report","New Order Multileg","Multileg Order Cancel/Replace","New Order
+          Single","New Order List","Order Cancel/Replace Request","New Order Cross","Cross
+          Order Cancel/Replace Request","New Order - Multileg","Multileg Order Cancel/Replace
+          Request","New Order - Single","New Order - List","New Order - Cross"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+        fix:name: StopPx
+    - name: hidden_qty
+      type: double
+      nullable: true
+      description: Current quantity hidden from the displayed book; null when unstated.
+    - name: vwap
+      type: double
+      nullable: true
+      description: Calculated average price of all fills on this order. For Fixed
+        Income trades AvgPx <6> is always expressed as percent-of-par , regardless
+        of the PriceType <423> of LastPx <31> . I.e., AvgPx will contain an average
+        of percent-of-par values (see LastParPx <669> ) for issues traded in Yield,
+        Spread or Discount.
+      metadata:
+        fix:tag: '6'
+        fix:type: Price
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","TradeCaptureReport","Confirmation","ExecutionAcknowledgement","TradeCaptureReportAck","AllocationReport","AllocationInstructionAlert","AllocationInstruction","Execution
+          Report","Trade Capture Report","Allocation Report","Allocation Instruction","List
+          Status","Allocation"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+        fix:name: AvgPx
+    - name: indicative
       type: bool
+      description: Whether this interest is a quote rather than a firm order.
+    - name: order_id
+      type: string
       nullable: true
-      description: Whether this side was the one taking liquidity.
+      description: Unique identifier for Order as assigned by sell-side (broker, exchange,
+        ECN). Uniqueness must be guaranteed within a single trading day. Firms which
+        accept multi-day orders should consider embedding a date within the OrderID
+        field to assure uniqueness across days.
       metadata:
-        fix:name: AggressorIndicator
-        fix:tag: '1057'
-- name: ask_alive
+        fix:tag: '37'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","TradeCaptureReportRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","ExecutionAcknowledgement","Email","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","DontKnowTradeDK","OrderMassCancelReport","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","Execution
+          Report","Order Cancel Reject","Multileg Order Cancel/Replace","Trade Capture
+          Report Request","Trade Capture Report","Confirmation","Allocation Report","Collateral
+          Request","Collateral Assignment","Collateral Response","Collateral Report","Collateral
+          Inquiry","Collateral Inquiry Ack","Confirmation Request","Order Cancel Request","Order
+          Cancel/Replace Request","Order Status Request","Allocation Instruction","Don''t
+          Know Trade","Order Mass Cancel Report","Cross Order Cancel/Replace Request","Cross
+          Order Cancel Request","Market Data - Snapshot/Full Refresh","Market Data
+          - Incremental Refresh","Multileg Order Cancel/Replace Request","Allocation"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+        fix:name: OrderID
+    - name: client_order_id
+      type: string
+      nullable: true
+      description: Unique identifier for Order as assigned by the buy-side (institution,
+        broker, intermediary etc.) (identified by SenderCompID <49> or OnBehalfOfCompID
+        <115> as appropriate). Uniqueness must be guaranteed within a single trading
+        day. Firms, particularly those which electronically submit multi-day orders,
+        trade globally or throughout market close periods, should ensure uniqueness
+        across days, for example by embedding a date within the ClOrdID <11> field.
+      metadata:
+        fix:tag: '11'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","QuoteResponse","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","ExecutionAcknowledgement","OrderMassActionReport","Email","OrderMassActionRequest","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","RegistrationInstructions","RegistrationInstructionsResponse","OrderMassCancelRequest","OrderMassCancelReport","QuoteRequest","SettlementInstructions","Execution
+          Report","Order Cancel Reject","New Order Multileg","Multileg Order Cancel/Replace","Trade
+          Capture Report Request","Trade Capture Report","Quote Response","Confirmation","Allocation
+          Report","Collateral Request","Collateral Assignment","Collateral Response","Collateral
+          Report","Collateral Inquiry","Collateral Inquiry Ack","Confirmation Request","New
+          Order Single","New Order List","Order Cancel Request","Order Cancel/Replace
+          Request","Order Status Request","Allocation Instruction","List Strike Price","List
+          Status","Registration Instructions","Registration Instructions Response","Order
+          Mass Cancel Request","Order Mass Cancel Report","Quote Request","New Order
+          Cross","Cross Order Cancel/Replace Request","Settlement Instructions","Cross
+          Order Cancel Request","New Order - Multileg","Multileg Order Cancel/Replace
+          Request","New Order - Single","New Order - List","Allocation","New Order
+          - Cross"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+        fix:name: ClOrdID
+    - name: prev_client_order_id
+      type: string
+      nullable: true
+      description: ClOrdID <11> of the previous order (NOT the initial order of the
+        day) as assigned by the institution, used to identify the previous order in
+        cancel and cancel/replace requests.
+      metadata:
+        fix:tag: '41'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","OrderCancelRequest","OrderCancelReplaceRequest","Execution
+          Report","Order Cancel Reject","Multileg Order Cancel/Replace","Order Cancel
+          Request","Order Cancel/Replace Request","Order Mass Cancel Report","Cross
+          Order Cancel/Replace Request","Cross Order Cancel Request"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+        fix:name: OrigClOrdID
+    - name: reason_code
+      type: int32
+      nullable: true
+      description: 'Code to identify reason for order rejection. Note: Values 3, 4,
+        and 5 will be used when rejecting an order due to pre-allocation information
+        errors.'
+      metadata:
+        fix:tag: '103'
+        fix:type: int
+        fix:version: 5.0.SP2
+        fix:values: '{"0":"Broker / Exchange option","1":"Unknown symbol","2":"Exchange
+          closed","3":"Order exceeds limit","4":"Too late to enter","5":"Unknown order","6":"Duplicate
+          Order (e.g. dupe ClOrdID <11> )","7":"Duplicate of a verbally communicated
+          order","8":"Stale order","9":"Trade along required","10":"Invalid Investor
+          ID","11":"Unsupported order characteristic","12":"Surveillence Option","13":"Incorrect
+          quantity","14":"Incorrect allocated quantity","15":"Unknown account(s)","99":"Other","18":"Invalid
+          price increment","16":"Price exceeds current price band"}'
+        fix:used_in: '["ExecutionReport","Execution Report","List Status"]'
+        fix:value_names: '{"0":"BROKER_CREDIT","1":"UNKNOWN_SYMBOL","2":"EXCHANGE_CLOSED","3":"ORDER_EXCEEDS_LIMIT","4":"TOO_LATE_TO_ENTER","5":"UNKNOWN_ORDER","6":"DUPLICATE_ORDER","7":"DUPLICATE_OF_A_VERBALLY_COMMUNICATED_ORDER","8":"STALE_ORDER","9":"TRADE_ALONG_REQUIRED","10":"INVALID_INVESTOR_ID","11":"UNSUPPORTED_ORDER_CHARACTERISTIC","12":"SURVEILLANCE_OPTION","13":"INCORRECT_QUANTITY","14":"INCORRECT_ALLOCATED_QUANTITY","15":"UNKNOWN_ACCOUNT","99":"OTHER","18":"INVALID_PRICE_INCREMENT","16":"PRICE_EXCEEDS_CURRENT_PRICE_BAND","19":"REFERENCE_PRICE_NOT_AVAILABLE","20":"NOTIONAL_VALUE_EXCEEDS_THRESHOLD","21":"ALGORITHM_RISK_THRESHOLD_BREACHED","22":"SHORT_SELL_NOT_PERMITTED","23":"SHORT_SELL_SECURITY_PRE_BORROW_RESTRICTION","24":"SHORT_SELL_ACCOUNT_PRE_BORROW_RESTRICTION","25":"INSUFFICIENT_CREDIT_LIMIT","26":"EXCEEDED_CLIP_SIZE_LIMIT","27":"EXCEEDED_MAX_NOTIONAL_ORDER_AMT","28":"EXCEEDED_DV01_PV01_LIMIT","29":"EXCEEDED_CS01_LIMIT"}'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int","4.1":"int","4.0":"int"}'
+        fix:name: OrdRejReason
+    - name: reason
+      type: string
+      nullable: true
+      description: 'Free format text string (Note: this field does not have a specified
+        maximum length)'
+      metadata:
+        fix:tag: '58'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["Reject","Logout","IOI","Advertisement <7","ExecutionReport","OrderCancelReject","Logon","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","QuoteRequestReject","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportRequestAck","TradeCaptureReportAck","AllocationReport","AllocationReportAck","Confirmation_Ack","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","MassQuoteAcknowledgement","CollateralReport","CollateralInquiry","CollateralInquiryAck","ConfirmationRequest","AllocationInstructionAlert","ExecutionAcknowledgement","ContraryIntentionReport","SecurityDefinitionUpdateReport","SettlementObligationReport","MarketDefinition","MarketDefinitionUpdateReport","ApplicationMessageRequest","ApplicationMessageRequestAck","ApplicationMessageReport","OrderMassActionReport","SecurityDefinitionRequest","OrderMassActionRequest","UserNotification","StreamAssignmentReportACK","PartyDetailsListRequest","PartyDetailsListReport","SecurityDefinition","NewOrderSingle","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","TradingSessionStatus","BusinessMessageReject","AllocationInstruction","BidRequest","ListCancelRequest","ListExecute","ListStatusRequest","AllocationInstructionAck","OrderMassCancelRequest","DontKnowTradeDK","OrderMassCancelReport","QuoteRequest","Quote","SettlementInstructions","SecurityTypeRequest","SecurityTypes","SecurityListRequest","MarketDataRequestReject","DerivativeSecurityListRequest","Advertisement","Execution
+          Report","Order Cancel Reject","Derivative Security List","New Order Multileg","Multileg
+          Order Cancel/Replace","Trade Capture Report Request","Trade Capture Report","Quote
+          Request Reject","Quote Status Report","Quote Response","Position Maintenance
+          Request","Position Maintenance Report","Request For Positions","Request
+          for Positions Ack","Position Report","Trade Capture Report Request Ack","Trade
+          Capture Report Ack","Allocation Report","Allocation Report Ack","Confirmation
+          Ack","Assignment Report","Collateral Request","Collateral Assignment","Collateral
+          Response","Mass Quote Acknowledgement","News","Collateral Report","Collateral
+          Inquiry","Collateral Inquiry Ack","Confirmation Request","Security Definition
+          Request","Email","Security Definition","New Order Single","New Order List","Security
+          Status","Order Cancel Request","Order Cancel/Replace Request","Trading Session
+          Status","Business Message Reject","Allocation Instruction","Bid Request","List
+          Cancel Request","Bid Response","List Execute","List Strike Price","List
+          Status Request","List Status","Allocation Instruction Ack","Order Mass Cancel
+          Request","Don''t Know Trade","Order Mass Cancel Report","Quote Request","New
+          Order Cross","Cross Order Cancel/Replace Request","Settlement Instructions","Cross
+          Order Cancel Request","Security Type Request","Security Types","Market Data
+          - Snapshot/Full Refresh","Security List Request","Market Data - Incremental
+          Refresh","Security List","Market Data Request Reject","Derivative Security
+          List Request","Indications of Interest","New Order - Multileg","Multileg
+          Order Cancel/Replace Request","New Order - Single","New Order - List","Allocation","Allocation
+          ACK","New Order - Cross","Indication of Interest","Quote Acknowledgement"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+        fix:name: Text
+- name: execution_events
   type: list
   nullable: true
-  description: Every live sell level, best first.
-  item:
-    type: struct
-    fields:
-    - name: px
-      type: double
-      description: Price of the level.
-      metadata:
-        fix:name: MDEntryPx
-        fix:tag: '270'
-    - name: qty
-      type: double
-      description: Quantity resting at that price.
-      metadata:
-        fix:name: MDEntrySize
-        fix:tag: '271'
-    - name: orders
-      type: int32
-      nullable: true
-      description: How many orders make up the level; null when the venue does not
-        say.
-      metadata:
-        fix:name: NumberOfOrders
-        fix:tag: '346'
-- name: ask_updates
-  type: list
-  nullable: true
-  description: The changes that produced this version of the sell side.
-  item:
-    type: struct
-    fields:
-    - name: action
-      type: int32
-      description: What this does to the book; `>= UpdateAction.REMOVE` takes liquidity
-        out.
-      metadata:
-        fix:name: MDUpdateAction
-        fix:tag: '279'
-        enum:name: UpdateAction
-        enum:type: int
-        enum:values: '{"0":"UNKNOWN","100":"APPLY","110":"NEW","120":"CHANGE","130":"OVERLAY","200":"REMOVE","210":"DELETE","220":"DELETE_THRU","230":"DELETE_FROM"}'
-    - name: px
-      type: double
-      nullable: true
-      description: Price the update applies at.
-      metadata:
-        fix:name: MDEntryPx
-        fix:tag: '270'
-    - name: qty
-      type: double
-      nullable: true
-      description: Quantity after the update; null on a deletion.
-      metadata:
-        fix:name: MDEntrySize
-        fix:tag: '271'
-    - name: orders
-      type: int32
-      nullable: true
-      description: How many orders make up the level after the update.
-      metadata:
-        fix:name: NumberOfOrders
-        fix:tag: '346'
-    - name: position
-      type: int32
-      nullable: true
-      description: Depth the update applies at, counting from the top; for venues
-        that index.
-      metadata:
-        fix:name: MDEntryPositionNo
-        fix:tag: '290'
-- name: ask_executions
-  type: list
-  nullable: true
-  description: The trades that took liquidity out of the sell side.
+  description: Complete execution inputs folded into this delta; empty on snapshots.
   item:
     type: struct
     fields:
     - name: unix
       type: int64
-      description: When it traded, in whole nanoseconds since the epoch.
+      description: When the event happened, in whole nanoseconds since the epoch.
       metadata:
         unit: nanosecond
         epoch: '1970-01-01'
-    - name: px
-      type: double
-      description: What it traded at.
+        iceberg:sort_key: asc
+    - name: unix_hour
+      type: int64
+      description: '`unix` truncated to the hour -- what the data is partitioned on.'
       metadata:
-        fix:name: LastPx
-        fix:tag: '31'
-    - name: qty
-      type: double
-      description: How much traded.
+        unit: nanosecond
+        epoch: '1970-01-01'
+        iceberg:derived_from: unix
+    - name: etype
+      type: int32
+      description: Which kind of event this is -- the one column a union of the tables
+        needs.
       metadata:
-        fix:name: LastQty
-        fix:tag: '32'
-    - name: xhash
+        enum:name: EventType
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'
+    - name: cunix
+      type: int64
+      description: When the event was created, upstream of anything that carried it.
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: runix
+      type: int64
+      description: When the event was written down here; deliberately not part of
+        `hash`.
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: eunix
       type: int64
       nullable: true
-      description: Lifecycle of the execution this came from -- the join into that
-        table.
+      description: When the event stops being true -- an order's expiry, a quote's
+        staleness.
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: sunix
+      type: int64
+      nullable: true
+      description: '`unix` of the event this is a snapshot of; null when it is not
+        one.'
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: hash
+      type: int64
+      description: 'Digest of this version''s content: the same version, twice, is
+        one row.'
+    - name: xhash
+      type: int64
+      description: Identity of the thing across every version of it -- the lifecycle.
+    - name: linked_xhash
+      type: list
+      nullable: true
+      description: Related lifecycle identities, ordered with the primary match first.
+      item:
+        type: int64
+    - name: version
+      type: int64
+      description: Which version of `xhash` this is, counting up from the first.
+    - name: state
+      type: int32
+      description: 'Where the lifecycle stands, as a banded code: `>= State.TERMINAL`
+        is over.'
+      metadata:
+        enum:name: State
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
+    - name: code
+      type: string
+      description: Ticker symbol. Common, "human understood" representation of the
+        security. SecurityID <48> value can be specified if no symbol exists (e.g.
+        non-exchange traded Collective Investment Vehicles) Use "[N/A]" for products
+        which do not have a symbol.
+      metadata:
+        fix:tag: '55'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+        fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
+          Status Request","Quote Acknowledgement","Security Definition Request","Security
+          Definition","New Order - Single","Security Status Request","New Order -
+          List","Security Status","Order Cancel Request","Order Cancel/Replace Request","Order
+          Status Request","Mass Quote","Allocation","List Strike Price","Don''t Know
+          Trade","Quote Request","Quote","Market Data Request","Market Data - Snapshot/Full
+          Refresh","Market Data - Incremental Refresh","Quote Cancel"]'
+        fix:name: Symbol
+    - name: xcode
+      type: string
+      description: Readable identifier shared by every version of this lifecycle.
+    - name: seq
+      type: int64
+      nullable: true
+      description: Integer message sequence number.
+      metadata:
+        fix:tag: '34'
+        fix:type: SeqNum
+        fix:version: 5.0.SP2
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+        fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"SeqNum"}'
+        fix:name: MsgSeqNum
+    - name: prev_hash
+      type: int64
+      nullable: true
+      description: The version this one replaced; null on the first.
+    - name: prev_state
+      type: int32
+      description: The state this version moved out of -- a transition, without the
+        self-join.
+      metadata:
+        enum:name: State
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
+    - name: prev_unix
+      type: int64
+      nullable: true
+      description: When the previous version happened, so dwell time is a subtraction.
+      metadata:
+        unit: nanosecond
+        epoch: '1970-01-01'
+    - name: parent_hash
+      type: list
+      nullable: true
+      description: Every event this one was built from, in the order they were combined.
+      item:
+        type: int64
+    - name: mic
+      type: int32
+      nullable: true
+      description: ISO 10383 venue code, packed losslessly into `int32`; null when
+        absent.
+      metadata:
+        enum:name: MIC
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}'
+        enum:encoding: ascii-big-endian
+        enum:max_bytes: '4'
+        enum:pattern: '[A-Z0-9]{4}'
+    - name: error
+      type: string
+      nullable: true
+      description: Why this event was rejected or could not be interpreted, when known.
+    - name: instrument_xhash
+      type: int64
+      description: Instrument lifecycle identity used to join and partition market
+        rows.
+    - name: kind
+      type: int32
+      description: Standard market semantic, independent of its protocol spelling.
+      metadata:
+        enum:name: MarketKind
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","100":"MARKET","110":"MARKET_ORDER","120":"MARKET_IF_TOUCHED","130":"MARKET_TO_LIMIT","200":"LIMIT","210":"LIMIT_ORDER","220":"LIMIT_ON_CLOSE","230":"LIMIT_OR_BETTER","300":"STOP","310":"STOP_ORDER","320":"STOP_LIMIT","400":"PEGGED","410":"PEGGED_ORDER","420":"PREVIOUSLY_QUOTED","430":"PREVIOUSLY_INDICATED","500":"EXECUTION","510":"ORDER_STATUS","520":"TRADE","530":"TRADE_CORRECT","540":"TRADE_CANCEL","550":"LOCKED","560":"RELEASED","600":"CLEARING","610":"CLEARING_HOLD","620":"RELEASED_TO_CLEARING","700":"ACTIVATION","710":"TRIGGERED"}'
+        enum:fix_values: '{"40":{"1":110,"5":110,"6":110,"A":110,"C":110,"G":110,"J":120,"K":130,"T":130,"2":210,"8":210,"F":210,"I":210,"B":220,"7":230,"3":310,"R":310,"4":320,"S":320,"9":410,"L":410,"M":410,"P":410,"D":420,"H":420,"Q":420,"E":430},"150":{"0":510,"3":510,"4":510,"5":510,"6":510,"7":510,"8":510,"9":510,"A":510,"B":510,"C":510,"D":510,"E":510,"F":520,"G":530,"H":540,"I":510,"J":610,"K":620,"L":710,"M":550,"N":560}}'
+    - name: side
+      type: int32
+      description: Side of order.
+      metadata:
+        fix:tag: '54'
+        fix:type: char
+        fix:version: 5.0.SP2
+        fix:values: '{"1":"Buy","2":"Sell","3":"Buy minus","4":"Sell plus","5":"Sell
+          short","6":"Sell short exempt","7":"Undisclosed (valid for IOI and List
+          Order messages only)","8":"Cross (orders where counterparty is an exchange,
+          valid for all messages except IOIs)","9":"Cross short","A":"Cross short
+          exempt","B":"\"As Defined\" (for use with multileg instruments)","C":"\"Opposite\"
+          (for use with multileg instruments)","D":"Subscribe (e.g. CIV)","E":"Redeem
+          (e.g. CIV)","F":"Lend (FINANCING - identifies direction of collateral)","G":"Borrow
+          (FINANCING - identifies direction of collateral)"}'
+        fix:used_in: '["IOI","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","OrderMassStatusRequest","QuoteStatusReport","QuoteResponse","Confirmation","AllocationReport","SettlementInstructionRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","AllocationInstructionAlert","ExecutionAcknowledgement","OrderMassActionReport","OrderMassActionRequest","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","AllocationInstruction","OrderMassCancelRequest","DontKnowTradeDK","OrderMassCancelReport","Quote","Execution
+          Report","New Order Multileg","Multileg Order Cancel/Replace","Trade Capture
+          Report Request","Trade Capture Report","Order Mass Status Request","Quote
+          Request Reject","Quote Status Report","Quote Response","Allocation Report","Settlement
+          Instruction Request","Collateral Request","Collateral Assignment","Collateral
+          Response","Collateral Report","Collateral Inquiry","New Order Single","New
+          Order List","Order Cancel Request","Order Cancel/Replace Request","Order
+          Status Request","Allocation Instruction","Bid Request","Bid Response","List
+          Strike Price","Order Mass Cancel Request","Don''t Know Trade","Order Mass
+          Cancel Report","Quote Request","New Order Cross","Cross Order Cancel/Replace
+          Request","Settlement Instructions","Cross Order Cancel Request","Indications
+          of Interest","New Order - Multileg","Multileg Order Cancel/Replace Request","New
+          Order - Single","New Order - List","Allocation","New Order - Cross","Indication
+          of Interest","Quote Status Request","Security Definition Request","Security
+          Definition"]'
+        fix:value_names: '{"1":"BUY","2":"SELL","3":"BUY_MINUS","4":"SELL_PLUS","5":"SELL_SHORT","6":"SELL_SHORT_EXEMPT","7":"UNDISCLOSED","8":"CROSS","9":"CROSS_SHORT","B":"AS_DEFINED","C":"OPPOSITE","A":"CROSS_SHORT_EXEMPT","D":"SUBSCRIBE","E":"REDEEM","F":"LEND","G":"BORROW","H":"SELL_UNDISCLOSED"}'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+        fix:name: Side
+        enum:name: Side
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","1112889600":"BUY","1113148750":"BUY_MINUS","1112494674":"BORROW","1398096467":"SUBSCRIBE","1397050444":"SELL","1397510220":"SELL_PLUS","1397248596":"SELL_SHORT","1397245272":"SELL_SHORT_EXEMPT","1279610436":"LEND","1380271181":"REDEEM","1129467731":"CROSS","1129468744":"CROSS_SHORT","1129468741":"CROSS_SHORT_EXEMPT","1095976006":"AS_DEFINED","1330663503":"OPPOSITE","1431192659":"UNDISCLOSED"}'
+        enum:encoding: ascii-big-endian
+        enum:aliases: '{"ASK":"SELL","AS_DEFINED":"ASDF","BID":"BUY","BORROW":"BORR","BUY_MINUS":"BYMN","CROSS":"CROS","CROSS_SHORT":"CRSH","CROSS_SHORT_EXEMPT":"CRSE","LONG":"BUY","OFFER":"SELL","OPPOSITE":"OPPO","REDEEM":"REDM","SELL_PLUS":"SLPL","SELL_SHORT":"SHRT","SELL_SHORT_EXEMPT":"SHEX","SHORT":"SELL_SHORT","SUBSCRIBE":"SUBS","UNDISCLOSED":"UNDS"}'
+        enum:byte_width: '4'
+        enum:padding: nul-right
+        enum:fix_aliases: '{"1":"BUY","2":"SELL","3":"BYMN","4":"SLPL","5":"SHRT","6":"SHEX","7":"UNDS","8":"CROS","9":"CRSH","A":"CRSE","B":"ASDF","C":"OPPO","D":"SUBS","E":"REDM","F":"LEND","G":"BORR"}'
+    - name: px
+      type: double
+      nullable: true
+      description: Price of this (last) fill.
+      metadata:
+        fix:tag: '31'
+        fix:type: Price
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","TradeCaptureReport","TradeCaptureReportAck","ExecutionAcknowledgement","SecurityStatus","DontKnowTradeDK","Execution
+          Report","Trade Capture Report","Allocation Report","Security Status","Allocation
+          Instruction","Don''t Know Trade","Allocation"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+        fix:name: LastPx
+    - name: prev_px
+      type: double
+      nullable: true
+      description: Price on the immediately preceding lifecycle version; null on the
+        first.
+    - name: px_unit
+      type: string
+      description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty
+        when unstated.'
+    - name: ccy
+      type: int32
+      nullable: true
+      description: 'Identifies currency used for price. Absence of this field is interpreted
+        as the default for the security. It is recommended that systems provide the
+        currency value whenever possible. See Appendix 6-A: Valid Currency Codes for
+        information on obtaining'
+      metadata:
+        fix:tag: '15'
+        fix:type: Currency
+        fix:version: 5.0.SP2
+        fix:used_in: '["IOI","Advertisement","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReport","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportAck","AllocationReport","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","AllocationInstructionAlert","SecurityDefinitionUpdateReport","MarketDefinition","MarketDefinitionUpdateReport","SecurityDefinitionRequest","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","SecurityStatus","OrderCancelReplaceRequest","AllocationInstruction","BidRequest","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","SecurityListRequest","DerivativeSecurityListRequest","Execution
+          Report","Derivative Security List","New Order Multileg","Multileg Order
+          Cancel/Replace","Trade Capture Report","Quote Request Reject","Quote Status
+          Report","Quote Response","Position Maintenance Request","Position Maintenance
+          Report","Request For Positions","Request for Positions Ack","Position Report","Allocation
+          Report","Assignment Report","Collateral Request","Collateral Assignment","Collateral
+          Response","Mass Quote Acknowledgement","Collateral Report","Collateral Inquiry","Collateral
+          Inquiry Ack","Security Definition Request","Security Definition","New Order
+          Single","Security Status Request","New Order List","Security Status","Order
+          Cancel/Replace Request","Mass Quote","Allocation Instruction","Bid Request","List
+          Strike Price","Quote Request","New Order Cross","Cross Order Cancel/Replace
+          Request","Market Data - Snapshot/Full Refresh","Security List Request","Market
+          Data - Incremental Refresh","Security List","Derivative Security List Request","Indications
+          of Interest","New Order - Multileg","Multileg Order Cancel/Replace Request","New
+          Order - Single","New Order - List","Allocation","New Order - Cross","Indication
+          of Interest"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency","4.2":"Currency","4.1":"char","4.0":"char"}'
+        fix:name: Currency
+        enum:name: Currency
+        enum:key_type: int32
+        enum:value_type: utf8
+        enum:values: '{"0":"UNKNOWN","1431520304":"USD","1163219504":"EUR","1195528240":"GBP","1246779696":"JPY","1128810032":"CHF","1128350768":"CAD","1096107056":"AUD","1314538544":"NZD","1129208112":"CNY","1212892208":"HKD","1397179440":"SGD","1397050160":"SEK","1313819440":"NOK","1145785136":"DKK","1347178032":"PLN","1129990960":"CZK","1213548080":"HUF","1297632816":"MXN","1112689712":"BRL","1514230320":"ZAR","1229869616":"INR","1263687472":"KRW","1415005232":"TWD","1480676656":"XAU","1480673072":"XAG","1481659440":"XPT","1481655344":"XPD","1481921328":"XTS","1482184752":"XXX"}'
+        enum:encoding: ascii-currency-decimals
+        enum:byte_width: '4'
+        enum:layout: CCCn
+        enum:decimal_byte: ascii-digit
+        enum:aliases: '{"$":"USD0","US$":"USD0","\u00a3":"GBP0","\u00a5":"JPY0","\u20ac":"EUR0"}'
+    - name: qty
+      type: double
+      nullable: true
+      description: Quantity (e.g. shares) bought/sold on this (last) fill. (Prior
+        to FIX 4.2 this field was of type int)
+      metadata:
+        fix:tag: '32'
+        fix:type: Qty
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","TradeCaptureReport","TradeCaptureReportAck","ExecutionAcknowledgement","DontKnowTradeDK","Execution
+          Report","Trade Capture Report","Allocation Report","Allocation Instruction","Don''t
+          Know Trade","Allocation"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+        fix:names: '{"5.0.SP2":"LastQty","5.0.SP1":"LastQty","5.0":"LastQty","4.4":"LastQty","4.3":"LastShares
+          prior to FIX 4.3)","4.2":"LastShares","4.1":"LastShares","4.0":"LastShares"}'
+        fix:name: LastQty
+    - name: prev_qty
+      type: double
+      nullable: true
+      description: Quantity on the immediately preceding lifecycle version; null on
+        the first.
+    - name: qty_unit
+      type: string
+      description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
+    - name: notional
+      type: double
+      nullable: true
+      description: '`px * qty * multiplier` in the instrument''s currency, as the
+        producer computed it.'
+    - name: prev_notional
+      type: double
+      nullable: true
+      description: Notional on the immediately preceding lifecycle version; null on
+        the first.
+    - name: metadata
+      type: map
+      nullable: true
+      description: Protocol fields carried verbatim, exactly as the venue sent them.
+      key:
+        type: string
+      value:
+        type: string
+    - name: exec_id
+      type: string
+      nullable: true
+      description: Unique identifier of execution message as assigned by sell-side
+        (broker, exchange, ECN) (will be 0 (zero) for ExecType <150> ='I' (Order Status)).
+        Uniqueness must be guaranteed within a single trading day or the life of a
+        multi-day order. Firms which accept multi-day orders should consider embedding
+        a date within the ExecID <17> field to assure uniqueness across days. (Prior
+        to FIX 4.1 this field was of type int)
+      metadata:
+        fix:tag: '17'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","TradeCaptureReportRequest","TradeCaptureReport","TradeCaptureReportAck","ExecutionAcknowledgement","DontKnowTradeDK","Execution
+          Report","Trade Capture Report Request","Trade Capture Report","Trade Capture
+          Report Ack","Allocation Report","Collateral Request","Collateral Assignment","Collateral
+          Response","Collateral Report","Collateral Inquiry","Collateral Inquiry Ack","Allocation
+          Instruction","Don''t Know Trade","Allocation"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"int"}'
+        fix:name: ExecID
+    - name: exec_ref_id
+      type: string
+      nullable: true
+      description: Reference identifier used with Trade, Trade Cancel and Trade Correct
+        execution types. (Prior to FIX 4.1 this field was of type int)
+      metadata:
+        fix:tag: '19'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","Execution Report"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"int"}'
+        fix:name: ExecRefID
+    - name: trade_id
+      type: string
+      nullable: true
+      description: The unique ID assigned to the trade entity once it is received
+        or matched by the exchange or central counterparty.
+      metadata:
+        fix:tag: '1003'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["TradeCaptureReportRequest","TradeCaptureReport","TradeCaptureReportRequestAck","TradeCaptureReportAck"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String"}'
+        fix:name: TradeID
+    - name: order_id
+      type: string
+      nullable: true
+      description: Unique identifier for Order as assigned by sell-side (broker, exchange,
+        ECN). Uniqueness must be guaranteed within a single trading day. Firms which
+        accept multi-day orders should consider embedding a date within the OrderID
+        field to assure uniqueness across days.
+      metadata:
+        fix:tag: '37'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","TradeCaptureReportRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","ExecutionAcknowledgement","Email","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","DontKnowTradeDK","OrderMassCancelReport","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","Execution
+          Report","Order Cancel Reject","Multileg Order Cancel/Replace","Trade Capture
+          Report Request","Trade Capture Report","Confirmation","Allocation Report","Collateral
+          Request","Collateral Assignment","Collateral Response","Collateral Report","Collateral
+          Inquiry","Collateral Inquiry Ack","Confirmation Request","Order Cancel Request","Order
+          Cancel/Replace Request","Order Status Request","Allocation Instruction","Don''t
+          Know Trade","Order Mass Cancel Report","Cross Order Cancel/Replace Request","Cross
+          Order Cancel Request","Market Data - Snapshot/Full Refresh","Market Data
+          - Incremental Refresh","Multileg Order Cancel/Replace Request","Allocation"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+        fix:name: OrderID
+    - name: client_order_id
+      type: string
+      nullable: true
+      description: Unique identifier for Order as assigned by the buy-side (institution,
+        broker, intermediary etc.) (identified by SenderCompID <49> or OnBehalfOfCompID
+        <115> as appropriate). Uniqueness must be guaranteed within a single trading
+        day. Firms, particularly those which electronically submit multi-day orders,
+        trade globally or throughout market close periods, should ensure uniqueness
+        across days, for example by embedding a date within the ClOrdID <11> field.
+      metadata:
+        fix:tag: '11'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","QuoteResponse","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","ExecutionAcknowledgement","OrderMassActionReport","Email","OrderMassActionRequest","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","RegistrationInstructions","RegistrationInstructionsResponse","OrderMassCancelRequest","OrderMassCancelReport","QuoteRequest","SettlementInstructions","Execution
+          Report","Order Cancel Reject","New Order Multileg","Multileg Order Cancel/Replace","Trade
+          Capture Report Request","Trade Capture Report","Quote Response","Confirmation","Allocation
+          Report","Collateral Request","Collateral Assignment","Collateral Response","Collateral
+          Report","Collateral Inquiry","Collateral Inquiry Ack","Confirmation Request","New
+          Order Single","New Order List","Order Cancel Request","Order Cancel/Replace
+          Request","Order Status Request","Allocation Instruction","List Strike Price","List
+          Status","Registration Instructions","Registration Instructions Response","Order
+          Mass Cancel Request","Order Mass Cancel Report","Quote Request","New Order
+          Cross","Cross Order Cancel/Replace Request","Settlement Instructions","Cross
+          Order Cancel Request","New Order - Multileg","Multileg Order Cancel/Replace
+          Request","New Order - Single","New Order - List","Allocation","New Order
+          - Cross"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+        fix:name: ClOrdID
+    - name: prev_client_order_id
+      type: string
+      nullable: true
+      description: ClOrdID <11> of the previous order (NOT the initial order of the
+        day) as assigned by the institution, used to identify the previous order in
+        cancel and cancel/replace requests.
+      metadata:
+        fix:tag: '41'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","OrderCancelRequest","OrderCancelReplaceRequest","Execution
+          Report","Order Cancel Reject","Multileg Order Cancel/Replace","Order Cancel
+          Request","Order Cancel/Replace Request","Order Mass Cancel Report","Cross
+          Order Cancel/Replace Request","Cross Order Cancel Request"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+        fix:name: OrigClOrdID
+    - name: filled_qty
+      type: double
+      nullable: true
+      description: Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2
+        this field was of type int)
+      metadata:
+        fix:tag: '14'
+        fix:type: Qty
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","ExecutionAcknowledgement","Execution Report","List
+          Status"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+        fix:name: CumQty
+    - name: leaves_qty
+      type: double
+      nullable: true
+      description: Quantity open for further execution. If the OrdStatus <39> is 'Canceled',
+        'DoneForTheDay', 'Expired', 'Calculated', or 'Rejected' (in which case the
+        order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty
+        <151> = OrderQty <38> – CumQty <14> . (Prior to FIX 4.2 this field was of
+        type int)
+      metadata:
+        fix:tag: '151'
+        fix:type: Qty
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","Execution Report","List Status"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
+        fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int"}'
+        fix:name: LeavesQty
+    - name: vwap
+      type: double
+      nullable: true
+      description: Calculated average price of all fills on this order. For Fixed
+        Income trades AvgPx <6> is always expressed as percent-of-par , regardless
+        of the PriceType <423> of LastPx <31> . I.e., AvgPx will contain an average
+        of percent-of-par values (see LastParPx <669> ) for issues traded in Yield,
+        Spread or Discount.
+      metadata:
+        fix:tag: '6'
+        fix:type: Price
+        fix:version: 5.0.SP2
+        fix:used_in: '["ExecutionReport","TradeCaptureReport","Confirmation","ExecutionAcknowledgement","TradeCaptureReportAck","AllocationReport","AllocationInstructionAlert","AllocationInstruction","Execution
+          Report","Trade Capture Report","Allocation Report","Allocation Instruction","List
+          Status","Allocation"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+        fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+        fix:name: AvgPx
     - name: aggressor
       type: bool
       nullable: true
-      description: Whether this side was the one taking liquidity.
+      description: Used to identify whether the order initiator is an aggressor or
+        not in the trade.
       metadata:
-        fix:name: AggressorIndicator
         fix:tag: '1057'
+        fix:type: Boolean
+        fix:version: 5.0.SP2
+        fix:values: '{"Y":"Order initiator is aggressor","N":"Order initiator is passive"}'
+        fix:used_in: '["ExecutionReport"]'
+        fix:value_names: '{"Y":"YES","N":"NO"}'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
+        fix:types: '{"5.0.SP2":"Boolean","5.0.SP1":"Boolean","5.0":"Boolean"}'
+        fix:name: AggressorIndicator
+    - name: reason_code
+      type: int32
+      nullable: true
+      description: Code to identify reason for an ExecutionRpt <8> message sent with
+        ExecType <150> ='Restated' or used when communicating an unsolicited cancel.
+      metadata:
+        fix:tag: '378'
+        fix:type: int
+        fix:version: 5.0.SP2
+        fix:values: '{"0":"GT corporate action","1":"GT renewal / restatement (no
+          corporate action)","2":"Verbal change","3":"Repricing of order","4":"Broker
+          option","5":"Partial decline of OrderQty <38> (e.g. exchange initiated partial
+          cancel)","6":"Cancel on Trading Halt","7":"Cancel on System Failure","8":"Market
+          (Exchange) option","9":"Canceled, not best","10":"Warehouse Recap","99":"Other","11":"Peg
+          Refresh"}'
+        fix:used_in: '["ExecutionReport","TradeCaptureReport","TradeCaptureReportAck","Execution
+          Report","Trade Capture Report"]'
+        fix:value_names: '{"0":"GT_CORPORATE_ACTION","1":"GT_RENEWAL","2":"VERBAL_CHANGE","3":"REPRICING_OF_ORDER","4":"BROKER_OPTION","5":"PARTIAL_DECLINE_OF_ORDER_QTY","7":"CANCEL_ON_SYSTEM_FAILURE","8":"MARKET","6":"CANCEL_ON_TRADING_HALT","9":"CANCELED","10":"WAREHOUSE_RECAP","99":"OTHER","11":"PEG_REFRESH","12":"CANCEL_ON_CONNECTION_LOSS","13":"CANCEL_ON_LOGOUT","14":"ASSIGN_TIME_PRIORITY","15":"CANCELLED_FOR_TRADE_PRICE_VIOLATION","16":"CANCELLED_FOR_CROSS_IMBALANCE","17":"CXLD_SMP","18":"CXLD_SMP_AGGRESSIVE","19":"CXLD_SMP_PASSIVE","20":"CXLD_SMP_AGGRESSIVE_PASSIVE"}'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+        fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
+        fix:name: ExecRestatementReason
+    - name: reason
+      type: string
+      nullable: true
+      description: 'Free format text string (Note: this field does not have a specified
+        maximum length)'
+      metadata:
+        fix:tag: '58'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:used_in: '["Reject","Logout","IOI","Advertisement <7","ExecutionReport","OrderCancelReject","Logon","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","QuoteRequestReject","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportRequestAck","TradeCaptureReportAck","AllocationReport","AllocationReportAck","Confirmation_Ack","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","MassQuoteAcknowledgement","CollateralReport","CollateralInquiry","CollateralInquiryAck","ConfirmationRequest","AllocationInstructionAlert","ExecutionAcknowledgement","ContraryIntentionReport","SecurityDefinitionUpdateReport","SettlementObligationReport","MarketDefinition","MarketDefinitionUpdateReport","ApplicationMessageRequest","ApplicationMessageRequestAck","ApplicationMessageReport","OrderMassActionReport","SecurityDefinitionRequest","OrderMassActionRequest","UserNotification","StreamAssignmentReportACK","PartyDetailsListRequest","PartyDetailsListReport","SecurityDefinition","NewOrderSingle","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","TradingSessionStatus","BusinessMessageReject","AllocationInstruction","BidRequest","ListCancelRequest","ListExecute","ListStatusRequest","AllocationInstructionAck","OrderMassCancelRequest","DontKnowTradeDK","OrderMassCancelReport","QuoteRequest","Quote","SettlementInstructions","SecurityTypeRequest","SecurityTypes","SecurityListRequest","MarketDataRequestReject","DerivativeSecurityListRequest","Advertisement","Execution
+          Report","Order Cancel Reject","Derivative Security List","New Order Multileg","Multileg
+          Order Cancel/Replace","Trade Capture Report Request","Trade Capture Report","Quote
+          Request Reject","Quote Status Report","Quote Response","Position Maintenance
+          Request","Position Maintenance Report","Request For Positions","Request
+          for Positions Ack","Position Report","Trade Capture Report Request Ack","Trade
+          Capture Report Ack","Allocation Report","Allocation Report Ack","Confirmation
+          Ack","Assignment Report","Collateral Request","Collateral Assignment","Collateral
+          Response","Mass Quote Acknowledgement","News","Collateral Report","Collateral
+          Inquiry","Collateral Inquiry Ack","Confirmation Request","Security Definition
+          Request","Email","Security Definition","New Order Single","New Order List","Security
+          Status","Order Cancel Request","Order Cancel/Replace Request","Trading Session
+          Status","Business Message Reject","Allocation Instruction","Bid Request","List
+          Cancel Request","Bid Response","List Execute","List Strike Price","List
+          Status Request","List Status","Allocation Instruction Ack","Order Mass Cancel
+          Request","Don''t Know Trade","Order Mass Cancel Report","Quote Request","New
+          Order Cross","Cross Order Cancel/Replace Request","Settlement Instructions","Cross
+          Order Cancel Request","Security Type Request","Security Types","Market Data
+          - Snapshot/Full Refresh","Security List Request","Market Data - Incremental
+          Refresh","Security List","Market Data Request Reject","Derivative Security
+          List Request","Indications of Interest","New Order - Multileg","Multileg
+          Order Cancel/Replace Request","New Order - Single","New Order - List","Allocation","Allocation
+          ACK","New Order - Cross","Indication of Interest","Quote Acknowledgement"]'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+        fix:name: Text

@@ -1,44 +1,9 @@
-"""Benchmark the two hot paths of the market module: identifiers, and book prices.
-
-Run from `python/`::
-
-    uv run python benchmarks/bench_market.py            # full sweep
-    uv run python benchmarks/bench_market.py --quick    # fewer rows, fewer repeats
-
-Five questions, answered on columns shaped like a real feed:
-
-1. **What does `hash_arrow` buy over `hash_of` per row?** Both build the same
-   identifiers, and the vectorised result is asserted equal to the scalar one
-   *before* anything is timed -- a benchmark that measures the wrong answer
-   measures nothing.
-2. **What does the length prefix cost?** It is what makes the encoding
-   injective (`identity.py`), and it is two extra kernels per part, so the
-   plain join is timed beside it rather than assumed cheap.
-3. **What does deriving a book's columns cost, against reading them back?**
-   The whole argument for storing `px`, `spread` and `micro_px` is that a
-   reader should never recompute them -- which is only worth saying if the
-   computation is worth avoiding. So the derivation is timed against the
-   column it fills, and, separately, against reading a price out of a side
-   that is *already* derived: the nested access is not the cost, the walk over
-   the levels is, and the two lines say so.
-4. **What does folding a stream into books cost?** `Book.from_events` keeps
-   every live order, so its cost is not the number of books but the number of
-   events and how deep the book gets -- timed on a stream shaped like a feed,
-   a quarter of whose events replace an order already resting.
-5. **What does reading a venue's FIX cost per message?** `FixEvents` is the
-   way in, so its throughput is the ceiling on everything downstream. Timed
-   on the three shapes a feed is actually made of -- an order request, a
-   filled execution report, and a market-data refresh whose entries fan out
-   to several events each -- because they cost very different amounts and one
-   averaged number would hide that.
-
-Every case is warmed once and reported as the best of `--repeat` runs; run the
-script twice before quoting a number anywhere.
-"""
+"""Benchmark market identities, translation, folding, and Arrow conversion."""
 
 from __future__ import annotations
 
 import argparse
+import copy
 import pathlib
 import random
 import sys
@@ -50,13 +15,15 @@ import pyarrow.compute
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep.fix import FixMessage  # noqa: E402
+from rekep.fix import FixMessage, parse_arrow_array  # noqa: E402
 from rekep.market import (  # noqa: E402
+    MIC,
     Book,
-    BookSide,
     FixEvents,
+    Instrument,
     identity,  # noqa: E402
 )
+from rekep.market.book import _Side  # noqa: E402
 from rekep.market.fields import dictionary_arrow  # noqa: E402
 from rekep.market.identity import (  # noqa: E402
     _binary,
@@ -70,7 +37,7 @@ from rekep.market.identity import (  # noqa: E402
 UNIX = 1710374400_000000000
 
 #: The states a day of orders actually visits, which is what makes the column
-#: worth encoding: a handful of distinct values repeated a million times.
+#: worth encoding: a handful of distinct values repeated through a feed.
 STATES = [210, 310, 410, 510, 610, 240]
 
 
@@ -159,12 +126,99 @@ def bench_identifiers(rows: int, repeat: int) -> None:
     report("  of which: the join, length framed", framed, rows)
 
 
+def bench_instruments(rows: int, repeat: int) -> None:
+    """Price the repeated identity spellings a feed sends on every message."""
+
+    def build(distinct: int) -> list[Instrument]:
+        return [Instrument(symbol=f"S{index % distinct}", exchange="XPAR") for index in range(rows)]
+
+    print(f"\nInstrument identity cache -- {rows:,} rows")
+    unique, uncached = timed(lambda: build(rows), repeat)
+    repeated, cached = timed(lambda: build(100), repeat)
+    assert cached[0].xhash == cached[100].xhash
+    assert uncached[0].xhash != uncached[-1].xhash
+    report("all spellings unique", unique, rows)
+    report("100 repeated spellings", repeated, rows, against=unique)
+
+
+def bench_instrument_logs(rows: int, repeat: int) -> None:
+    """Decode package-authored instrument rows directly and through generic FIX."""
+    from rekep.enums import AssetKind, Currency, Side
+    from rekep.market import Leg
+
+    sample = min(rows, 500)
+    instrument = Instrument(
+        unix=UNIX,
+        symbol="CAL-27",
+        kind=AssetKind.MULTILEG,
+        security_id="FR0000000001",
+        security_id_source="4",
+        alt_ids={"RIC": "CAL.N"},
+        security_type="MLEG",
+        exchange="XPAR",
+        currency=Currency.EUR,
+        multiplier=10.0,
+        tick=0.01,
+        lot=1.0,
+        legs=[
+            Leg(
+                symbol="JUN-27",
+                side=Side.BUY,
+                kind=AssetKind.FUTURE,
+                security_type="FUT",
+            )
+        ],
+    ).with_previous(None)
+    assert instrument is not None
+    log = instrument.into_log()
+
+    def through_registry() -> list[Instrument]:
+        built = []
+        for _ in range(sample):
+            parsed = next(log.into_fix_events().into_instruments())
+            built.append(log._instrument_version(parsed))
+        return built
+
+    def direct() -> list[Instrument]:
+        return [log.into_instrument() for _ in range(sample)]
+
+    registry, generic = timed(through_registry, repeat)
+    normalized, decoded = timed(direct, repeat)
+    assert generic[0].into_dict() == instrument.into_dict()
+    assert decoded[0].into_dict() == instrument.into_dict()
+
+    print(f"\nInstrument <-> normalized Log -- {sample:,} rows")
+    report("generic FIX/registry reconstruction", registry, sample)
+    report("direct normalized-row decode", normalized, sample, against=registry)
+
+
+def bench_mics(rows: int, repeat: int) -> None:
+    """Decode the low-cardinality venue column a feed repeats per event."""
+    values = [("XPAR", "XNAS", "XCME")[index % 3] for index in range(rows)]
+    parse = MIC._from_text.__wrapped__
+    uncached, reference = timed(lambda: [parse(MIC, value) for value in values], repeat)
+    seconds, decoded = timed(lambda: [MIC.from_str(value) for value in values], repeat)
+    assert decoded == reference
+    assert {one.code for one in decoded} == {"XPAR", "XNAS", "XCME"}
+    print(f"\nMIC decoding cache -- {rows:,} rows")
+    report("normalise and decode every row", uncached, rows)
+    report("three repeated venue spellings", seconds, rows, against=uncached)
+
+
 # -- 3: the book ------------------------------------------------------------
 
 
 def levels(depth: int, base: float) -> list[dict[str, object]]:
     """One side's live levels, `depth` of them, best first."""
-    return [{"px": base + step * 0.01, "qty": 100.0 + step, "orders": 3} for step in range(depth)]
+    return [
+        {
+            "px": base + step * 0.01,
+            "qty": 100.0 + step,
+            "order_xhash": [step * 3 + offset for offset in range(3)],
+            "exec_xhash": [],
+        }
+        for step in range(depth)
+    ]
 
 
 def envelope(rows: int) -> dict[str, object]:
@@ -179,39 +233,31 @@ def envelope(rows: int) -> dict[str, object]:
         "xhash": [index + 1 for index in range(rows)],
         "version": [1] * rows,
         "state": [210] * rows,
-        "symbol": [f"S{index % 5000}" for index in range(rows)],
+        "code": [f"S{index % 5000}" for index in range(rows)],
+        "xcode": [f"S{index % 5000}" for index in range(rows)],
         "prev_state": [0] * rows,
-        "instrument_hash": [index % 5000 + 1 for index in range(rows)],
+        "instrument_xhash": [index % 5000 + 1 for index in range(rows)],
+        "kind": [0] * rows,
         "side": [0] * rows,
         "px_unit": ["USD"] * rows,
         "qty_unit": ["SHARES"] * rows,
-        "instrument": [
-            {"xhash": 0, "symbol": "S", "kind": 110, "option_kind": 0} for _ in range(rows)
-        ],
     }
-
-
-def sides(rows: int, depth: int) -> pyarrow.RecordBatch:
-    """A batch of book sides, each carrying its own levels and nothing derived."""
-    given = envelope(rows) | {"alive": [levels(depth, 100.0)] * rows}
-    return BookSide.FIELD.cast_arrow_batch(pyarrow.RecordBatch.from_pydict(given))
 
 
 def books(rows: int, depth: int) -> pyarrow.RecordBatch:
     """A batch of books, both sides flat and only their levels filled in."""
     given = envelope(rows) | {
-        "bid_alive": [levels(depth, 100.0)] * rows,
-        "ask_alive": [levels(depth, 100.5)] * rows,
+        "bid_levels": [levels(depth, 100.0)] * rows,
+        "ask_levels": [levels(depth, 100.5)] * rows,
     }
-    return Book.FIELD.cast_arrow_batch(pyarrow.RecordBatch.from_pydict(given))
+    return Book.into_field().cast_arrow_batch(pyarrow.RecordBatch.from_pydict(given))
 
 
 def bench_book(rows: int, depth: int, repeat: int) -> None:
     print(f"\nBook -- {rows:,} rows, {depth} levels a side")
-    batch, side_batch = books(rows, depth), sides(rows, depth)
+    batch = books(rows, depth)
 
     summarised, filled = timed(lambda: Book.summarise_arrow_batch(batch), repeat)
-    side_time, side_filled = timed(lambda: BookSide.summarise_arrow_batch(side_batch), repeat)
 
     # What a reader that trusts the stored columns pays: one flat column read.
     flat, _ = timed(lambda: pyarrow.compute.mean(filled.column("micro_px")), repeat)
@@ -231,9 +277,7 @@ def bench_book(rows: int, depth: int, repeat: int) -> None:
 
     assert filled.column("spread")[0].as_py() is not None, "nothing was derived"
     assert filled.column("bid_depth")[0].as_py() == depth, "the sides were not derived"
-    assert side_filled.column("depth")[0].as_py() == depth, "the depth is wrong"
 
-    report("BookSide.summarise: best/depth/total, from the levels", side_time, rows)
     report("Book.summarise: both sides, then mid/spread/micro", summarised, rows)
     report("read the stored micro_px column", flat, rows, against=summarised)
     report("recompute a mid from the stored bid_px/ask_px", crossed_time, rows, against=summarised)
@@ -289,6 +333,20 @@ FEED = {
 }
 
 
+def bench_fix_parser(rows: int, repeat: int) -> None:
+    """Batch tokenisation gate before Python event materialisation."""
+    print(f"\nFIX batch parser -- {rows:,} messages of each shape")
+    for label, line in FEED.items():
+        column = pyarrow.array([line] * rows)
+        expected = FixMessage.from_text(line).pairs
+        assert parse_arrow_array(column.slice(0, 2)).to_pylist() == [expected, expected]
+        seconds, parsed = timed(lambda column=column: len(parse_arrow_array(column)), repeat)
+        assert parsed == rows
+        rate = rows / seconds
+        print(f"  {label:<44} {rate:>12,.0f} rows/s")
+        assert rate >= 50_000, f"{label} parsed at only {rate:,.0f} rows/s"
+
+
 def bench_fix(rows: int, repeat: int) -> None:
     """What one message costs, from the wire line to identified market events."""
     print(f"\nFixEvents -- {rows:,} messages of each shape")
@@ -311,15 +369,22 @@ def bench_fix(rows: int, repeat: int) -> None:
 
 
 def stream(events: int) -> list[object]:
-    """One instrument's order flow: a fresh order, a restatement, a cancel, a print.
+    """One instrument's orders, replacements, cancels, fills and rejections.
 
     Shaped like a feed rather than like a best case -- a quarter of the events
     replace an order already resting, which is the case the fold exists for and
-    the only one that has to find what it replaces.
+    the only one that has to find what it replaces; one in twenty is malformed.
     """
-    from rekep.market import ExecKind, Execution, Instrument, Order, Side, State
+    from rekep.market import Execution, Instrument, MarketKind, Order, Side, State
 
     instrument = Instrument(symbol="BTC-USD", exchange="XCME")
+
+    def ready(event):
+        built = event.attach_instrument(instrument).with_previous(None)
+        if built is None:
+            raise AssertionError("a first event cannot be unchanged")
+        return built
+
     generate = random.Random(5)
     built: list[object] = []
     for index in range(events):
@@ -329,30 +394,140 @@ def stream(events: int) -> list[object]:
         shape = index % 4
         if shape == 3:
             built.append(
-                Execution(
-                    unix=unix,
-                    instrument=instrument,
-                    symbol="BTC-USD",
-                    px=100.0 + generate.randrange(-20, 20) * 0.01,
-                    qty=1.0,
-                    kind=ExecKind.TRADED,
-                    exec_id=f"E{index}",
-                ).with_previous(None)
+                ready(
+                    Execution(
+                        unix=unix,
+                        code="BTC-USD",
+                        px=100.0 + generate.randrange(-20, 20) * 0.01,
+                        qty=1.0,
+                        state=State.FILLED,
+                        exec_id=f"E{index}",
+                    )
+                )
             )
             continue
+        quoted = 100.0 + side.sign * -1 * generate.randrange(1, 20) * 0.01
         built.append(
-            Order(
-                unix=unix,
-                instrument=instrument,
-                symbol="BTC-USD",
-                side=side,
-                px=100.0 + side.sign * -1 * generate.randrange(1, 20) * 0.01,
-                qty=float(generate.randrange(1, 50)),
-                order_id=named,
-                state=State.CANCELLED if shape == 2 else State.NEW,
-            ).with_previous(None)
+            ready(
+                Order(
+                    unix=unix,
+                    code="BTC-USD",
+                    side=side,
+                    px=float("nan") if index % 20 == 0 else quoted,
+                    qty=float(generate.randrange(1, 50)),
+                    order_id=named,
+                    state=State.CANCELLED if shape == 2 else State.NEW,
+                    kind=MarketKind.LIMIT_ORDER if index % 20 == 0 else MarketKind.UNKNOWN,
+                )
+            )
         )
     return built
+
+
+def bench_lifecycle(rows: int, repeat: int) -> None:
+    """Cached state comparison and indexed explicit-expiry lookup."""
+    import heapq
+
+    from rekep.market import Order, Side, State
+
+    previous = next(one for one in stream(4) if isinstance(one, Order) and one.px == one.px)
+    current = copy.copy(previous)
+    pictured = copy.copy(previous)
+    pictured.sunix = previous.unix
+    assert current.same_as(previous) and pictured.same_as(pictured)
+
+    print(f"\nLifecycle hot paths -- {rows:,} comparisons")
+    for label, one, other in (
+        ("same_as, ordinary event", current, previous),
+        ("same_as, snapshot", pictured, pictured),
+    ):
+        seconds, equal = timed(
+            lambda one=one, other=other: sum(one.same_as(other) for _ in range(rows)), repeat
+        )
+        assert equal == rows
+        report(label, seconds, rows)
+        print(f"  {'states/s':<44} {rows / seconds:>12,.0f}")
+
+    live = min(max(rows // 10, 1_000), 10_000)
+    probes = max(rows // 1_000, 100)
+    side = _Side(Side.BID)
+    expiry = UNIX + 10**15
+    clocks = list(range(live))
+    random.Random(9).shuffle(clocks)
+    for index, clock in enumerate(clocks):
+        side.apply(
+            Order(
+                unix=UNIX + clock,
+                cunix=UNIX + clock,
+                xhash=index + 1,
+                hash=index + 1,
+                code="BTC-USD",
+                xcode=f"O{index}",
+                order_id=f"O{index}",
+                side=Side.BID,
+                px=100.0,
+                qty=1.0,
+                state=State.NEW,
+                eunix=expiry if index % 100 == 0 else None,
+            )
+        )
+    indexed = sum(len(bucket) for bucket in side._expiring.values())
+    assert len(side.orders) == live and indexed == (live + 99) // 100
+
+    def probe_expiry() -> int:
+        return sum(len(side.expire(UNIX + live)) for _ in range(probes))
+
+    seconds, expired = timed(probe_expiry, repeat)
+    assert expired == 0 and len(side.orders) == live
+    print(f"\nExplicit expiry index -- {live:,} live orders, {indexed:,} indexed")
+    report("expire, no due order", seconds, probes)
+    print(f"  {'probes/s':<44} {probes / seconds:>12,.0f}")
+
+    def sorted_tie() -> list[Order]:
+        return sorted(
+            side.orders.values(),
+            key=lambda order: (order.cunix or order.unix, order.xhash),
+            reverse=True,
+        )[:1]
+
+    sorted_seconds, sorted_expected = timed(sorted_tie, repeat)
+    max_seconds, max_actual = timed(lambda: side._evictions(1), repeat)
+    assert [one.xhash for one in max_actual] == [one.xhash for one in sorted_expected]
+    print(f"\nCapacity tie -- {live:,} orders at one price, one eviction")
+    report("sorted whole price level", sorted_seconds, live)
+    report("max within price level", max_seconds, live, against=sorted_seconds)
+
+    capped = _Side(Side.BID)
+    for index in range(live):
+        capped.apply(
+            Order(
+                unix=UNIX + index,
+                cunix=UNIX + index,
+                xhash=index + 1,
+                hash=index + 1,
+                code="BTC-USD",
+                xcode=f"O{index}",
+                order_id=f"O{index}",
+                side=Side.BID,
+                px=float(live - index),
+                qty=1.0,
+                state=State.NEW,
+            )
+        )
+
+    def global_scan() -> list[Order]:
+        return heapq.nlargest(
+            1,
+            capped.orders.values(),
+            key=lambda order: (-(order.px or 0.0), order.cunix or order.unix, order.xhash),
+        )
+
+    scanned, expected = timed(global_scan, repeat)
+    indexed, actual = timed(lambda: capped._evictions(1), repeat)
+    assert [one.xhash for one in actual] == [one.xhash for one in expected]
+    print(f"\nCapacity eviction -- {live:,} live price levels, one eviction")
+    report("global live-order scan", scanned, live)
+    report("indexed worst-level traversal", indexed, live, against=scanned)
 
 
 def bench_ceiling(rows: int, repeat: int) -> None:
@@ -402,34 +577,88 @@ def bench_ceiling(rows: int, repeat: int) -> None:
 
 def bench_fold(events: int, repeat: int) -> None:
     """What folding one instrument's stream into books costs, per event and per book."""
+    from rekep.market import BookIterator, State
+
     print(f"\nBook.from_events -- {events:,} events, one instrument")
     given = stream(events)
-    produced = len(list(Book.from_events(given)))
+
+    def fold(max_side_alive: int | None = None) -> tuple[list[Book], BookIterator]:
+        folding = BookIterator.from_events(given, snapshot_every=0, max_side_alive=max_side_alive)
+        return list(folding.books), folding
+
+    books, _ = fold()
+    produced = len(books)
     assert produced, "the fold produced no books at all"
-    seconds, _ = timed(lambda: list(Book.from_events(given)), repeat)
+    rejected = sum(
+        one.state is State.INTERNAL_REJECTED for book in books for one in book.order_events or ()
+    )
+    assert rejected == (events + 19) // 20, "the benchmark lost its malformed-order leg"
+    seconds, _ = timed(fold, repeat)
     report("fold", seconds, events)
     print(f"  {'books/s':<44} {produced / seconds:>12,.0f}   ({produced:,} books)")
+    print(f"  {'rejected orders':<44} {rejected:>12,}")
+
+    guarded, (same, unchanged) = timed(lambda: fold(1_000), repeat)
+    assert [one.hash for one in same] == [one.hash for one in books]
+    assert all(
+        len(state.bid.orders) <= 1_000 and len(state.ask.orders) <= 1_000
+        for state in unchanged.folding.values()
+    )
+    report("fold, inactive max_side_alive", guarded, events)
+
+    bounded, (limited, folding) = timed(lambda: fold(10), repeat)
+    expired = sum(
+        event.state is State.INTERNAL_EXPIRED
+        for book in limited
+        for event in book.order_events or ()
+    )
+    assert expired, "the bound emitted no auditable expiry"
+    assert all(
+        len(state.bid.orders) <= 10 and len(state.ask.orders) <= 10
+        for state in folding.folding.values()
+    )
+    report("fold, max_side_alive=10", bounded, events)
+    print(f"  {'synthetic expiries':<44} {expired:>12,}")
+
+    sample = books[:12_000]
+    schema = Book.into_field().into_arrow_schema()
+
+    def document_projection() -> pyarrow.Table:
+        batch = pyarrow.RecordBatch.from_pylist(
+            [book.into_dict() for book in sample], schema=schema
+        )
+        return pyarrow.Table.from_batches([batch], schema=schema)
+
+    generic, expected = timed(document_projection, repeat)
+    assert expected.num_rows == len(sample)
+    print(f"\nBook to Arrow -- {len(sample):,} rows")
+    report("generic document projection", generic, len(sample))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--rows", type=int, default=20_000)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--repeat", type=int, default=5)
     parsed = parser.parse_args()
-    rows = 100_000 if parsed.quick else 1_000_000
-    repeat = 2 if parsed.quick else parsed.repeat
+    rows = 2_000 if parsed.quick else parsed.rows
+    repeat = 1 if parsed.quick else parsed.repeat
 
     # Acero costs its own initialisation on the first grouped aggregate in a
     # process, and `_list_sums` is one. Left unwarmed it lands on whichever
     # sweep runs first and makes the shallowest book look like the slowest --
     # which it did, at 1.6x the cost of a book ten times deeper.
     Book.summarise_arrow_batch(books(16, 2))
-    BookSide.summarise_arrow_batch(sides(16, 2))
 
     bench_identifiers(rows, repeat)
+    bench_instruments(rows, repeat)
+    bench_instrument_logs(rows, repeat)
+    bench_mics(rows, repeat)
     for depth in (1, 10) if parsed.quick else (1, 10, 50):
         bench_book(rows // 10, depth, repeat)
     bench_codes(rows, repeat)
+    bench_lifecycle(rows, repeat)
+    bench_fix_parser(rows // 20, repeat)
     bench_fix(rows // 20, repeat)
     bench_ceiling(rows // 20, repeat)
     bench_fold(rows // 10, repeat)

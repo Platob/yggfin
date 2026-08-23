@@ -14,6 +14,22 @@
    <field name='TestReqID' required='N' />
   </message>
  </messages>
+ <components>
+  <component name='Parties'>
+   <group name='NoPartyIDs' required='N'>
+    <field name='PartyID' required='N' />
+    <field name='PartyIDSource' required='N' />
+    <field name='PartyRole' required='N' />
+    <component name='PtysSubGrp' required='N' />
+   </group>
+  </component>
+  <component name='PtysSubGrp'>
+   <group name='NoPartySubIDs' required='N'>
+    <field name='PartySubID' required='N' />
+    <field name='PartySubIDType' required='N' />
+   </group>
+  </component>
+ </components>
  <fields>
   <field number='43' name='PossDupFlag' type='BOOLEAN'>
    <value enum='Y' description='POSSIBLE_DUPLICATE' />
@@ -25,6 +41,13 @@
    <value enum='7' description='UNDISCLOSED' />
   </field>
   <field number='103' name='OrdRejReason' type='INT' />
+  <field number='447' name='PartyIDSource' type='CHAR' />
+  <field number='448' name='PartyID' type='STRING' />
+  <field number='452' name='PartyRole' type='INT' />
+  <field number='453' name='NoPartyIDs' type='NUMINGROUP' />
+  <field number='523' name='PartySubID' type='STRING' />
+  <field number='802' name='NoPartySubIDs' type='NUMINGROUP' />
+  <field number='803' name='PartySubIDType' type='INT' />
   <field number='828' name='TrdType' type='INT'>
    <value enum='1' description='BLOCK_TRADE' />
   </field>

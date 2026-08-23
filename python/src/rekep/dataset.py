@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import abc
+import functools
 import importlib
 from collections.abc import Iterator, Mapping, Sequence
-from typing import Any, ClassVar, Self
+from types import MappingProxyType
+from typing import Any, Self
 
 import pyarrow
 import pyarrow.compute
@@ -19,63 +21,27 @@ from rekep.fields import Field, StructField, field_of
 SOURCE_INDEX = "__source_index"
 TARGET_INDEX = "__target_index"
 
+#: Default bounded Polars-to-Arrow handoff; commit size remains independent.
+POLARS_BATCH_ROW_SIZE = 65_536
 
-class Dataset(Convertible, abc.ABC):
-    """A stored data product, read and written as Arrow, whatever stores it.
-
-    Three things make one, and everything else here is built from them:
-
-    - `into_struct_field()` -- the shape it holds, as a `StructField`. What the
-      data *is*: names, types, nullability, keys, partitioning.
-    - `read_arrow_reader(schema)` -- a stream out of it, cast onto `schema`
-      when one is given and handed over as the store produced it when not.
-    - `write_arrow_reader(source, ...)` -- a stream into it, cast onto this
-      dataset's shape first, appended or merged, one commit per chunk.
-
-    Readers and writers are streams on purpose: a dataset is the one thing here
-    that is bigger than memory, so nothing about this interface may require the
-    whole of it at once. `read_arrow_table` and `write_arrow_table` are there
-    for when it does fit and the caller says so.
-
-    Writes **append by default, and create what is not there yet**: a first
-    write to an empty catalog or a missing file builds it from the declared
-    shape, so a pipeline does not need a separate "deploy" step. `create_with`
-    is there for when the shape has to exist before anything is written.
-
-    A dataset is a `Convertible` dataclass, so an implementation's
-    configuration is also a document: `IcebergDataset.from_yaml("logs.yaml")`.
-    """
-
-    #: What a document's `kind` says to reach this class. Subclasses set it.
-    KIND: ClassVar[str] = ""
-
-    #: Every kind that has been declared, filled by `__init_subclass__` so an
-    #: implementation is reachable from a document by existing rather than by
-    #: registering. The same mechanism `Task.KINDS` uses, and for the same
-    #: reason: a job's configuration names the store it reads, and the class
-    #: for it may live in a package the reader has never imported by name.
-    KINDS: ClassVar[dict[str, type[Dataset]]] = {}
-
-    #: Where the implementations this package ships live, so a document naming
-    #: one reaches it without the reader having imported it first. The Iceberg
-    #: one is behind an optional dependency, and this is what keeps it optional:
-    #: it is imported by a document that asks for it, and by nothing else.
-    MODULES: ClassVar[dict[str, str]] = {
+# Implementations register here from `__init_subclass__`; lazy modules make
+# the shipped kinds available without importing optional dependencies eagerly.
+_KINDS: dict[str, type[Dataset]] = {}
+_MODULES = MappingProxyType(
+    {
         "iceberg": "rekep.iceberg.dataset",
         "text_file": "rekep.text.text_file",
         "text_files": "rekep.text.text_files",
     }
-
-    #: What `read_arrow` redirects to, keyed by the type asked for.
-    READS: ClassVar[dict[Any, str]] = {
+)
+_READS = MappingProxyType(
+    {
         pyarrow.Table: "arrow_table",
         pyarrow.RecordBatchReader: "arrow_reader",
     }
-
-    #: What `write_arrow` redirects to, keyed by what is handed over. A batch
-    #: has its own method because wrapping it in a stream is this class's job,
-    #: not the caller's.
-    WRITES: ClassVar[dict[Any, str]] = {
+)
+_WRITES = MappingProxyType(
+    {
         pyarrow.RecordBatch: "arrow_batch",
         pyarrow.Table: "arrow_table",
         pyarrow.RecordBatchReader: "arrow_reader",
@@ -83,11 +49,23 @@ class Dataset(Convertible, abc.ABC):
         list: "arrow_reader",
         tuple: "arrow_reader",
     }
+)
+
+
+class Dataset(Convertible, abc.ABC):
+    """A stored data product, read and written as Arrow, whatever stores it."""
+
+    @classmethod
+    @functools.cache
+    def into_kind(cls) -> str:
+        """Document kind this implementation claims; empty on the base."""
+        return ""
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        if cls.KIND:
-            Dataset.KINDS[cls.KIND] = cls
+        kind = cls.into_kind()
+        if kind:
+            _KINDS[kind] = cls
 
     @classmethod
     def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
@@ -105,25 +83,26 @@ class Dataset(Convertible, abc.ABC):
             if not kind:
                 raise ValueError(
                     "a dataset document says which store it is: add a `kind`, one of "
-                    f"{sorted(set(Dataset.KINDS) | set(Dataset.MODULES))}"
+                    f"{sorted(set(_KINDS) | set(_MODULES))}"
                 )
-            built = Dataset.KINDS.get(kind) or Dataset._imported(kind)
+            built = _KINDS.get(kind) or Dataset._imported(kind)
             if built is None:
-                known = sorted(set(Dataset.KINDS) | set(Dataset.MODULES))
+                known = sorted(set(_KINDS) | set(_MODULES))
                 raise ValueError(f"no dataset of kind {kind!r}; there is {known}")
             return built.from_dict(mapping)  # type: ignore[return-value]
-        if kind and kind != cls.KIND:
-            raise ValueError(f"{cls.__name__} is {cls.KIND!r}, and the document says {kind!r}")
+        claimed = cls.into_kind()
+        if kind and kind != claimed:
+            raise ValueError(f"{cls.__name__} is {claimed!r}, and the document says {kind!r}")
         return super().from_dict({key: value for key, value in mapping.items() if key != "kind"})
 
     @staticmethod
     def _imported(kind: str) -> type[Dataset] | None:
         """The implementation for `kind`, imported if this package ships one."""
-        module = Dataset.MODULES.get(kind)
+        module = _MODULES.get(kind)
         if module is None:
             return None
         importlib.import_module(module)
-        return Dataset.KINDS.get(kind)
+        return _KINDS.get(kind)
 
     # -- what it holds ------------------------------------------------------
 
@@ -139,7 +118,7 @@ class Dataset(Convertible, abc.ABC):
         """The shape a cast should land on: `schema` if given, else ours.
 
         Every read and write takes an optional schema, and they all mean the
-        same by it -- a field, an Arrow schema, field or type, a `@field`
+        same by it -- a field, an Arrow schema, field or type, a `@scalar`
         class, or nothing at all -- so none of them decides that for itself.
         """
         return self.into_struct_field() if schema is None else field_of(schema)
@@ -191,7 +170,7 @@ class Dataset(Convertible, abc.ABC):
     def create_with(self, source: Any = None, **kwargs: Any) -> Self:
         """`create_with_field`, from whatever names a shape.
 
-        A field, an Arrow schema, field or type, or a `@field` class -- and
+        A field, an Arrow schema, field or type, or a `@scalar` class -- and
         nothing at all means this dataset's own declared shape.
         """
         return self.create_with_field(self.target_field(source), **kwargs)
@@ -220,7 +199,7 @@ class Dataset(Convertible, abc.ABC):
         `read_arrow(pyarrow.Table)` materialises, `read_arrow(RecordBatchReader)`
         streams; the keywords go through to whichever it is.
         """
-        return getattr(self, f"read_{self.redirect_of(target, self.READS)}")(**kwargs)
+        return getattr(self, f"read_{self.redirect_of(target, _READS)}")(**kwargs)
 
     @abc.abstractmethod
     def read_arrow_reader(self, schema: Any = None, **kwargs: Any) -> pyarrow.RecordBatchReader:
@@ -229,6 +208,21 @@ class Dataset(Convertible, abc.ABC):
     def read_arrow_table(self, schema: Any = None, **kwargs: Any) -> pyarrow.Table:
         """Read the whole dataset into one table. Needs it to fit in memory."""
         return self.read_arrow_reader(schema, **kwargs).read_all()
+
+    def read_polars_batches(self, schema: Any = None, **kwargs: Any) -> Iterator[Any]:
+        """Yield one Polars frame per Arrow batch without materialising the dataset."""
+        from rekep.require import require
+
+        polars = require("polars", "polars")
+        for batch in self.read_arrow_reader(schema, **kwargs):
+            yield polars.from_arrow(batch, rechunk=False)
+
+    def read_polars(self, schema: Any = None, **kwargs: Any) -> Any:
+        """Read the whole dataset into one Polars frame. Needs it to fit in memory."""
+        from rekep.require import require
+
+        polars = require("polars", "polars")
+        return polars.from_arrow(self.read_arrow_table(schema, **kwargs), rechunk=False)
 
     # -- writing ------------------------------------------------------------
 
@@ -256,9 +250,7 @@ class Dataset(Convertible, abc.ABC):
         their own `write_arrow_*`; this redirects to the one that fits rather
         than making every call site branch.
         """
-        return getattr(self, f"write_{self.redirect_of(source, self.WRITES)}")(
-            source, *args, **kwargs
-        )
+        return getattr(self, f"write_{self.redirect_of(source, _WRITES)}")(source, *args, **kwargs)
 
     def write_arrow_batch(
         self,
@@ -287,6 +279,21 @@ class Dataset(Convertible, abc.ABC):
         """
         self.write_arrow_reader(table.to_reader(), schema, merge_by, commit_row_size, **kwargs)
 
+    def write_polars(
+        self,
+        source: Any,
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_row_size: int | None = None,
+        *,
+        batch_row_size: int = POLARS_BATCH_ROW_SIZE,
+        **kwargs: Any,
+    ) -> None:
+        """Write a Polars frame through bounded, schema-checked Arrow batches."""
+        target = self.target_field(schema)
+        reader = _polars_reader(source, target, batch_row_size)
+        self.write_arrow_reader(reader, target, merge_by, commit_row_size, **kwargs)
+
     # -- appending -----------------------------------------------------------
 
     def append_arrow_reader(
@@ -296,31 +303,20 @@ class Dataset(Convertible, abc.ABC):
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
         **kwargs: Any,
-    ) -> None:
-        """Append a stream, skipping the rows a stored row already matches.
-
-        Same arguments as `write_arrow_reader`, and the same falsy-appends
-        rule -- but `merge_by` means something cheaper here. A *write* with
-        `merge_by` upserts: it finds the stored row a key matches and rewrites
-        it. An *append* never touches what is stored: a row whose key is
-        already there is dropped, the rest are inserted. That is the half of
-        an upsert a stream of immutable rows needs -- replaying it inserts
-        nothing, rewrites nothing, and costs no delete files.
-
-        Duplicate keys *inside* the stream collapse to their first row for the
-        same reason: by the time the second arrives, the dataset already has
-        that key. A null merge key is refused -- no join can match it, so a
-        replay would insert it again every time.
-
-        This generic form reads the stored key columns once and anti-joins
-        each chunk against them in Arrow, so it fits any store that can read;
-        a store that can plan better overrides it (`IcebergDataset` prunes
-        the stored side to each chunk's key ranges).
-        """
+    ) -> int:
+        """Append a stream and return how many rows were inserted."""
         join = self.merge_columns(merge_by)
         if not join:
-            self.write_arrow_reader(source, schema, None, commit_row_size, **kwargs)
-            return
+            inserted = 0
+
+            def counted() -> Iterator[pyarrow.RecordBatch]:
+                nonlocal inserted
+                for batch in source:
+                    inserted += batch.num_rows
+                    yield batch
+
+            self.write_arrow_reader(counted(), schema, None, commit_row_size, **kwargs)
+            return inserted
         target = self.target_field(schema)
         key_field = _key_field(target, join)
         reader = target.cast_arrow_reader(source)
@@ -330,6 +326,7 @@ class Dataset(Convertible, abc.ABC):
             else key_field.arrow_schema.empty_table()
         )
         seen = normalised_keys(seen, join)
+        inserted = 0
         for chunk in arrow_chunks(reader, commit_row_size):
             _refuse_null_keys(chunk, join)
             fresh = first_rows(normalised_keys(chunk, join), join)
@@ -338,13 +335,13 @@ class Dataset(Convertible, abc.ABC):
             if fresh.num_rows == 0:
                 continue
             self.write_arrow_table(fresh, target, None, None, **kwargs)
+            inserted += fresh.num_rows
             seen = pyarrow.concat_tables([seen, fresh.select(list(join))])
+        return inserted
 
-    def append_arrow(self, source: Any, *args: Any, **kwargs: Any) -> None:
-        """Append, picking the method by what is handed over, like `write_arrow`."""
-        return getattr(self, f"append_{self.redirect_of(source, self.WRITES)}")(
-            source, *args, **kwargs
-        )
+    def append_arrow(self, source: Any, *args: Any, **kwargs: Any) -> int:
+        """Append the inferred Arrow shape and return rows inserted."""
+        return getattr(self, f"append_{self.redirect_of(source, _WRITES)}")(source, *args, **kwargs)
 
     def append_arrow_batch(
         self,
@@ -353,9 +350,9 @@ class Dataset(Convertible, abc.ABC):
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> int:
         """`append_arrow_reader` for one batch."""
-        self.append_arrow_reader(iter([batch]), schema, merge_by, commit_row_size, **kwargs)
+        return self.append_arrow_reader(iter([batch]), schema, merge_by, commit_row_size, **kwargs)
 
     def append_arrow_table(
         self,
@@ -364,9 +361,87 @@ class Dataset(Convertible, abc.ABC):
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> int:
         """`append_arrow_reader` for a table already in memory."""
-        self.append_arrow_reader(table.to_reader(), schema, merge_by, commit_row_size, **kwargs)
+        return self.append_arrow_reader(
+            table.to_reader(), schema, merge_by, commit_row_size, **kwargs
+        )
+
+    def append_polars(
+        self,
+        source: Any,
+        schema: Any = None,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_row_size: int | None = None,
+        *,
+        batch_row_size: int = POLARS_BATCH_ROW_SIZE,
+        **kwargs: Any,
+    ) -> int:
+        """Append a Polars frame through bounded, schema-checked Arrow batches."""
+        target = self.target_field(schema)
+        reader = _polars_reader(source, target, batch_row_size)
+        return self.append_arrow_reader(reader, target, merge_by, commit_row_size, **kwargs)
+
+
+def _polars_reader(
+    source: Any, target: StructField, batch_row_size: int
+) -> pyarrow.RecordBatchReader:
+    """A DataFrame or streaming LazyFrame cast onto `target` batch by batch."""
+    if batch_row_size <= 0:
+        raise ValueError("batch_row_size must be positive")
+    from rekep.require import require
+
+    polars = require("polars", "polars")
+    if isinstance(source, polars.DataFrame):
+        frames = iter((source,))
+    elif isinstance(source, polars.LazyFrame):
+        collect_batches = getattr(source, "collect_batches", None)
+        if collect_batches is None:
+            raise ImportError("streaming a LazyFrame requires Polars with collect_batches support")
+        frames = collect_batches(
+            chunk_size=batch_row_size,
+            maintain_order=True,
+            engine="streaming",
+        )
+    else:
+        raise TypeError(f"Polars input needs a DataFrame or LazyFrame, got {type(source).__name__}")
+
+    def batches() -> Iterator[pyarrow.RecordBatch]:
+        for frame in frames:
+            table = _polars_table(frame, target, polars)
+            yield from table.to_batches(max_chunksize=batch_row_size)
+
+    return pyarrow.RecordBatchReader.from_batches(target.into_arrow_schema(), batches())
+
+
+def _polars_table(frame: Any, target: StructField, polars: Any) -> pyarrow.Table:
+    """Export at the newest compatible level, then enforce the Arrow contract."""
+    compatibility = getattr(polars, "CompatLevel", None)
+    options = {}
+    if compatibility is not None and not _needs_compatible_polars_arrow(target.arrow_type):
+        options["compat_level"] = compatibility.newest()
+    return target.cast_arrow_table(frame.to_arrow(**options))
+
+
+def _needs_compatible_polars_arrow(data_type: pyarrow.DataType) -> bool:
+    """Whether newest Polars export would replace a declared text buffer with a view."""
+    types = pyarrow.types
+    if (
+        types.is_string(data_type)
+        or types.is_large_string(data_type)
+        or types.is_binary(data_type)
+        or types.is_large_binary(data_type)
+    ):
+        return True
+    if types.is_dictionary(data_type):
+        return _needs_compatible_polars_arrow(data_type.value_type)
+    storage = getattr(data_type, "storage_type", None)
+    if storage is not None:
+        return _needs_compatible_polars_arrow(storage)
+    return any(
+        _needs_compatible_polars_arrow(data_type.field(index).type)
+        for index in range(data_type.num_fields)
+    )
 
 
 def arrow_chunks(
@@ -427,18 +502,7 @@ def keys_of(table: pyarrow.Table, join: Sequence[str], marker: str) -> pyarrow.T
 
 
 def normalised_keys(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
-    """`table` with `-0.0` in a float merge key replaced by the `0.0` it equals.
-
-    On the values that are *written*, not only inside the joins, because three
-    things have to agree about a key and only two of them can be talked round:
-    a store's comparison says they are the same number, an Arrow join hashes
-    them apart, and so does `pc.is_in` -- what a predicate filter becomes once
-    it reaches Arrow. Storing one spelling is the only way a later merge or
-    append finds the row again.
-
-    Nothing else is touched: not a float that is not a key, not a key that is
-    not a float, and not the sign of anything that is not zero.
-    """
+    """`table` with `-0.0` in a float merge key replaced by the `0.0` it equals."""
     columns = list(table.columns)
     changed = False
     for name in join:
@@ -486,27 +550,7 @@ def anti_join(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str])
 
 
 def _in_order(taken: Any) -> Any:
-    """Row positions a join handed back, put back into the table's own order.
-
-    An Arrow join emits its output a batch at a time and in whatever order the
-    batches finish -- measured on pyarrow 25, a 400k-row anti-join comes back
-    in ten runs rather than one. Nothing about the *rows* is wrong, and
-    everything about their **layout** is: a chunk is sorted on the way in so
-    that each of a file's row groups covers a narrow slice of the sort key,
-    and a scrambled take spreads every slice across all of them. `sorted` then
-    means nothing for any chunk that had a row to drop -- which is every
-    partial replay, and only those, since a chunk with nothing to drop is
-    handed back untouched.
-
-    Measured on a 1.2M-row table, a top-5% filter after inserting 800k rows
-    over 400k stored ones: **282,496 rows decoded in order against 400,000 to
-    531,072 out of it**, four row groups against four or five. The ordering
-    itself did not show up against run-to-run variance on the insert.
-
-    Sorting the *positions* rather than any column is what keeps this honest:
-    it restores the order the caller had, whatever that order was, and says
-    nothing about what it should be.
-    """
+    """Row positions a join handed back, put back into the table's own order."""
     positions = taken.combine_chunks()
     return positions.take(pyarrow.compute.sort_indices(positions))
 

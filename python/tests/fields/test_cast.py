@@ -6,11 +6,11 @@ from typing import Annotated
 import pyarrow
 import pytest
 
-from rekep import Convertible, Field, field
+from rekep import Convertible, Field, scalar
 from rekep.fields import cast_batch, cast_reader, cast_table, merge_fields, merge_schemas
 
 
-@field
+@scalar
 class Tick(Convertible):
     """One quote."""
 
@@ -41,9 +41,9 @@ def struct_of(**members: pyarrow.DataType) -> pyarrow.DataType:
 def test_an_already_matching_batch_is_returned_untouched() -> None:
     batch = pyarrow.RecordBatch.from_pylist(
         [{"symbol": "A", "size": 1, "day": datetime.date(2026, 8, 14), "venue": None}],
-        schema=Tick.FIELD.into_arrow_schema(),
+        schema=Tick.into_field().into_arrow_schema(),
     )
-    assert Tick.FIELD.cast_arrow_batch(batch) is batch, "no copy when there is nothing to do"
+    assert Tick.into_field().cast_arrow_batch(batch) is batch, "no copy when there is nothing to do"
 
 
 def test_a_wider_column_is_narrowed_to_the_declared_type() -> None:
@@ -53,7 +53,7 @@ def test_a_wider_column_is_narrowed_to_the_declared_type() -> None:
         size=pyarrow.array([2**40], type=pyarrow.int64()),
         day=[datetime.date(2026, 8, 14)],
     )
-    cast = Tick.FIELD.cast_arrow_batch(batch)
+    cast = Tick.into_field().cast_arrow_batch(batch)
     assert cast.column("size").type == pyarrow.int32()
     assert cast.column("size").to_pylist() != [2**40], "truncated, which is what unsafe means"
 
@@ -65,33 +65,33 @@ def test_safe_true_refuses_the_same_narrowing() -> None:
         day=[datetime.date(2026, 8, 14)],
     )
     with pytest.raises(pyarrow.ArrowInvalid):
-        Tick.FIELD.cast_arrow_batch(batch, safe=True)
+        Tick.into_field().cast_arrow_batch(batch, safe=True)
 
 
 def test_a_missing_nullable_column_is_filled_with_nulls() -> None:
     batch = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)])
-    assert Tick.FIELD.cast_arrow_batch(batch).column("venue").to_pylist() == [None]
+    assert Tick.into_field().cast_arrow_batch(batch).column("venue").to_pylist() == [None]
 
 
 def test_a_missing_non_nullable_column_is_refused_by_name() -> None:
     batch = batch_of(symbol=["A"], size=[1])
     with pytest.raises(ValueError, match=r"'Tick\.day' is missing and not nullable"):
-        Tick.FIELD.cast_arrow_batch(batch)
+        Tick.into_field().cast_arrow_batch(batch)
 
 
 def test_columns_are_reordered_and_extras_dropped() -> None:
     batch = batch_of(
         venue=["X"], size=[1], noise=["ignored"], day=[datetime.date(2026, 8, 14)], symbol=["A"]
     )
-    cast = Tick.FIELD.cast_arrow_batch(batch)
-    assert cast.schema.names == Tick.FIELD.into_arrow_schema().names
+    cast = Tick.into_field().cast_arrow_batch(batch)
+    assert cast.schema.names == Tick.into_field().into_arrow_schema().names
     assert cast.column("venue").to_pylist() == ["X"]
 
 
 def test_the_cast_batch_carries_the_declared_schema_metadata() -> None:
     batch = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)])
-    cast = Tick.FIELD.cast_arrow_batch(batch)
-    assert cast.schema.equals(Tick.FIELD.into_arrow_schema())
+    cast = Tick.into_field().cast_arrow_batch(batch)
+    assert cast.schema.equals(Tick.into_field().into_arrow_schema())
 
 
 # -- streams ----------------------------------------------------------------
@@ -99,9 +99,9 @@ def test_the_cast_batch_carries_the_declared_schema_metadata() -> None:
 
 def test_a_plain_iterator_of_batches_becomes_a_reader() -> None:
     batches = [batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)])]
-    reader = Tick.FIELD.cast_arrow_reader(iter(batches))
+    reader = Tick.into_field().cast_arrow_reader(iter(batches))
     assert isinstance(reader, pyarrow.RecordBatchReader)
-    assert reader.schema.equals(Tick.FIELD.into_arrow_schema())
+    assert reader.schema.equals(Tick.into_field().into_arrow_schema())
     assert reader.read_all().num_rows == 1
 
 
@@ -114,7 +114,7 @@ def test_a_reader_is_cast_one_batch_at_a_time() -> None:
             read.append(value)
             yield batch_of(symbol=[value], size=[1], day=[datetime.date(2026, 8, 14)])
 
-    reader = Tick.FIELD.cast_arrow_reader(batches())
+    reader = Tick.into_field().cast_arrow_reader(batches())
     assert read == [], "nothing consumed yet"
     first = next(reader)
     assert read == ["A"], "one batch, not both"
@@ -135,8 +135,8 @@ def test_the_module_functions_take_any_schema() -> None:
 
 def test_merge_schema_keeps_an_unknown_column() -> None:
     batch = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])
-    cast = Tick.FIELD.cast_arrow_reader(iter([batch]), merge_schema=True).read_all()
-    assert cast.column_names == [*Tick.FIELD.into_arrow_schema().names, "desk"]
+    cast = Tick.into_field().cast_arrow_reader(iter([batch]), merge_schema=True).read_all()
+    assert cast.column_names == [*Tick.into_field().into_arrow_schema().names, "desk"]
     assert cast.column("desk").to_pylist() == ["EQ"]
 
 
@@ -147,7 +147,7 @@ def test_merge_schema_still_casts_the_shared_columns() -> None:
         day=[datetime.date(2026, 8, 14)],
         desk=["EQ"],
     )
-    cast = Tick.FIELD.cast_arrow_reader(iter([batch]), merge_schema=True).read_all()
+    cast = Tick.into_field().cast_arrow_reader(iter([batch]), merge_schema=True).read_all()
     assert cast.column("size").type == pyarrow.int32(), "the declaration still wins"
 
 
@@ -157,13 +157,13 @@ def test_merge_schema_delivers_every_batch_exactly_once() -> None:
         batch_of(symbol=[name], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])
         for name in ("A", "B", "C")
     ]
-    read = Tick.FIELD.cast_arrow_reader(iter(batches), merge_schema=True).read_all()
+    read = Tick.into_field().cast_arrow_reader(iter(batches), merge_schema=True).read_all()
     assert read.column("symbol").to_pylist() == ["A", "B", "C"]
 
 
 def test_merge_schema_on_an_empty_stream_leaves_the_schema_alone() -> None:
-    reader = Tick.FIELD.cast_arrow_reader(iter(()), merge_schema=True)
-    assert reader.schema.equals(Tick.FIELD.into_arrow_schema())
+    reader = Tick.into_field().cast_arrow_reader(iter(()), merge_schema=True)
+    assert reader.schema.equals(Tick.into_field().into_arrow_schema())
     assert reader.read_all().num_rows == 0
 
 
@@ -172,7 +172,7 @@ def test_a_readers_own_schema_is_used_without_consuming_it() -> None:
         pyarrow.schema([("symbol", pyarrow.string()), ("desk", pyarrow.string())]),
         iter(()),
     )
-    assert "desk" in Tick.FIELD.cast_arrow_reader(source, merge_schema=True).schema.names
+    assert "desk" in Tick.into_field().cast_arrow_reader(source, merge_schema=True).schema.names
 
 
 def test_the_stream_shape_is_decided_once_not_per_batch() -> None:
@@ -180,17 +180,19 @@ def test_the_stream_shape_is_decided_once_not_per_batch() -> None:
     resolved in the target's favour -- documented, not accidental."""
     first = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])
     later = batch_of(symbol=["B"], size=[2], day=[datetime.date(2026, 8, 14)])
-    read = Tick.FIELD.cast_arrow_reader(iter([first, later]), merge_schema=True).read_all()
+    read = Tick.into_field().cast_arrow_reader(iter([first, later]), merge_schema=True).read_all()
     assert read.column("desk").to_pylist() == ["EQ", None], "the dropped column comes back null"
 
     surprise = batch_of(symbol=["C"], size=[3], day=[datetime.date(2026, 8, 14)], pod=["X"])
-    read = Tick.FIELD.cast_arrow_reader(iter([later, surprise]), merge_schema=True).read_all()
+    read = (
+        Tick.into_field().cast_arrow_reader(iter([later, surprise]), merge_schema=True).read_all()
+    )
     assert "pod" not in read.column_names, "a column only a later batch has is dropped"
 
 
 def test_merge_arrow_schema_adds_nullable_columns() -> None:
     incoming = pyarrow.schema([("symbol", pyarrow.string()), ("desk", pyarrow.string())])
-    merged = Tick.FIELD.merge_arrow_schema(incoming)
+    merged = Tick.into_field().merge_arrow_schema(incoming)
     assert merged.field("desk").nullable, "rows already stored have nothing to put in it"
     assert merged.field("size").type == pyarrow.int32(), "shared columns stay the target's"
 
@@ -245,7 +247,7 @@ def test_a_container_facing_a_scalar_leaves_the_target_alone() -> None:
 
 
 def test_a_schema_with_nothing_to_add_is_returned_as_it_was() -> None:
-    target = Tick.FIELD.into_arrow_schema()
+    target = Tick.into_field().into_arrow_schema()
     assert merge_schemas(pyarrow.schema([("symbol", pyarrow.string())]), target) is target
 
 
@@ -367,34 +369,34 @@ def test_a_table_is_cast_batch_by_batch() -> None:
             batch_of(symbol=["B"], size=[2], day=[datetime.date(2026, 8, 15)]),
         ]
     )
-    cast = Tick.FIELD.cast_arrow_table(table)
-    assert cast.schema.equals(Tick.FIELD.into_arrow_schema())
+    cast = Tick.into_field().cast_arrow_table(table)
+    assert cast.schema.equals(Tick.into_field().into_arrow_schema())
     assert cast.num_rows == 2
     assert cast.column("size").type == pyarrow.int32()
     assert cast.column("venue").to_pylist() == [None, None], "the missing nullable column is filled"
 
 
 def test_a_table_that_already_matches_is_handed_back() -> None:
-    table = Tick.FIELD.cast_arrow_table(
+    table = Tick.into_field().cast_arrow_table(
         pyarrow.Table.from_batches(
             [batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)])]
         )
     )
-    assert Tick.FIELD.cast_arrow_table(table) is table
+    assert Tick.into_field().cast_arrow_table(table) is table
 
 
 def test_a_table_can_merge_the_columns_it_has() -> None:
     table = pyarrow.Table.from_batches(
         [batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])]
     )
-    cast = Tick.FIELD.cast_arrow_table(table, merge_schema=True)
-    assert cast.column_names == [*Tick.FIELD.names, "desk"]
+    cast = Tick.into_field().cast_arrow_table(table, merge_schema=True)
+    assert cast.column_names == [*Tick.into_field().names, "desk"]
 
 
 def test_a_batch_can_merge_the_columns_it_has() -> None:
     batch = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])
-    cast = Tick.FIELD.cast_arrow_batch(batch, merge_schema=True)
-    assert cast.schema.names == [*Tick.FIELD.names, "desk"]
+    cast = Tick.into_field().cast_arrow_batch(batch, merge_schema=True)
+    assert cast.schema.names == [*Tick.into_field().names, "desk"]
     assert cast.column("size").type == pyarrow.int32(), "shared columns stay the target's"
 
 
@@ -413,23 +415,23 @@ def test_the_module_functions_cover_batch_table_and_stream() -> None:
 def test_cast_arrow_picks_the_method_by_what_it_is() -> None:
     batch = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)])
     table = pyarrow.Table.from_batches([batch])
-    assert isinstance(Tick.FIELD.cast_arrow(batch), pyarrow.RecordBatch)
-    assert isinstance(Tick.FIELD.cast_arrow(table), pyarrow.Table)
-    assert isinstance(Tick.FIELD.cast_arrow(iter([batch])), pyarrow.RecordBatchReader)
-    assert isinstance(Tick.FIELD.cast_arrow(table.to_reader()), pyarrow.RecordBatchReader)
-    column = Tick.FIELD.field("size").cast_arrow(pyarrow.array([1], pyarrow.int64()))
+    assert isinstance(Tick.into_field().cast_arrow(batch), pyarrow.RecordBatch)
+    assert isinstance(Tick.into_field().cast_arrow(table), pyarrow.Table)
+    assert isinstance(Tick.into_field().cast_arrow(iter([batch])), pyarrow.RecordBatchReader)
+    assert isinstance(Tick.into_field().cast_arrow(table.to_reader()), pyarrow.RecordBatchReader)
+    column = Tick.into_field().field("size").cast_arrow(pyarrow.array([1], pyarrow.int64()))
     assert column.type == pyarrow.int32()
-    assert Tick.FIELD.field("size").cast_arrow(table.column("size")).type == pyarrow.int32()
+    assert Tick.into_field().field("size").cast_arrow(table.column("size")).type == pyarrow.int32()
 
 
 def test_cast_arrow_passes_its_keywords_on() -> None:
     batch = batch_of(symbol=["A"], size=[1], day=[datetime.date(2026, 8, 14)], desk=["EQ"])
-    assert "desk" in Tick.FIELD.cast_arrow(batch, merge_schema=True).schema.names
+    assert "desk" in Tick.into_field().cast_arrow(batch, merge_schema=True).schema.names
 
 
 def test_cast_arrow_refuses_what_it_cannot_place() -> None:
     with pytest.raises(TypeError, match="cannot infer"):
-        Tick.FIELD.cast_arrow("a string is not arrow data")
+        Tick.into_field().cast_arrow("a string is not arrow data")
 
 
 # -- merging with another declaration ---------------------------------------
@@ -438,15 +440,15 @@ def test_cast_arrow_refuses_what_it_cannot_place() -> None:
 def test_merge_with_takes_whatever_names_a_shape() -> None:
     other = pyarrow.schema([("symbol", pyarrow.large_string()), ("desk", pyarrow.string())])
     for source in (other, Field.from_arrow_schema(other), Tick):
-        merged = Tick.FIELD.merge_with(source)
+        merged = Tick.into_field().merge_with(source)
         assert merged.field("symbol").arrow_type == pyarrow.string(), "this field's type wins"
         assert "size" in merged.names
 
 
 def test_merge_with_adds_what_the_other_has() -> None:
     other = pyarrow.schema([("desk", pyarrow.string())])
-    merged = Tick.FIELD.merge_with(other)
-    assert merged.names == [*Tick.FIELD.names, "desk"]
+    merged = Tick.into_field().merge_with(other)
+    assert merged.names == [*Tick.into_field().names, "desk"]
     assert merged.field("desk").nullable, "rows already stored have nothing to put in it"
 
 

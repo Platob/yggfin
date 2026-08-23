@@ -9,6 +9,7 @@ of pyiceberg's own conversion.
 from __future__ import annotations
 
 import itertools
+from collections.abc import Sequence
 from typing import Any
 
 import pyarrow
@@ -62,16 +63,7 @@ def iceberg_field(source: Field, field_id: int = 1) -> Any:
 
 
 def iceberg_partition_spec(source: StructField, schema: Any = None) -> Any:
-    """The `pyiceberg.partitioning.PartitionSpec` `source` declares.
-
-    The transform is read straight from the metadata that declared it, so
-    `identity`, `day` and `bucket[16]` all arrive as pyiceberg parses them.
-    An identity partition keeps the column's own name, which is what an
-    operator expects to see in a partition path; any other transform appends
-    its name -- `instrument_hash_bucket` -- which is what Spark itself calls
-    it. The width stays out of the name: it is already in the spec, and a
-    `[` in a partition field is a `[` in a directory path.
-    """
+    """The `pyiceberg.partitioning.PartitionSpec` `source` declares."""
     require("pyiceberg", "iceberg")
     from pyiceberg.partitioning import PartitionField, PartitionSpec
     from pyiceberg.transforms import parse_transform
@@ -95,7 +87,11 @@ def _kind(transform: str) -> str:
     return transform.split("[", 1)[0]
 
 
-def iceberg_sort_order(source: StructField, schema: Any = None) -> Any:
+def iceberg_sort_order(
+    source: StructField,
+    schema: Any = None,
+    sort_by: Sequence[str] | None = None,
+) -> Any:
     """The `pyiceberg.table.sorting.SortOrder` `source` declares, in declaration order.
 
     Iceberg records it and every engine that writes through the table honours
@@ -109,7 +105,7 @@ def iceberg_sort_order(source: StructField, schema: Any = None) -> Any:
     from pyiceberg.table.sorting import SortDirection, SortField, SortOrder
     from pyiceberg.transforms import IdentityTransform
 
-    declared = source.sort_keys()
+    declared = source.sort_keys() if sort_by is None else dict.fromkeys(sort_by, "ascending")
     if not declared:
         return SortOrder()
     schema = schema if schema is not None else iceberg_schema(source)
@@ -130,18 +126,7 @@ def iceberg_sort_order(source: StructField, schema: Any = None) -> Any:
 
 
 def struct_field_of(schema: Any, name: str = "", spec: Any = None) -> StructField:
-    """A `pyiceberg` schema as a struct field: types, docs and keys.
-
-    Arrow is the hub, so the types come from pyiceberg's own projection rather
-    than a mapping of our own -- **including its widths**: pyiceberg reads a
-    string column as `large_string`, and a field that said otherwise would
-    make every read pay a conversion. What is added here is what Arrow has no
-    place for: the documentation, which pyiceberg keeps under `doc`, the
-    identifier fields, the partition transforms when a spec is given, and the
-    **column ids**, which come back under `iceberg:field_id` -- so a field read
-    from a table can be published as a contract that says which id each column
-    has, and handed back to Iceberg without renumbering anything.
-    """
+    """A `pyiceberg` schema as a struct field: types, docs and keys."""
     require("pyiceberg", "iceberg")
     from pyiceberg.io.pyarrow import schema_to_pyarrow
 
@@ -162,16 +147,7 @@ def struct_field_of(schema: Any, name: str = "", spec: Any = None) -> StructFiel
 
 
 def _fresh(arrow: pyarrow.Schema, next_id: Any = None) -> Any:
-    """An Arrow schema as an Iceberg schema, keeping the ids it already carries.
-
-    Iceberg identifies a column by id, never by name, so a schema that came
-    *from* Iceberg -- or from a parquet footer written for it -- already says
-    which id each column has, and taking those back is what makes a round trip
-    lossless instead of a rename of every column. A schema that carries none,
-    or only some, is numbered fresh in Iceberg's own sibling-first order: the
-    user should not have to know the protocol to hand over a plain Arrow
-    schema.
-    """
+    """An Arrow schema as an Iceberg schema, keeping the ids it already carries."""
     from pyiceberg.io.pyarrow import _pyarrow_to_schema_without_ids, pyarrow_to_schema
     from pyiceberg.schema import assign_fresh_schema_ids
 
@@ -277,25 +253,7 @@ COLUMN_METRICS = "write.metadata.metrics.column"
 
 
 def metrics_for(source: StructField) -> dict[str, str]:
-    """Table properties that keep the columns a reader filters on prunable.
-
-    Iceberg counts leaves in **declaration order** and stops at a hundred, so
-    on a wide shape the columns a reader filters on are decided by where they
-    happen to sit -- and a nested member added in front of them silently
-    pushes one over the edge. `Book` reached exactly a hundred leaves the day
-    an instrument grew legs.
-
-    So the shape says which columns it is read by -- its partition, sort and
-    primary keys -- and those are declared by name, which takes them out of
-    the budget entirely. The budget itself is only raised when the shape is
-    genuinely past it, because a property that agrees with the default is a
-    property to keep in step with it.
-
-    pyiceberg 0.11 collects every top-level primitive regardless, so today
-    this changes nothing about what *this* writer records. It is written on
-    the table for the engines that do honour it -- a Spark or Flink job
-    writing into the same table reads these properties, not this code.
-    """
+    """Table properties that keep the columns a reader filters on prunable."""
     declared = {
         **source.partition_keys(),
         **source.sort_keys(),

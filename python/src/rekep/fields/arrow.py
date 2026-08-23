@@ -10,26 +10,7 @@ import pyarrow
 
 
 def merge_fields(source: pyarrow.Field, target: pyarrow.Field) -> pyarrow.Field:
-    """`source` merged into `target`, all the way down.
-
-    The one merge rule, applied recursively rather than only at the top:
-
-    - `target` wins wherever both have something -- its type, its
-      nullability, its metadata. That is what makes this a *merge* and not a
-      takeover: shared columns stay the target's, so data is cast onto them
-      (`cast_batch`), never the other way round. A source calling a column
-      `int64` does not get to widen a target that declared `int32`.
-    - Whatever `source` has and `target` does not is **added**, forced
-      nullable: values already stored under `target` predate the field and
-      have nothing to put in it.
-
-    "Whatever source has" means at every level, which is the point of doing
-    this per field rather than per schema. A struct that grew a member, a
-    list whose items grew one, a map whose values grew one -- each merges
-    the same way, because each is a field with fields inside it. Only
-    matching containers recurse: a struct in the target and a scalar in the
-    source is a type conflict, and the target simply wins.
-    """
+    """`source` merged into `target`, all the way down."""
     merged = _merge_type(source.type, target.type)
     if merged.equals(target.type):
         return target

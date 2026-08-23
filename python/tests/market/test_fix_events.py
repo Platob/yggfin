@@ -10,19 +10,27 @@ import datetime
 
 import pytest
 
-from rekep.fix import FixMessage
+from rekep.fix import FixMessage, FixRegistry, fix_field
 from rekep.market import (
+    MIC,
     AssetKind,
-    ExecKind,
+    Currency,
     Execution,
+    MarketKind,
     OptionKind,
     Order,
-    OrderKind,
     Side,
     State,
     TimeInForce,
 )
-from rekep.market.fix import CARRIED_TAGS, TRANSACTED, FixEvents, market_tags, unix_of
+from rekep.market.fix import (
+    CARRIED_FIELDS,
+    FIX_STATES,
+    TRANSACTED,
+    FixEvents,
+    market_tags,
+    unix_of,
+)
 
 #: One filled ExecutionReport, spelled the way a log prints one.
 FILLED = (
@@ -49,6 +57,11 @@ def test_a_fraction_is_scaled_by_its_own_width() -> None:
     """`.5` is half a second and `.000000001` is a nanosecond; both are decimals."""
     assert unix_of("20260821-00:00:00.5") - unix_of("20260821") == 500_000_000
     assert unix_of("20260821-00:00:00.000000001") - unix_of("20260821") == 1
+
+
+def test_epoch_fix_time_is_not_mistaken_for_an_absent_clock() -> None:
+    reader = FixEvents.from_text("35=D|52=19700101-00:00:00", runix=123)
+    assert reader.unix == 0
 
 
 def test_a_date_alone_and_a_time_alone_are_both_read() -> None:
@@ -101,6 +114,11 @@ def test_the_recording_clock_is_the_readers_and_stays_separate() -> None:
     assert order.runix > order.unix, "recorded after it happened, which is the point"
 
 
+def test_the_fix_sequence_populates_the_generic_event_envelope() -> None:
+    order, fill = events(FILLED)
+    assert order.seq == fill.seq == 1090
+
+
 def test_without_a_transaction_time_the_message_falls_down_the_declared_order() -> None:
     """Every step of `TRANSACTED`, in order, each one dropped in turn."""
     header = "35=D|55=AAPL|11=CL-1|"
@@ -120,10 +138,21 @@ def test_a_message_with_no_time_at_all_says_so_with_a_zero() -> None:
     assert events("35=D|55=AAPL|11=CL-1")[0].unix == 0
 
 
+def test_a_message_with_no_fix_clock_uses_the_recorded_log_instant() -> None:
+    recorded = unix_of("20260821-10:30:00")
+    assert events("35=D|55=AAPL|11=CL-1", runix=recorded)[0].unix == recorded
+
+
 def test_the_declared_order_is_the_one_the_reader_uses() -> None:
     """Pinned, because the rule *is* the constant: a reordering here is a silent
     change of which clock every downstream row is stamped with."""
-    assert TRANSACTED == (60, (272, 273), 42, 122, 52)
+    assert TRANSACTED == (
+        "TransactTime",
+        ("MDEntryDate", "MDEntryTime"),
+        "OrigTime",
+        "OrigSendingTime",
+        "SendingTime",
+    )
 
 
 # -- an execution report is two events ---------------------------------------
@@ -136,22 +165,40 @@ def test_a_filled_report_is_both_the_order_and_the_fill() -> None:
     assert isinstance(order, Order) and isinstance(fill, Execution)
 
 
-def test_the_order_carries_what_was_asked_and_the_fill_what_moved() -> None:
-    """`Price <44>`/`OrderQty <38>` against `LastPx <31>`/`LastQty <32>`."""
+def test_the_order_carries_what_remains_and_the_fill_what_moved() -> None:
+    """`LeavesQty <151>` is live interest; `LastQty <32>` is what just traded."""
     order, fill = events(FILLED)
-    assert (order.px, order.qty) == (100.5, 10.0)
+    assert (order.px, order.qty) == (100.5, 6.0)
     assert (fill.px, fill.qty) == (100.25, 4.0)
 
 
 def test_the_order_comes_first_because_the_fill_points_at_it() -> None:
     order, fill = events(FILLED)
-    assert fill.order_xhash == order.xhash
+    assert fill.linked_xhash == [order.xhash]
     assert fill.parent_hash == [order.hash]
+
+
+def test_a_report_hashes_only_the_completed_fill_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = Execution.hash_of.__func__
+    calls = 0
+
+    def counted(cls: type[Execution], *parts: object) -> int:
+        nonlocal calls
+        calls += 1
+        return original(cls, *parts)
+
+    monkeypatch.setattr(Execution, "hash_of", classmethod(counted))
+
+    _, fill = events(FILLED)
+
+    assert fill.hash and calls == 1
 
 
 def test_an_acknowledgement_produces_no_execution_row() -> None:
     """`ExecType <150>` `0` is New: nothing traded, and summing acks as fills is
-    exactly the mistake the `kind` band exists to prevent."""
+    exactly the mistake the field-specific state mapping prevents."""
     acked = FILLED.replace("|150=F|", "|150=0|").replace("|39=1|", "|39=0|")
     (only,) = events(acked)
     assert isinstance(only, Order) and only.state is State.NEW
@@ -171,7 +218,7 @@ def test_the_order_state_is_the_ordstatus_the_venue_sent() -> None:
 def test_an_executions_own_state_is_about_the_fill_not_the_order() -> None:
     """A fill is done the instant it exists; the order it belongs to may not be."""
     _, fill = events(FILLED)
-    assert fill.kind is ExecKind.TRADED and fill.state is State.FILLED
+    assert fill.state is State.FILLED
     assert fill.state is not State.PARTIALLY_FILLED
 
 
@@ -180,6 +227,14 @@ def test_a_trade_cancel_and_a_correct_read_as_what_they_do_to_the_fill() -> None
     _, corrected = events(FILLED.replace("|150=F|", "|150=G|"))
     assert cancelled.state is State.CANCELLED
     assert corrected.state is State.REPLACED
+
+
+def test_a_trade_correction_keeps_its_execid_and_anchors_on_execrefid() -> None:
+    report = FILLED.replace("|17=EX-3|", "|17=EX-4|19=EX-3|").replace("|150=F|", "|150=G|")
+    _, corrected = events(report)
+
+    assert corrected.exec_id == "EX-4" and corrected.exec_ref_id == "EX-3"
+    assert corrected.xcode == "EX-3"
 
 
 def test_a_lifecycle_exectype_reads_through_the_code_it_shares_with_ordstatus() -> None:
@@ -205,24 +260,35 @@ def test_a_request_is_pending_because_the_venue_has_not_agreed_yet(kind: str, st
 
 def test_an_order_carries_every_slot_the_message_filled() -> None:
     order, _ = events(FILLED)
-    assert order.kind is OrderKind.LIMIT_ORDER and order.tif is TimeInForce.GTC
+    assert order.kind is MarketKind.LIMIT_ORDER and order.tif is TimeInForce.GTC
     assert order.side is Side.BUY
-    assert (order.filled_qty, order.leaves_qty, order.avg_px) == (4.0, 6.0, 100.25)
+    assert (order.qty, order.vwap) == (6.0, 100.25)
+    assert not hasattr(order, "filled_qty") and not hasattr(order, "leaves_qty")
     assert (order.order_id, order.client_order_id) == ("ORD-9", "CL-7")
     assert order.prev_client_order_id == "CL-6"
+
+
+def test_order_qty_uses_explicit_or_derived_live_quantity() -> None:
+    explicit, _ = events(FILLED)
+    derived, _ = events(FILLED.replace("|151=6|", "|"))
+    assert explicit.qty == derived.qty == 6.0
+
+
+def test_an_omitted_time_in_force_is_day_as_fix_specifies() -> None:
+    (order,) = events("35=D|55=AAPL|11=CL-1|54=1|38=100|44=10|60=20260821-10:00:00")
+    assert order.tif is TimeInForce.DAY and order.eunix is None
 
 
 def test_a_price_the_venue_did_not_send_is_absent_and_not_zero() -> None:
     """A market order has no limit at all, and zero is a price."""
     (order,) = events("35=D|55=AAPL|11=CL-1|40=1|54=1|38=100|60=20260821-10:00:00")
-    assert order.px is None and order.kind is OrderKind.MARKET_ORDER
+    assert order.px is None and order.kind is MarketKind.MARKET_ORDER
 
 
-def test_an_expiry_given_only_as_a_day_lasts_through_that_day() -> None:
-    """A GTD order dated today is good *through* today; midnight would retire it
-    before it ever traded."""
+def test_a_local_market_expiry_date_is_preserved_but_not_guessed_as_utc() -> None:
     (order,) = events("35=D|55=AAPL|11=CL-1|59=6|432=20260821|60=20260821-10:00:00")
-    assert order.eunix == unix_of("20260822") - 1
+    assert order.eunix is None
+    assert order.metadata["432"] == "20260821"
 
 
 def test_an_explicit_expiry_time_wins_over_the_day() -> None:
@@ -230,6 +296,63 @@ def test_an_explicit_expiry_time_wins_over_the_day() -> None:
         "35=D|55=AAPL|11=CL-1|59=6|432=20260821|126=20260821-16:30:00|60=20260821-10:00:00"
     )
     assert order.eunix == unix_of("20260821-16:30:00")
+
+
+@pytest.mark.parametrize(
+    ("unit", "factor"),
+    [
+        (None, 1_000_000_000),
+        ("0", 1_000_000_000),
+        ("1", 100_000_000),
+        ("2", 10_000_000),
+        ("3", 1_000_000),
+        ("4", 1_000),
+        ("5", 1),
+        ("10", 60_000_000_000),
+        ("11", 3_600_000_000_000),
+        ("12", 86_400_000_000_000),
+        ("13", 604_800_000_000_000),
+    ],
+)
+def test_good_for_time_derives_an_exact_expiry(unit: str | None, factor: int) -> None:
+    unit_pair = "" if unit is None else f"|1916={unit}"
+    (order,) = events(f"35=D|55=AAPL|11=CL-1|59=A|1629=2{unit_pair}|60=20260821-10:00:00")
+    assert order.tif is TimeInForce.GFT
+    assert order.eunix == order.unix + 2 * factor
+    assert order.exposure_duration == 2
+    assert order.exposure_duration_unit == (None if unit is None else int(unit))
+    assert order.metadata["1629"] == "2"
+    if unit is not None:
+        assert order.metadata["1916"] == unit
+
+
+@pytest.mark.parametrize(
+    ("duration", "unit"), [("0", "0"), ("-1", "0"), ("2", "14"), ("2", "15"), ("2", "99")]
+)
+def test_good_for_time_refuses_non_positive_or_calendar_durations(duration: str, unit: str) -> None:
+    (order,) = events(f"35=D|55=AAPL|11=CL-1|59=A|1629={duration}|1916={unit}|60=20260821-10:00:00")
+    assert order.eunix is None
+    assert order.exposure_duration == int(duration)
+    assert order.exposure_duration_unit == int(unit)
+
+
+def test_expire_time_wins_over_good_for_time() -> None:
+    (order,) = events(
+        "35=D|55=AAPL|11=CL-1|59=A|1629=1|1916=13|126=20260821-10:00:01|60=20260821-10:00:00"
+    )
+    assert order.eunix == unix_of("20260821-10:00:01")
+
+
+@pytest.mark.parametrize("fix", ["3", "4"], ids=["ioc", "fok"])
+def test_immediate_time_in_force_expires_on_arrival(fix: str) -> None:
+    (order,) = events(f"35=D|55=AAPL|11=CL-1|54=1|38=100|44=10|59={fix}|60=20260821-10:00:00")
+    assert order.eunix == order.unix == unix_of("20260821-10:00:00")
+
+
+@pytest.mark.parametrize("fix", ["0", "2", "5", "7", "8", "9", "B", "C"])
+def test_calendar_dependent_time_in_force_has_no_invented_instant(fix: str) -> None:
+    (order,) = events(f"35=D|55=AAPL|11=CL-1|54=1|38=100|44=10|59={fix}|60=20260821-10:00:00")
+    assert order.eunix is None
 
 
 # -- market data -------------------------------------------------------------
@@ -273,6 +396,7 @@ def test_an_update_action_decides_what_the_entry_does_to_the_book() -> None:
     deleted = REFRESH.replace("279=0|269=0|", "279=2|269=0|", 1)
     bid, *_ = events(deleted)
     assert bid.state is State.CANCELLED
+    assert bid.metadata["279"] == "2"
 
 
 def test_a_snapshot_entry_with_no_action_is_present_by_definition() -> None:
@@ -284,7 +408,7 @@ def test_a_snapshot_entry_with_no_action_is_present_by_definition() -> None:
 def test_a_trade_entry_is_an_execution_and_not_a_resting_order() -> None:
     *_, printed = events(REFRESH)
     assert isinstance(printed, Execution)
-    assert printed.kind is ExecKind.TRADED and printed.state is State.FILLED
+    assert printed.state is State.FILLED
     assert (printed.px, printed.qty) == (100.2, 1.0)
 
 
@@ -313,36 +437,80 @@ def test_an_entry_id_is_the_lifecycle_when_the_venue_gives_one() -> None:
 
 def test_the_instrument_is_read_and_flattened_onto_the_partition_column() -> None:
     order, fill = events(FILLED)
-    assert order.instrument.symbol == "BTC-USD" and order.symbol == "BTC-USD"
-    assert order.instrument.exchange == "XCME" and order.instrument.currency == "USD"
-    assert order.instrument_hash == order.instrument.xhash != 0
-    assert fill.instrument_hash == order.instrument_hash
+    instrument = order.into_instrument()
+    assert instrument is not None
+    assert instrument.symbol == "BTC-USD" and order.code == "BTC-USD"
+    assert instrument.exchange == "XCME" and instrument.currency is Currency.USD
+    assert order.instrument_xhash == instrument.xhash != 0
+    assert fill.instrument_xhash == order.instrument_xhash
 
 
 def test_the_price_unit_is_the_instruments_currency() -> None:
     order, _ = events(FILLED)
-    assert order.px_unit == "USD"
+    assert order.px_unit == "USD" and order.ccy is Currency.USD
+
+
+def test_fix_exchange_values_become_the_lossless_mic_code() -> None:
+    order, fill = events(FILLED)
+    assert order.mic is fill.mic is MIC.from_str("XCME")
+    assert int(order.mic) == int.from_bytes(b"XCME", "big")
+
+
+def test_fix_text_becomes_the_event_error_and_session_ids_are_a_mic_fallback() -> None:
+    (order,) = events("35=D|49=BUYSIDE|56=XPAR|11=CL-1|58=invalid price")
+    assert order.error == "invalid price"
+    assert order.mic is MIC.from_str("XPAR")
+
+
+def test_a_structured_reject_reason_fills_error_when_text_is_absent() -> None:
+    (order,) = events("35=8|11=CL-1|39=8|150=0|103=6|60=20260821-10:00:00")
+    assert order.state is State.REJECTED
+    assert order.error is not None and order.error.startswith("OrdRejReason=6: Duplicate Order")
+
+
+def test_session_direction_does_not_split_one_order_lifecycle() -> None:
+    sent = "35=D|49=BUYSIDE|56=XPAR|55=AAPL|11=CL-1|60=20260821-10:00:00"
+    received = "35=8|49=XPAR|56=BUYSIDE|55=AAPL|11=CL-1|39=0|150=0|60=20260821-10:00:01"
+    (requested,) = events(sent)
+    (reported,) = events(received)
+    assert requested.mic == reported.mic == MIC.from_str("XPAR")
+    assert requested.mic is reported.mic is MIC.from_str("XPAR")
+    assert requested.xhash == reported.xhash
+
+
+def test_configured_mic_precedes_session_peer_fallbacks() -> None:
+    (order,) = events(
+        "35=D|49=BUY1|56=XPAR|55=AAPL|11=CL-1",
+        venue="XCME",
+        mic=MIC.from_str("XPAR"),
+    )
+    assert order.mic is MIC.from_str("XCME")
 
 
 def test_the_asset_class_is_the_first_character_of_the_cfi_code() -> None:
     """ISO 10962's own category letter, which is what `AssetKind` is coded on."""
     (order,) = events("35=D|55=AAPL|11=C|461=ESVUFR|60=20260821-10:00:00")
-    assert order.instrument.kind is AssetKind.EQUITY
-    assert order.instrument.cfi == "ESVUFR"
+    instrument = order.into_instrument()
+    assert instrument is not None
+    assert instrument.kind is AssetKind.EQUITY
+    assert instrument.cfi == "ESVUFR"
 
 
 def test_an_instrument_with_no_cfi_is_unknown_rather_than_guessed() -> None:
     (order,) = events("35=D|55=AAPL|11=C|60=20260821-10:00:00")
-    assert order.instrument.kind is AssetKind.UNKNOWN
+    instrument = order.into_instrument()
+    assert instrument is not None and instrument.kind is AssetKind.UNKNOWN
 
 
 def test_the_option_fields_are_read_where_a_venue_sends_them() -> None:
     (order,) = events(
         "35=D|55=AAPL|11=C|461=OCASPS|201=1|202=150.5|541=20261218|60=20260821-10:00:00"
     )
-    assert order.instrument.option_kind is OptionKind.CALL
-    assert order.instrument.strike == 150.5
-    assert order.instrument.maturity == datetime.date(2026, 12, 18)
+    instrument = order.into_instrument()
+    assert instrument is not None
+    assert instrument.option_kind is OptionKind.CALL
+    assert instrument.strike == 150.5
+    assert instrument.maturity == datetime.date(2026, 12, 18)
 
 
 # -- what the shapes do not have a column for --------------------------------
@@ -356,9 +524,35 @@ def test_a_field_no_column_holds_is_kept_under_the_key_it_arrived_as() -> None:
 
 def test_a_field_a_column_already_holds_is_not_repeated_into_the_extras() -> None:
     order, fill = events(FILLED)
-    for claimed in ("54", "44", "38", "31", "32", "150", "39", "55", "60", "52"):
+    for claimed in ("54", "44", "38", "31", "32", "55", "60", "52"):
         assert claimed not in order.metadata, claimed
         assert claimed not in fill.metadata, claimed
+
+
+def test_each_event_owns_its_metadata_mapping() -> None:
+    order, fill = events(FILLED)
+    expected = dict(fill.metadata)
+
+    assert order.metadata is not fill.metadata
+    order.metadata["local"] = "order-only"
+    assert fill.metadata == expected
+
+
+def test_standard_state_keeps_the_original_field_specific_codes() -> None:
+    order, fill = events(FILLED)
+    assert order.metadata["39"] == fill.metadata["39"] == "1"
+    assert order.metadata["150"] == fill.metadata["150"] == "F"
+    assert order.metadata["40"] == fill.metadata["40"] == "2"
+    assert FIX_STATES["OrdStatus"]["1"] is State.PARTIALLY_FILLED
+    assert FIX_STATES["MDUpdateAction"]["1"] is State.OPEN
+
+
+def test_standard_kind_keeps_each_many_to_one_order_type_spelling() -> None:
+    market, with_or_without = (
+        events(f"35=D|55=AAPL|11={code}|40={code}|60=20260821-10:00:00")[0] for code in ("5", "6")
+    )
+    assert market.kind is with_or_without.kind is MarketKind.MARKET_ORDER
+    assert market.metadata["40"] == "5" and with_or_without.metadata["40"] == "6"
 
 
 def test_the_frame_of_the_message_is_not_a_fact_about_the_market() -> None:
@@ -413,6 +607,43 @@ def test_pairs_and_a_wire_line_produce_the_same_events() -> None:
     assert from_pairs.hash == from_line.hash and from_pairs.xhash == from_line.xhash
 
 
+def test_an_offline_registry_selects_version_specific_wire_tags(tmp_path) -> None:
+    """A custom version must change reads, not only named-pair preprocessing."""
+    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    fields = (
+        ("MsgType", "String"),
+        ("Symbol", "String"),
+        ("ClOrdID", "String"),
+        ("Side", "char"),
+        ("OrderQty", "Qty"),
+        ("Price", "Price"),
+        ("TransactTime", "UTCTimestamp"),
+        ("DeskCode", "String"),
+    )
+    for version, first_tag in (("VENUE1", 9001), ("VENUE2", 9101)):
+        registry._store_fields(
+            version,
+            [
+                fix_field(name, first_tag + offset, datatype, version=version)
+                for offset, (name, datatype) in enumerate(fields)
+            ],
+        )
+
+    line = (
+        "8=FIX.VENUE1|9001=D|9002=AAPL|9003=CUSTOM-1|9004=1|9005=7|"
+        "9006=10.5|9007=20260821-10:00:00|9008=ALPHA"
+    )
+    assert list(FixEvents.from_text(line)) == [], "standard tags cannot read this dialect"
+
+    reader = FixEvents.from_text(line, registry=registry)
+    (order,) = list(reader)
+    assert reader.version == "VENUE1"
+    assert (order.code, order.client_order_id, order.side) == ("AAPL", "CUSTOM-1", Side.BUY)
+    assert (order.qty, order.px, order.unix) == (7.0, 10.5, unix_of("20260821-10:00:00"))
+    assert "9004" not in order.metadata, "the configured Side tag is a claimed column"
+    assert order.metadata["9008"] == "ALPHA", "a registry-only field remains auditable"
+
+
 # -- the dictionary these shapes are their own ------------------------------
 
 
@@ -421,16 +652,14 @@ def test_the_tag_mapping_comes_from_the_declarations_rather_than_a_list() -> Non
     tags = market_tags()
     assert tags["Side"] == 54 and tags["ExecType"] == 150 and tags["LastPx"] == 31
     assert tags["Symbol"] == 55, "a nested member of `instrument` counts too"
-    assert set(CARRIED_TAGS) <= set(tags)
+    assert set(CARRIED_FIELDS) <= set(tags)
 
 
-def test_every_carried_tag_is_the_number_the_dictionary_gives_that_name() -> None:
-    """The one hand-written list of tag numbers in the module, checked against the
-    published dictionary rather than against memory -- because a transposed tag
-    reads a real field under the wrong name and nothing ever says so."""
-    published = _published_tags()
-    for name, tag in CARRIED_TAGS.items():
-        assert published.get(name) == tag, f"{name} is <{published.get(name)}>, not <{tag}>"
+def test_every_carried_tag_comes_from_the_builtin_registry() -> None:
+    registry = FixRegistry.from_builtin()
+    tags = market_tags()
+    for name in CARRIED_FIELDS:
+        assert tags[name] == int(registry.scalar(name).fix["tag"]), name
 
 
 # -- messages that are not market events -------------------------------------
@@ -450,27 +679,6 @@ def test_a_fragment_with_no_msgtype_is_read_from_the_fields_it_has() -> None:
     assert [type(one) for one in reported] == [Order, Execution], (
         "an execution report says the order's state as well, header or no header"
     )
-
-
-def _published_tags() -> dict[str, int]:
-    """Every FIX field name to its tag, from `data/fix.zip` and not from the code.
-
-    Read with `zipfile` rather than through `FixRegistry`, so this does not
-    depend on the code it is checking -- exactly as `test_fix.py` does.
-    """
-    import json
-    import zipfile
-    from pathlib import Path
-
-    archive = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
-    found: dict[str, int] = {}
-    with zipfile.ZipFile(archive) as opened:
-        for member in sorted(opened.namelist(), reverse=True):
-            if member == "versions.json":
-                continue
-            for entry in json.loads(opened.read(member))["fields"]:
-                found.setdefault(entry["name"], int(entry["metadata"]["fix:tag"]))
-    return found
 
 
 # -- the instrument an entry is about ----------------------------------------
@@ -494,9 +702,10 @@ def test_an_entry_that_names_no_instrument_takes_the_headers() -> None:
     found = list(reader)
     assert len(found) == 2
     for one in found:
-        assert one.instrument is reader.instrument, "one message, one instrument"
-        assert one.instrument.alt_ids == {"ISIN": "US0378331005"}
-        assert one.instrument.isin_code == "US0378331005"
+        instrument = one.into_instrument()
+        assert instrument is reader.instrument, "one message, one instrument"
+        assert instrument.alt_ids == {"ISIN": "US0378331005"}
+        assert instrument.isin_code == "US0378331005"
 
 
 def test_an_entry_that_names_its_own_instrument_gets_it() -> None:
@@ -507,21 +716,40 @@ def test_an_entry_that_names_its_own_instrument_gets_it() -> None:
     line = IDENTIFIED.replace("48=US0378331005|22=4|454=1|455=US0378331005|456=4|", "")
     line = line.replace("269=1|270=100.7", "269=1|55=ETH-USD|270=100.7")
     found = list(FixEvents.from_text(line, venue="XCME"))
-    assert [one.instrument.symbol for one in found] == ["BTC-USD", "ETH-USD"]
-    assert found[0].instrument.xhash != found[1].instrument.xhash
+    instruments = [one.into_instrument() for one in found]
+    assert all(instrument is not None for instrument in instruments)
+    assert [instrument.symbol for instrument in instruments if instrument] == [
+        "BTC-USD",
+        "ETH-USD",
+    ]
+    assert instruments[0].xhash != instruments[1].xhash
+
+
+def test_instrument_projection_reads_every_md_entry_without_building_events(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    line = IDENTIFIED.replace("48=US0378331005|22=4|454=1|455=US0378331005|456=4|", "")
+    line = line.replace("269=1|270=100.7", "269=1|55=ETH-USD|270=100.7")
+
+    def refused(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("reference extraction must not construct market events")
+
+    monkeypatch.setattr(FixEvents, "into_entry_order", refused)
+    found = list(FixEvents.from_text(line, venue="XCME").into_instruments())
+
+    assert [instrument.symbol for instrument in found] == ["BTC-USD", "ETH-USD"]
+    assert len({instrument.xhash for instrument in found}) == 2
 
 
 def test_every_tag_the_instrument_reads_is_declared() -> None:
-    """`INSTRUMENT_TAGS` decides when an entry may skip building its own, so a
-    tag added to the reading and not to the set would let an entry inherit an
-    instrument that is not its."""
+    """The inheritance guard covers every named instrument field it reads."""
     import inspect
     import re
 
-    from rekep.market.fix import INSTRUMENT_TAGS
+    from rekep.market.fix import INSTRUMENT_FIELDS
 
     source = inspect.getsource(FixEvents.instrument.func)
-    read = set(re.findall(r"\bget\((\d+)\)", source))
+    read = set(re.findall(r'\bget\("([A-Za-z0-9]+)"\)', source))
     assert read, "the reading is there to be read"
-    assert read <= INSTRUMENT_TAGS, f"undeclared: {sorted(read - INSTRUMENT_TAGS)}"
-    assert {"454", "555"} <= INSTRUMENT_TAGS, "the two groups it also reads"
+    assert read <= INSTRUMENT_FIELDS, f"undeclared: {sorted(read - INSTRUMENT_FIELDS)}"
+    assert {"NoSecurityAltID", "NoLegs"} <= INSTRUMENT_FIELDS

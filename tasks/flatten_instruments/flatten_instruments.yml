@@ -1,0 +1,14 @@
+name: flatten_instruments
+notebook: flatten_instruments.ipynb
+parameters:
+  source: logs.market
+  target: market.instruments
+  start: null
+  end: null
+  catalog: rekep
+  catalog_properties:
+    type: sql
+    uri: sqlite:///data/catalog.db
+    warehouse: file://data/warehouse
+  merge_by: true
+  commit_row_size: 250000

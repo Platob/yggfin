@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import ast
 import collections.abc
+import dataclasses
 import inspect
 import itertools
 import re
@@ -24,11 +25,10 @@ SEQUENCE_ORIGINS = {list, collections.abc.Sequence, collections.abc.MutableSeque
 SET_ORIGINS = {set, frozenset, collections.abc.Set, collections.abc.MutableSet}
 MAPPING_ORIGINS = {dict, collections.abc.Mapping, collections.abc.MutableMapping}
 
-
 # -- declaration ------------------------------------------------------------
 
 
-def hide_private(cls: type) -> None:
+def hide_private(cls: type) -> dict[str, Any]:
     """Drop `__`-prefixed annotations so they never become dataclass fields.
 
     A name written `__cache` in a class body reaches `__annotations__` mangled
@@ -37,11 +37,30 @@ def hide_private(cls: type) -> None:
     """
     annotations = cls.__dict__.get("__annotations__")
     if not annotations:
-        return
+        return {}
     mangled = f"_{cls.__name__.lstrip('_')}__"
     hidden = [name for name in annotations if name.startswith("__") or name.startswith(mangled)]
+    declared = {name: annotations[name] for name in hidden}
     for name in hidden:
         del annotations[name]
+    return declared
+
+
+def restore_private_slots(cls: type, annotations: dict[str, Any]) -> None:
+    """Restore hidden annotations as non-init dataclass slots."""
+    if not annotations:
+        return
+    cls.__annotations__.update(annotations)
+    for name in annotations:
+        default = cls.__dict__.get(name, dataclasses.MISSING)
+        declared: dict[str, Any] = {
+            "init": False,
+            "repr": False,
+            "compare": False,
+        }
+        if default is not dataclasses.MISSING:
+            declared["default"] = default
+        setattr(cls, name, dataclasses.field(**declared))
 
 
 # -- type hints -------------------------------------------------------------

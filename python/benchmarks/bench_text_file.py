@@ -1,24 +1,4 @@
-"""Benchmark TextFile streaming: rows/s, MB/s, and peak Arrow memory.
-
-Run from `python/`::
-
-    uv run python benchmarks/bench_text_file.py            # every sweep
-    uv run python benchmarks/bench_text_file.py --quick    # one config, small file
-    uv run python benchmarks/bench_text_file.py --only folders    # a capture of many files
-    uv run python benchmarks/bench_text_file.py --only messages   # the message layer
-
-The generated log matches the parser's target layout, with a stack trace folded
-in every ~200 lines so continuation handling is part of what is measured.
-Memory is reported from Arrow's own allocator (`pyarrow.total_allocated_bytes`),
-which is where the batches actually live -- `tracemalloc` cannot see them.
-
-`--only messages` is the exception, and it says so in its own table: it races
-implementations that allocate outside Arrow (numpy buffers, polars frames), so
-there it is process RSS that is sampled instead. Those two candidates come from
-the `bench` dependency group (`uv sync --group bench`) and nothing in `src/`
-imports either -- a candidate that loses a race must not leave a runtime
-dependency behind.
-"""
+"""Benchmark TextFile streaming: rows/s, MB/s, and peak Arrow memory."""
 
 from __future__ import annotations
 
@@ -659,7 +639,7 @@ def _numpy_pairs(column: pyarrow.Array) -> pyarrow.MapArray:
     bounds = pyarrow.concat_arrays([pyarrow.array([0], pyarrow.int32()), counted])
     offsets = bounds.take(_boundaries(tokens))
     parents = compute.filter(compute.list_parent_indices(tokens), matched)
-    tags, entries, offsets = _until_checksum(tags, entries, offsets, parents)
+    tags, entries, offsets = _until_checksum(tags, entries, offsets, parents, named=False)
     return pyarrow.MapArray.from_arrays(offsets, tags, entries)
 
 
@@ -959,14 +939,14 @@ def _mib(peak: int) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--rows", type=int, default=1_000_000)
+    parser.add_argument("--rows", type=int, default=200_000)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument(
         "--only", choices=("sweep", "variants", "folders", "messages"), default=None
     )
     arguments = parser.parse_args()
-    rows = 200_000 if arguments.quick else arguments.rows
+    rows = 50_000 if arguments.quick else arguments.rows
     repeat = 1 if arguments.quick else arguments.repeat
     if arguments.only in (None, "sweep"):
         sweep(rows, arguments.quick)

@@ -1,34 +1,4 @@
-"""Benchmark FIX parsing: lines to maps, maps to tag-numbered maps.
-
-Run from `python/`::
-
-    uv run python benchmarks/bench_fix.py            # full sweep
-    uv run python benchmarks/bench_fix.py --quick    # smaller column, fewer repeats
-
-Three questions, answered on synthetic columns whose shape matches the tests'
-fixtures (wire messages with and without log noise and repeating groups, and
-rendered `Name=Value` / `Group[i]=Member=Value` lines):
-
-1. What does the vectorised parser buy over the scalar one? Both are timed on
-   the same rows, and the vectorised result is asserted equal to the scalar
-   one *before* anything is timed -- a benchmark that measures the wrong
-   answer measures nothing.
-2. Which kernels should the hot paths be made of? The tag/value cut is raced
-   (`split_pattern` + `list_element` against one `extract_regex`, trimming
-   and not), because that choice is baked into `parse_arrow_array` and the
-   loser looked entirely plausible.
-3. What does `tag_arrow_array` cost? The all-numeric cast fast path, and the
-   dictionary-encoded name resolution that rendered keys pay for.
-4. What does `FixMessage.from_pairs` cost, and was the fold the right way to
-   resolve a name? The fold-then-probe it ships with is raced against one
-   compiled case-insensitive alternation over every known name, which is the
-   obvious "just use a regex" answer -- and against a bare dict probe, which
-   is the floor. The docstring of `_fold` claims the alternation loses; this
-   is where that claim is either kept or found out.
-
-Every case is warmed once and reported as the best of `--repeat` runs; run
-the script twice before quoting a number anywhere.
-"""
+"""Benchmark FIX parsing: lines to maps, maps to tag-numbered maps."""
 
 from __future__ import annotations
 
@@ -45,7 +15,11 @@ import pyarrow.compute
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep.fix import FixMessage, parse_arrow_array, tag_arrow_array  # noqa: E402
+from rekep.fix import (  # noqa: E402
+    FixMessage,
+    parse_arrow_array,
+    tag_arrow_array,
+)
 from rekep.fix.message import _fold  # noqa: E402
 
 NOISE = "2026-08-14 00:05:01.147_250 [250-e7256476:9effef3e6a:72505] [ULBridge] (INFO) sent "

@@ -71,6 +71,11 @@ def test_bytes_parse_like_text() -> None:
     assert FixMessage.from_text(PIPE.encode()).pairs == FixMessage.from_text(PIPE).pairs
 
 
+def test_generic_building_dispatches_text_to_the_message_parser() -> None:
+    assert FixMessage.from_(PIPE) == FixMessage.from_text(PIPE)
+    assert FixMessage.into_redirects() is FixMessage.into_redirects()
+
+
 def test_a_message_renders_back_and_parses_again() -> None:
     parsed = FixMessage.from_text(PIPE)
     again = FixMessage.from_text(parsed.into_text(), SOH)
@@ -449,6 +454,23 @@ def test_the_checksum_ends_each_row_in_the_vectorised_parser_too() -> None:
     assert maps[2] == [("8", "FIX.4.2"), ("9", "2"), ("58", "x")]
     for line, row in zip(lines, maps, strict=True):
         assert row == FixMessage.from_text(line).pairs
+
+
+@pytest.mark.parametrize("checksum", ["CheckSum", "check_sum", "Trailer.CheckSum", "Trailer.10"])
+def test_a_named_checksum_ends_scalar_and_vector_messages(checksum: str) -> None:
+    line = f"#BeginString=FIXT.1.1|#{checksum}=000|#ApplVerID=9|#Symbol=X"
+    expected = [("BeginString", "FIXT.1.1"), (checksum, "000")]
+    assert FixMessage.from_text(line, "|", named=True).pairs == expected
+    assert parse_arrow_array(pyarrow.array([line]), "|", named=True).to_pylist() == [expected]
+
+
+@pytest.mark.parametrize("checksum", ["CheckSum", "10"])
+def test_an_indexed_member_named_checksum_does_not_end_the_outer_message(checksum: str) -> None:
+    line = f"#BeginString=FIXT.1.1|#NoFoo[0].{checksum}=000|#ApplVerID=9|#Symbol=X"
+    scalar = FixMessage.from_text(line, "|", named=True).pairs
+    vector = parse_arrow_array(pyarrow.array([line]), "|", named=True).to_pylist()[0]
+    assert scalar == vector
+    assert scalar[-2:] == [("ApplVerID", "9"), ("Symbol", "X")]
 
 
 def test_null_stays_null_and_noise_becomes_an_empty_map() -> None:

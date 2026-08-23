@@ -1,370 +1,74 @@
-"""A side of a book, both sides of one, and the derived prices computed in kernels."""
+"""Compact price levels and deterministic book folding."""
 
 from __future__ import annotations
 
 import bisect
 import copy
 import dataclasses
+import functools
+import heapq
+import math
 from collections import deque
 from collections.abc import Iterable, Iterator
-from typing import Annotated, Any, ClassVar, Self
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Annotated, Any, Self
 
 import pyarrow
 import pyarrow.compute
 
-from rekep.convert import Convertible
-from rekep.fields import Field, FieldBuilder, field
-from rekep.market.enums import EventType, Side, State, UpdateAction
-from rekep.market.event import HOUR, UNIX, MarketEvent
-from rekep.market.fields import MarketFieldBuilder, fix_tag
+from rekep.enums import (
+    EventType,
+    MarketKind,
+    Side,
+    State,
+)
+from rekep.fields import Field, scalar
+from rekep.market.event import DAY, HOUR, MarketEvent
+from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import NIL
 from rekep.market.instrument import Instrument
 from rekep.market.orders import Execution, Order
-from rekep.market.reference import Reference
 
+if TYPE_CHECKING:
+    from rekep.text.log import Log
 
-@field
-class Level(Convertible):
-    """One live price level: what is there, and how much of it."""
-
-    FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
-
-    px: Annotated[float, fix_tag("MDEntryPx", 270)] = 0.0
-    """Price of the level."""
-
-    qty: Annotated[float, fix_tag("MDEntrySize", 271)] = 0.0
-    """Quantity resting at that price."""
-
-    orders: Annotated[
-        int | None, fix_tag("NumberOfOrders", 346), Field(arrow_type=pyarrow.int32())
-    ] = None
-    """How many orders make up the level; null when the venue does not say."""
-
-
-@field
-class LevelUpdate(Convertible):
-    """One change to a level, as an incremental feed sends it.
-
-    `px` and `qty` are nullable here and not on `Level`, because a deletion
-    says which level went and not what was in it -- and the ranged deletions
-    (`DELETE_THRU`, `DELETE_FROM`) name a boundary rather than a level at all.
-    """
-
-    FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
-
-    action: Annotated[UpdateAction, fix_tag("MDUpdateAction", 279)] = UpdateAction.UNKNOWN
-    """What this does to the book; `>= UpdateAction.REMOVE` takes liquidity out."""
-
-    px: Annotated[float | None, fix_tag("MDEntryPx", 270)] = None
-    """Price the update applies at."""
-
-    qty: Annotated[float | None, fix_tag("MDEntrySize", 271)] = None
-    """Quantity after the update; null on a deletion."""
-
-    orders: Annotated[
-        int | None, fix_tag("NumberOfOrders", 346), Field(arrow_type=pyarrow.int32())
-    ] = None
-    """How many orders make up the level after the update."""
-
-    position: Annotated[
-        int | None, fix_tag("MDEntryPositionNo", 290), Field(arrow_type=pyarrow.int32())
-    ] = None
-    """Depth the update applies at, counting from the top; for venues that index."""
-
-
-@field
-class LevelExecution(Convertible):
-    """One trade against this side, as the book saw it.
-
-    Small on purpose: it is the *trace* of an execution against these levels,
-    not the execution itself. `xhash` is the link to the row that is, in the
-    executions table, with everything the report carried -- putting a whole
-    `Execution` here would nest a second event envelope inside every book row
-    for the two numbers a book actually needs.
-    """
-
-    FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
-
-    unix: Annotated[int, Field(metadata=UNIX)] = 0
-    """When it traded, in whole nanoseconds since the epoch."""
-
-    px: Annotated[float, fix_tag("LastPx", 31)] = 0.0
-    """What it traded at."""
-
-    qty: Annotated[float, fix_tag("LastQty", 32)] = 0.0
-    """How much traded."""
-
-    xhash: int | None = None
-    """Lifecycle of the execution this came from -- the join into that table."""
-
-    aggressor: Annotated[bool | None, fix_tag("AggressorIndicator", 1057)] = None
-    """Whether this side was the one taking liquidity."""
-
-
-@field
-class BookSide(MarketEvent):
-    """One side of one book: what is live, what changed, and what traded.
-
-    `side` is `BID` or `ASK`, which are the same codes as `BUY` and `SELL`
-    because a bid *is* a buy. `px` and `qty` are the **best level's** -- the
-    top of this side -- and `total_qty` is every level's.
-
-    **State, delta and trace are all on the row**, and that is the point of the
-    shape. A feed sends one or two of the three: a snapshot says what is there,
-    an incremental says what changed, a trade stream says what took liquidity
-    out. Keeping only snapshots loses what moved; keeping only increments makes
-    every reader replay from the last snapshot before it can answer anything;
-    keeping neither trades means "was that level filled or pulled?" needs a
-    join against another table on a timestamp. Carrying all three means a
-    consumer reads state without replaying and reconstructs causation without a
-    second stream -- and the cost is three list columns that are null on the
-    rows that do not have them.
-
-    A row where `alive` is null is an increment that was never resolved to a
-    state; `summarise_arrow` leaves those rows exactly as it found them rather
-    than deriving nulls over whatever the producer put there.
-    """
-
-    EVENT_TYPE: ClassVar[EventType] = EventType.BOOK_SIDE
-
-    # Re-declared for their real FIX field, and for nothing else: a dataclass
-    # member re-annotated keeps its position, so the column does not move.
-    # `MarketEvent` tags them `Price <44>`/`OrderQty <38>`, which is an
-    # *order's* price and quantity; a book level's are a market-data entry's.
-    px: Annotated[float | None, fix_tag("MDEntryPx", 270)] = None
-    """The best level's price on this side -- the top of the book, this way up."""
-
-    qty: Annotated[float | None, fix_tag("MDEntrySize", 271)] = None
-    """The size at that best level; `total_qty` is every level's."""
-
-    #: What `summarise_arrow` redirects to, keyed by what it was handed.
-    SUMMARIES: ClassVar[dict[Any, str]] = {
+_ARROW_DISPATCH = MappingProxyType(
+    {
         pyarrow.RecordBatch: "arrow_batch",
         pyarrow.Table: "arrow_table",
     }
-
-    #: What `append_event` redirects to, keyed by the kind of event.
-    APPENDS: ClassVar[dict[Any, str]] = {Order: "order", Execution: "execution"}
-
-    # Declared before the three lists, because Iceberg collects column bounds
-    # for the first `write.metadata.metrics.max-inferred-column-defaults`
-    # leaves in pre-order and nothing under a list gets bounds at all.
-    depth: Annotated[int | None, Field(arrow_type=pyarrow.int32())] = None
-    """How many levels are live -- `len(alive)`, flat, so a filter can use it."""
-
-    total_qty: float | None = None
-    """Sum of `qty` over every live level."""
-
-    alive: list[Level] | None = None
-    """Every live level, best first; null on a row that carries only a delta."""
-
-    updates: list[LevelUpdate] | None = None
-    """The changes that produced this version, in the order the venue sent them."""
-
-    executions: list[LevelExecution] | None = None
-    """The trades that took liquidity out of this side, in the order they printed."""
-
-    def forget_delta(self) -> None:
-        """A picture of a side shows the side, not what changed to produce it."""
-        self.updates = []
-        self.executions = []
-
-    # -- building a side out of events ---------------------------------------
-
-    def append_event(self, event: Any) -> Self | None:
-        """`append_order` or `append_execution`, inferred from what it was handed."""
-        return getattr(self, f"append_{self.redirect_of(event, self.APPENDS)}")(event)
-
-    def append_order(self, order: Order) -> Self | None:
-        """Add an order's resting quantity to this side, and record the update.
-
-        **Aggregated, not per order.** The level at `order.px` moves by what
-        the order rests for -- `display_qty` if the venue hides part of it,
-        `leaves_qty` if it said how much is left, `qty` otherwise, and nothing
-        at all once the order is terminal. What this does *not* do is track
-        which order contributed what, so replacing an order means appending the
-        cancel and then the replacement, not appending the new one twice.
-
-        That is the honest shape of an aggregated book, and it is what a venue
-        that publishes levels rather than orders gives you anyway.
-
-        **None when nothing moved**, and the side is left exactly as it was --
-        no version, no update, no new hash. An order that rests for nothing is
-        the common case of that: a terminal one, or one the venue sent with no
-        quantity at all. A caller that writes what it gets back therefore
-        writes one row per real change rather than one per message, which is
-        the difference between a book table and a copy of the feed.
-        """
-        self._facing(order)
-        if order.px is None:
-            raise ValueError(
-                f"order {order.xhash} has no price and so never rests: "
-                "a market order is an execution against this side, not a level on it"
-            )
-        resting = 0.0 if order.state.is_terminal else _resting(order)
-        return self._moved(order, order.px, resting)
-
-    def append_execution(self, execution: Execution) -> Self | None:
-        """Take a fill's quantity out of this side, and record the trade.
-
-        Only a report that moved shares changes the book: an acknowledgement
-        and a restatement share the same message type, and subtracting their
-        quantity is how a book ends up empty by lunchtime. Anything that moved
-        none of them returns None, having changed nothing.
-        """
-        self._facing(execution)
-        if not execution.kind.moves_shares or execution.px is None or execution.qty is None:
-            return None
-        traded = LevelExecution(
-            unix=execution.unix,
-            px=execution.px,
-            qty=execution.qty,
-            xhash=execution.xhash,
-            aggressor=execution.aggressor,
-        )
-        self.executions = [*(self.executions or []), traded]
-        return self._moved(execution, execution.px, -abs(execution.qty))
-
-    def _facing(self, event: MarketEvent) -> None:
-        """Refuse an event that does not belong on this side.
-
-        A sell order does not rest on the bid; it *takes* from it, which is an
-        execution and a different method. Left unchecked the direction was a
-        factor in the arithmetic, so a mismatched order quietly removed
-        liquidity instead of being refused -- and an event with no side at all
-        moved a level by nothing and recorded a `DELETE` of a level that had
-        never existed. Both were silent, and both were wrong.
-        """
-        if not self.side.sign:
-            raise ValueError(
-                f"a book side is a bid or an ask, not {self.side.name}: "
-                "set `side` before appending anything to it"
-            )
-        if event.side.sign != self.side.sign:
-            raise ValueError(
-                f"a {event.side.name} event does not belong on the {self.side.name} side of a book"
-            )
-
-    def _moved(self, event: MarketEvent, px: float, delta: float) -> Self | None:
-        """One level moved by `delta`, with the update and the lineage recorded.
-
-        None when `delta` moves nothing that is there: a zero delta on a level
-        the side does not hold is a message about liquidity that was already
-        gone, and versioning the side for it would write a row that differs
-        from the one before it only in its hash.
-        """
-        levels = {level.px: level for level in (self.alive or [])}
-        if not delta and px not in levels:
-            return None
-        standing = levels.get(px)
-        quantity = (standing.qty if standing else 0.0) + delta
-        if quantity > 0:
-            levels[px] = Level(px=px, qty=quantity, orders=standing.orders if standing else None)
-            action = UpdateAction.CHANGE if standing else UpdateAction.NEW
-        else:
-            levels.pop(px, None)
-            action = UpdateAction.DELETE
-        self.alive = sorted(levels.values(), key=lambda level: -level.px * self.side.sign)
-        self.updates = [
-            *(self.updates or []),
-            LevelUpdate(
-                action=action,
-                px=px,
-                qty=None if action is UpdateAction.DELETE else quantity,
-                orders=None,
-                position=None,
-            ),
-        ]
-        return self._versioned(event)
-
-    def _versioned(self, event: MarketEvent) -> Self:
-        """The side moved on one version, remembering what moved it.
-
-        Every append is a new version of the same `xhash`, so the lineage a
-        reader walks back is the same one whether the side was built here or
-        assembled from a feed: `prev_hash` is the version before, `parent_hash`
-        gains the event that caused this one, and the derived columns follow.
-        """
-        # `NIL` means nothing hashed this yet, so the first version replaced
-        # nothing and says so with a null rather than with sixteen zero bytes
-        # that a reader would have to know to recognise.
-        self.prev_hash = None if self.hash == NIL else self.hash
-        self.prev_state, self.prev_unix = self.state, self.unix
-        self.version += 1
-        self.unix = max(self.unix, event.unix)
-        # Set, never appended to: `parent_hash` is what *this version* was
-        # built from, and the version before it is already on the row as
-        # `prev_hash`. Accumulating instead put one entry per append on a
-        # single row -- two hundred appends, two hundred parents -- which is
-        # both unbounded and a different claim from the one the column makes.
-        self.parent_hash = [event.hash]
-        self.depth = len(self.alive or [])
-        self.total_qty = sum(level.qty for level in (self.alive or []))
-        best = (self.alive or [None])[0]
-        self.px = best.px if best else None
-        self.qty = best.qty if best else None
-        self.hash = self.hash_of(self.xhash, self.version, self.unix, self.px, self.qty)
-        return self
-
-    # -- the derived columns, in kernels -------------------------------------
-
-    @classmethod
-    def summarise_arrow(cls, source: Any) -> Any:
-        """`summarise_arrow_batch` or `_table`, inferred from what it was handed."""
-        return getattr(cls, f"summarise_{cls.redirect_of(source, cls.SUMMARIES)}")(source)
-
-    @classmethod
-    def summarise_arrow_batch(cls, batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
-        """`px`, `qty`, `depth` and `total_qty` recomputed from `alive`.
-
-        Flat columns, derived once by whoever writes the data, because the
-        alternative is every reader reaching into a list to ask what the best
-        price is -- and a nested access is the one thing no engine under this
-        package prunes on. `px > 100` skips files; `alive[0].px > 100` reads
-        them all and throws the rows away.
-        """
-        return _with(batch, **_derived(batch, "alive", ("px", "qty", "depth", "total_qty")))
-
-    @classmethod
-    def summarise_arrow_table(cls, table: pyarrow.Table) -> pyarrow.Table:
-        """`summarise_arrow_batch` over a whole table, batch by batch."""
-        return pyarrow.Table.from_batches(
-            [cls.summarise_arrow_batch(batch) for batch in table.to_batches()], schema=table.schema
-        )
+)
 
 
-@field
+@scalar(slots=True, weakref_slot=True)
+class Level(MarketConvertible):
+    """One compact price level and the event lifecycles linked to it."""
+
+    px: Annotated[float, fix_tag("MDEntryPx")] = 0.0
+    """Price of the level."""
+
+    qty: Annotated[float, fix_tag("MDEntrySize")] = 0.0
+    """Quantity resting at that price."""
+
+    order_xhash: list[int] = dataclasses.field(default_factory=list)
+    """Live order lifecycles at this price, in arrival order."""
+
+    exec_xhash: list[int] = dataclasses.field(default_factory=list)
+    """Execution lifecycles that changed this level in this delta."""
+
+
+@scalar(slots=True)
 class Book(MarketEvent):
-    """Both sides of one book, flat, and the prices that only exist across them.
+    """Both sides of one book, flat, and the prices that only exist across them."""
 
-    **The sides are unnested.** Each one contributes five scalars and its three
-    lists, prefixed `bid_`/`ask_`, rather than a whole `BookSide` event nested
-    inside. A nested side put a second and third copy of the fifteen-column
-    event envelope in every book row -- and, worse, pushed this shape to 140
-    leaf columns, past the 100 that Iceberg collects bounds for. `bid_hash` and
-    `ask_hash` keep the provenance a nested side was carrying: which exact
-    version of each side this book was built from, which is also what
-    `parent_hash` holds.
+    @classmethod
+    @functools.cache
+    def into_event_type(cls) -> EventType:
+        """Event kind fixed by this shape."""
+        return EventType.BOOK
 
-    `side` is `UNKNOWN`: a book does not have one. `px` is the **mid** and
-    `qty` is the size at the touch, so the abstract slots stay meaningful
-    rather than being null on every row of the largest table here.
-
-    **The flat pair `(px, spread)` is the best bid and offer**, exactly and
-    without duplicating them: bid is `px - spread / 2`, ask is `px +
-    spread / 2`. That is also why there is no `crossed` flag -- `spread < 0`
-    is crossed, `spread == 0` is locked, and both are one range predicate on a
-    column an engine already has statistics for.
-
-    Flat, rather than reached through a nested side, because a nested price is
-    not a filter anything here can use. Iceberg writes **no bounds at all for a
-    field under a list or a map**, so nothing about a level in `bid_alive` can
-    ever skip a file; Doris pushes a predicate down only for a top-level scalar
-    column. Deriving these once at write time is what makes the same query
-    cheap on all three engines instead of only on Spark.
-    """
-
-    EVENT_TYPE: ClassVar[EventType] = EventType.BOOK
+    hash: Annotated[int, Field.primary_key()] = NIL
+    """Digest of `(unix, instrument_xhash)`, unique for one book instant."""
 
     # Re-declared to carry **no** FIX tag, which is the honest thing to say:
     # a mid and a touch size are computed from two sides, and FIX has no field
@@ -375,15 +79,6 @@ class Book(MarketEvent):
 
     qty: float | None = None
     """The size at the touch, `bid_qty + ask_qty`; null until both sides have one."""
-
-    #: What `summarise_arrow` redirects to, keyed by what it was handed.
-    SUMMARIES: ClassVar[dict[Any, str]] = {
-        pyarrow.RecordBatch: "arrow_batch",
-        pyarrow.Table: "arrow_table",
-    }
-
-    #: What `append_event` redirects to, keyed by the kind of event.
-    APPENDS: ClassVar[dict[Any, str]] = {Order: "order", Execution: "execution"}
 
     spread: float | None = None
     """`ask_px - bid_px`; negative is crossed, zero is locked."""
@@ -398,9 +93,6 @@ class Book(MarketEvent):
     imbalance: float | None = None
     """`(bid_qty - ask_qty) / (bid_qty + ask_qty)`, in `[-1, 1]`; positive is bid-heavy."""
 
-    bid_hash: int | None = None
-    """Which version of the buy side this book was built from."""
-
     bid_px: float | None = None
     """Best bid; also `px - spread / 2`."""
 
@@ -412,9 +104,6 @@ class Book(MarketEvent):
 
     bid_total_qty: float | None = None
     """Sum of `qty` over every live buy level."""
-
-    ask_hash: int | None = None
-    """Which version of the sell side this book was built from."""
 
     ask_px: float | None = None
     """Best offer; also `px + spread / 2`."""
@@ -428,143 +117,80 @@ class Book(MarketEvent):
     ask_total_qty: float | None = None
     """Sum of `qty` over every live sell level."""
 
-    # Every list last, together: nothing under one of them carries statistics,
-    # so their position costs nothing, and keeping them out of the way leaves
-    # every scalar above inside the bounds budget.
-    bid_alive: list[Level] | None = None
-    """Every live buy level, best first."""
+    bid_levels: list[Level] | None = None
+    """Changed buy levels on deltas; every live buy level on snapshots, best first."""
 
-    bid_updates: list[LevelUpdate] | None = None
-    """The changes that produced this version of the buy side."""
+    ask_levels: list[Level] | None = None
+    """Changed sell levels on deltas; every live sell level on snapshots, best first."""
 
-    bid_executions: list[LevelExecution] | None = None
-    """The trades that took liquidity out of the buy side."""
+    order_events: list[Order] | None = None
+    """Order inputs on deltas; every live order on recovery snapshots."""
 
-    ask_alive: list[Level] | None = None
-    """Every live sell level, best first."""
+    execution_events: list[Execution] | None = None
+    """Complete execution inputs folded into this delta; empty on snapshots."""
 
-    ask_updates: list[LevelUpdate] | None = None
-    """The changes that produced this version of the sell side."""
+    def version_parts(self) -> tuple[Any, ...]:
+        """Identify the one book row allowed for an instrument and instant."""
+        return self.unix, self.instrument_xhash
 
-    ask_executions: list[LevelExecution] | None = None
-    """The trades that took liquidity out of the sell side."""
-
-    # -- building a book out of events ---------------------------------------
+    def _carry_side(self, previous: Book, name: str) -> None:
+        """Copy one unchanged side's flat summary from the prior book."""
+        for suffix in ("px", "qty", "depth", "total_qty"):
+            setattr(self, f"{name}_{suffix}", getattr(previous, f"{name}_{suffix}"))
 
     @classmethod
-    def from_events(cls, events: Iterable[MarketEvent], **declared: Any) -> Iterator[Self]:
-        """One book per instant that changed it, folded from a stream of events.
+    def from_logs(cls, logs: Iterable[Log], **declared: Any) -> Iterator[Self]:
+        """Fold an already sorted parsed-log stream into books."""
+        return iter(BookIterator(logs=logs, **declared))
 
-        A `BookIterator` read for its books and nothing else, which is the
-        common half of it. The other half is
-        `BookIterator(events=...).instruments`, and a job that writes both
-        tables wants the iterator itself rather than this.
-        """
-        return iter(BookIterator(events=events, **declared))
+    @classmethod
+    def from_events(
+        cls, events: Iterable[MarketEvent | Instrument], **declared: Any
+    ) -> Iterator[Self]:
+        """Fold translated events directly, for protocol adapters and tests."""
+        return iter(BookIterator.from_events(events, **declared))
 
-    def append_event(self, event: Any) -> Self | None:
-        """`append_order` or `append_execution`, inferred from what it was handed."""
-        return getattr(self, f"append_{self.redirect_of(event, self.APPENDS)}")(event)
+    def into_orders(self) -> Iterator[Order]:
+        """Complete order rows carried by this book delta or snapshot."""
+        return iter(self.order_events or ())
 
-    def append_order(self, order: Order) -> Self | None:
-        """Add an order to whichever side it belongs on; None if nothing moved."""
-        return self._through(order, "append_order")
-
-    def append_execution(self, execution: Execution) -> Self | None:
-        """Take a fill out of whichever side it hit; None if nothing moved."""
-        return self._through(execution, "append_execution")
-
-    def _through(self, event: MarketEvent, method: str) -> Self | None:
-        """Route `event` to its side, apply it there, and read the side back flat.
-
-        The sides are columns here and a `BookSide` there, so routing goes
-        through the real thing rather than through a second implementation of
-        what an order does to a level: `into_side` lifts the flat columns into
-        the side they came from, the side's own method moves it, and
-        `from_side` puts the result back. One walk, one set of rules, whichever
-        shape is holding them.
-
-        A side that says nothing moved stops here: the book is not versioned,
-        the other side is not touched, and the caller gets None. Passing it on
-        would write a book row whose only difference from the last one is that
-        a message arrived.
-        """
-        if not event.side.sign:
-            raise ValueError(
-                f"a {event.side.name} event names no side of the book to go on: "
-                "set `side` on it, or append it to the side you mean directly"
-            )
-        name = "bid" if event.side.sign > 0 else "ask"
-        moved = getattr(self.into_side(name), method)(event)
-        return None if moved is None else self.from_side(name, moved)
-
-    # -- the sides, lifted and put back --------------------------------------
-
-    def into_side(self, name: str) -> BookSide:
-        """One side of this book as the `BookSide` its columns describe."""
-        if name not in ("bid", "ask"):
-            raise ValueError(f"a book has a bid and an ask, not a {name!r}")
-        given = {
-            "etype": EventType.BOOK_SIDE,
-            "side": Side.BID if name == "bid" else Side.ASK,
-            # A side has a lifecycle of its own, derived from the book's so it
-            # is stable and reproducible without being shared: lifting the bid
-            # and the ask out of one book gave both the book's own `xhash`,
-            # which made `bid_hash` and `ask_hash` versions of the same thing.
-            "xhash": BookSide.hash_of(self.xhash, name),
-            "hash": getattr(self, f"{name}_hash") or NIL,
-        } | {
-            column: getattr(self, f"{name}_{column}")
-            for column in ("px", "qty", "depth", "total_qty", "alive", "updates", "executions")
-        }
-        # Everything else is the book's own envelope, copied by name rather
-        # than listed here, so a column added to `MarketEvent` reaches the side
-        # without this method changing.
-        envelope = {
-            member.name: getattr(self, member.name)
-            for member in MarketEvent.FIELD.fields
-            if member.name not in given
-        }
-        return BookSide(**envelope, **given)
-
-    def from_side(self, name: str, side: BookSide) -> Self:
-        """`side` written back into this book's flat columns, and the book re-priced."""
-        for column in ("hash", "px", "qty", "depth", "total_qty", "alive", "updates", "executions"):
-            setattr(self, f"{name}_{column}", getattr(side, column))
-        # `NIL` means nothing hashed this yet, so the first version replaced
-        # nothing and says so with a null rather than with sixteen zero bytes
-        # that a reader would have to know to recognise.
-        self.prev_hash = None if self.hash == NIL else self.hash
-        self.prev_state, self.prev_unix = self.state, self.unix
-        self.version += 1
-        self.unix = max(self.unix, side.unix)
-        # The side this version was built from, and only that -- the reasoning
-        # is on `BookSide._versioned`. The other side is unchanged and is
-        # already named by the `bid_hash`/`ask_hash` pair.
-        self.parent_hash = [side.hash]
-        self._priced()
-        self.hash = self.hash_of(self.xhash, self.version, self.unix, self.px, self.spread)
-        return self
+    def into_executions(self) -> Iterator[Execution]:
+        """Complete execution rows carried by this book delta."""
+        return iter(self.execution_events or ())
 
     def forget_delta(self) -> None:
-        """A picture of a book shows both sides, and neither side's changes."""
-        self.bid_updates = []
-        self.bid_executions = []
-        self.ask_updates = []
-        self.ask_executions = []
+        """A picture keeps levels but clears their execution traces and event deltas."""
+        MarketEvent.forget_delta(self)
+        for name in ("bid_levels", "ask_levels"):
+            levels = getattr(self, name)
+            if levels is not None:
+                setattr(
+                    self,
+                    name,
+                    [dataclasses.replace(level, exec_xhash=[]) for level in levels],
+                )
+        self.order_events = []
+        self.execution_events = []
 
     def derive(self) -> None:
-        """A book's prices are computed across its sides, and never carried.
+        """A book's prices are computed across its sides, and never carried."""
+        self._summarise()
+        MarketEvent.derive(self)
 
-        The one place a book has to override the completion rules: `px` and
-        `qty` are abstract slots that `MarketEvent.complete_from` fills from
-        the previous version of the same shape, which is right for an order
-        whose limit the venue stopped repeating and wrong for a mid. A book
-        whose ask has just emptied has *no* mid, and inheriting the last one
-        makes a one-sided market look two-sided for as long as it lasts.
-        """
+    def _summarise(self) -> None:
+        """Fill flat side summaries from present level lists, then price the book."""
+        for name in ("bid", "ask"):
+            levels = getattr(self, f"{name}_levels")
+            # A delta carries only changed levels and already carries the full
+            # flat summary. A null depth marks an un-summarised full picture.
+            if levels is None or getattr(self, f"{name}_depth") is not None:
+                continue
+            best = levels[0] if levels else None
+            setattr(self, f"{name}_px", None if best is None else best.px)
+            setattr(self, f"{name}_qty", None if best is None else best.qty)
+            setattr(self, f"{name}_depth", len(levels))
+            setattr(self, f"{name}_total_qty", sum(level.qty for level in levels))
         self._priced()
-        super().derive()
 
     def _priced(self) -> None:
         """The five prices across the sides, for one book rather than a column of them."""
@@ -589,33 +215,18 @@ class Book(MarketEvent):
     @classmethod
     def summarise_arrow(cls, source: Any) -> Any:
         """`summarise_arrow_batch` or `_table`, inferred from what it was handed."""
-        return getattr(cls, f"summarise_{cls.redirect_of(source, cls.SUMMARIES)}")(source)
+        return getattr(cls, f"summarise_{cls.redirect_of(source, _ARROW_DISPATCH)}")(source)
 
     @classmethod
     def summarise_arrow_batch(cls, batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
-        """Each side derived from its own levels, then the prices across them.
-
-        **Both halves, in that order**, because the second needs the first: a
-        book assembled from two feeds carries levels and nothing derived, so
-        reading `bid_px` before deriving it gives null and every price across
-        the sides comes out null with it. Doing only the cross-side half was
-        the first version of this, and the benchmark caught it by deriving a
-        batch of books into a column of nulls.
-
-        Everything is kernels over whole columns, and no row is looked at in
-        Python. A one-sided book derives to null everywhere a price is
-        missing, which is what a mid across a side that is not there means;
-        the division guards on the size rather than letting Arrow return an
-        infinity, because an infinite microprice is a number and a null is the
-        truth.
-        """
+        """Each side derived from its own levels, then the prices across them."""
         compute = pyarrow.compute
         for name in ("bid", "ask"):
             batch = _with(
                 batch,
                 **_derived(
                     batch,
-                    f"{name}_alive",
+                    f"{name}_levels",
                     (f"{name}_px", f"{name}_qty", f"{name}_depth", f"{name}_total_qty"),
                 ),
             )
@@ -657,17 +268,19 @@ class Book(MarketEvent):
 
 
 def _resting(order: Order) -> float:
-    """What an order actually sits in the book for.
+    """Displayed live quantity after subtracting explicitly hidden interest."""
+    if order.qty is None:
+        return 0.0
+    return max(float(order.qty) - max(float(order.hidden_qty or 0.0), 0.0), 0.0)
 
-    The venue's own numbers in the order it knows them: what it shows
-    (`display_qty`) is what the book sees of an iceberg, what is left
-    (`leaves_qty`) is what a partly filled order still rests for, and the
-    quantity asked for is what a fresh one does.
-    """
-    for quantity in (order.display_qty, order.leaves_qty, order.qty):
-        if quantity is not None:
-            return float(quantity)
-    return 0.0
+
+def _names_of(event: MarketEvent) -> tuple[str | None, str | None, str | None]:
+    """Source order identifiers carried by an order or execution."""
+    return (
+        getattr(event, "order_id", None),
+        getattr(event, "client_order_id", None),
+        getattr(event, "prev_client_order_id", None),
+    )
 
 
 def _combined(column: Any) -> Any:
@@ -685,58 +298,30 @@ def _with(batch: Any, **columns: Any) -> Any:
 
 
 def _derived(batch: Any, levels: str, into: tuple[str, str, str, str]) -> dict[str, Any]:
-    """The four columns a list of levels determines: best price, best size, depth, total.
-
-    One walk, whichever shape asked for it -- a `BookSide` deriving its own
-    columns and a `Book` deriving each of its two sides both come through here,
-    so there is one set of rules about empty lists and null ones rather than
-    two that drift.
-
-    Two things it does not do, both of which are how a first version got this
-    wrong:
-
-    - It never calls `list_element`, which raises `Index 0 is out of bounds` on
-      an empty list -- and an empty side of a book is a normal Tuesday, not an
-      error. The best row of each list is taken by its own offset instead,
-      which is null exactly where the list is empty.
-    - It never sums by prefix. A running total over the whole batch minus
-      another running total gives the right answer only until the totals get
-      big, and a book's own quantities are small differences of large ones by
-      then. The sum is grouped, which is exact.
-    """
+    """The four columns a list of levels determines: best price, best size, depth, total."""
     compute = pyarrow.compute
     alive = _combined(batch.column(levels))
-    known = compute.is_valid(alive)
     lengths = compute.list_value_length(alive)
     top = compute.if_else(
         compute.greater(lengths, 0), alive.offsets[:-1], pyarrow.scalar(None, pyarrow.int32())
     )
     members = alive.values
     best_px, best_qty, depth, total = into
+    derive = compute.and_(compute.is_valid(alive), compute.is_null(batch.column(depth)))
     return {
         best_px: compute.if_else(
-            known, compute.take(members.field("px"), top), batch.column(best_px)
+            derive, compute.take(members.field("px"), top), batch.column(best_px)
         ),
         best_qty: compute.if_else(
-            known, compute.take(members.field("qty"), top), batch.column(best_qty)
+            derive, compute.take(members.field("qty"), top), batch.column(best_qty)
         ),
-        depth: compute.if_else(known, lengths, batch.column(depth)),
-        total: compute.if_else(known, _list_sums(alive, "qty", lengths), batch.column(total)),
+        depth: compute.if_else(derive, lengths, batch.column(depth)),
+        total: compute.if_else(derive, _list_sums(alive, "qty", lengths), batch.column(total)),
     }
 
 
 def _list_sums(alive: Any, name: str, lengths: Any) -> Any:
-    """One exact sum per list, grouped rather than differenced.
-
-    `list_parent_indices` says which row each flattened level belongs to, so
-    the whole batch is one hash aggregate; the result is scattered back by
-    `index_in`, and a list that is empty sums to zero rather than to null --
-    a side with no levels holds nothing, which is a quantity and not a
-    question.
-
-    The row identifiers are built with `repeat` and `cumulative_sum` rather
-    than from a Python `range`, so nothing here allocates per row.
-    """
+    """One exact sum per list, grouped rather than differenced."""
     compute = pyarrow.compute
     rows = len(alive)
     totals = (
@@ -757,89 +342,21 @@ def _list_sums(alive: Any, name: str, lengths: Any) -> Any:
     return compute.if_else(compute.equal(lengths, 0), pyarrow.scalar(0.0), summed)
 
 
+def _summarise_side(book: Book, name: str, side: _Side) -> None:
+    """Write one dirty side's cached touch, depth and total onto a book."""
+    best = side.best_level
+    setattr(book, f"{name}_px", None if best is None else best.px)
+    setattr(book, f"{name}_qty", None if best is None else best.qty)
+    setattr(book, f"{name}_depth", side.depth)
+    setattr(book, f"{name}_total_qty", side.total_qty)
+
+
 # -- folding a book out of one instrument's events ---------------------------
 
 
-class _Level:
-    """One price level: what stands at it, and where it sorts.
-
-    A slotted class and not a tuple or a list of floats, because it is written
-    on every order and read on every snapshot: a slot read is an offset where
-    a dict probe is a hash, and a named field is legible where `totals[1]` is
-    not. Not a `@field` class either -- nothing here is ever a column, which
-    is what `Level` is for.
-    """
-
-    __slots__ = ("px", "key", "qty", "members", "frozen")
-
-    def __init__(self, px: float, key: float) -> None:
-        self.px = px
-        """The price itself, as the venue quoted it."""
-        self.key = key
-        """`px` turned the way this side sorts, which is what `keys` holds."""
-        self.qty = 0.0
-        """Everything resting here, kept as a running total."""
-        self.members: dict[int, None] = {}
-        """Which orders are here, by lifecycle, in the order they arrived.
-
-        A dict and not a list, because an order leaves a level as often as it
-        joins one and a list removal is a scan. Insertion-ordered, which is
-        what makes "the order a venue would have filled them in" a real answer
-        for the orders whose quantity ties.
-        """
-        self.frozen: Level | None = None
-        """This level as a row carries it, built once and shared until it moves.
-
-        A snapshot of a two hundred level book built two hundred `Level`
-        objects, and one order moving one level rebuilt all two hundred: at
-        0.52 us each that was 104 us of `into_levels`' 125 us. A level that did
-        not move rebuilds to an object equal to the one before it, so it hands
-        back the same one -- and nothing mutates a `Level` once it is on a row,
-        which is what makes sharing it across rows sound.
-        """
-
-    def into_level(self) -> Level:
-        """This level as a row carries it, from the cache when it has not moved."""
-        if self.frozen is None:
-            self.frozen = Level(px=self.px, qty=self.qty, orders=len(self.members))
-        return self.frozen
-
-
 @dataclasses.dataclass
-class Resting:
-    """Every order standing on one side of a book, kept in best-first order.
-
-    The state a fold needs and a `BookSide` row does not carry: which orders
-    are live, so that a restatement replaces what that order was resting for
-    rather than adding to it. `BookSide.append_order` is aggregated by design
-    -- it moves a level by a delta and keeps no idea which order contributed
-    what -- which is right for a venue that publishes levels and wrong for one
-    that publishes orders. This is the other half.
-
-    **The order is the structure, not a sort.** `keys` is the price of every
-    live level, kept sorted by `bisect.insort` as levels come and go, so the
-    best is `keys[0]` and a snapshot is one walk. What it replaced was a
-    `sorted()` per snapshot and a `min()` over every live order per read of
-    the touch, which is the difference between a structure that costs the
-    depth and one that costs the book:
-
-    | live orders | `best` before | `best` now |
-    | --- | --- | --- |
-    | 50 | 23 us | ~0.5 us |
-    | 2,000 | 1,030 us | ~0.5 us |
-    | 8,000 | 4,350 us | ~0.5 us |
-
-    Sorted **by price, then by descending quantity**: price first because that
-    is what a book is, size second because at one price the larger interest is
-    the one a taker meets first on most venues. The second key is applied
-    where it is asked for -- inside one level, over that level's own members
-    -- and never over every order at once, which is what made it free.
-
-    A bid sorts down and an ask up, and neither branches: `facing` is `-1` on
-    a bid and `+1` on an ask, and `key = px * facing` is ascending on both.
-    Multiplying by a sign is exact in binary floating point, so the price
-    comes back out of the key with nothing lost.
-    """
+class _Side:
+    """Every order standing on one side of a book, kept in best-first order."""
 
     side: Side
     """Which side this is; its sign is what turns the sort around."""
@@ -850,47 +367,100 @@ class Resting:
     named: dict[str, int] = dataclasses.field(default_factory=dict)
     """Which lifecycle each venue or client identifier belongs to."""
 
-    levels: dict[float, _Level] = dataclasses.field(default_factory=dict)
-    """Every live level, by price. Derived state, kept as the orders move.
-
-    Incrementally on purpose: a book is snapshotted after every instant that
-    changed it, and re-aggregating two hundred orders per snapshot is the same
-    arithmetic over and over for one order's worth of change.
-    """
+    levels: dict[float, Level] = dataclasses.field(default_factory=dict)
+    """Live levels by price, updated incrementally as orders move."""
 
     keys: list[float] = dataclasses.field(default_factory=list)
-    """`level.key` for every live level, **sorted**, best first.
+    """Best-first sorted prices multiplied by this side's direction."""
 
-    The whole point of the structure. Maintained by `bisect.insort` on an
-    insert and by one `pop` on a delete -- both a `memmove` over a list of
-    floats, which at any real depth is faster than the comparisons a sort
-    would do. Measured against a hand-written skip list, a treap, a chunked
-    sorted list and a lazy heap at depths 1 to 500: the list wins every one of
-    them on maintenance by 3-6x, because a `memmove` costs about 0.6 ns an
-    element where one node visit in a Python-object tree costs 60-120.
-    """
-
-    alive: list[_Level] = dataclasses.field(default_factory=list)
-    """The same levels as `keys`, in the same order, as the levels themselves.
-
-    Parallel and not a lookup: a snapshot walks this list straight, where
-    walking `keys` cost a float multiply and a dict probe per level to get back
-    to the thing the key stood for. Kept in step by the two places that move a
-    level -- there are only two -- and checked against `keys` by a test.
-    """
+    alive: list[Level] = dataclasses.field(default_factory=list)
+    """Live levels in the same best-first order as `keys`."""
 
     total_qty: float = 0.0
     """Everything resting on this side, running rather than summed per snapshot."""
 
-    updates: list[LevelUpdate] = dataclasses.field(default_factory=list)
-    """What has changed since the last book was yielded."""
+    changed: dict[float, None] = dataclasses.field(default_factory=dict)
+    """Prices changed since the last emitted book, in first-touch order."""
 
-    executions: list[LevelExecution] = dataclasses.field(default_factory=list)
-    """What has traded against this side since the last book was yielded."""
+    executions: dict[float, list[int]] = dataclasses.field(default_factory=dict)
+    """Execution lifecycles linked to each changed price."""
+
+    # Only explicit expiries are indexed; max-age expiry still examines all orders.
+    _expiry_keys: list[int] = dataclasses.field(default_factory=list, init=False, repr=False)
+    _expiring: dict[int, dict[int, None]] = dataclasses.field(
+        default_factory=dict, init=False, repr=False
+    )
 
     def __post_init__(self) -> None:
-        """Read the side's direction once: it is used on every order."""
+        """Cache direction and index any explicitly supplied live orders."""
         self.facing = -self.side.sign
+        for order in self.orders.values():
+            self._index_expiry(order)
+
+    @classmethod
+    def from_snapshot(
+        cls,
+        side: Side,
+        levels: Iterable[Level],
+        orders: Iterable[Order],
+    ) -> _Side:
+        """Restore a side from compact levels and generic live order rows."""
+        restored = cls(side=side)
+        by_xhash = {
+            order.xhash: order
+            for order in orders
+            if order.side.sign == side.sign and order.xhash and not order.state.is_terminal
+        }
+        linked: set[int] = set()
+        for captured in levels:
+            if captured.qty <= 0:
+                raise ValueError(f"recovery snapshot level {captured.px} must have positive qty")
+            members = list(dict.fromkeys(captured.order_xhash))
+            if captured.qty > 0 and not members:
+                raise ValueError(
+                    f"recovery level {captured.px} has positive qty but no linked Order"
+                )
+            missing = [xhash for xhash in members if xhash not in by_xhash]
+            if missing:
+                raise ValueError(
+                    "a recovery level requires every linked live Order row: "
+                    + ", ".join(map(str, missing))
+                )
+            repeated = [xhash for xhash in members if xhash in linked]
+            if repeated:
+                raise ValueError(
+                    "a recovery Order is linked from more than one level: "
+                    + ", ".join(map(str, repeated))
+                )
+            linked.update(members)
+            recovered_qty = sum(_resting(by_xhash[xhash]) for xhash in members)
+            if members and not math.isclose(recovered_qty, captured.qty):
+                raise ValueError(
+                    f"recovery level {captured.px} has qty {captured.qty}, "
+                    f"but its Orders total {recovered_qty}"
+                )
+            for xhash in members:
+                order = by_xhash[xhash]
+                if order.px != captured.px:
+                    raise ValueError(
+                        f"recovery Order {xhash} rests at {order.px}, not level {captured.px}"
+                    )
+                quantity = _resting(order)
+                if not order.xhash or order.px is None or quantity <= 0:
+                    continue
+                restored._remember(order)
+                restored._join(order, quantity)
+                for spelling in _names_of(order):
+                    if spelling:
+                        restored.named[spelling] = order.xhash
+        extra = [xhash for xhash in by_xhash if xhash not in linked]
+        if extra:
+            raise ValueError(
+                "a live recovery Order is absent from the compact levels: "
+                + ", ".join(map(str, extra))
+            )
+        restored.changed.clear()
+        return restored
 
     # -- what the orders come to --------------------------------------------
 
@@ -905,7 +475,7 @@ class Resting:
         return len(self.keys)
 
     @property
-    def best_level(self) -> _Level | None:
+    def best_level(self) -> Level | None:
         """The level at the touch, or None when nothing is resting. O(1)."""
         return self.alive[0] if self.alive else None
 
@@ -920,7 +490,7 @@ class Resting:
         level = self.best_level
         if level is None:
             return None
-        return max((self.orders[x] for x in level.members), key=_resting, default=None)
+        return max((self.orders[x] for x in level.order_xhash), key=_resting, default=None)
 
     @property
     def sorted_orders(self) -> list[Order]:
@@ -932,66 +502,139 @@ class Resting:
         """
         found: list[Order] = []
         for level in self.alive:
-            members = level.members
+            members = level.order_xhash
             if len(members) == 1:
-                found.append(self.orders[next(iter(members))])
+                found.append(self.orders[members[0]])
                 continue
             found.extend(sorted((self.orders[x] for x in members), key=_resting, reverse=True))
         return found
 
     def into_levels(self) -> list[Level]:
-        """The live orders aggregated to price levels, best first.
+        """The live orders aggregated to price levels, best first."""
+        return [
+            dataclasses.replace(
+                level,
+                order_xhash=list(level.order_xhash),
+                exec_xhash=[],
+            )
+            for level in self.alive
+        ]
 
-        Which is what a book row publishes: a level is every order at one
-        price, and `orders` is how many of them there are -- the one number an
-        aggregated feed cannot give you and an order-by-order fold can.
+    def into_orders(self) -> list[Order]:
+        """Independent live order rows needed to resume a compact snapshot."""
+        return [copy.copy(order) for order in self.sorted_orders]
 
-        One walk of `keys`, in the order they are already in. No sort, no
-        aggregation, and no rebuilding: the totals were kept as the orders
-        moved, and a level that did not move hands back the object it handed
-        back last time.
-        """
-        return [level.into_level() for level in self.alive]
-
-    def into_side(self, unix: int, xhash: int) -> BookSide:
-        """This side as the `BookSide` a book row carries flat."""
-        best = self.best_level
-        return BookSide(
-            unix=unix,
-            xhash=xhash,
-            side=self.side,
-            state=State.OPEN if best is not None else State.CLOSED,
-            px=best.px if best is not None else None,
-            qty=best.qty if best is not None else None,
-            depth=len(self.keys),
-            total_qty=self.total_qty,
-            alive=self.into_levels(),
-            updates=list(self.updates),
-            executions=list(self.executions),
-        )
+    def into_changed_levels(self) -> list[Level]:
+        """Post-change levels, including zero-quantity deletions, best first."""
+        levels = []
+        for px in self.changed:
+            level = self.levels.get(px)
+            executions = list(dict.fromkeys(self.executions.get(px, ())))
+            if level is None:
+                levels.append(Level(px=px, qty=0.0, exec_xhash=executions))
+            else:
+                levels.append(
+                    dataclasses.replace(
+                        level,
+                        order_xhash=list(level.order_xhash),
+                        exec_xhash=executions,
+                    )
+                )
+        return sorted(levels, key=lambda level: -level.px * self.side.sign)
 
     def cleared(self) -> None:
         """Forget the delta, keeping the state. Called once a book has been yielded."""
-        self.updates.clear()
+        self.changed.clear()
         self.executions.clear()
+
+    def expire(self, unix: int, max_age_ns: int | None = None) -> list[Order]:
+        """Remove and return terminal versions of orders stale at `unix`."""
+        expired: list[tuple[Order, str, int]] = []
+        orders: Iterable[Order]
+        if max_age_ns is None:
+            until = bisect.bisect_right(self._expiry_keys, unix)
+            orders = (
+                self.orders[xhash]
+                for expiry in self._expiry_keys[:until]
+                for xhash in self._expiring[expiry]
+            )
+        else:
+            orders = self.orders.values()
+        for order in orders:
+            explicit = order.eunix is not None and order.eunix <= unix
+            origin = order.cunix or order.unix
+            too_old = max_age_ns is not None and unix - origin >= max_age_ns
+            if explicit or too_old:
+                reason = (
+                    "order reached its explicit expiry"
+                    if explicit
+                    else "order exceeded the configured live age"
+                )
+                deadline = order.eunix if explicit else origin + max_age_ns
+                expired.append((order, reason, deadline))
+        return [
+            self._expire_order(order, unix, reason, deadline) for order, reason, deadline in expired
+        ]
+
+    def bound(self, max_alive: int, unix: int) -> list[Order]:
+        """Keep the best `max_alive` orders and return auditable evictions."""
+        if max_alive < 0:
+            raise ValueError("max_alive must be non-negative")
+        excess = len(self.orders) - max_alive
+        if excess <= 0:
+            return []
+        evicted = self._evictions(excess)
+        reason = f"order exceeded max_side_alive={max_alive} by price-time priority"
+        return [self._expire_order(order, unix, reason, unix) for order in evicted]
+
+    def _evictions(self, excess: int) -> list[Order]:
+        """Worst price first, ordering only equal-price candidates by time."""
+        evicted: list[Order] = []
+        for level in reversed(self.alive):
+            remaining = excess - len(evicted)
+            if remaining <= 0:
+                break
+            # Prices are already worst-first in this traversal. Only equal-price
+            # orders need ordering, and the latest loses first.
+            members = (self.orders[xhash] for xhash in level.order_xhash)
+            if remaining == 1:
+                evicted.append(max(members, key=self._time_priority))
+            elif remaining < len(level.order_xhash):
+                evicted.extend(heapq.nlargest(remaining, members, key=self._time_priority))
+            else:
+                evicted.extend(sorted(members, key=self._time_priority, reverse=True))
+        return evicted
+
+    @staticmethod
+    def _time_priority(order: Order) -> tuple[int, int]:
+        """Time priority within one price, with lifecycle as stable tie-break."""
+        return order.cunix or order.unix, order.xhash
+
+    def _expire_order(self, order: Order, unix: int, reason: str, deadline: int) -> Order:
+        """Remove one live order and build its synthetic terminal version."""
+        self._leave(order)
+        self._forget(order.xhash)
+        terminal = copy.copy(order)
+        terminal.unix = unix
+        terminal.eunix = deadline
+        terminal.state = State.INTERNAL_EXPIRED
+        if not terminal.error:
+            terminal.error = reason
+        terminal.with_previous(order)
+        return terminal
 
     # -- moving it ----------------------------------------------------------
 
     def apply(self, order: Order) -> bool:
-        """One order's latest version, put where it belongs. True if the side moved.
+        """One order's latest version, put where it belongs. True if the side moved."""
+        moved, _ = self._applied(order)
+        return moved
 
-        The order is completed from the version this side already holds, which
-        is what makes a venue's restatement usable: a report that says only
-        "partially filled, 4 done" arrives here with no price, and leaves with
-        the price the order has had all along.
-
-        An order that ends up resting for nothing is removed rather than kept
-        at zero -- a level of zero is not a level, and `alive` is what is
-        alive. False when nothing about the side changed.
-        """
+    def _applied(self, order: Order) -> tuple[bool, Order | None]:
+        """Apply one order and return the completed version used by the fold."""
         standing = self.standing(order)
         # A copy, because what is stored here outlives the call and is
-        # mutated by it -- `_reduce` writes a new `leaves_qty` onto a resting
+        # mutated by it -- `_reduce` writes a new `qty` onto a resting
         # order when a trade takes part of it. Folding the caller's own object
         # would edit an event it still holds, and replaying one stream twice
         # would give two different books.
@@ -1000,23 +643,28 @@ class Resting:
         # and `__post_init__` over forty fields to produce the same object:
         # 11.1 us against 3.3 us, and nothing here needs the re-run because
         # `completed_from` sets everything that would change. The copy shares
-        # the caller's `metadata` and `instrument`, which nothing in a fold
-        # writes to, and `parent_hash` is assigned rather than appended to.
+        # the caller's metadata and transient reference, which the fold never
+        # mutates, and `parent_hash` is assigned rather than appended to.
         #
-        # `completed_from` and not `with_previous`: a fold does not publish
-        # order rows, so it does not need their content hashes, and hashing
-        # every version of every live order was half the per-order cost.
-        settled = copy.copy(order).completed_from(standing)
+        # Complete once here so both the book and its auditable delta use the
+        # same linked version; publishing the raw partial report loses terms.
+        settled = BookIterator.validate(copy.copy(order).completed_from(standing))
+        if standing is not None and settled.same_as(standing):
+            return False, None
+        settled.identify()
+        if settled.state is State.INTERNAL_REJECTED:
+            return False, settled
         if settled.px is None:
             # No price even after completing: a market order, which rests
             # nowhere -- it is an execution against a side, not a level on
             # it. Skipped rather than refused, because an order stream really
             # does carry them and one of them is not a reason to abandon the
-            # book. `BookSide.append_order` raises instead, because there a
-            # caller named the side and meant it.
-            return False
+            # book.
+            return False, settled
         before = _resting(standing) if standing else 0.0
-        after = 0.0 if settled.state.is_terminal else _resting(settled)
+        after = (
+            0.0 if settled.state.is_terminal or settled.expires_on_arrival else _resting(settled)
+        )
         if standing is not None:
             self._leave(standing)
             if standing.xhash != settled.xhash:
@@ -1028,41 +676,41 @@ class Resting:
         if after <= 0:
             self._forget(settled.xhash)
         else:
-            self.orders[settled.xhash] = settled
+            self._remember(settled)
             self._join(settled, after)
-            for spelling in (settled.order_id, settled.client_order_id):
+            for spelling in _names_of(settled):
                 if spelling:
                     self.named[spelling] = settled.xhash
         moved = after - before
         if not moved and (standing is None or standing.px == settled.px):
-            return False
-        self.updates.append(
-            LevelUpdate(
-                action=_action_of(before, after),
-                px=settled.px,
-                qty=None if after <= 0 else after,
-                orders=None,
-                position=None,
-            )
-        )
-        return True
+            return False, copy.copy(settled)
+        return True, copy.copy(settled)
 
-    def standing(self, order: Order) -> Order | None:
-        """The live version of `order`, by lifecycle or by the name the venue gave it.
-
-        By name as well, and that is not redundant: a lifecycle is hashed from
-        the instrument, the venue and the identifier, so a report that carries
-        the identifier and omits the venue -- which venues do, because they
-        know which one they are -- hashes to a different lifecycle than the
-        order it continues. The identifier is the venue's own and unique to
-        it, so it settles the question the hash cannot.
-        """
-        found = self.orders.get(order.xhash) if order.xhash else None
-        if found is not None:
-            return found
-        for spelling in (order.order_id, order.client_order_id):
-            if spelling and spelling in self.named:
-                return self.orders.get(self.named[spelling])
+    def standing(self, event: Order | Execution) -> Order | None:
+        """The live order matched by lifecycle links, then source identifiers."""
+        if event.is_order() and event.xhash:
+            found = self.orders.get(event.xhash)
+            if found is not None:
+                return found
+        for identity in event.linked_xhash or ():
+            found = self.orders.get(identity)
+            if found is not None:
+                return found
+        for spelling in _names_of(event):
+            identity = self.named.get(spelling) if spelling else None
+            if identity is not None:
+                return self.orders.get(identity)
+        if not getattr(event, "order_id", None):
+            client_order_id = getattr(event, "client_order_id", None)
+            if client_order_id:
+                return next(
+                    (
+                        order
+                        for order in self.orders.values()
+                        if order.client_order_id == client_order_id
+                    ),
+                    None,
+                )
         return None
 
     def remove(self, xhash: int) -> None:
@@ -1085,14 +733,15 @@ class Resting:
         level = self.levels.get(px)
         if level is None:
             key = px * self.facing
-            level = self.levels[px] = _Level(px, key)
+            level = self.levels[px] = Level(px=px, qty=0.0)
             at = bisect.bisect_left(self.keys, key)
             self.keys.insert(at, key)
             self.alive.insert(at, level)
         level.qty += quantity
-        level.members[order.xhash] = None
-        level.frozen = None
+        if order.xhash not in level.order_xhash:
+            level.order_xhash.append(order.xhash)
         self.total_qty += quantity
+        self.changed[px] = None
 
     def _leave(self, order: Order) -> None:
         """Take `order` off its level, dropping the level when it empties.
@@ -1107,16 +756,17 @@ class Resting:
         quantity = _resting(order)
         level.qty -= quantity
         self.total_qty -= quantity
-        level.members.pop(order.xhash, None)
-        level.frozen = None
-        if not level.members or level.qty <= 0:
+        if order.xhash in level.order_xhash:
+            level.order_xhash.remove(order.xhash)
+        self.changed[order.px] = None
+        if not level.order_xhash or level.qty <= 0:
             # The whole level went with it, so the running totals follow: a
             # level whose members are gone but whose quantity has drifted --
             # a float sum that did not land on zero -- must not leave that
             # drift in `total_qty` for the rest of the fold.
             self.total_qty -= level.qty
             del self.levels[order.px]
-            at = bisect.bisect_left(self.keys, level.key)
+            at = bisect.bisect_left(self.keys, order.px * self.facing)
             self.keys.pop(at)
             self.alive.pop(at)
 
@@ -1125,35 +775,60 @@ class Resting:
         gone = self.orders.pop(xhash, None)
         if gone is None:
             return
-        for spelling in (gone.order_id, gone.client_order_id):
+        self._unindex_expiry(gone)
+        for spelling in _names_of(gone):
             if spelling and self.named.get(spelling) == xhash:
                 del self.named[spelling]
 
+    def _remember(self, order: Order) -> None:
+        """Store one live order and keep its explicit-expiry index exact."""
+        previous = self.orders.get(order.xhash)
+        changed_expiry = previous is None or previous.eunix != order.eunix
+        if previous is not None and changed_expiry:
+            self._unindex_expiry(previous)
+        self.orders[order.xhash] = order
+        if changed_expiry:
+            self._index_expiry(order)
+
+    def _index_expiry(self, order: Order) -> None:
+        """Index one live order when it carries an explicit expiry."""
+        if order.eunix is None:
+            return
+        bucket = self._expiring.get(order.eunix)
+        if bucket is None:
+            at = bisect.bisect_left(self._expiry_keys, order.eunix)
+            self._expiry_keys.insert(at, order.eunix)
+            bucket = self._expiring[order.eunix] = {}
+        bucket[order.xhash] = None
+
+    def _unindex_expiry(self, order: Order) -> None:
+        """Remove an order's current explicit-expiry entry."""
+        if order.eunix is None:
+            return
+        bucket = self._expiring.get(order.eunix)
+        if bucket is None:
+            return
+        bucket.pop(order.xhash, None)
+        if bucket:
+            return
+        del self._expiring[order.eunix]
+        at = bisect.bisect_left(self._expiry_keys, order.eunix)
+        if at < len(self._expiry_keys) and self._expiry_keys[at] == order.eunix:
+            self._expiry_keys.pop(at)
+
     def take(self, execution: Execution, traded: float) -> None:
-        """Record a trade against this side, and take `traded` out of it.
-
-        The order the fill names is reduced first, because that is exact.
-        Where the report names no order -- a market-data trade print, which is
-        most of them -- the quantity comes off the resting orders best first,
-        which is the same order a venue would have filled them in.
-
-        Walked level by level rather than over a sorted copy of the book: a
-        fill usually clears one level, and building an ordered list of every
-        live order to take one bite out of the top of it was the cost of a
-        trade on a deep book.
-        """
-        self.executions.append(
-            LevelExecution(
-                unix=execution.unix,
-                px=execution.px or 0.0,
-                qty=execution.qty or 0.0,
-                xhash=execution.xhash,
-                aggressor=execution.aggressor,
-            )
-        )
-        hit = self.orders.get(execution.order_xhash or 0)
+        """Record a trade against this side, and take `traded` out of it."""
+        hit = self.standing(execution)
         if hit is not None:
-            self._reduce(hit, traded)
+            if execution.leaves_qty is not None:
+                # ExecutionReport carries the post-trade total. The Order row
+                # emitted from that same report may already have applied it;
+                # subtracting LastQty again double-counts the fill.
+                hidden = max(hit.hidden_qty or 0.0, 0.0)
+                post_trade = max(execution.leaves_qty - hidden, 0.0)
+                traded = max(_resting(hit) - post_trade, 0.0)
+            if traded > 0:
+                self._reduce(hit, traded, execution.xhash)
             return
         while traded > 0 and self.alive:
             top = self.keys[0]
@@ -1161,41 +836,39 @@ class Resting:
             # A list, because reducing an order can empty the level and delete
             # the dict this is walking. Sorted inside the level and nowhere
             # else: the largest interest at one price is met first.
-            for xhash in sorted(level.members, key=lambda x: -_resting(self.orders[x])):
+            for xhash in sorted(
+                level.order_xhash,
+                key=lambda x: -_resting(self.orders[x]),
+            ):
                 if traded <= 0:
                     break
                 resting = self.orders.get(xhash)
                 if resting is not None:
-                    traded = self._reduce(resting, traded)
+                    traded = self._reduce(resting, traded, execution.xhash)
             if self.keys and self.keys[0] == top:
                 # The touch did not move, so there is nothing further to take
                 # off it. Without this the loop could spin on a level that
                 # would not clear.
                 break
 
-    def _reduce(self, order: Order, traded: float) -> float:
+    def _reduce(self, order: Order, traded: float, execution_xhash: int) -> float:
         """Take what `traded` can from one order; the rest is returned for the next."""
         standing = _resting(order)
         taken = min(standing, traded)
         left = standing - taken
+        if execution_xhash:
+            self.executions.setdefault(order.px, []).append(execution_xhash)
+        self.changed[order.px] = None
         if left <= 0:
             self.remove(order.xhash)
         else:
             level = self.levels.get(order.px)
             if level is not None:
                 level.qty -= taken
-                level.frozen = None
                 self.total_qty -= taken
-            order.leaves_qty = left
-        self.updates.append(
-            LevelUpdate(
-                action=_action_of(standing, left),
-                px=order.px,
-                qty=None if left <= 0 else left,
-                orders=None,
-                position=None,
-            )
-        )
+                self.changed[order.px] = None
+            if order.qty is not None:
+                order.qty = max(order.qty - taken, 0.0)
         return traded - taken
 
 
@@ -1203,7 +876,7 @@ class Resting:
 
 
 @dataclasses.dataclass
-class Folding:
+class _Folding:
     """One instrument's mutable state inside a `BookIterator`.
 
     Everything a fold has to remember between events, and nothing that is a
@@ -1212,25 +885,20 @@ class Folding:
     book.
     """
 
-    instrument_hash: int
+    instrument_xhash: int
     """Which instrument this is the state of."""
 
-    bid: Resting
+    bid: _Side
     """The bid side's live orders, best first."""
 
-    ask: Resting
+    ask: _Side
     """The ask side's live orders, best first."""
 
     xhash: int = NIL
     """The book's lifecycle. One instrument is one book, so this never moves."""
 
-    sides: tuple[int, int] = (NIL, NIL)
-    """The two sides' lifecycles, `(bid, ask)`, derived from `xhash` once.
-
-    Constant for the whole fold, and it used to be two digests per book: a
-    side's lifecycle is the book's plus which side it is, and neither changes
-    while one instrument is being folded.
-    """
+    xcode: str = ""
+    """Readable instrument code the book lifecycle was first identified by."""
 
     unix: int | None = None
     """The instant the events being folded belong to; None before the first."""
@@ -1242,10 +910,7 @@ class Folding:
     """The last event folded in -- where a book learns what it is a book of."""
 
     instrument: Instrument = dataclasses.field(default_factory=Instrument)
-    """The reference data learnt so far, which the instrument stream publishes."""
-
-    known: Reference | None = None
-    """The last reference row emitted, which the next one is a version of."""
+    """Latest instrument facts visible to the folded event."""
 
     emitted: int | None = None
     """`unix` of the last book emitted, which is what an hourly snapshot counts from."""
@@ -1253,76 +918,66 @@ class Folding:
     moved: bool = False
     """Whether anything has happened since the last book was emitted."""
 
-    def touched(self) -> tuple[bool, bool]:
-        """Which sides have something to say since the last book: `(bid, ask)`."""
-        return (
-            bool(self.bid.updates or self.bid.executions),
-            bool(self.ask.updates or self.ask.executions),
-        )
+    order_events: list[Order] = dataclasses.field(default_factory=list)
+    """Complete order inputs awaiting the next delta row."""
+
+    execution_events: list[Execution] = dataclasses.field(default_factory=list)
+    """Complete execution inputs awaiting the next delta row."""
 
 
 @dataclasses.dataclass
 class BookIterator:
-    """A stream of market events in; a stream of books and a stream of instruments out.
+    """Fold one sorted parsed-log stream into books."""
 
-    One iterator over **every** instrument, not one per instrument: the state
-    that has to be per instrument is per instrument (`Folding`, keyed by
-    `instrument_hash`) and everything around it is shared. That is what makes
-    it adaptable -- a partition holding one instrument and a capture holding
-    ten thousand are the same call -- and it is what lets a job write both
-    tables from one pass.
-
-    **Two streams, one source.** `books` and `instruments` are both views of
-    the same fold: whichever is pulled drives the source, and what the other
-    would have seen is held until it is. Pull them alternately, or drain one
-    and then the other -- but draining `books` first holds every instrument
-    version in memory, which for a capture of ten thousand instruments is ten
-    thousand small rows and for one instrument is one.
-
-    **One book per instant that changed it**, never one per message: several
-    events at the same nanosecond are one state of the book, and writing three
-    rows with the same `unix` is writing the feed rather than the book.
-
-    **And one book per hour regardless.** `snapshot_every` makes the fold emit
-    the book as it stood on each boundary it crosses, even where nothing
-    happened -- which is what turns "what was the book at 14:00" into a point
-    lookup instead of a scan backwards for the last row before it. Set it to
-    `0` for a stream of changes only.
-
-    **Sorted, and it is checked.** A fold is a fold: an event out of order
-    asks a book to un-happen something, and there is no honest answer. The
-    stream has to be in `unix` order *across* instruments, which is what an
-    Iceberg table sorted by `unix` hands back -- and what makes the hourly
-    boundary the same instant for every instrument in it.
-    """
-
-    events: Iterable[MarketEvent] = ()
-    """The stream to fold. Read once, lazily."""
+    logs: Iterable[Log] = ()
+    """Parsed logs sorted by event time, sequence and hash; read once."""
 
     snapshot_every: int = HOUR
     """Emit the book on every multiple of this; `0` emits only what changed."""
 
-    folding: dict[int, Folding] = dataclasses.field(default_factory=dict)
-    """The per-instrument state, by `instrument_hash`. Mutable, and the point.
+    snapshot_until: int | None = None
+    """On flush, complete boundaries before this exclusive instant; None does not guess."""
 
-    Keyed by the identity the instrument was **first** seen under, which is not
-    always the one a later message identifies it by: a venue sends the ISIN on
-    some messages and only the symbol on others, and `Instrument.identify`
-    prefers the registered identifier. Every identity an instrument has been
-    seen under is aliased onto this key, so one instrument is one fold however
-    the message spelled it.
-    """
+    snapshots: Iterable[Book] = ()
+    """Latest prior book snapshots used to resume live orders."""
+
+    max_order_age_ns: int | None = DAY
+    """Expire unchanged orders after one day; None uses explicit `eunix` only."""
+
+    max_side_alive: int | None = None
+    """Keep at most this many live orders per side; None keeps every order."""
+
+    folding: dict[int, _Folding] = dataclasses.field(default_factory=dict)
+    """Mutable fold state keyed by first-seen instrument identity; later identities alias to it."""
 
     def __post_init__(self) -> None:
+        if self.snapshot_every < 0:
+            raise ValueError("snapshot_every must be non-negative")
+        if self.max_side_alive is not None and self.max_side_alive < 0:
+            raise ValueError("max_side_alive must be non-negative")
         self._source: Iterator[MarketEvent] | None = None
+        self._event_input: Iterable[MarketEvent | Instrument] | None = None
         self._finished = False
         self._books: deque[Book] = deque()
-        self._instruments: deque[Instrument] = deque()
         self._unix: int | None = None
         self._swept: int | None = None
         self._aliases: dict[int, int] = {}
+        self._life_aliases: dict[int, int] = {}
+        self._hash_aliases: dict[int, int] = {}
+        self._instruments: dict[int, Instrument] = {}
+        for snapshot in self.snapshots:
+            self._restore(snapshot)
 
-    # -- the two streams -----------------------------------------------------
+    @classmethod
+    def from_events(
+        cls, events: Iterable[MarketEvent | Instrument], **declared: Any
+    ) -> BookIterator:
+        """Build a fold over one ordered stream of translated event versions."""
+        built = cls(**declared)
+        built._event_input = events
+        return built
+
+    # -- the stream ----------------------------------------------------------
 
     def __iter__(self) -> Iterator[Book]:
         """The books, which is what a fold is usually asked for."""
@@ -1331,21 +986,13 @@ class BookIterator:
     @property
     def books(self) -> Iterator[Book]:
         """Every book this stream produces, in the order the events arrived."""
-        return self._drain(self._books)
+        return self._drain()
 
-    @property
-    def instruments(self) -> Iterator[Reference]:
-        """Every version of what the stream taught the fold about an instrument.
-
-        `Reference` rows and not bare `Instrument`s, for the reasons `Reference` gives.
-        """
-        return self._drain(self._instruments)
-
-    def _drain(self, queue: deque[Any]) -> Iterator[Any]:
-        """One of the two streams: hand back what is held, then fold for more."""
+    def _drain(self) -> Iterator[Book]:
+        """Hand back held books, then fold only until another is available."""
         while True:
-            while queue:
-                yield queue.popleft()
+            while self._books:
+                yield self._books.popleft()
             if not self._advance():
                 return
 
@@ -1360,15 +1007,45 @@ class BookIterator:
         if self._finished:
             return False
         if self._source is None:
-            self._source = iter(self.events)
+            self._source = iter(self._events())
         event = next(self._source, None)
         if event is None:
             self._finished = True
             self._source = None
+            books = len(self._books)
             self._flush()
-            return bool(self._books or self._instruments)
+            self._order_output(books)
+            return bool(self._books)
+        books = len(self._books)
         self._feed(event)
+        self._order_output(books)
         return True
+
+    def _events(self) -> Iterator[MarketEvent]:
+        """Index instrument rows and translate the other parsed rows once."""
+        if self._event_input is not None:
+            for event in self._event_input:
+                if isinstance(event, Instrument):
+                    self._index_instrument(event)
+                else:
+                    yield event
+            return
+        for log in self.logs:
+            if log.etype is EventType.INSTRUMENT:
+                if log.is_instrument_version:
+                    for instrument in log.into_instruments():
+                        self._index_instrument(instrument)
+                continue
+            yield from log.into_market_events()
+
+    def _order_output(self, books: int) -> None:
+        """Keep checkpoint commits globally boundary-ordered across instruments."""
+        if len(self._books) - books > 1 or (
+            books and len(self._books) > books and self._books[-2].unix > self._books[-1].unix
+        ):
+            ordered = sorted(self._books, key=lambda row: row.unix)
+            self._books.clear()
+            self._books.extend(ordered)
 
     # -- folding --------------------------------------------------------------
 
@@ -1381,42 +1058,35 @@ class BookIterator:
             )
         self._unix = event.unix
         state = self._state_of(event)
+        # An active instrument has one row per instant. Exact-boundary events
+        # become that boundary's delta; only inactive instruments snapshot on
+        # the boundary through `_sweep`.
         self._settle(state, event.unix)
+        self._refresh_instrument(state, event)
         self._sweep(event.unix, state)
-        self._learn(state, event)
-        state.unix = event.unix
-        state.moved = _folded(state.bid, state.ask, event) or state.moved
+        state.moved = self._expire(state, event.unix) or state.moved
+        folded, settled = _folded(state.bid, state.ask, event)
+        if settled is None:
+            return
+        state.unix = settled.unix
+        if settled.is_order():
+            state.order_events.append(settled)
+            bounded = self.max_side_alive is not None and self._bound(state, settled.unix)
+        elif settled.is_execution():
+            state.execution_events.append(settled)
+            bounded = False
+        else:
+            bounded = False
+        state.moved = (
+            folded or bounded or settled.is_order() or settled.is_execution() or state.moved
+        )
         # After folding, never before: a book is described by the events it
         # holds, and reading the event that *triggered* the emission gave
         # every row the units of the instant after it.
-        state.about = event
+        state.about = settled
 
-    def _sweep(self, unix: int, folded: Folding) -> None:
-        """Fill in the hourly rows of every *other* instrument the clock passed.
-
-        The hour is a property of the clock, not of one instrument's stream: a
-        book nothing has happened to for three hours still stood there for
-        three hours, and a table whose hourly rows exist only for whatever was
-        trading is one you have to scan backwards to read.
-
-        `_settle` and not just `_snapshots`, because an instrument whose last
-        event has not been emitted yet has nothing to take a picture *of*: the
-        instant that ended is emitted first, which is also overdue by then.
-
-        Once per boundary rather than once per event, because it is a walk of
-        every instrument being folded: a capture of ten thousand instruments
-        pays it twenty-four times a day, not once a message. `folded` is
-        skipped because `_settle` has just done it, and doing it before that
-        would picture the state the event is about to change.
-
-        **What this costs the output order.** A book is emitted when the
-        instrument it belongs to is settled, so a quiet instrument's row
-        arrives in the stream up to one `snapshot_every` after its own
-        `unix` -- the rows are stamped right and ordered within that window,
-        not globally sorted. Settling every instrument on every event would
-        order them exactly and would cost a walk of the whole book of books
-        per message, which is the trade this makes deliberately.
-        """
+    def _sweep(self, unix: int, folded: _Folding) -> None:
+        """Fill in the hourly rows of every *other* instrument the clock passed."""
         every = self.snapshot_every
         if not every:
             return
@@ -1426,22 +1096,22 @@ class BookIterator:
         self._swept = boundary
         for state in self.folding.values():
             if state is not folded:
-                self._settle(state, unix)
+                self._settle(state, unix, inclusive=True)
+                if self._expire(state, unix):
+                    state.unix = unix
+                    state.moved = True
 
     def _flush(self) -> None:
-        """End of stream: emit what every instrument still holds, once.
-
-        `unix + 1` because `_settle` emits the instant that *ended*, and at the
-        end of a stream the last instant has. No hourly snapshot follows: a
-        snapshot fills the gap between two events, and past the last one there
-        is no gap to fill -- only a guess about how long the book stood.
-        """
+        """Emit the last delta and any explicitly bounded quiet-tail snapshots."""
         for state in self.folding.values():
             if state.unix is not None:
-                self._settle(state, state.unix + 1)
+                until = state.unix + 1
+                if self.snapshot_until is not None:
+                    until = max(until, self.snapshot_until)
+                self._settle(state, until)
 
-    def _state_of(self, event: MarketEvent) -> Folding:
-        """The fold this event belongs to, by any identity its instrument has.
+    def _state_of(self, event: MarketEvent) -> _Folding:
+        """The fold this event belongs to, by its flat or transient identities.
 
         A venue that starts sending an ISIN halfway through a capture changes
         what `Instrument.identify` returns, and a fold keyed on that alone
@@ -1449,69 +1119,229 @@ class BookIterator:
         onto the first one seen, which is also what the rows carry -- so the
         partition an instrument's rows land in does not move either.
         """
-        known = self._aliases.get(event.instrument_hash)
+        known = self._aliases.get(event.instrument_xhash)
         if known is not None:
+            self._canonicalize(event, known)
             return self.folding[known]
-        for identity in event.instrument.identities():
+        instrument = event.into_instrument()
+        for identity in instrument.identities() if instrument is not None else ():
             known = self._aliases.get(identity)
             if known is not None:
                 # Learnt under another spelling: alias this one too, so the
                 # next message carrying it is one probe rather than a walk.
-                self._aliases[event.instrument_hash] = known
+                self._aliases[event.instrument_xhash] = known
+                self._canonicalize(event, known)
                 return self.folding[known]
-        canonical = event.instrument_hash
-        state = self.folding[canonical] = self._started(event)
+        stored = self._instrument_of(event, instrument)
+        observed = event.instrument_xhash
+        canonical = stored.xhash if stored is not None else observed
+        self._canonicalize(event, canonical)
+        state = self.folding[canonical] = self._started(event, stored)
         self._aliases[canonical] = canonical
-        for identity in event.instrument.identities():
+        self._aliases[observed] = canonical
+        for identity in instrument.identities() if instrument is not None else ():
             self._aliases.setdefault(identity, canonical)
+        if stored is not None:
+            self._remember(state, stored)
         return state
 
-    def _started(self, event: MarketEvent) -> Folding:
+    def _started(self, event: MarketEvent, stored: Instrument | None = None) -> _Folding:
         """The state one instrument's fold starts from, identities and all."""
         lifecycle = Book(
             unix=event.unix,
-            instrument=event.instrument,
-            instrument_hash=event.instrument_hash,
-            symbol=event.symbol,
-        ).life_hash()
-        return Folding(
-            instrument_hash=event.instrument_hash,
-            bid=Resting(side=Side.BID),
-            ask=Resting(side=Side.ASK),
-            xhash=lifecycle,
-            sides=(BookSide.hash_of(lifecycle, "bid"), BookSide.hash_of(lifecycle, "ask")),
+            instrument_xhash=event.instrument_xhash,
+            code=event.code,
+            ccy=event.ccy,
+        )
+        parsed = event.into_instrument()
+        instrument = (
+            stored
+            if stored is not None
+            else parsed
+            or Instrument(xhash=event.instrument_xhash, symbol=event.code, currency=event.ccy)
+        )
+        lifecycle.attach_instrument(instrument)
+        xhash = lifecycle.life_hash()
+        state = _Folding(
+            instrument_xhash=event.instrument_xhash,
+            bid=_Side(side=Side.BID),
+            ask=_Side(side=Side.ASK),
+            xhash=xhash,
+            xcode=lifecycle.life_code(),
+            instrument=instrument,
+        )
+        return state
+
+    def _canonicalize(self, event: MarketEvent, instrument_xhash: int) -> None:
+        """Rewrite an aliased input and its relations onto the fold's canonical identities."""
+        linked = [self._alias_of(self._life_aliases, value) for value in event.linked_xhash or ()]
+        parents = [self._alias_of(self._hash_aliases, value) for value in event.parent_hash or ()]
+        previous = self._alias_of(self._hash_aliases, event.prev_hash)
+        linked = list(dict.fromkeys(linked))
+        parents = list(dict.fromkeys(parents))
+        changed = (
+            event.instrument_xhash != instrument_xhash
+            or linked != list(event.linked_xhash or ())
+            or parents != list(event.parent_hash or ())
+            or previous != event.prev_hash
+        )
+        if not changed:
+            return
+        old_xhash, old_hash = event.xhash, event.hash
+        event.instrument_xhash = instrument_xhash
+        event.linked_xhash = linked or None
+        event.parent_hash = parents or None
+        event.prev_hash = previous
+        event.xhash = NIL
+        event.hash = NIL
+        event.identify()
+        if old_xhash and old_xhash != event.xhash:
+            self._life_aliases[old_xhash] = event.xhash
+        if old_hash and old_hash != event.hash:
+            self._hash_aliases[old_hash] = event.hash
+
+    @staticmethod
+    def _alias_of(aliases: dict[int, int], value: int | None) -> int | None:
+        """Resolve a short alias chain; None remains absent."""
+        while value in aliases:
+            value = aliases[value]
+        return value
+
+    def _restore(self, snapshot: Book) -> None:
+        """Resume one fold from the complete live state of a prior snapshot."""
+        if snapshot.sunix is None:
+            raise ValueError("a recovery seed must be a book snapshot with `sunix`")
+        canonical = snapshot.instrument_xhash
+        known = self._instruments.get(canonical)
+        instrument = (
+            known
+            if known is not None
+            else snapshot.into_instrument() or Instrument(xhash=canonical, symbol=snapshot.code)
+        )
+        snapshot.attach_instrument(instrument)
+        state = _Folding(
+            instrument_xhash=canonical,
+            bid=_Side.from_snapshot(
+                Side.BID,
+                snapshot.bid_levels or (),
+                snapshot.order_events or (),
+            ),
+            ask=_Side.from_snapshot(
+                Side.ASK,
+                snapshot.ask_levels or (),
+                snapshot.order_events or (),
+            ),
+            xhash=snapshot.xhash,
+            xcode=snapshot.xcode,
+            unix=snapshot.unix,
+            previous=snapshot,
+            about=snapshot,
+            instrument=instrument,
+            emitted=snapshot.unix,
+        )
+        state.moved = self._bound(state, snapshot.unix)
+        self.folding[canonical] = state
+        self._aliases[canonical] = canonical
+        self._remember(state, state.instrument)
+        self._unix = max(self._unix or snapshot.unix, snapshot.unix)
+        self._swept = max(self._swept or snapshot.unix, snapshot.unix)
+
+    def _expire(self, state: _Folding, unix: int) -> bool:
+        """Expire stale orders on both sides before events at `unix` apply."""
+        expired = state.bid.expire(unix, self.max_order_age_ns)
+        expired += state.ask.expire(unix, self.max_order_age_ns)
+        state.order_events.extend(expired)
+        return bool(expired)
+
+    def _bound(self, state: _Folding, unix: int) -> bool:
+        """Apply the configured per-side live-order bound."""
+        if self.max_side_alive is None:
+            return False
+        expired = []
+        if len(state.bid.orders) > self.max_side_alive:
+            expired.extend(state.bid.bound(self.max_side_alive, unix))
+        if len(state.ask.orders) > self.max_side_alive:
+            expired.extend(state.ask.bound(self.max_side_alive, unix))
+        state.order_events.extend(expired)
+        return bool(expired)
+
+    @staticmethod
+    def validate(event: MarketEvent) -> MarketEvent:
+        """Reject incomplete book inputs while preserving an existing error."""
+        reasons: list[str] = []
+        validates_interest = (
+            event.is_order()
+            and not event.state.is_terminal
+            and event.state not in (State.UNKNOWN, State.PENDING_CANCEL)
+        )
+        if validates_interest:
+            quantity = event.qty
+            kind = getattr(event, "kind", MarketKind.UNKNOWN)
+            if not event.side.sign:
+                reasons.append("side is missing")
+            price_required = kind.band == MarketKind.LIMIT or kind is MarketKind.STOP_LIMIT
+            invalid_price = event.px is not None and not math.isfinite(event.px)
+            if price_required and event.px is None or invalid_price:
+                reasons.append("required price is missing or non-finite")
+            if quantity is None or not math.isfinite(quantity) or quantity <= 0:
+                reasons.append("quantity is missing or non-positive")
+        elif event.is_execution() and event.state is State.FILLED:
+            if event.px is None or not math.isfinite(event.px):
+                reasons.append("price is missing or non-finite")
+            if event.qty is None or not math.isfinite(event.qty) or event.qty <= 0:
+                reasons.append("quantity is missing or non-positive")
+        if not reasons:
+            return event
+        event.state = State.INTERNAL_REJECTED
+        if not getattr(event, "error", None):
+            event.error = "rejected for book: " + "; ".join(reasons)
+        event.hash = NIL
+        return event.identify()
+
+    def _remember(self, state: _Folding, known: Instrument) -> None:
+        """Alias every authoritative identity onto its fold."""
+        for identity in known.identities():
+            self._aliases.setdefault(identity, state.instrument_xhash)
+
+    def _index_instrument(self, known: Instrument) -> None:
+        """Index one full instrument version by all of its identities."""
+        for identity in (known.xhash, *known.identities()):
+            self._instruments[identity] = known
+
+    def _instrument_of(
+        self, event: MarketEvent, instrument: Instrument | None
+    ) -> Instrument | None:
+        """Known instrument reached through the event's canonical or parsed identity."""
+        stored = self._instruments.get(event.instrument_xhash)
+        if stored is not None or instrument is None:
+            return stored
+        return next(
+            (
+                self._instruments[identity]
+                for identity in instrument.identities()
+                if identity in self._instruments
+            ),
+            None,
         )
 
-    def _remember(self, state: Folding, known: Instrument) -> None:
-        """Alias every identity the enriched instrument now has onto its fold."""
-        for identity in known.identities():
-            self._aliases.setdefault(identity, state.instrument_hash)
-
-    def _learn(self, state: Folding, event: MarketEvent) -> None:
-        """Take whatever reference data the event carries, and publish a version.
-
-        Only where `enriched_with` says something was actually learnt.
-        """
-        enriched = state.instrument.enriched_with(event.instrument)
-        if enriched is None:
+    def _refresh_instrument(self, state: _Folding, event: MarketEvent) -> None:
+        """Use the latest instrument version visible at this event."""
+        known = self._instrument_of(event, event.into_instrument())
+        if known is None:
             return
-        state.instrument = enriched
-        self._remember(state, enriched)
-        state.known = Reference(
-            unix=event.unix, instrument=enriched, instrument_hash=state.instrument_hash
-        ).with_previous(state.known)
-        self._instruments.append(state.known)
+        state.instrument = known
+        self._remember(state, known)
 
     # -- emitting -------------------------------------------------------------
 
-    def _settle(self, state: Folding, unix: int) -> None:
+    def _settle(self, state: _Folding, unix: int, *, inclusive: bool = False) -> None:
         """Emit whatever `unix` completes: the instant that ended, then the hours."""
         if state.unix is not None and unix != state.unix and state.moved:
             self._emit(state, state.unix)
             state.moved = False
-        self._snapshots(state, unix)
+        self._snapshots(state, unix, inclusive=inclusive)
 
-    def _snapshots(self, state: Folding, unix: int) -> None:
+    def _snapshots(self, state: _Folding, unix: int, *, inclusive: bool = False) -> None:
         """One book on every boundary between the last emission and `unix`.
 
         Every boundary, and not just the latest: an hourly table whose rows
@@ -1524,32 +1354,58 @@ class BookIterator:
         if not every or state.previous is None or state.emitted is None:
             return
         boundary = state.emitted - state.emitted % every + every
-        while boundary < unix:
-            taken = state.previous.make_snapshot(boundary)
-            if taken is None:
+        while boundary < unix or (inclusive and boundary == unix):
+            # A deadline is state, not a later event's side effect. Apply it at
+            # the first observable boundary after it was reached, before a
+            # recovery picture can repeat an order that is already dead. The
+            # changed row at that boundary replaces the unchanged snapshot,
+            # just as a venue event exactly on a boundary does, and carries the
+            # synthetic EXPIRED delta once.
+            if self._expire(state, boundary):
+                state.unix = boundary
+                state.moved = True
+                self._emit(state, boundary)
+                state.moved = False
+                boundary += every
+                continue
+            if not self._snapshot_book(state, boundary):
                 break
-            state.previous = taken.with_previous(state.previous)
-            state.emitted = boundary
-            self._books.append(state.previous)
-            # What was known then, beside what stood then: both tables get the
-            # hour, so "at 14:00" is a row in each rather than a replay of one
-            # and a scan backwards through the other.
-            if state.known is not None:
-                pictured = state.known.make_snapshot(boundary)
-                if pictured is not None:
-                    state.known = pictured.with_previous(state.known)
-                    self._instruments.append(state.known)
             boundary += every
 
-    def _emit(self, state: Folding, unix: int) -> None:
-        """The book as it stands, as a new row, and the delta handed over with it."""
-        state.previous = _settled(state, unix)
+    def _snapshot_book(self, state: _Folding, unix: int) -> bool:
+        """Append one full recovery picture at an otherwise quiet instant."""
+        previous = state.previous
+        if previous is None:
+            return False
+        taken = previous.make_snapshot(unix)
+        if taken is None:
+            return False
+        taken.bid_levels = state.bid.into_levels()
+        taken.ask_levels = state.ask.into_levels()
+        taken.order_events = [*state.bid.into_orders(), *state.ask.into_orders()]
+        taken.execution_events = []
+        taken.linked_xhash = [order.xhash for order in taken.order_events if order.xhash] or None
+        taken.parent_hash = [order.hash for order in taken.order_events if order.hash] or None
+        linked = taken.with_previous(previous)
+        if linked is None:
+            return False
+        state.previous = linked
         state.emitted = unix
-        self._books.append(state.previous)
+        self._books.append(linked)
+        return True
+
+    def _emit(self, state: _Folding, unix: int) -> None:
+        """The book as it stands, as a new row, and the delta handed over with it."""
+        settled = _settled(state, unix)
+        if settled is None:
+            return
+        state.previous = settled
+        state.emitted = unix
+        self._books.append(settled)
 
 
-def _folded(bid: Resting, ask: Resting, event: MarketEvent) -> bool:
-    """One event applied to the side it belongs on. True when the book moved.
+def _folded(bid: _Side, ask: _Side, event: MarketEvent) -> tuple[bool, MarketEvent | None]:
+    """Apply one event and return `(moved, settled event)`.
 
     A shape that is itself a book is skipped rather than refused: a stream
     read off a table may carry the book rows this produced beside the
@@ -1558,18 +1414,30 @@ def _folded(bid: Resting, ask: Resting, event: MarketEvent) -> bool:
     """
     if event.is_order():
         side = bid if event.side.sign > 0 else ask if event.side.sign < 0 else None
+        if side is None:
+            side = bid if bid.standing(event) is not None else ask if ask.standing(event) else None
         # The price is *not* checked here: a cancellation carries none, and
-        # gets one from the version it cancels. `Resting.apply` decides,
+        # gets one from the version it cancels. `_Side.apply` decides,
         # after completing.
-        return False if side is None else side.apply(event)
+        if side is None:
+            settled = BookIterator.validate(event)
+            return False, settled
+        moved, settled = side._applied(event)
+        return moved, settled
     if event.is_execution():
-        return _traded(bid, ask, event)
-    return False
+        settled = BookIterator.validate(event)
+        return _traded(bid, ask, settled), settled
+    return False, event
 
 
-def _traded(bid: Resting, ask: Resting, execution: Execution) -> bool:
-    """A fill taken out of the side it hit, if this report moved shares at all."""
-    if not execution.kind.moves_shares or execution.px is None or execution.qty is None:
+def _traded(bid: _Side, ask: _Side, execution: Execution) -> bool:
+    """A new fill taken from its side; amendments need their referenced delta."""
+    if (
+        execution.state is State.INTERNAL_REJECTED
+        or execution.state is not State.FILLED
+        or execution.px is None
+        or execution.qty is None
+    ):
         return False
     side = _hit(bid, ask, execution)
     if side is None:
@@ -1578,34 +1446,16 @@ def _traded(bid: Resting, ask: Resting, execution: Execution) -> bool:
     return True
 
 
-def _hit(bid: Resting, ask: Resting, execution: Execution) -> Resting | None:
-    """Which side a fill took liquidity out of, by what the report actually says.
-
-    Three readings, strongest first, because a feed gives different ones:
-
-    1. **The report's own side.** An execution's `side` is the side of the
-       order it reports, and a filled buy order was resting on the bid --
-       so its liquidity leaves the bid. Exact whenever a venue sends it.
-    2. **The order it names.** A report with no side but an
-       `order_xhash` that is live on one side names that side.
-    3. **Its price against the touch.** A market-data trade print carries
-       neither, which is most prints: a trade at or below the mid took
-       from the bid, above it from the ask. That is the tick rule, and it
-       is the honest answer when the venue has not given a better one.
-
-    None when the book is empty, which is a print against liquidity this
-    fold never saw -- there is nothing to take it out of.
-    """
+def _hit(bid: _Side, ask: _Side, execution: Execution) -> _Side | None:
+    """Which side a fill took liquidity out of, by what the report actually says."""
     if execution.side.sign > 0:
         return bid
     if execution.side.sign < 0:
         return ask
-    named = execution.order_xhash
-    if named:
-        if named in bid.orders:
-            return bid
-        if named in ask.orders:
-            return ask
+    if bid.standing(execution) is not None:
+        return bid
+    if ask.standing(execution) is not None:
+        return ask
     best_bid, best_ask = bid.best, ask.best
     if best_bid is None and best_ask is None:
         return None
@@ -1617,79 +1467,45 @@ def _hit(bid: Resting, ask: Resting, execution: Execution) -> Resting | None:
     return bid if (execution.px or 0.0) <= mid else ask
 
 
-#: The columns one side contributes to a book row, and the order they are set
-#: in. Named once because they are read twice: built from a side that moved,
-#: and carried across from the row before for one that did not.
-SIDE_COLUMNS = ("hash", "px", "qty", "depth", "total_qty", "alive")
-
-#: The three that are a *delta* rather than a state, and so are never carried:
-#: what changed since the last row is empty on a row where nothing did.
-SIDE_DELTAS = ("updates", "executions")
-
-
-def _settled(state: Folding, unix: int) -> Book:
-    """The book as it stands, as a new row -- and the delta handed over with it.
-
-    A **new** `Book` per instant and never the same one mutated: these are
-    versions, and a caller collecting them into a batch would otherwise get one
-    object repeated. `with_previous` does the versioning, so a book folded here
-    carries the same `prev_hash`/`prev_state` chain as one assembled by
-    `append_event`.
-
-    **A side that did not move is not rebuilt.** Its columns are what they were
-    on the row before, including its `hash`: a `BookSide`'s hash identifies a
-    version of that side, and a side that nothing touched is still that version.
-    Rebuilding it produced an equal row at the cost of a walk of its levels and
-    a digest, on every book, for the side the event was not about -- which on a
-    feed that alternates sides is half of every snapshot.
-    """
+def _settled(state: _Folding, unix: int) -> Book | None:
+    """The book as it stands, as a new row -- and the delta handed over with it."""
     about = state.about
     # The instrument the fold has *accumulated*, not whatever the last message
     # happened to spell: a book row says what it is a book of, and the last
     # message may have named the instrument more poorly than an earlier one.
-    # `instrument_hash` is the fold's canonical key for the same reason -- a
+    # `instrument_xhash` is the fold's canonical key for the same reason -- a
     # row whose partition moved when a venue started sending an ISIN would
     # split one instrument's history across two of them.
-    known = state.instrument if state.instrument.xhash else about.instrument
     book = Book(
         unix=unix,
-        instrument=known,
-        instrument_hash=state.instrument_hash,
-        symbol=known.symbol or about.symbol,
+        instrument_xhash=state.instrument_xhash,
+        code=state.instrument.symbol or about.code,
+        xcode=state.xcode,
         px_unit=about.px_unit,
+        ccy=about.ccy,
         qty_unit=about.qty_unit,
-        venue=about.venue,
+        mic=about.mic,
+        seq=about.seq,
         state=State.OPEN if (state.bid.keys or state.ask.keys) else State.CLOSED,
     )
+    book.attach_instrument(state.instrument)
     book.xhash = state.xhash
-    parents = []
-    for name, resting, lifecycle, moved in (
-        ("bid", state.bid, state.sides[0], state.bid.updates or state.bid.executions),
-        ("ask", state.ask, state.sides[1], state.ask.updates or state.ask.executions),
-    ):
-        if not moved and state.previous is not None:
-            for column in SIDE_COLUMNS:
-                setattr(book, f"{name}_{column}", getattr(state.previous, f"{name}_{column}"))
-            for column in SIDE_DELTAS:
-                setattr(book, f"{name}_{column}", [])
-            parents.append(getattr(state.previous, f"{name}_hash"))
-            continue
-        side = resting.into_side(unix, lifecycle).identify()
-        for column in SIDE_COLUMNS:
-            setattr(book, f"{name}_{column}", getattr(side, column))
-        for column in SIDE_DELTAS:
-            setattr(book, f"{name}_{column}", getattr(side, column))
-        parents.append(side.hash)
-        resting.cleared()
-    book.parent_hash = parents
+    book.order_events = list(state.order_events)
+    book.execution_events = list(state.execution_events)
+    events = [*book.order_events, *book.execution_events]
+    book.linked_xhash = list(dict.fromkeys(event.xhash for event in events if event.xhash)) or None
+    book.parent_hash = list(dict.fromkeys(event.hash for event in events if event.hash)) or None
+    previous = state.previous
+    for name, side in (("bid", state.bid), ("ask", state.ask)):
+        if previous is None or side.changed:
+            _summarise_side(book, name, side)
+        else:
+            book._carry_side(previous, name)
+        setattr(book, f"{name}_levels", side.into_changed_levels() if side.changed else None)
+        side.cleared()
+    state.order_events.clear()
+    state.execution_events.clear()
     # The prices across the sides are `Book.derive`'s, which `with_previous`
     # runs once every layer has filled -- so they are not computed here as
     # well, and the content hash it ends with is of a row that already has them.
     return book.with_previous(state.previous)
-
-
-def _action_of(before: float, after: float) -> UpdateAction:
-    """What moving a level from `before` to `after` did to it."""
-    if after <= 0:
-        return UpdateAction.DELETE
-    return UpdateAction.CHANGE if before > 0 else UpdateAction.NEW

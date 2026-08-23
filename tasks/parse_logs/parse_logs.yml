@@ -1,88 +1,30 @@
-# Parse a capture of trading logs into one Iceberg table per kind of event it
-# holds -- in one pass, streamingly. This file *is* the job:
-#
-#     Task.from_yaml("tasks/parse_logs/parse_logs.yml").run()
-#
-# Every key is a field of `rekep.tasks.ParseLogs`, whose docstrings say what
-# each one means; `docs/tasks.md` is the prose.
-
-kind: parse_logs
-name: parse-trading-logs
-
-# -- what to read -------------------------------------------------------------
-
-source: ../data/capture  # a folder or a file; a bare path, `file://` or `s3://`
-pattern: "*.log*"
-recursive: true
-timezone: Europe/Paris  # the zone the header's wall clock is in; UTC when absent
-
-# -- what each line is about ---------------------------------------------------
-
-# Tried in order, first match wins, and a line nothing matches is UNKNOWN --
-# still parsed, still keyed, still landed. Delete the block for these defaults.
-rules:
-  rules:
-    - pattern: '35=8(\D|$)|ExecutionReport'
-      etype: EXECUTION
-      label: a fill, or a report of one
-    - pattern: '35=[DFG](\D|$)|NewOrderSingle|OrderCancel(Request|Replace)'
-      etype: ORDER
-      label: an order, or an amendment to one
-    - pattern: '35=X(\D|$)|MarketDataIncrementalRefresh'
-      etype: BOOK_SIDE
-      label: an incremental book update
-    - pattern: '35=W(\D|$)|MarketDataSnapshot'
-      etype: BOOK
-      label: a full book snapshot
-    - pattern: '35=[SR](\D|$)|Quote(Request)?\b'
-      etype: QUOTE
-      label: a quote, or a request for one
-    - pattern: '35=d(\D|$)|SecurityDefinition'
-      etype: INSTRUMENT
-      label: reference data
-
-# -- what each line carries ----------------------------------------------------
-
-# The other question, and a different one: which protocol the line holds and
-# how to read it. Same shape, and a line nothing matches is OTHER -- with
-# `fix_tags` and `keyval` null rather than empty. Delete the block for these
-# defaults; the wrapped bridge leads because it answers to both tells.
-protocols:
-  rules:
-    - protocol: UL
-      pattern: '(?s)(?:^|[^0-9])8=FIXT?.*[^0-9]35=UL(?:[^A-Za-z0-9]|$)'
-      codec: ul
-    - protocol: FIX
-      pattern: '(?:^|[^0-9])8=FIXT?'
-      codec: fix
-    - protocol: UL
-      pattern: '(?s)#[A-Za-z][A-Za-z0-9_.\-]*(?:\[\d+\])?[ \t\r\n\f\x0b]*=.*#[A-Za-z][A-Za-z0-9_.\-]*(?:\[\d+\])?[ \t\r\n\f\x0b]*='
-      codec: ul
-    - protocol: OTHER
-      codec: none
-
-fix_version: "4.4"  # what a name resolves against absent tag 8; a rule may name its own
-fix_dictionary: ../data/fix.zip  # read and never scraped; absent is `~/.config/fix`
-null_values: ["", "null", "<null>", "n/a"]  # spellings that mean the field is absent
-
-# -- where it lands ------------------------------------------------------------
-
-catalog: rekep
-namespace: logs
-table: "{event_type}_logs"  # `logs.order_logs`, ... `logs.unknown_logs`
-
-properties:  # a local SQLite catalog; REST or Glue is the same keys pointed elsewhere
-  type: sql
-  uri: sqlite:///../data/catalog.db
-  warehouse: file://../data/warehouse
-
-static_values:  # columns every row carries that the file itself never states
-  bridge: bridge-1
-  environment: prod
-
-# -- how it runs ---------------------------------------------------------------
-
-merge_by: true  # skip rows a target already holds, so a replay costs the read alone
-batch_row_size: 65536
-commit_row_size: 250000  # rows buffered per target, and so what bounds the memory
-# limit: 1000  # stop after this many rows; uncomment for a dry run
+name: parse_logs
+notebook: parse_logs.ipynb
+parameters:
+  project_root: .
+  source: data/capture
+  pattern: "*.log*"
+  recursive: true
+  timezone: Europe/Paris
+  start: null
+  end: null
+  fix_version: "4.4"
+  fix_dictionary: data/fix
+  null_values: ["", "null", "<null>", "n/a"]
+  rules: null
+  protocols: null
+  catalog: rekep
+  catalog_properties:
+    type: sql
+    uri: sqlite:///data/catalog.db
+    warehouse: file://data/warehouse
+  target_pattern: "logs.{category}"
+  instrument_source: market.instruments
+  instrument_snapshot_every: 3600000000000
+  static_values:
+    bridge: bridge-1
+    environment: prod
+  merge_by: true
+  batch_row_size: 65536
+  commit_row_size: 250000
+  limit: null

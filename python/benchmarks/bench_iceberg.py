@@ -1,54 +1,4 @@
-"""Benchmark the pipeline that matters: a log parsed and streamed into Iceberg.
-
-Run from `python/`::
-
-    uv run python benchmarks/bench_iceberg.py --quick     # one small sweep
-    uv run python benchmarks/bench_iceberg.py             # the full sweep
-    uv run python benchmarks/bench_iceberg.py --only read
-
-Seven questions, measured rather than assumed:
-
-1. **How fast does a stream land?** Append, upsert, and upsert on a stream that
-   cannot match anything already stored -- at several commit sizes, partitioned
-   and not. Seconds are only half of it: the files and snapshots a
-   configuration leaves behind are what the *next* reader pays for, so both are
-   reported.
-2. **Does a read prune?** A filter on a partition column, on a column that
-   correlates with one, and on one that does not -- with the planned file count
-   beside the wall time, because a fast scan that read every file is a scan that
-   got lucky. Warmed twice before anything is timed, once for the process and
-   once per case: a sweep of single calls in order is a story about warm-up.
-3. **What do the table properties buy?** The same stream written with Iceberg's
-   commit knobs at their defaults and at the ones this package sets.
-4. **How often is the store asked?** (`--only fs`) Every flow again, counted in
-   filesystem calls at the `PyArrowFile` layer -- below the FileIO cache, so a
-   count is a call an object store would actually serve: one `open` is a GET,
-   one `create` a PUT. Once with the immutable-content cache off, once on,
-   because seconds on a local disk cannot show what a scan-per-chunk flow does
-   to S3.
-
-5. **What does the maintenance cost, and does it settle?** (`--only maintain`)
-   How much of a table a *reader* holds before its consumer asks for a second
-   batch, how much metadata `maybe_optimize` walks to decide a quiet table
-   needs nothing, and whether `compact` converges on every partition shape --
-   including the transformed one, where a plan that never settles reads and
-   rewrites the whole table on every run.
-
-6. **What does the *update* half of a merge cost?** (`--only update`) The
-   filter naming the rows a merge deletes is one term per row for a composite
-   key, and pyiceberg binds that tree once per manifest it plans. Swept against
-   a key whose halves repeat, with the term count beside the seconds.
-
-7. **Does a replay reach only the files it lands in?** (`--only backfill`) A
-   chunk of keys clustered in a few bands of a wide table, planned rather than
-   read: the number that matters is files, never rows.
-
-Everything runs against a local SQLite catalog and a file warehouse, so the
-numbers are storage-latency-free: they measure planning, commit and Arrow work,
-which is what this package is responsible for. On an object store every commit
-also pays a round trip, which makes the *number* of commits matter more, not
-less.
-"""
+"""Benchmark the pipeline that matters: a log parsed and streamed into Iceberg."""
 
 from __future__ import annotations
 
@@ -68,12 +18,12 @@ import pyarrow
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep import Convertible, Field, Log, TextFile, field  # noqa: E402
+from rekep import Convertible, Field, Log, TextFile, scalar  # noqa: E402
 from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
 from rekep.iceberg.dataset import _key_ranges, _match_filter  # noqa: E402
 
 
-@field
+@scalar
 class Quote(Convertible):
     """One quote, under a composite key whose halves both repeat."""
 
@@ -90,11 +40,11 @@ class Quote(Convertible):
     """Where it traded."""
 
 
-@field
+@scalar
 class Tick(Convertible):
     """A row under a wide composite key, clustered per commit."""
 
-    at: Annotated[int, Field.primary_key()]
+    at: Annotated[int, Field.primary_key(), Field.sort_key()]
     """A timestamp that advances with the commits."""
 
     h64: Annotated[int, Field.primary_key()]
@@ -181,9 +131,9 @@ def catalog(root: pathlib.Path) -> IcebergCatalog:
 
 def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]) -> IcebergDataset:
     """A fresh table, partitioned by day or not at all."""
-    field = Log.FIELD
+    field = Log.into_field()
     if not partitioned:
-        field = field.into_dataclass("Flat").FIELD
+        field = field.into_dataclass("Flat").into_field()
         field.field("unix_hour").is_partition_key = False
     built = catalog(root).dataset("bench.logs", struct=field, table_properties=properties)
     return built.create_with()
@@ -241,6 +191,26 @@ def write_case(
         shutil.rmtree(root, ignore_errors=True)
 
 
+def monotonic_insert_case(table: pyarrow.Table, commit_rows: int, *, shortcut: bool) -> dict:
+    """Insert increasing chunks with or without the exact-upper-bound shortcut."""
+    root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-insert-"))
+    try:
+        target = catalog(root).dataset("bench.ticks", struct=Tick.into_field()).create_with()
+        if not shortcut:
+            target.__dict__["_insert_span"] = lambda chunk, join, reference: None
+
+        def write() -> None:
+            for start in range(0, table.num_rows, commit_rows):
+                target.append_arrow_table(
+                    table.slice(start, commit_rows), merge_by=True, commit_row_size=0
+                )
+
+        seconds, _ = timed(write)
+        return {"seconds": seconds, "rows": target.records, **stats(target)}
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 # -- reading ----------------------------------------------------------------
 
 
@@ -282,9 +252,7 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
     # A commit closes at the first batch boundary at or beyond its size, so a
     # commit smaller than the reader's batch is one batch: the sweep uses a
     # realistic parser batch (16k rows) and commit sizes around it.
-    commits: list[int | None] = (
-        [50_000, None] if quick else [16_384, 65_536, 262_144, 1_000_000, None]
-    )
+    commits: list[int | None] = [50_000, None] if quick else [16_384, 65_536, 262_144, None]
     half = table.slice(0, table.num_rows // 2)
     # (label, mode, commit, partitioned, properties, preload, plan_merges)
     configurations: list[tuple] = []
@@ -330,6 +298,112 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
             f"{report['stored']:>9,}"
         )
     return tmp
+
+
+def sweep_insert(rows: int, repeat: int) -> None:
+    """Chronological insert commits, with the previous planned path beside them."""
+    rows = min(rows, 100_000)
+    commit_rows = max(rows // 6, 1)
+    table = tick_rows(rows)
+    monotonic_insert_case(table.slice(0, min(rows, 1_000)), commit_rows, shortcut=False)
+    results: dict[str, list[dict[str, Any]]] = {"planned": [], "bounded": []}
+    for trial in range(repeat):
+        order = (False, True) if trial % 2 == 0 else (True, False)
+        for shortcut in order:
+            results["bounded" if shortcut else "planned"].append(
+                monotonic_insert_case(table, commit_rows, shortcut=shortcut)
+            )
+    expected = None
+    print(f"\n== monotonic insert: {rows:,} rows, {commit_rows:,} per commit ==")
+    header(("case", "best sec", "rows/s", "files", "manif", "snaps"), (12, 10, 11, 7, 6, 6))
+    for name, runs in results.items():
+        best = min(runs, key=lambda run: run["seconds"])
+        cost = tuple(best[key] for key in ("rows", "files", "manifests", "snapshots"))
+        expected = cost if expected is None else expected
+        assert cost == expected, (name, cost, expected)
+        print(
+            f"{name:>12} {best['seconds']:>10.3f} {rows / best['seconds']:>11,.0f} "
+            f"{best['files']:>7} {best['manifests']:>6} {best['snapshots']:>6}"
+        )
+
+
+def _store_quotes(table: pyarrow.Table) -> tuple[dict[str, int], pyarrow.Table]:
+    """Write one converted result and report the storage a reader inherits."""
+    root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-polars-"))
+    try:
+        target = catalog(root).dataset("bench.quotes", struct=Quote.into_field()).create_with()
+        target.write_arrow_table(table, commit_row_size=0)
+        plan = target.scan_plan("day = '2026-08-14'")
+        report = {
+            "rows": target.records or 0,
+            **stats(target),
+            "planned": plan["files"],
+            "skipped": plan["skipped"],
+        }
+        return report, target.read_arrow_table(Quote.into_field()).sort_by("symbol")
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def sweep_polars(rows: int, repeat: int) -> None:
+    """Polars export selected for the declared Arrow layout versus forced newest."""
+    import polars
+
+    from rekep.dataset import _polars_table
+
+    rows = min(rows, 100_000)
+    day = datetime.date(2026, 8, 14)
+    source = polars.DataFrame(
+        {
+            "symbol": [f"S{i}" for i in range(rows)],
+            "day": [day + datetime.timedelta(days=i % 4) for i in range(rows)],
+            "size": list(range(rows)),
+            "venue": ["XPAR"] * rows,
+        }
+    )
+    target = Quote.into_field()
+
+    def compatible() -> pyarrow.Table:
+        return _polars_table(source, target, polars)
+
+    def newest() -> pyarrow.Table:
+        return target.cast_arrow_table(source.to_arrow(compat_level=polars.CompatLevel.newest()))
+
+    compatible()
+    newest()
+    runs: dict[str, list[tuple[float, pyarrow.Table]]] = {
+        "compatible": [],
+        "forced newest": [],
+    }
+    calls = {"compatible": compatible, "forced newest": newest}
+    for trial in range(max(repeat, 2)):
+        order = ("compatible", "forced newest")
+        if trial % 2:
+            order = tuple(reversed(order))
+        for name in order:
+            runs[name].append(timed(calls[name]))
+
+    best = {name: min(values, key=lambda value: value[0]) for name, values in runs.items()}
+    assert best["compatible"][1].equals(best["forced newest"][1])
+    assert best["compatible"][1].schema.equals(target.into_arrow_schema())
+    stored = {name: _store_quotes(result) for name, (_, result) in best.items()}
+    baseline = stored["forced newest"]
+    assert stored["compatible"][0] == baseline[0]
+    assert stored["compatible"][1].equals(baseline[1])
+
+    print(f"\n== Polars -> declared Arrow: {rows:,} rows ==")
+    header(
+        ("case", "best sec", "rows/s", "files", "manif", "snaps", "planned", "skipped"),
+        (14, 10, 12, 7, 6, 6, 8, 8),
+    )
+    for name in ("forced newest", "compatible"):
+        seconds, _ = best[name]
+        report = stored[name][0]
+        print(
+            f"{name:>14} {seconds:>10.4f} {rows / seconds:>12,.0f} "
+            f"{report['files']:>7} {report['manifests']:>6} {report['snapshots']:>6} "
+            f"{report['planned']:>8} {report['skipped']:>8}"
+        )
 
 
 def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
@@ -462,7 +536,7 @@ def sweep_fs(rows: int, days: int) -> None:
         }
         catalog = IcebergCatalog(name=f"fs{name}", properties=properties)
         return catalog.dataset(
-            "bench.logs", struct=Log.FIELD, table_properties=OPTIMISED
+            "bench.logs", struct=Log.into_field(), table_properties=OPTIMISED
         ).create_with()
 
     def report(label: str, seconds: float) -> None:
@@ -699,14 +773,14 @@ def sweep_update(rows: int, days: int) -> None:
         cases = (
             (
                 "(symbol, day) — day repeats",
-                Quote.FIELD,
+                Quote.into_field(),
                 quote_rows(wide, days),
                 ["symbol", "day"],
                 "venue",
             ),
             (
                 "(at, h64) — nothing repeats",
-                Tick.FIELD,
+                Tick.into_field(),
                 tick_rows(wide * days),
                 ["at", "h64"],
                 "payload",
@@ -749,7 +823,7 @@ def tick_rows(count: int) -> pyarrow.Table:
             "h64": [source.getrandbits(62) for _ in range(count)],
             "payload": ["XPAR"] * count,
         },
-        schema=Tick.FIELD.into_arrow_schema(),
+        schema=Tick.into_field().into_arrow_schema(),
     )
 
 
@@ -763,7 +837,7 @@ def sweep_backfill(rows: int, days: int) -> None:
     """
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-backfill-"))
     try:
-        target = catalog(root).dataset("bench.ticks", struct=Tick.FIELD).create_with()
+        target = catalog(root).dataset("bench.ticks", struct=Tick.into_field()).create_with()
         per = max(rows // 20, 1_000)
         # The hash is drawn per *row*, not derived from the band: a real line
         # hash spreads over the whole range, so every file's bounds on it span
@@ -778,7 +852,7 @@ def sweep_backfill(rows: int, days: int) -> None:
                     "h64": [source.getrandbits(62) for _ in range(per)],
                     "payload": ["x" * 40] * per,
                 },
-                schema=Tick.FIELD.into_arrow_schema(),
+                schema=Tick.into_field().into_arrow_schema(),
             )
             for band in range(20)
         ]
@@ -816,7 +890,7 @@ def quote_rows(symbols: int, days: int) -> pyarrow.Table:
             "size": list(range(len(pairs))),
             "venue": ["XPAR"] * len(pairs),
         },
-        schema=Quote.FIELD.into_arrow_schema(),
+        schema=Quote.into_field().into_arrow_schema(),
     )
 
 
@@ -836,7 +910,7 @@ def daily(root: pathlib.Path) -> IcebergDataset:
     cannot address parts of it has to settle as a whole too. When it did not,
     every run read the table back and wrote it out again, forever.
     """
-    field = Log.FIELD.into_dataclass("Daily").FIELD
+    field = Log.into_field().into_dataclass("Daily").into_field()
     # `bucket[8]`, because `unix_hour` is an int64 and Iceberg's `day` transform is
     # for dates. The point is unchanged: a transform, not the value itself.
     field.field("unix_hour").is_partition_key = "bucket[8]"
@@ -864,7 +938,7 @@ def narrow_field() -> Any:
     """Three of the eight columns, as a declared shape rather than a column list."""
     from rekep.fields import Field
 
-    schema = Log.FIELD.into_arrow_schema()
+    schema = Log.into_field().into_arrow_schema()
     return Field.from_arrow_schema(
         pyarrow.schema([schema.field(name) for name in ("unix", "driver_name", "message")]),
         "Narrow",
@@ -873,21 +947,25 @@ def narrow_field() -> Any:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--rows", type=int, default=500_000)
+    parser.add_argument("--rows", type=int, default=100_000)
     parser.add_argument("--days", type=int, default=8)
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument(
         "--only",
-        choices=["write", "read", "fs", "maintain", "update", "backfill"],
+        choices=["write", "insert", "polars", "read", "fs", "maintain", "update", "backfill"],
         default=None,
     )
     arguments = parser.parse_args()
-    rows = 100_000 if arguments.quick else arguments.rows
+    rows = 5_000 if arguments.quick else arguments.rows
     days = 4 if arguments.quick else arguments.days
 
     if arguments.only in (None, "write"):
         shutil.rmtree(sweep_write(rows, days, arguments.quick), ignore_errors=True)
+    if arguments.only in (None, "insert"):
+        sweep_insert(rows, 2 if arguments.quick else arguments.repeat)
+    if arguments.only in (None, "polars"):
+        sweep_polars(rows, 2 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "read"):
         sweep_read(rows, days, 2 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "fs"):

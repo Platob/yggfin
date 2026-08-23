@@ -10,17 +10,20 @@ would have caught the two of them spelling a float differently.
 
 from __future__ import annotations
 
-import datetime
+import json
+import pathlib
 import struct
 import uuid
 
 import pyarrow
 import pytest
 
+import rekep.market.identity as identity
 from rekep.market.identity import (
     ABSENT_FRAME,
     ABSENT_LENGTH,
     HASH,
+    IDENTITY_PROTOCOL,
     NIL,
     arrow_of,
     frame,
@@ -32,10 +35,40 @@ from rekep.market.identity import (
 
 SYMBOLS = ["AAPL", "MSFT", "AAPL", None, ""]
 IDS = ["cl-1", "cl-2", "cl-1", "cl-3", "cl-4"]
+VECTORS = pathlib.Path(__file__).parents[3] / "docs" / "assets" / "identity-v1.json"
 
 
 def built(*columns: object) -> list[int]:
     return hash_arrow(*columns).to_pylist()
+
+
+def vector_part(declared: dict[str, object]) -> object:
+    """Materialize one language-neutral golden-vector part."""
+    kind = declared["type"]
+    if kind == "null":
+        return None
+    if kind == "utf8":
+        return declared["value"]
+    if kind == "bytes":
+        return bytes.fromhex(str(declared["hex"]))
+    if kind == "bool":
+        return declared["value"]
+    if kind == "i64":
+        return int(str(declared["value"]))
+    if kind == "f64":
+        return struct.unpack(">d", bytes.fromhex(str(declared["bits"])))[0]
+    if kind == "uuid":
+        return uuid.UUID(str(declared["value"]))
+    raise AssertionError(f"unknown vector part {kind!r}")
+
+
+def vector_column(part: object) -> pyarrow.Array:
+    """Represent a golden-vector part through the Arrow implementation."""
+    if part is None:
+        return pyarrow.array([None], type=pyarrow.string())
+    if isinstance(part, uuid.UUID):
+        return pyarrow.array([part.bytes], type=pyarrow.binary(16))
+    return pyarrow.array([part])
 
 
 # -- what an identifier is ---------------------------------------------------
@@ -59,6 +92,34 @@ def test_the_same_parts_give_the_same_number_in_any_process() -> None:
     assert hash_of("Order", "AAPL", 1) != hash_of("Order", "AAPL", 2)
 
 
+def test_the_wire_protocol_has_an_explicit_version() -> None:
+    assert IDENTITY_PROTOCOL == "rekep-identity-v1"
+
+
+def test_the_published_cross_language_vectors_pin_frame_and_digest() -> None:
+    corpus = json.loads(VECTORS.read_text(encoding="utf-8"))
+    assert (corpus["protocol"], corpus["algorithm"], corpus["seed"]) == (
+        IDENTITY_PROTOCOL,
+        "XXH3-64",
+        0,
+    )
+    assert len(corpus["raw_vectors"]) == 3
+    for vector in corpus["raw_vectors"]:
+        raw = bytes.fromhex(vector["raw_hex"])
+        digest = hash_bytes(raw)
+        assert f"{digest & ((1 << 64) - 1):016x}" == vector["digest_hex"], vector["name"]
+        assert digest == vector["signed_i64"], vector["name"]
+    assert len(corpus["vectors"]) == 16
+    for vector in corpus["vectors"]:
+        parts = tuple(vector_part(part) for part in vector["parts"])
+        raw = frame(parts)
+        digest = hash_of(*parts)
+        assert raw.hex() == vector["frame_hex"], vector["name"]
+        assert f"{digest & ((1 << 64) - 1):016x}" == vector["digest_hex"], vector["name"]
+        assert digest == vector["signed_i64"], vector["name"]
+        assert built(*(vector_column(part) for part in parts)) == [digest], vector["name"]
+
+
 # -- the frame, byte for byte ------------------------------------------------
 
 
@@ -67,6 +128,11 @@ def test_a_part_is_framed_behind_its_length_as_eight_little_endian_bytes() -> No
     assert frame(("AB",)) == struct.pack("<q", 2) + b"AB"
     assert frame(("",)) == struct.pack("<q", 0)
     assert frame(("A", "B")) == struct.pack("<q", 1) + b"A" + struct.pack("<q", 1) + b"B"
+
+
+def test_length_prefixes_are_int64_at_the_cached_boundary() -> None:
+    for size in (0, 1, 255, 256):
+        assert frame((b"x" * size,))[:8] == struct.pack("<q", size)
 
 
 def test_an_absent_part_is_framed_as_a_length_of_minus_one() -> None:
@@ -102,6 +168,15 @@ def test_a_blob_is_hashed_as_it_stands_and_not_framed() -> None:
     """A whole line has no split to forge, so there is nothing to frame."""
     assert hash_bytes(b"a line") != hash_of("a line")
     assert hash_bytes(b"a line") == hash_bytes(b"a line")
+
+
+def test_an_empty_composite_is_refused_in_both_builders() -> None:
+    with pytest.raises(TypeError, match="at least one part"):
+        hash_of()
+    with pytest.raises(TypeError, match="at least one part"):
+        frame(())
+    with pytest.raises(TypeError, match="at least one part"):
+        hash_arrow()
 
 
 # -- injectivity -------------------------------------------------------------
@@ -214,6 +289,22 @@ def test_a_chunked_column_hashes_as_one_column() -> None:
     )
 
 
+def test_a_dictionary_column_hashes_its_values_not_its_indices() -> None:
+    encoded = pyarrow.array(["MSFT", "AAPL", "MSFT"]).dictionary_encode()
+    assert built("Order", encoded) == [
+        hash_of("Order", "MSFT"),
+        hash_of("Order", "AAPL"),
+        hash_of("Order", "MSFT"),
+    ]
+
+
+@pytest.mark.parametrize("arrow_type", [pyarrow.null(), pyarrow.int64(), pyarrow.float64()])
+def test_null_is_absent_whatever_supported_arrow_column_carries_it(
+    arrow_type: pyarrow.DataType,
+) -> None:
+    assert built(pyarrow.array([None], type=arrow_type)) == [hash_of(None)]
+
+
 def test_an_identifier_column_can_itself_be_a_part() -> None:
     """A child event hashes its parents, and a parent is an int64 now."""
     parents = pyarrow.array([hash_of("a"), hash_of("b")], type=HASH)
@@ -265,15 +356,46 @@ def test_zero_and_negative_zero_are_different_parts() -> None:
     assert hash_of(0.0) != hash_of(-0.0)
 
 
-def test_an_integer_too_wide_for_an_int64_still_hashes() -> None:
-    """Nothing may take the digest down; a part that does not fit is text."""
-    assert part_bytes(2**70) == str(2**70).encode()
-    assert hash_of("X", 2**70) == hash_of("X", str(2**70))
+def test_every_nan_payload_is_canonical_in_scalar_and_arrow_paths() -> None:
+    values = [
+        struct.unpack(">d", bytes.fromhex(bits))[0]
+        for bits in ("7ff8000000000000", "7ff0000000000001", "fff8000000000042")
+    ]
+    expected = hash_of(values[0])
+    assert [hash_of(value) for value in values] == [expected] * 3
+    assert built(pyarrow.array(values, type=pyarrow.float64())) == [expected] * 3
 
 
-def test_a_date_is_still_spelled_by_arrow() -> None:
-    """The one renderer the vectorised path can use, for what has no width here."""
-    assert part_bytes(datetime.date(2024, 3, 14)) == b"2024-03-14"
+def test_vector_hashing_refuses_an_ambiguous_big_endian_arrow_host(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(identity.sys, "byteorder", "big")
+    with pytest.raises(RuntimeError, match="little-endian"):
+        hash_arrow(pyarrow.array([1], type=pyarrow.int64()))
+    assert hash_of(1), "the scalar implementation writes little-endian explicitly"
+
+
+@pytest.mark.parametrize("value", [-(2**63) - 1, 2**63])
+def test_an_integer_outside_the_portable_width_is_refused(value: int) -> None:
+    with pytest.raises(OverflowError, match="signed int64"):
+        hash_of("X", value)
+
+
+@pytest.mark.parametrize("value", [[1, 2], {"a": 1}, object()])
+def test_an_unsupported_part_is_refused_instead_of_stringified(value: object) -> None:
+    with pytest.raises(TypeError, match="identity parts must be"):
+        hash_of("X", value)
+
+
+def test_an_unsupported_arrow_type_is_refused_instead_of_stringified() -> None:
+    values = pyarrow.array([pyarrow.scalar("2024-03-14").cast(pyarrow.date32()).as_py()])
+    with pytest.raises(TypeError, match="date32"):
+        hash_arrow("X", values)
+
+
+def test_an_unsigned_arrow_integer_outside_int64_is_refused() -> None:
+    with pytest.raises(OverflowError, match="signed int64"):
+        hash_arrow("X", pyarrow.array([2**63], type=pyarrow.uint64()))
 
 
 def test_an_identifier_from_elsewhere_is_hashed_as_its_bytes() -> None:
@@ -281,13 +403,10 @@ def test_an_identifier_from_elsewhere_is_hashed_as_its_bytes() -> None:
     assert part_bytes(uuid.UUID(int=7)) == uuid.UUID(int=7).bytes
 
 
-def test_something_arrow_has_no_scalar_for_still_hashes() -> None:
-    class Odd:
-        def __str__(self) -> str:
-            return "odd"
-
-    assert part_bytes(Odd()) == b"odd"
-    assert hash_of("X", Odd()) == hash_of("X", "odd")
+def test_bytes_like_values_share_their_declared_raw_payload() -> None:
+    raw = b"\x00\x01\xff"
+    assert part_bytes(raw) == part_bytes(bytearray(raw)) == part_bytes(memoryview(raw))
+    assert hash_of(raw) == hash_of(bytearray(raw)) == hash_of(memoryview(raw))
 
 
 # -- a column of identifiers -------------------------------------------------
@@ -310,20 +429,19 @@ def test_a_chunked_column_converts_chunk_by_chunk() -> None:
     assert arrow_of(chunked).type == HASH
 
 
-def test_a_lifecycle_part_no_cache_can_key_on_is_still_hashed() -> None:
-    """The cache is a cache: a subclass whose lifecycle names a list gets the
-    identifier it would have got without one."""
+def test_a_supported_unhashable_lifecycle_part_bypasses_the_cache() -> None:
+    """A mutable bytes view is portable even though the lifecycle cache cannot key it."""
     import dataclasses
 
     from rekep.market import Order
     from rekep.market.identity import hash_of
 
     @dataclasses.dataclass
-    class Listed(Order):
-        """An order whose lifecycle is spelled as a list."""
+    class Binary(Order):
+        """An order whose lifecycle is raw protocol bytes."""
 
         def life_parts(self) -> tuple[object, ...]:
-            return ([1, 2, 3],)
+            return (bytearray(b"order-1"),)
 
-    one = Listed(unix=1, symbol="BTC-USD")
-    assert one.life_hash() == hash_of("Listed", [1, 2, 3])
+    one = Binary(unix=1, code="BTC-USD")
+    assert one.life_hash() == hash_of("Binary", bytearray(b"order-1"))

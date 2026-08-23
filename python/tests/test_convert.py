@@ -174,6 +174,20 @@ def test_none_inside_a_container_is_kept(tmp_path: pathlib.Path) -> None:
         book.into_toml()
 
 
+def test_arrow_struct_spellings_decode_to_declared_tuples() -> None:
+    @dataclasses.dataclass
+    class Pairs(Convertible):
+        position: tuple[int, str]
+        entries: list[tuple[int, str]]
+
+    assert Pairs.from_dict(
+        {
+            "position": {"f0": 7, "f1": "seven"},
+            "entries": [{"key": 1, "value": "one"}, {"key": 2, "value": "two"}],
+        }
+    ) == Pairs(position=(7, "seven"), entries=[(1, "one"), (2, "two")])
+
+
 def test_scalars_precede_tables_in_toml() -> None:
     """A bare key after a table header would silently land inside that table."""
 

@@ -3,6 +3,7 @@
 import datetime
 import decimal
 import enum
+import functools
 import pathlib
 import textwrap
 import uuid
@@ -11,7 +12,7 @@ from typing import Annotated
 import pyarrow
 import pytest
 
-from rekep import Convertible, Field, FieldBuilder, field
+from rekep import Convertible, Field, FieldBuilder, scalar
 
 
 class Side(enum.StrEnum):
@@ -24,7 +25,7 @@ class Tier(enum.IntEnum):
     INSTITUTIONAL = 2
 
 
-@field
+@scalar
 class Venue(Convertible):
     """A trading venue.
 
@@ -38,7 +39,7 @@ class Venue(Convertible):
     timeout: float | None = None
 
 
-@field
+@scalar
 class Book(Convertible):
     """A book of orders.
 
@@ -57,7 +58,7 @@ class Book(Convertible):
     root: pathlib.Path | None = None
 
 
-@field
+@scalar
 class Instrument(Convertible):
     """A tradable instrument."""
 
@@ -76,7 +77,7 @@ class Instrument(Convertible):
     """Smallest price increment."""
 
 
-@field
+@scalar
 class Node(Convertible):
     """A class that refers to itself."""
 
@@ -86,7 +87,7 @@ class Node(Convertible):
 
 @pytest.fixture
 def schema() -> pyarrow.Schema:
-    return Book.FIELD.into_arrow_schema()
+    return Book.into_field().into_arrow_schema()
 
 
 def members(cls: type) -> dict[str, Field]:
@@ -108,7 +109,7 @@ def test_optional_annotations_are_nullable(schema: pyarrow.Schema) -> None:
 
 
 def test_nullability_can_be_declared() -> None:
-    @field
+    @scalar
     class Forced(Convertible):
         loose: Annotated[str, Field(nullable=True)]
         tight: Annotated[str | None, Field(nullable=False)]
@@ -119,7 +120,7 @@ def test_nullability_can_be_declared() -> None:
 
 
 def test_item_nullability_survives_into_the_list() -> None:
-    @field
+    @scalar
     class Holder(Convertible):
         loose: list[str | None]
         tight: list[str]
@@ -185,16 +186,16 @@ def test_a_nested_class_becomes_a_struct(schema: pyarrow.Schema) -> None:
 
 
 def test_the_class_field_is_a_struct_named_after_the_class() -> None:
-    assert Venue.FIELD.name == "Venue"
-    assert pyarrow.types.is_struct(Venue.FIELD.arrow_type)
-    assert not Venue.FIELD.nullable
-    assert [member.name for member in Venue.FIELD.fields] == ["mic", "timeout"]
+    assert Venue.into_field().name == "Venue"
+    assert pyarrow.types.is_struct(Venue.into_field().arrow_type)
+    assert not Venue.into_field().nullable
+    assert [member.name for member in Venue.into_field().fields] == ["mic", "timeout"]
 
 
 def test_a_member_is_reachable_by_name() -> None:
-    assert Venue.FIELD.field("mic").arrow_type == pyarrow.string()
+    assert Venue.into_field().field("mic").arrow_type == pyarrow.string()
     with pytest.raises(KeyError, match="no member"):
-        Venue.FIELD.field("absent")
+        Venue.into_field().field("absent")
 
 
 # -- what an annotation declares --------------------------------------------
@@ -217,7 +218,7 @@ def test_declared_metadata_is_attached(schema: pyarrow.Schema) -> None:
     ],
 )
 def test_annotated_shorthands(extra: object, check) -> None:
-    @field
+    @scalar
     class Short(Convertible):
         value: Annotated[int, extra]
 
@@ -225,7 +226,7 @@ def test_annotated_shorthands(extra: object, check) -> None:
 
 
 def test_declarations_merge_left_to_right() -> None:
-    @field
+    @scalar
     class Mixed(Convertible):
         day: Annotated[str, {"unit": "day"}, "The day.", pyarrow.large_string()]
 
@@ -262,7 +263,7 @@ def test_an_undescribed_field_carries_no_metadata(schema: pyarrow.Schema) -> Non
 
 
 def test_an_explicit_description_beats_the_docstring() -> None:
-    @field
+    @scalar
     class Described(Convertible):
         """One field.
 
@@ -276,7 +277,7 @@ def test_an_explicit_description_beats_the_docstring() -> None:
 
 
 def test_descriptions_are_inherited_from_a_base_docstring() -> None:
-    @field
+    @scalar
     class Extended(Venue):
         """A venue with a desk.
 
@@ -308,7 +309,7 @@ def test_a_comment_is_not_a_description() -> None:
 
 
 def test_an_attribute_docstring_beats_the_class_docstring() -> None:
-    @field
+    @scalar
     class Both(Convertible):
         """Two sources.
 
@@ -323,7 +324,7 @@ def test_an_attribute_docstring_beats_the_class_docstring() -> None:
 
 
 def test_an_annotation_still_beats_an_attribute_docstring() -> None:
-    @field
+    @scalar
     class Both(Convertible):
         value: Annotated[int, "From the annotation."]
         """From under the field."""
@@ -332,7 +333,7 @@ def test_an_annotation_still_beats_an_attribute_docstring() -> None:
 
 
 def test_attribute_docstrings_are_inherited() -> None:
-    @field
+    @scalar
     class Listed(Instrument):
         """An instrument with a venue."""
 
@@ -348,15 +349,15 @@ def test_a_class_without_readable_source_still_projects() -> None:
     """`exec` leaves nothing for `inspect.getsource` to find; that is not fatal."""
     source = textwrap.dedent(
         """
-        @field
+        @scalar
         class Generated(Convertible):
             value: int
         """
     )
-    namespace: dict[str, object] = {"Convertible": Convertible, "field": field}
+    namespace: dict[str, object] = {"Convertible": Convertible, "scalar": scalar}
     exec(source, namespace)  # noqa: S102
 
-    schema = namespace["Generated"].FIELD.into_arrow_schema()
+    schema = namespace["Generated"].into_field().into_arrow_schema()
     assert schema.names == ["value"]
     assert schema.field("value").metadata is None
 
@@ -366,28 +367,28 @@ def test_a_class_without_readable_source_still_projects() -> None:
 
 def test_a_self_referential_class_is_refused_not_chased() -> None:
     with pytest.raises(TypeError, match="no recursive types"):
-        Node.FIELD.into_arrow_schema()
+        Node.into_field().into_arrow_schema()
 
 
 def test_a_non_optional_union_is_refused() -> None:
-    @field
+    @scalar
     class Ambiguous(Convertible):
         value: int | str
 
     with pytest.raises(TypeError, match="union"):
-        Ambiguous.FIELD.into_arrow_schema()
+        Ambiguous.into_field().into_arrow_schema()
 
 
 def test_an_unknown_leaf_is_refused_with_a_way_out() -> None:
     class Opaque:
         pass
 
-    @field
+    @scalar
     class Holder(Convertible):
         value: Opaque
 
     with pytest.raises(TypeError, match=r"Field\(arrow_type="):
-        Holder.FIELD.into_arrow_schema()
+        Holder.into_field().into_arrow_schema()
 
 
 def test_a_non_dataclass_is_refused() -> None:
@@ -406,11 +407,18 @@ def test_a_builder_can_be_taught_a_new_leaf() -> None:
         pass
 
     class WiderBuilder(FieldBuilder):
-        SCALARS = {**FieldBuilder.SCALARS, Opaque: pyarrow.binary()}
+        @classmethod
+        @functools.cache
+        def into_scalars(cls):
+            return {**super().into_scalars(), Opaque: pyarrow.binary()}
 
-    @field
+    @scalar
     class Holder(Convertible):
-        FIELD_BUILDER = WiderBuilder
+        @classmethod
+        @functools.cache
+        def into_field_builder(cls):
+            return WiderBuilder
+
         value: Opaque
 
-    assert Holder.FIELD.into_arrow_schema().field("value").type == pyarrow.binary()
+    assert Holder.into_field().into_arrow_schema().field("value").type == pyarrow.binary()

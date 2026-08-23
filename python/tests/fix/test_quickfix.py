@@ -1,4 +1,4 @@
-"""The QuickFIX spec read as a source: the file name, the fields, the session layer.
+"""The QuickFIX spec read as fields, components, and the session layer.
 
 The spec is the same standard the dictionary describes, written for programs
 instead of people. What it has and the dictionary does not is the *symbol* of
@@ -13,19 +13,31 @@ from pathlib import Path
 
 import pytest
 
-from rekep.fix.quickfix import SPEC_VERSIONS, parse_session, parse_spec, spec_name
+from rekep.fix.quickfix import (
+    SPEC_VERSIONS,
+    SpecComponent,
+    SpecComponentRef,
+    SpecFieldRef,
+    SpecGroup,
+    parse_components,
+    parse_session,
+    parse_spec,
+    spec_name,
+)
 
 SPEC = (Path(__file__).parent / "fixtures" / "FIX44.xml").read_text()
 
-#: Derived from the fixture, then pinned: four fields, three of them enumerated.
-EXPECTED_FIELDS = 4
+#: Derived from the fixture, then pinned: its fields, values, and components.
+EXPECTED_FIELDS = 11
 EXPECTED_VALUES = 6
+EXPECTED_COMPONENTS = 2
 
 
 def test_the_fixture_is_the_shape_the_tests_assume() -> None:
     parsed = parse_spec(SPEC)
     assert len(parsed) == EXPECTED_FIELDS
     assert sum(len(field.values) for field in parsed.values()) == EXPECTED_VALUES
+    assert len(parse_components(SPEC)) == EXPECTED_COMPONENTS
 
 
 # -- which file is which version ----------------------------------------------
@@ -83,6 +95,7 @@ def test_a_document_that_is_not_a_spec_reads_as_nothing() -> None:
     assert parse_spec("") == {}
     assert parse_spec("<fix><fields>") == {}
     assert parse_spec("not xml at all") == {}
+    assert parse_components("<broken") == {}
     assert parse_session("<broken") == ()
 
 
@@ -96,6 +109,86 @@ def test_a_field_missing_its_number_or_name_is_skipped_rather_than_guessed() -> 
         "</fields></fix>"
     )
     assert set(parse_spec(document)) == {1}
+
+
+# -- reusable components -----------------------------------------------------
+
+
+def test_a_component_preserves_its_group_tree_and_wire_order() -> None:
+    parties = parse_components(SPEC)["Parties"]
+    assert isinstance(parties, SpecComponent)
+    assert [member.name for member in parties.members] == ["NoPartyIDs"]
+    group = parties.members[0]
+    assert isinstance(group, SpecGroup)
+    assert group.tag == 453
+    assert [member.name for member in group.members] == [
+        "PartyID",
+        "PartyIDSource",
+        "PartyRole",
+        "PtysSubGrp",
+    ]
+    assert [member.tag for member in group.members[:3] if isinstance(member, SpecFieldRef)] == [
+        448,
+        447,
+        452,
+    ]
+    assert isinstance(group.members[-1], SpecComponentRef)
+
+
+def test_a_nested_group_is_its_own_component_declaration() -> None:
+    subgroup = parse_components(SPEC)["PtysSubGrp"]
+    group = subgroup.members[0]
+    assert isinstance(group, SpecGroup)
+    assert (group.name, group.tag) == ("NoPartySubIDs", 802)
+    assert [(member.name, member.tag) for member in group.members] == [
+        ("PartySubID", 523),
+        ("PartySubIDType", 803),
+    ]
+
+
+def test_a_component_declaration_round_trips_as_a_typed_document() -> None:
+    parties = parse_components(SPEC)["Parties"]
+    rebuilt = SpecComponent.from_dict(parties.into_dict())
+    assert rebuilt == parties
+    assert isinstance(rebuilt.members[0], SpecGroup)
+    assert isinstance(rebuilt.members[0].members[-1], SpecComponentRef)
+
+
+def test_each_member_class_owns_its_stored_kind() -> None:
+    assert SpecFieldRef.into_kind() == "field"
+    assert SpecComponentRef.into_kind() == "component"
+    assert SpecGroup.into_kind() == "group"
+
+
+def test_a_component_refusing_an_unknown_field_names_the_path() -> None:
+    document = """
+    <fix><components><component name='Parties'>
+      <field name='Missing' required='N'/>
+    </component></components><fields/></fix>
+    """
+    with pytest.raises(ValueError, match="Parties.*Missing"):
+        parse_components(document)
+
+
+def test_recursive_components_are_refused_by_their_chain() -> None:
+    document = """
+    <fix><components>
+      <component name='A'><component name='B' required='N'/></component>
+      <component name='B'><component name='A' required='N'/></component>
+    </components><fields/></fix>
+    """
+    with pytest.raises(ValueError, match=r"A -> B -> A"):
+        parse_components(document)
+
+
+def test_an_unknown_component_reference_names_its_owner() -> None:
+    document = """
+    <fix><components>
+      <component name='Parties'><component name='Missing' required='N'/></component>
+    </components><fields/></fix>
+    """
+    with pytest.raises(ValueError, match="Parties.*Missing"):
+        parse_components(document)
 
 
 # -- what every message carries -----------------------------------------------

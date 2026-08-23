@@ -1,122 +1,64 @@
 # Benchmarks
 
-Every number on this site was measured, and it lives on the page it is about:
-casting is on [Types](types.md#benchmarks), parsing on
-[Logs](logs.md#benchmarks), FIX on [FIX](fix.md#benchmarks), identifiers and
-books on [Market](market.md#benchmarks), whole jobs on
-[Tasks](tasks.md#benchmarks), and everything about tables on
-[Iceberg](iceberg.md#benchmarks). This page is the method —
-what the scripts do, and how to read what they print.
+Benchmarks measure reusable internal paths, not notebooks or orchestration.
+Each script verifies its result before timing it; subject pages retain the
+fixture and current measurements.
 
-The scripts are in `python/benchmarks/`, they ship with the package, and they
-build their own fixtures, so any of them runs on a clean checkout.
-
-## Running them
+| page | implementation | command |
+| --- | --- | --- |
+| [Types](types.md) | Recursive Arrow casts | `bench_cast.py` |
+| [Logs](logs.md) | Text files, folders, and parsing stages | `bench_text_file.py` |
+| [FIX](fix.md) | Parsing and registry lookup | `bench_fix.py`, `bench_fix_registry.py` |
+| [Market](market.md) | Identities, conversion, and book folding | `bench_market.py` |
+| [Iceberg](iceberg.md) | Reads, writes, merges, and maintenance | `bench_iceberg.py` |
 
 ```bash
 cd python
-uv run python benchmarks/bench_text_file.py                  # parsing a log
-uv run python benchmarks/bench_text_file.py --only variants  # what moves the parser
-uv run python benchmarks/bench_text_file.py --only folders   # a capture of many files
-uv run python benchmarks/bench_text_file.py --only messages  # the message layer
-uv run python benchmarks/bench_cast.py                       # casting data onto a shape
-uv run python benchmarks/bench_fix.py                        # FIX, scalar and vectorised
-uv run python benchmarks/bench_market.py                     # identifiers, and a book's prices
-uv run python benchmarks/bench_tasks.py                      # parse, fan out, append with a merge
-uv run python benchmarks/bench_iceberg.py                    # parse, stream in, read back
-uv run python benchmarks/bench_iceberg.py --only maintain    # the maintenance
-uv run python benchmarks/bench_iceberg.py --only update      # the half that rewrites
-uv run python benchmarks/bench_iceberg.py --only backfill    # replaying clustered keys
-uv run python benchmarks/bench_iceberg.py --only fs          # what the store is asked
+uv run python benchmarks/bench_cast.py --quick
+uv run python benchmarks/bench_text_file.py --quick
+uv run python benchmarks/bench_fix.py --quick
+uv run python benchmarks/bench_market.py --quick
+uv run python benchmarks/bench_iceberg.py --quick
 ```
 
-`--quick` runs a small fixture and one configuration, which is what to use when
-you are changing a benchmark rather than reading one.
+Use warm repeated runs, retain adverse configurations, and report the counts a
+reader pays for—planned files, manifests, requests, and rows—beside elapsed
+time. Raw workflow warehouses are temporary; the compact measured fixture is
+recorded on [End-to-end run](workflow-run.md).
 
-`--only messages` needs two packages nothing else here does — `uv sync --group
-bench` installs them. They are candidates it races the shipped implementations
-against, and they are in a group of their own precisely so that losing a race
-costs nothing: neither is imported anywhere under `src/`.
+## Latest quick run
 
-## Where the results are
+Measured 2026-08-23 on Windows 11, Python 3.12.13, and PyArrow 25.0.1. These
+figures are directional; the scripts assert their outputs before timing them.
 
-| page | what it measures | script |
-| --- | --- | --- |
-| [Types](types.md#benchmarks) | casting a batch, a nested column, a stream onto a shape — against `Array.cast` on the same data | `bench_cast.py` |
-| [Logs](logs.md#benchmarks) | parsing one log; parsing a folder of them; shipping the bytes; the message layer, implementation by implementation | `bench_text_file.py` |
-| [FIX](fix.md#benchmarks) | the scalar parser, the vectorised one, and turning keys into tags | `bench_fix.py` |
-| [Market](market.md#benchmarks) | building identifier columns, deriving a book's flat prices, reading a venue's FIX, folding a book, and the ceiling on compiling any of it | `bench_market.py` |
-| [Tasks](tasks.md#benchmarks) | parsing a capture, fanning it out, and what a replay costs | `bench_tasks.py` |
-| [Iceberg](iceberg.md#benchmarks) | commits, merges, reads, maintenance, backfills, and store calls | `bench_iceberg.py` |
+| path | fixture | result |
+| --- | ---: | ---: |
+| Text log, plain | 50,000 rows | 89,098 rows/s |
+| Text log, gzip | 50,000 rows | 100,677 rows/s |
+| FIX wire parser | 10,000 rows | 92,628–198,324 rows/s |
+| Normalized Instrument Log decode | 500 rows | 912 → 17,544 rows/s; 19.2x |
+| Recursive Arrow reshape | 50,000 rows | 109.8M rows/s |
+| Book summary, 10 levels/side | 200 books | 99,640 books/s |
+| Stateful book fold | 2,000 events | 660 ms; 3,030 books/s |
+| Iceberg append | 5,000 rows, 4 partitions | 15,097–18,490 rows/s |
+| Iceberg merge, all new | 5,000 rows | 12,301–13,387 rows/s |
+| Iceberg merge, half stored | 5,000 rows | 410–412 rows/s |
 
-## How to read a number
+The complete text parser clears the 50k rows/s first-layer target. Exact
+half-stored Iceberg upserts remain the clearest scale-up target; append and
+monotonic insert should be preferred when their semantics fit.
 
-Five rules produce the figures on this site, and they are the same five that
-decide whether a number is worth writing down at all.
+Package-authored instrument rows now decode their promoted fields and ordered
+pair buffer directly. External and legacy rows still use the FIX registry;
+the measured normalized path fell from 1,095.9 to 57.0 µs/row.
 
-**Verify the answer, then time it.** A benchmark that measures the wrong answer
-measures nothing. `bench_cast.py` asserts its result equals pyarrow's own cast
-before it starts a clock; `bench_fix.py` asserts the vectorised parse *is* the
-scalar one; `bench_market.py` asserts the vectorised identifiers are the scalar
-ones and that a book actually derived; the Iceberg sweeps assert the row counts they wrote.
+The focused fold improved from 2.416 s (828 books/s) to 660 ms (3,030
+books/s), about 3.68x. A changed bid now rebuilds only bid levels and bid
+summaries; ask values are carried from the preceding Book before cross-side
+prices are derived. The same optimization applies in the other direction.
 
-**Measure twice.** Every number quoted is a number that reproduced. Where two
-runs agree, one figure is quoted; where they do not, **the range is quoted** —
-`0.99–1.12`, `411k–425k` — and the spread is the point rather than an
-inconvenience. A single run is never quoted as if it were a specification.
-
-**Re-measure when the code under a number changes.** Making the line hash xxh3
-changed what the parser does per line, so every parser table was run again
-rather than carried over: a number that describes an older version of the code
-is worse than no number, because it reads as current.
-
-**Measure warm, and in isolation.** An Acero join costs its own initialisation
-on the first call in a process, so a sequence of timed stages charges the whole
-of it to whichever ran first: one reordering looked 5× faster that way and was
-worth 1.7 ms once both sides were warmed and run best-of-five. Three
-back-to-back runs of the same read once gave 0.057, 0.031 and 0.027 s — a 2.1×
-spread that was nothing but warm-up.
-
-**Sweep what is expected to be bad.** A sweep that only tries the configuration
-the code is good at is an advertisement. `into_bytes()` is in the byte-flow
-table precisely because it holds the whole capture; `chained by hand` is in the
-folder table because it is what a set costs without its one optimisation;
-`blake2b line hash` is in the parser table because it is the hash `xxhash`
-replaced; `Table.upsert` is in the merge table because it is the alternative.
-
-**Race a stage before choosing what it is made of.** The
-[message layer](logs.md#the-message-layer) is the worked example: every stage
-of it is timed as four implementations over one capture, each asserted to give
-the scalar parser's own answer before it is timed, and what ships is what the
-table says rather than what was written first. Two of the four exist only in
-the `bench` dependency group, so a candidate that loses leaves nothing behind.
-
-**Prefer a count to a second.** Seconds on a local disk say very little about a
-job on an object store, and they move ±30–40% on a shared machine. Counts do
-not move at all: files planned, files opened, manifests read, GETs served,
-rows rewritten, terms in a filter. Where a count answers the question, it is
-the number quoted, and the seconds beside it are labelled as noisy.
-
-!!! note "Local disk is not an object store"
-
-    The Iceberg sweeps use a SQLite catalog and a file warehouse, so they are
-    storage-latency-free: they measure planning, commit and Arrow work, which
-    is what this package is responsible for. On an object store every commit
-    and every plan also pays a round trip — which makes the *number of calls*
-    matter more, not less. That is measured separately, by counting calls on
-    the file handles themselves: [what the store is
-    asked](iceberg.md#what-the-store-is-asked).
-
-## Quoting them
-
-A number in a docstring or on this site is part of the code's contract with
-whoever reads it, so it carries its fixture — how many rows, how many files,
-best of how many — and it is re-measured when the code under it changes.
-Rounding a slow row away, or dropping the case that did not improve, is how a
-claim stops matching the benchmark under it.
-
-Where a faster path here replaces a library's own, the two are compared row by
-row in the tests rather than only in a benchmark
-([`tests/iceberg/test_coherence.py`](https://github.com/Platob/rekep/blob/main/python/tests/iceberg/test_coherence.py)),
-and a flag switches back to the library. A benchmark says which is faster; only
-a test says they agree.
+The [notebook smoke run](workflow-run.md) exercises all five stages, all three
+log routes, registry-backed instrument enrichment, book recovery rows,
+auditable rejection, and a zero-write replay. The bounded market benchmark
+separately rejected 10 of 200 malformed events and emitted 70 auditable
+`INTERNAL_EXPIRED` deltas while enforcing `max_side_alive=10`.

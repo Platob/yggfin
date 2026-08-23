@@ -3,6 +3,7 @@ type: struct
 description: One parsed line of a trading log.
 metadata:
   namespace: rekep.text.log
+  version: '1'
 fields:
 - name: unix
   type: int64
@@ -26,8 +27,9 @@ fields:
     needs.
   metadata:
     enum:name: EventType
-    enum:type: int
-    enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","310":"BOOK_SIDE","320":"BOOK","400":"REFERENCE","410":"INSTRUMENT"}'
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","100":"INTENT","110":"ORDER","120":"QUOTE","200":"FACT","210":"EXECUTION","300":"STATE","320":"BOOK","400":"INSTRUMENT_STATE","410":"INSTRUMENT"}'
 - name: cunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
@@ -62,7 +64,14 @@ fields:
     iceberg:primary_key: 'true'
 - name: xhash
   type: int64
-  description: Identity of the thing across every version of it -- the lifecycle.
+  description: Digest of `xcode`, or the raw-line digest when no correlation code
+    exists.
+- name: linked_xhash
+  type: list
+  nullable: true
+  description: Related lifecycle identities, ordered with the primary match first.
+  item:
+    type: int64
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -72,21 +81,26 @@ fields:
     is over.'
   metadata:
     enum:name: State
-    enum:type: int
-    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","600":"FAILED","610":"REJECTED"}'
-- name: symbol
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
+- name: code
   type: string
-  description: Main readable identifier of the subject, as the venue spells it.
-  metadata:
-    fix:name: Symbol
-    fix:tag: '55'
+  description: Best readable record identifier present on this line.
+- name: xcode
+  type: string
+  description: Best direct lifecycle correlation identifier present on this line.
 - name: seq
   type: int64
   nullable: true
-  description: Sequence the venue gave the message, which orders what a clock cannot.
+  description: Integer message sequence number.
   metadata:
-    fix:name: MsgSeqNum
     fix:tag: '34'
+    fix:type: SeqNum
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"SeqNum"}'
+    fix:name: MsgSeqNum
 - name: prev_hash
   type: int64
   nullable: true
@@ -96,8 +110,9 @@ fields:
   description: The state this version moved out of -- a transition, without the self-join.
   metadata:
     enum:name: State
-    enum:type: int
-    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","600":"FAILED","610":"REJECTED"}'
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
 - name: prev_unix
   type: int64
   nullable: true
@@ -111,6 +126,22 @@ fields:
   description: Every event this one was built from, in the order they were combined.
   item:
     type: int64
+- name: mic
+  type: int32
+  nullable: true
+  description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
+  metadata:
+    enum:name: MIC
+    enum:key_type: int32
+    enum:value_type: utf8
+    enum:values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}'
+    enum:encoding: ascii-big-endian
+    enum:max_bytes: '4'
+    enum:pattern: '[A-Z0-9]{4}'
+- name: error
+  type: string
+  nullable: true
+  description: Why this event was rejected or could not be interpreted, when known.
 - name: url
   type: string
   description: Path of the log the line came from, as its filesystem addresses it.
@@ -128,249 +159,1489 @@ fields:
   type: string
   description: Which protocol the line carries; OTHER is a line that carries none.
 - name: fix_tags
-  type: map
+  type: list
   nullable: true
   description: The message's fields under the tags FIX gives them, in wire order.
-  key:
-    type: int32
-  value:
+  item:
+    type: struct
+    fields:
+    - name: key
+      type: int32
+    - name: value
+      type: string
+- name: fix_miss_tags
+  type: list
+  nullable: true
+  description: Ordered raw keys absent from the selected FIX registry version.
+  item:
     type: string
 - name: keyval
-  type: map
+  type: list
   nullable: true
   description: The fields no FIX tag answers for, spelled as the log spelled them.
-  key:
-    type: string
-  value:
-    type: string
+  item:
+    type: struct
+    fields:
+    - name: key
+      type: string
+    - name: value
+      type: string
+- name: parties
+  type: list
+  nullable: true
+  description: FIX Parties entries; null when the component is absent.
+  metadata:
+    fix:component: Parties
+  item:
+    type: struct
+    fields:
+    - name: party_id
+      type: string
+      nullable: true
+      description: 'Party identifier/code. See PartyIDSource <447> and PartyRole <452>
+        . See Appendix 6-G: Use of <Parties> Component Block'
+      metadata:
+        fix:tag: '448'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
+        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
+        fix:name: PartyID
+    - name: party_id_source
+      type: string
+      nullable: true
+      description: 'Identifies class or source of the PartyID <448> value. Required
+        if PartyID is specified. Note: applicable values depend upon PartyRole <452>
+        specified. See Appendix 6-G: Use of <Parties> Component Block'
+      metadata:
+        fix:tag: '447'
+        fix:type: char
+        fix:version: 5.0.SP2
+        fix:values: '{"B":"BIC (Bank Identification Code\u2014Swift managed) code
+          (ISO 9362 \u2013 See Appendix 6-B )","C":"Generally accepted market participant
+          identifier (e.g. NASD mnemonic)","D":"Proprietary/Custom code","E":"ISO
+          Country <421> Code","F":"Settlement Entity Location (note if Local Market
+          Settlement use \"E = ISO Country Code\") (see Appendix 6-G for valid values)","1":"Korean
+          Investor ID","2":"Taiwanese Qualified Foreign Investor ID QFII / FID","3":"Taiwanese
+          Trading Account","4":"Malaysian Central Depository (MCD) number","5":"Chinese
+          Investor ID","6":"UK National Insurance or Pension Number","7":"US Social
+          Security Number","8":"US Employer Identification Number","9":"Australian
+          Business Number","A":"Australian Tax File Number","G":"MIC (ISO 10383 -
+          Market Identifier Code) (See Appendix 6-C )","H":"CSD participant/member
+          code (e.g. Euroclear, DTC, CREST or Kassenverein number)","I":"Directed
+          broker three character acronym as defined in ISITC \"ETC Best Practice\"
+          guidelines document"}'
+        fix:value_names: '{"5":"CHINESE_INVESTOR_ID","8":"US_EMPLOYER_OR_TAX_ID_NUMBER","A":"AUSTRALIAN_TAX_FILE_NUMBER","9":"AUSTRALIAN_BUSINESS_NUMBER","E":"ISO_COUNTRY_CODE","B":"BIC","7":"US_SOCIAL_SECURITY_NUMBER","D":"PROPRIETARY","F":"SETTLEMENT_ENTITY_LOCATION","1":"KOREAN_INVESTOR_ID","2":"TAIWANESE_FOREIGN_INVESTOR_ID","3":"TAIWANESE_TRADING_ACCT","4":"MALAYSIAN_CENTRAL_DEPOSITORY","6":"UK_NATIONAL_INSURANCE_OR_PENSION_NUMBER","C":"GENERAL_IDENTIFIER","G":"MIC","H":"CSD_PARTICIPANT","I":"ISITC_ACRONYM","J":"TAX_ID","K":"AUSTRALIAN_COMPANY_NUMBER","L":"AUSTRALIAN_REGISTERED_BODY_NUMBER","M":"CFTC_REPORTING_FIRM_IDENTIFIER","N":"LEGAL_ENTITY_IDENTIFIER","O":"INTERIM_IDENTIFIER","P":"SHORT_CODE_IDENTIFIER","Q":"NATIONAL_ID_NATURAL_PERSON","R":"INDIA_PERMANENT_ACCOUNT_NUMBER","S":"FDID","T":"SPSAID","U":"MASTER_SPSAID"}'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
+        fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char"}'
+        fix:name: PartyIDSource
+    - name: party_role
+      type: int64
+      nullable: true
+      description: Identifies the type or role of the PartyID <448> specified. See
+        Appendix 6-G – Use of <Parties> Component Block
+      metadata:
+        fix:tag: '452'
+        fix:type: int
+        fix:version: 5.0.SP2
+        fix:values: '{"1":"Executing Firm (formerly FIX 4.2 ExecBroker)","2":"Broker
+          of Credit (formerly FIX 4.2 BrokerOfCredit)","3":"Client ID (formerly FIX
+          4.2 ClientID)","4":"Clearing Firm (formerly FIX 4.2 ClearingFirm)","5":"Investor
+          ID","6":"Introducing Firm","7":"Entering Firm","8":"Locate / Lending Firm
+          (for short-sales)","9":"Fund Manager Client ID (for CIV)","10":"Settlement
+          Location (formerly FIX 4.2 SettlLocation)","11":"Order Origination Trader
+          (associated with Order Origination Firm - i.e. trader who initiates/submits
+          the order)","12":"Executing Trader (associated with Executing Firm - actually
+          executes)","13":"Order Origination Firm (e.g. buy-side firm)","14":"Giveup
+          Clearing Firm (firm to which trade is given up)","15":"Correspondent Clearing
+          Firm","16":"Executing System","17":"Contra Firm","18":"Contra Clearing Firm","19":"Sponsoring
+          Firm","20":"Underlying Contra Firm","21":"Clearing Organization","22":"Exchange","24":"Customer
+          Account","25":"Correspondent Clearing Organization","26":"Correspondent
+          Broker","27":"Buyer/Seller (Receiver/Deliverer)","28":"Custodian","29":"Intermediary","30":"Agent","31":"Sub-custodian","32":"Beneficiary","33":"Interested
+          party","34":"Regulatory body","35":"Liquidity provider","36":"Entering Trader","37":"Contra
+          Trader","38":"Position account","39":"Contra Investor ID","40":"Transfer
+          to Firm","41":"Contra Position Account","42":"Contra Exchange","43":"Internal
+          Carry Account","44":"Order Entry Operator ID","45":"Secondary Account Number","46":"Foreign
+          Firm","47":"Third Party Allocation Firm","48":"Claiming Account","49":"Asset
+          Manager","50":"Pledgor Account","51":"Pledgee Account","52":"Large Trader
+          Reportable Account","53":"Trader mnemonic","54":"Sender Location","55":"Session
+          ID","56":"Acceptable Counterparty","57":"Unacceptable Counterparty","58":"Entering
+          Unit","59":"Executing Unit","60":"Introducing Broker","61":"Quote originator","62":"Report
+          originator","63":"Systematic internaliser (SI)","64":"Multilateral Trading
+          Facility (MTF)","65":"Regulated Market (RM)","66":"Market Maker","67":"Investment
+          Firm","68":"Host Competent Authority (Host CA)","69":"Home Competent Authority
+          (Home CA)","70":"Competent Authority of the most relevant market in terms
+          of liquidity (CAL)","71":"Competent Authority of the Transaction (Execution)
+          Venue (CATV)","72":"Reporting intermediary (medium/vendor via which report
+          has been published)","73":"Execution Venue","74":"Market data entry originator","75":"Location
+          ID","76":"Desk ID","77":"Market data market","78":"Allocation Entity","79":"Prime
+          Broker providing General Trade Services","80":"Step-Out Firm (Prime Broker)","81":"BrokerClearingID","82":"Central
+          Registration Depository (CRD)","83":"Clearing Account","84":"Acceptable
+          Settling Counterparty","85":"Unacceptable Settling Counterparty"}'
+        fix:value_names: '{"15":"CORRESPONDANT_CLEARING_FIRM","3":"CLIENT_ID","20":"UNDERLYING_CONTRA_FIRM","19":"SPONSORING_FIRM","18":"CONTRA_CLEARING_FIRM","17":"CONTRA_FIRM","16":"EXECUTING_SYSTEM","7":"ENTERING_FIRM","1":"EXECUTING_FIRM","2":"BROKER_OF_CREDIT","5":"INVESTOR_ID","6":"INTRODUCING_FIRM","14":"GIVEUP_CLEARING_FIRM_DEPR","8":"LOCATE","9":"FUND_MANAGER_CLIENT_ID","10":"SETTLEMENT_LOCATION","11":"ORDER_ORIGINATION_TRADER","12":"EXECUTING_TRADER","13":"ORDER_ORIGINATION_FIRM","4":"CLEARING_FIRM","21":"CLEARING_ORGANIZATION","22":"EXCHANGE","24":"CUSTOMER_ACCOUNT","25":"CORRESPONDENT_CLEARING_ORGANIZATION","26":"CORRESPONDENT_BROKER","27":"BUYER","28":"CUSTODIAN","29":"INTERMEDIARY","30":"AGENT","31":"SUB_CUSTODIAN","32":"BENEFICIARY","33":"INTERESTED_PARTY","34":"REGULATORY_BODY","35":"LIQUIDITY_PROVIDER","36":"ENTERING_TRADER","37":"CONTRA_TRADER","38":"POSITION_ACCOUNT","39":"CONTRA_INVESTOR_ID","40":"TRANSFER_TO_FIRM","41":"CONTRA_POSITION_ACCOUNT","42":"CONTRA_EXCHANGE","43":"INTERNAL_CARRY_ACCOUNT","44":"ORDER_ENTRY_OPERATOR_ID","45":"SECONDARY_ACCOUNT_NUMBER","46":"FOREIGN_FIRM","47":"THIRD_PARTY_ALLOCATION_FIRM","48":"CLAIMING_ACCOUNT","49":"ASSET_MANAGER","50":"PLEDGOR_ACCOUNT","51":"PLEDGEE_ACCOUNT","52":"LARGE_TRADER_REPORTABLE_ACCOUNT","53":"TRADER_MNEMONIC","54":"SENDER_LOCATION","55":"SESSION_ID","56":"ACCEPTABLE_COUNTERPARTY","57":"UNACCEPTABLE_COUNTERPARTY","58":"ENTERING_UNIT","59":"EXECUTING_UNIT","60":"INTRODUCING_BROKER","61":"QUOTE_ORIGINATOR","62":"REPORT_ORIGINATOR","63":"SYSTEMATIC_INTERNALISER","64":"MULTILATERAL_TRADING_FACILITY","65":"REGULATED_MARKET","66":"MARKET_MAKER","67":"INVESTMENT_FIRM","68":"HOST_COMPETENT_AUTHORITY","69":"HOME_COMPETENT_AUTHORITY","70":"COMPETENT_AUTHORITY_LIQUIDITY","71":"COMPETENT_AUTHORITY_TRANSACTION_VENUE","72":"REPORTING_INTERMEDIARY","73":"EXECUTION_VENUE","74":"MARKET_DATA_ENTRY_ORIGINATOR","75":"LOCATION_ID","76":"DESK_ID","77":"MARKET_DATA_MARKET","78":"ALLOCATION_ENTITY","79":"PRIME_BROKER","80":"STEP_OUT_FIRM","81":"BROKER_CLEARING_ID","82":"CENTRAL_REGISTRATION_DEPOSITORY","83":"CLEARING_ACCOUNT","84":"ACCEPTABLE_SETTLING_COUNTERPARTY","85":"UNACCEPTABLE_SETTLING_COUNTERPARTY","86":"CLS_MEMBER_BANK","87":"IN_CONCERT_GROUP","88":"IN_CONCERT_CONTROLLING_ENTITY","89":"LARGE_POSITIONS_REPORTING_ACCOUNT","90":"SETTLEMENT_FIRM","91":"SETTLEMENT_ACCOUNT","92":"REPORTING_MARKET_CENTER","93":"RELATED_REPORTING_MARKET_CENTER","94":"AWAY_MARKET","95":"GIVEUP_TRADING_FIRM","96":"TAKEUP_TRADING_FIRM","97":"GIVEUP_CLEARING_FIRM","98":"TAKEUP_CLEARING_FIRM","99":"ORIGINATING_MARKET","100":"MARGIN_ACCOUNT","101":"COLLATERAL_ASSET_ACCOUNT","102":"DATA_REPOSITORY","103":"CALCULATION_AGENT","104":"EXERCISE_NOTICE_SENDER","105":"EXERCISE_NOTICE_RECEIVER","106":"RATE_REFERENCE_BANK","107":"CORRESPONDENT","109":"BENEFICIARY_BANK","110":"BORROWER","111":"PRIMARY_OBLIGATOR","112":"GUARANTOR","113":"EXCLUDED_REFERENCE_ENTITY","114":"DETERMINING_PARTY","115":"HEDGING_PARTY","116":"REPORTING_ENTITY","117":"SALES_PERSON","118":"OPERATOR","119":"CSD","120":"ICSD","121":"TRADING_SUB_ACCOUNT","122":"INVESTMENT_DECISION_MAKER","123":"PUBLISHING_INTERMEDIARY","124":"CSD_PARTICIPANT","125":"ISSUER","126":"CONTRA_CUSTOMER_ACCOUNT","127":"CONTRA_INVESTMENT_DECISION_MAKER"}'
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
+        fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int"}'
+        fix:name: PartyRole
+    - name: buffer
+      type: map
+      nullable: true
+      description: Unprojected party members under unique FIX names.
+      key:
+        type: string
+      value:
+        type: string
+- name: isincode
+  type: string
+  nullable: true
+  description: ISIN carried by the rendered ISINCODE field.
+  metadata:
+    fix:name: ISINCODE
+    fix:type: String
 - name: begin_string
   type: string
   nullable: true
-  description: '`BeginString <8>`: which FIX version the message says it is.'
+  description: Identifies beginning of new message and protocol version. ALWAYS FIRST
+    FIELD IN MESSAGE. (Always unencrypted)
+  metadata:
+    fix:tag: '8'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:value_names: '{"FIX.4.2":"FIX42","FIX.4.4":"FIX44","FIXT.1.1":"FIXT11"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: BeginString
 - name: body_length
   type: int64
   nullable: true
-  description: '`BodyLength <9>`, as the message counted it.'
+  description: Message length, in bytes, forward to the CheckSum <10> field. ALWAYS
+    SECOND FIELD IN MESSAGE. (Always unencrypted)
+  metadata:
+    fix:tag: '9'
+    fix:type: Length
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"Length"}'
+    fix:name: BodyLength
 - name: msg_type
   type: string
   nullable: true
-  description: '`MsgType <35>`: what the message is, on the wire.'
+  description: 'Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted)
+    Note: A "U" as the first character in the MsgType field (i.e. U, U2, etc) indicates
+    that the message format is privately defined between the sender and receiver.
+    *** Note the use of lower case letters ***'
+  metadata:
+    fix:tag: '35'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:values: '{"0":"Heartbeat <0>","1":"TestRequest <1>","2":"ResendRequest <2>","3":"Reject
+      <3>","4":"SequenceReset <4>","5":"Logout <5>","6":"IOI <6>","7":"Advertisement
+      <7>","8":"ExecutionReport <8>","9":"OrderCancelReject <9>","A":"Logon <A>","AA":"DerivativeSecurityList
+      <AA>","AB":"NewOrderMultileg <AB>","AC":"MultilegOrderCancelReplace <AC> (a.k.a.
+      Multileg Order Modification Request)","AD":"TradeCaptureReportRequest <AD>","AE":"TradeCaptureReport
+      <AE>","AF":"OrderMassStatusRequest <AF>","AG":"QuoteRequestReject <AG>","AH":"RFQRequest
+      <AH>","AI":"QuoteStatusReport <AI>","AJ":"QuoteResponse <AJ>","AK":"Confirmation
+      <AK>","AL":"PositionMaintenanceRequest <AL>","AM":"PositionMaintenanceReport
+      <AM>","AN":"RequestForPositions <AN>","AO":"RequestForPositionsAck <AO>","AP":"PositionReport
+      <AP>","AQ":"TradeCaptureReportRequestAck <AQ>","AR":"TradeCaptureReportAck <AR>","AS":"AllocationReport
+      <AS> (aka Allocation Claim)","AT":"AllocationReportAck <AT> (aka Allocation
+      Claim Ack)","AU":"ConfirmationAck <AU> (aka Affirmation)","AV":"SettlementInstructionRequest
+      <AV>","AW":"AssignmentReport <AW>","AX":"CollateralRequest <AX>","AY":"CollateralAssignment
+      <AY>","AZ":"CollateralResponse <AZ>","B":"News <B>","BA":"CollateralReport <BA>","BB":"CollateralInquiry
+      <BB>","BC":"NetworkCounterpartySystemStatusRequest <BC>","BD":"NetworkCounterpartySystemStatusResponse
+      <BD>","BE":"UserRequest <BE>","BF":"UserResponse <BF>","BG":"CollateralInquiryAck
+      <BG>","BH":"ConfirmationRequest <BH>","BI":"TradingSessionListRequest <BI>","BJ":"TradingSessionList
+      <BJ>","BK":"SecurityListUpdateReport <BK>","BL":"AdjustedPositionReport <BL>","BM":"AllocationInstructionAlert
+      <BM>","BN":"ExecutionAcknowledgement <BN>","BO":"ContraryIntentionReport <BO>","BP":"SecurityDefinitionUpdateReport
+      <BP>","BQ":"SettlementObligationReport <BP>","BR":"DerivativeSecurityListUpdateReport
+      <BR>","BS":"TradingSessionListUpdateReport <BS>","BT":"MarketDefinitionRequest
+      <BT>","BU":"MarketDefinition <BU>","BV":"MarketDefinitionUpdateReport <BV>","BW":"ApplicationMessageRequest
+      <BW>","BX":"ApplicationMessageRequestAck <BX>","BY":"ApplicationMessageReport
+      <BY>","BZ":"OrderMassActionReport <BZ>","C":"Email <C>","CA":"OrderMassActionRequest
+      <CA>","CB":"UserNotification <CB>","CC":"StreamAssignmentRequest <CC>","CD":"StreamAssignmentReport
+      <CD>","CE":"StreamAssignmentReportACK <CE>","CF":"PartyDetailsListRequest","CG":"PartyDetailsListReport","D":"NewOrderSingle
+      <D>","E":"NewOrderList <E>","F":"OrderCancelRequest <F>","G":"OrderCancel/ReplaceRequest
+      <G>","H":"OrderStatusRequest <H>","J":"AllocationInstruction <J>","K":"ListCancelRequest
+      <K>","L":"ListExecute <L>","M":"ListStatusRequest <M>","N":"ListStatus <N>","P":"AllocationInstructionAck
+      <P>","Q":"DontKnowTrade <Q>","R":"QuoteRequest <R>","S":"Quote <S>","T":"SettlementInstructions
+      <T>","V":"MarketDataRequest <V>","W":"MarketDataSnapshotFullRefresh <W>","X":"MarketDataIncrementalRefresh
+      <X>","Y":"MarketDataRequestReject <Y>","Z":"QuoteCancel <Z>","a":"QuoteStatusRequest
+      <a>","b":"MassQuoteAcknowledgement <b>","c":"SecurityDefinitionRequest <c>","d":"SecurityDefinition
+      <d>","e":"SecurityStatusRequest <e>","f":"SecurityStatus <f>","g":"TradingSessionStatusRequest
+      <g>","h":"TradingSessionStatus <h>","i":"MassQuote <i>","j":"BusinessMessageReject
+      <j>","k":"BidRequest <k>","l":"BidResponse <l> (lowercase L)","m":"ListStrikePrice
+      <m>","n":"XMLnonFIX <n>","o":"RegistrationInstructions <o>","p":"RegistrationInstructionsResponse
+      <p>","q":"OrderMassCancelRequest <q>","r":"OrderMassCancelReport <r>","s":"NewOrderCross
+      <s>","t":"CrossOrderCancelReplaceRequest <t>","u":"CrossOrderCancelRequest <u>","v":"SecurityTypeRequest
+      <v>","w":"SecurityTypes <w>","x":"SecurityListRequest <x>","y":"SecurityList
+      <y>","z":"DerivativeSecurityListRequest <z>"}'
+    fix:value_names: '{"0":"HEARTBEAT","1":"TEST_REQUEST","2":"RESEND_REQUEST","3":"REJECT","4":"SEQUENCE_RESET","5":"LOGOUT","6":"IOI","7":"ADVERTISEMENT","8":"EXECUTION_REPORT","9":"ORDER_CANCEL_REJECT","A":"LOGON","B":"NEWS","C":"EMAIL","D":"NEW_ORDER_SINGLE","E":"NEW_ORDER_LIST","F":"ORDER_CANCEL_REQUEST","G":"ORDER_CANCEL_REPLACE_REQUEST","H":"ORDER_STATUS_REQUEST","J":"ALLOCATION_INSTRUCTION","K":"LIST_CANCEL_REQUEST","L":"LIST_EXECUTE","M":"LIST_STATUS_REQUEST","N":"LIST_STATUS","P":"ALLOCATION_INSTRUCTION_ACK","Q":"DONT_KNOW_TRADE","R":"QUOTE_REQUEST","S":"QUOTE","T":"SETTLEMENT_INSTRUCTIONS","V":"MARKET_DATA_REQUEST","W":"MARKET_DATA_SNAPSHOT_FULL_REFRESH","X":"MARKET_DATA_INCREMENTAL_REFRESH","Y":"MARKET_DATA_REQUEST_REJECT","Z":"QUOTE_CANCEL","a":"QUOTE_STATUS_REQUEST","b":"MASS_QUOTE_ACK","c":"SECURITY_DEFINITION_REQUEST","d":"SECURITY_DEFINITION","e":"SECURITY_STATUS_REQUEST","f":"SECURITY_STATUS","g":"TRADING_SESSION_STATUS_REQUEST","h":"TRADING_SESSION_STATUS","i":"MASS_QUOTE","j":"BUSINESS_MESSAGE_REJECT","k":"BID_REQUEST","l":"BID_RESPONSE","m":"LIST_STRIKE_PRICE","AA":"DERIVATIVE_SECURITY_LIST","AB":"NEW_ORDER_MULTILEG","AC":"MULTILEG_ORDER_CANCEL_REPLACE","AD":"TRADE_CAPTURE_REPORT_REQUEST","AE":"TRADE_CAPTURE_REPORT","AF":"ORDER_MASS_STATUS_REQUEST","AG":"QUOTE_REQUEST_REJECT","AH":"RFQ_REQUEST","AI":"QUOTE_STATUS_REPORT","n":"XM_LNON_FIX","o":"REGISTRATION_INSTRUCTIONS","p":"REGISTRATION_INSTRUCTIONS_RESPONSE","q":"ORDER_MASS_CANCEL_REQUEST","r":"ORDER_MASS_CANCEL_REPORT","s":"NEW_ORDER_CROSS","t":"CROSS_ORDER_CANCEL_REPLACE_REQUEST","u":"CROSS_ORDER_CANCEL_REQUEST","v":"SECURITY_TYPE_REQUEST","w":"SECURITY_TYPES","x":"SECURITY_LIST_REQUEST","y":"SECURITY_LIST","z":"DERIVATIVE_SECURITY_LIST_REQUEST","AJ":"QUOTE_RESPONSE","AK":"CONFIRMATION","AL":"POSITION_MAINTENANCE_REQUEST","AM":"POSITION_MAINTENANCE_REPORT","AN":"REQUEST_FOR_POSITIONS","AO":"REQUEST_FOR_POSITIONS_ACK","AP":"POSITION_REPORT","AQ":"TRADE_CAPTURE_REPORT_REQUEST_ACK","AR":"TRADE_CAPTURE_REPORT_ACK","AS":"ALLOCATION_REPORT","AT":"ALLOCATION_REPORT_ACK","AU":"CONFIRMATION_ACK","AV":"SETTLEMENT_INSTRUCTION_REQUEST","AW":"ASSIGNMENT_REPORT","AX":"COLLATERAL_REQUEST","AY":"COLLATERAL_ASSIGNMENT","AZ":"COLLATERAL_RESPONSE","BA":"COLLATERAL_REPORT","BB":"COLLATERAL_INQUIRY","BC":"NETWORK_COUNTERPARTY_SYSTEM_STATUS_REQUEST","BD":"NETWORK_COUNTERPARTY_SYSTEM_STATUS_RESPONSE","BE":"USER_REQUEST","BF":"USER_RESPONSE","BG":"COLLATERAL_INQUIRY_ACK","BH":"CONFIRMATION_REQUEST","BI":"TRADING_SESSION_LIST_REQUEST","BJ":"TRADING_SESSION_LIST","BK":"SECURITY_LIST_UPDATE_REPORT","BL":"ADJUSTED_POSITION_REPORT","BM":"ALLOCATION_INSTRUCTION_ALERT","BN":"EXECUTION_ACK","BO":"CONTRARY_INTENTION_REPORT","BP":"SECURITY_DEFINITION_UPDATE_REPORT","BQ":"SETTLEMENT_OBLIGATION_REPORT","BR":"DERIVATIVE_SECURITY_LIST_UPDATE_REPORT","BS":"TRADING_SESSION_LIST_UPDATE_REPORT","BT":"MARKET_DEFINITION_REQUEST","BU":"MARKET_DEFINITION","BV":"MARKET_DEFINITION_UPDATE_REPORT","BW":"APPLICATION_MESSAGE_REQUEST","BX":"APPLICATION_MESSAGE_REQUEST_ACK","BY":"APPLICATION_MESSAGE_REPORT","BZ":"ORDER_MASS_ACTION_REPORT","CA":"ORDER_MASS_ACTION_REQUEST","CB":"USER_NOTIFICATION","CC":"STREAM_ASSIGNMENT_REQUEST","CD":"STREAM_ASSIGNMENT_REPORT","CE":"STREAM_ASSIGNMENT_REPORT_ACK","CF":"PARTY_DETAILS_LIST_REQUEST","CG":"PARTY_DETAILS_LIST_REPORT","CH":"MARGIN_REQUIREMENT_INQUIRY","CI":"MARGIN_REQUIREMENT_INQUIRY_ACK","CJ":"MARGIN_REQUIREMENT_REPORT","CK":"PARTY_DETAILS_LIST_UPDATE_REPORT","CL":"PARTY_RISK_LIMITS_REQUEST","CM":"PARTY_RISK_LIMITS_REPORT","CN":"SECURITY_MASS_STATUS_REQUEST","CO":"SECURITY_MASS_STATUS","CQ":"ACCOUNT_SUMMARY_REPORT","CR":"PARTY_RISK_LIMITS_UPDATE_REPORT","CS":"PARTY_RISK_LIMITS_DEFINITION_REQUEST","CT":"PARTY_RISK_LIMITS_DEFINITION_REQUEST_ACK","CU":"PARTY_ENTITLEMENTS_REQUEST","CV":"PARTY_ENTITLEMENTS_REPORT","CW":"QUOTE_ACK","CX":"PARTY_DETAILS_DEFINITION_REQUEST","CY":"PARTY_DETAILS_DEFINITION_REQUEST_ACK","CZ":"PARTY_ENTITLEMENTS_UPDATE_REPORT","DA":"PARTY_ENTITLEMENTS_DEFINITION_REQUEST","DB":"PARTY_ENTITLEMENTS_DEFINITION_REQUEST_ACK","DC":"TRADE_MATCH_REPORT","DD":"TRADE_MATCH_REPORT_ACK","DE":"PARTY_RISK_LIMITS_REPORT_ACK","DF":"PARTY_RISK_LIMIT_CHECK_REQUEST","DG":"PARTY_RISK_LIMIT_CHECK_REQUEST_ACK","DH":"PARTY_ACTION_REQUEST","DI":"PARTY_ACTION_REPORT","DJ":"MASS_ORDER","DK":"MASS_ORDER_ACK","DL":"POSITION_TRANSFER_INSTRUCTION","DM":"POSITION_TRANSFER_INSTRUCTION_ACK","DN":"POSITION_TRANSFER_REPORT","DO":"MARKET_DATA_STATISTICS_REQUEST","DP":"MARKET_DATA_STATISTICS_REPORT","DQ":"COLLATERAL_REPORT_ACK","DR":"MARKET_DATA_REPORT","DS":"CROSS_REQUEST","DT":"CROSS_REQUEST_ACK","DU":"ALLOCATION_INSTRUCTION_ALERT_REQUEST","DV":"ALLOCATION_INSTRUCTION_ALERT_REQUEST_ACK","DW":"TRADE_AGGREGATION_REQUEST","DX":"TRADE_AGGREGATION_REPORT","EA":"PAY_MANAGEMENT_REPORT","EB":"PAY_MANAGEMENT_REPORT_ACK","DY":"PAY_MANAGEMENT_REQUEST","DZ":"PAY_MANAGEMENT_REQUEST_ACK"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: MsgType
 - name: check_sum
   type: string
   nullable: true
-  description: '`CheckSum <10>`: three digits, so a string -- `010` read as `10` no
-    longer verifies.'
+  description: 'Three byte, simple checksum (see FIXT.1.1: "CheckSum Calculation"
+    for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing
+    <SOH>, as the end-of-message delimiter. Always defined as three characters. (Always
+    unencrypted)'
+  metadata:
+    fix:tag: '10'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: CheckSum
 - name: sender_comp_id
   type: string
   nullable: true
-  description: '`SenderCompID <49>`: who sent it.'
+  description: Assigned value used to identify firm sending message.
+  metadata:
+    fix:tag: '49'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: SenderCompID
 - name: sender_sub_id
   type: string
   nullable: true
-  description: '`SenderSubID <50>`: which desk of theirs.'
+  description: Assigned value used to identify specific message originator (desk,
+    trader, etc.)
+  metadata:
+    fix:tag: '50'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: SenderSubID
 - name: sender_location_id
   type: string
   nullable: true
-  description: '`SenderLocationID <142>`.'
+  description: Assigned value used to identify specific message originator’s location
+    (i.e. geographic location and/or desk, trader)
+  metadata:
+    fix:tag: '142'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
+    fix:name: SenderLocationID
 - name: target_comp_id
   type: string
   nullable: true
-  description: '`TargetCompID <56>`: who it was sent to.'
+  description: Assigned value used to identify receiving firm.
+  metadata:
+    fix:tag: '56'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: TargetCompID
 - name: target_sub_id
   type: string
   nullable: true
-  description: '`TargetSubID <57>`.'
+  description: Assigned value used to identify specific individual or unit intended
+    to receive message. "ADMIN" reserved for administrative messages not intended
+    for a specific user.
+  metadata:
+    fix:tag: '57'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: TargetSubID
 - name: target_location_id
   type: string
   nullable: true
-  description: '`TargetLocationID <143>`.'
+  description: Assigned value used to identify specific message destination’s location
+    (i.e. geographic location and/or desk, trader)
+  metadata:
+    fix:tag: '143'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
+    fix:name: TargetLocationID
 - name: on_behalf_of_comp_id
   type: string
   nullable: true
-  description: '`OnBehalfOfCompID <115>`: who the sender was speaking for.'
+  description: Assigned value used to identify firm originating message if the message
+    was delivered by a third party i.e. the third party firm identifier would be delivered
+    in the SenderCompID <49> field and the firm originating the message in this field.
+  metadata:
+    fix:tag: '115'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: OnBehalfOfCompID
 - name: on_behalf_of_sub_id
   type: string
   nullable: true
-  description: '`OnBehalfOfSubID <116>`.'
+  description: Assigned value used to identify specific message originator (i.e. trader)
+    if the message was delivered by a third party.
+  metadata:
+    fix:tag: '116'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: OnBehalfOfSubID
 - name: on_behalf_of_location_id
   type: string
   nullable: true
-  description: '`OnBehalfOfLocationID <144>`.'
+  description: Assigned value used to identify specific message originator’s location
+    (i.e. geographic location and/or desk, trader) if the message was delivered by
+    a third party
+  metadata:
+    fix:tag: '144'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
+    fix:name: OnBehalfOfLocationID
 - name: deliver_to_comp_id
   type: string
   nullable: true
-  description: '`DeliverToCompID <128>`: who it is ultimately for.'
+  description: Assigned value used to identify the firm targeted to receive the message
+    if the message is delivered by a third party i.e. the third party firm identifier
+    would be delivered in the TargetCompID <56> field and the ultimate receiver firm
+    ID in this field.
+  metadata:
+    fix:tag: '128'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: DeliverToCompID
 - name: deliver_to_sub_id
   type: string
   nullable: true
-  description: '`DeliverToSubID <129>`.'
+  description: Assigned value used to identify specific message recipient (i.e. trader)
+    if the message is delivered by a third party
+  metadata:
+    fix:tag: '129'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: DeliverToSubID
 - name: deliver_to_location_id
   type: string
   nullable: true
-  description: '`DeliverToLocationID <145>`.'
+  description: Assigned value used to identify specific message recipient’s location
+    (i.e. geographic location and/or desk, trader) if the message was delivered by
+    a third party
+  metadata:
+    fix:tag: '145'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
+    fix:name: DeliverToLocationID
 - name: last_msg_seq_num_processed
   type: int64
   nullable: true
-  description: '`LastMsgSeqNumProcessed <369>`: how far the sender had read.'
+  description: The last MsgSeqNum <34> value received by the FIX engine and processed
+    by downstream application, such as trading engine or order routing system. Can
+    be specified on every message sent. Useful for detecting a backlog with a counterparty.
+  metadata:
+    fix:tag: '369'
+    fix:type: SeqNum
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","FIXT1.1":"SeqNum"}'
+    fix:name: LastMsgSeqNumProcessed
 - name: poss_dup_flag
   type: bool
   nullable: true
-  description: '`PossDupFlag <43>`: a retransmission of a message already sent.'
+  description: Indicates possible retransmission of message with this sequence number
+  metadata:
+    fix:tag: '43'
+    fix:type: Boolean
+    fix:version: 5.0.SP2
+    fix:values: '{"N":"Original transmission","Y":"Possible duplicate"}'
+    fix:value_names: '{"N":"NO","Y":"YES"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"Boolean","5.0.SP1":"Boolean","5.0":"Boolean","4.4":"Boolean","4.3":"Boolean","4.2":"Boolean","4.1":"char","4.0":"char","FIXT1.1":"Boolean"}'
+    fix:name: PossDupFlag
 - name: poss_resend
   type: bool
   nullable: true
-  description: '`PossResend <97>`: the same business content under a new sequence.'
-- name: sending_unix
-  type: int64
+  description: Indicates that message may contain information that has been sent under
+    another sequence number.
+  metadata:
+    fix:tag: '97'
+    fix:type: Boolean
+    fix:version: 5.0.SP2
+    fix:values: '{"N":"Original Transmission","Y":"Possible Resend"}'
+    fix:value_names: '{"N":"NO","Y":"YES"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"Boolean","5.0.SP1":"Boolean","5.0":"Boolean","4.4":"Boolean","4.3":"Boolean","4.2":"Boolean","4.1":"char","4.0":"char","FIXT1.1":"Boolean"}'
+    fix:name: PossResend
+- name: sending_time
+  type: timestamp[us, tz=UTC]
   nullable: true
-  description: '`SendingTime <52>`: when it was transmitted.'
-- name: orig_sending_unix
-  type: int64
+  description: Time of message transmission (always expressed in UTC (Universal Time
+    Coordinated, also known as "GMT")
+  metadata:
+    fix:tag: '52'
+    fix:type: UTCTimestamp
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time","FIXT1.1":"UTCTimestamp"}'
+    fix:name: SendingTime
+- name: orig_sending_time
+  type: timestamp[us, tz=UTC]
   nullable: true
-  description: '`OrigSendingTime <122>`: the original transmission, on a resend.'
-- name: on_behalf_of_sending_unix
-  type: int64
+  description: Original time of message transmission (always expressed in UTC (Universal
+    Time Coordinated, also known as "GMT") when transmitting orders as the result
+    of a resend request.
+  metadata:
+    fix:tag: '122'
+    fix:type: UTCTimestamp
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time","FIXT1.1":"UTCTimestamp"}'
+    fix:name: OrigSendingTime
+- name: on_behalf_of_sending_time
+  type: timestamp[us, tz=UTC]
   nullable: true
-  description: '`OnBehalfOfSendingTime <370>`.'
+  description: 'Deprecated in FIX.4.3 See Appendix 6-F: 13.Removed Deprecated Field:
+    OnBehalfOfSendingTime (tag 370) [Deprecated and Replaced in FIX 4.3, Removed in
+    FIX 4.4] Used when a message is sent via a ''hub'' or ''service bureau''. If A
+    sends to Q (the hub) who then sends to B via a separate FIX session, then when
+    Q sends to B the value of this field should represent the SendingTime on the message
+    A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known
+    as ''GMT'')'
+  metadata:
+    fix:tag: '370'
+    fix:type: UTCTimestamp
+    fix:version: 5.0.SP2
+    fix:note: no longer used
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp"}'
+    fix:names: '{"5.0.SP2":"OnBehalfOfSendingTime","5.0.SP1":"OnBehalfOfSendingTime","5.0":"OnBehalfOfSendingTime","4.4":"OnBehalfOfSendingTime","4.3":"OnBehalfOfSendingTime(Deprecated)","4.2":"OnBehalfOfSendingTime"}'
+    fix:name: OnBehalfOfSendingTime
 - name: appl_ver_id
   type: string
   nullable: true
-  description: '`ApplVerID <1128>`.'
+  description: Specifies the service pack release being applied at message level.
+    Enumerated field with values assigned at time of service pack release
+  metadata:
+    fix:tag: '1128'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:values: '{"0":"FIX27","1":"FIX30","2":"FIX40","3":"FIX41","4":"FIX42","5":"FIX43","6":"FIX44","7":"FIX50","8":"FIX50SP1","9":"FIX50SP2"}'
+    fix:value_names: '{"0":"FIX27","1":"FIX30","2":"FIX40","3":"FIX41","4":"FIX42","5":"FIX43","6":"FIX44","7":"FIX50","8":"FIX50_SP1","9":"FIX50_SP2","10":"FIX_LATEST"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","FIXT1.1":"String"}'
+    fix:name: ApplVerID
 - name: cstm_appl_ver_id
   type: string
   nullable: true
-  description: '`CstmApplVerID <1129>`.'
+  description: Specifies a custom extension to a message being applied at the message
+    level. Enumerated field
+  metadata:
+    fix:tag: '1129'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","FIXT1.1":"String"}'
+    fix:name: CstmApplVerID
 - name: appl_ext_id
   type: int64
   nullable: true
-  description: '`ApplExtID <1156>`.'
+  description: The extension pack number associated with an application message.
+  metadata:
+    fix:tag: '1156'
+    fix:type: int
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","FIXT1.1":"int"}'
+    fix:name: ApplExtID
 - name: message_encoding
   type: string
   nullable: true
-  description: '`MessageEncoding <347>`.'
+  description: Type of message encoding (non-ASCII (non-English) characters) used
+    in a message’s "Encoded" fields.
+  metadata:
+    fix:tag: '347'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","FIXT1.1":"String"}'
+    fix:value_names: '{"EUC-JP":"EUCJP","ISO-2022-JP":"ISO2022_JP","Shift_JIS":"SHIFT_JIS","UTF-8":"UTF8"}'
+    fix:name: MessageEncoding
 - name: xml_data_len
   type: int64
   nullable: true
-  description: '`XmlDataLen <212>`.'
+  description: Length of the XmlData <213> data block.
+  metadata:
+    fix:tag: '212'
+    fix:type: Length
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"Length","FIXT1.1":"Length"}'
+    fix:name: XmlDataLen
 - name: xml_data
   type: binary
   nullable: true
-  description: '`XmlData <213>`, as the bytes it is.'
+  description: 'Actual XML data stream (e.g. FIXML). See approriate XML reference
+    (e.g. FIXML). Note: may contain embedded SOH characters.'
+  metadata:
+    fix:tag: '213'
+    fix:type: data
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"data","5.0.SP1":"data","5.0":"data","4.4":"data","4.3":"data","4.2":"data","FIXT1.1":"data"}'
+    fix:name: XmlData
 - name: secure_data_len
   type: int64
   nullable: true
-  description: '`SecureDataLen <90>`.'
+  description: Deprecated in FIXT 1.1 Length of encrypted message
+  metadata:
+    fix:tag: '90'
+    fix:type: Length
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"Length","4.1":"Length","4.0":"Length","FIXT1.1":"Length"}'
+    fix:name: SecureDataLen
 - name: secure_data
   type: binary
   nullable: true
-  description: '`SecureData <91>`, as the bytes it is.'
+  description: Deprecated in FIXT 1.1 Actual encrypted data stream
+  metadata:
+    fix:tag: '91'
+    fix:type: data
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"data","5.0.SP1":"data","5.0":"data","4.4":"data","4.3":"data","4.2":"data","4.1":"data","4.0":"data","FIXT1.1":"data"}'
+    fix:name: SecureData
 - name: signature_length
   type: int64
   nullable: true
-  description: '`SignatureLength <93>`.'
+  description: Deprecated in FIXT 1.1 Number of bytes in signature field
+  metadata:
+    fix:tag: '93'
+    fix:type: Length
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"Length","4.1":"Length","4.0":"Length","FIXT1.1":"Length"}'
+    fix:name: SignatureLength
 - name: signature
   type: binary
   nullable: true
-  description: '`Signature <89>`, as the bytes it is.'
+  description: Deprecated in FIXT 1.1 Electronic signature
+  metadata:
+    fix:tag: '89'
+    fix:type: data
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"data","5.0.SP1":"data","5.0":"data","4.4":"data","4.3":"data","4.2":"data","4.1":"data","4.0":"data","FIXT1.1":"data"}'
+    fix:name: Signature
+- name: symbol
+  type: string
+  nullable: true
+  description: Ticker symbol. Common, "human understood" representation of the security.
+    SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange
+    traded Collective Investment Vehicles) Use "[N/A]" for products which do not have
+    a symbol.
+  metadata:
+    fix:tag: '55'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
+      Status Request","Quote Acknowledgement","Security Definition Request","Security
+      Definition","New Order - Single","Security Status Request","New Order - List","Security
+      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
+      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
+      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
+      Data - Incremental Refresh","Quote Cancel"]'
+    fix:name: Symbol
 - name: security_id
   type: string
   nullable: true
-  description: '`SecurityID <48>`, under the scheme `security_id_source` names.'
+  description: Security identifier value of SecurityIDSource <22> type (e.g. CUSIP,
+    SEDOL, ISIN, etc). Requires SecurityIDSource.
+  metadata:
+    fix:tag: '48'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
+      Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
+      Definition","New Order - Single","Security Status Request","New Order - List","Security
+      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
+      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
+      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
+      Data - Incremental Refresh","Quote Cancel"]'
+    fix:name: SecurityID
 - name: security_id_source
   type: string
   nullable: true
-  description: '`SecurityIDSource <22>`: which scheme `security_id` is in -- `4` is
-    ISIN.'
+  description: Identifies class or source of the SecurityID <48> value. Required if
+    SecurityID is specified.
+  metadata:
+    fix:tag: '22'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:values: '{"1":"CUSIP","2":"SEDOL","3":"QUIK","4":"ISIN number","5":"RIC code","6":"ISO
+      Currency Code","7":"ISO Country Code","8":"Exchange Symbol","9":"Consolidated
+      Tape Association (CTA) Symbol (SIAC CTS/CQS line format)","A":"Bloomberg Symbol","B":"Wertpapier","C":"Dutch","D":"Valoren","E":"Sicovam","F":"Belgian","G":"\"Common\"
+      (Clearstream and Euroclear)","H":"Clearing House / Clearing Organization","I":"ISDA/FpML
+      Product Specification (XML in EncodedSecurityDesc <351> )","J":"Option Price
+      Reporting Authority","K":"ISDA/FpML Product URL (URL in SecurityID)","L":"Letter
+      of Credit","M":"Marketplace-assigned Identifier"}'
+    fix:value_names: '{"1":"CUSIP","2":"SEDOL","3":"QUIK","4":"ISIN_NUMBER","5":"RIC_CODE","6":"ISO_CURRENCY_CODE","7":"ISO_COUNTRY_CODE","8":"EXCHANGE_SYMBOL","9":"CONSOLIDATED_TAPE_ASSOCIATION","E":"SICOVAM","F":"BELGIAN","D":"VALOREN","C":"DUTCH","B":"WERTPAPIER","A":"BLOOMBERG_SYMBOL","G":"COMMON","H":"CLEARING_HOUSE","I":"ISDA_FP_ML_SPECIFICATION","J":"OPTION_PRICE_REPORTING_AUTHORITY","K":"ISDA_FP_MLURL","L":"LETTER_OF_CREDIT","M":"MARKETPLACE_ASSIGNED_IDENTIFIER","N":"MARKIT_RED_ENTITY_CLIP","P":"MARKIT_RED_PAIR_CLIP","Q":"CFTC_COMMODITY_CODE","R":"ISDA_COMMODITY_REFERENCE_PRICE","S":"FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER","T":"LEGAL_ENTITY_IDENTIFIER","U":"SYNTHETIC","V":"FIDESSA_INSTRUMENT_MNEMONIC","W":"INDEX_NAME","X":"UNIFORM_SYMBOL","Y":"DIGITAL_TOKEN_IDENTIFIER"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"SecurityIDSource","5.0.SP1":"SecurityIDSource","5.0":"SecurityIDSource","4.4":"SecurityIDSource","4.3":"IDSource
+      prior to FIX 4.3)","4.2":"IDSource","4.1":"IDSource","4.0":"IDSource"}'
+    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
+      Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
+      Definition","New Order - Single","Security Status Request","New Order - List","Security
+      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
+      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
+      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
+      Data - Incremental Refresh","Quote Cancel"]'
+    fix:name: SecurityIDSource
 - name: security_type
   type: string
   nullable: true
-  description: '`SecurityType <167>`.'
+  description: 'Indicates type of security. Security type enumerations are grouped
+    by Product <460> field value. NOTE: Additional values may be used by mutual agreement
+    of the counterparties.'
+  metadata:
+    fix:tag: '167'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:values: '{"BA":"Bankers Acceptance","CD":"Certificate of Deposit","CMO":"Collateralized
+      Mortgage Obligation","CORP":"Corporate Bond","CP":"Commercial Paper","CPP":"Corporate
+      Private Placement","CS":"Common Stock","FHA":"Federal Housing Authority","FHL":"Federal
+      Home Loan","FN":"Federal National Mortgage Association","FOR":"Foreign Exchange
+      Contract ( Deprecated in FIX.5.0.SP1 )","FUT":"Future","GN":"Government National
+      Mortgage Association","GOVT":"Treasuries + Agency Debenture","MF":"Mutual Fund","MIO":"Mortgage
+      Interest Only","MPO":"Mortgage Principal Only","MPP":"Mortgage Private Placement","MPT":"Miscellaneous
+      Pass-through","MUNI":"Municipal Bond","NONE":"No Security Type","OPT":"Option","PS":"Preferred
+      Stock","RP":"Repurchase Agreement","RVRP":"Reverse Repurchase Agreement","SL":"Student
+      Loan Marketing Association","TD":"Time Deposit","USTB":"US Treasury Bill (Use
+      \"TBILL\" (Government)) ( Deprecated in FIX 4.4 )","WAR":"Warrant","ZOO":"Cats,
+      Tigers & Lions (a real code: US Treasury Receipts)","CB":"Convertible Bond","?":"Wildcard
+      entry for use on Security Definition Request <c>","FAC":"Federal Agency Coupon","FADN":"Federal
+      Agency Discount Note","PEF":"Private Export Funding *","DUAL":"Dual Currency","XLINKD":"Indexed
+      Linked","STRUCT":"Structured Notes","YANK":"Yankee Corporate Bond","BRADY":"Brady
+      Bond","TBOND":"US Treasury Bond","TINT":"Interest Strip From Any Bond Or Note","TIPS":"Treasury
+      Inflation Protected Securities","TCAL":"Principal Strip Of A Callable Bond Or
+      Note","TPRN":"Principal Strip From A Non-Callable Bond Or Note","UST":"US Treasury
+      Note (Use \"TNOTE\" (Government)) ( Deprecated in FIX 4.4 )","TERM":"Term Loan","RVLV":"Revolver
+      Loan","RVLVTRM":"Revolver/Term Loan","BRIDGE":"Bridge Loan","LOFC":"Letter of
+      Credit","SWING":"Swing Line Facility","DINP":"Debtor in Possession","DEFLTED":"Defaulted","WITHDRN":"Withdrawn","REPLACD":"Replaced","MATURED":"Matured","AMENDED":"Amended
+      & Restated","RETIRED":"Retired","BN":"Bank Notes","BOX":"Bill of Exchanges","CL":"Call
+      Loans","DN":"Deposit Notes","LQN":"Liquidity Note","MTN":"Medium Term Notes","ONITE":"Overnight","PN":"Promissory
+      Note","PZFJ":"Plazos Fijos","STN":"Short Term Loan Note","XCN":"Extended Comm
+      Note","POOL":"Agency Pools","ABS":"Asset-backed Securities","CMBS":"Corp. Mortgage-backed
+      Securities","IET":"IOETTE Mortgage","MBS":"Mortgage-backed Securities","TBA":"To
+      be Announced","AN":"Other Anticipation Notes (BAN, GAN, etc.)","COFO":"Certificate
+      of Obligation","COFP":"Certificate of Participation","GO":"General Obligation
+      Bonds","MT":"Mandatory Tender","RAN":"Revenue Anticipation Note","REV":"Revenue
+      Bonds","SPCLA":"Special Assessment","SPCLO":"Special Obligation","SPCLT":"Special
+      Tax","TAN":"Tax Anticipation Note","TAXA":"Tax Allocation","TECP":"Tax Exempt
+      Commercial Paper","TRAN":"Tax & Revenue Anticipation Note","VRDN":"Variable
+      Rate Demand Note","MLEG":"Multi-leg instrument","EUSUPRA":"Euro Supranational
+      Coupons *","SUPRA":"USD Supranational Coupons *","EUCORP":"Euro Corporate Bond","REPO":"Repurchase","FORWARD":"Forward","BUYSELL":"Buy
+      Sellback","SECLOAN":"Securities Loan","SECPLEDGE":"Securities Pledge","EUSOV":"Euro
+      Sovereigns *","TNOTE":"US Treasury Note","TBILL":"US Treasury Bill","EUCD":"Euro
+      Certificate of Deposit","EUCP":"Euro Commercial Paper","YCD":"Yankee Certificate
+      of Deposit","PFAND":"Pfandbriefe *","OOF":"Options on Futures","OOP":"Options
+      on Physical - use not recommended","WLD":"Wildcard Entry (was \"?\" in 4.4,
+      used on Security Definition Request <c> message)","CASH":"Cash","FRN":"US Corporate
+      Floating Rate Notes","CDS":"Credit Default Swap","IRS":"Interest Rate Swap","OOC":"Options
+      on Combo","CAN":"Canadian Treasury Notes","CTB":"Canadian Treasury Bills","PROV":"Canadian
+      Provincial Bonds","TB":"Treasury Bill - non US","BDN":"Bank Depository Note","CAMM":"Canadian
+      Money Markets","SLQN":"Secured Liquidity Note","TLQN":"Term Liquidity Note","CMB":"Canadian
+      Mortgage Bonds","TMCP":"Taxable Municipal CP","EUFRN":"Euro Corporate Floating
+      Rate Notes","FXNDF":"Non-deliverable forward","FXSPOT":"FX Spot","FXFWD":"FX
+      Forward","FXSWAP":"FX Swap"}'
+    fix:used_in: '["AllocationReportAck","SettlementInstructionRequest","AllocationInstructionAck","SecurityTypeRequest","Allocation
+      Report Ack","Settlement Instruction Request","Allocation Instruction Ack","Settlement
+      Instructions","Security Type Request","Security Types","Indication of Interest","Advertisement","Execution
+      Report","Quote Status Request","Quote Acknowledgement","News","Security Definition
+      Request","Email","Security Definition","New Order - Single","Security Status
+      Request","New Order - List","Security Status","Order Cancel Request","Order
+      Cancel/Replace Request","Order Status Request","Mass Quote","Allocation","List
+      Strike Price","Don''t Know Trade","Quote Request","Quote","Market Data Request","Market
+      Data - Snapshot/Full Refresh","Market Data - Incremental Refresh","Quote Cancel"]'
+    fix:value_names: '{"BA":"BANKERS_ACCEPTANCE","CD":"CERTIFICATE_OF_DEPOSIT","CMO":"COLLATERALIZED_MORTGAGE_OBLIGATION","CORP":"CORPORATE_BOND","CP":"COMMERCIAL_PAPER","CPP":"CORPORATE_PRIVATE_PLACEMENT","CS":"COMMON_STOCK","FHA":"FEDERAL_HOUSING_AUTHORITY","FHL":"FEDERAL_HOME_LOAN","FN":"FEDERAL_NATIONAL_MORTGAGE_ASSOCIATION","FOR":"FOREIGN_EXCHANGE_CONTRACT","FUT":"FUTURE","GN":"GOVERNMENT_NATIONAL_MORTGAGE_ASSOCIATION","GOVT":"TREASURIES_AGENCY_DEBENTURE","MF":"MUTUAL_FUND","MIO":"MORTGAGE_INTEREST_ONLY","MPO":"MORTGAGE_PRINCIPAL_ONLY","MPP":"MORTGAGE_PRIVATE_PLACEMENT","MPT":"MISCELLANEOUS_PASS_THROUGH","MUNI":"MUNICIPAL_BOND","NONE":"NO_SECURITY_TYPE","OPT":"OPTION","PS":"PREFERRED_STOCK","RP":"REPURCHASE_AGREEMENT","RVRP":"REVERSE_REPURCHASE_AGREEMENT","SL":"STUDENT_LOAN_MARKETING_ASSOCIATION","TD":"TIME_DEPOSIT","USTB":"US_TREASURY_BILL_OLD","WAR":"WARRANT","ZOO":"CATS_TIGERS_AND_LIONS","?":"WILDCARD","CB":"CONVERTIBLE_BOND","IET":"IOETTE_MORTGAGE","VRDN":"VARIABLE_RATE_DEMAND_NOTE","PZFJ":"PLAZOS_FIJOS","PN":"PROMISSORY_NOTE","ONITE":"OVERNIGHT","MTN":"MEDIUM_TERM_NOTES","TECP":"TAX_EXEMPT_COMMERCIAL_PAPER","AMENDED":"AMENDED","BRIDGE":"BRIDGE_LOAN","LOFC":"LETTER_OF_CREDIT","SWING":"SWING_LINE_FACILITY","DINP":"DEBTOR_IN_POSSESSION","DEFLTED":"DEFAULTED","WITHDRN":"WITHDRAWN","LQN":"LIQUIDITY_NOTE","MATURED":"MATURED","DN":"DEPOSIT_NOTES","RETIRED":"RETIRED","BN":"BANK_NOTES","BOX":"BILL_OF_EXCHANGES","CL":"CALL_LOANS","REPLACD":"REPLACED","MT":"MANDATORY_TENDER","RVLVTRM":"REVOLVER","STN":"SHORT_TERM_LOAN_NOTE","TBA":"TO_BE_ANNOUNCED","AN":"OTHER_ANTICIPATION_NOTES","COFP":"CERTIFICATE_OF_PARTICIPATION","MBS":"MORTGAGE_BACKED_SECURITIES","REV":"REVENUE_BONDS","SPCLA":"SPECIAL_ASSESSMENT","SPCLO":"SPECIAL_OBLIGATION","SPCLT":"SPECIAL_TAX","TAN":"TAX_ANTICIPATION_NOTE","TAXA":"TAX_ALLOCATION","COFO":"CERTIFICATE_OF_OBLIGATION","GO":"GENERAL_OBLIGATION_BONDS","MLEG":"MULTILEG_INSTRUMENT","TRAN":"TAX_REVENUE_ANTICIPATION_NOTE","XCN":"EXTENDED_COMM_NOTE","POOL":"AGENCY_POOLS","ABS":"ASSET_BACKED_SECURITIES","CMBS":"CORP","RAN":"REVENUE_ANTICIPATION_NOTE","RVLV":"REVOLVER_LOAN","FAC":"FEDERAL_AGENCY_COUPON","FADN":"FEDERAL_AGENCY_DISCOUNT_NOTE","PEF":"PRIVATE_EXPORT_FUNDING","DUAL":"DUAL_CURRENCY","XLINKD":"INDEXED_LINKED","YANK":"YANKEE_CORPORATE_BOND","BRADY":"BRADY_BOND","TBOND":"US_TREASURY_BOND","TINT":"INTEREST_STRIP_FROM_ANY_BOND_OR_NOTE","TIPS":"TREASURY_INFLATION_PROTECTED_SECURITIES","TCAL":"PRINCIPAL_STRIP_OF_A_CALLABLE_BOND_OR_NOTE","TPRN":"PRINCIPAL_STRIP_FROM_A_NON_CALLABLE_BOND_OR_NOTE","UST":"US_TREASURY_NOTE_OLD","TERM":"TERM_LOAN","STRUCT":"STRUCTURED_NOTES","EUSUPRA":"EURO_SUPRANATIONAL_COUPONS","SUPRA":"USD_SUPRANATIONAL_COUPONS","EUCORP":"EURO_CORPORATE_BOND","EUSOV":"EURO_SOVEREIGNS","TNOTE":"US_TREASURY_NOTE","TBILL":"US_TREASURY_BILL","REPO":"REPURCHASE","FORWARD":"FORWARD","BUYSELL":"BUY_SELLBACK","SECLOAN":"SECURITIES_LOAN","SECPLEDGE":"SECURITIES_PLEDGE","EUCD":"EURO_CERTIFICATE_OF_DEPOSIT","EUCP":"EURO_COMMERCIAL_PAPER","YCD":"YANKEE_CERTIFICATE_OF_DEPOSIT","PFAND":"PFANDBRIEF","OOF":"OPTIONS_ON_FUTURES","OOP":"OPTIONS_ON_PHYSICAL","WLD":"WILDCARD_ENTRY","CASH":"CASH","EUFRN":"EURO_CORPORATE_FLOATING_RATE_NOTES","FRN":"US_CORPORATE_FLOATING_RATE_NOTES","CDS":"CREDIT_DEFAULT_SWAP","IRS":"INTEREST_RATE_SWAP","OOC":"OPTIONS_ON_COMBO","CAN":"CANADIAN_TREASURY_NOTES","CTB":"CANADIAN_TREASURY_BILLS","PROV":"CANADIAN_PROVINCIAL_BONDS","TB":"TREASURY_BILL","BDN":"BANK_DEPOSITORY_NOTE","CAMM":"CANADIAN_MONEY_MARKETS","SLQN":"SECURED_LIQUIDITY_NOTE","TLQN":"TERM_LIQUIDITY_NOTE","CMB":"CANADIAN_MORTGAGE_BONDS","TMCP":"TAXABLE_MUNICIPAL_CP","DIMSUMCORP":"OFFSHORE_ISSUED_CHINESE_YUAN_CORPORATE_BOND","PRCORP":"PREFERRED_CORPORATE_BOND","FXNDF":"NON_DELIVERABLE_FORWARD","FXSPOT":"FX_SPOT","FXFWD":"FX_FORWARD","FXSWAP":"FX_SWAP","FXNDS":"NON_DELIVERABLE_SWAP","FXBN":"FX_BANK_NOTE","FXDN":"FOREIGN_CURRENCY_DISCOUNT_NOTE","CAP":"CAP","CLLR":"COLLAR","CMDTYSWAP":"COMMODITY_SWAP","EXOTIC":"EXOTIC","FLR":"FLOOR","FRA":"FRA","FWD":"DERIVATIVE_FORWARD","TRS":"TOTAL_RETURN_SWAP","LOANLEASE":"LOAN_LEASE","SPOTFWD":"SPOT_FORWARD","SWAPTION":"SWAP_OPTION","XMISSION":"TRANSMISSION","INDEX":"INDEX","BDBSKT":"BOND_BASKET","CFD":"CONTRACT_FOR_DIFFERENCE","CRLTNSWAP":"CORRELATION_SWAP","DVDNDSWAP":"DIVIEND_SWAP","EQBSKT":"EQUITY_BASKET","EQFWD":"EQUITY_FORWARD","RTRNSWAP":"RETURN_SWAP","VARSWAP":"VARIANCE_SWAP","PRTFLIOSWAP":"PORTFOLIO_SWAPS","FUTSWAP":"FUTURES_ON_A_SWAP","FWDSWAP":"FORWARDS_ON_A_SWAP","FWDFRTAGMT":"FORWARD_FREIGHT_AGREEMENT","SPREADBET":"SPREAD_BETTING","ETC":"EXCHANGE_TRADED_COMMODITY","DR":"DEPOSITORY_RECEIPTS","DVPLDG":"DELIVERY_VERSUS_PLEDGE","COLLBSKT":"COLLATERAL_BASKET","SFP":"STRUCTURED_FINANCE_PRODUCT","MRGNLOAN":"MARGIN_LOAN","DIMSUMSOV":"OFFSHORE_ISSUED_CHINESE_YUAN_SOVEREIGN_BOND","SOV":"SOVEREIGN_BOND","TFRN":"US_TREASURY_FLOATING_RATE_NOTE","BAB":"BANK_ACCEPTED_BILL","BNST":"SHORT_TERM_BANK_NOTE","CLCP":"CALLABLE_COMMERCIAL_PAPER","CN":"COMMERCIAL_NOTE","CPIB":"INTEREST_BEARING_COMMERCIAL_PAPER","EUMTN":"EURO_MEDIUM_TERM_NOTE","EUNCP":"EURO_NEGOTIABLE_COMMERCIAL_PAPER","EUSTLQN":"EURO_STRUCTURED_LIQUIDITY_NOTE","EUTD":"EURO_TIME_DEPOSIT","JCD":"JUMBO_CERTIFICATE_OF_DEPOSIT","MMF":"MONEY_MARKET_FUND","MN":"MASTER_NOTE","NCD":"NEGOTIABLE_CERTIFICATE_OF_DEPOSIT","NCP":"NEGOTIABLE_COMMERCIAL_PAPER","RCD":"RETAIL_CERTIFICATE_OF_DEPOSIT","TDR":"TERM_DEPOSIT_RECEIPT","MCPIB":"MUNICIPAL_INTEREST_BEARING_COMMERCIAL_PAPER","TMB":"TAXABLE_MUNICIPAL_BOND","VRDO":"VARIABLE_RATE_DEMAND_OBLIGATION","Other":"OTHER","ETN":"EXCHANGE_TRADED_NOTE","SECDERIV":"SECURITIZED_DERIVATIVE","ETF":"EXCHANGE_TRADED_FUND","DIGITAL":"DIGITAL_ASSET"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char"}'
+    fix:name: SecurityType
 - name: cfi_code
   type: string
   nullable: true
-  description: '`CFICode <461>`: what kind of instrument it is, as ISO 10962 spells
-    it.'
+  description: Indicates the type of security using ISO 10962 standard, Classification
+    of Financial Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association
+    of National Numbering Agencies) acting as Registration Authority. See Appendix
+    6-B FIX Fields Based Upon Other Standards . See also the Product <460> and SecurityType
+    <167> fields. It is recommended that CFICode <461> be used instead of SecurityType
+    <167> for non-Fixed Income instruments. A subset of possible values applicable
+    to FIX usage are identified in Appendix 6-D CFICode Usage - ISO 10962 Classification
+    of Financial Instruments (CFI code)
+  metadata:
+    fix:tag: '461'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:used_in: '["SettlementInstructionRequest","Settlement Instruction Request","Settlement
+      Instructions","Security Types"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
+    fix:name: CFICode
 - name: security_exchange
   type: string
   nullable: true
-  description: '`SecurityExchange <207>`: the market the instrument is listed on.'
+  description: Market used to help identify a security.
+  metadata:
+    fix:tag: '207'
+    fix:type: Exchange
+    fix:version: 5.0.SP2
+    fix:used_in: '["TradingSessionListRequest","TradingSessionStatusRequest","Indication
+      of Interest","Advertisement","Execution Report","Quote Status Request","Quote
+      Acknowledgement","News","Security Definition Request","Email","Security Definition","New
+      Order - Single","Security Status Request","New Order - List","Security Status","Order
+      Cancel Request","Order Cancel/Replace Request","Order Status Request","Mass
+      Quote","Allocation","List Strike Price","Don''t Know Trade","Quote Request","Quote","Market
+      Data Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental
+      Refresh","Quote Cancel"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
+    fix:types: '{"5.0.SP2":"Exchange","5.0.SP1":"Exchange","5.0":"Exchange","4.4":"Exchange","4.3":"Exchange","4.2":"Exchange","4.1":"char"}'
+    fix:name: SecurityExchange
 - name: currency
   type: string
   nullable: true
-  description: '`Currency <15>`, which is what the prices below are in.'
+  description: 'Identifies currency used for price. Absence of this field is interpreted
+    as the default for the security. It is recommended that systems provide the currency
+    value whenever possible. See Appendix 6-A: Valid Currency Codes for information
+    on obtaining'
+  metadata:
+    fix:tag: '15'
+    fix:type: Currency
+    fix:version: 5.0.SP2
+    fix:used_in: '["IOI","Advertisement","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReport","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportAck","AllocationReport","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","AllocationInstructionAlert","SecurityDefinitionUpdateReport","MarketDefinition","MarketDefinitionUpdateReport","SecurityDefinitionRequest","SecurityDefinition","NewOrderSingle","SecurityStatusRequest","SecurityStatus","OrderCancelReplaceRequest","AllocationInstruction","BidRequest","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","SecurityListRequest","DerivativeSecurityListRequest","Execution
+      Report","Derivative Security List","New Order Multileg","Multileg Order Cancel/Replace","Trade
+      Capture Report","Quote Request Reject","Quote Status Report","Quote Response","Position
+      Maintenance Request","Position Maintenance Report","Request For Positions","Request
+      for Positions Ack","Position Report","Allocation Report","Assignment Report","Collateral
+      Request","Collateral Assignment","Collateral Response","Mass Quote Acknowledgement","Collateral
+      Report","Collateral Inquiry","Collateral Inquiry Ack","Security Definition Request","Security
+      Definition","New Order Single","Security Status Request","New Order List","Security
+      Status","Order Cancel/Replace Request","Mass Quote","Allocation Instruction","Bid
+      Request","List Strike Price","Quote Request","New Order Cross","Cross Order
+      Cancel/Replace Request","Market Data - Snapshot/Full Refresh","Security List
+      Request","Market Data - Incremental Refresh","Security List","Derivative Security
+      List Request","Indications of Interest","New Order - Multileg","Multileg Order
+      Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
+      Order - Cross","Indication of Interest"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency","4.2":"Currency","4.1":"char","4.0":"char"}'
+    fix:name: Currency
 - name: account
   type: string
   nullable: true
-  description: '`Account <1>`.'
+  description: Account mnemonic as agreed between buy and sell sides, e.g. broker
+    and institution or investor/intermediary and fund manager.
+  metadata:
+    fix:tag: '1'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:used_in: '["ExecutionReport","OrderCancelReject","QuoteStatusRequest","NewOrderMultileg","MultilegOrderCancelReplace","OrderMassStatusRequest","QuoteStatusReport","QuoteResponse","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","MassQuoteAcknowledgement","CollateralReport","CollateralInquiry","CollateralInquiryAck","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","MassQuote","RegistrationInstructions","RegistrationInstructionsResponse","Quote","QuoteCancel","Execution
+      Report","Order Cancel Reject","Quote Status Request","New Order Multileg","Multileg
+      Order Cancel/Replace","Trade Capture Report","Order Mass Status Request","Quote
+      Request Reject","Quote Status Report","Quote Response","Position Maintenance
+      Request","Position Maintenance Report","Request For Positions","Request for
+      Positions Ack","Position Report","Trade Capture Report Ack","Assignment Report","Collateral
+      Request","Collateral Assignment","Collateral Response","Mass Quote Acknowledgement","Collateral
+      Report","Collateral Inquiry","Collateral Inquiry Ack","New Order Single","New
+      Order List","Order Cancel Request","Order Cancel/Replace Request","Order Status
+      Request","Mass Quote","Bid Request","Registration Instructions","Registration
+      Instructions Response","Quote Request","New Order Cross","Cross Order Cancel/Replace
+      Request","Quote Cancel","New Order - Multileg","Multileg Order Cancel/Replace
+      Request","New Order - Single","New Order - List","New Order - Cross"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:name: Account
 - name: cl_ord_id
   type: string
   nullable: true
-  description: '`ClOrdID <11>`: the client''s own identifier for the order.'
+  description: Unique identifier for Order as assigned by the buy-side (institution,
+    broker, intermediary etc.) (identified by SenderCompID <49> or OnBehalfOfCompID
+    <115> as appropriate). Uniqueness must be guaranteed within a single trading day.
+    Firms, particularly those which electronically submit multi-day orders, trade
+    globally or throughout market close periods, should ensure uniqueness across days,
+    for example by embedding a date within the ClOrdID <11> field.
+  metadata:
+    fix:tag: '11'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:used_in: '["ExecutionReport","OrderCancelReject","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","QuoteResponse","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","ExecutionAcknowledgement","OrderMassActionReport","Email","OrderMassActionRequest","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","RegistrationInstructions","RegistrationInstructionsResponse","OrderMassCancelRequest","OrderMassCancelReport","QuoteRequest","SettlementInstructions","Execution
+      Report","Order Cancel Reject","New Order Multileg","Multileg Order Cancel/Replace","Trade
+      Capture Report Request","Trade Capture Report","Quote Response","Confirmation","Allocation
+      Report","Collateral Request","Collateral Assignment","Collateral Response","Collateral
+      Report","Collateral Inquiry","Collateral Inquiry Ack","Confirmation Request","New
+      Order Single","New Order List","Order Cancel Request","Order Cancel/Replace
+      Request","Order Status Request","Allocation Instruction","List Strike Price","List
+      Status","Registration Instructions","Registration Instructions Response","Order
+      Mass Cancel Request","Order Mass Cancel Report","Quote Request","New Order Cross","Cross
+      Order Cancel/Replace Request","Settlement Instructions","Cross Order Cancel
+      Request","New Order - Multileg","Multileg Order Cancel/Replace Request","New
+      Order - Single","New Order - List","Allocation","New Order - Cross"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:name: ClOrdID
 - name: orig_cl_ord_id
   type: string
   nullable: true
-  description: '`OrigClOrdID <41>`: which order an amendment or cancel is about.'
+  description: ClOrdID <11> of the previous order (NOT the initial order of the day)
+    as assigned by the institution, used to identify the previous order in cancel
+    and cancel/replace requests.
+  metadata:
+    fix:tag: '41'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:used_in: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","OrderCancelRequest","OrderCancelReplaceRequest","Execution
+      Report","Order Cancel Reject","Multileg Order Cancel/Replace","Order Cancel
+      Request","Order Cancel/Replace Request","Order Mass Cancel Report","Cross Order
+      Cancel/Replace Request","Cross Order Cancel Request"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:name: OrigClOrdID
 - name: order_id
   type: string
   nullable: true
-  description: '`OrderID <37>`: the venue''s identifier for it.'
+  description: Unique identifier for Order as assigned by sell-side (broker, exchange,
+    ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept
+    multi-day orders should consider embedding a date within the OrderID field to
+    assure uniqueness across days.
+  metadata:
+    fix:tag: '37'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:used_in: '["ExecutionReport","OrderCancelReject","MultilegOrderCancelReplace","TradeCaptureReportRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","CollateralInquiryAck","ExecutionAcknowledgement","Email","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","DontKnowTradeDK","OrderMassCancelReport","CrossOrderCancelReplaceRequest","CrossOrderCancelRequest","Execution
+      Report","Order Cancel Reject","Multileg Order Cancel/Replace","Trade Capture
+      Report Request","Trade Capture Report","Confirmation","Allocation Report","Collateral
+      Request","Collateral Assignment","Collateral Response","Collateral Report","Collateral
+      Inquiry","Collateral Inquiry Ack","Confirmation Request","Order Cancel Request","Order
+      Cancel/Replace Request","Order Status Request","Allocation Instruction","Don''t
+      Know Trade","Order Mass Cancel Report","Cross Order Cancel/Replace Request","Cross
+      Order Cancel Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental
+      Refresh","Multileg Order Cancel/Replace Request","Allocation"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:name: OrderID
 - name: exec_id
   type: string
   nullable: true
-  description: '`ExecID <17>`: the venue''s identifier for this execution report.'
+  description: Unique identifier of execution message as assigned by sell-side (broker,
+    exchange, ECN) (will be 0 (zero) for ExecType <150> ='I' (Order Status)). Uniqueness
+    must be guaranteed within a single trading day or the life of a multi-day order.
+    Firms which accept multi-day orders should consider embedding a date within the
+    ExecID <17> field to assure uniqueness across days. (Prior to FIX 4.1 this field
+    was of type int)
+  metadata:
+    fix:tag: '17'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:used_in: '["ExecutionReport","TradeCaptureReportRequest","TradeCaptureReport","TradeCaptureReportAck","ExecutionAcknowledgement","DontKnowTradeDK","Execution
+      Report","Trade Capture Report Request","Trade Capture Report","Trade Capture
+      Report Ack","Allocation Report","Collateral Request","Collateral Assignment","Collateral
+      Response","Collateral Report","Collateral Inquiry","Collateral Inquiry Ack","Allocation
+      Instruction","Don''t Know Trade","Allocation"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"int"}'
+    fix:name: ExecID
 - name: side
   type: string
   nullable: true
-  description: '`Side <54>`: `1` buy, `2` sell, and the rest of the standard''s codes.'
+  description: Side of order.
+  metadata:
+    fix:tag: '54'
+    fix:type: char
+    fix:version: 5.0.SP2
+    fix:values: '{"1":"Buy","2":"Sell","3":"Buy minus","4":"Sell plus","5":"Sell short","6":"Sell
+      short exempt","7":"Undisclosed (valid for IOI and List Order messages only)","8":"Cross
+      (orders where counterparty is an exchange, valid for all messages except IOIs)","9":"Cross
+      short","A":"Cross short exempt","B":"\"As Defined\" (for use with multileg instruments)","C":"\"Opposite\"
+      (for use with multileg instruments)","D":"Subscribe (e.g. CIV)","E":"Redeem
+      (e.g. CIV)","F":"Lend (FINANCING - identifies direction of collateral)","G":"Borrow
+      (FINANCING - identifies direction of collateral)"}'
+    fix:used_in: '["IOI","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","OrderMassStatusRequest","QuoteStatusReport","QuoteResponse","Confirmation","AllocationReport","SettlementInstructionRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","AllocationInstructionAlert","ExecutionAcknowledgement","OrderMassActionReport","OrderMassActionRequest","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","AllocationInstruction","OrderMassCancelRequest","DontKnowTradeDK","OrderMassCancelReport","Quote","Execution
+      Report","New Order Multileg","Multileg Order Cancel/Replace","Trade Capture
+      Report Request","Trade Capture Report","Order Mass Status Request","Quote Request
+      Reject","Quote Status Report","Quote Response","Allocation Report","Settlement
+      Instruction Request","Collateral Request","Collateral Assignment","Collateral
+      Response","Collateral Report","Collateral Inquiry","New Order Single","New Order
+      List","Order Cancel Request","Order Cancel/Replace Request","Order Status Request","Allocation
+      Instruction","Bid Request","Bid Response","List Strike Price","Order Mass Cancel
+      Request","Don''t Know Trade","Order Mass Cancel Report","Quote Request","New
+      Order Cross","Cross Order Cancel/Replace Request","Settlement Instructions","Cross
+      Order Cancel Request","Indications of Interest","New Order - Multileg","Multileg
+      Order Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
+      Order - Cross","Indication of Interest","Quote Status Request","Security Definition
+      Request","Security Definition"]'
+    fix:value_names: '{"1":"BUY","2":"SELL","3":"BUY_MINUS","4":"SELL_PLUS","5":"SELL_SHORT","6":"SELL_SHORT_EXEMPT","7":"UNDISCLOSED","8":"CROSS","9":"CROSS_SHORT","B":"AS_DEFINED","C":"OPPOSITE","A":"CROSS_SHORT_EXEMPT","D":"SUBSCRIBE","E":"REDEEM","F":"LEND","G":"BORROW","H":"SELL_UNDISCLOSED"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+    fix:name: Side
 - name: ord_type
   type: string
   nullable: true
-  description: '`OrdType <40>`: `1` market, `2` limit, ...'
+  description: Order type.
+  metadata:
+    fix:tag: '40'
+    fix:type: char
+    fix:version: 5.0.SP2
+    fix:values: '{"1":"Market","2":"Limit","3":"Stop / Stop Loss","4":"Stop Limit","5":"Market
+      On Close (No longer used) (Deprecated in FIX 4.3)","6":"With Or Without","7":"Limit
+      Or Better (Deprecated in FIX 4.4)","8":"Limit With Or Without","9":"On Basis","A":"On
+      Close (No longer used) (Deprecated in FIX 4.3)","B":"Limit On Close (No longer
+      used) (Deprecated in FIX 4.3)","C":"Forex Market (No longer used) (Deprecated
+      in FIX 4.3)","D":"Previously Quoted","E":"Previously Indicated","P":"Pegged","F":"Forex
+      Limit (No longer used) (Deprecated in FIX 4.3)","G":"Forex Swap","H":"Forex
+      Previously Quoted (No longer used) (Deprecated in FIX 4.3)","I":"Funari (Limit
+      day order with unexecuted portion handles as Market On Close. E.g. Japan)","J":"Market
+      If Touched (MIT)","K":"Market With Left Over as Limit (market order with unexecuted
+      quantity becoming limit order at last price)","L":"Previous Fund Valuation Point
+      (Historic pricing; for CIV)","M":"Next Fund Valuation Point (Forward pricing;
+      for CIV)","Q":"Counter-Order Selection"}'
+    fix:used_in: '["ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","QuoteStatusReport","QuoteResponse","NewOrderSingle","OrderCancelReplaceRequest","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","Execution
+      Report","New Order Multileg","Multileg Order Cancel/Replace","Trade Capture
+      Report","Quote Request Reject","Quote Status Report","Quote Response","Mass
+      Quote Acknowledgement","New Order Single","New Order List","Order Cancel/Replace
+      Request","Mass Quote","Quote Request","New Order Cross","Cross Order Cancel/Replace
+      Request","New Order - Multileg","Multileg Order Cancel/Replace Request","New
+      Order - Single","New Order - List","New Order - Cross","Order - List"]'
+    fix:value_names: '{"1":"MARKET","2":"LIMIT","3":"STOP","4":"STOP_LIMIT","5":"MARKET_ON_CLOSE","6":"WITH_OR_WITHOUT","7":"LIMIT_OR_BETTER","8":"LIMIT_WITH_OR_WITHOUT","9":"ON_BASIS","A":"ON_CLOSE","B":"LIMIT_ON_CLOSE","C":"FOREX_MARKET","D":"PREVIOUSLY_QUOTED","E":"PREVIOUSLY_INDICATED","P":"PEGGED","F":"FOREX_LIMIT","G":"FOREX_SWAP","H":"FOREX_PREVIOUSLY_QUOTED","I":"FUNARI","J":"MARKET_IF_TOUCHED","K":"MARKET_WITH_LEFT_OVER_AS_LIMIT","L":"PREVIOUS_FUND_VALUATION_POINT","M":"NEXT_FUND_VALUATION_POINT","Q":"COUNTER_ORDER_SELECTION","R":"STOP_ON_BID_OR_OFFER","S":"STOP_LIMIT_ON_BID_OR_OFFER"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+    fix:name: OrdType
 - name: time_in_force
   type: string
   nullable: true
-  description: '`TimeInForce <59>`: `0` day, `1` GTC, `3` IOC, ...'
+  description: Specifies how long the order remains in effect. Absence of this field
+    is interpreted as DAY. NOTE not applicable to CIV Orders.
+  metadata:
+    fix:tag: '59'
+    fix:type: char
+    fix:version: 5.0.SP2
+    fix:values: '{"0":"Day (or session)","1":"Good Till Cancel (GTC)","2":"At the
+      Opening (OPG)","3":"Immediate Or Cancel (IOC)","4":"Fill Or Kill (FOK)","5":"Good
+      Till Crossing (GTX)","6":"Good Till Date (GTD)","7":"At the Close","8":"Good
+      Through Crossing","9":"At Crossing"}'
+    fix:used_in: '["ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelReplaceRequest","NewOrderCross","CrossOrderCancelReplaceRequest","Execution
+      Report","New Order Multileg","Multileg Order Cancel/Replace","New Order Single","New
+      Order List","Order Cancel/Replace Request","New Order Cross","Cross Order Cancel/Replace
+      Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental Refresh","New
+      Order - Multileg","Multileg Order Cancel/Replace Request","New Order - Single","New
+      Order - List","New Order - Cross"]'
+    fix:value_names: '{"0":"DAY","1":"GOOD_TILL_CANCEL","2":"AT_THE_OPENING","3":"IMMEDIATE_OR_CANCEL","4":"FILL_OR_KILL","5":"GOOD_TILL_CROSSING","6":"GOOD_TILL_DATE","7":"AT_THE_CLOSE","8":"GOOD_THROUGH_CROSSING","9":"AT_CROSSING","A":"GOOD_FOR_TIME","B":"GOOD_FOR_AUCTION","C":"GOOD_FOR_MONTH"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+    fix:name: TimeInForce
 - name: ord_status
   type: string
   nullable: true
-  description: '`OrdStatus <39>`: where the order stands.'
+  description: Identifies current status of order.
+  metadata:
+    fix:tag: '39'
+    fix:type: char
+    fix:version: 5.0.SP2
+    fix:values: '{"0":"New","1":"Partially filled","2":"Filled","3":"Done for day","4":"Canceled","5":"Replaced
+      (No longer used) (Deprecated in FIX.4.3)","6":"Pending Cancel (i.e. result of
+      Order Cancel Request <F> )","7":"Stopped","8":"Rejected","9":"Suspended","A":"Pending
+      New","B":"Calculated","C":"Expired","D":"Accepted for Bidding","E":"Pending
+      Replace (i.e. result of Order Cancel/Replace Request <G> )"}'
+    fix:used_in: '["ExecutionReport","OrderCancelReject","TradeCaptureReport","TradeCaptureReportAck","Execution
+      Report","Order Cancel Reject","Trade Capture Report","List Status"]'
+    fix:value_names: '{"0":"NEW","1":"PARTIALLY_FILLED","2":"FILLED","3":"DONE_FOR_DAY","4":"CANCELED","5":"REPLACED","6":"PENDING_CANCEL","7":"STOPPED","8":"REJECTED","9":"SUSPENDED","A":"PENDING_NEW","B":"CALCULATED","C":"EXPIRED","D":"ACCEPTED_FOR_BIDDING","E":"PENDING_REPLACE"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+    fix:name: OrdStatus
 - name: exec_type
   type: string
   nullable: true
-  description: '`ExecType <150>`: what this report is reporting.'
+  description: Describes the specific Execution Report (i.e. Pending Cancel) while
+    OrdStatus <39> will always identify the current order status (i.e. Partially Filled)
+  metadata:
+    fix:tag: '150'
+    fix:type: char
+    fix:version: 5.0.SP2
+    fix:values: '{"0":"New","1":"Partial fill ( Replaced )","2":"Fill ( Replaced )","3":"Done
+      for day","4":"Canceled","5":"Replaced","6":"Pending Cancel (e.g. result of Order
+      Cancel Request <F> )","7":"Stopped","8":"Rejected","9":"Suspended","A":"Pending
+      New","B":"Calculated","C":"Expired","D":"Restated ( Execution Report <8> sent
+      unsolicited by sellside, with ExecRestatementReason <378> set)","E":"Pending
+      Replace (e.g. result of Order Cancel/Replace Request <G> )","F":"Trade (partial
+      fill or fill)","G":"Trade Correct","H":"Trade Cancel","I":"Order Status","J":"Trade
+      in a Clearing Hold","K":"Trade has been released to Clearing","L":"Triggered
+      or Activated by System"}'
+    fix:used_in: '["ExecutionReport","TradeCaptureReport","TradeCaptureReportAck","TradeCaptureReportRequest","Execution
+      Report","Trade Capture Report Request","Trade Capture Report","Trade Capture
+      Report Ack"]'
+    fix:value_names: '{"0":"NEW","1":"PARTIAL_FILL","2":"FILL","3":"DONE_FOR_DAY","4":"CANCELED","5":"REPLACED","6":"PENDING_CANCEL","7":"STOPPED","8":"REJECTED","9":"SUSPENDED","A":"PENDING_NEW","B":"CALCULATED","C":"EXPIRED","D":"RESTATED","E":"PENDING_REPLACE","F":"TRADE","G":"TRADE_CORRECT","H":"TRADE_CANCEL","I":"ORDER_STATUS","J":"TRADE_IN_A_CLEARING_HOLD","K":"TRADE_HAS_BEEN_RELEASED_TO_CLEARING","L":"TRIGGERED_OR_ACTIVATED_BY_SYSTEM","M":"LOCKED","N":"RELEASED"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
+    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char"}'
+    fix:name: ExecType
 - name: order_qty
   type: double
   nullable: true
-  description: '`OrderQty <38>`: how much was asked for.'
+  description: Quantity ordered. This represents the number of shares for equities
+    or par, face or nominal value for FI instruments. (Prior to FIX 4.2 this field
+    was of type int)
+  metadata:
+    fix:tag: '38'
+    fix:type: Qty
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+    fix:used_in: '["Confirmation","Allocation Report","Confirmation Request","Allocation
+      Instruction","Quote Request Reject","Quote Request","Execution Report","New
+      Order - Single","New Order - List","Order Cancel Request","Order Cancel/Replace
+      Request","Don''t Know Trade"]'
+    fix:name: OrderQty
 - name: price
   type: double
   nullable: true
-  description: '`Price <44>`: the limit, when there is one.'
-- name: avg_px
+  description: Price per unit of quantity (e.g. per share)
+  metadata:
+    fix:tag: '44'
+    fix:type: Price
+    fix:version: 5.0.SP2
+    fix:used_in: '["IOI","Advertisement","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","QuoteStatusReport","QuoteResponse","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","NewOrderSingle","OrderCancelReplaceRequest","NewOrderCross","CrossOrderCancelReplaceRequest","Execution
+      Report","New Order Multileg","Multileg Order Cancel/Replace","Quote Request
+      Reject","Quote Status Report","Quote Response","Collateral Request","Collateral
+      Assignment","Collateral Response","Collateral Report","Collateral Inquiry","New
+      Order Single","New Order List","Order Cancel/Replace Request","Bid Response","List
+      Strike Price","Quote Request","New Order Cross","Cross Order Cancel/Replace
+      Request","Indications of Interest","New Order - Multileg","Multileg Order Cancel/Replace
+      Request","New Order - Single","New Order - List","New Order - Cross","Indication
+      of Interest"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+    fix:name: Price
+- name: vwap
   type: double
   nullable: true
-  description: '`AvgPx <6>`: the average of what has filled so far.'
+  description: Calculated average price of all fills on this order. For Fixed Income
+    trades AvgPx <6> is always expressed as percent-of-par , regardless of the PriceType
+    <423> of LastPx <31> . I.e., AvgPx will contain an average of percent-of-par values
+    (see LastParPx <669> ) for issues traded in Yield, Spread or Discount.
+  metadata:
+    fix:tag: '6'
+    fix:type: Price
+    fix:version: 5.0.SP2
+    fix:used_in: '["ExecutionReport","TradeCaptureReport","Confirmation","ExecutionAcknowledgement","TradeCaptureReportAck","AllocationReport","AllocationInstructionAlert","AllocationInstruction","Execution
+      Report","Trade Capture Report","Allocation Report","Allocation Instruction","List
+      Status","Allocation"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+    fix:name: AvgPx
 - name: cum_qty
   type: double
   nullable: true
-  description: '`CumQty <14>`: how much has filled.'
+  description: Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this
+    field was of type int)
+  metadata:
+    fix:tag: '14'
+    fix:type: Qty
+    fix:version: 5.0.SP2
+    fix:used_in: '["ExecutionReport","ExecutionAcknowledgement","Execution Report","List
+      Status"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+    fix:name: CumQty
 - name: leaves_qty
   type: double
   nullable: true
-  description: '`LeavesQty <151>`: how much is still working.'
+  description: Quantity open for further execution. If the OrdStatus <39> is 'Canceled',
+    'DoneForTheDay', 'Expired', 'Calculated', or 'Rejected' (in which case the order
+    is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151>
+    = OrderQty <38> – CumQty <14> . (Prior to FIX 4.2 this field was of type int)
+  metadata:
+    fix:tag: '151'
+    fix:type: Qty
+    fix:version: 5.0.SP2
+    fix:used_in: '["ExecutionReport","Execution Report","List Status"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
+    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int"}'
+    fix:name: LeavesQty
 - name: last_px
   type: double
   nullable: true
-  description: '`LastPx <31>`: the price of this fill.'
+  description: Price of this (last) fill.
+  metadata:
+    fix:tag: '31'
+    fix:type: Price
+    fix:version: 5.0.SP2
+    fix:used_in: '["ExecutionReport","TradeCaptureReport","TradeCaptureReportAck","ExecutionAcknowledgement","SecurityStatus","DontKnowTradeDK","Execution
+      Report","Trade Capture Report","Allocation Report","Security Status","Allocation
+      Instruction","Don''t Know Trade","Allocation"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+    fix:name: LastPx
 - name: last_qty
   type: double
   nullable: true
-  description: '`LastQty <32>`: the size of this fill.'
-- name: transact_unix
-  type: int64
+  description: Quantity (e.g. shares) bought/sold on this (last) fill. (Prior to FIX
+    4.2 this field was of type int)
+  metadata:
+    fix:tag: '32'
+    fix:type: Qty
+    fix:version: 5.0.SP2
+    fix:used_in: '["ExecutionReport","TradeCaptureReport","TradeCaptureReportAck","ExecutionAcknowledgement","DontKnowTradeDK","Execution
+      Report","Trade Capture Report","Allocation Report","Allocation Instruction","Don''t
+      Know Trade","Allocation"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+    fix:names: '{"5.0.SP2":"LastQty","5.0.SP1":"LastQty","5.0":"LastQty","4.4":"LastQty","4.3":"LastShares
+      prior to FIX 4.3)","4.2":"LastShares","4.1":"LastShares","4.0":"LastShares"}'
+    fix:name: LastQty
+- name: transact_time
+  type: timestamp[us, tz=UTC]
   nullable: true
-  description: '`TransactTime <60>`: when the business event happened, in nanoseconds.'
+  description: Timestamp when the business transaction represented by the message
+    occurred.
+  metadata:
+    fix:tag: '60'
+    fix:type: UTCTimestamp
+    fix:version: 5.0.SP2
+    fix:used_in: '["IOI","Advertisement","ExecutionReport","OrderCancelReject","DerivativeSecurityList","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReport","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","TradeCaptureReportAck","AllocationReport","AllocationReportAck","Confirmation_Ack","SettlementInstructionRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","ConfirmationRequest","SecurityListUpdateReport","AllocationInstructionAlert","ContraryIntentionReport","SecurityDefinitionUpdateReport","SettlementObligationReport","DerivativeSecurityListUpdateReport","MarketDefinition","MarketDefinitionUpdateReport","OrderMassActionReport","OrderMassActionRequest","SecurityDefinition","NewOrderSingle","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","AllocationInstruction","ListCancelRequest","ListExecute","ListStatus","AllocationInstructionAck","OrderMassCancelRequest","OrderMassCancelReport","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","SettlementInstructions","CrossOrderCancelRequest","SecurityList","Execution
+      Report","Order Cancel Reject","New Order Multileg","Multileg Order Cancel/Replace","Trade
+      Capture Report Request","Trade Capture Report","Quote Request Reject","Quote
+      Status Report","Quote Response","Position Maintenance Request","Position Maintenance
+      Report","Request For Positions","Trade Capture Report Ack","Allocation Report","Allocation
+      Report Ack","Confirmation Ack","Settlement Instruction Request","Collateral
+      Request","Collateral Assignment","Collateral Response","Mass Quote Acknowledgement","Confirmation
+      Request","New Order Single","New Order List","Security Status","Order Cancel
+      Request","Order Cancel/Replace Request","Mass Quote","Allocation Instruction","List
+      Cancel Request","List Execute","List Status","Allocation Instruction Ack","Order
+      Mass Cancel Request","Order Mass Cancel Report","Quote Request","New Order Cross","Cross
+      Order Cancel/Replace Request","Settlement Instructions","Cross Order Cancel
+      Request","Indications of Interest","New Order - Multileg","Multileg Order Cancel/Replace
+      Request","New Order - Single","New Order - List","Allocation","Allocation ACK","New
+      Order - Cross","Indication of Interest"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time"}'
+    fix:name: TransactTime
 - name: text
   type: string
   nullable: true
-  description: '`Text <58>`: whatever the counterparty wrote, often the reject reason.'
+  description: 'Free format text string (Note: this field does not have a specified
+    maximum length)'
+  metadata:
+    fix:tag: '58'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:used_in: '["Reject","Logout","IOI","Advertisement <7","ExecutionReport","OrderCancelReject","Logon","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","QuoteRequestReject","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportRequestAck","TradeCaptureReportAck","AllocationReport","AllocationReportAck","Confirmation_Ack","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","MassQuoteAcknowledgement","CollateralReport","CollateralInquiry","CollateralInquiryAck","ConfirmationRequest","AllocationInstructionAlert","ExecutionAcknowledgement","ContraryIntentionReport","SecurityDefinitionUpdateReport","SettlementObligationReport","MarketDefinition","MarketDefinitionUpdateReport","ApplicationMessageRequest","ApplicationMessageRequestAck","ApplicationMessageReport","OrderMassActionReport","SecurityDefinitionRequest","OrderMassActionRequest","UserNotification","StreamAssignmentReportACK","PartyDetailsListRequest","PartyDetailsListReport","SecurityDefinition","NewOrderSingle","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","TradingSessionStatus","BusinessMessageReject","AllocationInstruction","BidRequest","ListCancelRequest","ListExecute","ListStatusRequest","AllocationInstructionAck","OrderMassCancelRequest","DontKnowTradeDK","OrderMassCancelReport","QuoteRequest","Quote","SettlementInstructions","SecurityTypeRequest","SecurityTypes","SecurityListRequest","MarketDataRequestReject","DerivativeSecurityListRequest","Advertisement","Execution
+      Report","Order Cancel Reject","Derivative Security List","New Order Multileg","Multileg
+      Order Cancel/Replace","Trade Capture Report Request","Trade Capture Report","Quote
+      Request Reject","Quote Status Report","Quote Response","Position Maintenance
+      Request","Position Maintenance Report","Request For Positions","Request for
+      Positions Ack","Position Report","Trade Capture Report Request Ack","Trade Capture
+      Report Ack","Allocation Report","Allocation Report Ack","Confirmation Ack","Assignment
+      Report","Collateral Request","Collateral Assignment","Collateral Response","Mass
+      Quote Acknowledgement","News","Collateral Report","Collateral Inquiry","Collateral
+      Inquiry Ack","Confirmation Request","Security Definition Request","Email","Security
+      Definition","New Order Single","New Order List","Security Status","Order Cancel
+      Request","Order Cancel/Replace Request","Trading Session Status","Business Message
+      Reject","Allocation Instruction","Bid Request","List Cancel Request","Bid Response","List
+      Execute","List Strike Price","List Status Request","List Status","Allocation
+      Instruction Ack","Order Mass Cancel Request","Don''t Know Trade","Order Mass
+      Cancel Report","Quote Request","New Order Cross","Cross Order Cancel/Replace
+      Request","Settlement Instructions","Cross Order Cancel Request","Security Type
+      Request","Security Types","Market Data - Snapshot/Full Refresh","Security List
+      Request","Market Data - Incremental Refresh","Security List","Market Data Request
+      Reject","Derivative Security List Request","Indications of Interest","New Order
+      - Multileg","Multileg Order Cancel/Replace Request","New Order - Single","New
+      Order - List","Allocation","Allocation ACK","New Order - Cross","Indication
+      of Interest","Quote Acknowledgement"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:name: Text
+- name: quote_id
+  type: string
+  nullable: true
+  description: Unique identifier for quote
+  metadata:
+    fix:tag: '117'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:used_in: '["QuoteStatusRequest","NewOrderMultileg","MultilegOrderCancelReplace","QuoteStatusReport","QuoteResponse","MassQuoteAcknowledgement","NewOrderSingle","MassQuote","NewOrderCross","Quote","CrossOrderCancelReplaceRequest","QuoteCancel","Quote
+      Status Request","New Order Multileg","Multileg Order Cancel/Replace","Quote
+      Status Report","Quote Response","Mass Quote Acknowledgement","New Order Single","New
+      Order List","Mass Quote","New Order Cross","Cross Order Cancel/Replace Request","Quote
+      Cancel","New Order - Multileg","Multileg Order Cancel/Replace Request","New
+      Order - Single","New Order - List","New Order - Cross","Quote Acknowledgement"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:name: QuoteID
+- name: quote_req_id
+  type: string
+  nullable: true
+  description: Unique identifier for quote request
+  metadata:
+    fix:tag: '131'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:used_in: '["QuoteRequestReject","QuoteStatusReport","MassQuoteAcknowledgement","MassQuote","QuoteRequest","Quote","QuoteCancel","Quote
+      Request Reject","Quote Status Report","Mass Quote Acknowledgement","Mass Quote","Quote
+      Request","Quote Cancel","Quote Acknowledgement"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:name: QuoteReqID
+- name: quote_type
+  type: int64
+  nullable: true
+  description: 'An indicative quote is used to inform a counterparty of a market.
+    An indicative quote does not result directly in a trade. A tradeable quote is
+    submitted to a market and will result directly in a trade against other orders
+    and quotes in a market. A restricted tradeable quote is submitted to a market
+    and within a certain restriction (possibly based upon price or quantity) will
+    automatically trade against orders. Order that do not comply with restrictions
+    are sent to the quote issuer who can choose to accept or decline the order. A
+    counter quote is used in the negotiation model. See Volume 7 - "Product: Fixed
+    Income" for example usage.'
+  metadata:
+    fix:tag: '537'
+    fix:type: int
+    fix:version: 5.0.SP2
+    fix:values: '{"0":"Indicative","1":"Tradeable","2":"Restricted Tradeable","3":"Counter
+      (tradeable)"}'
+    fix:used_in: '["QuoteStatusReport","QuoteResponse","MassQuoteAcknowledgement","MassQuote","Quote","QuoteCancel","Quote
+      Request Reject","RFQ Request","Quote Status Report","Quote Response","Mass Quote
+      Acknowledgement","Mass Quote","Quote Request"]'
+    fix:value_names: '{"0":"INDICATIVE","1":"TRADEABLE","2":"RESTRICTED_TRADEABLE","3":"COUNTER","4":"INITIALLY_TRADEABLE"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
+    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int"}'
+    fix:name: QuoteType
+- name: quote_status
+  type: int64
+  nullable: true
+  description: Identifies the status of the quote acknowledgement.
+  metadata:
+    fix:tag: '297'
+    fix:type: int
+    fix:version: 5.0.SP2
+    fix:values: '{"0":"Accepted","1":"Cancel for Symbol <55> (s) (Deprecated in FIX
+      5.0)","2":"Canceled for Security Type <167> (s) (Deprecated in FIX 5.0)","3":"Canceled
+      for Underlying Symbol <311> (Deprecated in FIX 5.0)","4":"Canceled All (Deprecated
+      in FIX 5.0)","5":"Rejected","6":"Removed from Market","7":"Expired","8":"Query","9":"Quote
+      Not Found","10":"Pending","11":"Pass","12":"Locked Market Warning","13":"Cross
+      Market Warning","14":"Canceled Due To Lock Market","15":"Canceled Due To Cross
+      Market","16":"Active","17":"Canceled","18":"Unsolicited Quote Replenishment","19":"Pending
+      End Trade","20":"Too Late to End"}'
+    fix:used_in: '["QuoteStatusReport","MassQuoteAcknowledgement","Quote Status Report","Mass
+      Quote Acknowledgement","Quote Acknowledgement"]'
+    fix:value_names: '{"0":"ACCEPTED","1":"CANCEL_FOR_SYMBOL","2":"CANCELED_FOR_SECURITY_TYPE","3":"CANCELED_FOR_UNDERLYING","4":"CANCELED_ALL","5":"REJECTED","6":"REMOVED_FROM_MARKET","10":"PENDING","9":"QUOTE_NOT_FOUND","8":"QUERY","7":"EXPIRED","11":"PASS","12":"LOCKED_MARKET_WARNING","13":"CROSS_MARKET_WARNING","14":"CANCELED_DUE_TO_LOCK_MARKET","15":"CANCELED_DUE_TO_CROSS_MARKET","16":"ACTIVE","17":"CANCELED","18":"UNSOLICITED_QUOTE_REPLENISHMENT","19":"PENDING_END_TRADE","20":"TOO_LATE_TO_END","21":"TRADED","22":"TRADED_AND_REMOVED","23":"CONTRACT_TERMINATES"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
+    fix:names: '{"5.0.SP2":"QuoteStatus","5.0.SP1":"QuoteStatus","5.0":"QuoteStatus","4.4":"QuoteStatus","4.3":"QuoteAckStatus
+      prior to FIX 4.3)","4.2":"QuoteAckStatus"}'
+    fix:name: QuoteStatus
+- name: quote_reject_reason
+  type: int64
+  nullable: true
+  description: 'Reason Quote was rejected:'
+  metadata:
+    fix:tag: '300'
+    fix:type: int
+    fix:version: 5.0.SP2
+    fix:values: '{"1":"Unknown Symbol (security)","2":"Exchange (Security) closed","3":"Quote
+      Request exceeds limit","4":"Too late to enter","5":"Unknown Quote","6":"Duplicate
+      Quote","7":"Invalid bid/ask spread","8":"Invalid price","9":"Not authorized
+      to quote security","99":"Other","10":"Price exceeds current price band","11":"Quote
+      Locked - Unable to Update/Cancel","12":"Invalid or unknown Security Issuer","13":"Invalid
+      or unknown Issuer of Underlying Security"}'
+    fix:used_in: '["MassQuoteAcknowledgement","QuoteStatusReport","Mass Quote Acknowledgement","Quote
+      Acknowledgement"]'
+    fix:value_names: '{"1":"UNKNOWN_SYMBOL","2":"EXCHANGE","3":"QUOTE_REQUEST_EXCEEDS_LIMIT","4":"TOO_LATE_TO_ENTER","5":"UNKNOWN_QUOTE","6":"DUPLICATE_QUOTE","7":"INVALID_BID","8":"INVALID_PRICE","9":"NOT_AUTHORIZED_TO_QUOTE_SECURITY","99":"OTHER","10":"PRICE_EXCEEDS_CURRENT_PRICE_BAND","11":"QUOTE_LOCKED","12":"INVALID_OR_UNKNOWN_SECURITY_ISSUER","13":"INVALID_OR_UNKNOWN_ISSUER_OF_UNDERLYING_SECURITY","14":"NOTIONAL_VALUE_EXCEEDS_THRESHOLD","15":"PRICE_EXCEEDS_CURRENT_PRICE_BAND_DEPR","16":"REFERENCE_PRICE_NOT_AVAILABLE","17":"INSUFFICIENT_CREDIT_LIMIT","18":"EXCEEDED_CLIP_SIZE_LIMIT","19":"EXCEEDED_MAX_NOTIONAL_ORDER_AMT","20":"EXCEEDED_DV01_PV01_LIMIT","21":"EXCEEDED_CS01_LIMIT"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
+    fix:name: QuoteRejectReason
+- name: quote_resp_type
+  type: int64
+  nullable: true
+  description: Identifies the type of Quote Response <AJ> .
+  metadata:
+    fix:tag: '694'
+    fix:type: int
+    fix:version: 5.0.SP2
+    fix:values: '{"1":"Hit/Lift","2":"Counter","3":"Expired","4":"Cover","5":"Done
+      Away","6":"Pass","7":"End Trade","8":"Timed Out"}'
+    fix:used_in: '["QuoteResponse","Quote Response"]'
+    fix:value_names: '{"1":"HIT","2":"COUNTER","3":"EXPIRED","4":"COVER","5":"DONE_AWAY","6":"PASS","7":"END_TRADE","8":"TIMED_OUT","9":"TIED","10":"TIED_COVER","11":"ACCEPT","12":"TERMINATE_CONTRACT"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
+    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int"}'
+    fix:name: QuoteRespType
+- name: quote_cancel_type
+  type: int64
+  nullable: true
+  description: Identifies the type of quote cancel.
+  metadata:
+    fix:tag: '298'
+    fix:type: int
+    fix:version: 5.0.SP2
+    fix:values: '{"1":"Cancel for one or more securities","2":"Cancel for SecurityType
+      <167> (s)","3":"Cancel for underlying security","4":"Cancel All Quotes","5":"Cancel
+      quote specified in QuoteID <117>","6":"Cancel by QuoteType <537>","7":"Cancel
+      for Security Issuer","8":"Cancel for Issuer of Underlying Security"}'
+    fix:used_in: '["QuoteStatusReport","MassQuoteAcknowledgement","QuoteCancel","Quote
+      Cancel"]'
+    fix:value_names: '{"1":"CANCEL_FOR_ONE_OR_MORE_SECURITIES","2":"CANCEL_FOR_SECURITY_TYPE","3":"CANCEL_FOR_UNDERLYING_SECURITY","4":"CANCEL_ALL_QUOTES","5":"CANCEL_SPECIFIED_SINGLE_QUOTE","6":"CANCEL_BY_TYPE_OF_QUOTE","7":"CANCEL_FOR_SECURITY_ISSUER","8":"CANCEL_FOR_ISSUER_OF_UNDERLYING_SECURITY"}'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
+    fix:name: QuoteCancelType
+- name: bid_px
+  type: double
+  nullable: true
+  description: Bid price/rate
+  metadata:
+    fix:tag: '132'
+    fix:type: Price
+    fix:version: 5.0.SP2
+    fix:used_in: '["QuoteStatusReport","QuoteResponse","Quote","Quote Status Report","Quote
+      Response","Mass Quote Acknowledgement","Mass Quote"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+    fix:name: BidPx
+- name: offer_px
+  type: double
+  nullable: true
+  description: Offer price/rate
+  metadata:
+    fix:tag: '133'
+    fix:type: Price
+    fix:version: 5.0.SP2
+    fix:used_in: '["QuoteStatusReport","QuoteResponse","Quote","Quote Status Report","Quote
+      Response","Mass Quote Acknowledgement","Mass Quote"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+    fix:name: OfferPx
+- name: bid_size
+  type: double
+  nullable: true
+  description: Quantity of bid (Prior to FIX 4.2 this field was of type int)
+  metadata:
+    fix:tag: '134'
+    fix:type: Qty
+    fix:version: 5.0.SP2
+    fix:used_in: '["QuoteStatusReport","QuoteResponse","Quote","Quote Status Report","Quote
+      Response","Mass Quote Acknowledgement","Mass Quote"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+    fix:name: BidSize
+- name: offer_size
+  type: double
+  nullable: true
+  description: Quantity of offer (Prior to FIX 4.2 this field was of type int)
+  metadata:
+    fix:tag: '135'
+    fix:type: Qty
+    fix:version: 5.0.SP2
+    fix:used_in: '["QuoteStatusReport","QuoteResponse","Quote","Quote Status Report","Quote
+      Response","Mass Quote Acknowledgement","Mass Quote"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+    fix:name: OfferSize
+- name: def_bid_size
+  type: double
+  nullable: true
+  description: Default Bid Size.
+  metadata:
+    fix:tag: '293'
+    fix:type: Qty
+    fix:version: 5.0.SP2
+    fix:used_in: '["MassQuote","Mass Quote"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty"}'
+    fix:name: DefBidSize
+- name: def_offer_size
+  type: double
+  nullable: true
+  description: The number of quote entries for a QuoteSet.
+  metadata:
+    fix:tag: '294'
+    fix:type: Qty
+    fix:version: 5.0.SP2
+    fix:used_in: '["MassQuote","Mass Quote"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty"}'
+    fix:name: DefOfferSize
+- name: valid_until_time
+  type: timestamp[us, tz=UTC]
+  nullable: true
+  description: Indicates expiration time of indication message (always expressed in
+    UTC (Universal Time Coordinated, also known as "GMT")
+  metadata:
+    fix:tag: '62'
+    fix:type: UTCTimestamp
+    fix:version: 5.0.SP2
+    fix:used_in: '["IOI","QuoteStatusReport","QuoteResponse","Quote","Quote Status
+      Report","Quote Response","Mass Quote Acknowledgement","Mass Quote","Quote Request","Indications
+      of Interest","Indication of Interest"]'
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time"}'
+    fix:name: ValidUntilTime
+- name: no_quote_sets
+  type: int64
+  nullable: true
+  description: The number of sets of quotes in the message.
+  metadata:
+    fix:tag: '296'
+    fix:type: NumInGroup
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:types: '{"5.0.SP2":"NumInGroup","5.0.SP1":"NumInGroup","5.0":"NumInGroup","4.4":"NumInGroup","4.3":"NumInGroup","4.2":"int"}'
+    fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Quote Acknowledgement"]'
+    fix:name: NoQuoteSets
+- name: no_quote_entries
+  type: int64
+  nullable: true
+  description: The number of quote entries for a QuoteSet.
+  metadata:
+    fix:tag: '295'
+    fix:type: NumInGroup
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:types: '{"5.0.SP2":"NumInGroup","5.0.SP1":"NumInGroup","5.0":"NumInGroup","4.4":"NumInGroup","4.3":"NumInGroup","4.2":"int"}'
+    fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Quote Cancel","Quote
+      Acknowledgement"]'
+    fix:name: NoQuoteEntries
+- name: quote_set_id
+  type: string
+  nullable: true
+  description: Unique id for the Quote Set.
+  metadata:
+    fix:tag: '302'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String"}'
+    fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Quote Acknowledgement"]'
+    fix:name: QuoteSetID
+- name: quote_entry_id
+  type: string
+  nullable: true
+  description: Unique identifier for a quote. The QuoteEntryID stays with the quote
+    as a static identifier even if the quote is updated.
+  metadata:
+    fix:tag: '299'
+    fix:type: String
+    fix:version: 5.0.SP2
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String"}'
+    fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Market Data - Snapshot/Full
+      Refresh","Market Data - Incremental Refresh","Quote Acknowledgement"]'
+    fix:name: QuoteEntryID

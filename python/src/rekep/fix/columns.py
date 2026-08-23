@@ -1,139 +1,217 @@
-"""Which FIX tags become columns of their own, and which column each becomes.
-
-Two sets, ordered by what the fields *mean* rather than by tag number, because
-a schema is read by people: the envelope first, then what was traded, who asked
-for it, on what terms, where it stands, and for how much.
-
-`SESSION` is the whole `StandardHeader` and `StandardTrailer` -- the fields
-every FIX message carries whatever it says. They are the same fields on every
-message of every type, so a map is the wrong shape to hold them: who sent it,
-to whom, in what order and when is what a reader filters and joins on.
-
-`COMMON` is what the components a trading log is actually made of carry:
-`Instrument`, `OrderQtyData`, and the flat body of a `NewOrderSingle` or an
-`ExecutionReport`. Typed and flat they are what a desk queries; left in a map
-they are text behind a lookup.
-
-**The rule, for both: a tag is lifted only where it occurs exactly once in the
-line.** A tag that repeats belongs to a repeating group -- `Symbol <55>` inside
-`NoRelatedSym`, `LastPx <31>` inside `NoLegs` -- and lifting the first
-occurrence out of a group would answer "the symbol" with whichever leg came
-first, which is a wrong answer that looks like a right one. Those rows keep
-everything in `fix_tags` and the column is null: a multi-leg order has no one
-symbol, and saying so is the honest column.
-
-`NoHops <627>` and its members are not here for the same reason: a repeating
-group is not one value.
-"""
+"""FIX fields promoted from parsed pairs to typed log columns."""
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from types import MappingProxyType
 
 import pyarrow
 
-#: The session layer -- `StandardHeader` and `StandardTrailer` -- grouped by
-#: what each field answers. `34` lands on the column `Event` already declares
-#: for it, so a parsed log line and a market event agree on what a sequence
-#: number is.
-SESSION: tuple[tuple[int, str], ...] = (
-    # The envelope itself: what this is, and whether it arrived intact.
-    (8, "begin_string"),
-    (9, "body_length"),
-    (35, "msg_type"),
-    (10, "check_sum"),
-    # Who sent it, and to whom.
-    (49, "sender_comp_id"),
-    (50, "sender_sub_id"),
-    (142, "sender_location_id"),
-    (56, "target_comp_id"),
-    (57, "target_sub_id"),
-    (143, "target_location_id"),
-    # And on whose behalf, when a hub relayed it.
-    (115, "on_behalf_of_comp_id"),
-    (116, "on_behalf_of_sub_id"),
-    (144, "on_behalf_of_location_id"),
-    (128, "deliver_to_comp_id"),
-    (129, "deliver_to_sub_id"),
-    (145, "deliver_to_location_id"),
-    # Where it sits in the session's stream, and whether it is a repeat.
-    (34, "seq"),
-    (369, "last_msg_seq_num_processed"),
-    (43, "poss_dup_flag"),
-    (97, "poss_resend"),
-    # When it was sent -- which is not when anything happened.
-    (52, "sending_unix"),
-    (122, "orig_sending_unix"),
-    (370, "on_behalf_of_sending_unix"),
-    # Which application version speaks, under FIXT.
-    (1128, "appl_ver_id"),
-    (1129, "cstm_appl_ver_id"),
-    (1156, "appl_ext_id"),
-    # How the payload is written, when it is not plain ASCII.
-    (347, "message_encoding"),
-    (212, "xml_data_len"),
-    (213, "xml_data"),
-    # And how it is sealed.
-    (90, "secure_data_len"),
-    (91, "secure_data"),
-    (93, "signature_length"),
-    (89, "signature"),
+from rekep.fields import Field
+from rekep.fix.registry import FixRegistry
+
+# Ordered by the log schema, using the registry's canonical names so no tag is
+# declared a second time in code.
+_SESSION_FIELDS: tuple[str, ...] = (
+    "BeginString",
+    "BodyLength",
+    "MsgType",
+    "CheckSum",
+    "SenderCompID",
+    "SenderSubID",
+    "SenderLocationID",
+    "TargetCompID",
+    "TargetSubID",
+    "TargetLocationID",
+    "OnBehalfOfCompID",
+    "OnBehalfOfSubID",
+    "OnBehalfOfLocationID",
+    "DeliverToCompID",
+    "DeliverToSubID",
+    "DeliverToLocationID",
+    "MsgSeqNum",
+    "LastMsgSeqNumProcessed",
+    "PossDupFlag",
+    "PossResend",
+    "SendingTime",
+    "OrigSendingTime",
+    "OnBehalfOfSendingTime",
+    "ApplVerID",
+    "CstmApplVerID",
+    "ApplExtID",
+    "MessageEncoding",
+    "XmlDataLen",
+    "XmlData",
+    "SecureDataLen",
+    "SecureData",
+    "SignatureLength",
+    "Signature",
 )
 
-#: What the components carry, in the order somebody reading a fill would ask.
-#: `55` lands on `Event.symbol`, which is already declared as tag 55 -- one
-#: column, not two answers to one question.
-COMMON: tuple[tuple[int, str], ...] = (
-    # What was traded.
-    (55, "symbol"),
-    (48, "security_id"),
-    (22, "security_id_source"),
-    (167, "security_type"),
-    (461, "cfi_code"),
-    (207, "security_exchange"),
-    (15, "currency"),
-    # Who asked, and under which identifiers.
-    (1, "account"),
-    (11, "cl_ord_id"),
-    (41, "orig_cl_ord_id"),
-    (37, "order_id"),
-    (17, "exec_id"),
-    # On what terms.
-    (54, "side"),
-    (40, "ord_type"),
-    (59, "time_in_force"),
-    # Where it stands.
-    (39, "ord_status"),
-    (150, "exec_type"),
-    # For how much, at what price.
-    (38, "order_qty"),
-    (44, "price"),
-    (6, "avg_px"),
-    (14, "cum_qty"),
-    (151, "leaves_qty"),
-    (31, "last_px"),
-    (32, "last_qty"),
-    # When it happened, and whatever was said about it.
-    (60, "transact_unix"),
-    (58, "text"),
+_COMMON_FIELDS: tuple[str, ...] = (
+    "Symbol",
+    "SecurityID",
+    "SecurityIDSource",
+    "SecurityType",
+    "CFICode",
+    "SecurityExchange",
+    "Currency",
+    "Account",
+    "ClOrdID",
+    "OrigClOrdID",
+    "OrderID",
+    "ExecID",
+    "Side",
+    "OrdType",
+    "TimeInForce",
+    "OrdStatus",
+    "ExecType",
+    "OrderQty",
+    "Price",
+    "AvgPx",
+    "CumQty",
+    "LeavesQty",
+    "LastPx",
+    "LastQty",
+    "TransactTime",
+    "Text",
 )
 
-FLAT: tuple[tuple[int, str], ...] = SESSION + COMMON
+_QUOTE_FIELDS: tuple[str, ...] = (
+    "QuoteID",
+    "QuoteReqID",
+    "QuoteType",
+    "QuoteStatus",
+    "QuoteRejectReason",
+    "QuoteRespType",
+    "QuoteCancelType",
+    "BidPx",
+    "OfferPx",
+    "BidSize",
+    "OfferSize",
+    "DefBidSize",
+    "DefOfferSize",
+    "ValidUntilTime",
+    "NoQuoteSets",
+    "NoQuoteEntries",
+    "QuoteSetID",
+    "QuoteEntryID",
+)
 
-#: Tag to the column it lands in. Read-only, because one shared mutable mapping
-#: is a bug waiting for the second caller.
+# These four delimit quote groups. On grouped rows they remain in `fix_tags`
+# even when also lifted, so a later market reader can reconstruct one-entry
+# groups without reparsing the raw message.
+_QUOTE_GROUP_COUNTS: tuple[str, ...] = ("NoQuoteSets", "NoQuoteEntries")
+_QUOTE_GROUP_STRUCTURE: tuple[str, ...] = (
+    *_QUOTE_GROUP_COUNTS,
+    "QuoteSetID",
+    "QuoteEntryID",
+)
+
+# Fields materialized inside the structured Parties component.
+_PARTY_FIELDS: tuple[str, ...] = (
+    "PartyID",
+    "PartyIDSource",
+    "PartyRole",
+    "NoPartyIDs",
+    "NoPartySubIDs",
+    "PartySubID",
+    "PartySubIDType",
+)
+
+# FIX's documentation establishes UTC for these four timestamps.
+_STAMP_FIELDS: tuple[str, ...] = (
+    "SendingTime",
+    "OrigSendingTime",
+    "OnBehalfOfSendingTime",
+    "TransactTime",
+    "ValidUntilTime",
+)
+
+# Public analytical names may clarify a protocol term while `fix:name` keeps
+# its exact registry spelling. These overrides are part of the log contract.
+_NAMES: Mapping[str, str] = MappingProxyType({"AvgPx": "vwap", "MsgSeqNum": "seq"})
+
+
+def _snake(name: str) -> str:
+    """FIX's canonical name as a public Python/Arrow name."""
+    name = re.sub(r"IDs$", "Ids", name)
+    words = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", "_", name)
+    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", words).lower()
+
+
+def _physical_type(member: Field) -> pyarrow.DataType:
+    """Registry type at Iceberg width, zoned only when FIX documents UTC."""
+    arrow_type = member.arrow_type
+    if arrow_type is None:  # pragma: no cover - generated registry invariant
+        raise ValueError(f"FIX field {member.name!r} has no Arrow type")
+    if not pyarrow.types.is_timestamp(arrow_type):
+        return arrow_type
+    datatype = member.fix.get("type", "").strip().lower()
+    documented = (member.description or "").lower()
+    timezone = "UTC" if datatype.startswith("utc") or "expressed in utc" in documented else None
+    return pyarrow.timestamp("us", tz=timezone)
+
+
+def _declaration(member: Field) -> Field:
+    """A registry field in the physical shape used by parsed logs."""
+    metadata = dict(member.metadata)
+    metadata["fix:name"] = member.name
+    return Field(
+        name=_NAMES.get(member.name, _snake(member.name)),
+        arrow_type=_physical_type(member),
+        nullable=True,
+        metadata=metadata,
+    )
+
+
+_REGISTRY = FixRegistry.from_builtin()
+_ORDER = _SESSION_FIELDS + _COMMON_FIELDS + _QUOTE_FIELDS + _PARTY_FIELDS
+_FIELDS = tuple(_REGISTRY.scalar(name) for name in _ORDER)
+LOG_FIELDS: Mapping[int, Field] = MappingProxyType(
+    {int(member.fix["tag"]): member for member in _FIELDS}
+)
+if len(LOG_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry invariant
+    raise ValueError("the bundled FIX fields do not have unique tags")
+DECLARATIONS: Mapping[int, Field] = MappingProxyType(
+    {tag: _declaration(member) for tag, member in LOG_FIELDS.items()}
+)
+
+_TAGS_BY_NAME = {member.name: int(member.fix["tag"]) for member in _FIELDS}
+STAMPS: frozenset[int] = frozenset(_TAGS_BY_NAME[name] for name in _STAMP_FIELDS)
+SESSION: tuple[tuple[int, str], ...] = tuple(
+    (tag, DECLARATIONS[tag].name) for name in _SESSION_FIELDS if (tag := _TAGS_BY_NAME[name])
+)
+COMMON: tuple[tuple[int, str], ...] = tuple(
+    (tag, DECLARATIONS[tag].name) for name in _COMMON_FIELDS if (tag := _TAGS_BY_NAME[name])
+)
+QUOTE: tuple[tuple[int, str], ...] = tuple(
+    (tag, DECLARATIONS[tag].name) for name in _QUOTE_FIELDS if (tag := _TAGS_BY_NAME[name])
+)
+FLAT: tuple[tuple[int, str], ...] = SESSION + COMMON + QUOTE
 COLUMNS: Mapping[int, str] = MappingProxyType(dict(FLAT))
-
-#: The same tags as an Arrow value set, built once: `is_in` against it is how a
-#: whole batch's liftable fields are found in one pass.
+TYPES: Mapping[int, pyarrow.DataType] = MappingProxyType(
+    {tag: DECLARATIONS[tag].arrow_type for tag in COLUMNS}
+)
 TAGS: pyarrow.Array = pyarrow.array(sorted(COLUMNS), pyarrow.int32())
+QUOTE_GROUP_COUNTS: pyarrow.Array = pyarrow.array(
+    [_TAGS_BY_NAME[name] for name in _QUOTE_GROUP_COUNTS], pyarrow.int32()
+)
+QUOTE_GROUP_STRUCTURE: pyarrow.Array = pyarrow.array(
+    [_TAGS_BY_NAME[name] for name in _QUOTE_GROUP_STRUCTURE], pyarrow.int32()
+)
 
-#: The lifted fields that are instants, and so land as **int64 nanoseconds**
-#: rather than as an Arrow timestamp. Two reasons, and both bite: Iceberg's
-#: timestamp is microseconds, so a `timestamp[ns]` column cannot be stored at
-#: all and a `timestamp[us]` one would truncate a value whose text has just
-#: been lifted out of the map -- unrecoverably. And every other instant this
-#: package stores is int64 nanos (`unix`, `runix`), so a latency is a
-#: subtraction rather than a conversion.
-STAMPS: frozenset[int] = frozenset({52, 122, 370, 60})
+# A bridge-rendered instrument identifier rather than a standard FIX tag. Its
+# source spelling stays in metadata now that the public column is snake_case.
+ISIN_CODE = Field(
+    name="isincode",
+    arrow_type=pyarrow.string(),
+    nullable=True,
+    metadata={
+        "description": "ISIN carried by the rendered ISINCODE field.",
+        "fix:name": "ISINCODE",
+        "fix:type": "String",
+    },
+)
+NAMED: Mapping[str, Field] = MappingProxyType({"isincode": ISIN_CODE})

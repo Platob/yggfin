@@ -1,50 +1,18 @@
-# Read a capture of market logs and land what the messages *mean*: an orders
-# table, an executions table, and a book table folded from both. This file *is*
-# the job:
-#
-#     Task.from_yaml("tasks/parse_market/parse_market.yml").run()
-#
-# Every key is a field of `rekep.tasks.ParseMarket`, whose docstrings say what
-# each one means; `docs/tasks.md` is the prose.
-
-kind: parse_market
-name: parse-market-logs
-
-# -- what to read -------------------------------------------------------------
-
-# Either a location, as here -- a folder or a file, local or remote...
-source: ../data/capture
-pattern: "*.log*"
-recursive: true
-
-# ... or a dataset document, which is how this chains onto `parse_logs` without
-# re-reading the capture. Replace the three lines above with:
-#
-#     source:
-#       kind: iceberg
-#       name: logs.order_logs
-#       catalog: rekep
-#       properties: {type: sql, uri: sqlite:///../data/catalog.db, warehouse: file://../data/warehouse}
-
-column: message  # which column of the source carries the FIX text
-timezone: Europe/Paris  # only read when the source is text; a table has real instants
-venue: XCME  # which feed this came off, when the messages themselves do not say
-
-# -- where it lands ------------------------------------------------------------
-
-catalog: rekep
-namespace: market
-table: "{shape}"  # `market.orders`, `market.executions`, `market.books`
-
-properties:
-  type: sql
-  uri: sqlite:///../data/catalog.db
-  warehouse: file://../data/warehouse
-
-# -- how it runs ---------------------------------------------------------------
-
-books: true  # fold and land books too; false leaves the folding to something else
-merge_by: true  # skip rows a target already holds, so a replay costs the read alone
-batch_row_size: 65536
-commit_row_size: 250000  # rows buffered per target, and so what bounds the memory
-# limit: 1000  # stop after this many source rows; uncomment for a dry run
+name: parse_market
+notebook: parse_market.ipynb
+parameters:
+  source: logs.market
+  target: market.books
+  start: null
+  end: null
+  catalog: rekep
+  catalog_properties:
+    type: sql
+    uri: sqlite:///data/catalog.db
+    warehouse: file://data/warehouse
+  snapshot_every: 3600000000000
+  max_lateness_ns: 900000000000
+  max_order_age_ns: 86400000000000
+  max_side_alive: 10000
+  merge_by: true
+  commit_row_size: 250000

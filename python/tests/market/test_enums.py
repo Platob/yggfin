@@ -9,32 +9,124 @@ awkward to change: adding a line is fine, editing one is a migration.
 
 from __future__ import annotations
 
+import pyarrow
 import pytest
 
-from rekep.market.enums import (
+import rekep.enums._ascii as enum_module
+from rekep.enums import (
+    MIC,
     AssetKind,
+    Currency,
     EventType,
-    ExecKind,
+    IdSource,
+    MarketKind,
     OptionKind,
-    OrderKind,
     Ranged,
     Side,
     State,
     TimeInForce,
-    UpdateAction,
 )
 
 RANGED = (
     State,
-    Side,
-    TimeInForce,
-    OrderKind,
-    ExecKind,
-    UpdateAction,
+    MarketKind,
     AssetKind,
     OptionKind,
     EventType,
 )
+
+PACKED = (Side, TimeInForce)
+
+
+def test_each_public_enum_is_defined_in_its_own_root_module() -> None:
+    declared = (
+        MIC,
+        AssetKind,
+        Currency,
+        EventType,
+        IdSource,
+        MarketKind,
+        OptionKind,
+        Ranged,
+        Side,
+        State,
+        TimeInForce,
+    )
+    assert tuple(kind.__module__ for kind in declared) == (
+        "rekep.enums.mic",
+        "rekep.enums.asset_kind",
+        "rekep.enums.currency",
+        "rekep.enums.event_type",
+        "rekep.enums.id_source",
+        "rekep.enums.market_kind",
+        "rekep.enums.option_kind",
+        "rekep.enums.ranged",
+        "rekep.enums.side",
+        "rekep.enums.state",
+        "rekep.enums.time_in_force",
+    )
+
+
+def test_a_mic_is_exactly_its_four_ascii_bytes_in_int32() -> None:
+    xpar = MIC.from_str("XPAR")
+    assert int(xpar) == int.from_bytes(b"XPAR", "big") == 1_481_654_610
+    assert xpar.into_str() == xpar.into_fix() == str(xpar) == "XPAR"
+
+
+def test_a_valid_unlisted_mic_registers_once_and_round_trips_from_storage() -> None:
+    first = MIC.from_str(" 21xx ")
+    assert first is MIC.from_str("21XX")
+    assert MIC.from_code(int(first)) is first
+    assert first.code == "21XX", "digits are valid ISO 10383 code characters"
+
+
+def test_an_invalid_mic_is_unknown_instead_of_a_truncated_collision() -> None:
+    assert MIC.from_str(None) is MIC.UNKNOWN
+    assert MIC.from_str("XPA") is MIC.UNKNOWN
+    assert MIC.from_str("ABCDE") is MIC.UNKNOWN
+    assert MIC.from_code(-1) is MIC.UNKNOWN
+
+
+def test_currency_is_three_letters_plus_an_ascii_decimal_digit() -> None:
+    assert int(Currency.EUR) == int.from_bytes(b"EUR0", "big")
+    assert Currency.EUR.code == Currency.EUR.into_fix() == "EUR"
+    assert Currency.EUR.packed_code == "EUR0" and Currency.EUR.decimals == 0
+    cents = Currency.from_str("EUR2")
+    assert cents.packed_code == "EUR2" and cents.decimals == 2
+    assert Currency.from_code(int(cents)) is cents
+    assert Currency.from_str("\U0001f4b6") is Currency.UNKNOWN
+    assert Currency.from_code(-1, Currency.EUR) is Currency.EUR
+
+
+def test_currency_registration_is_normalised_and_bounded() -> None:
+    assert Currency.from_str(" usd ") is Currency.USD
+    assert Currency.from_str("TOO-LONG") is Currency.UNKNOWN
+    registered = Currency.register("EUR", decimals=3, aliases=("EURO-3",))
+    assert Currency.from_str("euro-3") is registered
+    for value in range(enum_module._ASCII_REGISTERED_LIMIT + len(Currency) + 1):
+        code = "".join(chr(65 + digit) for digit in (value // 676, value // 26 % 26, value % 26))
+        Currency.from_str(code)
+    assert len(enum_module._ASCII_REGISTERED[Currency]) == enum_module._ASCII_REGISTERED_LIMIT
+
+
+def test_generic_packed_codes_are_strict_ascii() -> None:
+    assert MIC.from_str("\U0001f4b6") is MIC.UNKNOWN
+    assert MIC.schema_metadata()["encoding"] == "ascii-big-endian"
+
+
+def test_mic_columns_pack_in_kernels_and_keep_invalid_values_null() -> None:
+    packed = MIC.arrow_from_strings(
+        pyarrow.array(["XPAR", "bad", None, ""]),
+        pyarrow.array([None, "xnas", "XCME", "toolong"]),
+    )
+    assert packed.type == pyarrow.int32()
+    assert packed.to_pylist() == [
+        int(MIC.from_str("XPAR")),
+        int(MIC.from_str("XNAS")),
+        int(MIC.from_str("XCME")),
+        None,
+    ]
+
 
 #: What `State` means on disk. Written out rather than derived, so a renumbering
 #: fails here instead of in a year's worth of stored orders.
@@ -59,30 +151,32 @@ STATE_CODES = {
     "CANCELLED": 510,
     "REPLACED": 520,
     "EXPIRED": 530,
+    "INTERNAL_EXPIRED": 540,
     "FAILED": 600,
     "REJECTED": 610,
+    "INTERNAL_REJECTED": 620,
 }
 
 #: The same, for the side of a market. `BID` and `ASK` are aliases and so do
 #: not appear: an alias has no value of its own to pin.
 SIDE_CODES = {
     "UNKNOWN": 0,
-    "BUY": 100,
-    "BUY_MINUS": 110,
-    "BORROW": 120,
-    "SUBSCRIBE": 130,
-    "SELL": 200,
-    "SELL_PLUS": 210,
-    "SELL_SHORT": 220,
-    "SELL_SHORT_EXEMPT": 230,
-    "LEND": 240,
-    "REDEEM": 250,
-    "CROSS": 300,
-    "CROSS_SHORT": 310,
-    "CROSS_SHORT_EXEMPT": 320,
-    "AS_DEFINED": 330,
-    "OPPOSITE": 340,
-    "UNDISCLOSED": 350,
+    "BUY": int.from_bytes(b"BUY\0", "big"),
+    "BUY_MINUS": int.from_bytes(b"BYMN", "big"),
+    "BORROW": int.from_bytes(b"BORR", "big"),
+    "SUBSCRIBE": int.from_bytes(b"SUBS", "big"),
+    "SELL": int.from_bytes(b"SELL", "big"),
+    "SELL_PLUS": int.from_bytes(b"SLPL", "big"),
+    "SELL_SHORT": int.from_bytes(b"SHRT", "big"),
+    "SELL_SHORT_EXEMPT": int.from_bytes(b"SHEX", "big"),
+    "LEND": int.from_bytes(b"LEND", "big"),
+    "REDEEM": int.from_bytes(b"REDM", "big"),
+    "CROSS": int.from_bytes(b"CROS", "big"),
+    "CROSS_SHORT": int.from_bytes(b"CRSH", "big"),
+    "CROSS_SHORT_EXEMPT": int.from_bytes(b"CRSE", "big"),
+    "AS_DEFINED": int.from_bytes(b"ASDF", "big"),
+    "OPPOSITE": int.from_bytes(b"OPPO", "big"),
+    "UNDISCLOSED": int.from_bytes(b"UNDS", "big"),
 }
 
 
@@ -94,23 +188,45 @@ def test_the_side_codes_are_the_ones_on_disk() -> None:
     assert {member.name: int(member) for member in Side} == SIDE_CODES
 
 
-@pytest.mark.parametrize("ranged", RANGED, ids=lambda cls: cls.__name__)
-def test_zero_is_unknown_everywhere(ranged: type[Ranged]) -> None:
+def test_packed_side_aliases_and_unknown_codes_are_stable() -> None:
+    assert Side.BID is Side.BUY and Side.ASK is Side.SELL
+    assert Side.from_str("bid") is Side.BUY
+    assert Side.from_str("long") is Side.BUY
+    assert Side.from_str("offer") is Side.SELL
+    assert Side.from_code(int.from_bytes(b"NOPE", "big")) is Side.UNKNOWN
+    assert Side.from_fix("?", Side.SELL) is Side.SELL
+
+
+def test_time_in_force_uses_fixed_ascii_mnemonics_and_semantic_order() -> None:
+    assert int(TimeInForce.IOC).to_bytes(4, "big") == b"IOC\0"
+    assert int(TimeInForce.GTC).to_bytes(4, "big") == b"GTC\0"
+    assert TimeInForce.from_str("immediate_or_cancel") is TimeInForce.IOC
+    assert TimeInForce.from_str("good_till_cancelled") is TimeInForce.GTC
+    assert TimeInForce.from_code(int.from_bytes(b"NOPE", "big")) is TimeInForce.UNKNOWN
+    assert TimeInForce.IOC < TimeInForce.SESSION <= TimeInForce.DAY < TimeInForce.RESTING
+
+
+@pytest.mark.parametrize("declared", (*RANGED, *PACKED), ids=lambda cls: cls.__name__)
+def test_zero_is_unknown_everywhere(declared: type) -> None:
     """Every code column reads `0` as "nothing was said", with no exception."""
-    assert ranged(0).name == "UNKNOWN"
+    assert declared(0).name == "UNKNOWN"
 
 
-@pytest.mark.parametrize("ranged", RANGED, ids=lambda cls: cls.__name__)
-def test_no_two_members_share_a_fix_character(ranged: type[Ranged]) -> None:
+@pytest.mark.parametrize("declared", (*RANGED, *PACKED), ids=lambda cls: cls.__name__)
+def test_no_two_members_share_a_fix_character(declared: type) -> None:
     """A shared character would make `from_fix` pick one meaning and drop the other."""
-    codes = [member.into_fix() for member in ranged if member.into_fix()]
+    codes = [member.into_fix() for member in declared if member.into_fix()]
     assert len(codes) == len(set(codes)), sorted(codes)
 
 
 #: The enums that are a FIX field read as a code. `EventType` is ours -- no FIX
 #: field says whether a row is an order or a book -- so it is not in here, and
 #: the test below would otherwise pass on it by iterating over nothing.
-FIX_CODED = tuple(ranged for ranged in RANGED if ranged is not EventType)
+FIX_CODED = (
+    Side,
+    TimeInForce,
+    *(ranged for ranged in RANGED if ranged not in (EventType, State)),
+)
 
 
 @pytest.mark.parametrize("ranged", FIX_CODED, ids=lambda cls: cls.__name__)
@@ -122,9 +238,64 @@ def test_every_fix_character_round_trips(ranged: type[Ranged]) -> None:
         assert ranged.from_fix(member.into_fix()) is member
 
 
-def test_the_one_enum_that_is_ours_claims_no_fix_field() -> None:
-    """No FIX field says whether a row is an order or a book, so none is claimed."""
+def test_market_kind_fix_values_are_tag_scoped() -> None:
+    assert MarketKind.from_fix("J", tag=40) is MarketKind.MARKET_IF_TOUCHED
+    assert MarketKind.from_fix("J", tag=150) is MarketKind.CLEARING_HOLD
+    assert MarketKind.from_fix("J") is MarketKind.UNKNOWN
+    assert MarketKind.from_fix("F", tag=150) is MarketKind.TRADE
+    assert MarketKind.TRADE.into_fix(150) == "F"
+
+
+def test_time_in_force_covers_the_fix_latest_code_set() -> None:
+    expected = {
+        "0": TimeInForce.DAY,
+        "1": TimeInForce.GTC,
+        "2": TimeInForce.AT_OPEN,
+        "3": TimeInForce.IOC,
+        "4": TimeInForce.FOK,
+        "5": TimeInForce.GTX,
+        "6": TimeInForce.GTD,
+        "7": TimeInForce.AT_CLOSE,
+        "8": TimeInForce.GOOD_THROUGH_CROSSING,
+        "9": TimeInForce.AT_CROSSING,
+        "A": TimeInForce.GFT,
+        "B": TimeInForce.GFA,
+        "C": TimeInForce.GFM,
+    }
+    assert {member.into_fix(): member for member in TimeInForce if member.into_fix()} == expected
+
+
+def test_market_kind_covers_the_fix_latest_order_and_execution_codes() -> None:
+    mappings = MarketKind.fix_mapping()
+    assert set(mappings[40]) == set("123456789ABCDEFGHIJKLMPQRST")
+    assert set(mappings[150]) == set("03456789ABCDEFGHIJKLMN")
+    expected = {
+        "5": MarketKind.MARKET_ORDER,
+        "6": MarketKind.MARKET_ORDER,
+        "8": MarketKind.LIMIT_ORDER,
+        "9": MarketKind.PEGGED_ORDER,
+        "A": MarketKind.MARKET_ORDER,
+        "C": MarketKind.MARKET_ORDER,
+        "F": MarketKind.LIMIT_ORDER,
+        "G": MarketKind.MARKET_ORDER,
+        "H": MarketKind.PREVIOUSLY_QUOTED,
+        "I": MarketKind.LIMIT_ORDER,
+        "L": MarketKind.PEGGED_ORDER,
+        "M": MarketKind.PEGGED_ORDER,
+        "Q": MarketKind.PREVIOUSLY_QUOTED,
+        "R": MarketKind.STOP_ORDER,
+        "S": MarketKind.STOP_LIMIT,
+        "T": MarketKind.MARKET_TO_LIMIT,
+    }
+    assert {code: mappings[40][code] for code in expected} == expected
+    assert mappings[150]["M"] is MarketKind.LOCKED
+    assert mappings[150]["N"] is MarketKind.RELEASED
+
+
+def test_protocol_neutral_enums_claim_no_fix_field() -> None:
+    """State characters depend on the FIX field that carries them."""
     assert not any(member.into_fix() for member in EventType)
+    assert not any(member.into_fix() for member in State)
     assert EventType.from_fix("0") is EventType.UNKNOWN
 
 
@@ -198,31 +369,6 @@ def test_the_side_band_carries_the_sign() -> None:
     assert Side.CROSS.opposite is Side.CROSS
 
 
-def test_only_the_kinds_that_move_shares_are_above_the_trade_band() -> None:
-    """Summing quantity without this filter counts every acknowledgement as a fill."""
-    moving = {member for member in ExecKind if member.moves_shares}
-    assert moving == {
-        ExecKind.TRADE,
-        ExecKind.TRADED,
-        ExecKind.PARTIAL_FILL,
-        ExecKind.FILL,
-        ExecKind.AMEND,
-        ExecKind.TRADE_CORRECT,
-        ExecKind.TRADE_CANCEL,
-    }
-    assert not ExecKind.ACK.moves_shares and not ExecKind.CANCELLED.moves_shares
-
-
-def test_every_ranged_deletion_counts_as_a_removal() -> None:
-    """`== DELETE` misses the ranged ones, which is what the band is for."""
-    assert {member for member in UpdateAction if member.removes} == {
-        UpdateAction.REMOVE,
-        UpdateAction.DELETE,
-        UpdateAction.DELETE_THRU,
-        UpdateAction.DELETE_FROM,
-    }
-
-
 def test_only_resting_validities_rest() -> None:
     assert not TimeInForce.IOC.rests and not TimeInForce.FOK.rests
     assert TimeInForce.DAY.rests and TimeInForce.GTC.rests and TimeInForce.GTD.rests
@@ -244,11 +390,15 @@ def test_the_event_types_partition_the_shapes_by_what_they_assert() -> None:
     """An intent may never happen, a fact cannot be undone, a state is a picture."""
     assert EventType.ORDER.band == EventType.INTENT
     assert EventType.EXECUTION.band == EventType.FACT
-    assert EventType.BOOK.band == EventType.BOOK_SIDE.band == EventType.STATE
-    assert EventType.INSTRUMENT.band == EventType.REFERENCE
+    assert EventType.BOOK.band == EventType.STATE
+    assert EventType.INSTRUMENT.band == EventType.INSTRUMENT_STATE
+
+
+def test_the_removed_book_side_code_is_not_reused() -> None:
+    assert 310 not in {int(member) for member in EventType}
 
 
 def test_only_a_state_is_a_snapshot() -> None:
-    assert EventType.BOOK.is_snapshot and EventType.BOOK_SIDE.is_snapshot
+    assert EventType.BOOK.is_snapshot
     assert not EventType.ORDER.is_snapshot and not EventType.EXECUTION.is_snapshot
     assert EventType.INSTRUMENT.is_snapshot, "reference data is a picture too"

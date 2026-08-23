@@ -1,0 +1,46 @@
+name: integration
+
+on:
+  push:
+    branches: [main]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.event.issue.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.issue.pull_request &&
+       contains(github.event.comment.body, '--integration') &&
+       contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'),
+       github.event.comment.author_association))
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      # Comment events point at main, so test the base repository's PR merge ref.
+      - uses: actions/checkout@v4
+        with:
+          ref: >-
+            ${{ github.event_name == 'issue_comment' &&
+                format('refs/pull/{0}/merge', github.event.issue.number) ||
+                github.sha }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v5
+      - name: Sync
+        run: uv sync --frozen
+      - name: Test integration suite
+        run: uv run pytest -q -m integration

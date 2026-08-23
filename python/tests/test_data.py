@@ -136,6 +136,55 @@ def test_the_archive_is_what_publishing_it_produces(tmp_path: Path) -> None:
     assert rebuilt.read_bytes() == DATA.read_bytes()
 
 
+def test_a_projection_is_a_small_exact_offline_registry(
+    registry: FixRegistry, tmp_path: Path
+) -> None:
+    target = registry.into_projection(tmp_path / "projected.zip", ["Side", "QuoteID"])
+    projected = FixRegistry(cache_dir=target, offline=True)
+    assert projected.versions == registry.versions
+    assert set(projected.tags()) == {"side", "quoteid"}
+    for version in projected.versions:
+        expected = [
+            member for member in registry.fields(version) if member.name in {"Side", "QuoteID"}
+        ]
+        assert projected.fields(version) == expected
+    assert target.stat().st_size < 20_000
+
+    again = registry.into_projection(tmp_path / "again.zip", ["Side", "QuoteID"])
+    assert again.read_bytes() == target.read_bytes()
+
+
+def test_a_projection_refuses_missing_fields_and_its_source(
+    registry: FixRegistry, tmp_path: Path
+) -> None:
+    with pytest.raises(KeyError, match="AbsentField"):
+        registry.into_projection(tmp_path / "bad.zip", ["AbsentField"])
+    with pytest.raises(ValueError, match="cannot replace its source"):
+        registry.into_projection(DATA, ["Side"])
+
+
+def test_the_builtin_projection_matches_the_published_versions(
+    registry: FixRegistry,
+) -> None:
+    builtin = FixRegistry.from_builtin()
+    assert builtin.versions == ("FIX.Latest", *registry.versions)
+    assert len(builtin.tags()) == 158
+    selected = {
+        int(member.fix["tag"])
+        for version in registry.versions
+        for member in builtin.fields(version)
+    }
+    for version in registry.versions:
+        expected = [
+            member for member in registry.fields(version) if int(member.fix["tag"]) in selected
+        ]
+        assert builtin.fields(version) == expected, version
+    assert [member.name for member in builtin.fields("FIX.Latest")] == [
+        "ExposureDuration",
+        "ExposureDurationUnit",
+    ]
+
+
 def test_the_archive_says_it_came_from_nowhere_in_particular() -> None:
     """The other half of "built twice is the same file": the host.
 

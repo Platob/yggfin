@@ -2,185 +2,202 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any, ClassVar
+import functools
+from typing import Annotated, Any
 
 import pyarrow
 
-from rekep.fields import Field, field
-from rekep.market.enums import EventType, ExecKind, OrderKind, State, TimeInForce
+from rekep.enums import EventType, State, TimeInForce
+from rekep.fields import Field, scalar
 from rekep.market.event import Event, MarketEvent
 from rekep.market.fields import fix_tag
+from rekep.market.identity import NIL
 
 
-@field
+@scalar(slots=True)
 class Order(MarketEvent):
-    """One version of one order: what was asked for, and how far it has got.
+    """One version of one order: what was asked for, and how far it has got."""
 
-    `px` is the limit and `qty` is the quantity asked for. An order with
-    `kind` in the `MARKET` band has no `px`, and that is the type saying so
-    rather than a zero standing in for it.
+    @classmethod
+    @functools.cache
+    def into_event_type(cls) -> EventType:
+        """Event kind fixed by this shape."""
+        return EventType.ORDER
 
-    The running totals -- `filled_qty`, `leaves_qty`, `avg_px` -- are carried
-    on the row even though they are derivable from the executions, because
-    deriving them means a windowed aggregate over every fill of the lifecycle
-    to answer "how much is left", which is a question asked once per tick. The
-    venue already computed them and put them in the message; dropping them
-    only moves the work.
-
-    `prev_client_order_id` is FIX `OrigClOrdID <41>` and is the other half of
-    what `prev_hash` says: the identity the *venue* knew this order by before
-    the amendment, which is what reconciling against the venue's own records
-    needs and what a content hash cannot supply.
-    """
-
-    EVENT_TYPE: ClassVar[EventType] = EventType.ORDER
-
-    kind: Annotated[OrderKind, fix_tag("OrdType", 40)] = OrderKind.UNKNOWN
-    """How the order is priced; the band says whether `px` and `stop_px` mean anything."""
-
-    tif: Annotated[TimeInForce, fix_tag("TimeInForce", 59)] = TimeInForce.UNKNOWN
+    tif: Annotated[TimeInForce, fix_tag("TimeInForce")] = TimeInForce.UNKNOWN
     """How long it lives. `GTD` expires at `eunix`, where every expiry here lives."""
 
-    stop_px: Annotated[float | None, fix_tag("StopPx", 99)] = None
+    exposure_duration: Annotated[int | None, fix_tag("ExposureDuration")] = None
+    """FIX GFT duration; null when absent."""
+
+    exposure_duration_unit: Annotated[
+        int | None, fix_tag("ExposureDurationUnit"), Field(arrow_type=pyarrow.int32())
+    ] = None
+    """FIX GFT duration unit; null means the FIX default of seconds."""
+
+    stop_px: Annotated[float | None, fix_tag("StopPx")] = None
     """Trigger price of a stop order; `px` is the limit that applies once triggered."""
 
-    display_qty: Annotated[float | None, fix_tag("MaxFloor", 111)] = None
-    """How much of `qty` the book shows; the rest is hidden."""
+    hidden_qty: float | None = None
+    """Current quantity hidden from the displayed book; null when unstated."""
 
-    filled_qty: Annotated[float | None, fix_tag("CumQty", 14)] = None
-    """Quantity done so far, as the venue counts it."""
-
-    leaves_qty: Annotated[float | None, fix_tag("LeavesQty", 151)] = None
-    """Quantity still working; zero on anything terminal."""
-
-    avg_px: Annotated[float | None, fix_tag("AvgPx", 6)] = None
+    vwap: Annotated[float | None, fix_tag("AvgPx")] = None
     """Average price of what has been done, weighted by quantity."""
 
-    order_id: Annotated[str | None, fix_tag("OrderID", 37)] = None
+    indicative: bool = False
+    """Whether this interest is a quote rather than a firm order."""
+
+    order_id: Annotated[str | None, fix_tag("OrderID")] = None
     """Identifier the venue gave the order."""
 
-    client_order_id: Annotated[str | None, fix_tag("ClOrdID", 11)] = None
+    client_order_id: Annotated[str | None, fix_tag("ClOrdID")] = None
     """Identifier the sender gave this version of the order."""
 
-    prev_client_order_id: Annotated[str | None, fix_tag("OrigClOrdID", 41)] = None
+    prev_client_order_id: Annotated[str | None, fix_tag("OrigClOrdID")] = None
     """Identifier the sender gave the version this one replaced."""
 
     # int32 rather than int64: a reject code is a small number in every
     # dictionary that defines one, and it is not an enum here because past the
     # handful FIX standardises every venue numbers its own.
     reason_code: Annotated[
-        int | None, fix_tag("OrdRejReason", 103), Field(arrow_type=pyarrow.int32())
+        int | None, fix_tag("OrdRejReason"), Field(arrow_type=pyarrow.int32())
     ] = None
     """Why the order was refused or restated, as the venue numbers it."""
 
-    reason: Annotated[str | None, fix_tag("Text", 58)] = None
+    reason: Annotated[str | None, fix_tag("Text")] = None
     """Free text the venue sent with the refusal or the restatement."""
 
     def complete_from(self, previous: Event) -> None:
-        """An order completed from its last version, by what a market actually means.
-
-        Beyond carrying forward what the message did not repeat, two rules
-        that are arithmetic rather than copying:
-
-        - **`prev_client_order_id` is the identifier that was replaced.** FIX
-          calls it `OrigClOrdID <41>` and requires a new `ClOrdID <11>` per
-          version, so when this version has a different one and did not say
-          what it replaced, the version before it *is* the answer.
-        - **A fully filled order filled what it asked for.** `State.FILLED`
-          means all of it, so a report that says the state and not `CumQty
-          <14>` has still said how much was done: what the version before
-          asked for. `derive` is about to zero the quantity on this row, so
-          this is the only place that number is still readable.
-        """
-        super().complete_from(previous)
-        # By name, for the reason `_carry` gives. `filled_qty` and `avg_px`
-        # mean the same thing wherever they appear, unlike the abstract slots
-        # -- so they carry across shapes, and a fill's running totals complete
-        # the next order version of the same order.
-        _carry(self, previous, "stop_px", "display_qty", "filled_qty", "avg_px", "order_id")
-        if self.leaves_qty is None and self.qty is None:
-            # Carried only when `derive` below cannot work it out, which is
-            # the cross-shape case: an order following a fill has no quantity
-            # of its own to subtract from. Where it *does* -- an order
-            # following an order -- carrying would win over the derivation and
-            # keep reporting the quantity that was left before this version's
-            # own `CumQty <14>` said otherwise.
-            self.leaves_qty = getattr(previous, "leaves_qty", None)
-        _carry_code(self, previous, "kind", "tif")
+        """An order completed from its last version, by what a market actually means."""
+        same_named_life = self._continues_named_life(previous)
+        MarketEvent.complete_from(self, previous)
+        # By name, for the reason `_carry` gives. `vwap` means the same thing
+        # wherever it appears, unlike the abstract price and quantity slots.
+        _carry(
+            self,
+            previous,
+            "stop_px",
+            "hidden_qty",
+            "vwap",
+            "order_id",
+            "exposure_duration",
+            "exposure_duration_unit",
+        )
+        if self.qty is None and isinstance(previous, Execution):
+            self.qty = previous.leaves_qty
+        _carry_code(self, previous, "tif")
         named = getattr(previous, "client_order_id", None)
         if self.client_order_id is None:
             self.client_order_id = named
         elif self.prev_client_order_id is None and named not in (None, self.client_order_id):
             self.prev_client_order_id = named
-        if self.filled_qty is None and self.state is State.FILLED:
-            # Filled means all of it, so how much was done is what was asked
-            # -- which this version no longer carries, because the rule below
-            # has just zeroed it.
-            self.filled_qty = getattr(previous, "qty", None)
+        anchor = (
+            previous.xcode or previous.life_code()
+            if same_named_life
+            else self._parent_order_life_code(previous)
+        )
+        if anchor:
+            # A later acknowledgement may introduce the venue's OrderID. The
+            # exact field keeps it, while the lifecycle stays on its first
+            # readable anchor. Rehash even when its text already agrees:
+            # completion may just have supplied the instrument or venue scope.
+            self.xcode = anchor
+            self.xhash = NIL
 
     def derive(self) -> None:
-        """What an order's own numbers say about each other.
-
-        **`leaves_qty` is what is left**: `qty - filled_qty`, with nothing
-        filled counting as nothing filled. A venue that sends `CumQty <14>`
-        and not `LeavesQty <151>` has still said how much is working, and
-        deriving it here is what stops every reader deriving it differently.
-
-        **A terminal order rests nothing.** `leaves_qty` and `qty` both go to
-        zero, because there is no quantity on the row any more: the order is
-        done, cancelled or expired, and a book folding it has to take its
-        liquidity out rather than leave it standing. What was asked for is not
-        lost -- it is on the version before, which `prev_hash` names, and
-        `filled_qty` says how much of it happened.
-        """
+        """What an order's own numbers say about each other."""
+        if self.expires_on_arrival:
+            self.eunix = self.unix
         if self.state.is_terminal:
-            self.leaves_qty = 0.0
             self.qty = 0.0
-        elif self.leaves_qty is None and self.qty is not None:
-            self.leaves_qty = max(self.qty - (self.filled_qty or 0.0), 0.0)
-        super().derive()
+            self.hidden_qty = 0.0
+        MarketEvent.derive(self)
+
+    @property
+    def expires_on_arrival(self) -> bool:
+        """Whether FIX says unfilled quantity can never rest."""
+        return TimeInForce.IMMEDIATE <= self.tif < TimeInForce.SESSION
 
     def life_parts(self) -> tuple[Any, ...]:
-        """An order's lifecycle is the identifier that survives its amendments.
+        """An order's lifecycle is the identifier that survives its amendments."""
+        named = self._named_life_code()
+        if not named and (not self.xcode or self.xcode == self.code):
+            return MarketEvent.life_parts(self)
+        return (self.instrument_xhash, self.mic, self.xcode or named, self.side)
 
-        `OrderID <37>` first, because the venue assigns it once and keeps it
-        across a cancel/replace -- which is the definition of the lifecycle.
-        `ClOrdID <11>` does *not* survive one: the standard requires a new
-        one per version. So when only client identifiers are there,
-        `OrigClOrdID <41>` is preferred, which puts a replacement on the same
-        lifecycle as the version it replaced. One hop is exact; a chain of
-        replacements walks back one link per version, which is why
-        `with_previous` carries the lifecycle forward instead of re-deriving
-        it, and why a venue that sends `OrderID` never needs any of this.
-        """
-        named = self.order_id or self.prev_client_order_id or self.client_order_id
-        if not named:
-            return super().life_parts()
-        return (self.instrument_hash, self.venue or "", named)
+    def life_code(self) -> str:
+        """The order identifier that survives amendments, then the market fallback."""
+        return self.xcode or self._named_life_code() or MarketEvent.life_code(self)
+
+    def _named_life_code(self) -> str:
+        """The strongest order identifier this version carries itself."""
+        return self.order_id or self.prev_client_order_id or self.client_order_id or ""
+
+    def _continues_named_life(self, previous: Event) -> bool:
+        """Whether FIX identifiers link this row to the preceding Order."""
+        if not isinstance(previous, Order):
+            return False
+        if self.order_id and previous.order_id and self.order_id != previous.order_id:
+            return False
+        same_order = self.order_id and self.order_id == previous.order_id
+        same_client_version = (
+            self.client_order_id and self.client_order_id == previous.client_order_id
+        )
+        amends_client_version = self.prev_client_order_id and self.prev_client_order_id in (
+            previous.client_order_id,
+            previous.prev_client_order_id,
+        )
+        return bool(same_order or same_client_version or amends_client_version)
+
+    def _parent_order_life_code(self, previous: Event) -> str:
+        """An order code whose scoped hash matches a parent Execution's order."""
+        target = previous.primary_linked_xhash
+        if not target:
+            return ""
+        candidates = dict.fromkeys(
+            (
+                self.order_id,
+                self.prev_client_order_id,
+                self.client_order_id,
+                getattr(previous, "order_id", None),
+                getattr(previous, "prev_client_order_id", None),
+                getattr(previous, "client_order_id", None),
+            )
+        )
+        for candidate in candidates:
+            if (
+                candidate
+                and self.hash_of(
+                    self.instrument_xhash,
+                    self.mic,
+                    candidate,
+                    self.side,
+                )
+                == target
+            ):
+                return candidate
+        return ""
 
     def version_parts(self) -> tuple[Any, ...]:
         """An order's version moves with what it asked for, and how far it got."""
-        return (*super().version_parts(), self.client_order_id, self.filled_qty)
+        return (
+            *MarketEvent.version_parts(self),
+            self.client_order_id,
+            self.hidden_qty,
+            self.vwap,
+            self.indicative,
+        )
 
 
-@field
+@scalar(slots=True)
 class Execution(MarketEvent):
-    """One thing that happened to an order -- usually, but not always, a trade.
+    """One fill, correction or cancellation reported against an order."""
 
-    `px` is FIX `LastPx <31>` and `qty` is `LastQty <32>`: what traded on this
-    report, not what the order asked for. `kind >= ExecKind.TRADE` is what
-    separates the reports where shares moved from the acknowledgements that
-    share the same message, and summing `qty` without that filter counts every
-    ack as a fill.
-
-    `order_xhash` is the order's lifecycle, flat and typed, beside the generic
-    `parent_hash` list. The list is the truth about lineage; the flat column is
-    what a join uses, because no engine under this package joins on an array
-    without exploding it first, and an explode of a fills table is a shuffle
-    nobody needs to pay for a link that is always single-valued.
-    """
-
-    EVENT_TYPE: ClassVar[EventType] = EventType.EXECUTION
+    @classmethod
+    @functools.cache
+    def into_event_type(cls) -> EventType:
+        """Event kind fixed by this shape."""
+        return EventType.EXECUTION
 
     # The abstract slots, re-declared for the one thing a subclass owns about
     # them: which FIX field they actually hold. `MarketEvent` tags them
@@ -189,104 +206,138 @@ class Execution(MarketEvent):
     # order. Re-declaring keeps the column exactly where it was (a dataclass
     # field re-annotated keeps its position) and stops the schema naming a
     # field it does not carry.
-    px: Annotated[float | None, fix_tag("LastPx", 31)] = None
+    px: Annotated[float | None, fix_tag("LastPx")] = None
     """What traded on this report -- the fill's price, not the order's limit."""
 
-    qty: Annotated[float | None, fix_tag("LastQty", 32)] = None
+    qty: Annotated[float | None, fix_tag("LastQty")] = None
     """What traded on this report -- the fill's quantity, not the order's."""
 
-    kind: Annotated[ExecKind, fix_tag("ExecType", 150)] = ExecKind.UNKNOWN
-    """What this report says happened; `>= ExecKind.TRADE` means shares moved."""
-
-    exec_id: Annotated[str | None, fix_tag("ExecID", 17)] = None
+    exec_id: Annotated[str | None, fix_tag("ExecID")] = None
     """Identifier the venue gave this report."""
 
-    trade_id: Annotated[str | None, fix_tag("TradeID", 1003)] = None
+    exec_ref_id: Annotated[str | None, fix_tag("ExecRefID")] = None
+    """Original execution amended or cancelled by this report."""
+
+    trade_id: Annotated[str | None, fix_tag("TradeID")] = None
     """Identifier the venue gave the trade, which both sides of it share."""
 
-    order_xhash: int | None = None
-    """Lifecycle of the order this happened to -- the join key, single-valued."""
-
-    order_id: Annotated[str | None, fix_tag("OrderID", 37)] = None
+    order_id: Annotated[str | None, fix_tag("OrderID")] = None
     """Identifier the venue gave that order."""
 
-    client_order_id: Annotated[str | None, fix_tag("ClOrdID", 11)] = None
+    client_order_id: Annotated[str | None, fix_tag("ClOrdID")] = None
     """Identifier the sender gave the version of the order that traded."""
 
-    filled_qty: Annotated[float | None, fix_tag("CumQty", 14)] = None
+    prev_client_order_id: Annotated[str | None, fix_tag("OrigClOrdID")] = None
+    """Identifier the sender gave the preceding order version."""
+
+    filled_qty: Annotated[float | None, fix_tag("CumQty")] = None
     """Quantity done on the order as of this report, including this fill."""
 
-    leaves_qty: Annotated[float | None, fix_tag("LeavesQty", 151)] = None
+    leaves_qty: Annotated[float | None, fix_tag("LeavesQty")] = None
     """Quantity still working after this report."""
 
-    avg_px: Annotated[float | None, fix_tag("AvgPx", 6)] = None
+    vwap: Annotated[float | None, fix_tag("AvgPx")] = None
     """Average price of everything done on the order, as of this report."""
 
-    aggressor: Annotated[bool | None, fix_tag("AggressorIndicator", 1057)] = None
+    aggressor: Annotated[bool | None, fix_tag("AggressorIndicator")] = None
     """Whether this side took liquidity; null when the venue does not say."""
 
     reason_code: Annotated[
-        int | None, fix_tag("ExecRestatementReason", 378), Field(arrow_type=pyarrow.int32())
+        int | None, fix_tag("ExecRestatementReason"), Field(arrow_type=pyarrow.int32())
     ] = None
     """Why a restatement or a refusal happened, as the venue numbers it."""
 
-    reason: Annotated[str | None, fix_tag("Text", 58)] = None
+    reason: Annotated[str | None, fix_tag("Text")] = None
     """Free text the venue sent with the report."""
 
     def complete_from(self, previous: Event) -> None:
-        """A report completed from the one before it on the same order.
-
-        `previous` here is the last report of the *order*, not of this
-        execution -- which is what makes the running totals derivable at all.
-        The three that are arithmetic:
-
-        - **`filled_qty` accumulates.** A venue that sends `LastQty <32>` and
-          not `CumQty <14>` has still said how much is now done: what was done
-          before, plus this fill.
-        - **`leaves_qty` decreases by the same fill**, which is the other half
-          of the same statement.
-        - **`avg_px` is re-weighted**, not copied: the average of everything
-          done is the previous average over the previous quantity, plus this
-          fill over its own, divided by the total. Copying it forward would
-          leave every partial fill reporting the first one's price.
-
-        All three only fill where the venue said nothing, and all three need
-        this fill to have moved shares -- an acknowledgement changes no total,
-        and adding its quantity is how a fills table starts overcounting.
-        """
-        super().complete_from(previous)
+        """A report completed from the one before it on the same order."""
+        MarketEvent.complete_from(self, previous)
         # By name, for the reason `_carry` gives.
-        _carry(self, previous, "order_xhash", "order_id", "client_order_id", "aggressor")
-        _carry_code(self, previous, "kind")
-        if self.order_xhash is None and previous.is_order():
-            self.order_xhash = previous.xhash
+        _carry(
+            self,
+            previous,
+            "order_id",
+            "client_order_id",
+            "prev_client_order_id",
+            "aggressor",
+        )
+        same_report_life = (
+            isinstance(previous, Execution)
+            and self.state in (State.REPLACED, State.CANCELLED)
+            and self.exec_ref_id is not None
+            and self.exec_ref_id in (previous.exec_id, previous.exec_ref_id, previous.xcode)
+        )
+        if previous.is_order():
+            self.link_to(previous.xhash, primary=True)
+        if same_report_life and previous.xcode:
+            self.xcode = previous.xcode
+            self.xhash = NIL
         done, left, average = _totals_of(previous)
-        moved = self.kind.moves_shares and self.qty is not None
+        known_done = done
+        delta = None
+        revised_average = average
+        if same_report_life and isinstance(previous, Execution):
+            prior_qty = previous.qty
+            replacement_qty = 0.0 if self.state is State.CANCELLED else self.qty
+            if prior_qty is not None and replacement_qty is not None:
+                delta = replacement_qty - prior_qty
+                revised_average = (
+                    _replaced_average(
+                        average,
+                        known_done,
+                        previous.px,
+                        prior_qty,
+                        self.px,
+                        replacement_qty,
+                    )
+                    if known_done is not None
+                    else (
+                        average if replacement_qty == prior_qty and self.px == previous.px else None
+                    )
+                )
+        elif self.state is State.FILLED and self.qty is not None:
+            if known_done is None and previous.is_order() and average is None:
+                known_done = 0.0
+            delta = self.qty
+            revised_average = _weighted(average, known_done, self.px, self.qty)
         if self.filled_qty is None:
-            self.filled_qty = (done or 0.0) + self.qty if moved else done
+            self.filled_qty = (
+                max(known_done + delta, 0.0)
+                if delta is not None and known_done is not None
+                else known_done
+            )
         if self.leaves_qty is None and left is not None:
-            self.leaves_qty = max(left - self.qty, 0.0) if moved else left
-        if self.avg_px is None:
-            self.avg_px = _weighted(average, done, self.px, self.qty) if moved else average
+            self.leaves_qty = max(left - delta, 0.0) if delta is not None else left
+        if self.vwap is None:
+            self.vwap = revised_average
 
     def life_parts(self) -> tuple[Any, ...]:
         """An execution's lifecycle is the report the venue identified it by.
 
         `ExecID <17>` first, which the standard makes unique per report;
         `TradeID <1003>` after it, which both sides of a trade share and which
-        is what a trade-capture report carries instead. A fill amended later
-        (`ExecType` `G`/`H`) carries the *same* identifier, which is exactly
-        right: a correction is another version of one execution, not a
-        second one.
+        is what a trade-capture report carries instead. A correction uses
+        `ExecRefID <19>` to stay on the report it amends.
         """
-        named = self.exec_id or self.trade_id
-        if not named:
-            return super().life_parts()
-        return (self.instrument_hash, self.venue or "", named)
+        named = self._named_life_code()
+        if not named and (not self.xcode or self.xcode == self.code):
+            return MarketEvent.life_parts(self)
+        return (self.instrument_xhash, self.mic, self.xcode or named, self.side)
+
+    def life_code(self) -> str:
+        """The report identifier that survives corrections, then the market fallback."""
+        return self.xcode or self._named_life_code() or MarketEvent.life_code(self)
+
+    def _named_life_code(self) -> str:
+        """The strongest execution identifier this version carries itself."""
+        if self.state in (State.REPLACED, State.CANCELLED) and self.exec_ref_id:
+            return self.exec_ref_id
+        return self.exec_id or self.trade_id or ""
 
     def version_parts(self) -> tuple[Any, ...]:
         """An execution's version moves when what it says about the trade does."""
-        return (*super().version_parts(), self.kind, self.exec_id, self.filled_qty)
+        return (*MarketEvent.version_parts(self), self.exec_id, self.filled_qty, self.vwap)
 
 
 def _carry(into: Event, previous: Event, *names: str) -> None:
@@ -306,22 +357,7 @@ def _carry(into: Event, previous: Event, *names: str) -> None:
 
 
 def _carry_code(into: Event, previous: Event, *names: str) -> None:
-    """Fill each banded code in `names` from `previous`, where the codes agree.
-
-    Separate from `_carry` for one reason, and it was a live bug: `kind` is a
-    *different enum on every shape* -- an order's is `OrderKind`, an
-    execution's is `ExecKind` -- and a version chain crosses shapes, because
-    one `ExecutionReport <8>` yields both and the next order version follows
-    the fill. Carried by name alone, an order that followed a fill took
-    `ExecKind.TRADED` for its `kind`, which is `310`, which reads back as
-    `OrderKind.STOP_ORDER`; and a fill that followed an order took an
-    `OrderKind` and raised on the first `moves_shares`.
-
-    So the carried value has to be a member of the enum the target already
-    holds. Every code here defaults to its own `UNKNOWN`, which is zero, so
-    the target's current value is both the test for "unset" and the right
-    class to ask.
-    """
+    """Fill each banded code in `names` from `previous`, where the codes agree."""
     for name in names:
         current = getattr(into, name)
         if current != 0:
@@ -332,17 +368,14 @@ def _carry_code(into: Event, previous: Event, *names: str) -> None:
 
 
 def _totals_of(previous: MarketEvent) -> tuple[float | None, float | None, float | None]:
-    """`(filled_qty, leaves_qty, avg_px)` of whatever the previous version was.
-
-    An execution's previous version is the last report of the order, which may
-    be an `Order` or another `Execution` -- both carry the three running
-    totals, and it is read from either by name, for the reason `_carry` gives.
-    """
-    return (
-        getattr(previous, "filled_qty", None),
-        getattr(previous, "leaves_qty", None),
-        getattr(previous, "avg_px", None),
-    )
+    """Known `(filled, remaining, vwap)` before an execution report."""
+    if isinstance(previous, Order):
+        # A first live order has traded nothing and its current quantity is
+        # what remains. Later order versions deliberately carry no cumulative
+        # total; an execution must then use the source's explicit totals.
+        done = 0.0 if previous.prev_qty is None and previous.state.is_live else None
+        return done, previous.qty, previous.vwap
+    return previous.filled_qty, previous.leaves_qty, previous.vwap
 
 
 def _weighted(
@@ -354,9 +387,41 @@ def _weighted(
     a fill is worse than an absent one. A first fill is its own average, which
     falls out of the arithmetic with nothing done before it.
     """
-    if px is None or qty is None:
+    if qty is None or qty == 0:
         return average
-    if not average or not done:
+    if px is None or done is None:
+        return None
+    if done == 0:
         return px
+    if average is None:
+        return None
     total = done + qty
     return px if not total else (average * done + px * qty) / total
+
+
+def _replaced_average(
+    average: float | None,
+    done: float,
+    old_px: float | None,
+    old_qty: float,
+    new_px: float | None,
+    new_qty: float,
+) -> float | None:
+    """Average after one referenced fill is replaced or removed."""
+    total = done - old_qty + new_qty
+    if total <= 0:
+        return None
+    if old_px is None:
+        return average if new_qty == old_qty and new_px is None else None
+    if average is None:
+        if done != old_qty:
+            return None
+        notional = old_px * old_qty
+    else:
+        notional = average * done
+    notional -= old_px * old_qty
+    if new_qty:
+        if new_px is None:
+            return None
+        notional += new_px * new_qty
+    return notional / total

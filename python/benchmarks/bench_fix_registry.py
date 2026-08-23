@@ -1,28 +1,4 @@
-"""Benchmark the FIX registry's two stores: a directory of JSON, and a zip of it.
-
-Run from `python/`::
-
-    uv run python benchmarks/bench_fix_registry.py            # full sweep
-    uv run python benchmarks/bench_fix_registry.py --quick    # fewer repeats
-
-Both stores hold the same published dictionary (nine versions, 6,479 fields),
-and every answer is asserted *equal* before anything is timed -- a benchmark
-that measures the wrong answer measures nothing.
-
-Three questions:
-
-1. What does reading through a zip cost? Every question a caller asks, over
-   the archive and over the same files unpacked into a directory. Deflate is
-   not free, and the number that matters is how much of a question it is.
-2. What does the archive save? Its bytes against the directory's, and what
-   each deflate level is worth -- including level 0, which stores rather than
-   compresses and is here to be looked at rather than assumed away.
-3. What does publishing one cost? `into_zip` over the whole dictionary, which
-   is the call a refresh ends with.
-
-Every case is warmed once and reported as the best of `--repeat` runs; run the
-script twice before quoting a number anywhere.
-"""
+"""Benchmark the FIX registry's two stores: a directory of JSON, and a zip of it."""
 
 from __future__ import annotations
 

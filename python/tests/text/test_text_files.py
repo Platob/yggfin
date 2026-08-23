@@ -145,7 +145,12 @@ def test_a_name_with_an_odd_digit_still_sorts(tmp_path: Path) -> None:
 def test_a_directory_is_walked_once(tmp_path: Path) -> None:
     """A symlink back up the tree costs the whole capture twice, or forever."""
     (tmp_path / "app.txt").write_bytes(SAMPLE_BYTES)
-    (tmp_path / "loop").symlink_to(tmp_path, target_is_directory=True)
+    try:
+        (tmp_path / "loop").symlink_to(tmp_path, target_is_directory=True)
+    except OSError as error:
+        if getattr(error, "winerror", None) == 1314:
+            pytest.skip("Windows symlink privilege is unavailable")
+        raise
     files = TextFiles.from_folder(tmp_path, pattern="*.txt")
     assert len(list(files.into_urls())) == 1
 
@@ -194,7 +199,7 @@ def test_an_empty_set_reads_as_no_rows() -> None:
     assert files.exists is False
     table = files.into_arrow_table()
     assert table.num_rows == 0
-    assert table.schema.equals(Log.FIELD.into_arrow_schema())
+    assert table.schema.equals(Log.into_field().into_arrow_schema())
 
 
 def test_a_folder_with_no_logs_does_not_exist_yet(tmp_path: Path) -> None:
@@ -250,7 +255,7 @@ def test_the_declaration_reaches_every_file(capture: Path) -> None:
 def test_a_set_is_a_dataset(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert isinstance(files, Dataset)
-    assert files.into_struct_field() is Log.FIELD
+    assert files.into_struct_field() is Log.into_field()
     assert files.read_arrow_table().num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
 
 
@@ -302,7 +307,7 @@ def test_static_values_are_the_sets_and_reach_every_file(capture: Path) -> None:
 def test_every_record_of_every_file_is_parsed(capture: Path) -> None:
     table = TextFiles.from_folder(capture, pattern="*.txt*").into_arrow_table()
     assert table.num_rows == len(CAPTURE_ORDER) * EXPECTED_RECORDS
-    assert table.schema.equals(Log.FIELD.into_arrow_schema())
+    assert table.schema.equals(Log.into_field().into_arrow_schema())
 
 
 def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
@@ -394,7 +399,7 @@ def test_continuations_do_not_fold_across_two_files(tmp_path: Path) -> None:
 
 def test_reading_casts_only_when_asked(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt")
-    assert files.read_arrow_reader().schema.equals(Log.FIELD.into_arrow_schema())
+    assert files.read_arrow_reader().schema.equals(Log.into_field().into_arrow_schema())
     narrow = Field.from_arrow_schema(
         pyarrow.schema([("message", pyarrow.large_string())]), "Narrow"
     )

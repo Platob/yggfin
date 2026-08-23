@@ -8,12 +8,14 @@ import decimal
 import functools
 import re
 from collections.abc import Collection, Iterable, Iterator, Mapping
-from typing import Any, ClassVar
+from types import MappingProxyType
+from typing import Any
 
 import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
+from rekep.fields.arrays import sequence
 
 #: The delimiter the standard writes between fields: ASCII 0x01, Start of
 #: Heading. Unprintable, which is why logs substitute something visible.
@@ -49,7 +51,7 @@ _NOT_A_TAG = r"(?:^|[^0-9])"
 
 #: Where a message starts inside a log line: `8=FIX...` at the start or after
 #: anything that is not a digit. Public because **a classification rule is
-#: data** -- `Rules.DEFAULT`'s FIX rule is this string, and a rule set loaded
+#: data** -- `Rules.into_default()`'s FIX rule is this string, and a rule set loaded
 #: from a document has to be able to spell it -- and because what follows the
 #: BeginString value is, by construction, the separator.
 BEGIN_STRING = rf"{_NOT_A_TAG}8=FIXT?"
@@ -135,8 +137,14 @@ _BRIDGE_NEXT = re.compile(_BRIDGE_TOKEN, re.ASCII)
 #: all: `parse_arrow_array` samples a column once by contract, so the rows that
 #: share a separator have to be handed to it together, and this is how a caller
 #: finds out which those are without reading a row in Python.
-SEPARATOR_VECTOR = rf"(?s)8=FIXT?{_NOT_SEPARATOR}*(?P<sep>\^A|.)"
-BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_TOKEN}.*?(?P<sep>\^A|.){_BRIDGE_TOKEN}"
+SEPARATOR_VECTOR = rf"(?s){_NOT_A_TAG}8=FIXT?{_NOT_SEPARATOR}*(?P<sep>\^A|.)"
+NAMED_SEPARATOR_VECTOR = (
+    rf"(?s)(?:^|[^A-Za-z0-9])#?"
+    rf"(?:8|[Bb][Ee][Gg][Ii][Nn][Ss][Tt][Rr][Ii][Nn][Gg]){_WS}*="
+    rf"[Ff][Ii][Xx][Tt]?{_NOT_SEPARATOR}*(?P<sep>\^A|.)"
+)
+_BRIDGE_PAIR_TOKEN = rf"#(?:\d+|{_NAME})(?:\[\d+\])?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
+BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_PAIR_TOKEN}.*?(?P<sep>\^A|.){_BRIDGE_PAIR_TOKEN}"
 
 #: One token of a message, in every spelling the logs use. Five shapes come
 #: out of the same regex::
@@ -225,6 +233,7 @@ _UNFOLDED = re.compile(r"[ _\-]+", re.ASCII)
 #: BodyLength and CheckSum, the two fields whose *position* the standard
 #: fixes: 8, 9 lead and 10 ends the message.
 CHECKSUM = "10"
+_CHECKSUM_NAME = "checksum"
 
 
 #: An indexed token's head -- `#NoPartyIDs[0]=` -- which is the only place a
@@ -234,26 +243,7 @@ _INDEXED_HEAD = re.compile(rf"^{_WS}*#?{_NAME}\[\d+\]{_WS}*=", re.ASCII)
 
 
 def detect_separator(text: str) -> str:
-    """The character standing in for SOH in `text`.
-
-    The one honest place to read it is right after the BeginString value:
-    whatever follows `8=FIX.4.2` *is* the separator, whether or not it is on
-    the candidate list.
-
-    A bridge message has the same tell read the other way round: what sits
-    immediately **before** its second `#NAME=` is the separator, when that is
-    one of the candidates -- and the `#` itself when it is not, because a
-    bridge that writes `#A=1#B=2` has no delimiter between its tokens and the
-    marker of the next key is where the value before it ends. That reading is
-    not an optimisation, it is the only correct one on a line whose group
-    entries nest a second separator -- `...|#NOPARTYIDS[0]=PARTYID=x<SOH>...`
-    holds a SOH, and the candidate scan below would have answered SOH and
-    parsed the whole line as one field.
-
-    With neither tell -- a fragment, a heartbeat cut from its header -- the
-    first candidate present in the text wins, and a text with none reads as
-    SOH-separated, which parses it as one field.
-    """
+    """The character standing in for SOH in `text`."""
     match = _BEGIN.search(text)
     if match is not None:
         following = _separator_at(text, match.end())
@@ -281,19 +271,7 @@ def _separator_at(text: str, index: int) -> str | None:
 
 
 def _separator_before(text: str, index: int) -> str:
-    """The separator ending just before `index`; `MARKER` where the tokens abut.
-
-    A bridge writes `#A=1|#B=2` and it writes `#A=1#B=2`, and the difference
-    between them is one character that may equally be the tail of the value in
-    front of it. There is no reading of that character that is right both
-    times, so only a **candidate** is taken as a separator and anything else is
-    not taken at all: where the tokens abut, the `#` marking the next key is
-    what separates them, which is the one answer that cannot swallow a value.
-
-    Reading it as the separator anyway is what `#A=1#B=2` used to do -- `1` was
-    the separator, `A` came back empty and `B` came back attached to whatever
-    followed. It parsed, which is how it would have travelled.
-    """
+    """The separator ending just before `index`; `MARKER` where the tokens abut."""
     if index < 1:
         return MARKER
     if text[index - 2 : index] == "^A":
@@ -303,23 +281,7 @@ def _separator_before(text: str, index: int) -> str:
 
 
 def detect_entry_separator(text: str, separator: str) -> str | None:
-    """The character a group *entry* is written with inside one token, if any.
-
-    A bridge that nests a whole entry in one token --
-    `#NoPartyIDs[0]=PartyID=x<SEP>PartyIDSource=D` -- needs a second separator,
-    and it cannot be the outer one: a token that came from splitting on `|`
-    contains no `|`. So the candidates are `SEPARATORS` again, in the same
-    order and for the same reason, and the first one present inside an
-    **indexed** token wins.
-
-    Indexed and only indexed, because that is what says the token holds an
-    entry rather than a value. A plain `Text=a;b` is a value with a semicolon
-    in it, and reading `;` as a separator there would cut a message in half.
-
-    None when no indexed token carries a candidate -- which is every wire
-    message, every rendered line without groups, and a bridge that prints one
-    member per token.
-    """
+    """The character a group *entry* is written with inside one token, if any."""
     for token in text.split(separator):
         head = _INDEXED_HEAD.match(token)
         if head is None:
@@ -342,7 +304,11 @@ class FixMessage(Convertible):
     cast against the field that knows (`rekep.fix.fields`).
     """
 
-    REDIRECTS: ClassVar[dict[Any, str]] = {**Convertible.REDIRECTS, str: "text"}
+    @classmethod
+    @functools.cache
+    def into_redirects(cls) -> Mapping[Any, str]:
+        """Generic conversions plus direct text parsing."""
+        return MappingProxyType({**super().into_redirects(), str: "text"})
 
     pairs: list[tuple[str, str]] = dataclasses.field(default_factory=list)
 
@@ -357,40 +323,7 @@ class FixMessage(Convertible):
         named: bool | None = None,
         entry_separator: str | None = None,
     ) -> FixMessage:
-        """Parse one log line, however it spells its separators and its keys.
-
-        Robust the way a log demands: the message may sit inside a line with
-        its own prefix and suffix, so parsing starts where the message does --
-        at `8=FIX` for a wire message, at the first `#NAME=` of two or more for
-        a bridge one, which is the same rule and the same reason -- every token
-        that is not `key=value` is skipped rather than fatal, whitespace around
-        tokens (a ` | `-joined log) is trimmed, and the CheckSum <10> ends the
-        message so trailing log noise cannot glue itself onto the last value.
-
-        `named` decides what a *key* may be. False is the wire's rule -- a
-        numeric tag, everything else is log noise. True admits the rendered
-        spellings too: `Side=1`, `#SIDE=1` as a bridge marks a key, and a
-        repeating group printed entry by entry as `NoPartyIDs[0]=PartyID=x` or
-        `PartyID[1]=y`, which land under the canonical keys
-        `NoPartyIDs[0].PartyID` and `PartyID[1]` so the index survives into the
-        pairs. None reads the line itself: a BeginString means a wire message
-        buried in noise (tags only), no BeginString means the line *is* the
-        rendered pairs (names admitted).
-
-        **A message starts where it starts, once.** At its BeginString when it
-        has one, at its first `#NAME=` when it does not -- and never both, so a
-        line that carries a wire header *and* a bridge body
-        (`8=FIX.4.2|35=UL|#A=1|#B=2`) keeps its tags as well as its names.
-        Cutting at the bridge marker there dropped the header, which is the
-        half of the message that says what it is.
-
-        `entry_separator` is the second one, inside a single indexed token:
-        `#NoPartyIDs[0]=PartyID=x<SOH>PartyIDSource=D` is one whole group
-        *entry* in one token, and its members land under the same canonical
-        keys the one-member-per-token spelling produces. None detects it the
-        way the outer one is detected (`detect_entry_separator`); it is only
-        looked for in named mode, because only there is there an indexed token.
-        """
+        """Parse one log line, however it spells its separators and its keys."""
         if isinstance(text, bytes):
             text = text.decode("utf-8", "replace")
         begin = _BEGIN.search(text)
@@ -415,7 +348,7 @@ class FixMessage(Convertible):
                 pairs.extend(_entry_members(key, value, entry_separator))
             else:
                 pairs.append(parsed)
-            if key == CHECKSUM:
+            if _is_checksum(key):
                 break
         return cls(pairs=pairs)
 
@@ -425,38 +358,7 @@ class FixMessage(Convertible):
         pairs: Iterable[tuple[Any, Any]],
         names: Mapping[str, int | str] | None = None,
     ) -> FixMessage:
-        """A message out of `(key, value)` pairs, where a key is a tag *or* a name.
-
-        The other way in. `from_text` reads a line; this takes what a bridge,
-        a decoder or a test already has as pairs and normalises it into the
-        same thing: keys resolved to tag numbers where they name a known
-        field, values rendered the way the wire spells them, order and
-        repetition preserved because that is what a message is.
-
-        A key may be:
-
-        - a **tag** -- `54`, `"54"`, or anything whose text is digits;
-        - a **name** -- `"Side"`, `"side"`, `"SIDE"`, `"msg_type"`, resolved
-          through `names` after a fold that drops the separators a renderer's
-          casing convention adds and lowercases the rest, so one entry in
-          `names` answers for every spelling of it;
-        - a **decorated name** -- `"Instrument.Symbol"`, `"PartyID[1]"`,
-          `"NoPartyIDs[0].PartyID"`. The component path and the entry index
-          say *where* the field sits, not what it is, so the name is resolved
-          without them and the decoration is kept on the stored key -- which
-          is exactly what `from_text` stores, so both ways in agree.
-
-        A key that resolves to nothing is **kept as it was given**. That is
-        deliberate and it is what makes this usable on a real feed: every
-        venue sends fields no dictionary has, and dropping them would lose
-        data that the map, the round trip and `get` all handle perfectly
-        well. `names=None` resolves nothing at all, which keeps every name a
-        name -- and `get("Side")` still finds it, because the rendered
-        spellings are a fallback there.
-
-        A `None` value drops its pair: an absent field is absent, and `54=`
-        on the wire is a malformed message rather than an empty side.
-        """
+        """A message out of `(key, value)` pairs, where a key is a tag *or* a name."""
         folded = _folded(names)
         built: list[tuple[str, str]] = []
         for key, value in pairs:
@@ -521,23 +423,7 @@ class FixMessage(Convertible):
     def group(
         self, count_tag: int | str, members: Collection[int | str] | None = None
     ) -> list[list[tuple[str, str]]]:
-        """The entries of the repeating group `count_tag` counts.
-
-        The standard's own rules (FIX Vol 1, repeating groups): the NumInGroup
-        field precedes its entries; every entry starts with the same
-        *delimiter* tag -- the first tag after the count, by definition; tags
-        never repeat within one entry; and the count says how many entries
-        there are, so a later reappearance of the delimiter elsewhere in the
-        message is not one more.
-
-        Where the *last* entry ends is the one thing the wire does not say
-        without a dictionary. `members` -- the group's tags, from `FixRegistry`
-        or a spec -- makes the boundary exact; without it, an entry ends where
-        a tag repeats inside it, which the no-repetition rule guarantees is
-        past the end, and anything after the last entry that never repeated
-        stays in it. Compliant senders order group fields consistently, which
-        is what makes the fallback honest in practice.
-        """
+        """The entries of the repeating group `count_tag` counts."""
         wanted = str(count_tag)
         allowed = {str(member) for member in members} if members is not None else None
         pairs = self.pairs
@@ -567,17 +453,7 @@ class FixMessage(Convertible):
         return entries
 
     def indexed_group(self, name: int | str) -> list[list[tuple[str, str]]]:
-        """The entries of a group a log rendered with indexes, in index order.
-
-        The other spelling of a repeating group: not a count tag followed by
-        wire-order entries, but each field labelled with the entry it belongs
-        to -- `NoPartyIDs[0]=PartyID=x`, `NoPartyIDs[1]=PartyID=y` -- which
-        `from_text` stores under `NoPartyIDs[0].PartyID`. Here those keys are
-        folded back into entries, ordered by index however the log
-        interleaved them, sparse indexes tolerated. A bare `Name[i]=value`
-        token is one `(Name, value)` pair of entry `i`. Case-insensitive,
-        like the rest of the rendered-name handling.
-        """
+        """The entries of a group a log rendered with indexes, in index order."""
         wanted = str(name)
         pattern = _indexed_pattern(wanted)
         entries: dict[int, list[tuple[str, str]]] = {}
@@ -618,33 +494,7 @@ def parse_arrow_array(
     named: bool | None = None,
     entry_separator: str | None = None,
 ) -> Any:
-    """A column of FIX log lines as one `map<string, string>` per row.
-
-    The vectorised `FixMessage.from_text`: one `split_pattern` cuts every
-    line into tokens, one regex match classifies every token as `key=value`
-    or noise, one more pass cuts key from value, and the map offsets are
-    rebuilt from a cumulative sum of the matches -- kernels throughout, no
-    Python per row, which is what a column of millions of lines needs.
-    (The tag/value cut is a `split_pattern` and two `list_element` calls on
-    purpose: raced against one `extract_regex` in `benchmarks/bench_fix.py`,
-    the split ties the regex that skips trimming -- which is only equal on
-    unpadded tokens -- and beats the one that trims by ~3x, measured twice.)
-
-    A **map**, not a struct, because tags repeat -- a repeating group is tags
-    repeating, and an Arrow map is the one nested type that keeps duplicate
-    keys in order. Values stay text for the same reason they do on
-    `FixMessage`. A null line stays null; a line with no `key=value` in it
-    becomes an empty map.
-
-    `named` is `from_text`'s: False takes numeric tags only, True admits
-    rendered names, a bridge's `#` marker and indexed group entries
-    (`NoPartyIDs[0]=PartyID=x` lands under `NoPartyIDs[0].PartyID`, exactly as
-    the scalar parser stores it). None reads the *column*: the first non-empty
-    line with a BeginString means wire messages (tags only), none means
-    rendered pairs. `separator` and `entry_separator` are sampled the same way
-    when not given -- one style per call: a column mixing styles should be
-    split first, or parsed row by row with `FixMessage.from_text`.
-    """
+    """A column of FIX log lines as one `map<string, string>` per row."""
     if separator is None or named is None or entry_separator is None:
         # Sampled from the column as handed over -- once, even for a chunked
         # column, so where a chunk boundary falls can never change what a row
@@ -673,9 +523,13 @@ def parse_arrow_array(
     # RE2 has no lookbehind, so the non-digit guard rides outside the capture
     # -- and `(?s)`, or a message holding a newline would end at it here
     # where the scalar slice keeps it.
-    begun = compute.struct_field(compute.extract_regex(values, _BEGIN_VECTOR), "msg")
-    wire = compute.is_valid(begun)
-    values = compute.if_else(wire, begun, values)
+    starts = compute.starts_with(values, "8=FIX")
+    if compute.all(starts, min_count=0).as_py():
+        wire = compute.fill_null(starts, False)
+    else:
+        begun = compute.struct_field(compute.extract_regex(values, _BEGIN_VECTOR), "msg")
+        wire = compute.is_valid(begun)
+        values = compute.if_else(wire, begun, values)
     if named:
         # The other kind of message start, and **only** where there was no
         # first one: a line carrying a wire header and a bridge body starts at
@@ -686,20 +540,41 @@ def parse_arrow_array(
         values = compute.if_else(
             compute.and_(compute.invert(wire), compute.is_valid(bridged)), bridged, values
         )
+    canonical = False
+    wire_pattern = _canonical_wire_pattern(separator) if not named else None
+    if wire_pattern is not None:
+        canonical = bool(
+            compute.all(compute.match_substring_regex(values, wire_pattern), min_count=0).as_py()
+        )
     tokens = compute.split_pattern(values, separator)
     # `.values`, not `.flatten()`: the boundaries below index into the child
     # array as the offsets wrote it, and `flatten` re-slices around null rows.
     # A kernel output owns its buffers from zero, so the two only agree here.
     flat = tokens.values
-    matched = compute.match_substring_regex(flat, _PAIR_TOKEN_NAMED if named else _PAIR_TOKEN)
-    matched = compute.fill_null(matched, False)
-    kept = compute.filter(flat, matched)
+    parsed = None
+    if named:
+        # The extracted key is also the validity test. Running
+        # `_PAIR_TOKEN_NAMED` first repeated the same RE2 walk immediately in
+        # `_named_pairs`; bridge captures are the expensive parser case.
+        parsed = compute.extract_regex(flat, _TOKEN_VECTOR)
+        matched = compute.fill_null(compute.is_valid(compute.struct_field(parsed, "key")), False)
+    else:
+        matched = (
+            compute.not_equal(flat, "")
+            if canonical
+            else compute.match_substring_regex(flat, _PAIR_TOKEN)
+        )
+        matched = compute.fill_null(matched, False)
     expansion = None
     if named:
-        tags, entries, expansion = _named_pairs(kept, entry_separator)
+        assert parsed is not None
+        tags, entries, expansion = _named_pairs(compute.filter(parsed, matched), entry_separator)
     else:
+        kept = compute.filter(flat, matched)
         halves = compute.split_pattern(kept, "=", max_splits=1)
-        tags = compute.utf8_trim_whitespace(compute.list_element(halves, 0))
+        tags = compute.list_element(halves, 0)
+        if not canonical:
+            tags = compute.utf8_trim_whitespace(tags)
         entries = compute.utf8_trim_whitespace(compute.list_element(halves, 1))
     weights = matched.cast(pyarrow.int32())
     parents = compute.filter(compute.list_parent_indices(tokens), matched)
@@ -714,7 +589,7 @@ def parse_arrow_array(
     counted = compute.cumulative_sum(weights)
     bounds = pyarrow.concat_arrays([pyarrow.array([0], pyarrow.int32()), counted])
     offsets = bounds.take(_boundaries(tokens))
-    tags, entries, offsets = _until_checksum(tags, entries, offsets, parents)
+    tags, entries, offsets = _until_checksum(tags, entries, offsets, parents, named)
     if column.null_count:
         # A null in the offsets marks its row null, which is Arrow's own
         # `from_arrays` convention -- the one way to keep "no line" distinct
@@ -728,26 +603,20 @@ def parse_arrow_array(
     return pyarrow.MapArray.from_arrays(offsets, tags, entries)
 
 
-def _named_pairs(kept: Any, entry_separator: str | None = None) -> tuple[Any, Any, Any]:
-    """Canonical `(keys, values, expansion)` for named-mode tokens, in kernels.
+@functools.lru_cache(maxsize=len(SEPARATORS) + 1)
+def _canonical_wire_pattern(separator: str) -> str | None:
+    """Whole-row guard for the numeric wire fast path."""
+    if len(separator) != 1:
+        return None
+    escaped = re.escape(separator)
+    value = rf"[^{escaped}\r\n]*"
+    return rf"^\d+={value}(?:{escaped}\d+={value})*{escaped}?$"
 
-    The vectorised `_parse_token`: one `extract_regex` reads key, index,
-    member and rest out of every token at once; a second one cuts the inner
-    `member=` out of `rest` -- applied through masks, only where an index
-    said the token is a group entry and no canonical `.member` already named
-    it. The canonical key is then one element-wise join, so
-    `NoPartyIDs[0]=PartyID=x` and `NoPartyIDs[0].PartyID=x` come out
-    identical, exactly as the scalar parser stores them.
 
-    `expansion` is None unless a token turned out to hold a whole group entry
-    -- several members behind `entry_separator` -- in which case it is
-    `(pairs per token, which token each pair came from)` and the caller
-    rebuilds the row offsets from it. None is the normal answer and the one
-    every wire column gets.
-    """
+def _named_pairs(token: Any, entry_separator: str | None = None) -> tuple[Any, Any, Any]:
+    """Canonical `(keys, values, expansion)` for named-mode tokens, in kernels."""
     compute = pyarrow.compute
     empty = pyarrow.scalar("")
-    token = compute.extract_regex(kept, _TOKEN_VECTOR)
     # An optional group that did not take part comes back as the *empty
     # string*, not null -- RE2's convention through `extract_regex` -- and no
     # real index or member can be empty, so emptiness is the test throughout.
@@ -802,18 +671,7 @@ def _named_pairs(kept: Any, entry_separator: str | None = None) -> tuple[Any, An
 def _entry_pairs(
     tags: Any, lead: Any, value: Any, indexed: Any, entry_separator: str
 ) -> tuple[Any, Any, Any] | None:
-    """The vectorised `_entry_members`: one token, several members.
-
-    Only an **indexed** token is split, which is the whole of why the split is
-    safe: `Text=a;b` is a value with a semicolon in it, and a rule that split
-    every token on a candidate would cut that message in half. A token that is
-    not indexed is handed an empty string to split, so it comes back as one
-    chunk and stays aligned with everything else -- which is what lets the
-    chunk array be indexed by the same `taken` as the key columns.
-
-    None when no token turned out to hold more than one member, so a column of
-    group entries printed one per token pays a `split_pattern` and no more.
-    """
+    """The vectorised `_entry_members`: one token, several members."""
     compute = pyarrow.compute
     empty = pyarrow.scalar("")
     chunks = compute.split_pattern(compute.if_else(indexed, value, empty), entry_separator)
@@ -822,28 +680,40 @@ def _entry_pairs(
         return None
     taken, first = _expanded(counts)
     flat = chunks.values
-    inner = compute.extract_regex(flat, _MEMBER_VECTOR)
-    member = compute.fill_null(compute.struct_field(inner, "member"), "")
-    named_member = compute.not_equal(member, empty)
+    expanded_indexed = compute.take(indexed, taken)
+    continuation = compute.and_(expanded_indexed, compute.invert(first))
+    # Only continuation chunks can be `member=value`. The old whole-child
+    # regex also inspected every ordinary field and every first group member.
+    inner = compute.extract_regex(compute.filter(flat, continuation), _MEMBER_VECTOR)
+    slots = compute.if_else(
+        continuation,
+        compute.subtract(
+            compute.cumulative_sum(continuation.cast(pyarrow.int32())),
+            pyarrow.scalar(1, pyarrow.int32()),
+        ),
+        pyarrow.scalar(None, pyarrow.int32()),
+    )
+    member = compute.fill_null(compute.take(compute.struct_field(inner, "member"), slots), "")
+    inner_value = compute.take(compute.struct_field(inner, "value"), slots)
+    named_member = compute.and_(continuation, compute.not_equal(member, empty))
+    expanded_lead = compute.take(lead, taken)
     # A chunk with no `member=` keeps the entry's own key rather than being
     # dropped or guessed at -- the scalar parser's rule, for its reason.
     keys = compute.if_else(
-        compute.and_(compute.take(indexed, taken), compute.invert(first)),
+        continuation,
         compute.if_else(
             named_member,
-            compute.binary_join_element_wise(compute.take(lead, taken), member, "."),
-            compute.take(lead, taken),
+            compute.binary_join_element_wise(expanded_lead, member, "."),
+            expanded_lead,
         ),
         compute.take(tags, taken),
     )
     values = compute.if_else(
-        compute.take(indexed, taken),
+        expanded_indexed,
         compute.if_else(
             first,
             flat,
-            compute.if_else(
-                named_member, compute.fill_null(compute.struct_field(inner, "value"), ""), flat
-            ),
+            compute.if_else(named_member, compute.fill_null(inner_value, ""), flat),
         ),
         compute.take(value, taken),
     )
@@ -874,23 +744,34 @@ def _expanded(counts: Any) -> tuple[Any, Any]:
     return taken, compute.equal(running, starts)
 
 
-def _until_checksum(tags: Any, entries: Any, offsets: Any, parents: Any) -> tuple[Any, Any, Any]:
-    """Each row cut after its first CheckSum <10>, the way the scalar parser cuts.
-
-    The scalar loop `break`s once it stores tag 10, so anything pair-shaped
-    after the checksum -- a log suffix that happens to spell `key=value` --
-    never lands. The vectorised cut is three integer kernels: a running count
-    of checksums over the kept tokens, that count at each token's own row
-    start (`parents` says which row a token is in), and a filter keeping the
-    tokens whose row has no checksum before them -- the checksum itself
-    included, everything after it not. The row offsets are then renumbered by
-    the same cumulative-sum trick the noise filter uses. A column with no
-    checksum at all -- every rendered column -- pays one `equal` and one
-    `any`.
-    """
+def _until_checksum(
+    tags: Any, entries: Any, offsets: Any, parents: Any, named: bool
+) -> tuple[Any, Any, Any]:
+    """Each row cut after its first CheckSum <10>, the way the scalar parser cuts."""
     compute = pyarrow.compute
-    checks = compute.equal(tags, CHECKSUM)
+    if named:
+        # A rendered feed repeats a few field names across millions of rows.
+        # Normalise each distinct spelling once, then expand its boolean result.
+        encoded = compute.dictionary_encode(tags)
+        distinct = encoded.dictionary
+        terminal = compute.replace_substring_regex(distinct, r"^.*\.", "")
+        folded = compute.utf8_lower(
+            compute.replace_substring_regex(terminal, _UNFOLDED.pattern, "")
+        )
+        rendered = compute.and_(
+            compute.invert(compute.match_substring(distinct, "[")),
+            compute.or_(compute.equal(terminal, CHECKSUM), compute.equal(folded, _CHECKSUM_NAME)),
+        )
+        distinct_checks = compute.or_(compute.equal(distinct, CHECKSUM), rendered)
+        checks = compute.take(distinct_checks, encoded.indices)
+    else:
+        checks = compute.equal(tags, CHECKSUM)
     if not compute.any(checks, min_count=0).as_py():
+        return tags, entries, offsets
+    positions = sequence(len(tags))
+    row_ends = compute.take(offsets.slice(1), parents)
+    before_end = compute.less(positions, compute.subtract(row_ends, 1))
+    if not compute.any(compute.and_(checks, before_end), min_count=0).as_py():
         return tags, entries, offsets
     counted = compute.cumulative_sum(checks.cast(pyarrow.int32()))
     prefix = pyarrow.concat_arrays([pyarrow.array([0], pyarrow.int32()), counted])
@@ -910,22 +791,18 @@ def _until_checksum(tags: Any, entries: Any, offsets: Any, parents: Any) -> tupl
     )
 
 
+def _is_checksum(key: str) -> bool:
+    """Whether a top-level key is CheckSum <10>, including a component path."""
+    if key == CHECKSUM:
+        return True
+    if "[" in key:
+        return False
+    terminal = key.rsplit(".", 1)[-1]
+    return terminal == CHECKSUM or _fold(terminal) == _CHECKSUM_NAME
+
+
 def _column_style(column: Any, named: bool | None = None) -> tuple[str, bool, str | None]:
-    """`(separator, named, entry separator)` off the first non-empty line.
-
-    One sample decides for the column -- the same reading `from_text` makes
-    per line: a BeginString means wire tags buried in log noise, none means
-    the line is rendered `name=value` pairs, and a second separator is looked
-    for only where the reading says there could be one. `named` overrides that
-    middle answer where a caller already knows it, which is what a wrapped
-    bridge message needs: it has a BeginString, so the sample alone would call
-    it wire and never look for the separator inside its indexed tokens.
-
-    Sampled from the column *before* any cast, and decoded the way `from_text`
-    decodes, so a binary column holding a byte no UTF-8 admits is sampled
-    rather than crashed on. `(SOH, False, None)` for a column with nothing in
-    it.
-    """
+    """`(separator, named, entry separator)` off the first non-empty line."""
     for value in column:
         if not value.is_valid:
             continue
@@ -967,28 +844,7 @@ def tag_arrow_array(
     *,
     drop_unknown: bool = False,
 ) -> Any:
-    """The same maps with integer tags for keys: `map<int32, string>`.
-
-    What a join, a filter or a dictionary lookup wants after
-    `parse_arrow_array`: keys as the numbers FIX defines instead of the text
-    the log printed. The entry layout is reused as it stands -- the values
-    move by reference and only the key child is rebuilt -- so the common case
-    (every key already a tag number, which is what tag-mode parsing
-    produces) is a single cast kernel: ~140M keys/s, measured twice
-    (`benchmarks/bench_fix.py`).
-
-    Rendered keys resolve through `names` -- `{name: tag}`, case-insensitive,
-    which is exactly what `FixRegistry.tags()` builds -- after the member is
-    cut out of the indexed spellings by regex: `NoPartyIDs[0].PartyID`,
-    `PartyID[1]` and `Instrument.Symbol` all resolve by their trailing name.
-    The keys are dictionary-encoded first, so each distinct spelling is
-    resolved once however many million entries carry it.
-
-    A key that resolves nowhere is refused **by name**: a map key cannot be
-    null, and dropping data silently is worse than stopping. Pass
-    `drop_unknown=True` to drop those entries instead -- the layout is then
-    rebuilt around them, and a rendered log's `took=5ms` noise falls out.
-    """
+    """The same maps with integer tags for keys: `map<int32, string>`."""
     key_type = pyarrow.int32() if key_type is None else key_type
     if isinstance(maps, pyarrow.ChunkedArray):
         tagged = [
@@ -1102,20 +958,7 @@ _FOLDED_KEPT = 4
 
 
 def _folded(names: Mapping[str, int | str] | None) -> dict[str, str]:
-    """`names` as a fold-keyed lookup; empty when there is nothing to resolve.
-
-    Cached on the mapping *object*, because the natural call is
-    `from_pairs(pairs, names=TAGS)` in a loop over a stream and folding a
-    thousand-name dictionary per message is the whole cost of the conversion.
-
-    Identity and not contents, and that was measured: keying an `lru_cache` on
-    the sorted items spent **36% of `from_pairs`** building the key -- a cache
-    that costs more than the work it saves. The size is checked beside the
-    identity so a dictionary that *grew* is refolded; a mapping mutated in
-    place without changing size keeps the reading it had, which is why
-    `market_tags` hands back a read-only view rather than the dictionary
-    itself.
-    """
+    """`names` as a fold-keyed lookup; empty when there is nothing to resolve."""
     if not names:
         return {}
     for source, size, built in _FOLDED:
@@ -1128,46 +971,12 @@ def _folded(names: Mapping[str, int | str] | None) -> dict[str, str]:
 
 
 def _fold(name: str) -> str:
-    """One name in the spelling both sides of the lookup agree on.
-
-    Lowercased with the separators a renderer adds removed, so `MsgType`,
-    `msgtype`, `msg_type`, `msg-type` and `Msg Type` are one key.
-
-    It is *not* a regex over the known names, and it is not the first thing
-    tried either. Both were measured (`benchmarks/bench_fix.py`, mixed keys,
-    twice):
-
-    - one compiled case-insensitive alternation over the dictionary: **4.2M
-      keys/s at nine names, 89k at fifteen hundred**. It has to be probed for
-      the tag afterwards anyway, so it is a scan added *in front of* the
-      lookup it cannot replace -- and its cost scales with the dictionary
-      while a probe's does not. Nine names is exactly the size at which "just
-      use a regex" looks right.
-    - fold, then probe: **3.0M keys/s**, flat in the dictionary size.
-    - probe, then fold -- what `_resolved_key` does: **3.4-3.8M keys/s**,
-      because the `sub` here costs about 7x a bare `lower()` and a name with
-      no separator in it folds to its own lowercase. Those never pay for this
-      at all.
-    """
+    """One name in the spelling both sides of the lookup agree on."""
     return _UNFOLDED.sub("", name).lower()
 
 
 def _resolved_key(key: Any, folded: Mapping[str, str]) -> str | None:
-    """One given key as the key the message stores it under, or None to drop it.
-
-    Digits are already a tag. A plain name is one lowercase and one probe --
-    the common case, and the reason it is tried before anything else: a name
-    with no separator in it folds to its own lowercase, so the fold is skipped
-    entirely. A name a renderer put separators in costs the fold as well. Only
-    a *decorated* key -- a component path, an entry index -- runs
-    `_RENDERED_KEY`, which splits the name from the decoration, resolves the
-    name and puts the decoration back, so `NoPartyIDs[0].Side` becomes
-    `NoPartyIDs[0].54` and keeps saying which entry it came from.
-
-    Ordering the three that way is worth about 7x on a mixed column and is
-    measured in `benchmarks/bench_fix.py`; a name nothing resolves is kept as
-    it was given, whichever reading failed to place it.
-    """
+    """One given key as the key the message stores it under, or None to drop it."""
     if isinstance(key, bool):
         return None
     if isinstance(key, int):
@@ -1193,17 +1002,7 @@ def _resolved_key(key: Any, folded: Mapping[str, str]) -> str | None:
 
 
 def _rendered(value: Any) -> str:
-    """One value as the wire spells it.
-
-    Text is itself. A boolean is FIX `Boolean`'s own `Y`/`N` -- not `True`,
-    which no FIX reader accepts. A float is rendered **positionally**, via
-    `Decimal` over its shortest round-tripping repr, because FIX `Price` and
-    `Qty` are "a sequence of digits with an optional decimal point" and an
-    exponent is not one: `1e-07` is a number Python prints and not a price
-    any venue parses. A value that knows its own FIX spelling is asked for it
-    (`into_fix`), which is how a banded enum renders as the code it came
-    from. Everything else is `str`.
-    """
+    """One value as the wire spells it."""
     if isinstance(value, str):
         return value
     if isinstance(value, bool):
@@ -1239,20 +1038,7 @@ def _stamped(value: datetime.date | datetime.time) -> str:
 
 
 def _parse_token(token: str, named: bool) -> tuple[str, str] | None:
-    """One separator-delimited token as a `(key, value)` pair, or noise.
-
-    The whole grammar is `_TOKEN`; what this adds is the two readings a
-    regex alone cannot make. In tag mode anything that is not a bare
-    `digits=value` is noise -- that is what sheds `latency=5ms` around a wire
-    message, and a `#`-marked key with it, because a bridge's `#54=x` is a
-    rendered key that happens to be spelled with digits and not tag 54. In
-    named mode an indexed token is a group entry, so the inner `member=` is cut
-    out of the rest (`_MEMBER`) and the key is rebuilt in its canonical
-    spelling, index kept: `NoPartyIDs[0].PartyID`. The `#` is dropped there --
-    it marks where a key starts and says nothing about which field it is, so
-    `#SIDE` and `SIDE` are one key and `pairs` keeps the log's own spelling of
-    the rest.
-    """
+    """One separator-delimited token as a `(key, value)` pair, or noise."""
     head, sign, rest = token.partition("=")
     key = head.strip(_STRIPPED)
     if sign and key.isascii() and key.isdigit():
@@ -1286,21 +1072,7 @@ def _parse_token(token: str, named: bool) -> tuple[str, str] | None:
 
 
 def _entry_members(key: str, value: str, entry_separator: str) -> list[tuple[str, str]]:
-    """One indexed token that carries a whole group entry, as its members.
-
-    `NoPartyIDs[0]=PartyID=x<SOH>PartyIDSource=D<SOH>PartyRole=1` is one
-    *entry*, not one field: `_parse_token` has already read the first member
-    out of it, so what is left in `value` after the first entry separator is
-    the rest of the same entry. Each lands under the canonical key the
-    one-member-per-token spelling produces -- `NoPartyIDs[0].PartyIDSource` --
-    which is the whole point: **no new key spelling**, so a log that nests its
-    entries and one that prints them field by field parse to the same pairs.
-
-    A chunk with no `member=` in it is kept under the entry's own key rather
-    than dropped or guessed at. It is malformed either way, and a parser that
-    silently loses the malformed half of a line is how a capture stops being a
-    record of what happened.
-    """
+    """One indexed token that carries a whole group entry, as its members."""
     head, _, rest = value.partition(entry_separator)
     lead = key.rsplit(".", 1)[0]
     built = [(key, head.strip())]

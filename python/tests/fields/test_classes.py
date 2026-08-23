@@ -3,16 +3,17 @@
 import dataclasses
 import datetime
 import decimal
+import functools
 from typing import Annotated
 
 import pyarrow
 import pytest
 
-from rekep import Convertible, Field, field
+from rekep import Convertible, Field, scalar
 from rekep.fields import ClassBuilder
 
 
-@field
+@scalar
 class Venue(Convertible):
     """A trading venue."""
 
@@ -22,7 +23,7 @@ class Venue(Convertible):
     timeout: float | None = None
 
 
-@field
+@scalar
 class Book(Convertible):
     """A book of orders."""
 
@@ -39,19 +40,21 @@ class Book(Convertible):
 
 @pytest.fixture
 def rebuilt() -> type:
-    return Book.FIELD.into_dataclass()
+    return Book.into_field().into_dataclass()
 
 
 # -- the round trip ---------------------------------------------------------
 
 
 def test_the_rebuilt_class_projects_to_the_same_schema(rebuilt: type) -> None:
-    assert rebuilt.FIELD.into_arrow_schema().equals(Book.FIELD.into_arrow_schema())
+    assert rebuilt.into_field().into_arrow_schema().equals(Book.into_field().into_arrow_schema())
 
 
 def test_the_rebuilt_class_is_a_dataclass(rebuilt: type) -> None:
     assert dataclasses.is_dataclass(rebuilt)
-    assert [f.name for f in dataclasses.fields(rebuilt)] == Book.FIELD.into_arrow_schema().names
+    assert [
+        f.name for f in dataclasses.fields(rebuilt)
+    ] == Book.into_field().into_arrow_schema().names
 
 
 def test_the_rebuilt_class_takes_back_its_identity(rebuilt: type) -> None:
@@ -61,7 +64,7 @@ def test_the_rebuilt_class_takes_back_its_identity(rebuilt: type) -> None:
 
 
 def test_an_explicit_name_wins() -> None:
-    assert Book.FIELD.into_dataclass("Ledger").__name__ == "Ledger"
+    assert Book.into_field().into_dataclass("Ledger").__name__ == "Ledger"
 
 
 def test_an_anonymous_struct_falls_back_to_a_name() -> None:
@@ -76,17 +79,17 @@ def test_the_rebuilt_class_is_keyword_only(rebuilt: type) -> None:
 
 
 def test_exact_types_are_carried_not_re_inferred(rebuilt: type) -> None:
-    assert rebuilt.FIELD.field("size").arrow_type == pyarrow.int32()
-    assert rebuilt.FIELD.field("price").arrow_type == pyarrow.decimal128(38, 9)
+    assert rebuilt.into_field().field("size").arrow_type == pyarrow.int32()
+    assert rebuilt.into_field().field("price").arrow_type == pyarrow.decimal128(38, 9)
 
 
 def test_metadata_and_descriptions_survive(rebuilt: type) -> None:
-    assert rebuilt.FIELD.field("size").metadata["unit"] == "lots"
-    assert rebuilt.FIELD.field("name").description == "Human name of the book."
+    assert rebuilt.into_field().field("size").metadata["unit"] == "lots"
+    assert rebuilt.into_field().field("name").description == "Human name of the book."
 
 
 def test_a_nested_structs_own_descriptions_survive(rebuilt: type) -> None:
-    item = rebuilt.FIELD.field("venues").arrow_type.field(0)
+    item = rebuilt.into_field().field("venues").arrow_type.field(0)
     assert item.type.field(0).metadata[b"description"] == b"ISO 10383 market identifier."
 
 
@@ -129,9 +132,39 @@ def test_a_foreign_schema_becomes_a_class() -> None:
     )
     built = Field.from_arrow_schema(schema, "Quote").into_dataclass()
     assert built.__name__ == "Quote"
-    assert built.FIELD.into_arrow_schema().equals(
-        pyarrow.schema(list(schema), metadata={"name": "Quote"})
+    assert (
+        built.into_field()
+        .into_arrow_schema()
+        .equals(pyarrow.schema(list(schema), metadata={"name": "Quote"}))
     )
+
+
+def test_schema_metadata_survives_the_reverse_projection() -> None:
+    schema = pyarrow.schema(
+        [("id", pyarrow.int64())],
+        metadata={"name": "Quote", "namespace": "feeds", "version": "2", "owner": "md"},
+    )
+
+    built = Field.from_arrow_schema(schema).into_dataclass()
+
+    assert built.into_field_metadata() == {"version": "2", "owner": "md"}
+    with pytest.raises(TypeError):
+        built.into_field_metadata()["version"] = "3"
+    assert built.into_field().into_arrow_schema().equals(schema)
+
+
+def test_an_empty_schema_metadata_set_masks_the_bases_metadata() -> None:
+    class Versioned:
+        @classmethod
+        @functools.cache
+        def into_field_metadata(cls):
+            return {"version": "2"}
+
+    schema = pyarrow.schema([("id", pyarrow.int64())], metadata={"name": "Quote"})
+    built = ClassBuilder().dataclass(Field.from_arrow_schema(schema), base=Versioned)
+
+    assert built.into_field_metadata() == {}
+    assert built.into_field().into_arrow_schema().equals(schema)
 
 
 def test_a_nested_struct_becomes_a_nested_class() -> None:
@@ -148,7 +181,10 @@ def test_a_builder_can_be_pointed_at_another_base() -> None:
         pass
 
     class BasedBuilder(ClassBuilder):
-        BASE = Base
+        @classmethod
+        @functools.cache
+        def into_base(cls):
+            return Base
 
     built = BasedBuilder().dataclass(
         Field.from_arrow_schema(pyarrow.schema([("a", pyarrow.int64())]))

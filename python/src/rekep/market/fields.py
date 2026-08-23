@@ -1,61 +1,34 @@
-"""What a market declaration means: the four rules this package's shapes add.
-
-`FieldBuilder` already turns type hints into fields. Four things it cannot
-know are decided once here, in a subclass wired onto every market shape
-through `FIELD_BUILDER`, rather than repeated on the hundred members that
-would otherwise each have to state them:
-
-1. **A ranged code is `int32`.** Every enum in `enums.py` is a banded integer,
-   and the band arithmetic only ever needs four bytes. The base builder would
-   widen it to `int64`, doubling every state, side and kind column in the
-   package for nothing -- and a narrower width is also what lets an engine
-   keep the column's statistics in cache.
-2. **A key belongs to a table, not to a struct.** A shape nested inside
-   another -- an `Instrument` inside a `MarketEvent` -- keeps its
-   documentation and loses its primary and partition keys, because
-   `primary_keys()` and `partition_keys()` read the top level and nothing
-   reads a nested one. Left in, they would publish a contract that says a
-   column identifies a row when nothing treats it that way, which is the one
-   thing a contract may not do.
-3. **An enum says what its codes mean, in the schema.** The column is a number
-   and the enum is ours, so a consumer that never imports this package has
-   nothing to decode `410` with. The name, the value type and the whole member
-   table ride under `enum:` keys, next to the `fix:` ones -- which is what
-   makes a contract file readable by the people it is *for*.
-4. **A shape with one member is that member.** A `struct` of one is a nesting
-   level that carries no information and costs a filter its pushdown on every
-   engine below. It becomes an Arrow extension type over the member's own
-   storage instead: one column, the class name still on it, and a store that
-   has never heard of the extension writes the storage type and reads it back.
-"""
+"""What a market declaration means: the four rules this package's shapes add."""
 
 from __future__ import annotations
 
 import dataclasses
 import enum
+import functools
 import json
 from typing import Any
 
 import pyarrow
 
+from rekep.convert import Convertible
+from rekep.enums import Ranged
+from rekep.enums._ascii import _AsciiInt32
 from rekep.fields import PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
-from rekep.market.enums import Ranged
+from rekep.fix.registry import FixRegistry
 
 #: The prefix the enum keys ride under, like `fix:` and `iceberg:`.
 ENUM = "enum"
 
 
 class MarketFieldBuilder(FieldBuilder):
-    """`FieldBuilder` with the four rules above, wired on with `FIELD_BUILDER`."""
+    """`FieldBuilder` with the four rules market declarations add."""
 
     def scalar(self, annotation: Any) -> pyarrow.DataType | None:
-        """A ranged code is `int32`; everything else is the base builder's answer.
+        """Market integer codes are `int32`; other scalars use the base answer.
 
-        Checked before the base class, which would see an `IntEnum` and take
-        the width of its values -- `int64`, because that is what a Python int
-        is.
+        Checked first because the base sees an `IntEnum` as Python `int64`.
         """
-        if isinstance(annotation, type) and issubclass(annotation, Ranged):
+        if isinstance(annotation, type) and issubclass(annotation, (Ranged, _AsciiInt32)):
             return pyarrow.int32()
         return super().scalar(annotation)
 
@@ -77,40 +50,48 @@ class MarketFieldBuilder(FieldBuilder):
         declared = enum_of(annotation)
         if declared is not None:
             describe_enum(built, declared)
+        if isinstance(declared, type) and issubclass(declared, _AsciiInt32):
+            built.protocol(ENUM).update(declared.schema_metadata())
         return built
 
 
-def fix_tag(name: str, tag: int, **declared: Any) -> Field:
-    """A declaration naming the FIX field a member carries.
+class MarketConvertible(Convertible):
+    """Use the market field projection for a scalar declaration."""
 
-    The name and the tag ride under the `fix:` prefix that `Field.fix` already
-    reads, so a market column says which wire field it came from wherever the
-    schema travels -- and `tests/market/test_fix.py` checks every one of them
-    against the published dictionary in `data/fix.zip`, so a tag typed from
-    memory fails the build rather than mislabelling a column forever.
+    __slots__ = ()
 
-    The *name* is what is checked and the tag is what is written, because a
-    tag is a number that transposes without looking wrong::
+    @classmethod
+    @functools.cache
+    def into_field_builder(cls) -> type[FieldBuilder]:
+        """Projection builder shared by market declarations."""
+        return MarketFieldBuilder
 
-        px: Annotated[float | None, fix_tag("Price", 44)]
-    """
-    built = Field(**declared)
-    built.fix["name"] = name
-    built.fix["tag"] = str(int(tag))
-    return built
+    @classmethod
+    @functools.cache
+    def into_float_members(cls) -> tuple[str, ...]:
+        """Top-level float members whose Python value must match the Arrow contract."""
+        return tuple(
+            member.name
+            for member in cls.into_field().fields
+            if pyarrow.types.is_floating(member.arrow_type)
+        )
+
+    def normalize_float_members(self) -> None:
+        """Canonicalise numeric inputs before identity bytes are derived."""
+        for name in type(self).into_float_members():
+            value = getattr(self, name)
+            if value is not None and not isinstance(value, float):
+                setattr(self, name, float(value))
+
+
+def fix_tag(name: str, **declared: Any) -> Field:
+    """A model annotation backed by the packaged FIX registry."""
+    registry = FixRegistry.from_builtin().scalar(name, arrow_type=None)
+    return registry.merge(Field(**declared))
 
 
 def unkeyed(arrow_type: pyarrow.DataType) -> pyarrow.DataType:
-    """`arrow_type` with every nested primary and partition key declaration dropped.
-
-    Recursive through structs, lists and maps, because a key is just as
-    misleading three levels down as it is one -- and everything else the
-    members carry, the descriptions above all, is left exactly as it was.
-
-    Every list flavour rebuilds as itself: a walk that spelled all five `list`
-    would narrow a 64-bit offset and drop a `fixed_size_list`'s width in
-    silence, which is the failure `Field` names in its own dump.
-    """
+    """`arrow_type` with every nested primary and partition key declaration dropped."""
     kinds = pyarrow.types
     if kinds.is_struct(arrow_type):
         return pyarrow.struct(
@@ -156,16 +137,7 @@ def _unkeyed(field: pyarrow.Field) -> pyarrow.Field:
 
 
 class Newtype(pyarrow.ExtensionType):
-    """A one-member shape as one column, with the shape's name still on it.
-
-    Arrow's extension mechanism is exactly the right size for this: the column
-    *is* its storage -- an `int64`, a `string`, sixteen fixed bytes -- and the
-    name rides in the field's metadata under `ARROW:extension:name`. A reader
-    that knows the extension gets the class back; parquet, Iceberg, Spark and
-    Doris, which do not, all see the storage type and read it correctly. That
-    is the whole difference from a `struct` of one member, which every one of
-    them sees as a nesting level and none of them pushes a filter through.
-    """
+    """A one-member shape as one column, with the shape's name still on it."""
 
     def __init__(self, storage: pyarrow.DataType, name: str) -> None:
         self._name = name
@@ -188,7 +160,7 @@ class Newtype(pyarrow.ExtensionType):
 def single_member(annotation: Any) -> tuple[str, Any] | None:
     """`(class name, the one member's annotation)` when `annotation` is a shape of one.
 
-    A `@field` class with exactly one member and nothing else to say. Anything
+    A `@scalar` class with exactly one member and nothing else to say. Anything
     with two members, or none, is a struct like any other.
     """
     if not (isinstance(annotation, type) and dataclasses.is_dataclass(annotation)):
@@ -212,55 +184,29 @@ def enum_of(annotation: Any) -> type[enum.Enum] | None:
 
 
 def describe_enum(built: Field, declared: type[enum.Enum]) -> None:
-    """Write what `declared`'s codes mean into `built`'s metadata.
-
-    Under an `enum:` prefix, the way `fix:` and `iceberg:` keys ride: the
-    class, whether the values are numbers or text, and the whole member table
-    as JSON. A consumer that has never imported this package reads `410` out of
-    a column and finds `FILLED` in the schema that came with it -- which is the
-    difference between a contract and a number.
-
-    The **value type is read off the members**, not guessed from the base
-    class: `class Kind(str, Enum)` and `class Kind(IntEnum)` both subclass
-    something, and only the values say which of the two the column holds.
-    """
+    """Write what `declared`'s codes mean into `built`'s metadata."""
     values = {member.name: member.value for member in declared}
     kinds = {type(value) for value in values.values()}
     keys = built.protocol(ENUM)
     keys["name"] = declared.__name__
-    keys["type"] = "int" if kinds == {int} else "str" if kinds == {str} else "mixed"
+    keys["key_type"] = "int32" if kinds == {int} else "utf8" if kinds == {str} else "mixed"
+    keys["value_type"] = "utf8"
     keys["values"] = json.dumps(
         {str(value): name for name, value in values.items()}, separators=(",", ":")
     )
+    mapping = getattr(declared, "fix_mapping", None)
+    if mapping is not None:
+        keys["fix_values"] = json.dumps(
+            {
+                str(tag): {wire: int(member) for wire, member in values.items()}
+                for tag, values in mapping().items()
+            },
+            separators=(",", ":"),
+        )
 
 
 def dictionary_arrow(array: Any, target: pyarrow.DataType) -> Any:
-    """`array` as `target`, where either side may be dictionary-encoded.
-
-    Arrow's `dictionary` is an **encoding, not a type** -- the same values,
-    stored once each with an index per row -- which is what makes it the right
-    shape for a code column whose whole point is that it repeats. It is not a
-    `map`: a map is a column of key/value pairs, one set per row, and nothing
-    here wants that.
-
-    Three cases, asked in this order, because the first two are free and the
-    third is a pass over the data:
-
-    1. **Same value type** -- the array already holds what the dictionary
-       holds, so it is encoded as it stands.
-    2. **Same index type** -- the array already holds *indices*, so it is taken
-       as them rather than encoded again. This is the case that has to be
-       checked, and checked second: a `dictionary<int32, int32>` of ranged
-       codes has an index type and a value type that are the same width, and
-       an array of indices encoded as values doubles the dictionary and points
-       every row at the wrong member.
-    3. **Neither** -- the values are cast to the dictionary's value type first,
-       and then encoded. That is the only case that costs a pass, and it is the
-       one a producer that sent `int64` codes into an `int32` column lands in.
-
-    A `target` that is not a dictionary decodes instead, which is the same
-    three questions from the other side.
-    """
+    """`array` as `target`, where either side may be dictionary-encoded."""
     if isinstance(array, pyarrow.ChunkedArray):
         return pyarrow.chunked_array([dictionary_arrow(chunk, target) for chunk in array.chunks])
     if array.type == target:

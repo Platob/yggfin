@@ -3,17 +3,18 @@
 import dataclasses
 import datetime
 import decimal
+import functools
 from typing import Annotated
 
 import pyarrow
 import pytest
 
-from rekep import Convertible, Field, ListField, MapField, StructField, field
+from rekep import Convertible, Field, ListField, MapField, StructField, scalar
 from rekep.fields import FixedSizeListField, LargeListField, LargeListViewField, ListViewField
 from rekep.fields.field import arrow_type_for
 
 
-@field
+@scalar
 class Venue(Convertible):
     """A trading venue."""
 
@@ -23,7 +24,7 @@ class Venue(Convertible):
     timeout: float | None = None
 
 
-@field
+@scalar
 class Book(Convertible):
     """A book of orders."""
 
@@ -45,18 +46,18 @@ def test_field_makes_a_dataclass() -> None:
 
 
 def test_double_underscore_annotations_are_not_fields() -> None:
-    @field
+    @scalar
     class Cached(Convertible):
         mic: str
         __cache: dict = {}
 
     assert [f.name for f in dataclasses.fields(Cached)] == ["mic"]
-    assert Cached.FIELD.into_arrow_schema().names == ["mic"]
+    assert Cached.into_field().into_arrow_schema().names == ["mic"]
     assert Cached(mic="XPAR").into_dict() == {"mic": "XPAR"}
 
 
 def test_a_hidden_annotation_keeps_its_value_as_a_class_attribute() -> None:
-    @field
+    @scalar
     class Cached(Convertible):
         mic: str
         __cache: dict = {}
@@ -74,7 +75,7 @@ def test_a_mutable_default_would_have_broken_a_plain_dataclass() -> None:
 
 
 def test_field_forwards_dataclass_keywords() -> None:
-    @field(frozen=True, order=True)
+    @scalar(frozen=True, order=True)
     class Frozen(Convertible):
         mic: str
 
@@ -84,11 +85,11 @@ def test_field_forwards_dataclass_keywords() -> None:
 
 
 def test_field_works_bare_and_called() -> None:
-    @field
+    @scalar
     class Bare(Convertible):
         mic: str
 
-    @field()
+    @scalar()
     class Called(Convertible):
         mic: str
 
@@ -101,29 +102,30 @@ def test_field_works_bare_and_called() -> None:
 
 def test_the_projection_is_built_once() -> None:
     """The walk over hints, docstrings and nested classes is not per call."""
-    assert Venue.FIELD is Venue.FIELD
-    assert isinstance(Venue.__dict__["FIELD"], Field), "the descriptor stepped aside"
+    assert Venue.into_field() is Venue.into_field()
+    assert "FIELD" not in Venue.__dict__
+    assert isinstance(Venue.__dict__["into_field"], classmethod)
 
 
 def test_an_instance_sees_the_same_field() -> None:
-    assert Venue(mic="XPAR").FIELD is Venue.FIELD
+    assert Venue(mic="XPAR").into_field() is Venue.into_field()
 
 
 def test_a_subclass_gets_its_own_projection_not_its_bases() -> None:
-    @field
+    @scalar
     class Extended(Venue):
         desk: str = "default"
 
-    assert Extended.FIELD is not Venue.FIELD
-    assert Extended.FIELD.into_arrow_schema().names == ["mic", "timeout", "desk"]
-    assert Venue.FIELD.into_arrow_schema().names == ["mic", "timeout"]
+    assert Extended.into_field() is not Venue.into_field()
+    assert Extended.into_field().into_arrow_schema().names == ["mic", "timeout", "desk"]
+    assert Venue.into_field().into_arrow_schema().names == ["mic", "timeout"]
 
 
 # -- what a field holds -----------------------------------------------------
 
 
 def test_a_field_holds_a_name_a_type_and_metadata() -> None:
-    member = Venue.FIELD.field("mic")
+    member = Venue.into_field().field("mic")
     assert member.name == "mic"
     assert member.arrow_type == pyarrow.string()
     assert member.metadata == {"description": "ISO 10383 market identifier."}
@@ -174,10 +176,24 @@ def test_a_field_without_a_type_cannot_convert() -> None:
 
 
 def test_a_class_projects_to_a_schema_of_its_members() -> None:
-    schema = Book.FIELD.into_arrow_schema()
+    schema = Book.into_field().into_arrow_schema()
     assert schema.names == ["name", "size", "price", "opened", "venues", "limits", "root"]
     assert schema.metadata[b"name"] == b"Book"
     assert schema.metadata[b"namespace"] == Book.__module__.encode()
+
+
+def test_a_class_can_publish_contract_metadata() -> None:
+    @scalar
+    class Versioned:
+        @classmethod
+        @functools.cache
+        def into_field_metadata(cls):
+            return {"version": "2", "owner": "market-data"}
+
+        value: int
+
+    assert Versioned.into_field().metadata["version"] == "2"
+    assert Versioned.into_field().into_arrow_schema().metadata[b"owner"] == b"market-data"
 
 
 def test_a_scalar_field_is_a_one_column_schema() -> None:
@@ -186,11 +202,11 @@ def test_a_scalar_field_is_a_one_column_schema() -> None:
 
 
 def test_a_schema_round_trips_back_into_the_same_field() -> None:
-    assert Field.from_arrow_schema(Book.FIELD.into_arrow_schema()) == Book.FIELD
+    assert Field.from_arrow_schema(Book.into_field().into_arrow_schema()) == Book.into_field()
 
 
 def test_an_arrow_field_round_trips() -> None:
-    original = Book.FIELD.field("size").into_arrow_field()
+    original = Book.into_field().field("size").into_arrow_field()
     assert Field.from_arrow_field(original).into_arrow_field().equals(original)
 
 
@@ -214,15 +230,15 @@ def test_into_redirects_on_the_requested_arrow_type(requested: type, stem: str) 
 
 
 def test_into_the_requested_type() -> None:
-    assert Book.FIELD.into_(pyarrow.Schema).equals(Book.FIELD.into_arrow_schema())
-    assert Book.FIELD.into_(pyarrow.DataType) == Book.FIELD.arrow_type
+    assert Book.into_field().into_(pyarrow.Schema).equals(Book.into_field().into_arrow_schema())
+    assert Book.into_field().into_(pyarrow.DataType) == Book.into_field().arrow_type
 
 
 # -- describing a field -----------------------------------------------------
 
 
 def test_a_dump_nests_rather_than_flattening() -> None:
-    dumped = Book.FIELD.into_dict()
+    dumped = Book.into_field().into_dict()
     assert dumped["name"] == "Book"
     assert dumped["type"] == "struct"
     assert dumped["description"] == "A book of orders."
@@ -237,7 +253,7 @@ def test_a_dump_nests_rather_than_flattening() -> None:
 
 
 def test_a_dump_round_trips_through_plain_containers() -> None:
-    assert Field.from_dict(Book.FIELD.into_dict()) == Book.FIELD
+    assert Field.from_dict(Book.into_field().into_dict()) == Book.into_field()
 
 
 @pytest.mark.parametrize(
@@ -361,9 +377,9 @@ def test_a_fixed_size_list_dumps_the_width_it_needs_back() -> None:
 def test_a_field_serialises_itself(tmp_path) -> None:
     """A `Field` is a `Convertible` dataclass, so the declaration is a document."""
     path = tmp_path / "book.json"
-    Book.FIELD.into_json(path)
-    assert Field.from_json(path) == Book.FIELD
-    assert Field.from_yaml(Book.FIELD.into_yaml()) == Book.FIELD
+    Book.into_field().into_json(path)
+    assert Field.from_json(path) == Book.into_field()
+    assert Field.from_yaml(Book.into_field().into_yaml()) == Book.into_field()
 
 
 # -- the type picks the class -----------------------------------------------
@@ -394,10 +410,10 @@ def test_every_way_of_building_one_lands_on_the_same_class() -> None:
     assert isinstance(
         Field.from_arrow_schema(pyarrow.schema([("a", pyarrow.int64())])), StructField
     )
-    assert isinstance(Field.from_dict(Book.FIELD.into_dict()), StructField)
+    assert isinstance(Field.from_dict(Book.into_field().into_dict()), StructField)
     assert isinstance(Field.of(pyarrow.list_(pyarrow.int64())), ListField)
-    assert isinstance(Book.FIELD.field("venues"), ListField)
-    assert isinstance(Book.FIELD.field("limits"), MapField)
+    assert isinstance(Book.into_field().field("venues"), ListField)
+    assert isinstance(Book.into_field().field("limits"), MapField)
 
 
 def test_asking_for_a_subclass_is_honoured() -> None:
@@ -406,8 +422,8 @@ def test_asking_for_a_subclass_is_honoured() -> None:
 
 
 def test_a_container_reaches_what_is_inside_it() -> None:
-    assert Book.FIELD.field("venues").item.field("mic").arrow_type == pyarrow.string()
-    limits = Book.FIELD.field("limits")
+    assert Book.into_field().field("venues").item.field("mic").arrow_type == pyarrow.string()
+    limits = Book.into_field().field("limits")
     assert limits.key.arrow_type == pyarrow.string()
     assert limits.value.arrow_type == pyarrow.int64()
     assert limits.value.nullable, "`int | None` values stay nullable through the map"
@@ -421,35 +437,35 @@ def test_a_leaf_has_no_fields() -> None:
 
 
 def test_a_key_is_declared_and_read_back() -> None:
-    @field
+    @scalar
     class Quote(Convertible):
         symbol: Annotated[str, Field.primary_key()]
         day: Annotated[datetime.date, Field.partition_key("day")]
         size: int
 
-    assert Quote.FIELD.primary_keys() == ["symbol"]
-    assert Quote.FIELD.partition_keys() == {"day": "day"}
-    assert Quote.FIELD.field("symbol").is_primary_key
-    assert Quote.FIELD.field("day").partition_transform == "day"
-    assert not Quote.FIELD.field("size").is_primary_key
+    assert Quote.into_field().primary_keys() == ["symbol"]
+    assert Quote.into_field().partition_keys() == {"day": "day"}
+    assert Quote.into_field().field("symbol").is_primary_key
+    assert Quote.into_field().field("day").partition_transform == "day"
+    assert not Quote.into_field().field("size").is_primary_key
 
 
 def test_an_identity_partition_says_so() -> None:
-    @field
+    @scalar
     class Quote(Convertible):
         day: Annotated[datetime.date, Field.partition_key()]
 
-    assert Quote.FIELD.partition_keys() == {"day": "identity"}
+    assert Quote.into_field().partition_keys() == {"day": "identity"}
 
 
 def test_a_nullable_key_is_refused_at_declaration() -> None:
     with pytest.raises(TypeError, match="primary key and cannot be nullable"):
 
-        @field
+        @scalar
         class Loose(Convertible):
             symbol: Annotated[str | None, Field.primary_key()] = None
 
-        Loose.FIELD.into_arrow_schema()
+        Loose.into_field().into_arrow_schema()
 
 
 def test_a_nullable_key_is_refused_by_the_setter() -> None:
@@ -487,26 +503,26 @@ def test_a_partition_can_be_taken_back_off() -> None:
 def test_a_sort_order_is_declared_in_declaration_order() -> None:
     """The struct already has an order, so the sort order does not need a position."""
 
-    @field
+    @scalar
     class Quote(Convertible):
         day: Annotated[datetime.date, Field.sort_key()]
         symbol: str
         size: Annotated[int, Field.sort_key("desc")]
 
-    assert Quote.FIELD.sort_keys() == {"day": "asc", "size": "desc"}
-    assert Quote.FIELD.field("day").is_sort_key
-    assert not Quote.FIELD.field("symbol").is_sort_key
-    assert Quote.FIELD.field("symbol").sort_direction == ""
+    assert Quote.into_field().sort_keys() == {"day": "asc", "size": "desc"}
+    assert Quote.into_field().field("day").is_sort_key
+    assert not Quote.into_field().field("symbol").is_sort_key
+    assert Quote.into_field().field("symbol").sort_direction == ""
 
 
 def test_a_column_can_be_partitioned_on_and_sorted_on_at_once() -> None:
     """They answer different questions -- which file, and where inside it."""
 
-    @field
+    @scalar
     class Quote(Convertible):
         day: Annotated[datetime.date, Field.partition_key("day"), Field.sort_key()]
 
-    declared = Quote.FIELD.field("day")
+    declared = Quote.into_field().field("day")
     assert declared.partition_transform == "day" and declared.sort_direction == "asc"
 
 
@@ -521,11 +537,11 @@ def test_a_sort_key_can_be_taken_back_off() -> None:
 def test_a_sort_key_survives_the_round_trip_through_arrow() -> None:
     """It is metadata on the column, so it travels wherever the schema does."""
 
-    @field
+    @scalar
     class Quote(Convertible):
         unix: Annotated[int, Field.sort_key()]
 
-    schema = Quote.FIELD.into_arrow_schema()
+    schema = Quote.into_field().into_arrow_schema()
     assert schema.field("unix").metadata[b"iceberg:sort_key"] == b"asc"
     assert Field.from_arrow_schema(schema).sort_keys() == {"unix": "asc"}
 

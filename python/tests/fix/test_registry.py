@@ -35,16 +35,14 @@ from .conftest import FIXTURES, fixture_page
 #: the by-tag page and three field pages -- an enumerated one, one with no
 #: enumeration, and MsgType, whose values *are* message links.
 CAPTURE = FIXTURES / "capture"
+PUBLISHED = Path(__file__).resolve().parents[3] / "data"
 
 #: Derived from the by-tag fixture, then pinned: four fields are listed, and a
 #: broken link regex cannot move both sides of the assertion together.
 EXPECTED_LISTED = 4
 
-#: The spec fixture names one tag the site's page does not, so a scrape that
-#: reads both sources ends with five. Two constants and not one, because "what
-#: the site listed" and "what the dictionary holds" stopped being the same
-#: number the moment a second source arrived.
-EXPECTED_SPEC_ONLY = 1
+#: The spec adds fields used by its component declarations and one extra enum.
+EXPECTED_SPEC_ONLY = 8
 EXPECTED_FIELDS = EXPECTED_LISTED + EXPECTED_SPEC_ONLY
 
 
@@ -146,10 +144,23 @@ def test_version_ordering_reads_the_sp_suffix() -> None:
 
 
 def test_a_version_scrapes_every_listed_field(registry: FixtureRegistry) -> None:
-    """Both sources, in tag order: the site lists four and the spec names a fifth."""
+    """Both sources, in tag order: the spec also names component fields."""
     fields = registry.fields("4.4")
     assert len(fields) == EXPECTED_FIELDS
-    assert [int(member.fix["tag"]) for member in fields] == [43, 54, 103, 205, 828]
+    assert [int(member.fix["tag"]) for member in fields] == [
+        43,
+        54,
+        103,
+        205,
+        447,
+        448,
+        452,
+        453,
+        523,
+        802,
+        803,
+        828,
+    ]
 
 
 def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegistry) -> None:
@@ -306,6 +317,21 @@ def test_the_extension_says_which_store_this_is(tmp_path: Path) -> None:
     assert not FixRegistry(cache_dir=tmp_path / "fix.zipped").archived
 
 
+def test_the_published_folder_is_the_archive_uncompressed() -> None:
+    folder = PUBLISHED / "fix"
+    archive = PUBLISHED / "fix.zip"
+    files = {path.name: path.read_bytes() for path in folder.glob("*.json")}
+    with zipfile.ZipFile(archive) as opened:
+        members = {name: opened.read(name) for name in opened.namelist()}
+    assert files == members
+    unpacked = FixRegistry(cache_dir=folder, offline=True)
+    zipped = FixRegistry(cache_dir=archive, offline=True)
+    assert unpacked.fields_available("4.4") and zipped.fields_available("4.4")
+    assert unpacked.versions == zipped.versions
+    assert unpacked.field("Side", "4.4") == zipped.field("Side", "4.4")
+    assert unpacked.component("Parties", "4.4") == zipped.component("Parties", "4.4")
+
+
 def test_a_zip_answers_everything_the_directory_answers(dumped: Path, tmp_path: Path) -> None:
     """The reference is the directory the archive was made from."""
     folder = OfflineRegistry(cache_dir=dumped)
@@ -316,6 +342,7 @@ def test_a_zip_answers_everything_the_directory_answers(dumped: Path, tmp_path: 
     assert archive.tags() == folder.tags()
     assert archive.search("reject") == folder.search("reject")
     assert archive.lookup(54) == folder.lookup(54)
+    assert archive.components("4.4") == folder.components("4.4")
 
 
 def test_the_archive_holds_one_member_per_file(dumped: Path, tmp_path: Path) -> None:
@@ -391,6 +418,7 @@ def test_an_archive_that_holds_nothing_yet_is_not_an_error(tmp_path: Path) -> No
     """A path that does not exist is a cold store, whichever kind it names."""
     for cache in (tmp_path / "fix", tmp_path / "fix.zip"):
         registry = OfflineRegistry(cache_dir=cache)
+        assert not registry.fields_available()
         assert registry._stored_versions() == ()
         assert registry._stored_spellings() == ()
         assert registry._stored_fields("4.4") is None
@@ -413,6 +441,7 @@ def test_the_cache_survives_offline(registry: FixtureRegistry) -> None:
     offline = OfflineRegistry(cache_dir=registry.cache_dir)
     assert offline.versions == registry.versions
     assert offline.field("Side").fix["tag"] == "54"
+    assert offline.component("parties", "4.4").name == "Parties"
 
 
 def test_offline_with_only_field_caches_still_knows_its_versions(
@@ -514,6 +543,73 @@ def test_an_unknown_field_raises_key_error(registry: FixtureRegistry) -> None:
         registry.field("NoSuchField")
 
 
+def test_the_builtin_registry_is_cached_offline_and_versioned() -> None:
+    registry = FixRegistry.from_builtin()
+    assert registry is FixRegistry.from_builtin()
+    assert registry.offline
+    assert registry.versions[:2] == ("FIX.Latest", "5.0.SP2")
+    assert registry.versions[-1] == "FIXT1.1"
+
+
+def test_the_builtin_registry_carries_quote_and_translation_controls() -> None:
+    registry = FixRegistry.from_builtin()
+    expected = {
+        "OrdType": 40,
+        "ExecType": 150,
+        "QuoteID": 117,
+        "QuoteReqID": 131,
+        "QuoteType": 537,
+        "QuoteStatus": 297,
+        "QuoteRejectReason": 300,
+        "QuoteRespType": 694,
+        "QuoteCancelType": 298,
+        "BidPx": 132,
+        "OfferPx": 133,
+        "BidSize": 134,
+        "OfferSize": 135,
+        "DefBidSize": 293,
+        "DefOfferSize": 294,
+        "ValidUntilTime": 62,
+        "NoQuoteSets": 296,
+        "NoQuoteEntries": 295,
+        "QuoteSetID": 302,
+        "QuoteEntryID": 299,
+    }
+    assert {name: int(registry.scalar(name).fix["tag"]) for name in expected} == expected
+
+
+def test_a_builtin_scalar_merges_cross_version_metadata() -> None:
+    registry = FixRegistry.from_builtin()
+    begin = registry.scalar("BeginString")
+    assert begin.fix["name"] == "BeginString"
+    assert begin.fix["tag"] == "8"
+    assert json.loads(begin.fix["versions"]) == [
+        member.fix["version"] for member in registry.lookup(8)
+    ]
+    types = json.loads(begin.fix["types"])
+    assert types["5.0.SP2"] == "String"
+    assert types["4.0"] == "char"
+
+    side = registry.scalar("Side")
+    assert json.loads(side.fix["values"])["1"] == "Buy"
+    assert json.loads(side.fix["value_names"])["H"] == "SELL_UNDISCLOSED"
+    assert "Quote" in json.loads(side.fix["used_in"])
+
+
+def test_a_scalar_is_fresh_and_an_explicit_version_stays_exact() -> None:
+    registry = FixRegistry.from_builtin()
+    first = registry.scalar("Price", name="px", arrow_type=None)
+    second = registry.scalar("Price", name="px", arrow_type=None)
+    assert first == second and first is not second
+    assert first.name == "px" and first.arrow_type is None and first.nullable is None
+    first.fix["tag"] = "999"
+    assert second.fix["tag"] == "44"
+
+    exact = registry.scalar("Side", version="4.4")
+    assert exact.fix["version"] == "4.4"
+    assert "versions" not in exact.fix and "types" not in exact.fix
+
+
 # -- search ------------------------------------------------------------------
 
 
@@ -599,6 +695,43 @@ def test_a_spec_that_cannot_be_had_costs_the_symbols_and_never_the_scrape(
     assert all("value_names" not in field.fix for field in fields)
 
 
+# -- reusable components ----------------------------------------------------
+
+
+def test_the_spec_components_travel_with_a_scraped_version(tmp_path: Path) -> None:
+    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    registry.fields("4.4")
+    components = registry.components("4.4")
+    assert [component.name for component in components] == ["Parties", "PtysSubGrp"]
+    assert registry.component("PARTIES", "4.4") == components[0]
+    assert components[0].members[0].name == "NoPartyIDs"
+    assert components[0].members[0].tag == 453
+
+
+def test_an_old_cache_gains_components_from_the_one_spec_request(tmp_path: Path) -> None:
+    plain = FixRegistry(cache_dir=tmp_path / "fix")
+    plain._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])
+    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    assert registry._stored_components("4.4") is None, "the old document has no key"
+    assert registry.component("Parties", "4.4").members[0].tag == 453
+    assert registry.fetched == [f"{registry.spec_url}/FIX44.xml"]
+
+
+def test_an_old_offline_cache_has_no_components_and_does_not_fetch(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])
+    offline = OfflineRegistry(cache_dir=tmp_path / "fix")
+    assert offline.components("4.4") == []
+    with pytest.raises(KeyError, match="Parties"):
+        offline.component("Parties", "4.4")
+
+
+def test_an_empty_component_list_is_distinct_from_an_old_cache(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry._store_fields("4.4", [fix_field("Side", 54, "char")], components=[])
+    assert registry._stored_components("4.4") == []
+
+
 def test_the_session_layer_travels_with_the_dictionary(tmp_path: Path) -> None:
     """The one fact a stored dictionary could not otherwise answer."""
     registry = FixtureRegistry(cache_dir=tmp_path / "fix")
@@ -644,6 +777,7 @@ def test_enriching_adds_the_symbols_to_a_dictionary_already_stored(tmp_path: Pat
     assert json.loads(after.field(54, "4.4").fix["value_names"])["1"] == "BUY"
     assert json.loads(after.field(54, "4.4").fix["values"])["1"] == "Buy", "prose untouched"
     assert after.session("4.4"), "and the session layer lands with it"
+    assert after.component("Parties", "4.4").members[0].name == "NoPartyIDs"
 
 
 def test_enriching_a_version_nothing_stored_does_nothing(tmp_path: Path) -> None:

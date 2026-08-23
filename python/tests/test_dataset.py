@@ -8,11 +8,11 @@ from typing import Annotated, Any
 import pyarrow
 import pytest
 
-from rekep import Convertible, Dataset, Field, StructField, field
-from rekep.dataset import arrow_chunks
+from rekep import Convertible, Dataset, Field, StructField, scalar
+from rekep.dataset import _needs_compatible_polars_arrow, _polars_table, arrow_chunks
 
 
-@field
+@scalar
 class Quote(Convertible):
     """One quote."""
 
@@ -70,7 +70,7 @@ class MemoryDataset(Dataset):
 
 @pytest.fixture
 def dataset() -> MemoryDataset:
-    return MemoryDataset(struct=Quote.FIELD)
+    return MemoryDataset(struct=Quote.into_field())
 
 
 def batch_of(**columns: list) -> pyarrow.RecordBatch:
@@ -88,12 +88,12 @@ def rows(count: int) -> pyarrow.RecordBatch:
 
 
 def test_a_dataset_says_what_it_holds(dataset: MemoryDataset) -> None:
-    assert dataset.into_struct_field() is Quote.FIELD
-    assert dataset.into_arrow_schema().equals(Quote.FIELD.into_arrow_schema())
+    assert dataset.into_struct_field() is Quote.into_field()
+    assert dataset.into_arrow_schema().equals(Quote.into_field().into_arrow_schema())
 
 
 def test_the_target_of_a_cast_is_the_dataset_unless_one_is_given(dataset: MemoryDataset) -> None:
-    assert dataset.target_field() is Quote.FIELD
+    assert dataset.target_field() is Quote.into_field()
     other = Field.from_arrow_schema(pyarrow.schema([("symbol", pyarrow.string())]))
     assert dataset.target_field(other) is other, "a field is taken as it is"
     assert dataset.target_field(other.into_arrow_schema()) == other, "a schema becomes one"
@@ -102,7 +102,7 @@ def test_the_target_of_a_cast_is_the_dataset_unless_one_is_given(dataset: Memory
 def test_an_incomplete_implementation_cannot_be_built() -> None:
     class Half(Dataset):
         def into_struct_field(self) -> StructField:
-            return Quote.FIELD
+            return Quote.into_field()
 
     with pytest.raises(TypeError, match="abstract"):
         Half()
@@ -112,7 +112,7 @@ def test_an_incomplete_implementation_cannot_be_built() -> None:
 
 
 def test_merge_by_true_means_the_declared_primary_key() -> None:
-    @field
+    @scalar
     class Keyed(Convertible):
         symbol: Annotated[str, Field.primary_key()]
         """Instrument."""
@@ -120,7 +120,7 @@ def test_merge_by_true_means_the_declared_primary_key() -> None:
         size: int
         """Quantity."""
 
-    assert MemoryDataset(struct=Keyed.FIELD).merge_columns(True) == ["symbol"]
+    assert MemoryDataset(struct=Keyed.into_field()).merge_columns(True) == ["symbol"]
 
 
 def test_merge_by_a_list_means_those_columns(dataset: MemoryDataset) -> None:
@@ -145,7 +145,7 @@ def test_a_write_casts_onto_the_datasets_shape(dataset: MemoryDataset) -> None:
     batch = batch_of(day=[datetime.date(2026, 8, 14)], symbol=["A"], noise=[1])
     dataset.write_arrow_reader(iter([batch]))
     stored = dataset.commits[0]
-    assert stored.schema.equals(Quote.FIELD.into_arrow_schema())
+    assert stored.schema.equals(Quote.into_field().into_arrow_schema())
     assert stored.column("size").to_pylist() == [None]
 
 
@@ -178,15 +178,137 @@ def test_a_table_goes_in_and_comes_back(dataset: MemoryDataset) -> None:
 
 def test_a_read_casts_only_when_asked(dataset: MemoryDataset) -> None:
     dataset.write_arrow_table(pyarrow.Table.from_batches([rows(1)]))
-    assert dataset.read_arrow_reader().schema.equals(Quote.FIELD.into_arrow_schema())
+    assert dataset.read_arrow_reader().schema.equals(Quote.into_field().into_arrow_schema())
     narrow = pyarrow.schema([("symbol", pyarrow.large_string())])
     assert dataset.read_arrow_reader(narrow).schema.field("symbol").type == pyarrow.large_string()
+
+
+def test_polars_batches_stream_from_the_arrow_reader(
+    dataset: MemoryDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    polars = pytest.importorskip("polars")
+    dataset.write_arrow_reader(iter([rows(1), rows(1)]), commit_row_size=1)
+    monkeypatch.setattr(
+        MemoryDataset,
+        "read_arrow_table",
+        lambda *_args, **_kwargs: pytest.fail("read_polars_batches materialised the dataset"),
+    )
+    frames = list(dataset.read_polars_batches())
+    assert [frame.height for frame in frames] == [1, 1]
+    assert polars.concat(frames).columns == Quote.into_field().names
+
+
+def test_read_polars_is_the_explicit_in_memory_form(dataset: MemoryDataset) -> None:
+    pytest.importorskip("polars")
+    dataset.write_arrow_table(pyarrow.Table.from_batches([rows(3)]))
+    frame = dataset.read_polars()
+    assert frame.shape == (3, 3)
+    assert frame["size"].to_list() == [0, 1, 2]
+
+
+def test_a_polars_frame_is_cast_onto_the_datasets_shape(dataset: MemoryDataset) -> None:
+    polars = pytest.importorskip("polars")
+    source = polars.DataFrame(
+        {
+            "day": [datetime.date(2026, 8, 14)],
+            "noise": [9],
+            "symbol": ["A"],
+        }
+    )
+    dataset.write_polars(source)
+    stored = dataset.commits[0]
+    assert stored.schema.equals(Quote.into_field().into_arrow_schema())
+    assert stored.to_pydict() == {
+        "symbol": ["A"],
+        "day": [datetime.date(2026, 8, 14)],
+        "size": [None],
+    }
+
+
+def test_a_lazy_polars_frame_stays_streamed(
+    dataset: MemoryDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    polars = pytest.importorskip("polars")
+    source = polars.DataFrame(
+        {
+            "symbol": [f"S{i}" for i in range(5)],
+            "day": [datetime.date(2026, 8, 14)] * 5,
+            "size": list(range(5)),
+        }
+    ).lazy()
+    monkeypatch.setattr(
+        polars.LazyFrame,
+        "collect",
+        lambda *_args, **_kwargs: pytest.fail("write_polars materialised the LazyFrame"),
+    )
+    dataset.write_polars(source, batch_row_size=2, commit_row_size=2)
+    assert [commit.num_rows for commit in dataset.commits] == [2, 2, 1]
+    assert dataset.read_arrow_table().column("size").to_pylist() == list(range(5))
+
+
+def test_polars_export_preserves_a_compatible_text_layout() -> None:
+    polars = pytest.importorskip("polars")
+
+    class Frame:
+        options: dict[str, object]
+
+        def to_arrow(self, **options: object) -> pyarrow.Table:
+            self.options = options
+            return pyarrow.table({"symbol": ["A"]})
+
+    target = Field.from_arrow_schema(pyarrow.schema([("symbol", pyarrow.string())]))
+    frame = Frame()
+    stored = _polars_table(frame, target, polars)
+    assert frame.options == {}, "newest would turn text into a view that storage casts back"
+    assert stored.schema.equals(target.into_arrow_schema())
+
+
+def test_polars_export_uses_the_newest_layout_when_the_contract_keeps_it() -> None:
+    polars = pytest.importorskip("polars")
+
+    class Frame:
+        options: dict[str, object]
+
+        def to_arrow(self, **options: object) -> pyarrow.Table:
+            self.options = options
+            return pyarrow.table({"symbol": pyarrow.array(["A"], type=pyarrow.string_view())})
+
+    target = Field.from_arrow_schema(pyarrow.schema([("symbol", pyarrow.string_view())]))
+    frame = Frame()
+    stored = _polars_table(frame, target, polars)
+    assert frame.options == {"compat_level": polars.CompatLevel.newest()}
+    assert stored.schema.equals(target.into_arrow_schema())
+
+
+@pytest.mark.parametrize(
+    ("data_type", "compatible"),
+    [
+        (pyarrow.int64(), False),
+        (pyarrow.list_(pyarrow.int64()), False),
+        (pyarrow.string_view(), False),
+        (pyarrow.string(), True),
+        (pyarrow.list_(pyarrow.large_binary()), True),
+        (pyarrow.struct([("nested", pyarrow.string())]), True),
+        (pyarrow.dictionary(pyarrow.int32(), pyarrow.string()), True),
+    ],
+)
+def test_polars_compatibility_follows_nested_arrow_types(
+    data_type: pyarrow.DataType, compatible: bool
+) -> None:
+    assert _needs_compatible_polars_arrow(data_type) is compatible
+
+
+def test_polars_cannot_fill_a_missing_required_column(dataset: MemoryDataset) -> None:
+    polars = pytest.importorskip("polars")
+    with pytest.raises(ValueError, match="symbol"):
+        dataset.write_polars(polars.DataFrame({"day": [datetime.date(2026, 8, 14)]}))
+    assert dataset.commits == []
 
 
 # -- appending --------------------------------------------------------------
 
 
-@field
+@scalar
 class Keyed(Convertible):
     """One keyed row."""
 
@@ -199,7 +321,7 @@ class Keyed(Convertible):
 
 @pytest.fixture
 def keyed() -> MemoryDataset:
-    return MemoryDataset(struct=Keyed.FIELD)
+    return MemoryDataset(struct=Keyed.into_field())
 
 
 def keyed_batch(symbols: list[str], sizes: list[int]) -> pyarrow.RecordBatch:
@@ -212,22 +334,32 @@ def stored_rows(dataset: MemoryDataset) -> dict[str, int]:
 
 
 def test_append_without_merge_by_is_a_plain_write(keyed: MemoryDataset) -> None:
-    keyed.append_arrow(keyed_batch(["A"], [1]))
-    keyed.append_arrow(keyed_batch(["A"], [2]))
+    assert keyed.append_arrow(keyed_batch(["A"], [1])) == 1
+    assert keyed.append_arrow(keyed_batch(["A"], [2])) == 1
     assert keyed.read_arrow_table().num_rows == 2, "falsy merge_by appends, same as a write"
 
 
 def test_append_merge_by_skips_stored_keys_and_never_rewrites(keyed: MemoryDataset) -> None:
     keyed.write_arrow(keyed_batch(["A", "B"], [1, 2]))
-    keyed.append_arrow(keyed_batch(["B", "C"], [20, 3]), merge_by=True)
+    assert keyed.append_arrow(keyed_batch(["B", "C"], [20, 3]), merge_by=True) == 1
     assert stored_rows(keyed) == {"A": 1, "B": 2, "C": 3}, "B keeps its stored value"
+
+
+def test_append_polars_skips_a_stored_key(keyed: MemoryDataset) -> None:
+    polars = pytest.importorskip("polars")
+    keyed.write_arrow(keyed_batch(["A"], [1]))
+    assert (
+        keyed.append_polars(polars.DataFrame({"symbol": ["A", "B"], "size": [9, 2]}), merge_by=True)
+        == 1
+    )
+    assert stored_rows(keyed) == {"A": 1, "B": 2}
 
 
 def test_replaying_a_stream_appends_nothing(keyed: MemoryDataset) -> None:
     batch = keyed_batch(["A", "B"], [1, 2])
-    keyed.append_arrow(batch, merge_by=True)
+    assert keyed.append_arrow(batch, merge_by=True) == 2
     commits = len(keyed.commits)
-    keyed.append_arrow(batch, merge_by=True)
+    assert keyed.append_arrow(batch, merge_by=True) == 0
     assert stored_rows(keyed) == {"A": 1, "B": 2}
     assert len(keyed.commits) == commits, "a replay is not even a commit"
 
@@ -295,11 +427,11 @@ def test_create_with_takes_whatever_names_a_shape(dataset: MemoryDataset) -> Non
     assert dataset.create_with_arrow_field(
         pyarrow.field("q", pyarrow.struct([("a", pyarrow.int64())]))
     )
-    assert dataset.create_with(Quote).into_struct_field().names == Quote.FIELD.names
+    assert dataset.create_with(Quote).into_struct_field().names == Quote.into_field().names
 
 
 def test_create_with_nothing_uses_the_declared_shape(dataset: MemoryDataset) -> None:
-    assert dataset.create_with().into_struct_field() is Quote.FIELD
+    assert dataset.create_with().into_struct_field() is Quote.into_field()
 
 
 def test_get_or_create_is_idempotent(dataset: MemoryDataset) -> None:
@@ -341,7 +473,7 @@ def test_a_document_says_which_store_it_names() -> None:
     implementation declares, so a scheduler reads a document for a class it has
     never imported by name."""
     built = Dataset.from_dict({"kind": "text_file", "url": "a.log"})
-    assert type(built).KIND == "text_file"
+    assert type(built).into_kind() == "text_file"
     assert built.url.endswith("a.log")
 
 
@@ -380,12 +512,12 @@ def test_a_concrete_class_refuses_a_document_naming_a_different_store() -> None:
 
 
 def test_every_shipped_kind_is_reachable_from_a_document() -> None:
-    """A name in `MODULES` that no class claims is a document that cannot be read."""
-    for kind, module in Dataset.MODULES.items():
+    """Every lazy module registers the kind its document names."""
+    for kind in ("iceberg", "text_file", "text_files"):
         if kind == "iceberg":
             pytest.importorskip("pyiceberg")
-        assert Dataset._imported(kind) is not None, f"{kind} is not in {module}"
-        assert Dataset.KINDS[kind].KIND == kind
+        built = Dataset._imported(kind)
+        assert built is not None and built.into_kind() == kind
 
 
 # -- what a join hands back --------------------------------------------------

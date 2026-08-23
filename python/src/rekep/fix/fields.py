@@ -188,23 +188,7 @@ _DECIMAL = r"^[+-]?(?:[0-9]{1,17}(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]{1,3})?
 
 @functools.lru_cache(maxsize=8192)
 def unix_of(text: str | None, day: int | None = None) -> int | None:
-    """A FIX timestamp, date or time-of-day as nanoseconds since the epoch, UTC.
-
-    One reading for all three spellings, because a caller asking "when" should
-    not have to know which a field is declared as -- and feeds disagree with
-    their own dictionary about that more often than is comfortable.
-
-    `day` is the instant a *time-only* value belongs to, which is the one thing
-    it does not carry: `MDEntryTime <273>` without its `MDEntryDate <272>` is a
-    time of day, and the message's own date places it. Without `day` it reads
-    as that time on the epoch's day -- honest, and visibly wrong rather than
-    quietly plausible.
-
-    None for anything that is not a timestamp, an empty string and a date that
-    does not exist included: `0` there would be the epoch, which a sort puts
-    first. Cached because a message asks this of the same string several times
-    over, and pure, so the cache cannot be stale.
-    """
+    """A FIX timestamp, date or time-of-day as nanoseconds since the epoch, UTC."""
     if not text:
         return None
     match = _STAMP.match(text)
@@ -267,7 +251,11 @@ def cast_arrow_fix(values: Any, arrow_type: pyarrow.DataType) -> Any:
         or kinds.is_decimal(arrow_type)
     ):
         pattern = _INTEGER if kinds.is_integer(arrow_type) else _DECIMAL
-        return _only(text, pattern).cast(arrow_type, safe=False)
+        readable = _only(text, pattern)
+        if kinds.is_integer(arrow_type):
+            # Arrow accepts `-1` but rejects FIX's equally valid `+1`.
+            readable = pyarrow.compute.replace_substring_regex(readable, r"^\+", "")
+        return readable.cast(arrow_type, safe=False)
     return text.cast(arrow_type, safe=False)
 
 

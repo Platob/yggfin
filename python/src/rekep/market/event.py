@@ -6,16 +6,20 @@ import copy
 import dataclasses
 import datetime
 import functools
-from typing import Annotated, Any, ClassVar, Self
+import operator
+from collections.abc import Mapping
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Annotated, Any, Self
 
 import pyarrow
 
-from rekep.convert import Convertible
-from rekep.fields import Field, FieldBuilder, field
-from rekep.market.enums import AssetKind, EventType, Side, State
-from rekep.market.fields import MarketFieldBuilder, fix_tag
+from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Side, State
+from rekep.fields import Field, scalar
+from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import NIL, hash_arrow, hash_of
-from rekep.market.instrument import Instrument
+
+if TYPE_CHECKING:
+    from rekep.market.instrument import Instrument
 
 #: What a `*unix` column holds, said once. Whole nanoseconds since the epoch,
 #: as an integer rather than a timestamp type -- which is the same choice
@@ -34,48 +38,24 @@ DAY = 86_400_000_000_000
 #: Nanoseconds in an hour, which is what `unix_hour` truncates `unix` to.
 HOUR = 3_600_000_000_000
 
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 
-@field
-class Event(Convertible):
-    """One immutable version of one thing that happened, and its place in a life.
 
-    Every shape in this package is an `Event`, and the envelope is what makes a
-    stream of them a *history* rather than a pile of rows:
+@scalar(slots=True, weakref_slot=True)
+class Event(MarketConvertible):
+    """One immutable version of one thing that happened, and its place in a life."""
 
-    - **`xhash` is the thing; `hash` is this version of it.** An order amended
-      four times is four rows sharing one `xhash`, each with its own `hash` and
-      an incrementing `version`. Nothing is ever updated in place, so the store
-      can be append-only and a reader can ask what was known at any moment
-      rather than only what is true now.
-    - **`hash` is content, so a capture read twice deduplicates itself.** It is
-      the digest of what the event *says* -- never of when it was recorded --
-      so the same version arriving down two feeds is one row with one key, and
-      re-reading yesterday's capture writes nothing. That is why `runix` is
-      outside the digest and outside the key.
-    - **The previous version is on the row.** `prev_hash`, `prev_state` and
-      `prev_unix` make the history a linked list, so "what changed" and "how
-      long did it sit there" are read from one row instead of joined out of a
-      window function over the whole lifecycle. Three columns bought against a
-      self-join that costs a shuffle of the table.
+    @classmethod
+    @functools.cache
+    def into_field_metadata(cls) -> Mapping[str, str]:
+        """Contract metadata inherited by every event shape."""
+        return _CONTRACT_METADATA
 
-    The four clocks are separate because they answer different questions and
-    disagree constantly -- by microseconds on a good day and by hours when
-    something has gone wrong upstream. `unix` is when it happened, `cunix` when
-    it was made, `runix` when it was written down, `eunix` when it stops being
-    true. Only `unix` is in the key.
-
-    The primary key is `(unix, hash)`: `hash` alone identifies the version, and
-    leading with time gives an engine a key that correlates with the partition,
-    so a merge prunes to a day instead of scanning the table. `Log` keys itself
-    the same way for the same reason.
-    """
-
-    FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
-
-    #: What this shape is, as the `etype` column holds it. Declared on the
-    #: class rather than passed per row, because a shape is one kind of event
-    #: and a row that disagreed with its own table would be unreadable.
-    EVENT_TYPE: ClassVar[EventType] = EventType.UNKNOWN
+    @classmethod
+    @functools.cache
+    def into_event_type(cls) -> EventType:
+        """Event kind fixed by this concrete shape."""
+        return EventType.UNKNOWN
 
     # Sorted on, as well as keyed and partitioned by the hour it falls in.
     # A sort order does not decide which file a row lands in -- the partition
@@ -137,17 +117,23 @@ class Event(Convertible):
     xhash: int = NIL
     """Identity of the thing across every version of it -- the lifecycle."""
 
+    linked_xhash: list[int] | None = None
+    """Related lifecycle identities, ordered with the primary match first."""
+
     version: int = 0
     """Which version of `xhash` this is, counting up from the first."""
 
     state: State = State.UNKNOWN
     """Where the lifecycle stands, as a banded code: `>= State.TERMINAL` is over."""
 
-    symbol: Annotated[str, fix_tag("Symbol", 55)] = ""
-    """Main readable identifier of the subject, as the venue spells it."""
+    code: str = ""
+    """Readable identifier of this event, as its source spells it."""
 
-    seq: Annotated[int | None, fix_tag("MsgSeqNum", 34)] = None
-    """Sequence the venue gave the message, which orders what a clock cannot."""
+    xcode: str = ""
+    """Readable identifier shared by every version of this lifecycle."""
+
+    seq: Annotated[int | None, fix_tag("MsgSeqNum")] = None
+    """Source sequence used to order events whose clocks are equal."""
 
     prev_hash: int | None = None
     """The version this one replaced; null on the first."""
@@ -158,35 +144,21 @@ class Event(Convertible):
     prev_unix: Annotated[int | None, Field(metadata=UNIX)] = None
     """When the previous version happened, so dwell time is a subtraction."""
 
-    # A list rather than a second parent column: a book is built from two
-    # sides, a spread from as many legs as it has, and the count is not a
-    # property of the shape. What a join actually uses is the one flat parent a
-    # subclass declares -- an execution's `order_xhash` -- because no engine
-    # here joins on a list without exploding it first.
+    # Version digests are distinct from `linked_xhash` lifecycle relations.
     parent_hash: list[int] | None = None
     """Every event this one was built from, in the order they were combined."""
 
+    mic: MIC | None = None
+    """ISO 10383 venue code, packed losslessly into `int32`; null when absent."""
+
+    error: str | None = None
+    """Why this event was rejected or could not be interpreted, when known."""
+
     def __post_init__(self) -> None:
-        """Make the members agree, so everything downstream can assume they do.
-
-        Two of them are not independent facts and are therefore never given:
-
-        - **`etype` is the class.** A row whose type disagreed with the table
-          holding it would be unreadable, so it is taken from `EVENT_TYPE`
-          rather than trusted from a caller. A value explicitly set to
-          something other than `UNKNOWN` is left alone, which is how a shape
-          that carries more than one kind (a `Quote` on the order table) still
-          says so.
-        - **`unix_hour` is `unix`.** It is denormalised for the partition, so
-          deriving it here is the difference between one authority and two
-          columns that disagree on the row nobody looks at. A modulo rather
-          than a `datetime` round trip: it is exact for every representable
-          instant, it costs no object, and Python's `%` floors, so an instant
-          before the epoch lands in the hour that contains it rather than in
-          the one after.
-        """
+        """Make the members agree, so everything downstream can assume they do."""
+        self.normalize_float_members()
         if self.etype is EventType.UNKNOWN:
-            self.etype = type(self).EVENT_TYPE
+            self.etype = type(self).into_event_type()
         self.unix_hour = self.unix - self.unix % HOUR
 
     # -- what kind of event this is -----------------------------------------
@@ -199,9 +171,8 @@ class Event(Convertible):
         (`EventType.STATE`) and a member (`EventType.BOOK`) are both answerable
         without a caller knowing which it was handed.
         """
-        return cls.EVENT_TYPE == kind or (
-            kind == EventType.band_of(kind) and cls.EVENT_TYPE.band == kind
-        )
+        declared = cls.into_event_type()
+        return declared == kind or (kind == EventType.band_of(kind) and declared.band == kind)
 
     @classmethod
     def is_order(cls) -> bool:
@@ -214,11 +185,6 @@ class Event(Convertible):
         return cls.is_a(EventType.EXECUTION)
 
     @classmethod
-    def is_book_side(cls) -> bool:
-        """Whether this shape is one side of a book."""
-        return cls.is_a(EventType.BOOK_SIDE)
-
-    @classmethod
     def is_book(cls) -> bool:
         """Whether this shape is a whole book."""
         return cls.is_a(EventType.BOOK)
@@ -226,7 +192,7 @@ class Event(Convertible):
     @classmethod
     def is_snapshot(cls) -> bool:
         """Whether this shape is a picture of something rather than a thing itself."""
-        return cls.EVENT_TYPE.is_snapshot
+        return cls.into_event_type().is_snapshot
 
     # -- identity -----------------------------------------------------------
 
@@ -235,7 +201,7 @@ class Event(Convertible):
         """The identifier `parts` name, for this shape.
 
         The class name goes in front of the parts, so an `Order` and a `Book`
-        built from the same symbol and time cannot land on one identifier --
+        built from the same code and time cannot land on one identifier --
         which is a collision no amount of hash width prevents, because the
         inputs really are equal.
         """
@@ -247,77 +213,82 @@ class Event(Convertible):
         return hash_arrow(cls.__name__, *columns)
 
     def identify(self) -> Self:
-        """Give the event the identity its own content earns, where it has none.
-
-        Two identities and one rule each. `xhash` is the **lifecycle** -- the
-        thing that persists across every version of this event -- so it is
-        hashed from what does not change: which instrument, which side, which
-        identifier the venue gave it. `hash` is **this version** -- so it is
-        hashed from the lifecycle plus what makes this version different from
-        the last one.
-
-        Both are computed by layer: `life_parts` and `version_parts` are what
-        a subclass overrides, and the hashing, the class-name prefix and the
-        "only when unset" rule stay here. A producer that already knows an
-        identity keeps it -- this fills gaps, it does not overwrite.
-        """
+        """Give the event the identity its own content earns, where it has none."""
+        self._materialize_life_code()
         self.xhash = self.xhash or self.life_hash()
+        self._drop_self_link()
         if not self.hash:
             self.hash = self.hash_of(*self.version_parts())
         return self
 
-    def with_previous(self, previous: Event | None) -> Self:
-        """This event completed from the version before it, and re-identified.
+    def with_previous(self, previous: Event | None) -> Self | None:
+        """Complete this version, returning None when it changes no stored fact."""
+        self.completed_from(previous)
+        if previous is not None and self.same_as(previous):
+            return None
+        return self.identify()
 
-        The whole point of a versioned event: a venue restates only what
-        changed, so a report that says "partially filled, 4 done" and nothing
-        else is a complete row only once the price, the side, the instrument
-        and everything else it did not repeat are carried forward from the
-        version it follows.
+    def same_as(self, previous: Event) -> bool:
+        """Whether this is only a later observation of the same stored state."""
+        if type(self) is not type(previous) or self.xhash != previous.xhash:
+            return False
+        snapshot = self.sunix is not None or previous.sunix is not None
+        values, floats = type(self)._same_as_values(snapshot)
+        if values(self) != values(previous):
+            return False
+        # Tuple equality treats the same NaN object as equal by identity while
+        # the member-by-member comparison this replaces did not.
+        if floats is None:
+            return True
+        current = floats(self)
+        if not isinstance(current, tuple):
+            return current == current
+        return all(value == value for value in current)
 
-        What that means field by field is **layered**: `complete_from` is what
-        each class overrides, and it fills only what this version left absent.
-        A value the message actually sent always wins -- this completes a row,
-        it does not correct one.
-
-        There are two halves to filling a row and they are separate methods,
-        because only one of them needs a previous version. `complete_from` is
-        what the row before implies about this one; `derive` is what *this*
-        row implies about itself -- a quantity that is the difference of two
-        others, a notional that is a product of three. A first version has no
-        previous and still derives.
-
-        What is *not* layered is the versioning, and it is `completed_from` so
-        no subclass can forget a piece of it: the counter moves on, and the
-        version before is recorded as `prev_hash`/`prev_state`/`prev_unix` so
-        a transition is on the row rather than behind a self-join. The content
-        hash comes last -- after every layer has filled, or it would identify
-        a row that does not exist yet.
-        """
-        return self.completed_from(previous).identify()
+    @classmethod
+    @functools.cache
+    def _same_as_values(cls, snapshot: bool) -> tuple[Any, Any | None]:
+        """Cached projection of the state compared for this concrete shape."""
+        ignored = {
+            "cunix",
+            "runix",
+            "seq",
+            "hash",
+            "xhash",
+            "version",
+            "prev_hash",
+            "prev_state",
+            "prev_unix",
+            "prev_px",
+            "prev_qty",
+            "prev_notional",
+            "parent_hash",
+        }
+        # Observation time is state only for a snapshot.
+        if not snapshot:
+            ignored.update(("unix", "unix_hour"))
+        names = tuple(
+            member.name for member in dataclasses.fields(cls) if member.name not in ignored
+        )
+        floating = tuple(
+            member.name
+            for member in cls.into_field().fields
+            if member.name in names and pyarrow.types.is_floating(member.arrow_type)
+        )
+        return operator.attrgetter(*names), operator.attrgetter(*floating) if floating else None
 
     def completed_from(self, previous: Event | None) -> Self:
-        """`with_previous` without the content hash: everything but `hash`.
-
-        The split exists because **the content hash is half the cost of a
-        completion and a fold does not need it**. `Book.from_events` keeps
-        live orders so it can complete the next version of each from the one
-        it holds; what it writes is book rows, and it identifies those. The
-        orders it holds are working state, and hashing every version of every
-        one of them was 51% of the fold's per-order cost
-        (`benchmarks/bench_market.py`).
-
-        `xhash` is still derived, because the lifecycle is what the fold keys
-        on. `hash` is left `NIL`, which is the shape's own word for "nothing
-        has hashed this yet" -- so a caller who does need it asks `identify`,
-        and `with_previous` is exactly that call.
-        """
+        """`with_previous` without the content hash: everything but `hash`."""
         if previous is None:
             self.derive()
+            self._materialize_life_code()
             self.xhash = self.xhash or self.life_hash()
+            self._drop_self_link()
             return self
+        life_before = self.life_parts()
         self.complete_from(previous)
         self.derive()
+        self._materialize_life_code()
         # Read **after** every layer has completed, and that is not
         # incidental: an order version that arrived carrying only its
         # `OrderID <37>` does not know its own instrument or venue until the
@@ -326,20 +297,34 @@ class Event(Convertible):
         # and start its own version count. An event with nothing to be
         # identified by inherits the lifecycle it is completed from, which is
         # the only one available to it.
+        # A parsed row may already have been identified before completion
+        # supplies its instrument or venue. Its readable key still agrees,
+        # but its scoped hash does not; changed lifecycle parts invalidate it.
+        if self.xhash and self.life_parts() != life_before:
+            self.xhash = NIL
         self.xhash = self.xhash or self.life_hash() or previous.xhash
+        self._drop_self_link()
         if self.xhash and self.xhash == previous.xhash:
+            # The row carried no readable key of its own, so the same
+            # lifecycle is the only honest place its readable key can come
+            # from. Never copy it before this comparison: completion crosses
+            # shapes, and an execution is not named by its order's code.
+            self.xcode = previous.xcode or self.xcode
             self.version = previous.version + 1
             # NIL means the previous version was never hashed, and a null says
             # "no previous version" -- which is the truth about it either way.
             self.prev_hash = previous.hash or None
             self.prev_state = previous.state
             self.prev_unix = previous.unix
-        elif previous.hash and previous.hash not in (self.parent_hash or ()):
+            self._remember_previous(previous)
+        elif self.xhash != previous.xhash:
             # Not a version of it: a different thing, built from it. A fill
             # completed from the order it happened to is the case that matters
             # -- it takes the order's running totals and stays version zero of
             # its own life, because a version counter counts one lifecycle.
-            self.parent_hash = [*(self.parent_hash or ()), previous.hash]
+            if previous.hash and previous.hash not in (self.parent_hash or ()):
+                self.parent_hash = [*(self.parent_hash or ()), previous.hash]
+            self.link_to(previous.xhash)
         # Cleared, not kept: every layer has just filled fields the hash is
         # made of, so the identity this row arrived with was of a different
         # row. `identify` refuses to overwrite a hash that is set, which is
@@ -348,18 +333,8 @@ class Event(Convertible):
         return self
 
     def complete_from(self, previous: Event) -> None:
-        """Fill what this version left absent, from the version before it.
-
-        The envelope's own layer. `cunix` is the one that reads oddly and is
-        the most important: it is **get-or-set**, because a lifecycle is
-        created once and every later version of it was created at the same
-        instant. A version that recomputed it would make "how old is this
-        order" mean "how long since the last message about it".
-
-        The identity is deliberately not here: whether this row is a version
-        of `previous` or a different thing built from it is `same_life_as`,
-        and it can only be asked once every layer has filled.
-        """
+        """Fill what this version left absent, from the version before it."""
+        self.link_to(*(previous.linked_xhash or ()))
         if not self.cunix:
             self.cunix = previous.cunix or previous.unix
         if not self.unix:
@@ -369,16 +344,39 @@ class Event(Convertible):
             self.unix_hour = self.unix - self.unix % HOUR
         if not self.runix:
             self.runix = previous.runix
-        if self.eunix is None:
-            self.eunix = previous.eunix
-        if not self.symbol:
-            self.symbol = previous.symbol
         if self.seq is None:
             self.seq = previous.seq
+        if self.eunix is None:
+            self.eunix = previous.eunix
+        if not self.code:
+            self.code = previous.code
+        if self.mic is None:
+            self.mic = previous.mic
         if self.state is State.UNKNOWN:
             # A report that says nothing about the state is not saying the
             # state is unknown; it is not mentioning it.
             self.state = previous.state
+
+    def _remember_previous(self, previous: Event) -> None:
+        """Store shape-specific transition values after lifecycle matching."""
+
+    def link_to(self, *xhashes: int | None, primary: bool = False) -> Self:
+        """Relate lifecycle identities once, optionally ahead of existing links."""
+        given = list(dict.fromkeys(xhash for xhash in xhashes if xhash))
+        existing = list(self.linked_xhash or ())
+        ordered = given + existing if primary else existing + given
+        self.linked_xhash = list(dict.fromkeys(ordered)) or None
+        return self
+
+    @property
+    def primary_linked_xhash(self) -> int | None:
+        """First related lifecycle, when one is known."""
+        return self.linked_xhash[0] if self.linked_xhash else None
+
+    def _drop_self_link(self) -> None:
+        """A relation never points back to its own lifecycle."""
+        if self.xhash and self.linked_xhash:
+            self.linked_xhash = [one for one in self.linked_xhash if one != self.xhash] or None
 
     def derive(self) -> None:
         """Fill what this row's own fields already determine.
@@ -389,36 +387,11 @@ class Event(Convertible):
         `super().derive()` without knowing that.
         """
 
-    def make_snapshot(self, unix: int) -> Self | None:
-        """This event as the picture of itself that `unix` would see, or None.
-
-        A snapshot is a row that says two things: **when it was taken** and
-        **what it is a picture of**. `unix` is the first and `sunix` is the
-        second, which is what makes staleness a subtraction on the row rather
-        than a join against whatever was snapshotted.
-
-        None -- and *nothing produced* -- in three cases, each of which would
-        otherwise put a row in a table that is a lie:
-
-        - **The shape is not a picture.** An orders table holds orders, and a
-          picture of an order at half past two is not one of them.
-          `EventType.is_snapshot` is the test, and it is the shape's, not the
-          row's.
-        - **It is already that picture.** Asking for a snapshot at the instant
-          the event already carries hands back the event, so this says so with
-          a None rather than with a copy that differs in nothing.
-        - **The instant is before the event.** A picture cannot be taken of
-          something that has not happened.
-
-        The versioning is deliberately *not* here. A snapshot is another
-        version of the same lifecycle -- the book at 14:00 and the book at
-        15:00 are two rows of one book -- and `with_previous` is where a
-        version is made, so a caller chains the two and gets the same
-        `prev_hash` walk as every other row::
-
-            book.make_snapshot(hour).with_previous(book)
-        """
-        if not type(self).is_snapshot() or unix <= self.unix:
+    def make_snapshot(self, unix: int, *, same_unix: bool = False) -> Self | None:
+        """Picture this live state, expiring it after one unchanged day."""
+        if not type(self).is_snapshot() or (self.state.is_terminal and not same_unix):
+            return None
+        if unix < self.unix or (unix == self.unix and not same_unix):
             return None
         if self.sunix is not None and self.sunix >= unix:
             return None
@@ -430,6 +403,10 @@ class Event(Convertible):
         # Two snapshots of one unchanged book then agree on what they show and
         # differ only in when they were taken, which is the truth about them.
         taken.sunix = self.sunix if self.sunix is not None else self.unix
+        if unix - taken.sunix >= DAY:
+            taken.state = State.INTERNAL_EXPIRED
+            taken.eunix = taken.sunix + DAY
+            taken.error = taken.error or "expired internally after one day without change"
         taken.forget_delta()
         # Cleared so `identify` derives one: the row differs from the one it
         # was copied from, in the two fields that say it is a picture.
@@ -437,20 +414,7 @@ class Event(Convertible):
         return taken
 
     def forget_delta(self) -> None:
-        """Drop what *changed*, keeping what *is*. A snapshot has no delta.
-
-        A picture of a book shows the book; it does not show the update that
-        produced the book an hour ago. Carrying those forward made a consumer
-        summing the delta columns count one level insertion once per hourly row
-        until something else happened -- four times over a three-hour quiet
-        patch.
-
-        Nothing at this layer, because the envelope has no delta. A shape that
-        does overrides it, and **assigns** rather than clearing in place: a
-        snapshot is a `copy.copy`, so its lists are the subject's own until
-        something replaces them, and `.clear()` would empty the row being
-        pictured.
-        """
+        """Drop what *changed*, keeping what *is*. A snapshot has no delta."""
 
     def life_hash(self) -> int:
         """The identifier of this event's lifecycle, from what it carries now.
@@ -471,10 +435,17 @@ class Event(Convertible):
         try:
             return _life_hash(type(self).__name__, parts)
         except TypeError:
-            # A part no cache can key on -- a list of identifiers a subclass
-            # returns. The frame does not mind what a part is, so it is hashed
-            # directly and simply not remembered.
+            # A supported bytes-like part may be mutable and therefore cannot
+            # key the cache; frame it directly without remembering it.
             return self.hash_of(*parts)
+
+    def life_code(self) -> str:
+        """The readable part that names this lifecycle, without changing it."""
+        return self.xcode or self.code
+
+    def _materialize_life_code(self) -> None:
+        """Store the readable lifecycle part once, before mutable codes move."""
+        self.xcode = self.xcode or self.life_code()
 
     def life_parts(self) -> tuple[Any, ...]:
         """What makes this event's lifecycle the one it is, across every version.
@@ -482,7 +453,8 @@ class Event(Convertible):
         Empty when nothing does, which `life_hash` reads as `NIL`: an event
         that names no persistent thing is honestly unidentified.
         """
-        return (self.symbol,) if self.symbol else ()
+        code = self.life_code()
+        return (code,) if code else ()
 
     def version_parts(self) -> tuple[Any, ...]:
         """What makes this version different from the one before it.
@@ -491,29 +463,31 @@ class Event(Convertible):
         their versions are, and then the counter, the instant and the state --
         the three things every event has that a new version moves.
         """
-        return (self.xhash, self.version, self.unix, self.state)
+        links = tuple(self.linked_xhash or ())
+        return (
+            self.xhash,
+            self.version,
+            self.unix,
+            self.state,
+            self.mic,
+            len(links),
+            *links,
+            self.error,
+        )
 
 
-@field
+@scalar(slots=True)
 class MarketEvent(Event):
-    """An event with a price, a quantity and an instrument -- the shape of a market.
+    """A priced event carrying a flat instrument identity."""
 
-    The four slots below are deliberately *abstract*, and every subclass says
-    in its own docstring what it puts in them. That is what stops the package
-    growing a `last_px`, a `bid_px`, an `entry_px` and a `limit_px` that all
-    mean "the price on this row" and none of which a generic reader can find::
+    # Parsed instrument facts are useful while folding but are deliberately
+    # not a member: market events persist only the flat identity.
+    __instrument: Instrument | None = None
 
-        Order       px is the limit, qty is the order quantity
-        Execution   px is what traded (FIX LastPx), qty is how much (LastQty)
-        BookSide    px is the best level's price, qty is its size
-        Book        px is the mid, qty is the size behind it
-
-    `px` and `qty` are nullable, and that is not laziness: a market order has
-    no price, an empty book side has neither, and `0.0` is a real price --
-    negative ones are too, as a settlement in April 2020 reminded everybody --
-    so a NOT NULL column would have to lie about the difference between "at
-    zero" and "not priced".
-    """
+    # The base envelope's code is protocol-neutral. A market event specialises
+    # it as FIX Symbol while keeping the inherited column position.
+    code: Annotated[str, fix_tag("Symbol")] = ""
+    """Instrument symbol as the source spells it."""
 
     # Flat, first, and partitioned on. An event stream is read one instrument
     # at a time far more often than it is read whole, and `instrument.xhash`
@@ -525,14 +499,20 @@ class MarketEvent(Event):
     # which is a hundred thousand partitions a day and a file in each. Sixteen
     # buckets is sixteen files an hour, and a single-instrument read still
     # touches one of them. The count is a deployment choice, not a law.
-    instrument_hash: Annotated[int, Field.partition_key("bucket[16]")] = NIL
-    """Which instrument this is about -- `instrument.xhash`, flat, for the partition."""
+    instrument_xhash: Annotated[int, Field.partition_key("bucket[16]")] = NIL
+    """Instrument lifecycle identity used to join and partition market rows."""
 
-    side: Annotated[Side, fix_tag("Side", 54)] = Side.UNKNOWN
+    kind: MarketKind = MarketKind.UNKNOWN
+    """Standard market semantic, independent of its protocol spelling."""
+
+    side: Annotated[Side, fix_tag("Side")] = Side.UNKNOWN
     """Which way the interest points; `side.sign` turns it into `+1` or `-1`."""
 
-    px: Annotated[float | None, fix_tag("Price", 44)] = None
+    px: Annotated[float | None, fix_tag("Price")] = None
     """The price on this row, in `px_unit`; what it means is the subclass's to say."""
+
+    prev_px: float | None = None
+    """Price on the immediately preceding lifecycle version; null on the first."""
 
     # Ours, and so carrying no FIX tag: it normalises `PriceType <423>`, which
     # is an enumeration of conventions, together with `Currency <15>`, which is
@@ -543,56 +523,65 @@ class MarketEvent(Event):
     px_unit: str = ""
     """How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated."""
 
-    qty: Annotated[float | None, fix_tag("OrderQty", 38)] = None
+    ccy: Annotated[Currency | None, fix_tag("Currency")] = None
+    """Currency of the monetary values; null when the source does not state one."""
+
+    qty: Annotated[float | None, fix_tag("OrderQty")] = None
     """The quantity on this row, in `qty_unit`; what it means is the subclass's to say."""
+
+    prev_qty: float | None = None
+    """Quantity on the immediately preceding lifecycle version; null on the first."""
 
     qty_unit: str = ""
     """How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated."""
 
-    # Carried rather than derived, because deriving it needs the instrument's
-    # multiplier -- so every consumer that wants money either joins reference
-    # data or is quietly wrong on anything but a cash equity.
+    # Carried rather than derived after persistence because the multiplier is
+    # normalized in the separate reference stream.
     notional: float | None = None
     """`px * qty * multiplier` in the instrument's currency, as the producer computed it."""
 
-    venue: Annotated[str | None, fix_tag("LastMkt", 30)] = None
-    """Where this event happened, which is not always where the instrument is listed."""
+    prev_notional: float | None = None
+    """Notional on the immediately preceding lifecycle version; null on the first."""
 
-    instrument: Instrument = dataclasses.field(default_factory=Instrument)
-    """What was traded. The flat `symbol` above is what a filter uses; this is the rest."""
-
-    # A map and not a struct: what a venue sends is not known when the shape is
-    # written, duplicate keys happen, and order is part of what was sent.
+    # Free-form protocol metadata stays separate from declared columns.
     metadata: dict[str, str] | None = None
     """Protocol fields carried verbatim, exactly as the venue sent them."""
 
     def __post_init__(self) -> None:
-        """The envelope's own normalisation, then the instrument the row is about.
+        """Normalize the compact currency code and inherited clocks."""
+        if self.ccy is not None:
+            self.ccy = Currency.from_str(self.ccy)
+        Event.__post_init__(self)
 
-        `instrument_hash` is `instrument.xhash` flattened, so the two cannot
-        disagree: a nested member nothing partitions on and a flat column
-        everything does have to be the same instrument.
-        """
-        super().__post_init__()
-        if self.instrument.xhash:
-            self.instrument_hash = self.instrument.xhash
+    def attach_instrument(self, instrument: Instrument) -> Self:
+        """Use reference data while building without adding it to the event schema."""
+        self.__instrument = instrument
+        self.instrument_xhash = self.instrument_xhash or instrument.xhash
+        self.code = self.code or instrument.symbol
+        if self.ccy is None:
+            self.ccy = instrument.currency
+        return self
+
+    def into_instrument(self) -> Instrument | None:
+        """Return transient parsed reference data, absent after persisted reads."""
+        return getattr(self, "_MarketEvent__instrument", None)
 
     def complete_from(self, previous: Event) -> None:
         """The four market slots, carried forward where this version was silent.
 
         `px` and `qty` are filled because a venue restating an order's status
-        rarely repeats its limit, and a row with a null price is a row that
-        drops out of every filter on price. The instrument is filled for the
-        same reason and re-flattened onto `instrument_hash` after, so a
-        completed row lands in the partition its lifecycle already lives in.
+        rarely repeats its limit, and a row with a null price drops out of
+        every filter on price.
         """
-        super().complete_from(previous)
+        Event.complete_from(self, previous)
         if not isinstance(previous, MarketEvent):
             return
-        if not self.instrument.xhash and previous.instrument.xhash:
-            self.instrument = previous.instrument
-        if not self.instrument_hash:
-            self.instrument_hash = self.instrument.xhash or previous.instrument_hash
+        if self.into_instrument() is None:
+            known = previous.into_instrument()
+            if known is not None:
+                self.__instrument = known
+        if not self.instrument_xhash:
+            self.instrument_xhash = previous.instrument_xhash
         if self.side is Side.UNKNOWN:
             self.side = previous.side
         # `px` and `qty` are the abstract slots, and what they hold is the
@@ -600,23 +589,36 @@ class MarketEvent(Event):
         # are what traded, a book's are the mid and the touch. So they carry
         # only from a version of the *same shape*. Carrying an execution's
         # `LastQty` into an order's `OrderQty` made a partly filled order
-        # claim it had asked for exactly what had just traded, and then
-        # derived a `leaves_qty` of zero from it.
+        # claim its current quantity was exactly what had just traded.
         if previous.etype == self.etype:
+            if self.kind is MarketKind.UNKNOWN:
+                self.kind = previous.kind
             if self.px is None:
                 self.px = previous.px
             if self.qty is None:
                 self.qty = previous.qty
         if not self.px_unit:
             self.px_unit = previous.px_unit
+        if self.ccy is None:
+            self.ccy = previous.ccy
         if not self.qty_unit:
             self.qty_unit = previous.qty_unit
-        if self.venue is None:
-            self.venue = previous.venue
+
+    def _remember_previous(self, previous: Event) -> None:
+        """Keep the prior priced values only after lifecycle identity agrees."""
+        Event._remember_previous(self, previous)
+        if not isinstance(previous, MarketEvent):
+            return
+        if self.prev_px is None:
+            self.prev_px = previous.px
+        if self.prev_qty is None:
+            self.prev_qty = previous.qty
+        if self.prev_notional is None:
+            self.prev_notional = previous.notional
 
     def derive(self) -> None:
         """A notional is a price times a quantity times a multiplier, or nothing."""
-        super().derive()
+        Event.derive(self)
         if self.notional is None:
             self.notional = self.into_notional()
 
@@ -631,16 +633,26 @@ class MarketEvent(Event):
         """
         if self.px is None or self.qty is None:
             return None
-        multiplier = self.instrument.multiplier
+        instrument = self.into_instrument()
+        if instrument is None:
+            return None
+        multiplier = instrument.multiplier
         if multiplier is None:
             # A cash instrument really does trade one for one, and it is the
             # only class where the multiplier can be assumed rather than read.
             # `band` is the floor as an `int`, which is what a range predicate
             # compares against -- so this is `==` and never `is`.
-            if self.instrument.kind.band != AssetKind.CASH:
+            if instrument.kind.band != AssetKind.CASH:
                 return None
             multiplier = 1.0
         return self.px * self.qty * multiplier
+
+    def forget_delta(self) -> None:
+        """A snapshot keeps current values, never the transition into them."""
+        Event.forget_delta(self)
+        self.prev_px = None
+        self.prev_qty = None
+        self.prev_notional = None
 
     def life_parts(self) -> tuple[Any, ...]:
         """A market lifecycle is an instrument and a direction, at least.
@@ -650,13 +662,54 @@ class MarketEvent(Event):
         names neither has no lifecycle worth hashing, which is what the empty
         tuple says.
         """
-        if not self.instrument_hash and not self.symbol:
+        code = self.life_code()
+        if not self.instrument_xhash and not code:
             return ()
-        return (self.instrument_hash, self.symbol, self.side)
+        return (self.instrument_xhash, code, self.side)
 
     def version_parts(self) -> tuple[Any, ...]:
         """A market version moves when its price or its quantity moves."""
-        return (*super().version_parts(), self.side, self.px, self.qty)
+        return (
+            *Event.version_parts(self),
+            self.kind,
+            self.side,
+            self.px,
+            self.prev_px,
+            self.ccy,
+            self.qty,
+            self.prev_qty,
+            self.notional,
+            self.prev_notional,
+        )
+
+    @classmethod
+    def from_books_arrow_batch(cls, books: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
+        """Flatten this event shape from one batch of carrying books."""
+        if cls.is_order():
+            column = "order_events"
+        elif cls.is_execution():
+            column = "execution_events"
+        else:
+            raise TypeError(f"{cls.__name__} is not a book event shape")
+        from rekep.fields.arrays import struct_columns
+
+        listed = books.column(column)
+        parents = pyarrow.compute.list_parent_indices(listed)
+        events = pyarrow.compute.list_flatten(listed)
+        field = cls.into_field()
+        if not len(events):
+            return pyarrow.RecordBatch.from_arrays(
+                [pyarrow.array([], type=member.arrow_type) for member in field.fields],
+                schema=field.into_arrow_schema(),
+            )
+        projected = struct_columns(events)
+        projected["parent_hash"] = _append_list_value(
+            projected["parent_hash"], books.column("hash").take(parents)
+        )
+        raw = pyarrow.RecordBatch.from_arrays(
+            [projected[name] for name in field.names], names=field.names
+        )
+        return field.cast_arrow_batch(raw)
 
 
 @functools.lru_cache(maxsize=65_536)
@@ -669,3 +722,19 @@ def _life_hash(shape: str, parts: tuple[Any, ...]) -> int:
     repeats to find and should not keep them all.
     """
     return hash_of(shape, *parts)
+
+
+def _append_list_value(array: pyarrow.Array, values: pyarrow.Array) -> pyarrow.Array:
+    """Append one carrying-book hash per nested event without row loops."""
+    from rekep.fields.arrays import build_list, list_parts, sequence
+
+    sizes, flat = list_parts(array)
+    grown = pyarrow.compute.add(sizes, 1)
+    parent = pyarrow.compute.list_parent_indices(array)
+    old_positions = pyarrow.compute.add(sequence(len(flat)), parent)
+    new_positions = pyarrow.compute.subtract(pyarrow.compute.cumulative_sum(grown), 1)
+    positions = pyarrow.concat_arrays([old_positions, new_positions])
+    ordered = pyarrow.concat_arrays([flat, values]).take(
+        pyarrow.compute.array_sort_indices(positions)
+    )
+    return build_list(array.type, grown, ordered)

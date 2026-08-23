@@ -6,23 +6,30 @@ import dataclasses
 import enum
 import json
 import uuid
-from typing import Annotated, ClassVar, get_type_hints
+from typing import Annotated, get_type_hints
 
 import pyarrow
 import pytest
 
-from rekep.convert import Convertible
+from rekep.enums import MarketKind, Side, State, TimeInForce
 from rekep.fields import (
     DESCRIPTION,
     PARTITION_KEY,
     PRIMARY_KEY,
     Field,
     FieldBuilder,
-    field,
+    scalar,
 )
-from rekep.market import Book, BookSide, Instrument, MarketEvent, Order
-from rekep.market.enums import Side, State
+from rekep.market import (
+    Book,
+    Event,
+    Execution,
+    Instrument,
+    MarketEvent,
+    Order,
+)
 from rekep.market.fields import (
+    MarketConvertible,
     MarketFieldBuilder,
     Newtype,
     describe_enum,
@@ -33,7 +40,7 @@ from rekep.market.fields import (
     unkeyed,
 )
 
-SHAPES = (Instrument, MarketEvent, Order, BookSide, Book)
+SHAPES = (Instrument, MarketEvent, Order, Book)
 
 #: Every list flavour, because a walk that spelled them all `list` would narrow
 #: a 64-bit offset and drop a width without saying so.
@@ -65,11 +72,9 @@ def keys_in(arrow_type: pyarrow.DataType) -> set[bytes]:
     return {key for metadata in metadata_in(arrow_type) for key in metadata}
 
 
-@field
-class Keyed:
+@scalar
+class Keyed(MarketConvertible):
     """A shape whose members are keys, for nesting inside another."""
-
-    FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
 
     identifier: Annotated[uuid.UUID, Field.primary_key()]
     """Its own key."""
@@ -83,59 +88,51 @@ def test_an_identifier_is_a_plain_int64() -> None:
     something else, and a `long` is the same column in every engine there is."""
     for shape in SHAPES:
         for name in ("hash", "xhash"):
-            if name in shape.FIELD.names:
-                assert shape.FIELD.field(name).arrow_type == pyarrow.int64(), shape.__name__
+            if name in shape.into_field().names:
+                assert shape.into_field().field(name).arrow_type == pyarrow.int64(), shape.__name__
 
 
-def test_a_ranged_code_is_int32_and_not_int64() -> None:
+def test_a_market_code_is_int32_and_not_int64() -> None:
     """The base builder takes the width of a Python int, which is twice what is needed."""
     assert MarketFieldBuilder().data_type(State) == pyarrow.int32()
     assert MarketFieldBuilder().data_type(Side) == pyarrow.int32()
     assert FieldBuilder().data_type(State) == pyarrow.int64()
 
 
-def test_every_ranged_column_of_every_shape_is_int32() -> None:
+def test_every_market_code_column_of_every_shape_is_int32() -> None:
     """The rule is worth nothing if one shape quietly bypasses the builder."""
     for shape in SHAPES:
-        for member in shape.FIELD.fields:
+        for member in shape.into_field().fields:
             if member.name in ("state", "prev_state", "side", "kind", "tif", "option_kind"):
                 assert member.arrow_type == pyarrow.int32(), f"{shape.__name__}.{member.name}"
 
 
-def test_a_nested_shape_keeps_its_documentation_and_loses_its_keys() -> None:
-    """A key is a table's; nothing reads a nested one, so publishing one would lie."""
-    nested = MarketEvent.FIELD.field("instrument")
-    assert Instrument.FIELD.primary_keys() == ["xhash"], "the table itself is still keyed"
-    assert not nested.field("xhash").is_primary_key
-    assert nested.field("symbol").description == Instrument.FIELD.field("symbol").description
-
-
-def test_a_key_inside_a_nested_shape_is_stripped_wherever_it_is() -> None:
-    """Every shape nests an `Instrument`, whose `xhash` is its own table's key."""
-    for shape in (Book, BookSide, Order, MarketEvent):
-        nested = shape.FIELD.field("instrument")
-        assert nested.field("xhash").name == "xhash", "the member is still there"
-        assert not nested.field("xhash").is_primary_key, shape.__name__
-        inside = keys_in(nested.arrow_type)
-        assert PRIMARY_KEY.encode() not in inside and PARTITION_KEY.encode() not in inside
-        assert DESCRIPTION.encode() in inside, "and the comments are all still there"
-        # The shape's own top level is a table, and keeps its keys.
-        assert {PRIMARY_KEY.encode(), PARTITION_KEY.encode()} <= keys_in(shape.FIELD.arrow_type)
+def test_the_instrument_is_one_flat_event_contract() -> None:
+    assert Instrument.into_field().primary_keys() == ["unix", "hash"]
+    assert Instrument.into_field().partition_keys() == {
+        "unix_hour": "identity",
+        "xhash": "bucket[16]",
+    }
+    for shape in (Book, Order, MarketEvent):
+        assert "instrument" not in shape.into_field().names
 
 
 def test_the_shape_that_owns_the_table_keeps_its_own_keys() -> None:
     """Stripping the nested ones must not strip the top level with them."""
     for shape in SHAPES:
-        assert shape.FIELD.primary_keys(), shape.__name__
-    assert Book.FIELD.primary_keys() == ["unix", "hash"]
-    assert Book.FIELD.partition_keys() == {"unix_hour": "identity", "instrument_hash": "bucket[16]"}
-    assert Book.FIELD.sort_keys() == {"unix": "asc"}
+        assert shape.into_field().primary_keys(), shape.__name__
+    assert Book.into_field().primary_keys() == ["unix", "hash"]
+    assert Book.into_field().partition_keys() == {
+        "unix_hour": "identity",
+        "instrument_xhash": "bucket[16]",
+    }
+    assert Book.into_field().sort_keys() == {"unix": "asc"}
 
 
 @pytest.mark.parametrize("flavour", FLAVOURS, ids=lambda build: build.__name__)
 def test_a_key_inside_every_list_flavour_is_stripped_and_the_flavour_kept(flavour) -> None:
     """Crossing every branch of the walk, which is where a kind check goes wrong."""
-    inside = flavour(Keyed.FIELD.arrow_type)
+    inside = flavour(Keyed.into_field().arrow_type)
     stripped = unkeyed(inside)
     assert type(stripped) is type(inside)
     assert str(stripped).split("<", 1)[0] == str(inside).split("<", 1)[0]
@@ -144,14 +141,14 @@ def test_a_key_inside_every_list_flavour_is_stripped_and_the_flavour_kept(flavou
 
 
 def test_a_fixed_size_list_keeps_the_width_that_is_part_of_its_type() -> None:
-    inside = pyarrow.list_(pyarrow.field("item", Keyed.FIELD.arrow_type), 3)
+    inside = pyarrow.list_(pyarrow.field("item", Keyed.into_field().arrow_type), 3)
     stripped = unkeyed(inside)
     assert pyarrow.types.is_fixed_size_list(stripped) and stripped.list_size == 3
     assert keys_in(stripped) == {DESCRIPTION.encode()}
 
 
 def test_a_key_inside_a_map_is_stripped_on_both_halves() -> None:
-    inside = pyarrow.map_(pyarrow.string(), Keyed.FIELD.arrow_type, keys_sorted=True)
+    inside = pyarrow.map_(pyarrow.string(), Keyed.into_field().arrow_type, keys_sorted=True)
     stripped = unkeyed(inside)
     assert pyarrow.types.is_map(stripped) and stripped.keys_sorted
     assert keys_in(stripped) == {DESCRIPTION.encode()}
@@ -162,31 +159,36 @@ def test_a_leaf_comes_back_untouched() -> None:
 
 
 def test_a_fix_tag_lands_where_the_protocol_reads_it() -> None:
-    declared = fix_tag("Price", 44)
+    declared = fix_tag("Price")
     assert declared.fix["name"] == "Price"
     assert declared.fix["tag"] == "44"
-    assert declared.metadata == {"fix:name": "Price", "fix:tag": "44"}
+    assert declared.fix["type"] == "Price"
+    assert json.loads(declared.fix["versions"])[0] == "5.0.SP2"
+    assert declared.description
 
 
 def test_a_fix_tag_merges_with_the_other_declarations_on_a_member() -> None:
     """Both `Annotated` extras have to survive, or one silently wins."""
-    built = Field.from_annotation(
-        "unix", Annotated[int, Field.primary_key(), fix_tag("Symbol", 55)]
-    )
+    built = Field.from_annotation("unix", Annotated[int, Field.primary_key(), fix_tag("Symbol")])
     assert built.is_primary_key and built.fix["tag"] == "55"
 
 
 def test_the_builder_is_wired_onto_every_shape() -> None:
-    """A shape that forgot `FIELD_BUILDER` would project UUIDs as strings and pass."""
+    """A shape that forgot the hook would project UUIDs as strings and pass."""
     for shape in SHAPES:
-        assert getattr(shape, "FIELD_BUILDER", None) is MarketFieldBuilder, shape.__name__
+        assert shape.into_field_builder() is MarketFieldBuilder, shape.__name__
 
 
 def test_the_builder_is_not_a_dataclass_member() -> None:
-    """A `ClassVar` must not become a column, or every shape grows one."""
+    """The projection hook must not become a column, or every shape grows one."""
     for shape in SHAPES:
-        assert "FIELD_BUILDER" not in {f.name for f in dataclasses.fields(shape)}
-        assert "FIELD_BUILDER" not in shape.FIELD.names
+        assert "into_field_builder" not in {f.name for f in dataclasses.fields(shape)}
+        assert "into_field_builder" not in shape.into_field().names
+
+
+def test_contract_metadata_cannot_be_changed_through_the_hook() -> None:
+    with pytest.raises(TypeError):
+        Event.into_field_metadata()["version"] = "2"
 
 
 # -- what an enum means, in the schema ---------------------------------------
@@ -195,7 +197,7 @@ def test_the_builder_is_not_a_dataclass_member() -> None:
 def test_every_ranged_column_says_what_its_codes_mean() -> None:
     """A consumer that never imports this package has to be able to read `410`."""
     for shape in SHAPES:
-        for member in shape.FIELD.fields:
+        for member in shape.into_field().fields:
             declared = enum_of(get_type_hints(shape, include_extras=True).get(member.name))
             if declared is None:
                 continue
@@ -206,54 +208,84 @@ def test_every_ranged_column_says_what_its_codes_mean() -> None:
             }, member.name
 
 
-def test_the_value_type_is_read_off_the_members_and_not_the_base_class() -> None:
+def test_enum_key_and_value_types_are_explicit() -> None:
     """`class K(str, Enum)` and `class K(IntEnum)` both subclass something."""
     numbers = enum.Enum("Numbers", {"A": 1, "B": 2})
     words = enum.Enum("Words", {"A": "a", "B": "b"})
     mixed = enum.Enum("Mixed", {"A": 1, "B": "b"})
-    for declared, expected in ((numbers, "int"), (words, "str"), (mixed, "mixed")):
+    for declared, expected in ((numbers, "int32"), (words, "utf8"), (mixed, "mixed")):
         built = Field(name="k")
         describe_enum(built, declared)
-        assert built.protocol("enum")["type"] == expected, declared.__name__
+        metadata = built.protocol("enum")
+        assert metadata["key_type"] == expected, declared.__name__
+        assert metadata["value_type"] == "utf8", declared.__name__
+
+    currency = Instrument.into_field().field("currency").protocol("enum")
+    assert currency["key_type"] == "int32"
+    assert currency["value_type"] == "utf8"
+    assert currency["encoding"] == "ascii-currency-decimals"
+    assert currency["layout"] == "CCCn"
+    assert currency["decimal_byte"] == "ascii-digit"
+    assert "dynamic" not in currency
+
+    for declared in (Side, TimeInForce):
+        metadata = describe_enum_metadata(declared)
+        assert metadata["encoding"] == "ascii-big-endian"
+        assert metadata["byte_width"] == "4"
+        assert metadata["padding"] == "nul-right"
+    assert json.loads(describe_enum_metadata(Side)["fix_aliases"])["1"] == "BUY"
+    assert json.loads(describe_enum_metadata(TimeInForce)["fix_aliases"])["3"] == "IOC"
+    aliases = json.loads(describe_enum_metadata(Side)["aliases"])
+    assert aliases["BID"] == "BUY" and aliases["ASK"] == "SELL"
+
+
+def describe_enum_metadata(declared: type) -> dict[str, str]:
+    built = Field(name="code")
+    describe_enum(built, declared)
+    built.protocol("enum").update(declared.schema_metadata())
+    return built.protocol("enum")
 
 
 def test_a_column_that_is_not_an_enum_says_nothing_about_one() -> None:
-    assert "name" not in Order.FIELD.field("px").protocol("enum")
-    assert "name" not in Order.FIELD.field("symbol").protocol("enum")
+    assert "name" not in Order.into_field().field("px").protocol("enum")
+    assert "name" not in Order.into_field().field("code").protocol("enum")
 
 
 def test_an_enum_behind_an_optional_is_still_found() -> None:
     """`Kind | None` is where an enum most often hides."""
-    assert enum_of(Annotated[State | None, fix_tag("OrdStatus", 39)]) is State
+    assert enum_of(Annotated[State | None, fix_tag("OrdStatus")]) is State
     assert enum_of(State) is State
     assert enum_of(str) is None
 
 
 def test_the_published_contract_carries_the_member_table() -> None:
     """Which is the whole point: the file is what a consumer reads, not the code."""
-    keys = Order.FIELD.into_dict()
+    keys = Order.into_field().into_dict()
     state = next(member for member in keys["fields"] if member["name"] == "state")
     assert json.loads(state["metadata"]["enum:values"])["410"] == "FILLED"
+
+
+def test_market_kind_metadata_keeps_each_tags_original_wire_mapping() -> None:
+    for shape in (Order, Execution):
+        mapping = json.loads(shape.into_field().field("kind").protocol("enum")["fix_values"])
+        assert mapping["40"]["J"] == int(MarketKind.MARKET_IF_TOUCHED)
+        assert mapping["150"]["J"] == int(MarketKind.CLEARING_HOLD)
 
 
 # -- a shape of one member is that member ------------------------------------
 
 
-@field
-class Ticker(Convertible):
+@scalar
+class Ticker(MarketConvertible):
     """One symbol, and nothing else."""
-
-    FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
 
     symbol: str = ""
     """The symbol."""
 
 
-@field
-class Pair(Convertible):
+@scalar
+class Pair(MarketConvertible):
     """Two members, so still a struct."""
-
-    FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
 
     left: str = ""
     """One."""
@@ -262,11 +294,9 @@ class Pair(Convertible):
     """The other."""
 
 
-@field
-class Holder(Convertible):
+@scalar
+class Holder(MarketConvertible):
     """Something holding one of each."""
-
-    FIELD_BUILDER: ClassVar[type[FieldBuilder]] = MarketFieldBuilder
 
     one: Ticker = dataclasses.field(default_factory=Ticker)
     """A shape of one member."""
@@ -277,7 +307,7 @@ class Holder(Convertible):
 
 def test_a_nested_shape_of_one_member_is_that_member_and_not_a_struct_of_one() -> None:
     """A struct of one is a nesting level carrying nothing, and it costs a pushdown."""
-    one = Holder.FIELD.field("one").arrow_type
+    one = Holder.into_field().field("one").arrow_type
     assert isinstance(one, Newtype)
     assert one.storage_type == pyarrow.string()
     assert one.shape_name == "Ticker", "and the class it came from is still on it"
@@ -285,21 +315,23 @@ def test_a_nested_shape_of_one_member_is_that_member_and_not_a_struct_of_one() -
 
 
 def test_a_nested_shape_of_two_members_is_still_a_struct() -> None:
-    two = Holder.FIELD.field("two").arrow_type
+    two = Holder.into_field().field("two").arrow_type
     assert pyarrow.types.is_struct(two) and two.num_fields == 2
 
 
 def test_the_storage_is_what_a_store_that_never_heard_of_the_extension_sees() -> None:
     """Which is why this is safe to publish: the bytes are the storage type's."""
     column = pyarrow.array(["AAPL", "MSFT"])
-    wrapped = pyarrow.ExtensionArray.from_storage(Holder.FIELD.field("one").arrow_type, column)
+    wrapped = pyarrow.ExtensionArray.from_storage(
+        Holder.into_field().field("one").arrow_type, column
+    )
     assert wrapped.storage.equals(column)
     assert wrapped.type.storage_type == pyarrow.string()
 
 
 def test_a_shape_of_one_member_projected_on_its_own_is_still_a_struct() -> None:
     """The rule is about a member of something else, not about a table."""
-    assert pyarrow.types.is_struct(Ticker.FIELD.arrow_type)
+    assert pyarrow.types.is_struct(Ticker.into_field().arrow_type)
     assert single_member(Ticker) == ("Ticker", str)
     assert single_member(Pair) is None
     assert single_member(str) is None

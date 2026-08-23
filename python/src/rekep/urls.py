@@ -1,41 +1,4 @@
-"""One place a location is parsed, decoded and put back together.
-
-A path is not a string. `file:///C:/warehouse`, `C:\\warehouse`,
-`s3://bucket/key`, `s3://key:secret@minio:9000/bucket/key` and `logs/app.txt`
-all name a file, and every one of them is read differently -- so anything that
-compares two locations, or hands one to a filesystem, has to reduce both
-through the *same* parser. That parser is here, and `Url` is what it produces:
-a mutable dataclass whose fields are the parts, whose `into_filesystem` hands
-back the `pyarrow.fs` handle and the path that filesystem understands, and
-whose `join` walks it without any call site doing string arithmetic.
-
-Four things it gets right that a `urlparse` at the call site does not:
-
-- **A secret may contain a colon.** Userinfo splits on the *first* one, so
-  `s3://AKIA:sec:ret@bucket/key` is the key `AKIA` and the secret `sec:ret`,
-  and every part is percent-decoded (`%2F` in a secret, `%20` in a name).
-- **A hostname is a store; a name is a bucket.** `s3://key:secret@minio:9000/logs`
-  and `s3://s3.eu-west-1.amazonaws.com/logs` are two stores holding a bucket
-  called `logs`; `s3://logs/app.txt` names that bucket directly, and
-  `s3://logs.s3.eu-west-1.amazonaws.com/app.txt` names it again, virtual-hosted.
-  A port says a store and so does a host ending in `.com`, because a bucket is
-  *named* and a store is *addressed* -- and most S3 endpoints carry no port at
-  all, since they answer on 443. `pyarrow`'s own URI parser reads the netloc as
-  the bucket in every one of those spellings and drops the port, which turns a
-  MinIO warehouse into a bucket named `minio` -- silently, since the name is
-  legal -- and an AWS location into one named `logs.s3.eu-west-1.amazonaws.com`.
-- **A Windows drive is not a scheme.** `C:/warehouse` parses as scheme `c`
-  everywhere else; here it is a local path, and `file:///C:/x` sheds the slash
-  a URI split leaves in front of the drive.
-- **A local path is spelled POSIX, always.** `C:\\warehouse`, `C:/warehouse` and
-  `file:///C:/warehouse` are one location, so one parser hands back one string:
-  a backslash is a separator where it is one, `/var/log` is already absolute
-  and does not collect the working drive, and the answer comes back with `/`.
-  Two paths only compare where both were spelled the same way.
-
-A password never reaches a log by accident: `repr` masks it, and only
-`into_string()` writes it out.
-"""
+"""One place a location is parsed, decoded and put back together."""
 
 from __future__ import annotations
 
@@ -246,28 +209,7 @@ class Url:
 
     @property
     def hosts_a_store(self) -> bool:
-        """Whether the netloc is the store rather than the bucket.
-
-        Two things say so, and most S3 locations are the second. **A port**:
-        `minio:9000` is a store on a port nobody's bucket has. **A hostname**:
-        every AWS endpoint and every hosted S3 answers on 443 and so carries no
-        port at all, and `s3.eu-west-1.amazonaws.com` or `minio.corp.com` is a
-        name somebody registered rather than one somebody created a bucket
-        with. A dot alone is not it -- `my.logs.2026` is a legal bucket name,
-        so what is read is the last label (`STORE_HOST`).
-
-        `?endpoint_override=` is a setting added *beside* the location and is
-        therefore also the way out: it says the endpoint outright, so the
-        netloc is left naming its bucket. That is what a location whose bucket
-        really is a domain -- `s3://www.example.com/index.html`, the static
-        website pattern -- uses to keep its name.
-
-        The hostname half is read for S3 schemes only, because S3 is what
-        addresses one store two ways. `gs://bucket/key` and
-        `abfss://container@account.dfs.../key` each have one spelling, and a
-        name in them is a name however it ends. A **port** is still read
-        everywhere: nothing puts one in a container name.
-        """
+        """Whether the netloc is the store rather than the bucket."""
         if not self.host:
             return False
         if self.port:
@@ -278,19 +220,7 @@ class Url:
 
     @property
     def hosted_bucket(self) -> str:
-        """The bucket a virtual-hosted spelling puts in front of the store.
-
-        `logs.s3.eu-west-1.amazonaws.com` is AWS's own spelling for the bucket
-        `logs`, and reading the whole host as a name addresses a bucket nobody
-        created. Empty when the netloc names no store, and empty when it names
-        one path-style -- `s3.eu-west-1.amazonaws.com/logs`, where the bucket
-        is the first path segment like it is behind any endpoint.
-
-        Only Amazon's own hostnames are split, because only they publish which
-        labels are the service: `bucket.nyc3.example.com` and
-        `nyc3.example.com` are the same shape, and guessing between them would
-        move the bucket rather than find it.
-        """
+        """The bucket a virtual-hosted spelling puts in front of the store."""
         if self.scheme not in S3 or not self.hosts_a_store:
             return ""
         bucket, store = _split_host(self.host)
@@ -345,17 +275,7 @@ class Url:
 
     @property
     def store_path(self) -> str:
-        """The path the location's own filesystem understands.
-
-        A local file keeps its whole path, drive letter included. An object
-        store wants `bucket/key`, and it is built from `bucket` and `key`
-        rather than beside them, so the three cannot answer differently about
-        one location however the netloc was spelled.
-
-        This is the path for the filesystems this module builds itself -- the
-        local one and S3. For a scheme Arrow builds, `into_filesystem` hands
-        back Arrow's own answer, which is the one that filesystem takes.
-        """
+        """The path the location's own filesystem understands."""
         if self.scheme in LOCAL:
             return self._local_path()
         return "/".join(part for part in (self.bucket, self.key) if part)
@@ -377,16 +297,7 @@ class Url:
         return self._spelled()
 
     def into_filesystem(self) -> tuple[pyarrow.fs.FileSystem, str]:
-        """The `pyarrow.fs` handle for this location, and the path on it.
-
-        Arrow owns every scheme it already knows, so this delegates -- with
-        two exceptions it demonstrably reads wrong. A **local** path is built
-        directly, because a Windows drive letter has to survive. An **S3**
-        location whose netloc is a store, or that carries credentials, is built
-        directly too: Arrow's parser takes `minio:9000` for a bucket, drops the
-        port, and never sees the endpoint at all -- and takes
-        `logs.s3.eu-west-1.amazonaws.com` for one whole bucket name.
-        """
+        """The `pyarrow.fs` handle for this location, and the path on it."""
         if self.scheme in LOCAL:
             return pyarrow.fs.LocalFileSystem(), self._local_path()
         if self.scheme in S3 and (self.endpoint is not None or self.user is not None):
@@ -395,21 +306,7 @@ class Url:
         return filesystem, path
 
     def _s3_filesystem(self) -> pyarrow.fs.FileSystem:
-        """`S3FileSystem` configured from the parts of the location itself.
-
-        Amazon's own hostnames are the one endpoint nobody has to be told: the
-        SDK builds `bucket.s3.<region>.amazonaws.com` from the region, so an
-        override there would only force path-style addressing -- which
-        `s3-accelerate` refuses outright -- while adding nothing. They
-        configure the **region** instead, which is the part that has to travel
-        with them: SigV4 signs for a region, and a location signed for the
-        wrong one is refused rather than redirected.
-
-        The region is only resolved from the bucket when nothing else says and
-        no endpoint was configured: an AWS bucket has one to resolve, a MinIO
-        endpoint does not, and a resolution that fails is not a reason to
-        refuse the write -- Arrow's own default stands.
-        """
+        """`S3FileSystem` configured from the parts of the location itself."""
         settings: dict[str, Any] = {
             key: self.query[key] for key in S3_SETTINGS if key in self.query
         }
@@ -433,16 +330,7 @@ class Url:
         return pyarrow.fs.S3FileSystem(**settings)
 
     def _local_path(self) -> str:
-        """A local path, absolute and POSIX-spelled, both because they compare.
-
-        Absolute is what a filesystem takes; POSIX is what two of these can be
-        compared as. A path that is *already* absolute -- a drive letter, or a
-        leading slash -- is left where it is rather than sent through
-        `os.path.abspath`, which on Windows answers `/var/log` with the working
-        directory's drive glued on front. That is a guess, it differs per
-        process, and it is what stopped `file:///var/log/app.txt` round
-        tripping there.
-        """
+        """A local path, absolute and POSIX-spelled, both because they compare."""
         path = self.path or "."
         if DRIVE.match(path) or path.startswith("/"):
             return _posix(os.path.normpath(path))
@@ -528,16 +416,7 @@ def _bare(netloc: str) -> str:
 
 
 def _amazon(host: str) -> tuple[str, str | None]:
-    """`(store, region)` for one of Amazon's own S3 hostnames.
-
-    `("", None)` for anything else, which is every hostname whose shape nobody
-    published -- the answer this refuses to guess at. Where it does match, the
-    store is the host with any virtual-hosted bucket label taken off the front,
-    and the region is whichever label carries it: `s3.eu-west-1...` says it in
-    its own label, the legacy `s3-eu-west-1...` says it inside the service one,
-    and `s3.amazonaws.com` says nothing, because the global endpoint names no
-    region and the bucket has to be asked instead.
-    """
+    """`(store, region)` for one of Amazon's own S3 hostnames."""
     matched = AWS_HOST.match(host)
     if matched is None:
         return "", None
@@ -549,19 +428,7 @@ def _amazon(host: str) -> tuple[str, str | None]:
 
 
 def _split_host(host: str) -> tuple[str, str]:
-    """A host as `(the bucket it names, the store it names)`.
-
-    Exactly one of the two is set, and telling which is the whole job:
-
-    - `logs.s3.eu-west-1.amazonaws.com` -> `("logs", "s3.eu-west-1...")`: a
-      store, with the bucket in front of it, which is AWS's virtual-hosted
-      spelling and the one a console copies out.
-    - `s3.eu-west-1.amazonaws.com`, `minio.corp.com` -> `("", host)`: a store,
-      with the bucket below it in the path.
-    - `logs`, `my.logs.2026` -> `(host, "")`: a bucket, which is what
-      `s3://bucket/key` means everywhere and is the common case -- and the one
-      a hostname rule must not take a bucket name away from.
-    """
+    """A host as `(the bucket it names, the store it names)`."""
     store, _ = _amazon(host)
     if store:
         # `- 1` for the dot the bucket label is joined on; without a bucket the

@@ -9,8 +9,9 @@ import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
-from functools import cached_property
-from typing import Any, ClassVar
+from functools import cache, cached_property
+from types import MappingProxyType
+from typing import Any
 
 import pyarrow
 import pyarrow.fs
@@ -38,62 +39,33 @@ _DIGITS = re.compile(r"(\d+)")
 
 @dataclass(eq=False)
 class TextFiles(Dataset, io.BufferedIOBase):
-    """Every log under a set of roots, read in path order as one Arrow stream.
+    """Every log under a set of roots, read in path order as one Arrow stream."""
 
-    A capture is never one file: a bridge rotates its log, an operator gzips
-    yesterday's, and a day of it lands in a folder per host. This is that
-    folder -- a `Dataset` like `TextFile` is, and a readable binary stream like
-    `TextFile` is, over as many files as the store holds.
+    @classmethod
+    @cache
+    def into_redirects(cls) -> Mapping[object, str]:
+        """Conversions this file set infers from its source or target."""
+        return MappingProxyType(
+            {
+                pyarrow.RecordBatchReader: "arrow_reader",
+                pyarrow.Table: "arrow_table",
+                pyarrow.RecordBatch: "arrow_batches",
+                str: "folder",
+                os.PathLike: "folder",
+            }
+        )
 
-    Three things it is careful about, because each of them was a way to read a
-    capture wrong:
+    @classmethod
+    @cache
+    def into_file(cls) -> type[TextFile]:
+        """Class used to read each file in the set."""
+        return TextFile
 
-    - **Order is the file path order, and it is decided here, not by the
-      store.** `pyarrow.fs` lists a directory in whatever order the filesystem
-      answers in -- inode order on Linux, arbitrary on an object store -- so a
-      set that did not sort would hand rows over in a different sequence on
-      every machine. Paths are sorted with their digit runs compared as
-      numbers, so `app.2.txt.gz` precedes `app.10.txt.gz` instead of following
-      it, and `reverse=True` reads that order backwards. Which of the two is
-      *chronological* is the writer's convention and not something a path can
-      be asked -- an un-numbered file sorts on its own name, so `app.txt`
-      lands after `app.1.txt.gz` while `app.log` lands before `app.log.1.gz`.
-      Where the order has to be exact, state it: `from_folders` reads its
-      roots in the order given.
-    - **Nothing is listed before it is needed.** The walk goes one directory at
-      a time through `FileSelector(recursive=False)`, so the first rows arrive
-      without the whole tree being listed, and a store is asked for a listing
-      per directory rather than one that materialises every key under a prefix.
-    - **One file is open at a time.** Parsing chains the per-file readers, so
-      what is held is one file's stream and one batch, whatever the set holds.
-
-    `filesystem` is optional and behaves as it does on `TextFile`: with none,
-    each root is resolved from its URI (cached, so an object store's credential
-    chain is walked once); with one, the roots are paths on it. Every root has
-    to live on the same filesystem -- one set is one stream, and a stream comes
-    off one store.
-
-    A root that is a **directory** is walked; a root that is a **file** is
-    taken as it is, because a caller who named a file has already said which
-    one. A root that is not there at all is refused rather than skipped: a
-    misspelt folder that quietly yields no rows is a pipeline that reports
-    success and stores nothing.
-    """
-
-    REDIRECTS: ClassVar[dict[object, str]] = {
-        pyarrow.RecordBatchReader: "arrow_reader",
-        pyarrow.Table: "arrow_table",
-        pyarrow.RecordBatch: "arrow_batches",
-        str: "folder",
-        os.PathLike: "folder",
-    }
-
-    #: Class each log is read as. Override it and the parsing, the columns and
-    #: the descriptions all follow, exactly as `TextFile.ROW` does for one file.
-    FILE: ClassVar[type[TextFile]] = TextFile
-
-    #: What a document's `kind` names this store as, for `Dataset.from_dict`.
-    KIND: ClassVar[str] = "text_files"
+    @classmethod
+    @cache
+    def into_kind(cls) -> str:
+        """Document kind registered with `Dataset`."""
+        return "text_files"
 
     #: Roots to read, in the order given: folders to walk, or files to take.
     #: The order a caller states is never reshuffled -- yesterday's archive
@@ -219,7 +191,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         the files' -- including the static columns, which the set declares and
         hands to every file it opens.
         """
-        return parsed_field_of(self.FILE.ROW.FIELD, self.static_columns)
+        return parsed_field_of(self.into_file().into_row().into_field(), self.static_columns)
 
     def into_struct_field(self) -> StructField:
         """The shape this set holds: the declared one, or what the parser fills."""
@@ -268,7 +240,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
             return reader
         return target.cast_arrow_reader(reader)
 
-    def append_arrow_reader(self, source: Any, *args: Any, **kwargs: Any) -> None:
+    def append_arrow_reader(self, source: Any, *args: Any, **kwargs: Any) -> int:
         """Refused, for the reason a write is -- and before reading anything.
 
         The generic append reads the stored key columns first so it can
@@ -335,7 +307,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         not open a file per name.
         """
         for info in self.into_file_infos():
-            yield self.FILE(
+            yield self.into_file()(
                 url=info.path,
                 filesystem=self.filesystem,
                 header_pattern=self.header_pattern,
@@ -347,21 +319,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
             )
 
     def _walk(self, directory: str, seen: set[str] | None = None) -> Iterator[pyarrow.fs.FileInfo]:
-        """One directory, in path order, descending as the names come up.
-
-        Sorted here because no filesystem promises an order: a local listing
-        comes back in directory order and an object store in whatever its
-        pagination gives. Files and subdirectories are ordered together, so a
-        walk visits `a/nested.txt` before `app.txt` exactly as a sort of the
-        full paths would.
-
-        A directory is descended into once, and "once" is decided on what it
-        resolves to rather than on how it was spelled. A symlink pointing back
-        up its own tree is a local-filesystem thing rather than a store one,
-        but where it exists the walk reads the whole capture again at every
-        depth until the operating system refuses the path -- forty copies of
-        every row, and nothing in the error saying which link caused it.
-        """
+        """One directory, in path order, descending as the names come up."""
         seen = set() if seen is None else seen
         identity = self._identity(directory)
         if identity in seen:
@@ -407,25 +365,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         read_byte_size: int = DEFAULT_READ_BYTE_SIZE,
         fold_continuations: bool = True,
     ) -> Iterator[pyarrow.RecordBatch]:
-        """Parse every log in order, in batches that do not end at a file.
-
-        Each file is opened, drained and closed before the next is touched, so
-        memory is the same whether the set holds one log or a thousand.
-
-        A file shorter than `batch_row_size` would otherwise emit a batch of
-        its own, and a folder of rotated logs is mostly short files: 500 of
-        them means 500 tiny batches, each paying the per-batch cost of every
-        stage downstream. Short batches are held and handed over combined once
-        they reach the size asked for -- which is a *lower* bound, since a
-        batch is never cut in half to hit it. A batch that is already full
-        arrives with nothing pending and is passed through untouched, so a big
-        log costs exactly what `TextFile` costs: the copy is paid only where
-        there was fragmentation to fix.
-
-        Continuations are folded **within** a file, never across two: a log
-        that ends mid-stack-trace ends there, because the next file in a
-        rotation was written earlier or later, not in the middle of that trace.
-        """
+        """Parse every log in order, in batches that do not end at a file."""
         self._check_open()
         pending: list[pyarrow.RecordBatch] = []
         rows = 0
@@ -447,27 +387,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         read_byte_size: int = DEFAULT_READ_BYTE_SIZE,
         compression: str | None = None,
     ) -> Iterator[bytes]:
-        """The bytes of every log in order, decoded -- or re-encoded by a codec.
-
-        The other half of what a set is for: shipping a capture somewhere,
-        rather than parsing it. Each file is decoded by Arrow as it is read
-        (`.gz`, `.zst`, plain, by extension), so what comes out is log text
-        whatever the folder mixes, and what is held is one `read_byte_size`
-        read.
-
-        `compression` re-encodes that stream through one of the codecs Arrow
-        can **stream** -- `"gzip"`, `"zstd"`, `"lz4"`, `"bz2"`, `"brotli"`; not
-        `"snappy"` or `"lz4_raw"`, which Arrow refuses to compress
-        incrementally -- and it is encoded as it goes: `Codec.compress` would
-        need the whole capture in memory first, which is the one thing a stream
-        of logs cannot afford. The result is one member a plain
-        `gzip.decompress` reads back.
-
-        A file that does not end in a newline is separated from the next by
-        one, here rather than in the parser: without it the last line of one
-        log and the first of the next are glued into a single row, and the
-        parser never sees a file boundary to blame it on.
-        """
+        """The bytes of every log in order, decoded -- or re-encoded by a codec."""
         self._check_open()
         raw = self._raw_chunks(read_byte_size)
         if compression is None:
@@ -516,17 +436,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         return False
 
     def read(self, size: int | None = -1) -> bytes:
-        """Up to `size` bytes of the concatenated, decoded logs.
-
-        The buffered face of `into_byte_chunks`, so a whole capture can be
-        handed to anything that reads a binary stream, with one file open and
-        one read held at a time.
-
-        `read()` with no size is the exception, and it is the exception every
-        `read()` has: it returns the whole capture, so it holds the whole
-        capture -- about twice it, in fact, while the buffer becomes bytes.
-        Ask for a size, or take `into_byte_chunks`.
-        """
+        """Up to `size` bytes of the concatenated, decoded logs."""
         self._check_open()
         want = None if size is None or size < 0 else size
         buffer = self._buffer
@@ -619,19 +529,7 @@ def _one(batches: list[pyarrow.RecordBatch], schema: pyarrow.Schema) -> pyarrow.
 
 
 def _natural(info: pyarrow.fs.FileInfo) -> tuple[tuple[int, int | str, str], ...]:
-    """Sort key for one directory entry, with digit runs compared as numbers.
-
-    `app.10.txt.gz` sorts after `app.9.txt.gz` rather than before it, which is
-    what makes a rotated family read in the order it was written. Digits sort
-    after text at the same position -- the leading `(0, ...)` / `(1, ...)`
-    tags -- so two parts are never compared as a string against an int.
-
-    The third element is the digit run as it was written, and it is what makes
-    the order *total*: `app01.txt` and `app1.txt` are the same number, so
-    without it their keys are equal, `sorted` is stable, and the two come back
-    in whatever order the store listed them -- which is the one thing this key
-    exists to rule out.
-    """
+    """Sort key for one directory entry, with digit runs compared as numbers."""
     return tuple(
         # `isdecimal`, not `isdigit`: the two disagree on characters like "²",
         # which `\d` does not match but `isdigit` accepts -- and one such name
@@ -647,21 +545,7 @@ def _natural(info: pyarrow.fs.FileInfo) -> tuple[tuple[int, int | str, str], ...
 
 
 def _root(source: str | os.PathLike[str], filesystem: pyarrow.fs.FileSystem | None) -> str:
-    """A source as this set addresses it: a URI, whatever it arrived as.
-
-    Without a filesystem it goes through `Url`, which is where this package
-    decides what a location is -- a bare path becomes a `file://` URI against
-    the working directory, a Windows drive letter stays a drive letter, and a
-    URI keeps its endpoint and its credentials.
-
-    With one, the caller has already said which store this is and the path is
-    theirs: a key under a prefix is left exactly as it was written, because
-    only that store knows what its own separators mean. A **local** path is
-    still *spelled* through `Url` -- resolved against nothing, just spelled --
-    because `pyarrow.fs` answers every local listing with forward slashes, and
-    a root spelled `C:\\logs` is a prefix of none of the paths this set is
-    then holding beside it.
-    """
+    """A source as this set addresses it: a URI, whatever it arrived as."""
     text = os.fspath(source)
     if filesystem is None:
         return Url.from_string(text).into_string()

@@ -110,6 +110,27 @@ def test_a_warehouse_url_configures_the_filesystem_it_names() -> None:
     }
 
 
+def test_s3_query_settings_leave_the_location_before_iceberg_appends_to_it() -> None:
+    """A table path belongs before `?`; leaving it after made every file one key."""
+    inferred = inferred_properties(
+        {
+            "warehouse": (
+                "s3://key:sec%3Aret%2Fword%40x@bucket/wh"
+                "?endpoint_override=127.0.0.1%3A19000&scheme=http&region=eu-west-1"
+            ),
+            "vendor.option": "kept",
+        }
+    )
+    assert inferred == {
+        "warehouse": "s3://key:sec%3Aret%2Fword%40x@bucket/wh",
+        "s3.endpoint": "http://127.0.0.1:19000",
+        "s3.access-key-id": "key",
+        "s3.secret-access-key": "sec:ret/word@x",
+        "s3.region": "eu-west-1",
+        "vendor.option": "kept",
+    }
+
+
 def test_what_the_caller_set_wins_over_what_the_location_says() -> None:
     """An explicit property is a decision; a URL is a default."""
     inferred = inferred_properties(
@@ -120,7 +141,12 @@ def test_what_the_caller_set_wins_over_what_the_location_says() -> None:
 
 
 def test_a_location_that_says_nothing_adds_nothing() -> None:
-    for properties in ({"warehouse": "s3://bucket/wh"}, {"warehouse": "/tmp/wh"}, {}):
+    for properties in (
+        {"warehouse": "s3://bucket/wh"},
+        {"warehouse": "/tmp/wh", "vendor.option": "kept"},
+        {"vendor.option": "kept"},
+        {},
+    ):
         assert inferred_properties(properties) == properties
 
 

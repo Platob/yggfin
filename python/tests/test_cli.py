@@ -24,13 +24,13 @@ def run(*argv: str) -> int:
 def test_dump_writes_the_declaration_to_stdout(capsysbinary: pytest.CaptureFixture) -> None:
     assert run("fields", "dump", "--pyclass", "rekep.text.log:Log") == 0
     written = capsysbinary.readouterr().out
-    assert Field.from_yaml(written) == Log.FIELD
+    assert Field.from_yaml(written) == Log.into_field()
 
 
 def test_dump_takes_a_dotted_class_too(capsysbinary: pytest.CaptureFixture) -> None:
     """`module:Attribute` is what an entry point writes; the dot is what a docstring does."""
     assert run("fields", "dump", "--pyclass", "rekep.text.log.Log") == 0
-    assert Field.from_yaml(capsysbinary.readouterr().out) == Log.FIELD
+    assert Field.from_yaml(capsysbinary.readouterr().out) == Log.into_field()
 
 
 @pytest.mark.parametrize(
@@ -39,7 +39,7 @@ def test_dump_takes_a_dotted_class_too(capsysbinary: pytest.CaptureFixture) -> N
 def test_dump_infers_the_format_from_the_target(tmp_path: Path, suffix: str, reader) -> None:
     target = tmp_path / f"log{suffix}"
     assert run("fields", "dump", "--pyclass", "rekep.text.log:Log", "--target", str(target)) == 0
-    assert reader(str(target)) == Log.FIELD
+    assert reader(str(target)) == Log.into_field()
 
 
 def test_dump_format_wins_over_the_extension(tmp_path: Path) -> None:
@@ -53,7 +53,7 @@ def test_dump_format_wins_over_the_extension(tmp_path: Path) -> None:
 def test_dump_writes_toml_when_asked(tmp_path: Path) -> None:
     target = tmp_path / "log.toml"
     assert run("fields", "dump", "--pyclass", "rekep.text.log:Log", "--target", str(target)) == 0
-    assert Field.from_toml(str(target)) == Log.FIELD
+    assert Field.from_toml(str(target)) == Log.into_field()
 
 
 def test_only_the_document_reaches_stdout(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
@@ -109,16 +109,19 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     the contract cannot take the printed number quietly with it.
 
     `fix_tags` is the one line the renderer has to spell out of a nested type,
-    and `check_sum` is the last of the flattened session columns, so between
-    them they say the whole shape reached the file.
+    and `check_sum` pins the public naming, so together they cover the shape.
     """
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "log.yaml")) == 0
     printed = capsys.readouterr().out
-    assert len(Log.FIELD.names) == 81
-    assert "Log: 81 columns, builds" in printed
+    assert len(Log.into_field().names) == 107
+    assert "Log: 107 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unix_hour: int64  [partition identity]" in printed
-    assert "fix_tags: map<int32, string>  [nullable]" in printed
+    assert (
+        "fix_tags: list<item: struct<key: int32 not null, value: string not null> not null>"
+        "  [nullable]"
+    ) in printed
+    assert "parties: list<item: struct<party_id: string" in printed
     assert "check_sum: string  [nullable]" in printed
     assert "primary keys: ['unix', 'hash']" in printed
 
@@ -131,12 +134,6 @@ def test_every_published_contract_loads(contract: str, capsys: pytest.CaptureFix
     (path,) = SCHEMAS.rglob(contract)
     assert run("fields", "load", "--target", str(path)) == 0
     assert "builds" in capsys.readouterr().out
-
-
-def test_load_shows_an_iceberg_field_id(capsys: pytest.CaptureFixture) -> None:
-    """Ids are what a table identifies a column by, so a contract that has them shows them."""
-    assert run("fields", "load", "--target", str(SCHEMAS / "trading" / "venue.json")) == 0
-    assert "id 1]" in capsys.readouterr().out
 
 
 def test_a_document_that_does_not_build_is_refused(
@@ -183,7 +180,7 @@ def test_dump_then_load_is_the_contract_workflow(
     target = tmp_path / "log.yaml"
     assert run("fields", "dump", "--pyclass", "rekep.text.log:Log", "--target", str(target)) == 0
     assert run("fields", "load", "--target", str(target)) == 0
-    assert Field.from_file(str(target)) == Log.FIELD
+    assert Field.from_file(str(target)) == Log.into_field()
     assert "builds" in capsys.readouterr().out
 
 

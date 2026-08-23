@@ -5,10 +5,11 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
+import itertools
 import json
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from functools import cached_property
-from typing import Any, ClassVar
+from typing import Any
 
 import pyarrow
 import pyarrow.fs
@@ -154,35 +155,13 @@ COMMIT_PROPERTIES = {
 
 @dataclasses.dataclass(eq=False)
 class IcebergDataset(Dataset):
-    """An Iceberg table, read and written as Arrow through pyiceberg.
+    """An Iceberg table, read and written as Arrow through pyiceberg."""
 
-    Nothing about Iceberg is reimplemented here: pyiceberg plans the scans,
-    writes the files and commits the snapshots. What this adds is the two ends
-    -- the shape (`StructField`) the data is cast onto, and the streaming that
-    keeps a commit from happening once per batch -- plus the maintenance an
-    Iceberg table needs and nobody enjoys writing::
-
-        logs = IcebergDataset(
-            name="trading.logs",
-            catalog="local",
-            properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file:///wh"},
-            struct=Log.FIELD,
-        )
-        logs.write_arrow(batches, merge_by=True, commit_row_size=1_000_000)
-        logs.read_arrow_table(row_filter="date = '2026-08-14'")
-        logs.optimize()          # merge manifests, compact files, expire and sweep
-
-    `struct` is optional: with one, the table is created from it (schema,
-    documentation, identifier fields and partition spec included) the first
-    time it is written; without one, the table's own schema is the shape.
-
-    Every read, write and maintenance verb takes `branch` (and reads take
-    `snapshot_id`), so a job can work on a branch and publish it later without
-    a second dataset object.
-    """
-
-    #: What a document's `kind` names this store as, for `Dataset.from_dict`.
-    KIND: ClassVar[str] = "iceberg"
+    @classmethod
+    @functools.cache
+    def into_kind(cls) -> str:
+        """Document kind registered with `Dataset`."""
+        return "iceberg"
 
     #: Table identifier, `namespace.name`.
     name: str
@@ -238,7 +217,25 @@ class IcebergDataset(Dataset):
     @cached_property
     def store(self) -> IcebergCatalog:
         """The catalog this table lives in."""
-        return IcebergCatalog(name=self.catalog, properties=self.properties)
+        store = IcebergCatalog(name=self.catalog, properties=self.properties)
+        self.__dict__["_owns_store"] = True
+        return store
+
+    def close(self) -> None:
+        """Release this handle's owned catalog without loading it."""
+        self.__dict__.pop("iceberg_table", None)
+        self.__dict__.pop("table_field", None)
+        self.__dict__.pop("_insert_upper", None)
+        store = self.__dict__.pop("store", None)
+        owns_store = self.__dict__.pop("_owns_store", False)
+        if store is not None and owns_store:
+            store.close()
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            pass
 
     @property
     def iceberg_catalog(self) -> Any:
@@ -257,19 +254,7 @@ class IcebergDataset(Dataset):
 
     @property
     def records(self) -> int | None:
-        """How many rows the current snapshot holds, from its summary, or None.
-
-        **Metadata, not a scan.** Iceberg records the count when it commits, so
-        it is already in what this process loaded: no manifest is walked and no
-        data file is opened. That is what makes it usable per commit -- a job
-        that reported what it landed by reading the table back would spend more
-        on the report than on the write.
-
-        None when the snapshot does not say -- another engine's summary, or a
-        table nothing has written to -- because the readings a caller wants for
-        that are opposite ones: count it, or assume nothing is known. A table
-        that does not exist yet holds nothing, which is `0` and not unknown.
-        """
+        """How many rows the current snapshot holds, from its summary, or None."""
         if not self.exists:
             return 0
         snapshot = self.iceberg_table.current_snapshot()
@@ -302,7 +287,7 @@ class IcebergDataset(Dataset):
             # Declared at creation, because Iceberg records a sort order on the
             # table and every writer through it honours it -- a shape that says
             # how it is read is a shape that says how it should be laid out.
-            sort_order=field.into_iceberg_sort_order(schema),
+            sort_order=field.into_iceberg_sort_order(schema, self.sort_by),
             properties={**defaults, **self.table_properties, **kwargs.pop("properties", {})},
         )
         self.__dict__["iceberg_table"] = table
@@ -328,7 +313,7 @@ class IcebergDataset(Dataset):
 
     def refresh(self) -> IcebergDataset:
         """Drop what was loaded, so the next call sees other writers' commits."""
-        for view in ("iceberg_table", "table_field"):
+        for view in ("iceberg_table", "table_field", "_insert_upper"):
             self.__dict__.pop(view, None)
         return self
 
@@ -357,21 +342,7 @@ class IcebergDataset(Dataset):
         return self.struct.derived_keys() if self.struct is not None else {}
 
     def add_fields(self, source: Any = None, *, dry_run: bool = False) -> list[str]:
-        """Add the columns `source` has and the table lacks; skip when there are none.
-
-        Schema evolution as a merge, in Iceberg's own terms: pyiceberg's
-        `union_by_name` matches by name, adds what is new as optional (rows
-        already written have nothing to put in it) and leaves everything else
-        alone, at every level. Ids are Iceberg's business -- an incoming Arrow
-        schema that carries none is numbered on the way in.
-
-        Returns the columns it added, so "nothing to do" is an empty list and
-        never a commit; `dry_run=True` reports without touching the table. The
-        names are **dotted paths**, because that is what evolution can add: a
-        member gained by a struct, a list's item or a map's value is a new
-        column to `union_by_name`, and comparing top-level names alone reported
-        nothing to do and then let the next write drop the value.
-        """
+        """Add the columns `source` has and the table lacks; skip when there are none."""
         target = self.target_field(source)
         current = self.table_field
         held = set(current.leaf_names())
@@ -399,40 +370,10 @@ class IcebergDataset(Dataset):
         snapshot_id: int | None = None,
         limit: int | None = None,
         branch: str | None = None,
+        order_by: str | Sequence[str] | None = None,
     ) -> pyarrow.RecordBatchReader:
-        """Stream the table, pushing what it can down to the scan planner.
-
-        `row_filter` and `columns` are the planner's business, not ours: handing
-        them over is what lets Iceberg skip whole files on partition and column
-        statistics rather than reading them to throw the rows away. Use
-        `scan_plan` to see whether a filter actually skipped anything -- the
-        rows that come back never say so.
-
-        `limit` is not a planning hint in pyiceberg -- every planned file's
-        read is submitted before the row cap is checked -- so the plan is cut
-        off here instead: files are taken in plan order until their record
-        counts alone satisfy the limit, and the rest are never opened.
-        Measured on eight files, `limit=100` opened eight without this and one
-        with it. A record count is used only where pyiceberg's own `count()`
-        uses one -- the file's partition satisfies the whole filter and no
-        delete file has removed rows from it -- so a limit under a *partition*
-        filter is trimmed too, and a filter the files themselves have to answer
-        hands the plan back whole. `snapshot_id` reads an older state, `branch`
-        another line of it.
-
-        With no `schema` the reader is pyiceberg's own, untouched -- the fastest
-        path, and the one that keeps the widths the store uses. With one, every
-        batch is cast onto it on the way out **and the projection follows from
-        it**: asking for a narrow shape reads narrow columns, rather than
-        reading all of them and dropping the rest after the fact. Name
-        `columns` to override that.
-
-        A read pinned to a `snapshot_id` or a `branch` reads under the schema
-        *that snapshot* was written with, which a rename or a drop since makes
-        a different one. The shape's columns are matched to it by field id, so
-        a renamed column is found and comes back under the name the shape asked
-        for it by -- matching by name would have filled it with nulls.
-        """
+        """Stream the table, optionally merging files on lexicographic sort keys."""
+        ordering = (order_by,) if isinstance(order_by, str) else tuple(order_by or ())
         reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
         table = self.iceberg_table
@@ -441,7 +382,9 @@ class IcebergDataset(Dataset):
         # will answer to is not known until it is pinned.
         scan = table.scan(
             snapshot_id=snapshot_id,
-            limit=limit,
+            # A scan limit is applied independently while files are merged.
+            # Leave it global when ordering, then cut the merged reader once.
+            limit=None if ordering else limit,
             **({"row_filter": row_filter} if row_filter is not None else {}),
         )
         if reference:
@@ -452,22 +395,26 @@ class IcebergDataset(Dataset):
         elif target is not None:
             found = self._selected(target, scan)
             scan = scan.select(*found)
-        reader = _limited_reader(scan, limit)
+        projected = {field.name for field in scan.projection().fields}
+        missing = [name for name in ordering if name not in projected]
+        if missing:
+            raise ValueError(
+                f"order_by={order_by!r} is not projected; include {missing!r} in "
+                "`columns` or `schema`"
+            )
+        reader = (
+            _ordered_reader(scan, scan.plan_files(), ordering)
+            if ordering
+            else _limited_reader(scan, limit)
+        )
+        if limit is not None:
+            reader = _reader_limit(reader, limit)
         if target is None:
             return reader
         return target.cast_arrow_reader(_renamed(reader, found))
 
     def _reference(self, branch: str | None, snapshot_id: int | None) -> str | None:
-        """The branch a read follows, or None when a snapshot id decides instead.
-
-        Naming both is a contradiction and is refused, the way pyiceberg
-        refuses it ("Cannot override ref, already set snapshot id"): a snapshot
-        id names one state exactly, and nothing checks that it belongs to that
-        branch. Ignoring one of the two silently is the worst of the three
-        available answers. The dataset's *own* `branch` is not a contradiction
-        -- it is a default, and an explicit snapshot id is how a caller reads
-        past it.
-        """
+        """The branch a read follows, or None when a snapshot id decides instead."""
         if snapshot_id is None:
             return branch or self.branch
         if branch is not None:
@@ -478,26 +425,7 @@ class IcebergDataset(Dataset):
         return None
 
     def _selected(self, target: StructField, scan: Any) -> dict[str, str]:
-        """`{the scan's name: the target's name}` for every column it can fill.
-
-        Matched by **field id** first, never by name alone. A rename is
-        metadata-only, so a scan pinned to a snapshot older than one answers to
-        the *old* names: a column renamed since would be left out of the
-        projection and then filled with nulls, and a column added since would
-        be asked for by a name that snapshot never had. Ids are what a rename
-        does not change.
-
-        A name the current schema does not carry at all -- a column dropped
-        since -- is looked up in that snapshot's own names instead, which is
-        what pyiceberg does with the same `selected_fields`: the column is
-        still on disk and still readable, and reading it is what was asked for.
-
-        Whichever way it was found, the column comes back under the name the
-        *target* used to ask for it. A column the target declares and that
-        snapshot really does not have is left out -- the cast fills it with
-        nulls, or refuses it if it may not be null, which is the same answer
-        either way.
-        """
+        """`{the scan's name: the target's name}` for every column it can fill."""
         current = {field.name: field.field_id for field in self.iceberg_table.schema().fields}
         pinned = {field.field_id: field.name for field in scan.projection().fields}
         by_name = set(pinned.values())
@@ -523,20 +451,11 @@ class IcebergDataset(Dataset):
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> None:
-        """Write a stream into the table, one commit per chunk.
-
-        The stream is cast onto `schema` -- this dataset's shape by default --
-        so a nearly-right batch lands instead of failing pyiceberg's own schema
-        check, and a column the source never produced is filled when it may be.
-        The table is created from the declared shape if it is not there yet:
-        a write appends, and appending to nothing is a create.
-
-        `merge_by=True` merges on the primary key the shape declares, a list of
-        names merges on those, and falsy appends. A merge goes through
-        `merge_arrow_table`, which plans the rows it has to look at from the
-        chunk's key ranges; `plan_merges=False` hands the chunk to
-        `Table.upsert` instead, for the same rows and a great deal more time.
-        """
+        """Write a stream into the table, one commit per chunk."""
+        # An upsert or an unconditional append can put a key beyond an
+        # insert-only writer's known maximum. Its cheap monotonic proof is no
+        # longer complete after either operation.
+        self.__dict__.pop("_insert_upper", None)
         table = self.get_or_create_table()
         reader = self.target_field(schema).cast_arrow_reader(source)
         join = self.merge_columns(merge_by)
@@ -566,68 +485,11 @@ class IcebergDataset(Dataset):
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> tuple[int, int]:
-        """One chunk merged into the table: `(rows updated, rows inserted)`.
-
-        The algorithm is pyiceberg's own -- find the stored rows a chunk
-        matches, overwrite the ones whose non-key columns changed, append the
-        rest -- and its own helpers do the row-level work, so the rows this
-        leaves behind are the rows `Table.upsert` would leave behind, down to
-        the schema check it makes first. What changes is **how the matching
-        rows are found**.
-
-        Four refusals are deliberately stricter than the library's, because
-        every alternative is a corrupted table:
-
-        - a stored table with duplicate merge keys, wherever the copies are
-          (pyiceberg checks one record batch at a time, so copies in two files
-          slip past it and it writes a third);
-        - a null merge key, and a NaN one -- no predicate can name either, so
-          the stored row is never found and a second one is inserted, again on
-          every later merge;
-        - a chunk that does not carry every column the table has: the schema
-          check allows a missing *optional* column, and a merge that took it
-          would write nulls over whatever is stored there.
-
-        And two are deliberately more forgiving, because refusing costs data
-        and accepting cannot: a `-0.0` key is **written as** the `0.0` it
-        equals, and a chunk whose columns are in another order is merged rather
-        than rejected. The signed zero is the one place a merge changes a value
-        the caller passed, and it is the only way the three things that have to
-        agree about a key can: IEEE 754 and Iceberg call them the same number,
-        an Arrow join hashes them apart, and `pc.is_in` -- which is what
-        pyiceberg's delete filter becomes -- does too. Store one of them and a
-        later merge finds the row; store both and the table has two rows with
-        the same key, which is what the library does.
-
-        `Table.upsert` builds its scan filter as one equality term per incoming
-        row (`Or(And(k1 = .., k2 = ..), ...)` for a composite key), then binds
-        that same expression to Arrow once per matched batch to decide what to
-        insert. Both are quadratic in the chunk: measured on a two-column key,
-        500 rows upsert at ~700 rows/s and 4,000 rows at ~440, and it gets
-        worse from there (`benchmarks/bench_iceberg.py`).
-
-        **Where the win is**: on the insert-dominated stream this exists for --
-        new keys, or a replay of rows that have not changed -- the difference
-        is orders of magnitude, because the scan prunes to nothing and no
-        overwrite happens. When most rows genuinely *change*, the delete half
-        still carries pyiceberg's exact per-row filter (it has to: a range
-        would delete rows the chunk never touched), and the win is closer to
-        2x.
-
-        Here the scan is filtered by the chunk's **key ranges** -- two terms per
-        key column, whatever the chunk's size -- which every matching row
-        satisfies, so the scan returns a superset and nothing can be missed.
-        The rows to insert then come from one Arrow anti-join instead of a bound
-        expression per batch. A stream whose keys are all new prunes to zero
-        files and becomes a plain append, which is the case a log ingest hits
-        every time.
-
-        Only the full upsert (update matched, insert unmatched) is implemented;
-        for the other three combinations call `iceberg_table.upsert` directly.
-        """
+        """One chunk merged into the table: `(rows updated, rows inserted)`."""
         from pyiceberg.io.pyarrow import _check_pyarrow_schema_compatible
         from pyiceberg.table import upsert_util
 
+        self.__dict__.pop("_insert_upper", None)
         join = self.merge_columns(merge_by)
         if not join:
             raise ValueError("merge_arrow_table needs columns to merge on")
@@ -708,6 +570,11 @@ class IcebergDataset(Dataset):
         # Without this, a duplicate key stored anywhere inside the chunk's key
         # range aborts a merge that has nothing to do with it.
         matched = semi_join(matched, chunk, join)
+        if matched.num_rows == 0:
+            # The range overlapped stored rows, but the exact keys did not.
+            # There is nothing left to compare or anti-join: this is an append.
+            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            return 0, chunk.num_rows
 
         # An Arrow join hands back nullable columns whatever it was given, and
         # pyiceberg checks a write against the table's own requiredness -- so
@@ -751,31 +618,33 @@ class IcebergDataset(Dataset):
         *,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
-    ) -> None:
-        """Append a stream, inserting only the keys the table does not hold yet.
-
-        `write_arrow_reader`'s arguments, `append_arrow_reader`'s meaning for
-        `merge_by`: stored rows are never rewritten, rows whose key is already
-        stored are dropped, and the rest are appended -- one commit per chunk,
-        through `insert_arrow_table`. The generic form would read every stored
-        key once; this one plans a scan per chunk instead, pruned to the
-        chunk's own key ranges *and* projected to the key columns alone, so a
-        chunk of new keys costs a plain append and a replayed one reads keys,
-        not rows.
-        """
+    ) -> int:
+        """Append a stream, inserting only the keys the table does not hold yet."""
         join = self.merge_columns(merge_by)
         if not join:
+            inserted = 0
+
+            def counted() -> Iterator[pyarrow.RecordBatch]:
+                nonlocal inserted
+                for batch in source:
+                    inserted += batch.num_rows
+                    yield batch
+
             self.write_arrow_reader(
-                source, schema, None, commit_row_size, branch=branch, properties=properties
+                counted(), schema, None, commit_row_size, branch=branch, properties=properties
             )
-            return
+            return inserted
         self.get_or_create_table()
         reader = self.target_field(schema).cast_arrow_reader(source)
         rows = self.commit_row_size if commit_row_size is None else commit_row_size
+        inserted = 0
         for chunk in arrow_chunks(reader, rows):
-            self.insert_arrow_table(self.sorted(chunk), join, branch=branch, properties=properties)
+            inserted += self.insert_arrow_table(
+                self.sorted(chunk), join, branch=branch, properties=properties
+            )
         if self.auto_optimize:
             self.maybe_optimize(branch=branch)
+        return inserted
 
     def insert_arrow_table(
         self,
@@ -785,25 +654,7 @@ class IcebergDataset(Dataset):
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> int:
-        """One chunk appended where no stored row matches: rows inserted.
-
-        The insert half of `merge_arrow_table`, alone -- and cheaper than the
-        merge by more than the update it skips. The scan that finds what is
-        already stored is pruned to the chunk's key ranges exactly as a
-        merge's is, but it also **projects to the key columns alone**: an
-        append never compares non-key columns, so it never has to read them,
-        and what comes back per matched row is a key instead of a row. The
-        rows to insert then come from one Arrow anti-join.
-
-        The guards a merge needs mostly fall away because nothing stored is
-        ever rewritten: a stored duplicate key just keeps its copies, a chunk
-        missing an optional column inserts nulls into *new* rows only. What
-        stays is what protects the keys themselves -- a null or NaN key is
-        refused (`_key_ranges`: no predicate can name either, so a replay
-        would insert it again every time), `-0.0` is written as the `0.0` it
-        equals, and duplicate keys inside the chunk collapse to their first
-        row, which is what a replay of them would leave behind.
-        """
+        """One chunk appended where no stored row matches: rows inserted."""
         join = self.merge_columns(merge_by)
         if not join:
             raise ValueError("insert_arrow_table needs columns to merge on")
@@ -818,7 +669,19 @@ class IcebergDataset(Dataset):
         reference = branch or self.branch or MAIN
         # `_key_ranges` raises on a null or NaN key before the scan is even
         # built, which is the same refusal a merge makes.
-        scan = table.scan(row_filter=_key_ranges(chunk, join, self.derived_columns()))
+        row_filter = _key_ranges(chunk, join, self.derived_columns())
+        span = self._insert_span(chunk, join, reference)
+        head = table.current_snapshot()
+        empty = reference == MAIN and head is None
+        snapshot_id = head.snapshot_id if head is not None else None
+        if span is not None and self._strictly_after_inserted(span, empty, snapshot_id):
+            # Once this object has filled an empty table, the upper bound is
+            # exact. A later chunk strictly above it cannot match a stored key,
+            # so planning manifests and files can only rediscover that fact.
+            table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            self._remember_inserted(span, table, establish=empty)
+            return chunk.num_rows
+        scan = table.scan(row_filter=row_filter)
         if reference in table.refs():
             scan = scan.use_ref(reference)
         # Keys only -- an append never compares a non-key column, so it never
@@ -846,31 +709,80 @@ class IcebergDataset(Dataset):
         )
         if matched is None or matched.num_rows == 0:
             table.append(chunk, snapshot_properties=properties or {}, branch=reference)
+            self._remember_inserted(span, table, establish=empty)
             return chunk.num_rows
         # Onto the chunk's own key columns, so the anti-join can run: a scan
         # hands back `large_string` where the chunk carries `string`.
         fresh = anti_join(chunk, keys.cast_arrow_table(matched), join)
         if fresh.num_rows:
             table.append(fresh, snapshot_properties=properties or {}, branch=reference)
+            self._remember_inserted(span, table)
         return fresh.num_rows
 
+    def _insert_span(
+        self, chunk: pyarrow.Table, join: Sequence[str], reference: str
+    ) -> tuple[tuple[str, tuple[str, ...], str], pyarrow.Scalar, pyarrow.Scalar] | None:
+        """The first declared sort key's `(cache key, minimum, maximum)`."""
+        ordered = self.sort_columns()
+        if not ordered or ordered[0] not in join:
+            return None
+        name = ordered[0]
+        try:
+            bounds = pyarrow.compute.min_max(chunk.column(name))
+        except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError):
+            return None
+        lower, upper = bounds["min"], bounds["max"]
+        if not lower.is_valid or not upper.is_valid:
+            return None
+        return (reference, tuple(join), name), lower, upper
+
+    def _strictly_after_inserted(
+        self,
+        span: tuple[tuple[str, tuple[str, ...], str], pyarrow.Scalar, pyarrow.Scalar],
+        empty: bool,
+        snapshot_id: int | None,
+    ) -> bool:
+        """Whether `span` is provably disjoint from every inserted key."""
+        key, lower, _ = span
+        remembered = self.__dict__.get("_insert_upper", {}).get(key)
+        if remembered is None:
+            return empty
+        upper, bounded_snapshot = remembered
+        if bounded_snapshot != snapshot_id:
+            bounds = self.__dict__["_insert_upper"]
+            del bounds[key]
+            if not bounds:
+                del self.__dict__["_insert_upper"]
+            return False
+        return bool(pyarrow.compute.greater(lower, upper).as_py())
+
+    def _remember_inserted(
+        self,
+        span: tuple[tuple[str, tuple[str, ...], str], pyarrow.Scalar, pyarrow.Scalar] | None,
+        table: Any,
+        *,
+        establish: bool = False,
+    ) -> None:
+        """Advance an exact insert-only upper bound; never infer one mid-table."""
+        if span is None:
+            return
+        key, _, upper = span
+        remembered = self.__dict__.get("_insert_upper")
+        if remembered is None:
+            if not establish:
+                return
+            remembered = self.__dict__.setdefault("_insert_upper", {})
+        previous = remembered.get(key)
+        if previous is None and not establish:
+            return
+        bounded = previous[0] if previous is not None else None
+        if bounded is None or pyarrow.compute.greater(upper, bounded).as_py():
+            bounded = upper
+        head = table.current_snapshot()
+        remembered[key] = (bounded, head.snapshot_id if head is not None else None)
+
     def sorted(self, chunk: pyarrow.Table) -> pyarrow.Table:
-        """`chunk` in `sort_by` order, or exactly as it came when nothing says.
-
-        Sorting is not about the file's contents -- Iceberg does not care what
-        order rows are stored in -- it is about the *bounds* recorded around
-        them. Inside a file those bounds are per row group, and a filter skips
-        a row group it cannot match without decoding it: on one 600k-row commit
-        a top-5% filter took 214 ms unsorted and 22 ms sorted, reading the same
-        single file. (Which is also why `write.parquet.row-group-limit` is set:
-        with Iceberg's default of a million rows there would be one row group
-        and nothing to skip.)
-
-        What it does **not** do is narrow *file* bounds for a stream that
-        arrives shuffled -- a chunk of shuffled rows still spans the whole key
-        range whatever order it is written in. File bounds come from chunks
-        that are already roughly ordered, which is what a log is.
-        """
+        """`chunk` in `sort_by` order, or exactly as it came when nothing says."""
         names = self.sort_columns()
         if not names or chunk.num_rows < 2 or _in_sort_order(chunk, names):
             return chunk
@@ -885,6 +797,7 @@ class IcebergDataset(Dataset):
 
     def delete(self, row_filter: Any = None, *, branch: str | None = None) -> None:
         """Delete the rows a filter matches, in one commit."""
+        self.__dict__.pop("_insert_upper", None)
         table = self.iceberg_table
         reference = branch or self.branch or MAIN
         if row_filter is None:
@@ -939,20 +852,7 @@ class IcebergDataset(Dataset):
         snapshot_id: int | None = None,
         branch: str | None = None,
     ) -> dict[str, int]:
-        """What a read would touch, without reading it: files, rows, bytes.
-
-        Metadata only, and the one honest way to see whether a filter prunes:
-        the rows a scan *returns* say nothing about the files it *opened*, so a
-        filter that Iceberg cannot use (`!=`, a range over a bucketed column, a
-        nested field, a column written with no metrics) looks perfect in the
-        results and reads the whole table.
-
-        Compares against the unfiltered plan, so `skipped` is what the filter
-        actually bought::
-
-            quotes.scan_plan("day = '2026-08-14'")
-            {'files': 2, 'rows': 20000, 'bytes': 190_000, 'total_files': 16, 'skipped': 14}
-        """
+        """What a read would touch, without reading it: files, rows, bytes."""
         table = self.iceberg_table
         planned = self._planned(table, row_filter, columns, snapshot_id, branch)
         # With no filter the two plans *are* the same plan, and planning is what
@@ -1019,34 +919,7 @@ class IcebergDataset(Dataset):
     def compaction_plan(
         self, min_files: int = 2, *, branch: str | None = None
     ) -> list[tuple[Any, int]]:
-        """`(row filter, file count)` for every part of the table worth rewriting.
-
-        Partition by partition when every partition field is an identity of a
-        column -- then a partition *is* a predicate, and rewriting one touches
-        nothing else. Otherwise (a transform that hides which rows are where,
-        or no partitioning at all) the only honest plan is the whole table at
-        once, which means reading it: `row_filter` on `compact` is how a table
-        too big for that is compacted a piece at a time.
-
-        Predicates are built as expressions rather than as filter strings. A
-        string has to be parsed back, and an apostrophe in a partition value or
-        a timestamp partition made that parse fail -- on ordinary values, in
-        the very case this says it handles. A null partition value is
-        `IsNull`, not a skipped term: dropping it planned the whole table under
-        one partition's name and rewrote every other partition's files with it.
-
-        **A part already compacted is not planned again.** Whether a rewrite
-        can improve anything is not something file counts can answer: pyiceberg
-        decides how many files a commit produces from the *in-memory* size of
-        what it is given, so a part that legitimately needs ten files still
-        reports ten afterwards -- and a plan that only counts files rewrites it
-        forever, doubling the table on every run. What settles it is whether
-        anything has landed since, which `COMPACTION_MARK` records.
-
-        `branch` plans that branch's snapshot. Without it the plan came from
-        main whatever branch the rewrite then went to, so a branch never
-        settled and, once main was compacted, was never planned at all.
-        """
+        """`(row filter, file count)` for every part of the table worth rewriting."""
         return [(part, count) for _, part, count in self._plan_rows(min_files, branch)]
 
     def _plan_rows(self, min_files: int, branch: str | None) -> list[tuple[str, Any, int]]:
@@ -1098,16 +971,7 @@ class IcebergDataset(Dataset):
         return plan
 
     def _partition_rows(self, reference: str) -> list[dict]:
-        """One row per partition of that branch's head, as Iceberg reports them.
-
-        Held against the metadata version it was read from, because that is
-        what it is a function of: `inspect.partitions()` walks every manifest
-        of the head, and one `auto_optimize` write stream asks for it twice
-        over the same version -- `maybe_optimize` to decide, `compact` to plan,
-        with nothing committing in between. Any commit, ours or another
-        writer's seen through `refresh()`, moves `metadata_location`, so the
-        key invalidates itself and there is nothing to remember to clear.
-        """
+        """One row per partition of that branch's head, as Iceberg reports them."""
         table = self.iceberg_table
         key = (reference, table.metadata_location)
         held = self.__dict__.get("_partitions")
@@ -1141,36 +1005,7 @@ class IcebergDataset(Dataset):
         target_file_size: int | None = None,
         branch: str | None = None,
     ) -> int:
-        """Rewrite fragmented parts of the table, one commit each.
-
-        A stream that commits often lands many small files, and a scan pays for
-        every one of them. Compaction reads a part back and writes it out as
-        Iceberg would have written it in one go -- how big the output files are
-        is `write.target-file-size-bytes`, Iceberg's own knob, never a size
-        this code picks.
-
-        Returns how many files were rewritten. `row_filter` compacts one part
-        of the table and nothing else, which is also how a table too big to
-        read at once is compacted: a partition at a time. A filtered run
-        records nothing in `COMPACTION_MARK` -- what it rewrote is whatever the
-        caller's filter covered, which may be a fraction of a partition, and
-        marking the whole partition settled would leave the rest of it
-        unplanned for good.
-
-        **Each part is planned immediately before it is rewritten, and that is
-        not an oversight.** Planning the whole table once and slicing the tasks
-        by partition is the obvious saving -- one plan against one per part,
-        measured at 17 ms against 148 on a 25-file table -- and it drops rows.
-        A plan frozen before the loop cannot see a write that lands in a
-        partition the loop has not reached yet, while the `overwrite` for that
-        partition deletes the file it landed in: measured on four partitions,
-        50 rows appended mid-loop survived the current path and were gone from
-        the frozen-plan one, with no error raised. Another *object* on the same
-        catalog is caught by Iceberg's own commit requirement
-        (`CommitFailedException`); another thread on this one is not. Re-read
-        this before making that saving again -- it needs the ref checked for
-        movement per part, not just a bucketed plan.
-        """
+        """Rewrite fragmented parts of the table, one commit each."""
         if target_file_size:
             self.set_properties({TARGET_FILE_SIZE: str(target_file_size)})
         reference = branch or self.branch or MAIN
@@ -1241,22 +1076,7 @@ class IcebergDataset(Dataset):
         metadata: bool = True,
         dry_run: bool = False,
     ) -> dict[str, int]:
-        """Expire old snapshots, then delete the files they stranded.
-
-        pyiceberg's expiry is metadata-only: it forgets snapshots, it does not
-        remove what they were keeping alive, so a table that is only ever
-        expired grows garbage instead of shrinking. This does both -- and the
-        sweep is deliberately conservative: a file is deleted only when no live
-        snapshot references it *and* it is older than `orphan_age`, because a
-        writer that is committing right now has files on disk that no snapshot
-        mentions yet.
-
-        Returns `{"expired": n, "deleted": m, "bytes": b}`. `dry_run=True`
-        reports what it *would* expire, and then counts the files that are
-        already orphaned -- **not** the ones expiring would strand, which is
-        strictly more. A dry run under-reports the sweep on purpose: it is the
-        one number that cannot be known without committing the expiry.
-        """
+        """Expire old snapshots, then delete the files they stranded."""
         # Before anything is looked at, and not once per chunk the way a write
         # must not: what another writer has committed since this object loaded
         # the table is invisible to the live set, and a file missing from the
@@ -1284,67 +1104,14 @@ class IcebergDataset(Dataset):
     def orphan_files(
         self, older_than: datetime.timedelta = ORPHAN_AGE, *, metadata: bool = True
     ) -> list[tuple[str, int]]:
-        """Files under the table that nothing live references any more.
-
-        Two directories, because a stream fills both: `data/`, where expiry
-        strands the files old snapshots held, and `metadata/`, which grows with
-        the *commit count* -- one `metadata.json` and one manifest per commit,
-        so a table with a single live data file can easily carry a hundred
-        metadata files.
-
-        **Where** those two directories are is Iceberg's answer, not a guess:
-        `write.data.path` and `write.metadata.path` move either of them, often
-        to another store entirely, and a table Spark created carries them
-        whether or not this code knows. Assuming `<location>/data` made the
-        sweep a silent no-op on such a table -- the listing found nothing and
-        `allow_not_found` swallowed it.
-
-        The live set is deliberately over-broad: every retained snapshot's
-        manifest list and every manifest reachable from it, every entry in the
-        metadata log, the statistics the metadata registers, and the current
-        metadata pointer -- read from the catalog now, not from whatever this
-        object loaded when it was made. A dataset that has been open a while
-        has not seen the other writers, and a file missing from the live set is
-        a file this deletes: measured, a stale sweeper deleted twelve of
-        another writer's files and left the table unreadable.
-
-        Anything younger than `older_than` is spared whether or not it is
-        referenced, and that is the **only** protection against a writer
-        committing *during* the sweep -- one has files on disk that no snapshot
-        mentions yet. Three days by default; lowering it is safe when nothing
-        else is writing, and nowhere else.
-
-        **Zero spares nothing**, and it is taken literally rather than compared
-        against a clock: a file written a moment ago can carry an mtime a
-        moment in the *future*, because the store stamps from its own clock and
-        this process reads its own. Comparing anyway left a file a caller had
-        just asked to have taken, on whichever run the two disagreed.
-
-        Listed through `pyarrow.fs`, like every other file this package touches,
-        so an object store is walked by the same handle the reads use -- and
-        compared **relative to the directory**, resolved once through that same
-        `pyarrow.fs`. Stripping the scheme by hand instead is what made this
-        dangerous: `file:/tmp/x`, `abfss://container@account.../x` and a
-        Windows drive letter all resolve to something a string split does not
-        produce, so every live file fell out of the live set and `cleanup`
-        deleted the whole table.
-        """
+        """Files under the table that nothing live references any more."""
         self.refresh()
         return [(path, size) for _, path, _, size in self._orphans(older_than, metadata=metadata)]
 
     def _orphans(
         self, older_than: datetime.timedelta, *, metadata: bool
     ) -> list[tuple[Any, str, str, int]]:
-        """`orphan_files`, as `(filesystem, path, location, size)`.
-
-        The **filesystem** is the one that can delete it: `write.data.path`
-        often points at another store entirely, and one handle built from the
-        table's location would delete against the wrong one. The **location**
-        is the URI Iceberg would have written the file under -- the directory
-        the listing walked, plus what the file's path has under it -- which is
-        the key the content cache holds its bytes at, and `_sweep` is what
-        needs it.
-        """
+        """`orphan_files`, as `(filesystem, path, location, size)`."""
         table = self.iceberg_table
         cutoff = datetime.datetime.now(datetime.UTC) - older_than
         # **One** live set, against **every** listing. The two halves used to
@@ -1417,21 +1184,7 @@ class IcebergDataset(Dataset):
         return list(found.values())
 
     def _sweep(self, orphans: Sequence[tuple[Any, str, str, int]]) -> None:
-        """Delete what the sweep found -- from the store, and from the cache.
-
-        Both, because the two disagree the moment only one is told. The bytes
-        of every manifest, manifest list and `metadata.json` this process
-        touched are held by `ArrowFileIO`'s content cache, keyed by location,
-        and deleting through a `pyarrow.fs` handle goes behind its back: a
-        swept file kept answering `exists()` with True and handing its bytes
-        to `open()` -- measured, five of them after one `cleanup` -- which is
-        exactly the copy that lies `ArrowFileIO.delete` exists to prevent.
-
-        The location a listing's path is put back together as is the one
-        Iceberg recorded, because Iceberg does not decode what it writes:
-        `parse_location` hands `urlparse().path` straight to `pyarrow.fs`, so
-        the spelling in the metadata *is* the spelling on the store.
-        """
+        """Delete what the sweep found -- from the store, and from the cache."""
         # At the point of use, like every other pyiceberg import here: the
         # module has to import without the extra installed.
         from rekep.iceberg.fileio import CONTENT_CACHE
@@ -1462,42 +1215,7 @@ class IcebergDataset(Dataset):
         return load_location_provider(table.location(), table.properties)
 
     def _live(self, table: Any) -> tuple[set[str], set[str]]:
-        """`(data files, metadata files)` nothing may delete, from **one** walk.
-
-        Two readings of the same manifests: what a manifest *holds* is the
-        data, what it *is* is metadata. Walked twice -- which is how this was
-        written first -- every retained snapshot's manifest list was decoded a
-        second time for the second reading; measured on a 40-commit table,
-        24 ms of the 101 ms the live set cost, and one round trip per snapshot
-        on a store the cache has gone cold on.
-
-        Walked from the manifests rather than read off `inspect.all_files()`,
-        which builds -- per data file -- the column sizes, value counts, null
-        counts and a decoded lower *and* upper bound for every field in the
-        schema, so that one column of paths can be kept. Measured on 40 columns
-        and 80 snapshots: 550 ms against 143, and the gap grows with the column
-        count.
-
-        Deleting a metadata file does not lose a row; it loses the *table*. So
-        that half is built from every direction at once -- the current pointer,
-        the metadata log, every snapshot's manifest list, every manifest, and
-        the statistics the metadata registers -- and a file is only swept when
-        none of them mention it. The manifest **lists** are collected from the
-        snapshots directly and not from the walk, which dedupes on the manifest
-        path: a snapshot reaching no manifest another has already reached would
-        otherwise never have its own list named, and the one thing this set may
-        not be is narrow.
-
-        The statistics are the ones nothing else reaches: a Puffin file another
-        engine wrote sits in `metadata/` beside everything else, is named only
-        by `metadata.statistics`, and is exactly as old as the snapshot it
-        describes -- so an age rule does not save it either.
-
-        Both halves are always built. `metadata=False` on a sweep says do not
-        *list* the metadata directory; it does not say those files stopped
-        being live, and a data directory that contains them still has to know
-        what they are.
-        """
+        """`(data files, metadata files)` nothing may delete, from **one** walk."""
         data: set[str] = set()
         files: set[str] = {table.metadata_location}
         files.update(entry.metadata_file for entry in table.metadata.metadata_log)
@@ -1517,27 +1235,7 @@ class IcebergDataset(Dataset):
     def maybe_optimize(
         self, *, min_files: int = 2, branch: str | None = None, **kwargs: Any
     ) -> dict[str, int] | None:
-        """`optimize`, but only once cheap signals say the table needs it.
-
-        The signals cost no store round trips a write has not already paid
-        for: snapshot count is in the metadata this object holds, manifest
-        count is one manifest-list read the FileIO cache is already holding,
-        and the compaction planner -- the expensive question, a walk of every
-        manifest -- is only asked when the cheap ones leave it open.
-
-        Which is what the file count is for. A plan cannot rewrite more files
-        than the branch has, and how many that is the head snapshot already
-        says (`total-data-files`, in metadata this object holds): below the
-        threshold the planner cannot possibly cross it, so it is never asked.
-        That is the quiet table, which is every call on a stream that has
-        converged -- and it was paying a full `inspect.partitions()` for the
-        privilege.
-
-        Returns `optimize`'s report, or None when nothing crossed an
-        `AUTO_OPTIMIZE_*` threshold -- which is also the answer right after an
-        optimize ran, so `auto_optimize=True` on a stream converges instead of
-        compacting on every call.
-        """
+        """`optimize`, but only once cheap signals say the table needs it."""
         table = self.iceberg_table
         reference = branch or self.branch or MAIN
         head = table.refs().get(reference)
@@ -1571,20 +1269,7 @@ class IcebergDataset(Dataset):
         metadata: bool = True,
         **kwargs: Any,
     ) -> dict[str, int]:
-        """Merge manifests, compact files, then expire and sweep -- in that order.
-
-        The order is the point: compacting first makes the snapshots that
-        cleanup then expires, and merging manifests first means the compaction
-        commits land in fewer of them. One call is the whole routine a table
-        written by a streaming job needs.
-
-        `cleanup`'s arguments are named here rather than swept into `kwargs`,
-        which sent every one of them to `compact` and raised. The sweep is the
-        expensive half -- a recursive listing of the whole store, on every call
-        -- so `remove_orphans=False` is what an `auto_optimize` stream that
-        wants the compaction and not the listing asks for. Everything else goes
-        through to `compact`.
-        """
+        """Merge manifests, compact files, then expire and sweep -- in that order."""
         if self.iceberg_table.properties.get(MERGE_MANIFESTS) != "true":
             # Only when it is not already on: a no-op commit is still a metadata
             # version, and a routine that runs on a schedule would spend one
@@ -1627,31 +1312,190 @@ class IcebergDataset(Dataset):
 # -- helpers ----------------------------------------------------------------
 
 
-def _planned_reader(scan: Any, tasks: Sequence[Any]) -> pyarrow.RecordBatchReader:
-    """The scan's own batch reader, over files it has already planned -- and
-    over no more of them at a time than the consumer is keeping up with.
+def _ordered_reader(
+    scan: Any, tasks: Iterable[Any], columns: Sequence[str]
+) -> pyarrow.RecordBatchReader:
+    """Read partition paths in order, merging their sorted files on `columns`.
 
-    `DataScan.to_arrow_batch_reader` calls `plan_files` again -- and pyiceberg
-    re-reads the manifest list per plan, on purpose -- so a caller that has
-    planned already, to see whether there is anything to read or to trim what
-    there is, would pay planning twice per chunk. This is that method's own
-    construction, handed the tasks in hand; the rows are the rows it would
-    return.
-
-    **In groups**, which is the part that makes it a stream. `ArrowScan`
-    submits *every* planned file to its thread pool at once and each finished
-    one holds a whole file's decoded batches until the consumer reaches it, so
-    a reader over a big table is a `read_arrow_table` that takes longer:
-    measured on 24 files and 99 MiB, one batch of 20,000 rows left every file
-    opened and Arrow holding 97 of those MiB. Handing the plan over a group at
-    a time bounds that to the group. The group is the pool's own width, since
-    that is how many files it can decode at once anyway -- past it there is a
-    queue, not parallelism.
-
-    A plan carrying delete files is handed over whole: `_read_all_delete_files`
-    runs per `ArrowScan`, so a delete file two groups both reference would be
-    read once per group. Those tables keep the behaviour they had.
+    Iceberg sort orders describe file layout, not result order. Plans may list
+    newer manifests first, so a stateful consumer cannot use plan order.
+    Partitions are independent storage streams: finish one canonical path
+    before opening the next, and merge overlapping file ranges only within it.
     """
+    from pyiceberg.conversions import from_bytes
+    from pyiceberg.io.pyarrow import schema_to_pyarrow
+
+    target = schema_to_pyarrow(scan.projection())
+    primary = columns[0]
+    field = scan.projection().find_field(primary)
+
+    def bound(task: Any, upper: bool) -> Any | None:
+        values = task.file.upper_bounds if upper else task.file.lower_bounds
+        raw = (values or {}).get(field.field_id)
+        return None if raw is None else from_bytes(field.field_type, raw)
+
+    def batches() -> Iterator[pyarrow.RecordBatch]:
+        for _, partition in _partition_tasks(scan, tasks):
+            ranged = [(bound(task, False), bound(task, True), task) for task in partition]
+            if any(lower is None or upper is None for lower, upper, _ in ranged):
+                groups = [partition]
+            else:
+                ranged.sort(key=lambda item: (item[0], str(item[2].file.file_path)))
+                groups = []
+                held: list[Any] = []
+                high = None
+                for lower, upper, task in ranged:
+                    # Equal primary boundaries overlap when a secondary key
+                    # decides business order, so only a strict gap concatenates.
+                    if held and lower > high:
+                        groups.append(held)
+                        held = []
+                        high = None
+                    held.append(task)
+                    high = upper if high is None or upper > high else high
+                if held:
+                    groups.append(held)
+            for group in groups:
+                if len(group) == 1:
+                    yield from _sorted_task_batches(scan, group[0], columns)
+                else:
+                    yield from _merge_task_batches(scan, group, columns)
+
+    return pyarrow.RecordBatchReader.from_batches(target, batches()).cast(target)
+
+
+def _sorted_task_batches(
+    scan: Any, task: Any, columns: Sequence[str]
+) -> Iterator[pyarrow.RecordBatch]:
+    """One file's batches, refusing a table that only claims to be sorted."""
+    previous = None
+    for batch in _planned_reader(scan, [task]):
+        if not batch.num_rows:
+            continue
+        if not _reader_in_sort_order(batch, columns):
+            raise ValueError(
+                f"Iceberg file {task.file.file_path!s} is not ordered on {list(columns)!r}"
+            )
+        first = _row_key(batch, columns, 0)
+        last = _row_key(batch, columns, batch.num_rows - 1)
+        if previous is not None and first < previous:
+            raise ValueError(
+                f"Iceberg file {task.file.file_path!s} is not ordered on {list(columns)!r}"
+            )
+        previous = last
+        yield batch
+
+
+def _merge_task_batches(
+    scan: Any, tasks: Sequence[Any], columns: Sequence[str]
+) -> Iterator[pyarrow.RecordBatch]:
+    """K-way merge overlapping sorted files, moving slices rather than rows."""
+    streams = [iter(_sorted_task_batches(scan, task, columns)) for task in tasks]
+    batches: list[pyarrow.RecordBatch | None] = [None] * len(streams)
+    offsets = [0] * len(streams)
+
+    def advance(index: int) -> bool:
+        while batches[index] is None or offsets[index] >= batches[index].num_rows:
+            batches[index] = next(streams[index], None)
+            offsets[index] = 0
+            if batches[index] is None:
+                return False
+            if batches[index].num_rows:
+                return True
+        return True
+
+    for index in range(len(streams)):
+        advance(index)
+    while True:
+        live = [index for index in range(len(streams)) if advance(index)]
+        if not live:
+            return
+        starts = {
+            index: _row_key(batches[index], columns, offsets[index])  # type: ignore[arg-type]
+            for index in live
+        }
+        chosen = min(live, key=lambda index: (starts[index], index))
+        others = [starts[index] for index in live if index != chosen]
+        batch = batches[chosen]
+        assert batch is not None
+        stop = (
+            batch.num_rows
+            if not others
+            else _upper_bound(batch, columns, min(others), offsets[chosen])
+        )
+        yield batch.slice(offsets[chosen], stop - offsets[chosen])
+        offsets[chosen] = stop
+
+
+def _row_key(batch: pyarrow.RecordBatch, columns: Sequence[str], index: int) -> tuple[Any, ...]:
+    """One row's lexicographic key, with Arrow's null-last order made explicit."""
+    return tuple(
+        (value is None, value)
+        for column in columns
+        for value in (batch.column(column)[index].as_py(),)
+    )
+
+
+def _reader_in_sort_order(batch: pyarrow.RecordBatch, columns: Sequence[str]) -> bool:
+    """Whether a physical batch follows Arrow's ascending, null-last ordering."""
+    compute = pyarrow.compute
+    ordered = None
+    for name in reversed(list(columns)):
+        column = batch.column(name)
+        before, after = column[:-1], column[1:]
+        before_null, after_null = compute.is_null(before), compute.is_null(after)
+        less = compute.or_(
+            compute.and_(compute.invert(before_null), after_null),
+            compute.fill_null(compute.less(before, after), False),
+        )
+        equal = compute.or_(
+            compute.and_(before_null, after_null),
+            compute.fill_null(compute.equal(before, after), False),
+        )
+        ordered = less if ordered is None else compute.or_(less, compute.and_(equal, ordered))
+    if ordered is None:
+        return True
+    return bool(compute.all(ordered, min_count=0).as_py())
+
+
+def _upper_bound(
+    batch: pyarrow.RecordBatch,
+    columns: Sequence[str],
+    sought: tuple[Any, ...],
+    start: int,
+) -> int:
+    """First row whose lexicographic key is strictly greater than `sought`."""
+    low, high = start, batch.num_rows
+    while low < high:
+        middle = (low + high) // 2
+        if _row_key(batch, columns, middle) <= sought:
+            low = middle + 1
+        else:
+            high = middle
+    return low
+
+
+def _reader_limit(reader: pyarrow.RecordBatchReader, limit: int) -> pyarrow.RecordBatchReader:
+    """Cut a reader after global ordering, rather than once per source file."""
+    schema = reader.schema
+
+    def batches() -> Iterator[pyarrow.RecordBatch]:
+        remaining = limit
+        if remaining <= 0:
+            return
+        for batch in reader:
+            taken = batch.slice(0, remaining)
+            if taken.num_rows:
+                yield taken
+            remaining -= taken.num_rows
+            if remaining <= 0:
+                return
+
+    return pyarrow.RecordBatchReader.from_batches(schema, batches()).cast(schema)
+
+
+def _planned_reader(scan: Any, tasks: Iterable[Any]) -> pyarrow.RecordBatchReader:
+    """Read a planned stream one partition at a time with bounded read-ahead."""
     from pyiceberg.io.pyarrow import ArrowScan, schema_to_pyarrow
 
     target = schema_to_pyarrow(scan.projection())
@@ -1666,25 +1510,65 @@ def _planned_reader(scan: Any, tasks: Sequence[Any]) -> pyarrow.RecordBatchReade
             limit,
         )
 
-    if any(task.delete_files for task in tasks):
-        batches = arrow(scan.limit).to_record_batches(tasks)
-        return pyarrow.RecordBatchReader.from_batches(target, batches).cast(target)
-
     def generate() -> Iterator[pyarrow.RecordBatch]:
         taken = 0
-        for group in _grouped(tasks, _read_ahead()):
-            # The limit is what is *left* of it: handing each group the whole
-            # of it would cap every group instead of the read, and three
-            # groups would answer `limit=100` with three hundred rows.
-            for batch in arrow(
-                None if scan.limit is None else scan.limit - taken
-            ).to_record_batches(group):
-                yield batch
-                taken += batch.num_rows
-            if scan.limit is not None and taken >= scan.limit:
-                break
+        for _, partition in _partition_tasks(scan, tasks):
+            # ArrowScan loads delete files per call. Keep a partition sharing
+            # one together so its delete file is not reopened per read-ahead group.
+            groups = (
+                (partition,)
+                if any(task.delete_files for task in partition)
+                else _grouped(partition, _read_ahead())
+            )
+            for group in groups:
+                # The limit is what is left globally, not once per partition.
+                for batch in arrow(
+                    None if scan.limit is None else scan.limit - taken
+                ).to_record_batches(group):
+                    yield batch
+                    taken += batch.num_rows
+                if scan.limit is not None and taken >= scan.limit:
+                    return
 
     return pyarrow.RecordBatchReader.from_batches(target, generate()).cast(target)
+
+
+def _partition_tasks(scan: Any, tasks: Iterable[Any]) -> Iterator[tuple[str, list[Any]]]:
+    """Planned tasks grouped by canonical partition path, in path order."""
+    planned, identity = _ordered_partition_tasks(scan, tasks)
+    for (path, _), grouped in itertools.groupby(planned, key=identity):
+        yield path, list(grouped)
+
+
+def _ordered_partition_tasks(
+    scan: Any, tasks: Iterable[Any]
+) -> tuple[list[Any], Callable[[Any], tuple[str, int]]]:
+    """Planned tasks plus their canonical partition identity, path-sorted."""
+    planned = tasks if isinstance(tasks, list) else list(tasks)
+    metadata = getattr(scan, "table_metadata", None)
+    held_specs = getattr(metadata, "specs", None)
+    held_specs = held_specs() if callable(held_specs) else held_specs
+    specs = (
+        held_specs
+        if isinstance(held_specs, Mapping)
+        else {spec.spec_id: spec for spec in (held_specs or ())}
+    )
+    schema = metadata.schema() if metadata is not None else None
+
+    def identity(task: Any) -> tuple[str, int]:
+        data = task.file
+        spec_id = int(getattr(data, "spec_id", 0) or 0)
+        partition = getattr(data, "partition", None)
+        spec = specs.get(spec_id)
+        if spec is not None and schema is not None:
+            try:
+                return spec.partition_to_path(partition, schema), spec_id
+            except (KeyError, TypeError, ValueError):
+                pass
+        return str(partition or ""), spec_id
+
+    planned.sort(key=lambda task: (*identity(task), str(getattr(task.file, "file_path", ""))))
+    return planned, identity
 
 
 def _grouped(tasks: Sequence[Any], size: int) -> Iterator[Sequence[Any]]:
@@ -1708,34 +1592,8 @@ def _read_ahead() -> int:
 
 
 def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
-    """`scan`'s reader, opening only the files the `limit` can need.
-
-    pyiceberg treats `limit` as a row cap: every planned file's read is
-    submitted to the pool before the cap is checked, so `limit=100` on an
-    eight-file table opens eight files to keep one batch (measured; this opens
-    one). A file's `record_count` says how many rows it contributes, so the
-    *plan* is cut at the limit instead and the files past it are never opened.
-
-    When that count is **exact** is pyiceberg's own rule, plus the one thing
-    that rule gets wrong: `DataScan.count()` adds `record_count` for a task
-    whose residual is `AlwaysTrue` and which carries no delete files, and reads
-    the file for every other -- but a residual resolved against a *null*
-    partition value is `AlwaysTrue` for rows Arrow then drops (`_null_partition`
-    says why), so a filtered read leaves those files to pyiceberg too.
-
-    A residual is what a filter leaves once the file's partition has answered
-    what it can, so the rule covers more than a bare limit does --
-    `limit=100` under `unix_hour = ...` opens one file of the
-    day's several, where this used to hand the whole plan back on sight of a
-    filter. It still hands it back the moment a task is not exact: a residual
-    over a non-partition column may match any number of that file's rows, and
-    a delete file makes the count an over-count of the live ones. Either way
-    the cap on what comes back is pyiceberg's, unchanged.
-
-    A limit already satisfied stops the walk, so a task past it is never even
-    inspected -- which is also what makes `limit=0` open nothing.
-    """
-    tasks = list(scan.plan_files())
+    """`scan`'s reader, opening only the files the `limit` can need."""
+    tasks, _ = _ordered_partition_tasks(scan, scan.plan_files())
     if limit is None:
         return _planned_reader(scan, tasks)
     exact = _always_true()
@@ -1756,39 +1614,12 @@ def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
 
 
 def _null_partition(partition: Any) -> bool:
-    """Whether a file's partition record holds a null in any field.
-
-    The one place an `AlwaysTrue` residual does not mean what it says. pyiceberg
-    resolves a filter against the partition value in **Python**, so a file whose
-    partition is null answers `venue != 'XPAR'` with `None != 'XPAR'` -- True --
-    and the residual comes back `AlwaysTrue`. Arrow then applies the same filter
-    to the rows in *three-valued* logic, where `NULL != 'XPAR'` is NULL, and
-    drops every one of them. The file contributes nothing while its record count
-    says ten, so trimming there stops at a file with no matching rows and never
-    opens the ones that have them: measured, a `limit=5` read of a table with
-    ten matching rows returned **zero**.
-
-    `NotIn` has the same shape (`None not in {...}` is True), and any predicate
-    pyiceberg resolves this way can join them, so the test is the null and not
-    the operator.
-    """
+    """Whether a file's partition record holds a null in any field."""
     return any(partition[index] is None for index in range(len(partition)))
 
 
 def _in_sort_order(chunk: pyarrow.Table, names: Sequence[str]) -> bool:
-    """Whether `chunk`'s rows are already ascending on `names`, lexicographically.
-
-    Asked because the answer is usually yes and the question is far cheaper
-    than the sort: on a million rows in order, 1.7 ms to check against 38.7 ms
-    to sort, and on a million shuffled ones the same 1.7 ms against 185. A
-    stream that arrives in time order -- a capture, a log, a folded book -- is
-    the case this exists for, and it is the common one.
-
-    Nulls answer *no*. A comparison against one is null rather than false, and
-    where Arrow puts them in a sort is not something to reimplement here:
-    sorting a chunk that did not need it costs time, and skipping one that did
-    costs every reader after it.
-    """
+    """Whether `chunk`'s rows are already ascending on `names`, lexicographically."""
     compute = pyarrow.compute
     ordered = None
     for name in reversed(list(names)):
@@ -1813,31 +1644,7 @@ def _key_ranges(
     join: Sequence[str],
     derived: Mapping[str, Sequence[str]] | None = None,
 ) -> Any:
-    """A predicate every row matching `chunk` on `join` must satisfy.
-
-    A stored row can only equal an incoming one if it agrees on every key
-    column, so *anything* implied by that is a safe scan filter -- and the
-    cheapest such filter is the one that does not grow with the chunk: the
-    values a key column takes, when there are few of them, and its range when
-    there are many. Two terms per column either way, against `Table.upsert`'s
-    one term from row.
-
-    The `In` form matters beyond predicate size: an identity-partitioned key
-    column prunes to exactly its partitions, where a range only prunes what the
-    file bounds happen to exclude. A chunk of entirely new keys plans to no
-    files at all, which is what turns a merge into an append.
-
-    `derived` extends that past the keys themselves. A column declared a
-    function of key columns -- `unix_hour`, which is `unix` truncated to the hour --
-    agrees wherever the keys agree, so its values in the chunk are its values
-    in every row that can match, and naming it is as safe as naming a key.
-    It is also the one that pays, because the market shapes are keyed on `unix`
-    and `hash` and partitioned on `unix_hour`: a filter that never mentions the
-    partition column prunes nothing at the manifest list, so the merge scales
-    with the *table* rather than with the chunk. Measured on a replayed hour,
-    declared against not: 19 ms against 37 over 48 hourly partitions, 20
-    against 93 over 168, 27 against 164 over 336.
-    """
+    """A predicate every row matching `chunk` on `join` must satisfy."""
     from pyiceberg.expressions import And
 
     terms = []
@@ -1933,48 +1740,7 @@ def _has_nan(values: Any) -> bool:
 
 
 def _banded(column: str, values: Any) -> Any | None:
-    """The narrowest union of ranges that still covers every value in `values`.
-
-    One min/max range is what a key column past `MERGE_IN_LIMIT` distinct
-    values became, and it prunes nothing on a chunk whose keys sit in a few
-    bands of a wide range -- a backfill, or a replay of two days into a month.
-    Measured on 30 files of clustered timestamps, replaying the keys of two of
-    them planned **26** files to find the two that held them, reading 520,000
-    rows for 40,000 keys.
-
-    The bands are found without sorting the column. Every value is placed in
-    one of `MERGE_RANGE_BANDS * 8` equal slices of `[min, max]` by arithmetic,
-    each occupied slice reports its own exact min and max, and adjacent ones
-    are merged back until at most `MERGE_RANGE_BANDS` remain. Sorting would be
-    the obvious way and is the expensive one: on a 400k-row integer column
-    `unique` alone runs 31-420 ms against 7.8 ms for this, and
-    `_distinct_under` exists precisely to not pay it.
-
-    **Any placement is a correct one.** A slice reports the exact min and max
-    of the rows that landed in it, and every row lands in exactly one, so the
-    union covers every value however the index arithmetic rounded -- which
-    matters, because a nanosecond timestamp does not fit a float64 mantissa.
-    Rounding costs pruning quality, never correctness, and a merge's scan
-    filter has to be a superset and never less.
-
-    Two shapes keep the single range. A column arithmetic means nothing on --
-    a string, a boolean, anything Arrow will not subtract -- and one whose
-    values occupy nearly every slice, where there is no gap to cut out and the
-    bands would only be a longer way of saying `min <= x <= max`. That question
-    is asked before the bands are built: `unique` over the slice indices is
-    1.1 ms where grouping the values by them is 5.5, so a 400k-row column with
-    no gap in it costs 7.8 ms rather than 8.7, and one with gaps 13.8.
-
-    Which is the price, and it is paid on every chunk past the naming limit
-    whether or not there is a gap to find. Measured on the sweep: a replay of
-    two distant bands went from 18 files planned to **2**, while a replay of
-    one contiguous band planned 1 either way and took 0.02 s against 0.04.
-
-    None when the column has bounds that cannot be *said*: a nanosecond
-    timestamp, which pyarrow will not hand back as a `datetime` at all.
-    `_key_ranges` then leaves the column out, which widens the filter -- the
-    only direction it is allowed to be wrong in.
-    """
+    """The narrowest union of ranges that still covers every value in `values`."""
     compute = pyarrow.compute
     try:
         bounds = compute.min_max(values).as_py()
@@ -2075,39 +1841,14 @@ def _banded(column: str, values: Any) -> Any | None:
 
 
 def _placed(values: Any) -> Any:
-    """`values` as doubles, **unsafely** -- the number is a place, not a value.
-
-    Arrow's default cast is range-checked, and an integer past 2**53 is outside
-    what a double can hold exactly: `cast(1_700_000_000_000_000_000, "double")`
-    raises rather than rounding. Every key this banding exists for is such an
-    integer -- a nanosecond timestamp, a 62-bit line hash -- so the checked
-    cast made `_banded` give up on exactly the columns it was written for and
-    quietly hand back the single range.
-
-    Rounding is harmless here and it is the one thing this function is allowed
-    to do. The double decides only which slice a value is *placed* in; the
-    slice then reports the exact min and max of whatever landed in it, out of
-    the original values. Two keys rounding to one place widen a band; they
-    cannot drop a value out of the cover.
-    """
+    """`values` as doubles, **unsafely** -- the number is a place, not a value."""
     return pyarrow.compute.cast(values, "double", safe=False)
 
 
 def _fewest(
     bands: list[tuple[Any, Any, float, float]], keep: int
 ) -> list[tuple[Any, Any, float, float]]:
-    """`bands` reduced to at most `keep`, always by closing the smallest gap.
-
-    Each band is `(low, high, where low is, where high is)` -- the first two
-    spell the range, the last two measure it. Gaps are compared in the numbers
-    because the values cannot always be subtracted: `datetime.time` has no
-    subtraction at all, and a merge key of that type raised `TypeError` out of
-    here, out of `_key_ranges`, and out of every merge and insert on the table.
-
-    Merging two adjacent bands into one range only ever *widens* what the
-    filter matches, so no value can fall out of it; which gaps survive is a
-    quality choice, and the widest are the ones worth keeping.
-    """
+    """`bands` reduced to at most `keep`, always by closing the smallest gap."""
     while len(bands) > keep:
         gap = min(range(len(bands) - 1), key=lambda i: bands[i + 1][2] - bands[i][3])
         bands[gap : gap + 2] = [
@@ -2138,20 +1879,7 @@ def _downcasts_ns() -> bool:
 
 
 def _under_current_names(table: Any, source: Any) -> Any:
-    """`source` with its columns named the way the table names them *now*.
-
-    Takes a table or a reader; a reader is renamed batch by batch, so nothing
-    is materialised to do it.
-
-    A scan pinned to a ref reads under that snapshot's schema, not the current
-    one -- and a rename is metadata-only, so until something else commits, the
-    branch head still carries the old names. Matching by name there would
-    compare a renamed column against nulls and rewrite every row it read.
-
-    Field ids are what a rename does not change, and pyiceberg puts them on the
-    columns it hands back, so they are what the names are recovered from. Top
-    level only: that is what a merge joins and compares on.
-    """
+    """`source` with its columns named the way the table names them *now*."""
     current = {field.field_id: field.name for field in table.schema().fields}
     names = []
     for field in source.schema:
@@ -2166,20 +1894,7 @@ def _under_current_names(table: Any, source: Any) -> Any:
 
 
 def _distinct_under(values: Any, limit: int) -> Any:
-    """The column's distinct values, or None when there are more than `limit`.
-
-    Hashing a whole column to *then* discover it has too many distinct values
-    to name is the expensive way to learn nothing: on a million rows `unique`
-    costs 50 ms on int64 keys and 115 ms on strings, against 0.3 ms and 13 ms
-    for the `min_max` that is all a range needs. So a slice one longer than the
-    limit is hashed first -- if that alone already has more distinct values
-    than the limit, so does the column, and the full pass is never made.
-
-    Measured on a 400k-row chunk, which is the whole of `_key_ranges`: a
-    high-cardinality integer key 27.0 ms -> 0.4 ms, an integer and a string key
-    69.9 ms -> 6.3 ms. The probe is a tax only where the `In` form was going to
-    win anyway -- an eight-value partition key pays 1.3 ms -> 1.5 ms for it.
-    """
+    """The column's distinct values, or None when there are more than `limit`."""
     head = pyarrow.compute.unique(values.combine_chunks().slice(0, limit + 1))
     if len(head) > limit:
         return None
@@ -2196,20 +1911,7 @@ def _has_zero(values: Any) -> bool:
 
 
 def _match_filter(updates: pyarrow.Table, join: Sequence[str]) -> Any:
-    """pyiceberg's exact per-row delete filter, widened where `In` cannot see a zero.
-
-    A single-column key becomes one `In`, and an `In` of more than one literal
-    reaches Arrow as `pc.is_in`, which hashes `-0.0` apart from the `0.0` it
-    equals. So a row stored as `-0.0` -- before this package normalised keys,
-    or by another engine -- is written again and never deleted, leaving two
-    rows under one key. Exactly one literal is not affected (`In` collapses to
-    `EqualTo`, which compares numerically), and neither is a composite key
-    (per-row `EqualTo` again): this one shape is the whole of it.
-
-    What the widening adds is every row whose key is `+/-0.0`, which for a
-    single-column key are exactly the rows the chunk's zero identifies. The
-    filter stays exact.
-    """
+    """pyiceberg's exact per-row delete filter, widened where `In` cannot see a zero."""
     from pyiceberg.expressions import And, GreaterThanOrEqual, LessThanOrEqual, Or
     from pyiceberg.table import upsert_util
 
@@ -2225,38 +1927,7 @@ def _match_filter(updates: pyarrow.Table, join: Sequence[str]) -> Any:
 
 
 def _factored(updates: pyarrow.Table, join: Sequence[str]) -> Any:
-    """The same filter, with whatever a key column repeats said once.
-
-    `create_match_filter` spells a composite key as one `And(EqualTo, EqualTo)`
-    per row, and the size of that tree is most of what a merge's *commit*
-    costs: pyiceberg builds an `_InclusiveMetricsEvaluator` over it per
-    manifest it plans, and each one binds the whole tree. Measured on a
-    5,000-row update of an 8-file table, 15.8 of the 18.1 seconds went on
-    nineteen of those, at 770 ms each -- against 0.4 ms for the ranges beside
-    it.
-
-    Anything a key column repeats is a branch that need not repeat with it. The
-    rows are grouped on whichever key column has the fewest distinct values and
-    each group becomes one term: a `(symbol, day)` key over one day collapses
-    500 terms into one `And(EqualTo(day, ...), In(symbol, [...]))`. A key whose
-    columns repeat nothing groups one row per term, which is the tree
-    `create_match_filter` already builds -- so this is never the larger of the
-    two.
-
-    **Still exact.** A group names `outer = v` and the rest of the key in
-    exactly the combinations that appear with `v`, which is that group's rows
-    and nothing else; the union over the groups is the row set. The inner half
-    is `create_match_filter`'s own answer for the remaining columns, so what a
-    group matches is decided by the library either way.
-
-    Two shapes go back to it whole. A **float key column holding a zero**,
-    because the inner half becomes an `In` and `pc.is_in` hashes `-0.0` apart
-    from the `0.0` it equals -- a row another engine stored as `-0.0` would
-    survive its own delete, which is the same trap the single-column case is
-    widened against. And anything Arrow or pyiceberg **refuses**, because a key
-    type that cannot be grouped or named in an `In` is one the library's own
-    per-row form still handles.
-    """
+    """The same filter, with whatever a key column repeats said once."""
     from pyiceberg.expressions import And, EqualTo, In, Or
     from pyiceberg.table import upsert_util
 
@@ -2333,25 +2004,7 @@ def _align_keys(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str
 
 
 def _changed(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
-    """Rows of `chunk` a stored row matches but does not equal.
-
-    The same answer as pyiceberg's `get_rows_to_update`, computed in kernels.
-    Theirs joins on the keys and then **compares the matched rows in Python**,
-    one `slice(i, 1)` and one `as_py()` per non-key column per row -- about
-    50 microseconds a row, which is the whole cost of a merge that updates
-    anything. Here the pairs are gathered with `take` and compared column by
-    column, so a million matched rows cost a handful of vectorised passes.
-
-    Null semantics are theirs: two nulls are equal, a null and a value are not.
-
-    Whatever Arrow cannot do here, pyiceberg's own function does instead. That
-    is not only the obvious cases -- a struct, a list, a map have no equality
-    kernel -- but every one that cannot be enumerated in advance: an extension
-    type such as Iceberg's uuid, two tables carrying the same column at
-    different types, a naive timestamp against a zoned one. Rather than guess
-    which kernels exist, the fast path is *attempted*, and any Arrow refusal
-    hands the whole comparison back to the library.
-    """
+    """Rows of `chunk` a stored row matches but does not equal."""
     from pyiceberg.table import upsert_util
 
     compare = [name for name in chunk.column_names if name not in set(join)]
@@ -2397,15 +2050,7 @@ def _changed_by_kernel(
 
 
 def _column_differs(one: Any, other: Any) -> Any:
-    """Which rows of two aligned columns disagree, nulls counted pyiceberg's way.
-
-    Per **column**, and that is the point. Arrow has no equality kernel for a
-    list, a struct or a map, and one such column used to hand the whole
-    comparison back to the library -- twenty scalar columns compared row by row
-    in Python because the twenty-first was a `list<int64>`. Measured on `Log`,
-    whose `parent_hash` is exactly that: a merge of 50,000 stored and unchanged
-    rows spent **6.35 seconds of 7.2** inside `get_rows_to_update`.
-    """
+    """Which rows of two aligned columns disagree, nulls counted pyiceberg's way."""
     compute = pyarrow.compute
     try:
         unequal = compute.fill_null(compute.not_equal(one, other), False)
@@ -2476,18 +2121,7 @@ def _mark_key(branch: str, partition: Any) -> str:
 
 
 def _stored_files(snapshot: Any) -> int | None:
-    """How many data files the state that snapshot heads holds, or None.
-
-    Iceberg records it in the snapshot summary, so it is already in the
-    metadata this process loaded -- no manifest is walked to answer it, and it
-    is the same number the planner would count: checked against `plan_files()`
-    on a partitioned table plain, after a compaction and after a delete, 36/36
-    and 4/4 and 4/4.
-
-    None when the snapshot does not say -- another engine's summary, or none at
-    all -- because the two answers a caller wants for that are opposite ones:
-    plan it, or assume the worst.
-    """
+    """How many data files the state that snapshot heads holds, or None."""
     if snapshot is None:
         return 0
     try:
@@ -2557,22 +2191,7 @@ def _path_of(location: str) -> str:
 
 
 def _relative(path: str, bases: Sequence[str]) -> str | None:
-    """`path` under whichever of `bases` it is spelled against, tail only.
-
-    The one comparison that survives a store naming its files differently from
-    the URI the metadata records: both sides are reduced to what follows the
-    directory they are in, so how the directory itself is spelled stops
-    mattering.
-
-    **None when it is spelled against none of them**, which is a real answer
-    and not a missing one. This used to hand back the whole unreduced path, and
-    an unreduced path can never equal a reduced one -- so a live file recorded
-    under a spelling its own directory does not produce fell out of the live
-    set and was swept. `file:` with one slash is enough to do it: `add_files`
-    records what it is given, and the bases for `file:///w/t/data` are that and
-    `/w/t/data`. Measured, `cleanup` deleted a data file the *current* snapshot
-    referenced and the table stopped reading.
-    """
+    """`path` under whichever of `bases` it is spelled against, tail only."""
     for base in sorted(bases, key=len, reverse=True):
         if base and path.startswith(base):
             return path[len(base) :].lstrip("/")

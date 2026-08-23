@@ -6,7 +6,7 @@ from typing import Annotated
 import pyarrow
 import pytest
 
-from rekep import Convertible, Field, StructField, field
+from rekep import Convertible, Field, StructField, scalar
 from rekep.iceberg import iceberg_field, iceberg_partition_spec, iceberg_schema, metrics_for
 from rekep.iceberg.fields import (
     COLUMN_METRICS,
@@ -17,7 +17,7 @@ from rekep.iceberg.fields import (
 )
 
 
-@field
+@scalar
 class Quote(Convertible):
     """One quote."""
 
@@ -33,7 +33,7 @@ class Quote(Convertible):
 
 @pytest.fixture
 def schema() -> object:
-    return Quote.FIELD.into_iceberg_schema()
+    return Quote.into_field().into_iceberg_schema()
 
 
 # -- one field on its own ---------------------------------------------------
@@ -46,7 +46,7 @@ def test_one_field_projects_on_its_own_and_numbers_from_the_id_given() -> None:
     projection and call it were the only lines of `field.py` the whole suite
     never reached.
     """
-    projected = Quote.FIELD.field("symbol").into_iceberg_field(field_id=7)
+    projected = Quote.into_field().field("symbol").into_iceberg_field(field_id=7)
     assert projected.name == "symbol"
     assert projected.field_id == 7
     assert projected.required is True
@@ -56,7 +56,7 @@ def test_one_field_projects_on_its_own_and_numbers_from_the_id_given() -> None:
 def test_one_field_projects_the_same_way_the_whole_schema_does(schema: object) -> None:
     """Two ways to the same NestedField, which is what makes the short one safe."""
     whole = schema.find_field("venue")
-    alone = Quote.FIELD.field("venue").into_iceberg_field(field_id=whole.field_id)
+    alone = Quote.into_field().field("venue").into_iceberg_field(field_id=whole.field_id)
     assert alone.name == whole.name
     assert alone.field_type == whole.field_type
     assert alone.required == whole.required
@@ -85,11 +85,11 @@ def test_the_primary_key_becomes_the_identifier_fields(schema: object) -> None:
 
 
 def test_a_field_without_a_key_declares_no_identifier() -> None:
-    @field
+    @scalar
     class Loose(Convertible):
         symbol: str
 
-    assert Loose.FIELD.into_iceberg_schema().identifier_field_ids == []
+    assert Loose.into_field().into_iceberg_schema().identifier_field_ids == []
 
 
 def test_ids_match_what_pyiceberg_would_assign_from_the_same_arrow_schema() -> None:
@@ -97,27 +97,27 @@ def test_ids_match_what_pyiceberg_would_assign_from_the_same_arrow_schema() -> N
     from pyiceberg.io.pyarrow import _pyarrow_to_schema_without_ids
     from pyiceberg.schema import assign_fresh_schema_ids
 
-    arrow = Quote.FIELD.into_arrow_schema()
+    arrow = Quote.into_field().into_arrow_schema()
     fresh = assign_fresh_schema_ids(_pyarrow_to_schema_without_ids(arrow))
-    ours = Quote.FIELD.into_iceberg_schema()
+    ours = Quote.into_field().into_iceberg_schema()
     assert {f.name: f.field_id for f in ours.fields} == {f.name: f.field_id for f in fresh.fields}
 
 
 def test_one_field_projects_on_its_own() -> None:
-    built = iceberg_field(Quote.FIELD.field("symbol"), field_id=7)
+    built = iceberg_field(Quote.into_field().field("symbol"), field_id=7)
     assert (built.name, built.field_id, built.required) == ("symbol", 7, True)
     assert built.doc == "Instrument."
 
 
 def test_a_nested_field_projects_too() -> None:
-    @field
+    @scalar
     class Book(Convertible):
         """A book."""
 
         venue: Quote
         legs: list[int]
 
-    schema = Book.FIELD.into_iceberg_schema()
+    schema = Book.into_field().into_iceberg_schema()
     assert str(schema.find_field("venue").field_type).startswith("struct")
     assert schema.find_field("legs").field_type.element_type.__class__.__name__ == "LongType"
 
@@ -126,7 +126,7 @@ def test_a_nested_field_projects_too() -> None:
 
 
 def test_the_partition_spec_follows_the_declaration(schema: object) -> None:
-    spec = Quote.FIELD.into_iceberg_partition_spec(schema)
+    spec = Quote.into_field().into_iceberg_partition_spec(schema)
     (partition,) = spec.fields
     assert partition.name == "day", "an identity partition keeps the column name"
     assert partition.source_id == schema.find_field("day").field_id
@@ -134,12 +134,12 @@ def test_the_partition_spec_follows_the_declaration(schema: object) -> None:
 
 
 def test_a_transform_is_parsed_as_iceberg_spells_it() -> None:
-    @field
+    @scalar
     class Bucketed(Convertible):
         symbol: Annotated[str, Field.partition_key("bucket[16]")]
         stamp: Annotated[datetime.datetime, Field.partition_key("day")]
 
-    spec = Bucketed.FIELD.into_iceberg_partition_spec()
+    spec = Bucketed.into_field().into_iceberg_partition_spec()
     assert [str(f.transform) for f in spec.fields] == ["bucket[16]", "day"]
     assert [f.name for f in spec.fields] == ["symbol_bucket", "stamp_day"], (
         "the width is in the spec already, and a partition name is a directory name"
@@ -149,11 +149,11 @@ def test_a_transform_is_parsed_as_iceberg_spells_it() -> None:
 
 
 def test_nothing_declared_is_an_unpartitioned_spec() -> None:
-    @field
+    @scalar
     class Flat(Convertible):
         symbol: str
 
-    assert Flat.FIELD.into_iceberg_partition_spec().fields == ()
+    assert Flat.into_field().into_iceberg_partition_spec().fields == ()
 
 
 # -- reading one back -------------------------------------------------------
@@ -169,7 +169,7 @@ def test_a_schema_comes_back_as_a_struct_field(schema: object) -> None:
 
 
 def test_the_spec_comes_back_as_partition_keys(schema: object) -> None:
-    spec = Quote.FIELD.into_iceberg_partition_spec(schema)
+    spec = Quote.into_field().into_iceberg_partition_spec(schema)
     built = StructField.from_iceberg_schema(schema, "Quote", spec)
     assert built.partition_keys() == {"day": "identity"}
 
@@ -190,8 +190,8 @@ def test_the_round_trip_keeps_names_types_and_keys(schema: object) -> None:
 
 def test_the_module_functions_take_a_field_directly() -> None:
     """The methods on a field are the front door; these are what they call."""
-    assert [f.name for f in iceberg_schema(Quote.FIELD).fields] == Quote.FIELD.names
-    assert [f.name for f in iceberg_partition_spec(Quote.FIELD).fields] == ["day"]
+    assert [f.name for f in iceberg_schema(Quote.into_field()).fields] == Quote.into_field().names
+    assert [f.name for f in iceberg_partition_spec(Quote.into_field()).fields] == ["day"]
 
 
 # -- column ids --------------------------------------------------------------
@@ -257,7 +257,7 @@ def test_ids_ride_under_the_protocol_prefix() -> None:
 # -- metrics ----------------------------------------------------------------
 
 
-@field
+@scalar
 class Wide(Convertible):
     """A shape with more leaves than Iceberg infers bounds for."""
 
@@ -270,7 +270,7 @@ class Wide(Convertible):
 
 def _widened(leaves: int) -> StructField:
     """`Wide` grown to `leaves` members, the two declared ones included."""
-    source = Wide.FIELD
+    source = Wide.into_field()
     grown = pyarrow.struct(
         list(source.arrow_fields)
         + [pyarrow.field(f"pad{index}", pyarrow.int64()) for index in range(leaves - 2)]
@@ -279,7 +279,7 @@ def _widened(leaves: int) -> StructField:
 
 
 def test_the_keys_a_reader_filters_on_are_declared_by_name() -> None:
-    declared = metrics_for(Quote.FIELD)
+    declared = metrics_for(Quote.into_field())
     assert declared == {
         "write.metadata.metrics.column.day": "full",
         "write.metadata.metrics.column.symbol": "truncate(16)",
@@ -287,7 +287,7 @@ def test_the_keys_a_reader_filters_on_are_declared_by_name() -> None:
 
 
 def test_a_shape_inside_the_budget_does_not_restate_it() -> None:
-    assert INFERRED_METRICS not in metrics_for(Quote.FIELD)
+    assert INFERRED_METRICS not in metrics_for(Quote.into_field())
     assert INFERRED_METRICS not in metrics_for(_widened(DEFAULT_INFERRED))
 
 

@@ -1,16 +1,4 @@
-"""Building one Arrow array out of another, in kernels and builders only.
-
-Every function here is a shape change -- a list becoming a map, a struct
-becoming a list, a map becoming a struct -- and **none of them loops over rows
-in Python**. What a row is worth of work always comes out of `pyarrow.compute`
-or an array builder, so a conversion costs one pass in C++ rather than one
-interpreted step per value.
-
-The index arithmetic that makes that possible is worth reading once: a
-`sequence` is built by summing a constant array, and a row/member split of it
-is two integer kernels, so even "repeat these names once per row" never becomes
-a comprehension.
-"""
+"""Building one Arrow array out of another, in kernels and builders only."""
 
 from __future__ import annotations
 
@@ -243,17 +231,7 @@ def list_column(array: pyarrow.Array, index: int) -> pyarrow.Array:
 
 
 def interleave(columns: list[pyarrow.Array], length: int) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """`(entry values, member index)` for `length` rows of `len(columns)` members.
-
-    Turning a struct into a list or a map means reading the members row by row
-    -- member 0 of row 0, member 1 of row 0, member 0 of row 1 -- which is a
-    transpose, and a transpose is a `take` with the right indices. The indices
-    are pure integer kernels: concatenating the members gives a member-major
-    array, and entry `p` of the result is at `(p % m) * length + p // m` in it.
-
-    The member index comes back too, because whatever names those members
-    (a map's keys) needs exactly the same `take`.
-    """
+    """`(entry values, member index)` for `length` rows of `len(columns)` members."""
     members = len(columns)
     positions = sequence(length * members)
     rows = pyarrow.compute.divide(positions, members)

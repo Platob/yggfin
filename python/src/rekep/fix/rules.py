@@ -1,58 +1,45 @@
-"""Which protocol a log line carries, and how to read it.
-
-FIX knowledge, not log knowledge: the patterns that say "this is a wire
-message" and "this is a bridge message" are the parser's own (`BEGIN_STRING`,
-`BRIDGE`), and a second copy of either in `rekep.text` would be a second answer
-to one question.
-"""
+"""Protocol classification, parsing rules, and log target categories."""
 
 from __future__ import annotations
 
 import dataclasses
 import functools
 import re
-from typing import Any, ClassVar
+from typing import Any
 
 import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.fields import field
+from rekep.enums import EventType
+from rekep.fields import scalar
 from rekep.fix.message import BEGIN_STRING, BRIDGE, BRIDGE_WIRE
 
-#: Read the line as wire tags, as rendered names, or not at all. Three and not
-#: two: "this is not a message" is an answer, and it is 60% of a capture --
-#: which is why a rule set runs before the parser does
-#: (`benchmarks/bench_text_file.py --only messages`).
+#: Read wire tags, rendered names, or no message.
 CODECS: tuple[str, ...] = ("fix", "ul", "none")
 
-#: `codec` -> `parse_arrow_array`'s `named`. None is "nothing to parse", which
-#: is not either of the other two and must not be spelled as one.
+#: `codec` -> `parse_arrow_array`'s named mode; None skips parsing.
 NAMED: dict[str, bool | None] = {"fix": False, "ul": True, "none": None}
 
-#: What a line carrying nothing this rule set knows is. The fall-through, and
-#: the value the `protocol` column holds for most of a capture.
+#: Fall-through protocol for a line no configured rule recognizes.
 NO_PROTOCOL = "OTHER"
 
+#: Parsed-log target categories. Market rows share one table; known operational
+#: traffic stays separate from lines whose transport is not recognised.
+MARKET_CATEGORY = "market"
+MISC_CATEGORY = "misc_logs"
+UNKNOWN_CATEGORY = "unknown_logs"
 
-@field
+
+@scalar
 class Rule(Convertible):
-    """One pattern, and what a line matching it carries.
-
-    A declaration and nothing else, so a desk whose bridge spells its messages
-    differently writes a document rather than patching this package.
-
-    **A pattern is run by two engines** -- `re` on one line, RE2 over a whole
-    column -- and they are contracted to agree, so it has to be spellable in
-    both: no lookbehind, no lookahead, no backreference. The built-ins are the
-    parser's own constants for that reason.
-    """
+    """A protocol rule whose regexes must work in Python `re` and Arrow RE2."""
 
     protocol: str = NO_PROTOCOL
     """What a line matching this rule carries, as the `protocol` column holds it."""
 
     pattern: str = ""
-    """Regular expression matched anywhere in the message; empty matches every line."""
+    """First message regex; empty with no `patterns` matches every line."""
 
     driver_pattern: str | None = None
     """Matched against `driver_name` as well, when the driver is what tells them apart."""
@@ -67,7 +54,15 @@ class Rule(Convertible):
     """How to read the line: `fix`, `ul`, or `none` for "do not"."""
 
     fix_version: str | None = None
-    """Which FIX version to resolve names against when the message carries no BeginString."""
+    """Fallback FIX application version for messages this rule matches."""
+
+    patterns: list[str] = dataclasses.field(default_factory=list)
+    """Additional message regexes; matching any one satisfies the rule."""
+
+    def __post_init__(self) -> None:
+        """Keep direct string input as one pattern, never its characters."""
+        if isinstance(self.patterns, str):
+            self.patterns = [self.patterns]
 
     @property
     def named(self) -> bool | None:
@@ -75,73 +70,68 @@ class Rule(Convertible):
         return NAMED.get(self.codec)
 
     def matches(self, message: str | None, driver: str | None = None) -> bool:
-        """Whether one line is this rule's.
-
-        The scalar twin of `into_arrow_protocol_array`. A rule naming a driver
-        and handed none does not match: a rule that cannot be evaluated is not
-        a rule that matched.
-        """
+        """Whether one line matches; unavailable message or driver data does not."""
         if message is None:
             return False
-        if self.pattern and _compiled(self.pattern).search(message) is None:
+        patterns = self.message_patterns
+        if patterns and not any(_compiled(pattern).search(message) for pattern in patterns):
             return False
         if self.driver_pattern:
             if driver is None or _compiled(self.driver_pattern).search(driver) is None:
                 return False
         return True
 
+    @property
+    def message_patterns(self) -> tuple[str, ...]:
+        """All nonempty message patterns, in declaration order."""
+        return tuple(filter(None, (self.pattern, *self.patterns)))
 
-#: A wire FIX message: a BeginString anywhere in the line. The parser's own
-#: constant, so "what makes this a FIX message" and "where does the message
-#: start" can never drift apart.
+
+#: Use parser-owned patterns so classification and parsing cannot drift.
 FIX = Rule(protocol="FIX", pattern=BEGIN_STRING, codec="fix")
 
-#: A UL bridge message: two or more `#NAME=` tokens. Two, because a lone
-#: `#FOO=bar` in prose is a sentence -- again the parser's own constant.
 UL = Rule(protocol="UL", pattern=BRIDGE, codec="ul")
 
-#: The same message inside a FIX envelope: `8=FIX.4.2|35=UL|#A=1|#B=2`. It
-#: answers to the FIX tell too, so it sits **in front of** the FIX rule -- read
-#: as a wire message, every named field in it is noise. Same protocol as any
-#: other bridge message, and the wire header is not lost: the named codec
-#: admits a numeric key, and the message still starts at its BeginString.
+#: More specific than FIX, so this must precede `FIX`.
 UL_WIRE = Rule(protocol="UL", pattern=BRIDGE_WIRE, codec="ul")
 
-#: Everything else, which is most of a capture. An empty pattern matches every
-#: line, so this is the fall-through *as a rule*: last in the list, and the
-#: answer a custom set that runs out without matching gives.
+#: Operational lines whose vocabulary is understood but which carry no market
+#: message. Keeping these known lines out of `unknown_logs` makes that table a
+#: useful signal that a genuinely new log format arrived.
+MISC = Rule(
+    protocol="MISC",
+    patterns=[
+        r"(?i)\bheartbeat\b",
+        r"(?i)\b(?:connect(?:ed|ion)?|disconnect(?:ed|ion)?|reconnect(?:ed|ion)?)\b",
+        r"(?i)\b(?:logon|logout|timeout|retry)\b",
+    ],
+    codec="none",
+)
+
+#: Empty patterns make this the final fall-through rule.
 OTHER = Rule(protocol=NO_PROTOCOL, pattern="", codec="none")
 
-#: The built-ins, in the order they are tried. The wrapped bridge message
-#: leads, because it is the only one that answers to two tells and the more
-#: specific reading has to get there first.
-DEFAULT_RULES: tuple[Rule, ...] = (UL_WIRE, FIX, UL, OTHER)
+#: First match wins; wrapped UL must precede its FIX envelope.
+DEFAULT_RULES: tuple[Rule, ...] = (UL_WIRE, FIX, UL, MISC, OTHER)
+
+
+def _default_rules() -> list[Rule]:
+    """Fresh default rules, including their mutable pattern lists."""
+    return [dataclasses.replace(rule, patterns=list(rule.patterns)) for rule in DEFAULT_RULES]
 
 
 @dataclasses.dataclass
 class Rules(Convertible):
-    """Which protocol each line carries, by the first pattern that matches.
+    """Which protocol each line carries, by the first pattern that matches."""
 
-    A list of rules and nothing else, so the whole thing is configuration:
-    `Rules.from_yaml("rules.yml")` reads one, and it travels in a task document
-    with the rest of the job.
-
-    **First match wins, no match is OTHER.** An ordered list lets a specific
-    rule sit in front of a general one without either knowing about the other,
-    and a line nothing matches is still a line -- parsed as nothing, stored,
-    keyed and partitioned like every other. Dropping it, or guessing, is how a
-    log stops being a record of what happened.
-
-    One Arrow kernel per rule over the whole column: a handful of passes per
-    batch, and nothing per row.
-    """
-
-    #: What a FIX-carrying trading log reads under. Assigned below the class,
-    #: because it is an instance of it.
-    DEFAULT: ClassVar[Rules]
+    @classmethod
+    @functools.cache
+    def into_default(cls) -> Rules:
+        """Shared default rules, built lazily once per concrete class."""
+        return cls()
 
     #: Rules in the order they are tried.
-    rules: list[Rule] = dataclasses.field(default_factory=lambda: list(DEFAULT_RULES))
+    rules: list[Rule] = dataclasses.field(default_factory=_default_rules)
 
     def categorise(self, message: str | None, driver: str | None = None) -> Rule:
         """The first rule `message` matches, or `OTHER`."""
@@ -162,21 +152,21 @@ class Rules(Convertible):
                 return rule
         return OTHER
 
+    def category_of(self, protocol: str | None, etype: int | EventType | None) -> str:
+        """Target category for one parsed row."""
+        if etype is not None and int(etype) != int(EventType.UNKNOWN):
+            return MARKET_CATEGORY
+        if protocol in self.protocols:
+            return MISC_CATEGORY
+        return UNKNOWN_CATEGORY
+
+    @property
+    def protocols(self) -> frozenset[str]:
+        """Recognised protocol names, excluding the fall-through value."""
+        return frozenset(rule.protocol for rule in self.rules if rule.protocol != NO_PROTOCOL)
+
     def into_arrow_protocol_array(self, messages: Any, drivers: Any = None) -> pyarrow.Array:
-        """What each row carries, in kernels: one `protocol` name per line.
-
-        Applied **in reverse**, each rule overwriting what the ones after it
-        decided, so the earliest surviving rule is the first match -- one pass
-        per rule rather than a scan per row.
-
-        A rule with an empty pattern costs no kernel: it matches every row,
-        which is what the array already holds. A rule naming a driver where no
-        driver column was handed over is skipped, for `Rule.matches`'s reason.
-
-        A null message matches nothing rather than propagating: a line with no
-        payload carries none, which OTHER already says, and the null would land
-        in a NOT NULL column.
-        """
+        """What each row carries, in kernels: one `protocol` name per line."""
         compute = pyarrow.compute
         rows = len(messages)
         found: Any = pyarrow.repeat(pyarrow.scalar(OTHER.protocol, pyarrow.string()), rows)
@@ -191,32 +181,55 @@ class Rules(Convertible):
             found = compute.if_else(hit, pyarrow.scalar(rule.protocol, pyarrow.string()), found)
         return found.cast(pyarrow.string(), safe=False)
 
+    def into_arrow_category_array(self, protocols: Any, etypes: Any) -> pyarrow.Array:
+        """Target category per parsed row, using the scalar rule in kernels."""
+        compute = pyarrow.compute
+        rows = len(protocols)
+        if len(etypes) != rows:
+            raise ValueError("protocol and etype columns must have the same length")
+        if not rows:
+            return pyarrow.array([], pyarrow.string())
 
-Rules.DEFAULT = Rules()
+        event_codes = compute.fill_null(etypes.cast(pyarrow.int32(), safe=False), 0)
+        market = compute.not_equal(event_codes, int(EventType.UNKNOWN))
+        known = compute.fill_null(
+            compute.is_in(
+                protocols.cast(pyarrow.string(), safe=False),
+                value_set=pyarrow.array(sorted(self.protocols), pyarrow.string()),
+            ),
+            False,
+        )
+        non_market = compute.if_else(
+            known,
+            pyarrow.scalar(MISC_CATEGORY),
+            pyarrow.scalar(UNKNOWN_CATEGORY),
+        )
+        return compute.if_else(market, pyarrow.scalar(MARKET_CATEGORY), non_market).cast(
+            pyarrow.string(), safe=False
+        )
 
 
 def _hit(rule: Rule, text: Any, drivers: Any) -> Any:
-    """One rule's mask over a whole column, or None where it costs nothing."""
+    """One rule's mask over a whole column."""
     compute = pyarrow.compute
-    mask = None
-    if rule.pattern:
-        mask = compute.fill_null(compute.match_substring_regex(text, rule.pattern), False)
+    message_mask = None
+    for pattern in rule.message_patterns:
+        matched = compute.fill_null(compute.match_substring_regex(text, pattern), False)
+        message_mask = matched if message_mask is None else compute.or_(message_mask, matched)
+    mask = compute.is_valid(text)
+    if message_mask is not None:
+        mask = compute.and_(mask, message_mask)
     if rule.driver_pattern:
         if drivers is None:
-            return None
+            return pyarrow.repeat(False, len(text))
         matched = compute.fill_null(
             compute.match_substring_regex(drivers, rule.driver_pattern), False
         )
-        mask = matched if mask is None else compute.and_(mask, matched)
+        mask = compute.and_(mask, matched)
     return mask
 
 
 @functools.lru_cache(maxsize=256)
 def _compiled(pattern: str) -> re.Pattern[str]:
-    """One rule's pattern, compiled once however many lines it is run over.
-
-    `re.ASCII` for the reason every pattern in `rekep.fix` carries it: the
-    vectorised twin runs under RE2, whose classes are ASCII-only, and the two
-    readings of a rule are contracted to agree.
-    """
-    return re.compile(pattern, re.DOTALL | re.ASCII)
+    """Compile once with ASCII classes, matching Arrow RE2 semantics."""
+    return re.compile(pattern, re.ASCII)

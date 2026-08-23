@@ -1,41 +1,5 @@
-"""Arrow's FileIO, taught three things: Windows drive letters, S3 endpoints,
-and not to fetch the same immutable file twice.
-
-**The parse fix.** `PyArrowFileIO.parse_location` splits a URI and glues netloc
-and path back together, so `file:///C:/warehouse` comes out as `/C:/warehouse`
--- a spelling `pyarrow`'s local filesystem refuses on Windows with
-`WinError 123`. The same split hands a bare `C:/warehouse` to `urlparse`, which
-reads the drive as a one-letter URI scheme and refuses it as a filesystem. Both
-are the standard spellings a Windows path arrives in, so the default FileIO
-cannot write a local warehouse there at all. Locations are parsed by
-`rekep.urls.Url` here, which is the same parser everything else in this package
-reads a location with.
-
-**The endpoint fix.** A warehouse on MinIO is `s3://key:secret@minio:9000/wh`,
-and every parser in the stack reads `minio` as the *bucket* and drops the port
--- a bucket name that is legal, so nothing raises and the write lands nowhere
-anybody looks. A location that names a port names an endpoint, so this reads
-the endpoint, the access key and the secret out of it and fills in the
-`s3.*` properties pyiceberg configures its filesystem from. What the caller
-already set wins; nothing is guessed where the location says nothing.
-
-**The cache.** Every file Iceberg writes below the catalog pointer is immutable
-and lives at a name no other write will ever reuse -- manifests, manifest
-lists and `metadata.json` versions all carry a UUID minted per attempt. Yet
-pyiceberg re-reads them constantly: the manifest list on *every* scan plan (its
-own comment calls the re-read intentional), and every manifest on every
-`fetch_manifest_entry`. A streaming merge plans a scan per chunk, so on an
-object store the same few-KB files are fetched hundreds of times -- measured on
-8 merge commits, 104 of 136 GETs were manifests and manifest lists the process
-had already read. Immutability makes the fix safe: entries can go cold, never
-stale. So this FileIO keeps a bounded, process-wide cache of those files'
-bytes, filled on first read *and on write* -- the manifest list a commit just
-wrote is the one the next chunk's scan plans from, so write-through means the
-steady state fetches nothing at all.
-
-Data files are never cached: they are the bytes worth streaming, and one of
-them would evict the whole point.
-"""
+"""Arrow's FileIO, taught three things: Windows drive letters, S3 endpoints, and not to fetch the
+same immutable file twice."""
 
 from __future__ import annotations
 
@@ -80,38 +44,13 @@ DEFAULT_CACHE_BYTES = 64 * 1024 * 1024
 
 
 def _immutable(location: str) -> bool:
-    """Whether Iceberg promises never to rewrite the file at `location`.
-
-    Manifests and manifest lists (`.avro`) and metadata versions are written
-    once at a UUID-bearing name and referenced forever after; the one mutable
-    file near them, a Hadoop catalog's `version-hint.text`, matches neither.
-    Data files are immutable too, but caching is for what is fetched
-    *repeatedly*, and a data file is read once per scan that wants its rows.
-
-    The UUID is what the promise rests on, so a metadata version has to carry
-    one: pyiceberg mints `00007-<uuid>.metadata.json` per attempt, but the
-    `v7.metadata.json` a Hadoop-style catalog writes is a name two racing
-    writers can both produce, with different bytes. That one is read from the
-    store every time, which is the only honest answer about a file whose name
-    does not say which write it came from.
-    """
+    """Whether Iceberg promises never to rewrite the file at `location`."""
     name = location.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
     return name.endswith(".avro") or bool(_VERSIONED.match(name))
 
 
 class ContentCache:
-    """Bytes of immutable files, bounded and shared across the process.
-
-    One cache for everything, the way pyiceberg shares its own manifest-file
-    cache: the entries are keyed by full location, and a location is unique
-    across catalogs, warehouses and threads. Eviction is LRU by total bytes;
-    a file bigger than an eighth of the budget is never stored, so one bloated
-    manifest cannot evict everything else.
-
-    `stats()` is how a benchmark -- or an operator wondering what their object
-    store is being asked -- sees it working: hits, misses, stores, and the
-    bytes currently held.
-    """
+    """Bytes of immutable files, bounded and shared across the process."""
 
     def __init__(self, limit: int = DEFAULT_CACHE_BYTES) -> None:
         self.limit = limit
@@ -215,15 +154,7 @@ class CachedInputFile(InputFile):
 
 
 class CachedOutputFile(OutputFile):
-    """An output file whose bytes land in the cache as they land in the store.
-
-    Write-through is what makes a streaming write quiet: the manifest list a
-    commit writes is exactly the file the next chunk's scan plans from, so
-    caching it *now* means that plan never asks the store. The bytes are only
-    stored when the stream closes cleanly -- a write abandoned mid-file must
-    not leave its half in the cache -- and a failed *commit* is harmless
-    either way, because its files sit at names nothing will ever reference.
-    """
+    """An output file whose bytes land in the cache as they land in the store."""
 
     def __init__(self, inner: OutputFile, cache: ContentCache) -> None:
         super().__init__(location=inner.location)
@@ -291,7 +222,7 @@ class _TeeStream:
     def __enter__(self) -> _TeeStream:
         return self
 
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+    def __exit__(self, exc_type: Any, _exc_value: Any, _traceback: Any) -> None:
         if exc_type is not None:
             self._failed = True
         self.close()
@@ -301,16 +232,9 @@ class _TeeStream:
 
 
 def inferred_properties(properties: Properties) -> Properties:
-    """`properties`, plus what the locations in them already say.
-
-    A catalog configured with `warehouse=s3://key:secret@minio:9000/wh` has
-    said where the store is, which key reaches it and which secret -- and then
-    has to say all three again as `s3.endpoint`, `s3.access-key-id` and
-    `s3.secret-access-key`, because that is where pyiceberg reads them. This
-    fills those in from the location, and only where the caller left them out:
-    an explicit property is a decision, and a URL is a default.
-    """
+    """`properties`, plus S3 settings carried by its locations."""
     inferred: dict[str, str] = {}
+    normalized = dict(properties)
     for name in LOCATION_PROPERTIES:
         location = properties.get(name)
         if not location:
@@ -320,27 +244,18 @@ def inferred_properties(properties: Properties) -> Properties:
             continue
         for key, value in properties_of(url).items():
             inferred.setdefault(key, value)
-    if not inferred:
+        if url.query:
+            clean = url.copy()
+            clean.query.clear()
+            normalized[name] = clean.into_string()
+    if not inferred and normalized == properties:
         return properties
-    return {**inferred, **properties}
+    return {**inferred, **normalized}
 
 
 class ArrowFileIO(PyArrowFileIO):
-    """`PyArrowFileIO` whose locations are read the way this package reads
-    every location, and whose immutable metadata is fetched once.
-
-    Three changes, one per failure mode. **Parsing**: on Windows, `/C:/x` sheds
-    the slash the URI split left in front of the drive, and a bare `C:/x` is a
-    local path rather than a URI with scheme `c`; everywhere else the parent's
-    answer stands, so a POSIX directory literally named `C:` keeps meaning what
-    it says. **Configuration**: a warehouse URL that names an endpoint and
-    credentials fills in the `s3.*` properties saying the same thing, so the
-    filesystem pyiceberg builds reaches the store the location named.
-    **Fetching**: manifests, manifest lists and `metadata.json` versions are
-    served from `CONTENT_CACHE` and kept there as they are written, which is
-    what keeps a scan-per-chunk write flow from asking an object store for the
-    same bytes on every chunk.
-    """
+    """`PyArrowFileIO` whose locations are read the way this package reads every location, and
+    whose immutable metadata is fetched once."""
 
     def __init__(self, properties: Properties = EMPTY_DICT) -> None:
         super().__init__(properties=inferred_properties(properties))
@@ -354,17 +269,7 @@ class ArrowFileIO(PyArrowFileIO):
 
     @staticmethod
     def parse_location(location: str, properties: Properties = EMPTY_DICT) -> tuple[str, str, str]:
-        """Where a location is: its scheme, its netloc, and the path on it.
-
-        Two answers the parent gets wrong. A Windows drive letter is a path and
-        not a scheme, on the host where that is true. And an S3 location says
-        its bucket in two places: in the netloc when it names a bucket, and in
-        the first path segment when the netloc was an endpoint -- while the
-        parent reads the netloc either way, so `s3://key:secret@minio:9000/wh`
-        addresses a bucket called `key:secret@minio`. Legal as a name, and
-        therefore silent. Every S3 location is read here for that reason; a
-        plain `s3://bucket/key` comes out exactly as the parent reads it.
-        """
+        """Where a location is: its scheme, its netloc, and the path on it."""
         url = Url.from_string(location)
         if _WINDOWS and url.scheme == "file":
             return "file", "", url.path

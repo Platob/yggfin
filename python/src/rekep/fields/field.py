@@ -7,11 +7,12 @@ import functools
 import itertools
 import re
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
-from typing import Any, ClassVar
+from types import MappingProxyType
+from typing import Any
 
 import pyarrow
 
-from rekep.annotations import hide_private, unwrap_annotated
+from rekep.annotations import hide_private, restore_private_slots, unwrap_annotated
 from rekep.convert import Convertible
 from rekep.fields import arrays
 from rekep.fields.arrow import merge_fields
@@ -57,21 +58,26 @@ ASCENDING = "asc"
 #: The declaration; everything else a field holds is derived from these.
 DECLARED = ("name", "arrow_type", "nullable", "metadata")
 
+_DERIVED = (
+    "fields",
+    "_by_name",
+    "item",
+    "key",
+    "value",
+    "arrow_field",
+    "arrow_fields",
+    "arrow_schema",
+)
+_FIELD_CASTS = MappingProxyType(
+    {
+        pyarrow.Array: "arrow_array",
+        pyarrow.ChunkedArray: "arrow_array",
+    }
+)
+
 
 class ProtocolMetadata(MutableMapping):
-    """One protocol's keys in a field's metadata: `prefix:key = value`.
-
-    A **view**, never a copy: a get reads the field's own metadata with the
-    prefix put back on, so looking a key up allocates nothing, and a write
-    goes through the field's `metadata` assignment -- which is what drops the
-    derived views and rebuilds the containers above it, exactly as setting
-    `metadata` directly would. Two proxies over one field always agree,
-    because neither holds any state beyond the prefix.
-
-    Values are strings, like all field metadata: what a value *means* is the
-    protocol's business, and `__setitem__` coerces with `str` the way the
-    field itself does.
-    """
+    """One protocol's keys in a field's metadata: `prefix:key = value`."""
 
     __slots__ = ("field", "prefix")
 
@@ -111,71 +117,26 @@ class ProtocolMetadata(MutableMapping):
 
 @dataclasses.dataclass(eq=True)
 class Field(Convertible):
-    """One field: a name, an Arrow type, and metadata.
+    """One field: a name, an Arrow type, and metadata."""
 
-    The same three things Arrow itself holds, kept as ours so a field can be
-    *declared* before it is resolved. That is the one class doing both jobs:
+    @classmethod
+    @functools.cache
+    def into_redirects(cls) -> Mapping[Any, str]:
+        """Conversions inferred for fields and their serialized forms."""
+        return MappingProxyType(
+            {
+                **super().into_redirects(),
+                pyarrow.Schema: "arrow_schema",
+                pyarrow.Field: "arrow_field",
+                pyarrow.DataType: "arrow_type",
+            }
+        )
 
-    - As a declaration it rides in `Annotated`, saying only what inference
-      cannot know -- an exact width, a unit, a comment, a key::
-
-          size: Annotated[int, Field(arrow_type=pyarrow.int32(), metadata={"unit": "lots"})]
-          unix: Annotated[int, Field.primary_key()]
-          day: Annotated[datetime.date, Field.partition_key("day")]
-
-      A bare `pyarrow.DataType`, `Mapping` or `str` in `Annotated` is read as
-      the type, the metadata or the description, so the short forms work too.
-    - As a resolved field it is what a `@field` class projects to -- name,
-      struct type, metadata -- and converts from and to Arrow in both
-      directions: `into_arrow_field`, `into_arrow_schema`, `from_arrow_schema`.
-
-    **The type picks the class.** `Field(...)` returns a `StructField`, a
-    `ListField` or a `MapField` when its type is one of those, so the methods
-    that only make sense for a container (`fields`, `item`, `key`/`value`, and
-    the recursive casts built on them) live on the class that has them rather
-    than behind a kind check on every call.
-
-    Nullability is declared, never guessed: `str` is NOT NULL, `str | None` is
-    nullable, and item nullability survives (`list[str | None]`). A `None`
-    `nullable` means "unstated" while merging declarations, and reads as NOT
-    NULL once the field is resolved.
-
-    A field is mutable, and a member reached through a container is a *view*
-    of it: setting `is_primary_key` on `record.field("id")` rebuilds the struct
-    it came from, all the way to the root. Derived views (the Arrow schema, the
-    member list) are cached and dropped whenever the declaration changes.
-
-    Being a `Convertible` dataclass, a field serialises itself -- `into_json`,
-    `into_yaml`, `into_toml` dump the declaration, nested fields and all, and
-    `from_dict` reads one back.
-    """
-
-    REDIRECTS: ClassVar[dict[Any, str]] = {
-        **Convertible.REDIRECTS,
-        pyarrow.Schema: "arrow_schema",
-        pyarrow.Field: "arrow_field",
-        pyarrow.DataType: "arrow_type",
-    }
-
-    #: What `cast_arrow` redirects to, keyed by the kind of thing handed to it.
-    #: A struct adds the batch, table and stream entries: only a schema-shaped
-    #: field can reshape those.
-    CASTS: ClassVar[dict[Any, str]] = {
-        pyarrow.Array: "arrow_array",
-        pyarrow.ChunkedArray: "arrow_array",
-    }
-
-    #: Views computed from the declaration, dropped whenever it changes.
-    DERIVED: ClassVar[tuple[str, ...]] = (
-        "fields",
-        "_by_name",
-        "item",
-        "key",
-        "value",
-        "arrow_field",
-        "arrow_fields",
-        "arrow_schema",
-    )
+    @classmethod
+    @functools.cache
+    def into_casts(cls) -> Mapping[Any, str]:
+        """Arrow values this field can cast, keyed by source type."""
+        return _FIELD_CASTS
 
     #: Container this field is a member of, when it was reached through one.
     #: Written without an annotation on purpose: it is a link between fields,
@@ -222,7 +183,7 @@ class Field(Convertible):
         """
         super().__setattr__(name, value)
         if name in DECLARED:
-            for derived in self.DERIVED:
+            for derived in _DERIVED:
                 self.__dict__.pop(derived, None)
             if self._parent is not None:
                 self._parent._member_changed(self)
@@ -314,15 +275,7 @@ class Field(Convertible):
 
     @property
     def field_id(self) -> int | None:
-        """The Iceberg column id this field carries, or None when it has none.
-
-        A declaration written in Python has none: ids belong to a table, and
-        the first write is where they are assigned. A field read back from an
-        Iceberg schema carries them, and a contract dumped from one publishes
-        them -- which is what lets a consumer name a column the way Iceberg
-        does, and what makes a round trip through the protocol keep the
-        identity a rename would otherwise lose.
-        """
+        """The Iceberg column id this field carries, or None when it has none."""
         declared = self.iceberg.get("field_id")
         return int(declared) if declared else None
 
@@ -344,15 +297,7 @@ class Field(Convertible):
 
     @property
     def derived_from(self) -> tuple[str, ...]:
-        """Columns this field is a function of, or nothing when it stands alone.
-
-        A denormalised column holds no information its sources do not: two rows
-        agreeing on every source agree here too. That is a fact about the data
-        and not about any one write, which is why it is declared on the field
-        rather than passed to a merge -- and it is what lets a merge that knows
-        only the sources still name this column in the filter it scans with,
-        which is the difference between pruning partitions and reading bounds.
-        """
+        """Columns this field is a function of, or nothing when it stands alone."""
         declared = self.iceberg.get("derived_from", "")
         return tuple(name for name in declared.split(",") if name)
 
@@ -401,16 +346,7 @@ class Field(Convertible):
         )
 
     def merge_with(self, other: Any) -> Field:
-        """This field widened with whatever `other` has and it does not.
-
-        The merge rule, from this side: **this** field wins wherever both say
-        something -- its type, its nullability, its metadata -- so data is cast
-        onto it and never the other way round, and whatever `other` has and it
-        does not is added, forced nullable, at every level (`fields.arrow`).
-
-        `other` is anything that names a shape: a field, an Arrow field, type
-        or schema, or a `@field` class.
-        """
+        """This field widened with whatever `other` has and it does not."""
         return self.merge_with_arrow_field(field_of(other).into_arrow_field())
 
     def merge_with_arrow_field(self, other: pyarrow.Field) -> Field:
@@ -492,7 +428,8 @@ class Field(Convertible):
         """A whole class as one field: its members are the struct's members."""
         from rekep.fields.builder import FieldBuilder
 
-        builder: type[FieldBuilder] = getattr(target, "FIELD_BUILDER", FieldBuilder)
+        builder_of = getattr(target, "into_field_builder", None)
+        builder: type[FieldBuilder] = builder_of() if callable(builder_of) else FieldBuilder
         return builder().dataclass_field(target, name)
 
     @classmethod
@@ -671,7 +608,9 @@ class Field(Convertible):
         iterator of batches each have their own `cast_arrow_*`; this redirects
         to the one that fits rather than making every call site branch.
         """
-        return getattr(self, f"cast_{self.redirect_of(source, self.CASTS)}")(source, **kwargs)
+        return getattr(self, f"cast_{self.redirect_of(source, self.into_casts())}")(
+            source, **kwargs
+        )
 
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
         """`array` cast to this field's type, or handed back when it already is.
@@ -730,17 +669,7 @@ class ListField(Field):
         return self._extend({"item": self.item})
 
     def cast_arrow_array(self, array: Any, *, safe: bool = False) -> Any:
-        """Cast the values, then cut them back into rows of this flavour.
-
-        Recursing into the item is what makes a list of structs castable at
-        all: the members may be in another order, or one may be missing, and
-        only the field that declares them knows what to do about that.
-
-        The source does not have to be a list. A **map** is a list of entries,
-        so it converts by casting its entries onto the item; a **struct** is a
-        row of members, so its members become the elements of one list each --
-        both in kernels, never row by row.
-        """
+        """Cast the values, then cut them back into rows of this flavour."""
         if isinstance(array, pyarrow.ChunkedArray) or array.type == self.arrow_type:
             return super().cast_arrow_array(array, safe=safe)
         if pyarrow.types.is_struct(array.type):
@@ -759,22 +688,7 @@ class ListField(Field):
         return self._rebuilt(array, safe=safe)
 
     def _reusable(self, array: Any) -> bool:
-        """Whether the source's own row layout can be handed to a builder as is.
-
-        Three shapes cannot, and each of them is silent or fatal if it is:
-
-        A **map** and a **fixed size list** do not carry the offsets a builder
-        wants at all. A **sliced** array carries offsets that are themselves a
-        slice, and Arrow refuses those beside a validity mask outright ("Null
-        bitmap with offsets slice not supported") -- which is every sliced list
-        with a null row, and a slice is what `Table.slice` and every reader
-        hands out. And a **list view** whose rows are not laid out back to back
-        -- anything that has been through `take` or `filter` -- survives the
-        re-wrap but not the flavour change after it: Arrow's view-to-list cast
-        reads the offsets buffer and ignores the sizes one, so rows come back
-        holding other rows' values. `_rebuilt` cuts the rows again through
-        `list_flatten`, which reads the sizes, and is right in all three cases.
-        """
+        """Whether the source's own row layout can be handed to a builder as is."""
         kinds = pyarrow.types
         if kinds.is_map(array.type) or kinds.is_fixed_size_list(array.type):
             return False
@@ -971,24 +885,28 @@ class MapField(Field):
 
 
 class StructField(Field):
-    """A field whose members are fields: what a `@field` class projects to.
+    """A field whose members are fields: what a `@scalar` class projects to.
 
     A struct is also a *schema*: `into_arrow_schema` lays its members out flat
     with the field's own name and metadata as schema metadata, and the casts
     take a batch, a table or a whole stream onto that shape.
     """
 
-    CASTS: ClassVar[dict[Any, str]] = {
-        **Field.CASTS,
-        pyarrow.RecordBatch: "arrow_batch",
-        pyarrow.Table: "arrow_table",
-        pyarrow.RecordBatchReader: "arrow_reader",
-        # A stream of batches, however it is held. Not `Iterable`: a `str` is
-        # one, and inferring "reader" for a path would be a silent mistake.
-        Iterator: "arrow_reader",
-        list: "arrow_reader",
-        tuple: "arrow_reader",
-    }
+    @classmethod
+    @functools.cache
+    def into_casts(cls) -> Mapping[Any, str]:
+        """Array and schema-shaped Arrow values this struct can cast."""
+        return MappingProxyType(
+            {
+                **super().into_casts(),
+                pyarrow.RecordBatch: "arrow_batch",
+                pyarrow.Table: "arrow_table",
+                pyarrow.RecordBatchReader: "arrow_reader",
+                Iterator: "arrow_reader",
+                list: "arrow_reader",
+                tuple: "arrow_reader",
+            }
+        )
 
     # -- members ------------------------------------------------------------
 
@@ -1081,11 +999,13 @@ class StructField(Field):
 
         return iceberg_partition_spec(self, schema)
 
-    def into_iceberg_sort_order(self, schema: Any = None) -> Any:
-        """The `pyiceberg` sort order this struct's members declare."""
+    def into_iceberg_sort_order(
+        self, schema: Any = None, sort_by: Sequence[str] | None = None
+    ) -> Any:
+        """The declared sort order, or an explicit ascending column order."""
         from rekep.iceberg.fields import iceberg_sort_order
 
-        return iceberg_sort_order(self, schema)
+        return iceberg_sort_order(self, schema, sort_by)
 
     @classmethod
     def from_iceberg_schema(cls, source: Any, name: str = "", spec: Any = None) -> StructField:
@@ -1095,10 +1015,10 @@ class StructField(Field):
         return struct_field_of(source, name, spec)
 
     def into_dataclass(self, name: str | None = None) -> type:
-        """Rebuild a `@field` class whose projection is exactly this field.
+        """Rebuild a `@scalar` class whose projection is exactly this field.
 
         Imported at the point of use: the class builder decorates what it
-        builds with `field`, which lives here.
+        builds with `scalar`, which lives here.
         """
         from rekep.fields.classes import ClassBuilder
 
@@ -1177,20 +1097,7 @@ class StructField(Field):
     def cast_arrow_columns(
         self, column_of: Callable[[str], Any], length: int, *, safe: bool = False
     ) -> list[Any]:
-        """One array per member: cast what `column_of` finds, null when it may be.
-
-        The shared half of every cast here -- a batch, a table, a struct array,
-        a map -- all come down to "line these columns up with these members".
-        The source is a lookup rather than a mapping so that a batch is asked
-        only for the columns this field declares: building a dict of every
-        column it has, most of which may be dropped, costs more than the cast
-        of a small batch does.
-
-        A member the source does not have is filled with nulls, but only if it
-        is nullable. A missing NOT NULL member is refused by name: filling it
-        builds data that only fails later, at the write, where the cause is
-        much harder to see.
-        """
+        """One array per member: cast what `column_of` finds, null when it may be."""
         columns = []
         for member in self.fields:
             column = column_of(member.name)
@@ -1220,19 +1127,7 @@ class StructField(Field):
     def cast_arrow_batch(
         self, batch: pyarrow.RecordBatch, *, safe: bool = False, merge_schema: bool = False
     ) -> pyarrow.RecordBatch:
-        """`batch` reshaped onto this field: cast, filled, reordered.
-
-        The gap this closes is the one every real pipeline hits: a transform
-        produces *almost* the target shape -- an `int64` where the target wants
-        `int32`, a column the source never had, its columns in another order,
-        a struct column whose members grew -- and the write fails on a schema
-        comparison rather than on the data.
-
-        `merge_schema=True` keeps the columns the batch has and this field does
-        not, appended after the declared ones rather than dropped; the shared
-        ones stay this field's, so the data is cast onto them and never the
-        other way round.
-        """
+        """`batch` reshaped onto this field: cast, filled, reordered."""
         target = self.merged(batch.schema) if merge_schema else self
         schema = target.arrow_schema
         if batch.schema.equals(schema, check_metadata=True):
@@ -1268,24 +1163,7 @@ class StructField(Field):
         safe: bool = False,
         merge_schema: bool = False,
     ) -> pyarrow.RecordBatchReader:
-        """`cast_arrow_batch` over a whole stream, still one batch at a time.
-
-        Takes a plain iterator of batches too, so a transform's output becomes
-        a reader of this field's shape in one step, without the caller building
-        a `RecordBatchReader` by hand first.
-
-        `merge_schema=True` has to look at the incoming schema, which for a
-        plain iterator means pulling one batch early (put straight back, so
-        nothing is lost or read twice); a reader already declares its schema
-        and is not touched. An empty iterator leaves the target as it was.
-
-        The shape is decided **once**, from the reader's own schema or the
-        first batch, and every later batch is cast onto it -- a stream is one
-        shape, and a `RecordBatchReader` cannot say otherwise. A hand-rolled
-        iterator whose batches disagree is therefore resolved in the target's
-        favour: a column a later batch drops comes back as nulls, a column
-        only a later batch has is dropped.
-        """
+        """`cast_arrow_batch` over a whole stream, still one batch at a time."""
         target = self
         if merge_schema:
             source, incoming = _peek_schema(source)
@@ -1321,57 +1199,46 @@ class StructField(Field):
 # -- the decorator ----------------------------------------------------------
 
 
-def field(cls: type | None = None, /, **kwargs: Any) -> Any:
-    """Turn a class into a field: a dataclass whose members are its Arrow struct.
-
-    Wraps `dataclasses.dataclass`, so every keyword it takes is accepted here,
-    and the declaration becomes the schema: the class projects to one
-    `StructField`, reachable as `FIELD`, whose `arrow_type` is a struct of its
-    members and whose metadata carries the class docstring::
-
-        @field
-        class Venue(Convertible):
-            mic: str
-            '''ISO 10383 market identifier.'''
-
-        Venue.FIELD.name                    # 'Venue'
-        Venue.FIELD.into_arrow_schema()     # mic: string not null
-        Venue.FIELD.field("mic").description
-
-    Annotations whose name starts with `__` are dropped before the dataclass
-    machinery sees them, which is how a class carries private working state --
-    caches, handles, memoised views -- without it becoming a member, an
-    `__init__` argument, or a column. Python mangles those names inside a class
-    body, so both the written and the mangled spelling are excluded.
-
-    Inherit `Convertible` alongside, as above, for the instance to serialise
-    itself; the projection here needs no base class of its own.
-    """
+def scalar(cls: type | None = None, /, **kwargs: Any) -> Any:
+    """Turn a class into a field: a dataclass whose members are its Arrow struct."""
 
     def wrap(target: type) -> type:
-        hide_private(target)
+        private = hide_private(target)
+        if kwargs.get("slots"):
+            restore_private_slots(target, private)
         built = dataclasses.dataclass(**kwargs)(target)
-        built.FIELD = _ClassField()
+        if private:
+            hide_private(built)
+            for name in private:
+                built.__dataclass_fields__.pop(name, None)
+        built.into_field = classmethod(_into_class_field)
+        if not callable(getattr(built, "into_field_builder", None)):
+            built.into_field_builder = classmethod(_into_field_builder)
+        if not callable(getattr(built, "into_field_metadata", None)):
+            built.into_field_metadata = classmethod(_into_field_metadata)
         return built
 
     return wrap if cls is None else wrap(cls)
 
 
-class _ClassField:
-    """Descriptor building, once and on first use, the `Field` a class is.
+@functools.cache
+def _into_class_field(owner: type) -> StructField:
+    """Build a class declaration once, after its module resolved forward references."""
+    return Field.from_dataclass(owner)
 
-    Lazy rather than built at decoration time: a class body may name a type
-    declared further down its module, and `get_type_hints` cannot resolve a
-    forward reference until the module finishes loading. The built field
-    replaces the descriptor on the class that asked for it, so the walk over
-    hints, docstrings and nested classes happens once per class -- and a
-    subclass gets its own, not its base's.
-    """
 
-    def __get__(self, instance: Any, owner: type) -> StructField:
-        built = Field.from_dataclass(owner)
-        owner.FIELD = built
-        return built
+@functools.cache
+def _into_field_builder(_owner: type) -> type:
+    """Default projection builder for a `@scalar` class."""
+    from rekep.fields.builder import FieldBuilder
+
+    return FieldBuilder
+
+
+@functools.cache
+def _into_field_metadata(_owner: type) -> Mapping[str, str]:
+    """Default contract metadata for a `@scalar` class."""
+    return MappingProxyType({})
 
 
 # -- casting onto a plain schema --------------------------------------------
@@ -1383,7 +1250,7 @@ def cast_batch(
     """`batch` reshaped onto `schema`, for a target nobody declared as a class.
 
     A parquet footer or another team's contract is a target shape just as well
-    as a `@field` class, so the schema gets the same machinery.
+    as a `@scalar` class, so the schema gets the same machinery.
     """
     return Field.from_arrow_schema(schema).cast_arrow_batch(batch, safe=safe)
 
@@ -1490,7 +1357,7 @@ def field_of(source: Any, name: str = "") -> Field:
     """Whatever names a shape, as a `Field`.
 
     A field is itself, an Arrow schema is a struct field, an Arrow field or
-    type is what it says, and a `@field` class is its `FIELD`. One reading of
+    type is what it says, and a `@scalar` class supplies `into_field()`. One reading of
     "the shape" for every call site that takes one.
     """
     if isinstance(source, Field):
@@ -1501,7 +1368,8 @@ def field_of(source: Any, name: str = "") -> Field:
         return Field.from_arrow_field(source)
     if isinstance(source, pyarrow.DataType):
         return Field.from_arrow_type(source, name)
-    declared = getattr(source, "FIELD", None)
+    into_field = getattr(source, "into_field", None)
+    declared = into_field() if callable(into_field) else None
     if isinstance(declared, Field):
         return declared
     if isinstance(source, type) and dataclasses.is_dataclass(source):
