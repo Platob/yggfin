@@ -24,10 +24,10 @@ Descriptions are short contract facts. Use metadata for protocol identity:
 `fix:*`, `enum:*`, and `iceberg:*`. Repeated FIX data uses ordered lists rather
 than maps.
 
-Evolution is normally additive. Add nullable fields; use a new version to drop
-or retype a field. The `linked_events` and Book-state refactor is an intentional
-breaking cutover: migrate or recreate existing tables before adopting the new
-contracts. No legacy aliases remain in the normalized shape.
+All five contracts remain at version 1 while the project is pre-release. Schema
+changes update declarations and generated contracts together, with no legacy
+contract versions to migrate. After compatibility is established, add nullable
+fields and use a new version to drop or retype a field.
 
 Regenerate a package contract from its declaration and run
 `python/tests/test_schemas.py` before publishing it.

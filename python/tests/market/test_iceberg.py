@@ -128,8 +128,8 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
         struct=Book.into_field(),
     )
     levels = [
-        [{"px": 10.0, "qty": 5.0, "order_xhash": [1], "exec_xhash": []}],
-        [{"px": 11.0, "qty": 6.0, "order_xhash": [], "exec_xhash": []}],
+        [{"px": 10.0, "qty": 5.0}],
+        [{"px": 11.0, "qty": 6.0}],
     ]
     given = Book.summarise_arrow_batch(
         batch(Book, 2, sunix=[1, 2], bid_levels=levels, ask_levels=levels)
@@ -164,5 +164,5 @@ def test_the_metrics_budget_covers_every_flat_column_of_a_book() -> None:
         for member in schema.fields
         if not str(member.field_type).startswith(("list", "map", "struct"))
     ]
-    assert {"spread", "micro_px", "imbalance", "bid_px", "ask_px"} <= set(flat)
+    assert {"spread", "vwap", "exec_px", "imbalance", "bid_px", "ask_px"} <= set(flat)
     assert len(schema.fields) < 100, "no more top-level fields than the budget counts leaves"

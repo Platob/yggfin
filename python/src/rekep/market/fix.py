@@ -778,8 +778,6 @@ class FixEvents(Convertible):
                 order_id=get("OrderID"),
                 client_order_id=get("ClOrdID"),
                 prev_client_order_id=get("OrigClOrdID"),
-                reason_code=_integer(get("OrdRejReason") or get("CxlRejReason")),
-                reason=get("Text"),
                 **self._shared(),
             )
         )
@@ -809,8 +807,6 @@ class FixEvents(Convertible):
                 indicative=True,
                 order_id=get("QuoteEntryID") or get("QuoteID"),
                 client_order_id=get("QuoteReqID"),
-                reason_code=_integer(get("QuoteRejectReason")),
-                reason=get("Text"),
                 **self._shared(),
             )
         )
@@ -843,8 +839,6 @@ class FixEvents(Convertible):
                 leaves_qty=_number(get("LeavesQty")),
                 vwap=_number(get("AvgPx")),
                 aggressor=_flag(get("AggressorIndicator")),
-                reason_code=_integer(get("ExecRestatementReason")),
-                reason=get("Text"),
                 **self._shared(),
             ),
             order,
@@ -1046,15 +1040,14 @@ class FixEvents(Convertible):
         mic = self._mic()
         return {
             "code": instrument.symbol,
-            "seq": _integer(self.get("MsgSeqNum")),
             "mic": mic,
-            "error": self._error(),
+            "reason": self._reason(),
             "instrument_xhash": instrument.xhash,
             "px_unit": instrument.currency.into_str() if instrument.currency else "",
             "ccy": instrument.currency,
         }
 
-    def _error(self) -> str | None:
+    def _reason(self) -> str | None:
         """FIX text or the first structured reject/restatement reason."""
         if text := self.get("Text"):
             return str(text)

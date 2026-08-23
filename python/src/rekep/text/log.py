@@ -23,7 +23,7 @@ from rekep.market.event import Event
 from rekep.market.identity import NIL
 
 _EVENT_CODE = pyarrow.int32()
-_CONTRACT_METADATA = MappingProxyType({"version": "2"})
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _INSTRUMENT_DRIVER = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 _INSTRUMENT_KIND = "rekep.kind"
@@ -118,6 +118,9 @@ class Log(Event):
 
     protocol: str = NO_PROTOCOL
     """Which protocol the line carries; OTHER is a line that carries none."""
+
+    msg_seq_num: Annotated[int | None, DECLARATIONS[34]] = None
+    """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
 
     # Lists preserve repeated keys and wire order. Null means no parsed
     # message; an empty list means a message with nothing left after lifting.
@@ -495,8 +498,8 @@ class Log(Event):
     def into_market_events(self, **declared: Any) -> Iterator[Any]:
         """Translate this parsed row into its ordered market events."""
         for event in self.into_fix_events(**declared):
-            if self.error and not event.error:
-                event.error = self.error
+            if self.reason and not event.reason:
+                event.reason = self.reason
                 event.hash = NIL
                 event.identify()
             yield event
@@ -631,13 +634,10 @@ class Log(Event):
             state=self.state,
             code=self.code,
             xcode=self.xcode,
-            seq=self.seq,
-            prev_hash=self.prev_hash,
-            prev_state=self.prev_state,
             prev_unix=self.prev_unix,
             parent_hash=None if self.parent_hash is None else list(self.parent_hash),
             mic=self.mic,
-            error=self.error,
+            reason=self.reason,
         )
 
 

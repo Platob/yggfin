@@ -18,30 +18,31 @@ from rekep.text import Log
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
 
 
-def test_a_registered_identifier_wins_over_the_symbol() -> None:
-    """It is issued rather than chosen, so two vendors' spellings land on one identity."""
-    built = Instrument(symbol="AAPL", security_id="US0378331005", security_id_source="4")
-    assert built.xhash == hash_of("id", "4", "US0378331005")
-    assert built.xhash != hash_of("symbol", "", "AAPL")
+def test_the_exact_symbol_forces_the_instrument_identity_and_readable_key() -> None:
+    expected = hash_of("symbol", "", "AAPL")
+    variants = (
+        Instrument(symbol="AAPL"),
+        Instrument(symbol="AAPL", exchange="XNAS"),
+        Instrument(symbol="AAPL", security_id="US0378331005", security_id_source="4"),
+        Instrument(symbol="AAPL", xhash=7, xcode="US0378331005"),
+    )
+    assert {(built.xhash, built.xcode) for built in variants} == {(expected, "AAPL")}
 
 
-def test_two_vendors_spelling_the_same_registered_instrument_agree() -> None:
-    """Which is the whole point of preferring the registered key."""
+def test_two_venues_using_the_same_symbol_agree() -> None:
     one = Instrument(
         symbol="AAPL", exchange="XNAS", security_id="US0378331005", security_id_source="4"
     )
     other = Instrument(
-        symbol="AAPL.OQ", exchange="XNGS", security_id="US0378331005", security_id_source="4"
+        symbol="AAPL", exchange="XPAR", security_id="FR0000000001", security_id_source="4"
     )
     assert one.xhash == other.xhash
 
 
-def test_a_symbol_is_scoped_to_the_venue_that_spells_it() -> None:
-    """`BTC-USD` is several different contracts, and they must not share an identity."""
-    here = Instrument(symbol="BTC-USD", exchange="XCME")
-    there = Instrument(symbol="BTC-USD", exchange="XCBT")
-    assert here.xhash != there.xhash
-    assert here.xhash == hash_of("symbol", "XCME", "BTC-USD")
+def test_two_symbols_for_the_same_registered_identifier_stay_distinct() -> None:
+    one = Instrument(symbol="AAPL", security_id="US0378331005", security_id_source="4")
+    other = Instrument(symbol="AAPL.OQ", security_id="US0378331005", security_id_source="4")
+    assert one.xhash != other.xhash
 
 
 def test_a_feed_that_names_no_venue_still_gets_one_stable_identity() -> None:
@@ -49,22 +50,55 @@ def test_a_feed_that_names_no_venue_still_gets_one_stable_identity() -> None:
     assert Instrument(symbol="BTC-USD").xhash == Instrument(symbol="BTC-USD").xhash
 
 
-def test_a_half_registered_identifier_falls_back_rather_than_keying_on_half() -> None:
-    """An id with no scheme names nothing; a scheme with no id names nothing either."""
-    assert Instrument(symbol="AAPL", security_id="US0378331005").xhash == hash_of(
-        "symbol", "", "AAPL"
+def test_symbol_identity_preserves_case_and_whitespace_exactly() -> None:
+    assert (
+        len(
+            {
+                Instrument(symbol="AAPL").xhash,
+                Instrument(symbol="aapl").xhash,
+                Instrument(symbol=" AAPL ").xhash,
+            }
+        )
+        == 3
     )
-    assert Instrument(symbol="AAPL", security_id_source="4").xhash == hash_of("symbol", "", "AAPL")
 
 
 def test_an_instrument_with_no_key_at_all_is_visibly_unidentified() -> None:
     """A hash of emptiness would silently merge every unnamed instrument into one."""
     assert Instrument().xhash == NIL
-    assert Instrument(exchange="XCME", currency="USD").xhash == NIL, "neither is a key"
+    unidentified = Instrument(
+        xhash=7,
+        xcode="US0378331005",
+        exchange="XCME",
+        currency="USD",
+        security_id="US0378331005",
+        security_id_source="4",
+    )
+    assert (unidentified.xhash, unidentified.xcode) == (NIL, "")
 
 
 def test_currency_input_is_normalised_to_the_persisted_int32_enum() -> None:
     assert Instrument(currency=" usd ").currency is Currency.USD
+
+
+@pytest.mark.parametrize("symbol", ("EUR/USD", "eur/usd", "XAU/USD"))
+def test_a_slash_delimited_currency_pair_is_detected_at_construction(symbol: str) -> None:
+    built = Instrument(symbol=symbol)
+    assert built.kind is AssetKind.CURRENCY
+    assert built.currency is Currency.from_str(symbol[4:])
+
+
+@pytest.mark.parametrize("symbol", ("EURUSD", "EUR-USD", "EUR/USDT", " EUR/USD", "EUR/USD "))
+def test_only_an_exact_three_letter_slash_pair_is_autodetected(symbol: str) -> None:
+    built = Instrument(symbol=symbol)
+    assert built.kind is AssetKind.UNKNOWN
+    assert built.currency is None
+
+
+def test_explicit_pair_classification_and_currency_are_preserved() -> None:
+    built = Instrument(symbol="EUR/USD", kind=AssetKind.FORWARD, currency=Currency.EUR)
+    assert built.kind is AssetKind.FORWARD
+    assert built.currency is Currency.EUR
 
 
 def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
@@ -156,18 +190,6 @@ def test_instrument_log_interop_preserves_the_full_version_through_arrow(
     assert restored.into_dict() == instrument.into_dict()
 
 
-def test_a_scheme_constant_keeps_a_symbol_from_colliding_with_a_registered_id() -> None:
-    """Without it, a symbol that reads like an ISIN would be that ISIN."""
-    symbol = Instrument(symbol="US0378331005", exchange="4")
-    registered = Instrument(security_id="US0378331005", security_id_source="4")
-    assert symbol.xhash != registered.xhash
-
-
-def test_a_caller_that_knows_the_identity_keeps_it() -> None:
-    """Instrument data owns identity; a derivation is a producer fallback."""
-    assert Instrument(xhash=7, symbol="AAPL").xhash == 7
-
-
 def test_reference_data_that_arrives_later_does_not_move_the_identity() -> None:
     """A tick or a maturity learnt afterwards is not part of the key, deliberately:
     an identity that moved when a field was enriched would break every join to it."""
@@ -186,17 +208,17 @@ def test_a_repeated_instrument_spelling_is_hashed_once(monkeypatch: pytest.Monke
         calls += 1
         return original(*parts)
 
-    instrument_module._identity_hash.cache_clear()
+    instrument_module._symbol_hash.cache_clear()
     monkeypatch.setattr(instrument_module, "hash_of", counted)
     first = Instrument(symbol="CACHE-TEST", exchange="XNAS")
     second = Instrument(symbol="CACHE-TEST", exchange="XNAS")
 
     assert first.xhash == second.xhash
     assert calls == 1
-    instrument_module._identity_hash.cache_clear()
+    instrument_module._symbol_hash.cache_clear()
 
 
-def test_instrument_identity_names_every_fact_and_leg_member() -> None:
+def test_instrument_version_hashing_names_every_fact_and_leg_member() -> None:
     assert instrument_module._INSTRUMENT_MEMBERS == tuple(
         name for name in Instrument.__annotations__ if name != "xhash"
     )

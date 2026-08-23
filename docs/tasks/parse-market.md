@@ -1,7 +1,8 @@
 # Parse market
 
 `tasks/parse_market/parse_market.ipynb` reads
-`logs.market` in `(unix, seq, hash)` order and folds it through `BookIterator`.
+`logs.market` in `(unix, msg_seq_num, hash)` order and folds it through
+`BookIterator`.
 It writes only `market.books`.
 
 For a bounded interval the reader includes recovery history before `start` and

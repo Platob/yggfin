@@ -171,15 +171,13 @@ def test_the_caret_and_the_soh_lines_keep_their_distinct_version_semantics(
 ) -> None:
     """Known `FIX.4.4` decodes; malformed `FIX4` remains lossless raw input."""
     assert table.column("begin_string")[SOHED].as_py() == "FIX.4.4"
-    assert table.column("seq")[SOHED].as_py() == 1094
+    assert table.column("msg_seq_num")[SOHED].as_py() == 1094
     assert table.column("check_sum")[SOHED].as_py() == "118"
     assert table.column("msg_type")[SOHED].as_py() == "8"
     assert table.column("fix_tags")[SOHED].as_py() == []
 
     assert _pairs(table.column("fix_tags")[CARET]) == CARET_RAW_PAIRS
-    assert table.column("fix_miss_tags")[CARET].as_py() == [
-        str(tag) for tag, _ in CARET_RAW_PAIRS
-    ]
+    assert table.column("fix_miss_tags")[CARET].as_py() == [str(tag) for tag, _ in CARET_RAW_PAIRS]
     assert table.column("keyval")[CARET].as_py() == []
     _assert_no_semantic_columns(table, CARET)
 
@@ -284,9 +282,7 @@ def test_a_bridge_message_separated_by_its_own_markers_reads_the_same(
     """
     assert _pairs(table.column("keyval")[HASHED]) == HASHED_RAW_PAIRS
     assert table.column("fix_tags")[HASHED].as_py() == []
-    assert table.column("fix_miss_tags")[HASHED].as_py() == [
-        key for key, _ in HASHED_RAW_PAIRS
-    ]
+    assert table.column("fix_miss_tags")[HASHED].as_py() == [key for key, _ in HASHED_RAW_PAIRS]
     _assert_no_semantic_columns(table, HASHED)
 
 
@@ -311,9 +307,7 @@ def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> No
 
 def test_versionless_names_are_all_kept_and_never_guessed(table: pyarrow.Table) -> None:
     assert _pairs(table.column("keyval")[BRIDGE]) == BRIDGE_RAW_PAIRS
-    assert table.column("fix_miss_tags")[BRIDGE].as_py() == [
-        key for key, _ in BRIDGE_RAW_PAIRS
-    ]
+    assert table.column("fix_miss_tags")[BRIDGE].as_py() == [key for key, _ in BRIDGE_RAW_PAIRS]
     assert table.column("isincode")[BRIDGE].as_py() is None
     _assert_no_semantic_columns(table, BRIDGE)
 
@@ -346,7 +340,7 @@ def test_a_wire_message_lands_its_header_and_trailer_in_columns(table: pyarrow.T
     assert table.column("begin_string")[PIPED].as_py() == "FIX.4.2"
     assert table.column("body_length")[PIPED].as_py() == 176
     assert table.column("msg_type")[PIPED].as_py() == "D"
-    assert table.column("seq")[PIPED].as_py() == 1092
+    assert table.column("msg_seq_num")[PIPED].as_py() == 1092
     assert table.column("sender_comp_id")[PIPED].as_py() == "BUYSIDE"
     assert table.column("target_comp_id")[PIPED].as_py() == "XPAR"
     assert table.column("check_sum")[PIPED].as_py() == "203"
@@ -438,13 +432,13 @@ def test_a_tag_is_lifted_only_where_it_occurs_once_in_its_own_line(
     ], "every occurrence of a repeated tag, in wire order"
     assert parsed.column("price")[0].as_py() is None, "no one price is the multi-leg order's"
     assert parsed.column("symbol")[0].as_py() is None, "nor one unambiguous symbol"
-    assert parsed.column("seq")[0].as_py() == 8, "while what was written once still lifted"
+    assert parsed.column("msg_seq_num")[0].as_py() == 8, "while what was written once still lifted"
     assert parsed.column("msg_type")[0].as_py() == "AB"
 
     assert parsed.column("fix_tags")[1].as_py() == [], "and the line beside it lifted all of it"
     assert parsed.column("symbol")[1].as_py() == "TTF"
     assert parsed.column("price")[1].as_py() == 41.25
-    assert parsed.column("seq")[1].as_py() == 9
+    assert parsed.column("msg_seq_num")[1].as_py() == 9
 
 
 def test_a_hop_stays_in_the_pair_list_because_one_row_of_it_is_not_one_value(
@@ -580,7 +574,7 @@ def test_a_sparse_codec_gets_typed_nulls_for_optional_declared_columns(
     sparse = SparseCodec(registry=codec.registry)
     parsed = _one_line(tmp_path / "sparse.txt", sparse, "FixSession", "8=FIX.4.4|35=D|34=7|55=TTF|")
 
-    assert parsed.column("seq")[0].as_py() is None
+    assert parsed.column("msg_seq_num")[0].as_py() is None
     assert parsed.column("parties")[0].as_py() is None
     assert [tag for tag, _ in _pairs(parsed.column("fix_tags")[0])] == [8, 35, 34, 55]
 
@@ -596,7 +590,7 @@ def test_quote_fields_are_typed_once_and_drive_log_correlation(
         "134=10|135=12|293=9|294=11|62=20260821-10:05:00|",
     )
 
-    assert parsed.column("seq").to_pylist() == [7]
+    assert parsed.column("msg_seq_num").to_pylist() == [7]
     assert parsed.column("code").to_pylist() == ["Q-1"]
     assert parsed.column("xcode").to_pylist() == ["Q-1"]
     assert parsed.column("quote_id").to_pylist() == ["Q-1"]
@@ -682,7 +676,7 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
     assert _pairs(table.column("keyval")[EXPECTED_RECORDS + BRIDGE]) == BRIDGE_RAW_PAIRS
     _assert_no_semantic_columns(table, BRIDGE)
     _assert_no_semantic_columns(table, EXPECTED_RECORDS + BRIDGE)
-    sequences = table.column("seq").to_pylist()
+    sequences = table.column("msg_seq_num").to_pylist()
     assert sequences[PIPED] == 1092, "the flat layer of the first file"
     assert sequences[EXPECTED_RECORDS + PIPED] == 1092, "and of the second, read the same way"
     assert table.schema.names[-1] == "bridge", "and a static column still lands last"

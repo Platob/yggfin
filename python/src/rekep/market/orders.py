@@ -6,10 +6,8 @@ import dataclasses
 import functools
 from typing import Annotated, Any
 
-import pyarrow
-
 from rekep.enums import EventType, State, TimeInForce
-from rekep.fields import Field, scalar
+from rekep.fields import scalar
 from rekep.market.event import Event, MarketEvent
 from rekep.market.fields import fix_tag
 from rekep.market.identity import NIL
@@ -55,9 +53,7 @@ def _quantity_transition(
             if leaves is not None and last is not None:
                 previous = leaves + last
             elif total is not None and cumulative is not None:
-                previous = (
-                    total if normalized is State.FILLED else max(total - cumulative, 0.0)
-                )
+                previous = total if normalized is State.FILLED else max(total - cumulative, 0.0)
             elif cancelled is not None:
                 previous = cancelled
             elif total is not None:
@@ -81,11 +77,7 @@ def _quantity_transition(
     else:
         current = total
 
-    if (
-        normalized is State.PARTIALLY_FILLED
-        and execution_state is State.FILLED
-        and current == 0
-    ):
+    if normalized is State.PARTIALLY_FILLED and execution_state is State.FILLED and current == 0:
         normalized = State.FILLED
 
     if previous is None and normalized >= State.PARTIAL:
@@ -146,17 +138,6 @@ class Order(MarketEvent):
 
     prev_client_order_id: Annotated[str | None, fix_tag("OrigClOrdID")] = None
     """Identifier the sender gave the version this one replaced."""
-
-    # int32 rather than int64: a reject code is a small number in every
-    # dictionary that defines one, and it is not an enum here because past the
-    # handful FIX standardises every venue numbers its own.
-    reason_code: Annotated[
-        int | None, fix_tag("OrdRejReason"), Field(arrow_type=pyarrow.int32())
-    ] = None
-    """Why the order was refused or restated, as the venue numbers it."""
-
-    reason: Annotated[str | None, fix_tag("Text")] = None
-    """Free text the venue sent with the refusal or the restatement."""
 
     def complete_from(self, previous: Event) -> None:
         """An order completed from its last version, by what a market actually means."""
@@ -346,14 +327,6 @@ class Execution(MarketEvent):
 
     aggressor: Annotated[bool | None, fix_tag("AggressorIndicator")] = None
     """Whether this side took liquidity; null when the venue does not say."""
-
-    reason_code: Annotated[
-        int | None, fix_tag("ExecRestatementReason"), Field(arrow_type=pyarrow.int32())
-    ] = None
-    """Why a restatement or a refusal happened, as the venue numbers it."""
-
-    reason: Annotated[str | None, fix_tag("Text")] = None
-    """Free text the venue sent with the report."""
 
     def complete_from(self, previous: Event) -> None:
         """A report completed from the one before it on the same order."""

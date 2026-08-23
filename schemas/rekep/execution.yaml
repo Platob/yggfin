@@ -3,7 +3,7 @@ type: struct
 description: One fill, correction or cancellation reported against an order.
 metadata:
   namespace: rekep.market.orders
-  version: '2'
+  version: '1'
 fields:
 - name: unix
   type: int64
@@ -110,29 +110,6 @@ fields:
 - name: xcode
   type: string
   description: Readable identifier shared by every version of this lifecycle.
-- name: seq
-  type: int64
-  nullable: true
-  description: Integer message sequence number.
-  metadata:
-    fix:tag: '34'
-    fix:type: SeqNum
-    fix:version: 5.0.SP2
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"SeqNum"}'
-    fix:name: MsgSeqNum
-- name: prev_hash
-  type: int64
-  nullable: true
-  description: The version this one replaced; null on the first.
-- name: prev_state
-  type: int32
-  description: The state this version moved out of -- a transition, without the self-join.
-  metadata:
-    enum:name: State
-    enum:key_type: int32
-    enum:value_type: utf8
-    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
 - name: prev_unix
   type: int64
   nullable: true
@@ -158,7 +135,7 @@ fields:
     enum:encoding: ascii-big-endian
     enum:max_bytes: '4'
     enum:pattern: '[A-Z0-9]{4}'
-- name: error
+- name: reason
   type: string
   nullable: true
   description: Why this event was rejected or could not be interpreted, when known.
@@ -496,58 +473,3 @@ fields:
     fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
     fix:types: '{"5.0.SP2":"Boolean","5.0.SP1":"Boolean","5.0":"Boolean"}'
     fix:name: AggressorIndicator
-- name: reason_code
-  type: int32
-  nullable: true
-  description: Code to identify reason for an ExecutionRpt <8> message sent with ExecType
-    <150> ='Restated' or used when communicating an unsolicited cancel.
-  metadata:
-    fix:tag: '378'
-    fix:type: int
-    fix:version: 5.0.SP2
-    fix:values: '{"0":"GT corporate action","1":"GT renewal / restatement (no corporate
-      action)","2":"Verbal change","3":"Repricing of order","4":"Broker option","5":"Partial
-      decline of OrderQty <38> (e.g. exchange initiated partial cancel)","6":"Cancel
-      on Trading Halt","7":"Cancel on System Failure","8":"Market (Exchange) option","9":"Canceled,
-      not best","10":"Warehouse Recap","99":"Other","11":"Peg Refresh"}'
-    fix:used_in: '["ExecutionReport","TradeCaptureReport","TradeCaptureReportAck","Execution
-      Report","Trade Capture Report"]'
-    fix:value_names: '{"0":"GT_CORPORATE_ACTION","1":"GT_RENEWAL","2":"VERBAL_CHANGE","3":"REPRICING_OF_ORDER","4":"BROKER_OPTION","5":"PARTIAL_DECLINE_OF_ORDER_QTY","7":"CANCEL_ON_SYSTEM_FAILURE","8":"MARKET","6":"CANCEL_ON_TRADING_HALT","9":"CANCELED","10":"WAREHOUSE_RECAP","99":"OTHER","11":"PEG_REFRESH","12":"CANCEL_ON_CONNECTION_LOSS","13":"CANCEL_ON_LOGOUT","14":"ASSIGN_TIME_PRIORITY","15":"CANCELLED_FOR_TRADE_PRICE_VIOLATION","16":"CANCELLED_FOR_CROSS_IMBALANCE","17":"CXLD_SMP","18":"CXLD_SMP_AGGRESSIVE","19":"CXLD_SMP_PASSIVE","20":"CXLD_SMP_AGGRESSIVE_PASSIVE"}'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
-    fix:name: ExecRestatementReason
-- name: reason
-  type: string
-  nullable: true
-  description: 'Free format text string (Note: this field does not have a specified
-    maximum length)'
-  metadata:
-    fix:tag: '58'
-    fix:type: String
-    fix:version: 5.0.SP2
-    fix:used_in: '["Reject","Logout","IOI","Advertisement <7","ExecutionReport","OrderCancelReject","Logon","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","QuoteRequestReject","QuoteStatusReport","QuoteResponse","Confirmation","PositionMaintenanceRequest","PositionMaintenanceReport","RequestForPositions","RequestForPositionsAck","PositionReport","TradeCaptureReportRequestAck","TradeCaptureReportAck","AllocationReport","AllocationReportAck","Confirmation_Ack","AssignmentReport","CollateralRequest","CollateralAssignment","CollateralResponse","MassQuoteAcknowledgement","CollateralReport","CollateralInquiry","CollateralInquiryAck","ConfirmationRequest","AllocationInstructionAlert","ExecutionAcknowledgement","ContraryIntentionReport","SecurityDefinitionUpdateReport","SettlementObligationReport","MarketDefinition","MarketDefinitionUpdateReport","ApplicationMessageRequest","ApplicationMessageRequestAck","ApplicationMessageReport","OrderMassActionReport","SecurityDefinitionRequest","OrderMassActionRequest","UserNotification","StreamAssignmentReportACK","PartyDetailsListRequest","PartyDetailsListReport","SecurityDefinition","NewOrderSingle","SecurityStatus","OrderCancelRequest","OrderCancelReplaceRequest","TradingSessionStatus","BusinessMessageReject","AllocationInstruction","BidRequest","ListCancelRequest","ListExecute","ListStatusRequest","AllocationInstructionAck","OrderMassCancelRequest","DontKnowTradeDK","OrderMassCancelReport","QuoteRequest","Quote","SettlementInstructions","SecurityTypeRequest","SecurityTypes","SecurityListRequest","MarketDataRequestReject","DerivativeSecurityListRequest","Advertisement","Execution
-      Report","Order Cancel Reject","Derivative Security List","New Order Multileg","Multileg
-      Order Cancel/Replace","Trade Capture Report Request","Trade Capture Report","Quote
-      Request Reject","Quote Status Report","Quote Response","Position Maintenance
-      Request","Position Maintenance Report","Request For Positions","Request for
-      Positions Ack","Position Report","Trade Capture Report Request Ack","Trade Capture
-      Report Ack","Allocation Report","Allocation Report Ack","Confirmation Ack","Assignment
-      Report","Collateral Request","Collateral Assignment","Collateral Response","Mass
-      Quote Acknowledgement","News","Collateral Report","Collateral Inquiry","Collateral
-      Inquiry Ack","Confirmation Request","Security Definition Request","Email","Security
-      Definition","New Order Single","New Order List","Security Status","Order Cancel
-      Request","Order Cancel/Replace Request","Trading Session Status","Business Message
-      Reject","Allocation Instruction","Bid Request","List Cancel Request","Bid Response","List
-      Execute","List Strike Price","List Status Request","List Status","Allocation
-      Instruction Ack","Order Mass Cancel Request","Don''t Know Trade","Order Mass
-      Cancel Report","Quote Request","New Order Cross","Cross Order Cancel/Replace
-      Request","Settlement Instructions","Cross Order Cancel Request","Security Type
-      Request","Security Types","Market Data - Snapshot/Full Refresh","Security List
-      Request","Market Data - Incremental Refresh","Security List","Market Data Request
-      Reject","Derivative Security List Request","Indications of Interest","New Order
-      - Multileg","Multileg Order Cancel/Replace Request","New Order - Single","New
-      Order - List","Allocation","Allocation ACK","New Order - Cross","Indication
-      of Interest","Quote Acknowledgement"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
-    fix:name: Text

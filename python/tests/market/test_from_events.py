@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+import rekep.market.book as book_module
 from rekep.market import (
     MIC,
     Book,
@@ -97,14 +98,34 @@ def test_the_books_are_separate_rows_and_not_one_object_repeated() -> None:
     """A caller collecting them into a batch would otherwise get the last one, twice."""
     first, second = books([*TWO_SIDED, order(20, Side.BID, 100.0, 9.0, "B3")])
     assert first is not second
-    assert first.bid_total_qty == 8.0 and second.bid_total_qty == 17.0
+    assert (first.bid_depth, second.bid_depth) == (2, 2)
+    assert (first.bid_qty, second.bid_qty) == (5.0, 14.0)
 
 
 def test_a_book_is_versioned_like_any_other_event() -> None:
     first, second = books([*TWO_SIDED, order(20, Side.BID, 100.0, 9.0, "B3")])
     assert second.version == first.version + 1
-    assert second.prev_hash == first.hash and second.xhash == first.xhash
-    assert first.prev_hash is None
+    assert second.prev_unix == first.unix and second.xhash == first.xhash
+    assert first.prev_unix is None
+    assert (second.prev_bid_px, second.prev_bid_qty) == (first.bid_px, first.bid_qty)
+    assert (second.prev_ask_px, second.prev_ask_qty) == (first.ask_px, first.ask_qty)
+
+
+def test_a_book_hash_frames_both_ordered_live_sides_explicitly() -> None:
+    (only,) = books(TWO_SIDED)
+    bid, lower_bid, ask = TWO_SIDED
+    expected = (
+        only.unix,
+        only.instrument_xhash,
+        2,
+        bid.hash,
+        lower_bid.hash,
+        1,
+        ask.hash,
+    )
+
+    assert only.version_parts() == expected
+    assert only.hash == Book.hash_of(*expected)
 
 
 # -- what it refuses ---------------------------------------------------------
@@ -192,14 +213,15 @@ def test_a_book_links_to_the_events_that_built_its_delta() -> None:
 # -- the levels, and the orders under them -----------------------------------
 
 
-def test_orders_at_one_price_aggregate_into_one_level_that_counts_them() -> None:
-    """The one number an aggregated feed cannot give you."""
+def test_orders_at_one_price_aggregate_into_one_level() -> None:
     folding = BookIterator.from_events(
         [*TWO_SIDED, order(10, Side.BID, 100.0, 9.0, "B3")], snapshot_every=0
     )
     list(folding)
-    top = next(iter(folding.folding.values())).bid.into_levels()[0]
-    assert (top.px, top.qty, len(top.order_xhash)) == (100.0, 14.0, 2)
+    side = next(iter(folding.folding.values())).bid
+    top = side.into_levels()[0]
+    assert (top.px, top.qty) == (100.0, 14.0)
+    assert len(side.alive[0].members) == 2
 
 
 def test_the_bid_is_sorted_down_and_the_ask_up() -> None:
@@ -235,6 +257,122 @@ def test_a_restated_order_replaces_what_it_was_resting_for() -> None:
     first, second = books([*TWO_SIDED, order(20, Side.BID, 100.0, 2.0, "B1", state=State.OPEN)])
     assert first.bid_qty == 5.0
     assert second.bid_qty == 2.0, "replaced, not added to"
+
+
+def test_a_full_duplicate_skips_copy_and_completion(monkeypatch: pytest.MonkeyPatch) -> None:
+    side = _Side(side=Side.BID, max_order_age_ns=None)
+    assert side.apply(order(10, Side.BID, 100.0, 5.0, "B1"))
+    duplicate = order(20, Side.BID, 100.0, 5.0, "B1")
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("a complete duplicate must be skipped before copying or completion")
+
+    monkeypatch.setattr(book_module.copy, "copy", forbidden)
+    monkeypatch.setattr(Order, "completed_from", forbidden)
+    monkeypatch.setattr(Order, "_completed_from_same_lifecycle", forbidden)
+
+    assert side._applied(duplicate) == (False, None)
+
+
+def test_a_partial_restatement_still_copies_and_completes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    side = _Side(side=Side.BID, max_order_age_ns=None)
+    assert side.apply(order(10, Side.BID, 100.0, 5.0, "B1"))
+    partial = Order(
+        unix=20,
+        code="BTC-USD",
+        side=Side.BID,
+        qty=4.0,
+        order_id="B1",
+        state=State.NEW,
+    ).attach_instrument(BTC)
+    copied = book_module.copy.copy
+    completed = Order.completed_from
+    calls: list[str] = []
+
+    def counted_copy(value: object) -> object:
+        calls.append("copy")
+        return copied(value)
+
+    def counted_completion(current: Order, previous: MarketEvent | None) -> Order:
+        calls.append("complete")
+        return completed(current, previous)
+
+    monkeypatch.setattr(book_module.copy, "copy", counted_copy)
+    monkeypatch.setattr(Order, "completed_from", counted_completion)
+
+    moved, settled = side._applied(partial)
+
+    assert moved and settled is not None
+    assert (settled.px, settled.qty) == (100.0, 4.0)
+    assert calls == ["copy", "complete"]
+
+
+def test_a_metadata_only_same_price_update_has_no_level_delta() -> None:
+    first, updated = books(
+        [
+            order(10, Side.BID, 100.0, 5.0, "B1"),
+            order(20, Side.BID, 100.0, 5.0, "B1", state=State.ACCEPTED),
+        ]
+    )
+
+    assert updated.deltas[0].state is State.ACCEPTED
+    assert updated.bid_levels == []
+    assert (updated.bid_px, updated.bid_qty, updated.bid_depth) == (
+        first.bid_px,
+        first.bid_qty,
+        first.bid_depth,
+    )
+
+
+def test_a_same_price_quantity_update_keeps_exact_side_summaries() -> None:
+    folding = BookIterator.from_events(
+        [
+            order(10, Side.BID, 100.0, 5.0, "B1"),
+            order(10, Side.BID, 100.0, 2.0, "B2"),
+            order(10, Side.BID, 99.0, 3.0, "B3"),
+            order(20, Side.BID, 100.0, 4.0, "B1"),
+        ],
+        snapshot_every=0,
+        max_order_age_ns=None,
+    )
+
+    _, updated = list(folding)
+    state = next(iter(folding.folding.values()))
+    assert (updated.bid_px, updated.bid_qty, updated.bid_depth) == (100.0, 6.0, 2)
+    assert [(level.px, level.qty) for level in updated.bid_levels] == [(100.0, 6.0)]
+    assert state.bid.levels[100.0].qty == 6.0
+    assert sum(level.qty for level in state.bid.alive) == 9.0
+
+
+def test_expiry_scan_starts_only_when_the_earliest_deadline_is_due(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entered: list[tuple[Side, int]] = []
+    expire = _Side.expire
+
+    def counted_expire(side: _Side, unix: int) -> list[Order]:
+        entered.append((side.side, unix))
+        return expire(side, unix)
+
+    monkeypatch.setattr(_Side, "expire", counted_expire)
+    events = [
+        order(10, Side.BID, 100.0, 5.0, "B1", eunix=100),
+        order(50, Side.ASK, 101.0, 1.0, "A1"),
+        order(100, Side.ASK, 102.0, 1.0, "A2"),
+    ]
+
+    found = list(
+        BookIterator.from_events(
+            events,
+            snapshot_every=0,
+            max_order_age_ns=None,
+        )
+    )
+
+    assert entered == [(Side.BID, 100)]
+    assert any(event.state is State.INTERNAL_EXPIRED for book in found for event in book.deltas)
 
 
 def test_an_order_completed_from_the_one_it_replaces_keeps_current_quantity() -> None:
@@ -287,10 +425,10 @@ def test_the_flat_pair_of_mid_and_spread_is_the_best_bid_and_offer_exactly() -> 
     assert only.px + only.spread / 2 == only.ask_px
 
 
-def test_the_microprice_leans_towards_the_side_with_less_size() -> None:
+def test_the_vwap_leans_towards_the_side_with_less_size() -> None:
     (only,) = books(TWO_SIDED)
-    assert only.micro_px == pytest.approx((100.0 * 7.0 + 100.5 * 5.0) / 12.0)
-    assert only.micro_px < only.px, "more offered than bid, so the fair price is lower"
+    assert only.vwap == pytest.approx((100.0 * 7.0 + 100.5 * 5.0) / 12.0)
+    assert only.vwap < only.px, "more offered than bid, so the fair price is lower"
 
 
 def test_the_imbalance_is_signed_towards_the_heavier_side() -> None:
@@ -301,7 +439,7 @@ def test_the_imbalance_is_signed_towards_the_heavier_side() -> None:
 def test_a_one_sided_book_has_no_prices_across_it() -> None:
     (only,) = books([order(10, Side.BID, 100.0, 5.0, "B1")])
     assert only.bid_px == 100.0
-    assert only.px is None and only.spread is None and only.micro_px is None
+    assert only.px is None and only.spread is None and only.vwap is None
 
 
 def test_an_empty_book_says_so_in_its_state() -> None:
@@ -321,6 +459,22 @@ def test_a_fill_takes_liquidity_out_of_the_side_it_names() -> None:
     order was resting on the bid."""
     _, second = books([*TWO_SIDED, trade(20, 100.0, 2.0, side=Side.BID)])
     assert second.bid_qty == 3.0 and second.ask_qty == 7.0
+
+
+def test_the_latest_filled_execution_price_carries_across_later_books() -> None:
+    first, filled, carried, newer = books(
+        [
+            *TWO_SIDED,
+            trade(20, 100.0, 2.0, side=Side.BID),
+            order(30, Side.ASK, 101.0, 1.0, "A2"),
+            trade(40, 100.5, 1.0, side=Side.ASK),
+        ]
+    )
+
+    assert (first.exec_px, first.prev_exec_px) == (None, None)
+    assert (filled.exec_px, filled.prev_exec_px) == (100.0, None)
+    assert (carried.exec_px, carried.prev_exec_px) == (100.0, 100.0)
+    assert (newer.exec_px, newer.prev_exec_px) == (100.5, 100.0)
 
 
 def test_a_fill_that_names_an_order_takes_it_out_of_that_order_s_side() -> None:
@@ -384,7 +538,7 @@ def test_a_trade_is_recorded_on_the_side_it_hit() -> None:
     _, second = books([*TWO_SIDED, trade(20, 100.0, 2.0)])
     (changed,) = second.bid_levels
     assert (changed.px, changed.qty) == (100.0, 3.0)
-    assert changed.exec_xhash == [second.executions[0].xhash]
+    assert [(one.px, one.qty) for one in second.executions] == [(100.0, 2.0)]
     assert second.ask_levels == []
 
 
@@ -403,10 +557,11 @@ def test_a_trade_bigger_than_the_level_walks_the_orders_in_the_order_they_sit() 
     events = [*TWO_SIDED, trade(20, 100.0, 6.0)]
     _, second = books(events)
     assert second.bid_depth == 1 and second.bid_px == 99.5 and second.bid_qty == 2.0
-    assert len(second.bid_levels) == 2
-    assert all(
-        level.exec_xhash == [second.executions[0].xhash] for level in second.bid_levels
-    )
+    assert [(level.px, level.qty) for level in second.bid_levels] == [
+        (100.0, 0.0),
+        (99.5, 2.0),
+    ]
+    assert [(one.px, one.qty) for one in second.executions] == [(100.0, 6.0)]
 
 
 def test_a_print_against_a_book_this_fold_never_saw_takes_nothing() -> None:
@@ -444,7 +599,7 @@ def test_a_book_whose_side_emptied_has_no_mid_rather_than_the_last_one() -> None
     assert first.px == 100.25
     assert second.bid_px == 100.0 and second.ask_px is None
     assert second.px is None and second.qty is None
-    assert second.spread is None and second.micro_px is None and second.imbalance is None
+    assert second.spread is None and second.vwap is None and second.imbalance is None
 
 
 # -- the whole way, from a venue's own lines ---------------------------------
@@ -478,8 +633,8 @@ def test_a_venue_s_own_lines_fold_into_the_book_they_describe() -> None:
         (100.0, 9.0),
     ]
     assert [one.ask_qty for one in found] == [7.0, 7.0, 4.0], "the trade took three off the ask"
-    assert len(found[-1].ask_levels) == 1
-    assert found[-1].ask_levels[0].exec_xhash
+    assert [(level.px, level.qty) for level in found[-1].ask_levels] == [(100.5, 4.0)]
+    assert [(one.px, one.qty) for one in found[-1].executions] == [(100.5, 3.0)]
 
 
 def test_the_folded_books_are_a_table() -> None:
@@ -552,9 +707,9 @@ def test_the_running_levels_are_what_walking_the_orders_would_give() -> None:
             )
             if generate.random() < 0.3 and side.orders:
                 side.take(trade(10 + step, 100.0, float(generate.randrange(1, 5))), 3.0)
-            assert [
-                (level.px, level.qty, len(level.order_xhash)) for level in side.into_levels()
-            ] == walked(side), f"turn {turn}, step {step}"
+            assert [(level.px, level.qty, len(level.members)) for level in side.alive] == walked(
+                side
+            ), f"turn {turn}, step {step}"
 
 
 def test_the_two_parallel_lists_never_drift_apart() -> None:
@@ -617,8 +772,10 @@ def test_expiry_without_a_max_age_reads_only_the_explicit_index() -> None:
 
     side = _Side(side=Side.BID)
     standing = order(10, Side.BID, 100.0, 5.0, "standing")
+    expiring = order(10, Side.BID, 99.0, 2.0, "expiring", eunix=20)
     side.apply(standing)
-    side.apply(order(10, Side.BID, 99.0, 2.0, "expiring", eunix=20))
+    side.apply(expiring)
+    assert set(side._deadline_tokens) == {expiring.xhash}
     side.orders = NoValues(side.orders)
 
     (expired,) = side.expire(20)
@@ -663,7 +820,7 @@ def test_a_side_bound_keeps_best_price_then_earliest_time(side: Side, prices: li
     assert [one.order_id for one in resting.sorted_orders] == ["O1", "O2"]
     assert [one.order_id for one in expired] == ["O0", "O3"]
     assert all(one.state is State.INTERNAL_EXPIRED and one.version == 1 for one in expired)
-    assert all(one.error and "max_side_alive=2" in one.error for one in expired)
+    assert all(one.reason and "max_side_alive=2" in one.reason for one in expired)
     assert all(one.state is State.INTERNAL_EXPIRED for one in expired)
     assert set(resting._deadline_tokens) == set(resting.orders)
     assert all(
@@ -717,14 +874,12 @@ def test_bounded_evictions_are_auditable_and_never_enter_the_book_again() -> Non
 
     found = list(iterator)
     expired = [
-        event
-        for book in found
-        for event in book.deltas
-        if event.state is State.INTERNAL_EXPIRED
+        event for book in found for event in book.deltas if event.state is State.INTERNAL_EXPIRED
     ]
 
     assert [one.order_id for one in expired] == ["B2"]
-    assert found[-1].bid_depth == 2 and found[-1].bid_total_qty == 2.0
+    assert found[-1].bid_depth == 2
+    assert sum(level.qty for level in iterator.folding[BTC.xhash].bid.alive) == 2.0
     assert {one.order_id for one in iterator.folding[BTC.xhash].bid.orders.values()} == {
         "B1",
         "B3",
@@ -741,7 +896,7 @@ def test_a_new_order_evicted_immediately_keeps_both_versions_in_order() -> None:
 
     placed, expired = latest.deltas
     assert placed.order_id == expired.order_id == "B2"
-    assert expired.state is State.INTERNAL_EXPIRED and expired.prev_hash == placed.hash
+    assert expired.state is State.INTERNAL_EXPIRED and expired.prev_unix == placed.unix
     assert expired.version == placed.version + 1
     assert latest.bid_px == 100.0 and latest.bid_depth == 1
 
@@ -766,7 +921,7 @@ def test_immediate_orders_are_audited_but_never_rest(tif: TimeInForce) -> None:
     (book,) = BookIterator.from_events([immediate], snapshot_every=0)
 
     assert immediate.eunix == immediate.unix
-    assert book.bid_depth == 0 and book.bid_total_qty == 0.0
+    assert book.bid_depth == 0 and book.bid_px is None and book.bid_qty is None
     assert book.deltas == [immediate]
 
 
@@ -789,6 +944,5 @@ def test_a_report_that_omits_the_mic_still_finds_the_order_it_continues() -> Non
     ).attach_instrument(BTC)
     assert side.standing(bare) is not None
     side.apply(bare)
-    assert [(level.px, level.qty, len(level.order_xhash)) for level in side.into_levels()] == [
-        (100.0, 2.0, 1)
-    ], "one order, replaced, and not two"
+    assert [(level.px, level.qty) for level in side.into_levels()] == [(100.0, 2.0)]
+    assert len(side.orders) == 1, "one order, replaced, and not two"

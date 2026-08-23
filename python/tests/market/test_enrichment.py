@@ -10,7 +10,7 @@ import datetime
 
 import pytest
 
-from rekep.market import AssetKind, Currency, FixEvents, IdSource, Instrument, OptionKind, Side
+from rekep.market import AssetKind, Currency, FixEvents, IdSource, Instrument, Leg, OptionKind, Side
 from rekep.market.fix import SECURITY_TYPES, _classified, _month_year
 
 
@@ -92,6 +92,12 @@ def test_the_security_type_classifies_where_the_cfi_is_absent() -> None:
     assert instrument_of(f"{HEAD}|55=AAPL|167=CS").kind is AssetKind.EQUITY
     assert instrument_of(f"{HEAD}|55=ESZ6|167=FUT").kind is AssetKind.FUTURE
     assert instrument_of(f"{HEAD}|55=SPX|167=MLEG").kind is AssetKind.MULTILEG
+
+
+def test_a_currency_pair_symbol_supplies_its_class_and_quote_currency() -> None:
+    found = instrument_of(f"{HEAD}|55=EUR/USD")
+    assert found.kind is AssetKind.CURRENCY
+    assert found.currency is Currency.USD
 
 
 def test_the_cfi_wins_over_the_security_type_when_both_are_there() -> None:
@@ -198,15 +204,23 @@ def test_a_leg_identifies_the_way_an_instrument_does_so_it_joins_to_one() -> Non
     )
 
 
+def test_a_currency_pair_leg_uses_the_same_symbol_rules_as_an_instrument() -> None:
+    leg = Leg(symbol="EUR/USD", xhash=7)
+    instrument = Instrument(symbol=leg.symbol)
+    assert (leg.xhash, leg.kind, leg.currency) == (
+        instrument.xhash,
+        AssetKind.CURRENCY,
+        Currency.USD,
+    )
+
+
 def test_an_instrument_that_is_not_multileg_carries_no_legs() -> None:
     assert instrument_of(f"{HEAD}|55=AAPL|167=CS").legs is None
 
 
 def test_the_legs_are_not_repeated_into_the_metadata() -> None:
     """A field a column holds is not an extra, and a leg's fields are columns."""
-    (order,) = FixEvents.from_text(
-        f"{SPREAD}|9999=mine", venue="XCME", fix_version="4.4"
-    )
+    (order,) = FixEvents.from_text(f"{SPREAD}|9999=mine", venue="XCME", fix_version="4.4")
     assert order.metadata == {"9999": "mine"}
 
 

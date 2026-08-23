@@ -1,10 +1,21 @@
 name: parse_market
 notebook: parse_market.ipynb
 parameters:
+  # Iceberg sources and targets are catalog table identifiers; their S3 file
+  # locations come from the catalog warehouse below.
   source: logs.market
   target: market.books
   start: null
   end: null
+  # AWS Glue with an S3 warehouse (replace the active local block):
+  # catalog: rekep-production
+  # catalog_properties:
+  #   type: glue
+  #   warehouse: s3://example-bucket/rekep/warehouse
+  #   glue.region: eu-west-1
+  #   s3.region: eu-west-1
+  #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
+  # Credentials come from the standard AWS environment or workload role.
   catalog: rekep
   catalog_properties:
     type: sql

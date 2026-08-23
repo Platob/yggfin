@@ -38,7 +38,7 @@ DAY = 86_400_000_000_000
 #: Nanoseconds in an hour, which is what `unix_hour` truncates `unix` to.
 HOUR = 3_600_000_000_000
 
-_CONTRACT_METADATA = MappingProxyType({"version": "2"})
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 
 _LINKED_EVENTS_TYPE = pyarrow.list_(
     pyarrow.field(
@@ -130,9 +130,9 @@ class Event(MarketConvertible):
     xhash: int = NIL
     """Identity of the thing across every version of it -- the lifecycle."""
 
-    linked_events: Annotated[
-        list[tuple[int, int]], Field(arrow_type=_LINKED_EVENTS_TYPE)
-    ] = dataclasses.field(default_factory=list)
+    linked_events: Annotated[list[tuple[int, int]], Field(arrow_type=_LINKED_EVENTS_TYPE)] = (
+        dataclasses.field(default_factory=list)
+    )
     """Related event times and lifecycle identities, primary match first."""
 
     version: int = 0
@@ -147,15 +147,6 @@ class Event(MarketConvertible):
     xcode: str = ""
     """Readable identifier shared by every version of this lifecycle."""
 
-    seq: Annotated[int | None, fix_tag("MsgSeqNum")] = None
-    """Source sequence used to order events whose clocks are equal."""
-
-    prev_hash: int | None = None
-    """The version this one replaced; null on the first."""
-
-    prev_state: State = State.UNKNOWN
-    """The state this version moved out of -- a transition, without the self-join."""
-
     prev_unix: Annotated[int | None, Field(metadata=UNIX)] = None
     """When the previous version happened, so dwell time is a subtraction."""
 
@@ -166,7 +157,7 @@ class Event(MarketConvertible):
     mic: MIC | None = None
     """ISO 10383 venue code, packed losslessly into `int32`; null when absent."""
 
-    error: str | None = None
+    reason: str | None = None
     """Why this event was rejected or could not be interpreted, when known."""
 
     def __post_init__(self) -> None:
@@ -297,16 +288,18 @@ class Event(MarketConvertible):
         ignored = {
             "cunix",
             "runix",
-            "seq",
             "hash",
             "xhash",
             "version",
-            "prev_hash",
-            "prev_state",
             "prev_unix",
             "prev_px",
             "prev_qty",
             "prev_notional",
+            "prev_bid_px",
+            "prev_bid_qty",
+            "prev_ask_px",
+            "prev_ask_qty",
+            "prev_exec_px",
             "parent_hash",
         }
         # Observation time is state only for a snapshot.
@@ -356,10 +349,6 @@ class Event(MarketConvertible):
             # shapes, and an execution is not named by its order's code.
             self.xcode = previous.xcode or self.xcode
             self.version = previous.version + 1
-            # NIL means the previous version was never hashed, and a null says
-            # "no previous version" -- which is the truth about it either way.
-            self.prev_hash = previous.hash or None
-            self.prev_state = previous.state
             self.prev_unix = previous.unix
             self._remember_previous(previous)
         elif self.xhash != previous.xhash:
@@ -386,8 +375,6 @@ class Event(MarketConvertible):
         self._drop_self_link()
         self.xcode = previous.xcode or self.xcode
         self.version = previous.version + 1
-        self.prev_hash = previous.hash or None
-        self.prev_state = previous.state
         self.prev_unix = previous.unix
         self._remember_previous(previous)
         self.hash = NIL
@@ -406,8 +393,6 @@ class Event(MarketConvertible):
             self.unix_hour = self.unix - self.unix % HOUR
         if not self.runix:
             self.runix = previous.runix
-        if self.seq is None:
-            self.seq = previous.seq
         if self.eunix is None:
             self.eunix = previous.eunix
         if not self.code:
@@ -422,9 +407,7 @@ class Event(MarketConvertible):
     def _remember_previous(self, previous: Event) -> None:
         """Store shape-specific transition values after lifecycle matching."""
 
-    def link_to(
-        self, *events: Event | tuple[int, int], primary: bool = False
-    ) -> Self:
+    def link_to(self, *events: Event | tuple[int, int], primary: bool = False) -> Self:
         """Relate events once, optionally ahead of existing links."""
         if not events:
             return self
@@ -483,7 +466,7 @@ class Event(MarketConvertible):
         if unix - taken.sunix >= DAY:
             taken.state = State.INTERNAL_EXPIRED
             taken.eunix = taken.sunix + DAY
-            taken.error = taken.error or "expired internally after one day without change"
+            taken.reason = taken.reason or "expired internally after one day without change"
         taken.forget_delta()
         # Cleared so `identify` derives one: the row differs from the one it
         # was copied from, in the two fields that say it is a picture.
@@ -549,7 +532,7 @@ class Event(MarketConvertible):
             self.mic,
             len(links),
             *(part for link in links for part in link),
-            self.error,
+            self.reason,
         )
 
 

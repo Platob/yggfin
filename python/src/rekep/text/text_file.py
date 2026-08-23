@@ -402,13 +402,10 @@ class TextFile(Dataset, io.BufferedIOBase):
             "state": _zeros(count, pyarrow.int32()),
             "code": pyarrow.repeat("", count),
             "xcode": pyarrow.repeat("", count),
-            "seq": pyarrow.nulls(count, pyarrow.int64()),
-            "prev_hash": pyarrow.nulls(count, HASH),
-            "prev_state": _zeros(count, pyarrow.int32()),
             "prev_unix": pyarrow.nulls(count, pyarrow.int64()),
             "parent_hash": pyarrow.nulls(count, PARENTS),
             "mic": pyarrow.nulls(count, pyarrow.int32()),
-            "error": pyarrow.nulls(count, pyarrow.string()),
+            "reason": pyarrow.nulls(count, pyarrow.string()),
             "url": pyarrow.repeat(self.url, count),
             "thread_name": _utf8(threads),
             "driver_name": _utf8(drivers),
@@ -421,7 +418,7 @@ class TextFile(Dataset, io.BufferedIOBase):
                 )
             columns[name] = column
         columns["mic"] = _mic_arrow(columns, message, count)
-        columns["error"] = columns.get("text", columns["error"])
+        columns["reason"] = columns.get("text", columns["reason"])
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )

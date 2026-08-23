@@ -103,7 +103,7 @@ def test_every_market_code_column_of_every_shape_is_int32() -> None:
     """The rule is worth nothing if one shape quietly bypasses the builder."""
     for shape in SHAPES:
         for member in shape.into_field().fields:
-            if member.name in ("state", "prev_state", "side", "kind", "tif", "option_kind"):
+            if member.name in ("state", "side", "kind", "tif", "option_kind"):
                 assert member.arrow_type == pyarrow.int32(), f"{shape.__name__}.{member.name}"
 
 

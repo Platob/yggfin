@@ -78,7 +78,7 @@ def test_a_first_version_still_gets_its_identity() -> None:
     assert first.xhash != NIL and first.hash != NIL
     assert first.xcode == "ORD-1"
     assert first.xhash == Order.hash_of(EQUITY.xhash, first.mic, first.xcode, first.side)
-    assert first.version == 0 and first.prev_hash is None
+    assert first.version == 0 and first.prev_unix is None
 
 
 def test_the_lifecycle_and_the_counter_carry_across_versions() -> None:
@@ -90,19 +90,11 @@ def test_the_lifecycle_and_the_counter_carry_across_versions() -> None:
     assert later.version == first.version + 1
 
 
-def test_the_transition_is_on_the_row_rather_than_behind_a_self_join() -> None:
+def test_the_transition_time_is_on_the_row_rather_than_behind_a_self_join() -> None:
     first = resting()
     later = changed(_order(unix=20, order_id="ORD-1", state=State.PARTIALLY_FILLED), first)
-    assert later.prev_hash == first.hash
-    assert later.prev_state is State.NEW and later.prev_unix == first.unix
+    assert later.prev_unix == first.unix
     assert later.unix - later.prev_unix == 10, "dwell time, without a join"
-
-
-def test_a_previous_version_that_was_never_hashed_is_a_null_and_not_a_nil() -> None:
-    unhashed = _order(unix=10, state=State.NEW)
-    assert unhashed.hash == NIL
-    later = changed(_order(unix=20, state=State.OPEN), unhashed)
-    assert later.prev_hash is None
 
 
 def test_the_creation_time_is_got_or_set_and_never_recomputed() -> None:
@@ -119,12 +111,6 @@ def test_a_duplicate_observation_returns_none() -> None:
     """A later timestamp alone does not create another stored version."""
     first = resting()
     duplicate = _order(unix=20, order_id="ORD-1").with_previous(first)
-    assert duplicate is None
-
-
-def test_a_new_source_sequence_is_observation_metadata() -> None:
-    first = resting(seq=7)
-    duplicate = _order(unix=20, seq=8, order_id="ORD-1").with_previous(first)
     assert duplicate is None
 
 
@@ -243,7 +229,7 @@ def test_a_terminal_order_rests_nothing_at_all(state: State) -> None:
 def test_what_was_asked_for_is_on_the_version_before_and_not_lost() -> None:
     first = resting()
     done = changed(_order(unix=20, order_id="ORD-1", state=State.CANCELLED), first)
-    assert done.prev_hash == first.hash and first.qty == 10.0
+    assert done.prev_qty == first.qty == 10.0
 
 
 def test_a_fully_filled_order_keeps_its_prior_quantity_on_the_transition() -> None:
@@ -297,9 +283,7 @@ def test_a_fill_links_itself_to_the_order_it_followed() -> None:
 
 def test_the_matched_order_precedes_other_lifecycle_links() -> None:
     first = resting()
-    done = fill(100.0, 4.0, 20, exec_id="EX-1", linked_events=[(0, -1)]).with_previous(
-        first
-    )
+    done = fill(100.0, 4.0, 20, exec_id="EX-1", linked_events=[(0, -1)]).with_previous(first)
     assert done is not None
     assert done.linked_events == [(first.unix, first.xhash), (0, -1)]
 
@@ -562,7 +546,7 @@ def test_a_fill_is_not_a_version_of_the_order_it_happened_to() -> None:
     assert done.xhash != order.xhash
     assert done.xcode == "EX-1" and done.xcode != order.xcode
     assert done.version == 0, "version zero of its own life"
-    assert done.prev_hash is None, "nothing came before it"
+    assert done.prev_unix is None, "nothing in its own lifecycle came before it"
     assert done.parent_hash == [order.hash], "but it was built from the order"
 
 

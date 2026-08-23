@@ -35,13 +35,10 @@ ENVELOPE = [
     "state",
     "code",
     "xcode",
-    "seq",
-    "prev_hash",
-    "prev_state",
     "prev_unix",
     "parent_hash",
     "mic",
-    "error",
+    "reason",
 ]
 
 #: What `MarketEvent` adds on top, also in order. `instrument_xhash` leads because
@@ -227,12 +224,8 @@ def test_an_execution_carries_each_source_order_identifier() -> None:
     )
 
 
-def test_a_level_carries_state_and_both_lifecycle_links() -> None:
-    assert Level.into_field().names == ["px", "qty", "order_xhash", "exec_xhash"]
-    for name in ("order_xhash", "exec_xhash"):
-        member = Level.into_field().field(name)
-        assert not member.nullable
-        assert member.item.arrow_type == pyarrow.int64()
+def test_a_level_carries_only_price_and_quantity() -> None:
+    assert Level.into_field().names == ["px", "qty"]
 
 
 def test_a_book_keeps_only_compact_best_first_level_lists() -> None:
@@ -243,7 +236,8 @@ def test_a_book_keeps_only_compact_best_first_level_lists() -> None:
         assert Book.into_field().field(f"{side}_levels").item.arrow_type == (
             Level.into_field().arrow_type
         )
-    assert not names & {"bid_hash", "ask_hash"}
+    assert not names & {"bid_hash", "ask_hash", "bid_total_qty", "ask_total_qty", "micro_px"}
+    assert {"vwap", "exec_px", "prev_exec_px"} <= names
     assert {"deltas", "executions", "bid_alive", "ask_alive"} <= names
     for name in ("bid_levels", "ask_levels", "deltas", "executions", "bid_alive", "ask_alive"):
         assert not Book.into_field().field(name).nullable
@@ -310,14 +304,13 @@ FILTERED = {
         "instrument_xhash",
         "px",
         "spread",
-        "micro_px",
+        "vwap",
+        "exec_px",
         "imbalance",
         "code",
         "xcode",
         "bid_px",
         "ask_px",
-        "bid_total_qty",
-        "ask_total_qty",
     ),
     Instrument: ("xhash", "symbol", "kind"),
 }

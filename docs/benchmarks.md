@@ -30,7 +30,8 @@ The market benchmark keeps its quick replay matrix small. Pass `--matrix` for
 the selected 10K/100K/1M event cross-section over 10 to 10K live levels and 1,
 10, or 100 orders per level. Its representative fold also reports identity
 calls, copies, standing probes, heap operations, sorting, snapshot
-materializations, emitted payloads, and peak traced memory.
+materializations, skipped expiry scans, emitted payloads, and peak traced
+memory.
 
 ## Latest quick run
 
@@ -65,7 +66,9 @@ On the same 10,000-event fold, replay improved from 9.762 s (1,024 books/s) to
 1.958 s (5,105 books/s), about 5.0x. A changed bid now rebuilds only bid levels
 and bid summaries; ask values are carried from the preceding Book before
 cross-side prices are derived. The same optimization applies in the other
-direction.
+direction. Book identity now additionally includes every ordered live Order
+hash, so dense-book throughput also measures that required linear identity
+input; duplicate-event shortcuts avoid the walk when no Book is emitted.
 
 The [notebook smoke run](workflow-run.md) exercises all five stages, all three
 log routes, registry-backed instrument enrichment, book recovery rows,

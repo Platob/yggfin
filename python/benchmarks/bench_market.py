@@ -125,6 +125,7 @@ def counted_operations() -> Iterator[Counter[str]]:
     side = getattr(book_module, "_Side", None)
     if side is not None and hasattr(side, "standing"):
         patch(side, "standing", calls("standing_probes", side.standing))
+        patch(side, "expire", calls("expiry_scans", side.expire))
         patch(side, "_join", calls("level_joins", side._join))
         patch(side, "_leave", calls("level_leaves", side._leave))
         original_sorted_orders = side.__dict__["sorted_orders"]
@@ -315,8 +316,6 @@ def levels(depth: int, base: float) -> list[dict[str, object]]:
         {
             "px": base + step * 0.01,
             "qty": 100.0 + step,
-            "order_xhash": [step * 3 + offset for offset in range(3)],
-            "exec_xhash": [],
         }
         for step in range(depth)
     ]
@@ -337,7 +336,6 @@ def envelope(rows: int) -> dict[str, object]:
         "state": [210] * rows,
         "code": [f"S{index % 5000}" for index in range(rows)],
         "xcode": [f"S{index % 5000}" for index in range(rows)],
-        "prev_state": [0] * rows,
         "instrument_xhash": [index % 5000 + 1 for index in range(rows)],
         "kind": [0] * rows,
         "side": [0] * rows,
@@ -369,7 +367,7 @@ def bench_book(rows: int, depth: int, repeat: int) -> None:
     summarised, filled = timed(lambda: Book.summarise_arrow_batch(batch), repeat)
 
     # What a reader that trusts the stored columns pays: one flat column read.
-    flat, _ = timed(lambda: pyarrow.compute.mean(filled.column("micro_px")), repeat)
+    flat, _ = timed(lambda: pyarrow.compute.mean(filled.column("vwap")), repeat)
 
     # And the cheapest thing a reader could do with sides that are *already*
     # derived, which is here to say that the flat access is not the cost: the
@@ -387,8 +385,8 @@ def bench_book(rows: int, depth: int, repeat: int) -> None:
     assert filled.column("spread")[0].as_py() is not None, "nothing was derived"
     assert filled.column("bid_depth")[0].as_py() == depth, "the sides were not derived"
 
-    report("Book.summarise: both sides, then mid/spread/micro", summarised, rows)
-    report("read the stored micro_px column", flat, rows, against=summarised)
+    report("Book.summarise: both sides, then mid/spread/vwap", summarised, rows)
+    report("read the stored vwap column", flat, rows, against=summarised)
     report("recompute a mid from the stored bid_px/ask_px", crossed_time, rows, against=summarised)
 
 
@@ -562,9 +560,7 @@ def shaped_stream(events: int, live_levels: int, orders_per_level: int) -> Itera
         yield built
 
 
-def fold_shape(
-    events: int, live_levels: int, orders_per_level: int
-) -> tuple[Counter[str], object]:
+def fold_shape(events: int, live_levels: int, orders_per_level: int) -> tuple[Counter[str], object]:
     """Stream one replay shape and retain only output counts and final state."""
     from rekep.market import BookIterator
 
@@ -641,6 +637,7 @@ def bench_operation_counts(rows: int) -> None:
         "frame",
         "life_hash",
         "standing_probes",
+        "expiry_scans",
         "level_joins",
         "level_leaves",
         "full_order_scan_calls",
@@ -685,9 +682,7 @@ def bench_snapshot(rows: int, repeat: int) -> None:
     assert len(snapshot.bid_alive) + len(snapshot.ask_alive) == live
 
     def recover() -> BookIterator:
-        return BookIterator(
-            snapshots=(snapshot,), snapshot_every=0, max_order_age_ns=None
-        )
+        return BookIterator(snapshots=(snapshot,), snapshot_every=0, max_order_age_ns=None)
 
     recovery_seconds, recovered = timed(recover, repeat)
     restored = next(iter(recovered.folding.values()))
@@ -916,9 +911,7 @@ def bench_fold(events: int, repeat: int) -> None:
     books, _ = fold()
     produced = len(books)
     assert produced, "the fold produced no books at all"
-    rejected = sum(
-        one.state is State.INTERNAL_REJECTED for book in books for one in book.deltas
-    )
+    rejected = sum(one.state is State.INTERNAL_REJECTED for book in books for one in book.deltas)
     assert rejected == (events + 19) // 20, "the benchmark lost its malformed-order leg"
     seconds, _ = timed(fold, repeat)
     report("fold", seconds, events)
@@ -935,9 +928,7 @@ def bench_fold(events: int, repeat: int) -> None:
 
     bounded, (limited, folding) = timed(lambda: fold(10), repeat)
     expired = sum(
-        event.state is State.INTERNAL_EXPIRED
-        for book in limited
-        for event in book.deltas
+        event.state is State.INTERNAL_EXPIRED for book in limited for event in book.deltas
     )
     assert expired, "the bound emitted no auditable expiry"
     assert all(

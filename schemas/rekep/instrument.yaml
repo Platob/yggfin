@@ -3,7 +3,7 @@ type: struct
 description: One version of the facts known about a tradable instrument.
 metadata:
   namespace: rekep.market.instrument
-  version: '2'
+  version: '1'
 fields:
 - name: unix
   type: int64
@@ -64,8 +64,7 @@ fields:
     iceberg:primary_key: 'true'
 - name: xhash
   type: int64
-  description: Stable identity of the instrument, which outlives every symbol it has
-    had.
+  description: Digest of the exact `symbol`; zero when the symbol is empty.
   metadata:
     iceberg:partition_key: bucket[16]
 - name: linked_events
@@ -96,29 +95,6 @@ fields:
 - name: xcode
   type: string
   description: Readable identifier shared by every version of this lifecycle.
-- name: seq
-  type: int64
-  nullable: true
-  description: Integer message sequence number.
-  metadata:
-    fix:tag: '34'
-    fix:type: SeqNum
-    fix:version: 5.0.SP2
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"SeqNum"}'
-    fix:name: MsgSeqNum
-- name: prev_hash
-  type: int64
-  nullable: true
-  description: The version this one replaced; null on the first.
-- name: prev_state
-  type: int32
-  description: The state this version moved out of -- a transition, without the self-join.
-  metadata:
-    enum:name: State
-    enum:key_type: int32
-    enum:value_type: utf8
-    enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
 - name: prev_unix
   type: int64
   nullable: true
@@ -144,7 +120,7 @@ fields:
     enum:encoding: ascii-big-endian
     enum:max_bytes: '4'
     enum:pattern: '[A-Z0-9]{4}'
-- name: error
+- name: reason
   type: string
   nullable: true
   description: Why this event was rejected or could not be interpreted, when known.

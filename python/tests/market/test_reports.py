@@ -76,7 +76,7 @@ def test_partial_report_applies_authoritative_leaves_once() -> None:
     (execution,) = latest.executions
     assert (order.prev_qty, order.qty, order.state) == (100.0, 70.0, State.PARTIALLY_FILLED)
     assert execution.qty == 30.0 and latest.bid_qty == 70.0
-    assert latest.bid_levels[0].exec_xhash == [execution.xhash]
+    assert [(level.px, level.qty) for level in latest.bid_levels] == [(100.0, 70.0)]
 
 
 def test_partial_report_without_leaves_uses_previous_remaining_minus_last() -> None:
@@ -84,7 +84,7 @@ def test_partial_report_without_leaves_uses_previous_remaining_minus_last() -> N
 
     (order,) = latest.deltas
     assert (order.prev_qty, order.qty) == (100.0, 70.0)
-    assert latest.bid_qty == latest.bid_total_qty == 70.0
+    assert latest.bid_qty == 70.0 and latest.bid_depth == 1
 
 
 def test_linked_parentless_pair_does_not_reduce_the_resulting_order_twice() -> None:
@@ -98,7 +98,8 @@ def test_linked_parentless_pair_does_not_reduce_the_resulting_order_twice() -> N
 
     assert latest.bid_qty == 70.0
     assert latest.deltas[0].qty == 70.0
-    assert latest.bid_levels[0].exec_xhash == [latest.executions[0].xhash]
+    assert [(level.px, level.qty) for level in latest.bid_levels] == [(100.0, 70.0)]
+    assert [one.xhash for one in latest.executions] == [execution.xhash]
 
 
 def test_multiple_partial_reports_reduce_the_live_order_once_each() -> None:
@@ -131,7 +132,7 @@ def test_full_fill_is_terminal_zero_and_does_not_consume_an_unrelated_order() ->
 
     filled_order = next(order for order in latest.deltas if order.order_id == "ORDER-1")
     assert filled_order.state is State.FILLED and filled_order.qty == 0.0
-    assert latest.bid_qty == latest.bid_total_qty == 50.0 and latest.bid_depth == 1
+    assert latest.bid_qty == 50.0 and latest.bid_depth == 1
 
 
 def test_cancel_without_a_prior_new_keeps_source_quantity_as_previous() -> None:
@@ -168,9 +169,7 @@ def test_first_observed_fill_without_last_preserves_requested_quantity() -> None
 
 
 def test_partial_execution_without_a_prior_new_still_yields_both_rows() -> None:
-    (book,) = folded(
-        report(1, None, "F", last_qty=30.0, cum_qty=30.0, leaves_qty=70.0)
-    )
+    (book,) = folded(report(1, None, "F", last_qty=30.0, cum_qty=30.0, leaves_qty=70.0))
 
     assert len(book.deltas) == len(book.executions) == 1
     assert (book.deltas[0].prev_qty, book.deltas[0].qty, book.bid_qty) == (100.0, 70.0, 70.0)
@@ -188,9 +187,7 @@ def test_exec_type_supplies_new_state_when_ord_status_is_absent() -> None:
     ("exec_type", "state"),
     [("4", State.CANCELLED), ("C", State.EXPIRED), ("8", State.REJECTED)],
 )
-def test_terminal_exec_type_without_ord_status_never_rests(
-    exec_type: str, state: State
-) -> None:
+def test_terminal_exec_type_without_ord_status_never_rests(exec_type: str, state: State) -> None:
     (order,) = report(1, None, exec_type, order_qty=100.0)
     (book,) = folded([order])
 
@@ -260,7 +257,7 @@ def test_partial_fill_preserves_displayed_floor_not_stale_hidden_quantity() -> N
     )[-1]
 
     assert (latest.deltas[0].qty, latest.deltas[0].hidden_qty) == (70.0, 50.0)
-    assert latest.bid_qty == latest.bid_total_qty == 20.0
+    assert latest.bid_qty == 20.0 and latest.bid_depth == 1
 
 
 def test_cancellation_quantity_is_preserved_when_it_is_the_only_source() -> None:

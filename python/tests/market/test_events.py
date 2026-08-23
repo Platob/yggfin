@@ -115,10 +115,29 @@ def test_a_snapshot_keeps_both_when_it_was_taken_and_what_it_is_of() -> None:
 
 
 def test_a_snapshot_drops_previous_market_values_because_they_are_a_delta() -> None:
-    current = Book(unix=1, prev_px=10.0, prev_qty=20.0, prev_notional=200.0)
+    current = Book(
+        unix=1,
+        prev_px=10.0,
+        prev_qty=20.0,
+        prev_notional=200.0,
+        prev_bid_px=9.0,
+        prev_bid_qty=4.0,
+        prev_ask_px=11.0,
+        prev_ask_qty=6.0,
+        exec_px=10.5,
+        prev_exec_px=10.0,
+    )
     snapshot = current.make_snapshot(2)
     assert snapshot is not None
     assert (snapshot.prev_px, snapshot.prev_qty, snapshot.prev_notional) == (None, None, None)
+    assert (
+        snapshot.prev_bid_px,
+        snapshot.prev_bid_qty,
+        snapshot.prev_ask_px,
+        snapshot.prev_ask_qty,
+        snapshot.prev_exec_px,
+    ) == (None, None, None, None, None)
+    assert snapshot.exec_px == 10.5
 
 
 def test_an_unchanged_state_expires_once_after_one_day() -> None:
@@ -157,45 +176,46 @@ def test_a_shape_hashes_whole_columns_the_way_it_hashes_one_row() -> None:
     assert Order.hash_arrow(symbols, ids).to_pylist() != Book.hash_arrow(symbols, ids).to_pylist()
 
 
-def test_a_book_version_is_only_its_instant_and_instrument() -> None:
+def test_an_empty_book_version_includes_explicit_empty_side_lengths() -> None:
     unix, instrument_xhash = 1_710_374_400_000_000_123, 42
     built = Book(unix=unix, instrument_xhash=instrument_xhash).identify()
 
-    assert built.version_parts() == (unix, instrument_xhash)
-    assert built.hash == Book.hash_of(unix, instrument_xhash)
+    assert built.version_parts() == (unix, instrument_xhash, 0, 0)
+    assert built.hash == Book.hash_of(unix, instrument_xhash, 0, 0)
     assert Book.hash_arrow(
         pyarrow.array([unix], pyarrow.int64()),
         pyarrow.array([instrument_xhash], pyarrow.int64()),
+        pyarrow.array([0], pyarrow.int64()),
+        pyarrow.array([0], pyarrow.int64()),
     ).to_pylist() == [built.hash]
 
 
 def test_an_unhashed_event_carries_the_nil_identifier_rather_than_a_null() -> None:
     """`hash` is NOT NULL, so an unsaved row is a visible repeat, not a late failure."""
     assert Order().hash == NIL and Order().xhash == NIL
-    assert Order().state is State.UNKNOWN and Order().prev_state is State.UNKNOWN
-    assert Order().prev_hash is None, "but the previous version really is absent"
+    assert Order().state is State.UNKNOWN and Order().prev_unix is None
 
 
-def test_mic_and_error_distinguish_otherwise_identical_event_versions() -> None:
+def test_mic_and_reason_distinguish_otherwise_identical_event_versions() -> None:
     xpar = MIC.from_str("XPAR")
-    base = Event(unix=1, code="A", mic=xpar, error="bad quantity").identify()
-    other_error = Event(unix=1, code="A", mic=xpar, error="bad price").identify()
-    other_mic = Event(unix=1, code="A", mic=MIC.from_str("XLON"), error="bad quantity").identify()
-    assert len({base.hash, other_error.hash, other_mic.hash}) == 3
+    base = Event(unix=1, code="A", mic=xpar, reason="bad quantity").identify()
+    other_reason = Event(unix=1, code="A", mic=xpar, reason="bad price").identify()
+    other_mic = Event(unix=1, code="A", mic=MIC.from_str("XLON"), reason="bad quantity").identify()
+    assert len({base.hash, other_reason.hash, other_mic.hash}) == 3
 
 
-def test_a_silent_update_keeps_the_lifecycle_mic_but_not_an_old_error() -> None:
-    previous = Event(unix=1, code="A", mic=MIC.from_str("XPAR"), error="rejected").identify()
+def test_a_silent_update_keeps_the_lifecycle_mic_but_not_an_old_reason() -> None:
+    previous = Event(unix=1, code="A", mic=MIC.from_str("XPAR"), reason="rejected").identify()
     current = Event(unix=2, code="A").completed_from(previous)
     assert current.mic is previous.mic
-    assert current.error is None
+    assert current.reason is None
 
 
 def test_the_base_code_is_protocol_neutral_and_market_code_is_fix_symbol() -> None:
     assert "fix:tag" not in Event.into_field().field("code").metadata
-    assert Event.into_field().field("seq").fix["tag"] == "34"
     assert MarketEvent.into_field().field("code").metadata["fix:tag"] == "55"
-    assert "seq" in MarketEvent.into_field().names
+    assert {"seq", "prev_hash", "prev_state", "error"}.isdisjoint(Event.into_field().names)
+    assert Event.into_field().names.count("reason") == 1
     assert "venue" not in MarketEvent.into_field().names
     assert Event.into_field().field("xcode").arrow_type == pyarrow.string()
 

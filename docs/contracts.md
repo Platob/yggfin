@@ -33,17 +33,14 @@ example `orig_cl_ord_id` with `fix:name: OrigClOrdID`.
 
 ## Evolution
 
-Ordinary evolution is additive and nullable. Dropping or retyping a field is a
-new contract version. Producers cast before writing; consumers load the same
-contract and may use `merge_schema=True` to retain additive fields from a newer
-producer.
+All five contracts remain at version 1 while the project is pre-release. Schema
+changes update the declarations and generated contracts together; there are no
+older published contract versions to migrate.
 
-The `linked_events` and Book-state refactor is an intentional breaking cutover:
-it replaces stored names and types and makes collections and depths required.
-Existing Iceberg tables must be explicitly migrated or recreated before using
-these contracts; the core model does not keep parallel legacy columns. In
-particular, an old lifecycle-only link has no event time from which to recover
-`linked_events` losslessly.
+After compatibility is established, ordinary evolution is additive and
+nullable. Dropping or retyping a field requires a new contract version.
+Producers cast before writing; consumers load the same contract and may use
+`merge_schema=True` to retain additive fields from a newer producer.
 
 ## Publishing
 

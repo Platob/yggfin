@@ -293,6 +293,7 @@ LINE_COLUMNS = [
     "driver_name",
     "message",
     "protocol",
+    "msg_seq_num",
     "fix_tags",
     "fix_miss_tags",
     "keyval",
@@ -377,8 +378,8 @@ LINE_COLUMNS = [
 ]
 
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LINE_COLUMNS = 86
-EXPECTED_LOG_COLUMNS = 107
+EXPECTED_LINE_COLUMNS = 87
+EXPECTED_LOG_COLUMNS = 105
 
 
 def test_schema(plain: Path) -> None:
@@ -402,12 +403,14 @@ def test_the_flat_columns_are_the_ones_the_column_layer_names() -> None:
     field added on one side only is either a tag lifted out of `fix_tags` into a
     column nothing declares, or a column no message can ever fill.
 
-    All fifty-nine retain their canonical FIX names in metadata.
+    Every promoted field retains its canonical FIX name in metadata.
     """
     assert FLAT == SESSION + COMMON + QUOTE, "session, common market fields, then quotes"
     assert [column for _, column in FLAT] == list(COLUMNS.values())
     assert len(COLUMNS) == EXPECTED_FLAT_COLUMNS
-    added = [name for name in COLUMNS.values() if name not in Event.into_field().names]
+    added = [
+        name for name in COLUMNS.values() if name not in {*Event.into_field().names, "msg_seq_num"}
+    ]
     assert LINE_COLUMNS[-len(added) :] == added
 
 
@@ -422,7 +425,7 @@ def test_a_flat_field_is_a_column_of_its_own_type_and_not_text(plain: Path) -> N
         "begin_string": pyarrow.string(),
         "body_length": pyarrow.int64(),
         "msg_type": pyarrow.string(),
-        "seq": pyarrow.int64(),
+        "msg_seq_num": pyarrow.int64(),
         "poss_dup_flag": pyarrow.bool_(),
         "secure_data": pyarrow.binary(),
         "order_qty": pyarrow.float64(),
@@ -489,13 +492,13 @@ def test_exact_fix_columns_also_fill_the_generic_envelope(wire: Path) -> None:
     """Snake columns keep FIX identity while generic identifiers are derived."""
     table = TextFile.from_path(wire).read_arrow_table()
     assert table.column("symbol").to_pylist() == ["TTF", None, None]
-    assert table.column("seq").to_pylist() == [7, 8, None]
+    assert table.column("msg_seq_num").to_pylist() == [7, 8, None]
     assert table.column("code").to_pylist() == ["ORD-1", "", ""]
     assert table.column("xcode").to_pylist() == ["ORD-1", "", ""]
     assert table.column("msg_type").to_pylist() == ["D", "AB", None]
     assert table.column("check_sum").to_pylist() == ["203", "011", None]
     assert table.column("mic").to_pylist() == [int(MIC.from_str("XPAR"))] * 2 + [None]
-    assert table.column("error").to_pylist() == ["ok", None, None]
+    assert table.column("reason").to_pylist() == ["ok", None, None]
 
 
 def test_session_direction_selects_the_venue_side_when_both_ids_look_like_mics(

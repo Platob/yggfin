@@ -22,6 +22,7 @@ from rekep.market import (
 )
 from rekep.market.book import _Side
 from rekep.market.event import DAY, HOUR
+from rekep.market.identity import NIL
 from rekep.text import Log
 
 #: An instant on an hour boundary, so a snapshot's `unix` is legible.
@@ -62,7 +63,6 @@ def with_instruments(events, instruments):
         key=lambda event: (
             event.unix,
             0 if isinstance(event, Instrument) else 1,
-            -1 if event.seq is None else event.seq,
             event.hash,
         ),
     )
@@ -173,17 +173,16 @@ def test_book_iteration_never_queues_a_parallel_reference_stream() -> None:
 def test_an_out_of_order_rotated_segment_keeps_a_distinct_instrument() -> None:
     instruments = list(
         Instrument.from_observations(
-            [(BASE + 10, BTC, 7), (BASE, ETH, 3)],
+            [(BASE + 10, BTC), (BASE, ETH)],
             snapshot_every=0,
         )
     )
 
     assert {known.xhash for known in instruments} == {BTC.xhash, ETH.xhash}
     assert [known.unix for known in instruments] == [BASE + 10, BASE + 10]
-    assert [known.seq for known in instruments] == [7, 3]
 
 
-def test_conflicting_security_ids_do_not_merge_through_a_shared_symbol() -> None:
+def test_conflicting_security_ids_collapse_under_the_same_exact_symbol() -> None:
     first = Instrument(
         symbol="ABC",
         exchange="XPAR",
@@ -204,9 +203,10 @@ def test_conflicting_security_ids_do_not_merge_through_a_shared_symbol() -> None
         )
     )
 
-    assert [row.security_id for row in instruments] == ["111111111", "222222222"]
-    assert len({row.xhash for row in instruments}) == 2
-    assert [row.version for row in instruments] == [0, 0]
+    (known,) = instruments
+    assert known.security_id == "111111111", "the first nonempty fact remains authoritative"
+    assert known.xhash == first.xhash == second.xhash
+    assert known.version == 0
 
 
 def test_a_weak_symbol_can_still_be_enriched_by_its_first_security_id() -> None:
@@ -228,40 +228,39 @@ def test_a_weak_symbol_can_still_be_enriched_by_its_first_security_id() -> None:
     assert enriched.version == bare.version + 1
 
 
-def test_a_reference_visible_later_does_not_enrich_an_earlier_book() -> None:
-    bare = Instrument(security_id="US1234567890", security_id_source="4")
-    rich = Instrument(
+def test_a_security_id_only_instrument_is_unidentified_and_skipped() -> None:
+    unidentified = Instrument(security_id="US1234567890", security_id_source="4")
+    assert unidentified.xhash == NIL and unidentified.identities() == ()
+    assert list(Instrument.from_observations([(BASE, unidentified)], snapshot_every=0)) == []
+
+
+def test_different_symbols_do_not_alias_through_a_shared_security_id() -> None:
+    first = Instrument(
         symbol="BTC-USD",
         security_id="US1234567890",
         security_id_source="4",
     )
-    events = [
-        order(BASE, bare, Side.BID, 100.0, 1.0, "B1"),
-        order(BASE + 10, rich, Side.ASK, 101.0, 1.0, "A1"),
-    ]
+    second = Instrument(
+        symbol="XBT-USD",
+        security_id="US1234567890",
+        security_id_source="4",
+    )
+
     instruments = list(
         Instrument.from_observations(
-            [(BASE, bare), (BASE + 10, rich)],
+            [(BASE, first), (BASE + 1, second)],
             snapshot_every=0,
         )
     )
 
-    books = list(BookIterator.from_events(with_instruments(events, instruments), snapshot_every=0))
-
-    assert [book.code for book in books] == ["", "BTC-USD"]
+    assert [known.symbol for known in instruments] == ["BTC-USD", "XBT-USD"]
+    assert len({known.xhash for known in instruments}) == 2
+    assert [known.version for known in instruments] == [0, 0]
 
 
 def test_iterating_the_iterator_is_iterating_its_books() -> None:
     events = [order(BASE, BTC, Side.BID, 100.0, 5.0, "B1")]
     assert [type(one) for one in BookIterator.from_events(events)] == [Book]
-
-
-def test_a_book_keeps_the_source_sequence_of_the_event_it_settled() -> None:
-    event = order(BASE, BTC, Side.BID, 100.0, 5.0, "B1", seq=7)
-
-    (book,) = BookIterator.from_events([event], snapshot_every=0)
-
-    assert book.seq == 7
 
 
 def test_the_source_is_read_once_and_not_started_over() -> None:
@@ -344,7 +343,7 @@ def test_a_message_that_knows_more_publishes_another_version() -> None:
     assert rich.cfi == "FFICSX" and rich.kind is AssetKind.FUTURE
     assert rich.currency is Currency.USD
     assert rich.xhash == bare.xhash, "the same instrument, and an identity that did not move"
-    assert rich.version == bare.version + 1 and rich.prev_hash == bare.hash
+    assert rich.version == bare.version + 1 and rich.prev_unix == bare.unix
     assert rich.hash != bare.hash, "two versions of what is known, and two rows"
 
 
@@ -527,9 +526,7 @@ def test_an_exact_boundary_keeps_one_book_identity() -> None:
     books = list(BookIterator.from_events(events).books)
 
     assert len({(book.unix, book.instrument_xhash) for book in books}) == len(books)
-    assert [book.hash for book in books] == [
-        Book.hash_of(book.unix, book.instrument_xhash) for book in books
-    ]
+    assert [book.hash for book in books] == [Book.hash_of(*book.version_parts()) for book in books]
 
 
 def test_the_snapshots_are_versions_of_the_book_they_picture() -> None:
@@ -543,7 +540,7 @@ def test_the_snapshots_are_versions_of_the_book_they_picture() -> None:
     assert len({one.xhash for one in found}) == 1, "one book"
     assert len({one.hash for one in found}) == len(found), "and four versions of it"
     for before, after in zip(found, found[1:], strict=False):
-        assert after.prev_hash == before.hash
+        assert after.prev_unix == before.unix
 
 
 def test_turning_the_grid_off_leaves_only_what_changed() -> None:
@@ -614,21 +611,19 @@ def test_each_delta_reads_both_incremental_side_summaries() -> None:
             row.bid_px,
             row.bid_qty,
             row.bid_depth,
-            row.bid_total_qty,
             row.ask_px,
             row.ask_qty,
             row.ask_depth,
-            row.ask_total_qty,
         )
         for row in found
     ] == [
-        (100.0, 5.0, 1, 5.0, None, None, 0, 0.0),
-        (100.0, 5.0, 1, 5.0, 100.5, 7.0, 1, 7.0),
-        (100.0, 5.0, 1, 5.0, 100.4, 2.0, 2, 9.0),
-        (100.0, 5.0, 2, 8.0, 100.4, 2.0, 2, 9.0),
+        (100.0, 5.0, 1, None, None, 0),
+        (100.0, 5.0, 1, 100.5, 7.0, 1),
+        (100.0, 5.0, 1, 100.4, 2.0, 2),
+        (100.0, 5.0, 2, 100.4, 2.0, 2),
     ]
     assert found[1].px == pytest.approx(100.25)
-    assert found[2].micro_px == pytest.approx((100.0 * 2.0 + 100.4 * 5.0) / 7.0)
+    assert found[2].vwap == pytest.approx((100.0 * 2.0 + 100.4 * 5.0) / 7.0)
 
 
 def test_a_trade_counts_as_the_side_moving() -> None:
@@ -650,8 +645,8 @@ def test_a_trade_counts_as_the_side_moving() -> None:
     ]
     first, _, third = BookIterator.from_events(events, snapshot_every=0).books
     assert first.bid_qty == 5.0 and third.bid_qty == 3.0
-    assert len(third.bid_levels) == 1
-    assert third.bid_levels[0].exec_xhash == [third.executions[0].xhash]
+    assert [(level.px, level.qty) for level in third.bid_levels] == [(100.0, 3.0)]
+    assert [(one.px, one.qty) for one in third.executions] == [(100.0, 2.0)]
 
 
 def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
@@ -703,10 +698,15 @@ def test_a_snapshot_shows_the_book_and_not_what_changed_to_produce_it() -> None:
     for one in found:
         if one.sunix is None:
             continue
-        assert all(not level.exec_xhash for level in one.bid_levels)
-        assert all(not level.exec_xhash for level in one.ask_levels)
         assert [level.px for level in one.bid_levels] == [100.0], "the state is still there"
         assert one.deltas == [] and one.executions == []
+        assert (
+            one.prev_bid_px,
+            one.prev_bid_qty,
+            one.prev_ask_px,
+            one.prev_ask_qty,
+            one.prev_exec_px,
+        ) == (None, None, None, None, None)
         assert [order.order_id for order in one.bid_alive] == ["B1"]
         assert one.linked_events == [(order.unix, order.xhash) for order in one.bid_alive]
 
@@ -721,7 +721,7 @@ def test_forgetting_the_delta_does_not_empty_the_row_it_pictures() -> None:
     first, snapshot, _ = BookIterator.from_events(events).books
     assert len(first.bid_levels) == 1, "the row that was pictured still has its delta"
     assert snapshot.bid_levels is not first.bid_levels
-    assert snapshot.bid_levels[0].order_xhash == first.bid_levels[0].order_xhash
+    assert snapshot.bid_levels == first.bid_levels
 
 
 # -- recovery, validation and expiry ---------------------------------------
@@ -747,11 +747,42 @@ def test_a_snapshot_restores_names_levels_and_live_quantities() -> None:
     seed = next(one for one in BookIterator.from_events(before) if one.sunix is not None)
     after = order(BASE + HOUR + 70, BTC, Side.BID, 99.0, 3.0, "B2")
 
-    (resumed,) = BookIterator.from_events([after], snapshots=[seed], snapshot_every=0)
+    iterator = BookIterator.from_events([after], snapshots=[seed], snapshot_every=0)
+    (resumed,) = iterator
 
-    assert resumed.bid_depth == 2 and resumed.bid_total_qty == 8.0
+    assert resumed.bid_depth == 2
     assert resumed.bid_px == 100.0 and resumed.ask_px is None
     assert [one.order_id for one in resumed.deltas] == ["B2"]
+    assert sum(level.qty for level in iterator.folding[BTC.xhash].bid.alive) == 8.0
+
+
+def test_recovery_rebuilds_the_same_order_framed_hash_as_an_uninterrupted_fold() -> None:
+    placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
+    clock = order(BASE + HOUR + 60, BTC, Side.ASK, 100.5, 7.0, "A1")
+    after = order(BASE + HOUR + 70, BTC, Side.BID, 99.0, 3.0, "B2")
+    uninterrupted = list(BookIterator.from_events([placed, clock, after], snapshot_every=0))[-1]
+    seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
+    persisted = Book.from_dict(seed.into_dict())
+
+    recovered = list(
+        BookIterator.from_events(
+            [clock, after],
+            snapshots=[persisted],
+            snapshot_every=0,
+        )
+    )[-1]
+    expected = (
+        after.unix,
+        BTC.xhash,
+        2,
+        placed.hash,
+        after.hash,
+        1,
+        clock.hash,
+    )
+
+    assert uninterrupted.version_parts() == recovered.version_parts() == expected
+    assert uninterrupted.hash == recovered.hash == Book.hash_of(*expected)
 
 
 def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> None:
@@ -787,21 +818,40 @@ def test_a_restored_order_continues_the_persisted_version_chain() -> None:
 
     (audited,) = resumed.deltas
     seeded = next(one for one in seed.bid_alive if one.order_id == "B1")
-    assert audited.prev_hash == seeded.hash == placed.hash
+    assert audited.prev_unix == seeded.unix == placed.unix
     assert audited.version == seeded.version + 1
 
 
-@pytest.mark.parametrize("anonymous", [False, True], ids=["missing-order", "anonymous-level"])
-def test_recovery_refuses_a_live_level_it_cannot_reconstruct(anonymous: bool) -> None:
+def test_recovery_refuses_a_live_level_it_cannot_reconstruct() -> None:
     placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
     clock = order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
     seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
-    levels = seed.bid_levels
-    if anonymous:
-        levels = [dataclasses.replace(level, order_xhash=[]) for level in levels]
-    broken = dataclasses.replace(seed, bid_levels=levels, bid_alive=[])
+    broken = dataclasses.replace(seed, bid_alive=[])
 
-    with pytest.raises(ValueError, match="linked (live )?Order"):
+    with pytest.raises(ValueError, match="no live Order"):
+        BookIterator(snapshots=[broken])
+
+
+def test_recovery_refuses_a_live_order_absent_from_the_levels() -> None:
+    placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
+    clock = order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
+    seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
+    broken = dataclasses.replace(seed, bid_depth=0, bid_levels=[])
+
+    with pytest.raises(ValueError, match="absent from the levels"):
+        BookIterator(snapshots=[broken])
+
+
+def test_recovery_refuses_a_level_quantity_that_disagrees_with_its_orders() -> None:
+    placed = order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1")
+    clock = order(BASE + HOUR + 60, BTC, Side.ASK, 101.0, 1.0, "A1")
+    seed = next(one for one in BookIterator.from_events([placed, clock]) if one.sunix is not None)
+    broken = dataclasses.replace(
+        seed,
+        bid_levels=[dataclasses.replace(seed.bid_levels[0], qty=4.0)],
+    )
+
+    with pytest.raises(ValueError, match="Orders total"):
         BookIterator(snapshots=[broken])
 
 
@@ -855,47 +905,44 @@ def test_recovery_applies_the_side_bound_as_an_auditable_delta() -> None:
     ]
     seed = next(one for one in BookIterator.from_events(before) if one.sunix is not None)
 
-    (bounded,) = BookIterator(snapshots=[seed], snapshot_every=0, max_side_alive=2).books
+    iterator = BookIterator(snapshots=[seed], snapshot_every=0, max_side_alive=2)
+    (bounded,) = iterator.books
 
     expired = [one for one in bounded.deltas if one.state is State.INTERNAL_EXPIRED]
     assert [one.order_id for one in expired] == ["B3"]
-    assert bounded.bid_depth == 2 and bounded.bid_total_qty == 2.0
+    assert bounded.bid_depth == 2
+    assert sum(level.qty for level in iterator.folding[BTC.xhash].bid.alive) == 2.0
 
 
-def test_a_reference_restores_aliases_the_normalized_book_does_not_store() -> None:
-    identified = Instrument(
+def test_different_symbol_references_do_not_alias_one_book() -> None:
+    first = Instrument(
         symbol="BTC-USD",
         exchange="XCME",
         security_id="US1234567890",
         security_id_source="4",
     )
+    second = Instrument(
+        symbol="XBT-USD",
+        exchange="XCME",
+        security_id="US1234567890",
+        security_id_source="4",
+    )
     events = [
-        order(BASE + 60, BTC, Side.BID, 100.0, 5.0, "B1"),
-        order(BASE + 70, identified, Side.BID, 99.0, 2.0, "B2"),
-        order(BASE + HOUR + 60, identified, Side.ASK, 100.5, 1.0, "A1"),
+        order(BASE, first, Side.BID, 100.0, 5.0, "B1"),
+        order(BASE + 1, second, Side.BID, 99.0, 2.0, "B2"),
     ]
     instruments = list(Instrument.from_events(events))
-    folding = BookIterator.from_events(with_instruments(events, instruments))
-    books = list(folding.books)
-    snapshot = next(one for one in books if one.sunix is not None)
-    persisted = Book.from_dict(snapshot.into_dict())
-    assert persisted.into_instrument() is None
-
-    security_id_only = Instrument(security_id="US1234567890", security_id_source="4")
-    after = order(BASE + HOUR + 70, security_id_only, Side.BID, 98.0, 1.0, "B3")
-    latest = max(instruments, key=lambda known: known.unix)
-    resumed = BookIterator.from_events(
-        with_instruments([after], [latest]),
-        snapshots=[persisted],
+    folding = BookIterator.from_events(
+        with_instruments(events, instruments),
         snapshot_every=0,
     )
 
-    (book,) = resumed.books
-    assert len(resumed.folding) == 1
-    assert book.instrument_xhash == BTC.xhash
+    books = list(folding.books)
+    assert len(folding.folding) == 2
+    assert {book.instrument_xhash for book in books} == {first.xhash, second.xhash}
 
 
-def test_a_reference_alone_canonicalizes_the_book_and_nested_order() -> None:
+def test_a_same_symbol_reference_keeps_the_book_and_nested_order_on_one_identity() -> None:
     canonical = Instrument(symbol="BTC-USD", exchange="XCME")
     richer = Instrument(
         symbol="BTC-USD",
@@ -904,7 +951,7 @@ def test_a_reference_alone_canonicalizes_the_book_and_nested_order() -> None:
         security_id_source="4",
     )
     known = dataclasses.replace(canonical, unix=BASE - HOUR).with_previous(None)
-    assert known is not None and richer.xhash != known.xhash
+    assert known is not None and richer.xhash == known.xhash
     folding = BookIterator.from_events(
         with_instruments(
             [order(BASE, richer, Side.BID, 100.0, 1.0, "B1")],
@@ -921,7 +968,7 @@ def test_a_reference_alone_canonicalizes_the_book_and_nested_order() -> None:
     assert nested.xhash == Order.hash_of(canonical.xhash, nested.mic, "B1", nested.side)
 
 
-def test_alias_canonicalization_rewrites_execution_links_and_parent_versions() -> None:
+def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions() -> None:
     canonical = Instrument(symbol="BTC-USD", exchange="XCME")
     richer = Instrument(
         symbol="BTC-USD",
@@ -982,7 +1029,7 @@ def test_stale_orders_expire_into_an_auditable_terminal_event(explicit: bool) ->
     expired = [one for one in latest.deltas if one.order_id == "B1"]
     assert len(expired) == 1 and expired[0].state is State.INTERNAL_EXPIRED
     assert expired[0].eunix == BASE + 10
-    assert expired[0].error and latest.bid_depth == 0
+    assert expired[0].reason and latest.bid_depth == 0
 
 
 def test_an_inactive_instrument_snapshots_before_its_expiry_is_applied() -> None:
@@ -1108,7 +1155,7 @@ def test_an_incomplete_limit_order_is_rejected_but_not_lost() -> None:
     (book,) = BookIterator.from_events([incomplete], snapshot_every=0)
 
     (audited,) = book.deltas
-    assert audited.state is State.INTERNAL_REJECTED and "required price" in audited.error
+    assert audited.state is State.INTERNAL_REJECTED and "required price" in audited.reason
     assert book.bid_depth == 0 and book.bid_px is None
 
 
@@ -1118,7 +1165,7 @@ def test_a_new_order_without_a_side_is_rejected_instead_of_silently_ignored() ->
     (book,) = BookIterator.from_events([incomplete], snapshot_every=0)
 
     (audited,) = book.deltas
-    assert audited.state is State.INTERNAL_REJECTED and "side is missing" in audited.error
+    assert audited.state is State.INTERNAL_REJECTED and "side is missing" in audited.reason
     assert book.bid_depth == book.ask_depth == 0
 
 
@@ -1149,7 +1196,7 @@ def test_pending_new_is_validated_but_pending_cancel_may_omit_terms() -> None:
     assert books[0].deltas[0].state is State.INTERNAL_REJECTED
     assert books[-1].bid_qty == 5.0
     assert books[-1].deltas[0].state is State.PENDING_CANCEL
-    assert books[-1].deltas[0].error is None
+    assert books[-1].deltas[0].reason is None
 
 
 def test_a_rejected_replace_never_removes_the_standing_order() -> None:
@@ -1162,14 +1209,14 @@ def test_a_rejected_replace_never_removes_the_standing_order() -> None:
         5.0,
         "B1",
         kind=MarketKind.LIMIT_ORDER,
-        error="upstream detail",
+        reason="upstream detail",
     )
 
     latest = list(BookIterator.from_events([standing, malformed], snapshot_every=0))[-1]
 
     assert latest.bid_px == 100.0 and latest.bid_qty == 5.0
     assert latest.deltas[0].state is State.INTERNAL_REJECTED
-    assert latest.deltas[0].error == "upstream detail"
+    assert latest.deltas[0].reason == "upstream detail"
 
 
 def test_negative_prices_are_valid_but_nonpositive_quantities_are_not() -> None:
@@ -1198,7 +1245,7 @@ def test_negative_prices_are_valid_but_nonpositive_quantities_are_not() -> None:
 
     assert latest.bid_qty == 5.0
     assert latest.executions[0].state is State.INTERNAL_REJECTED
-    assert "quantity" in latest.executions[0].error
+    assert "quantity" in latest.executions[0].reason
 
 
 def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
@@ -1229,8 +1276,8 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
 
     latest = list(BookIterator.from_events([placed, remaining, fill], snapshot_every=0))[-1]
 
-    assert latest.bid_qty == 800.0 and latest.bid_total_qty == 800.0
+    assert latest.bid_qty == 800.0 and latest.bid_depth == 1
     assert latest.deltas[0].px == 100.0 and latest.deltas[0].qty == 800.0
     assert latest.deltas[0].prev_qty == 1_200.0
-    assert latest.deltas[0].version == 1 and latest.deltas[0].prev_hash == placed.hash
+    assert latest.deltas[0].version == 1 and latest.deltas[0].prev_unix == placed.unix
     assert latest.executions[0].qty == 400.0

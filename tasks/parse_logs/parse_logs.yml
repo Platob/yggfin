@@ -2,6 +2,7 @@ name: parse_logs
 notebook: parse_logs.ipynb
 parameters:
   project_root: .
+  # Raw input may be an S3 prefix, for example: s3://example-bucket/capture
   source: data/capture
   pattern: "*.log*"
   recursive: true
@@ -12,6 +13,17 @@ parameters:
   null_values: ["", "null", "<null>", "n/a"]
   rules: null
   protocols: null
+  # `target_pattern` and `instrument_source` below are Iceberg table
+  # identifiers; new table files live under the catalog warehouse.
+  # AWS Glue with an S3 warehouse (replace the active local block):
+  # catalog: rekep-production
+  # catalog_properties:
+  #   type: glue
+  #   warehouse: s3://example-bucket/rekep/warehouse
+  #   glue.region: eu-west-1
+  #   s3.region: eu-west-1
+  #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
+  # Credentials come from the standard AWS environment or workload role.
   catalog: rekep
   catalog_properties:
     type: sql

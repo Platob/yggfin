@@ -131,7 +131,7 @@ _STAMP_FIELDS: tuple[str, ...] = (
 
 # Public analytical names may clarify a protocol term while `fix:name` keeps
 # its exact registry spelling. These overrides are part of the log contract.
-_NAMES: Mapping[str, str] = MappingProxyType({"AvgPx": "vwap", "MsgSeqNum": "seq"})
+_NAMES: Mapping[str, str] = MappingProxyType({"AvgPx": "vwap"})
 
 
 def _snake(name: str) -> str:

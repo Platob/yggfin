@@ -25,7 +25,7 @@ logs = IcebergDataset(
 reader = logs.read_arrow_reader(
     row_filter=filter,
     columns=["unix", "hash", "symbol"],
-    order_by=["unix", "seq", "hash"],
+    order_by=["unix", "msg_seq_num", "hash"],
     snapshot_id=None,
     branch="main",
 )
@@ -48,9 +48,10 @@ stored; write/upsert replaces them. Input batches accumulate to the requested
 commit size. Schema additions are nullable and additive.
 
 The current market-contract cutover is not an additive Iceberg evolution:
-renamed Book payloads, typed `linked_events`, and required collections need an
-explicit table migration or recreation. Dataset writes do not guess a missing
-link time or keep the retired columns alive.
+renamed Book payloads, typed `linked_events`, required collections, removed
+event fields, and the Log sequence rename need an explicit table migration or
+recreation. Dataset writes do not guess missing lineage or keep retired columns
+alive.
 
 Every verb accepts `branch`; reads also accept `snapshot_id`. A producer that
 does not provide Iceberg ids is numbered at creation, while a contract that

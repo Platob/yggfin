@@ -37,8 +37,8 @@
 
   <rect class="origin" x="1135" y="30" width="420" height="90" rx="14"/>
   <text class="label" x="1345" y="63">Shared Event envelope</text>
-  <text class="small" x="1345" y="88">unix | seq | hash | xhash | linked_events</text>
-  <text class="small" x="1345" y="108">state | error | parent_hash</text>
+  <text class="small" x="1345" y="88">unix | hash | xhash | linked_events</text>
+  <text class="small" x="1345" y="108">state | reason | parent_hash</text>
   <path class="inherit" d="M1050 75 H1135"/>
 
   <rect class="contract" x="45" y="245" width="355" height="240" rx="15"/>

@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
+import re
 from collections.abc import Iterable, Iterator
 from typing import Annotated, Any
 
@@ -70,13 +71,13 @@ class Leg(MarketConvertible):
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
-        if not self.xhash:
-            self.xhash = Instrument(
-                symbol=self.symbol,
-                exchange=self.exchange,
-                security_id=self.security_id,
-                security_id_source=self.security_id_source,
-            ).xhash
+        quote = _forex_quote(self.symbol)
+        if quote is not None:
+            if self.kind == AssetKind.UNKNOWN:
+                self.kind = AssetKind.CURRENCY
+            if self.currency is None:
+                self.currency = quote
+        self.xhash = _symbol_hash(self.symbol) if self.symbol else NIL
 
 
 @scalar(slots=True)
@@ -90,10 +91,10 @@ class Instrument(Event):
         return EventType.INSTRUMENT
 
     xhash: Annotated[int, Field.partition_key("bucket[16]")] = NIL
-    """Stable identity of the instrument, which outlives every symbol it has had."""
+    """Digest of the exact `symbol`; zero when the symbol is empty."""
 
     symbol: Annotated[str, fix_tag("Symbol")] = ""
-    """Identifier as the venue spells it -- readable, and never an identity."""
+    """Identifier as the venue spells it and the instrument identity source."""
 
     kind: AssetKind = AssetKind.UNKNOWN
     """What it settles as, read from the first character of the CFI code."""
@@ -166,14 +167,20 @@ class Instrument(Event):
     """The legs of a multileg instrument, in the order the venue sent them."""
 
     def __post_init__(self) -> None:
-        """Normalize facts and derive a stable identity when none was supplied."""
+        """Normalize facts and derive identity solely from the exact symbol."""
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
+        quote = _forex_quote(self.symbol)
+        if quote is not None:
+            if self.kind == AssetKind.UNKNOWN:
+                self.kind = AssetKind.CURRENCY
+            if self.currency is None:
+                self.currency = quote
         if self.isin_code is None:
             self.isin_code = self.into_isin()
-        if not self.xhash:
-            self.xhash = self.into_xhash()
+        self.xhash = self.into_xhash()
+        self.xcode = self.symbol
         self.code = self.code or self.symbol
         Event.__post_init__(self)
         self._materialize_life_code()
@@ -199,35 +206,23 @@ class Instrument(Event):
                 filled[name] = theirs
         if not filled:
             return None
-        return dataclasses.replace(self, **filled, xhash=self.xhash or other.xhash)
+        return dataclasses.replace(self, **filled)
 
     def into_xhash(self) -> int:
-        """The identity `self` is entitled to, from the strongest key it carries."""
-        found = self.identities()
-        return found[0] if found else NIL
+        """The exact symbol's domain-separated identity, or zero when absent."""
+        return _symbol_hash(self.symbol) if self.symbol else NIL
 
     def identities(self) -> tuple[int, ...]:
-        """Every identity this instrument could be known by, strongest first."""
-        found = []
-        if self.security_id and self.security_id_source:
-            found.append(_identity_hash("id", self.security_id_source, self.security_id))
-        if self.isin_code:
-            found.append(_identity_hash("id", IdSource.ISIN.into_fix(), self.isin_code))
-        if self.symbol:
-            found.append(_identity_hash("symbol", self.exchange or "", self.symbol))
-        return tuple(dict.fromkeys(found))
+        """The one identity by which this exact symbol is known."""
+        return (self.xhash,) if self.xhash else ()
 
     def life_code(self) -> str:
-        """Strongest readable identifier carried by this version."""
-        if self.xcode:
-            return self.xcode
-        if self.security_id and self.security_id_source:
-            return self.security_id
-        return self.into_isin() or self.symbol or Event.life_code(self)
+        """The exact symbol shared by every version of this lifecycle."""
+        return self.symbol
 
     def life_parts(self) -> tuple[Any, ...]:
-        """An instrument lifecycle is its stable identity."""
-        return (self.xhash,) if self.xhash else Event.life_parts(self)
+        """An instrument lifecycle exists only when its exact symbol does."""
+        return (self.xhash,) if self.xhash else ()
 
     def version_parts(self) -> tuple[Any, ...]:
         """Hash the complete explicitly framed instrument state."""
@@ -242,9 +237,7 @@ class Instrument(Event):
     @classmethod
     def from_observations(
         cls,
-        observations: Iterable[
-            tuple[int, Instrument | None] | tuple[int, Instrument | None, int | None]
-        ],
+        observations: Iterable[tuple[int, Instrument | None]],
         **declared: Any,
     ) -> Iterator[Instrument]:
         """Version ordered instrument observations and hourly snapshots."""
@@ -254,7 +247,7 @@ class Instrument(Event):
     def from_events(cls, events: Iterable[Any], **declared: Any) -> Iterator[Instrument]:
         """Version transient instrument facts carried by market events."""
         return cls.from_observations(
-            ((event.unix, event.into_instrument(), event.seq) for event in events),
+            ((event.unix, event.into_instrument()) for event in events),
             **declared,
         )
 
@@ -268,12 +261,12 @@ class Instrument(Event):
     ) -> Iterator[Instrument]:
         """Version instrument facts and symbol-only fallbacks from sorted logs."""
 
-        def observations() -> Iterator[tuple[int, Instrument, int | None]]:
+        def observations() -> Iterator[tuple[int, Instrument]]:
             for log in logs:
                 for instrument in log.into_instruments(
                     registry=registry,
                 ):
-                    yield log.unix, instrument, log.seq
+                    yield log.unix, instrument
 
         return cls.from_observations(observations(), **declared)
 
@@ -292,9 +285,7 @@ class _InstrumentState:
 class _InstrumentIterator:
     """Deduplicate and version instrument observations in event-time order."""
 
-    observations: Iterable[
-        tuple[int, Instrument | None] | tuple[int, Instrument | None, int | None]
-    ] = ()
+    observations: Iterable[tuple[int, Instrument | None]] = ()
     instruments: Iterable[Instrument] = ()
     snapshot_every: int = HOUR
     snapshot_until: int | None = None
@@ -303,15 +294,12 @@ class _InstrumentIterator:
         if self.snapshot_every < 0:
             raise ValueError("snapshot_every must be non-negative")
         self._states: dict[int, _InstrumentState] = {}
-        self._aliases: dict[int, int] = {}
         self._unix: int | None = None
         for known in self.instruments:
             self._seed(known)
 
     def __iter__(self) -> Iterator[Instrument]:
-        for observed in self.observations:
-            unix, instrument, *carried = observed
-            seq = carried[0] if carried else None
+        for unix, instrument in self.observations:
             if self._unix is not None and unix < self._unix:
                 unix = self._unix
             self._unix = unix
@@ -320,7 +308,7 @@ class _InstrumentIterator:
                 continue
             state = self._state_of(instrument)
             if state is None:
-                known = _observed_at(instrument, unix, seq).with_previous(None)
+                known = _observed_at(instrument, unix).with_previous(None)
                 if known is None:  # pragma: no cover - first observations always add state
                     continue
                 state = _InstrumentState(
@@ -330,7 +318,6 @@ class _InstrumentIterator:
                     next_snapshot=self._next_boundary(unix),
                 )
                 self._states[state.xhash] = state
-                self._remember(state)
                 yield known
                 continue
             if all(
@@ -341,15 +328,12 @@ class _InstrumentIterator:
             enriched = state.current.enriched_with(instrument)
             if enriched is None:
                 continue
-            known = _observed_at(enriched, unix, seq, xhash=state.xhash).with_previous(
-                state.previous
-            )
+            known = _observed_at(enriched, unix).with_previous(state.previous)
             if known is None:
                 continue
             state.current = known
             state.previous = known
             state.next_snapshot = self._next_boundary(unix)
-            self._remember(state)
             yield known
         if self.snapshot_until is not None:
             yield from self._snapshots(self.snapshot_until)
@@ -370,28 +354,10 @@ class _InstrumentIterator:
             next_snapshot=None if known.state.is_terminal else self._next_boundary(known.unix),
         )
         self._states[known.xhash] = state
-        self._remember(state)
 
     def _state_of(self, instrument: Instrument) -> _InstrumentState | None:
-        """Find a lifecycle through any non-conflicting spelling."""
-        identities = instrument.identities()
-        strong = _strong_identities(instrument, identities)
-        for identity in identities:
-            canonical = self._aliases.get(identity)
-            if canonical is None:
-                continue
-            state = self._states[canonical]
-            known_strong = _strong_identities(state.current)
-            if strong and known_strong and strong.isdisjoint(known_strong):
-                continue
-            return state
-        return None
-
-    def _remember(self, state: _InstrumentState) -> None:
-        """Alias every known spelling onto the first stable identity."""
-        self._aliases[state.xhash] = state.xhash
-        for identity in state.current.identities():
-            self._aliases.setdefault(identity, state.xhash)
+        """Find the lifecycle named by this exact symbol."""
+        return self._states.get(instrument.xhash)
 
     def _next_boundary(self, unix: int) -> int | None:
         return (
@@ -430,7 +396,7 @@ class _InstrumentIterator:
                 yield known
 
 
-# Frozen by the instrument identity protocol, not inferred from dataclass order.
+# Frozen by the instrument version protocol, not inferred from dataclass order.
 _INSTRUMENT_MEMBERS = (
     "symbol",
     "kind",
@@ -473,9 +439,6 @@ _LEG_MEMBERS = (
 def _observed_at(
     instrument: Instrument,
     unix: int,
-    seq: int | None,
-    *,
-    xhash: int | None = None,
 ) -> Instrument:
     """Copy facts onto a fresh event envelope at one observation instant."""
     return dataclasses.replace(
@@ -488,16 +451,12 @@ def _observed_at(
         eunix=None,
         sunix=None,
         hash=NIL,
-        xhash=instrument.xhash if xhash is None else xhash,
         linked_events=[],
         version=0,
         state=State.OPEN,
-        seq=seq,
-        prev_hash=None,
-        prev_state=State.UNKNOWN,
         prev_unix=None,
         parent_hash=None,
-        error=None,
+        reason=None,
     )
 
 
@@ -514,14 +473,6 @@ def _instrument_parts(instrument: Instrument) -> tuple[Any, ...]:
         else:
             parts.append(_scalar_part(value))
     return tuple(parts)
-
-
-def _strong_identities(
-    instrument: Instrument, identities: tuple[int, ...] | None = None
-) -> frozenset[int]:
-    """Security identifiers, excluding the exchange-symbol fallback."""
-    found = instrument.identities() if identities is None else identities
-    return frozenset(found[:-1] if instrument.symbol else found)
 
 
 def _map_parts(values: dict[str, str] | None) -> tuple[Any, ...]:
@@ -546,7 +497,17 @@ def _scalar_part(value: Any) -> Any:
     return value.isoformat() if isinstance(value, datetime.date) else value
 
 
+_FOREX_SYMBOL = re.compile(r"[A-Za-z]{3}/[A-Za-z]{3}", re.ASCII)
+
+
+def _forex_quote(symbol: str) -> Currency | None:
+    """The quote currency of an exact slash-delimited pair, when present."""
+    if _FOREX_SYMBOL.fullmatch(symbol) is None:
+        return None
+    return Currency.from_str(symbol[4:])
+
+
 @functools.lru_cache(maxsize=65_536)
-def _identity_hash(kind: str, scope: str, value: str) -> int:
-    """Hash a repeated instrument spelling once."""
-    return hash_of(kind, scope, value)
+def _symbol_hash(symbol: str) -> int:
+    """Hash one exact symbol in the existing symbol-identity domain."""
+    return hash_of("symbol", "", symbol)

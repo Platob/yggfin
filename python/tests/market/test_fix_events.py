@@ -61,9 +61,7 @@ def test_a_fraction_is_scaled_by_its_own_width() -> None:
 
 
 def test_epoch_fix_time_is_not_mistaken_for_an_absent_clock() -> None:
-    reader = FixEvents.from_text(
-        "35=D|52=19700101-00:00:00", runix=123, fix_version="4.4"
-    )
+    reader = FixEvents.from_text("35=D|52=19700101-00:00:00", runix=123, fix_version="4.4")
     assert reader.unix == 0
 
 
@@ -117,9 +115,9 @@ def test_the_recording_clock_is_the_readers_and_stays_separate() -> None:
     assert order.runix > order.unix, "recorded after it happened, which is the point"
 
 
-def test_the_fix_sequence_populates_the_generic_event_envelope() -> None:
+def test_the_fix_sequence_is_not_repeated_on_market_events() -> None:
     order, fill = events(FILLED)
-    assert order.seq == fill.seq == 1090
+    assert not hasattr(order, "seq") and not hasattr(fill, "seq")
 
 
 def test_without_a_transaction_time_the_message_falls_down_the_declared_order() -> None:
@@ -457,16 +455,16 @@ def test_fix_exchange_values_become_the_lossless_mic_code() -> None:
     assert int(order.mic) == int.from_bytes(b"XCME", "big")
 
 
-def test_fix_text_becomes_the_event_error_and_session_ids_are_a_mic_fallback() -> None:
+def test_fix_text_becomes_the_event_reason_and_session_ids_are_a_mic_fallback() -> None:
     (order,) = events("35=D|49=BUYSIDE|56=XPAR|11=CL-1|58=invalid price")
-    assert order.error == "invalid price"
+    assert order.reason == "invalid price"
     assert order.mic is MIC.from_str("XPAR")
 
 
-def test_a_structured_reject_reason_fills_error_when_text_is_absent() -> None:
+def test_a_structured_reject_reason_fills_reason_when_text_is_absent() -> None:
     (order,) = events("35=8|11=CL-1|39=8|150=0|103=6|60=20260821-10:00:00")
     assert order.state is State.REJECTED
-    assert order.error is not None and order.error.startswith("OrdRejReason=6: Duplicate Order")
+    assert order.reason is not None and order.reason.startswith("OrdRejReason=6: Duplicate Order")
 
 
 def test_session_direction_does_not_split_one_order_lifecycle() -> None:

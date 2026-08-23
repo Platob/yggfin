@@ -112,7 +112,7 @@ FIX_LINE = Log(
     begin_string="FIX.4.2",
     body_length=176,
     msg_type="D",
-    seq=7,
+    msg_seq_num=7,
     sender_comp_id="BUYSIDE",
     target_comp_id="XPAR",
     sending_time=datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC),
@@ -727,7 +727,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     hold fails at the write and nowhere earlier: the pair lists, a boolean, a
     double, a binary block, and a UTC microsecond timestamp.
     """
-    assert len(Log.into_field().names) == 107
+    assert len(Log.into_field().names) == 105
     logs.write_arrow_table(log_table(FIX_LINE), merge_by=True)
     logs.write_arrow_table(log_table(FIX_LINE), merge_by=True)
 
@@ -738,7 +738,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     assert row["protocol"] == "FIX"
     assert row["fix_tags"] == []
     assert [party["party_id"] for party in row["parties"]] == ["BUYSIDE", "XPAR"]
-    assert row["seq"] == 7 and row["sender_comp_id"] == "BUYSIDE"
+    assert row["msg_seq_num"] == 7 and row["sender_comp_id"] == "BUYSIDE"
     assert row["symbol"] == "TTF" and row["cl_ord_id"] == "ORD-1"
     assert row["order_qty"] == 1200.0
     assert row["poss_dup_flag"] is True

@@ -96,7 +96,7 @@ the short 1.5 s test bound; the normal workflow default is one day.
 | --- | --- | --- | --- |
 | market, `10:30:00.100Z` | `FIX / BOOK / X` | `BTC-USD` | repeated depth tags retained in wire order |
 | market, `10:30:00.350Z` | `FIX / INSTRUMENT / d` | `US0378331005` | `969=.01`, `561=1`, `107=Apple Inc.` |
-| market, `10:30:00.350Z` | `REKEP / INSTRUMENT / d` | `US0378331005` | normalized lifecycle envelope and ordered registry fields |
+| market, `10:30:00.350Z` | `REKEP / INSTRUMENT / d` | `AAPL` | normalized lifecycle envelope and ordered registry fields |
 | misc, `10:30:00.800Z` | `MISC` | `HealthMonitor` | heartbeat retained verbatim |
 | unknown, `10:30:00.900Z` | `OTHER` | `ExperimentalAdapter` | opaque payload retained verbatim |
 
@@ -107,39 +107,39 @@ only the exact `Log` to `Instrument` projection.
 
 ### Instruments
 
-| Symbol | Venue / currency | Enrichment | `hash` / `xhash` |
+| Symbol | Venue / currency | Enrichment | `xhash` |
 | --- | --- | --- | --- |
-| `BTC-USD` | `XCME / USD` | synthetic market identity | `2443066157729684564` / `4180479152097446469` |
-| `AAPL` | `XNAS / USD` | ISIN `US0378331005`, tick `0.01`, lot `1`, label `Apple Inc.` | `-3430413876036852523` / `6963562219488403439` |
-| `MSFT` | `XNAS / USD` | synthetic market identity | `935404501851440295` / `1898218569485766473` |
+| `BTC-USD` | `XCME / USD` | synthetic market identity | `7683678321830537938` |
+| `AAPL` | `XNAS / USD` | ISIN `US0378331005`, tick `0.01`, lot `1`, label `Apple Inc.` | `-9052458260103799025` |
+| `MSFT` | `XNAS / USD` | synthetic market identity | `-1664556628408186290` |
 
 ### Books
 
-| Event time | Instrument | State | Best bid / ask | `hash` |
-| --- | --- | --- | --- | ---: |
-| `10:30:00.010Z` | `BTC-USD` | `OPEN` | `100 x 5` / `100.5 x 7` | `2004760038513526214` |
-| `10:30:00.400Z` | `AAPL` | `CLOSED` | none / none; rejected delta retained | `107443134474959791` |
-| `10:30:00.600Z` | `MSFT` | `OPEN` | none / `200 x 8` | `-1076024249053620757` |
+| Event time | Instrument | State | Best bid / ask |
+| --- | --- | --- | --- |
+| `10:30:00.010Z` | `BTC-USD` | `OPEN` | `100 x 5` / `100.5 x 7` |
+| `10:30:00.400Z` | `AAPL` | `CLOSED` | none / none; rejected delta retained |
+| `10:30:00.600Z` | `MSFT` | `OPEN` | none / `200 x 8` |
 
-The BTC book relates both level lifecycles with their source times in
+The BTC book relates both source order lifecycles with their event times in
 `linked_events` and both source versions in `parent_hash`. Bid and ask levels
 remain best-price ordered.
 
 ### Orders
 
-| Order | State | Side, price, quantity | Lineage / error |
+| Order | State | Side, price, quantity | Lineage / reason |
 | --- | --- | --- | --- |
-| `BAD-AAPL` | `INTERNAL_REJECTED` | buy limit, null, `10` | parent book `107443134474959791`; `rejected for book: required price is missing or non-finite` |
-| `CA1 / OA1` | `INTERNAL_EXPIRED` | buy limit, `150`, `0` | previous version retained; live-age expiry |
+| `BAD-AAPL` | `INTERNAL_REJECTED` | buy limit, null, `10` | parent Book version; `rejected for book: required price is missing or non-finite` |
+| `CA1 / OA1` | `INTERNAL_EXPIRED` | buy limit, `150`, `0` | preceding observation time retained; live-age expiry |
 | `CM1 / OM1` | `FILLED` | sell limit, `200`, `0` | lifecycle closed by execution report |
 
 ### Executions
 
-| Execution | State | Side, price, quantity | Order link | `hash` |
-| --- | --- | --- | --- | ---: |
-| BTC depth trade | `FILLED` | trade, `100.5`, `3` | source depth lifecycle | `2597774428527752844` |
-| `EA1` | `FILLED` | buy, `150`, `4` | `OA1 / CA1`, timed order link | `-1633321435522966350` |
-| `EM1` | `FILLED` | sell, `200`, `8` | `OM1 / CM1`, timed order link | `-365983740112302740` |
+| Execution | State | Side, price, quantity | Order link |
+| --- | --- | --- | --- |
+| BTC depth trade | `FILLED` | trade, `100.5`, `3` | source depth lifecycle |
+| `EA1` | `FILLED` | buy, `150`, `4` | `OA1 / CA1`, timed order link |
+| `EM1` | `FILLED` | sell, `200`, `8` | `OM1 / CM1`, timed order link |
 
 Flattening appends the carrying `Book.hash` to each event's `parent_hash`;
 `linked_events` retains the event time and lifecycle linkage between executions
@@ -151,11 +151,11 @@ and orders.
 
 | Contract | Fields | Primary key | Partitions | Nested payloads |
 | --- | ---: | --- | --- | --- |
-| `Log` | 107 | `unix, hash` | `unix_hour` | `fix_tags`, `fix_miss_tags`, `keyval`, `parties` |
-| `Instrument` | 39 | `unix, hash` | `unix_hour`, `xhash` | `alt_ids`, `legs` |
-| `Book` | contract-defined | `unix, hash` | `unix_hour`, `instrument_xhash` | levels, deltas, executions, live snapshot orders |
-| `Order` | 46 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage and metadata |
-| `Execution` | 46 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage and metadata |
+| `Log` | 105 | `unix, hash` | `unix_hour` | `fix_tags`, `fix_miss_tags`, `keyval`, `parties` |
+| `Instrument` | 36 | `unix, hash` | `unix_hour`, `xhash` | `alt_ids`, `legs` |
+| `Book` | 52 | `unix, hash` | `unix_hour`, `instrument_xhash` | levels, deltas, executions, live snapshot orders |
+| `Order` | 39 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage and metadata |
+| `Execution` | 41 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage and metadata |
 
 The YAML contracts under `schemas/rekep/` are the portable source. Arrow owns
 types and metadata between stages, Iceberg owns table ids and snapshots, and

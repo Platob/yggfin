@@ -33,30 +33,37 @@ ENVELOPE = [
     "state",
     "code",
     "xcode",
-    "seq",
-    "prev_hash",
-    "prev_state",
     "prev_unix",
     "parent_hash",
     "mic",
-    "error",
+    "reason",
 ]
 SOURCE: list[str] = []
 LINE = ["url", "thread_name", "driver_name", "message"]
-MESSAGE = ["protocol", "fix_tags", "fix_miss_tags", "keyval", "parties", "isincode"]
+MESSAGE = [
+    "protocol",
+    "msg_seq_num",
+    "fix_tags",
+    "fix_miss_tags",
+    "keyval",
+    "parties",
+    "isincode",
+]
 
 #: Raw FIX names stay distinct from the protocol-neutral event envelope.
-RAW_TAGS = {55: "symbol", 34: "seq"}
+RAW_TAGS = {55: "symbol", 34: "msg_seq_num"}
 
 #: The flattened message layer, derived from the module that names it and
 #: pinned below -- so a column renamed in one file and not in the other fails
 #: here, rather than moving both sides of every comparison together.
 FLAT_COLUMNS = [column for _, column in FLAT]
-ADDED_COLUMNS = [column for column in FLAT_COLUMNS if column not in set(ENVELOPE)]
+ADDED_COLUMNS = [
+    column for column in FLAT_COLUMNS if column not in set(ENVELOPE + SOURCE + LINE + MESSAGE)
+]
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 107
+EXPECTED_LOG_COLUMNS = 105
 
 
 @pytest.fixture(scope="module")
@@ -238,13 +245,13 @@ def test_a_row_round_trips_as_a_document() -> None:
         fix_miss_tags=["ISINCODE"],
         keyval=[("ISINCODE", "XX0000084733"), ("ISINCODE", "XX0000084734")],
         code="TTF",
-        seq=7,
+        msg_seq_num=7,
         symbol="TTF",
         sending_time=datetime.datetime.fromtimestamp(1_755_163_800.123, tz=datetime.UTC),
         poss_dup_flag=True,
         check_sum="010",
         mic=MIC.from_str("XPAR"),
-        error="test reject",
+        reason="test reject",
     )
     assert Log.from_json(row.into_json()) == row
 
@@ -257,9 +264,10 @@ def test_mic_is_a_lossless_optional_int32_code() -> None:
     assert "enum:dynamic" not in member.metadata
 
 
-def test_error_is_optional_text_on_every_event() -> None:
-    member = Event.into_field().field("error")
+def test_reason_is_generic_optional_text_on_every_event() -> None:
+    member = Event.into_field().field("reason")
     assert member.nullable and member.arrow_type == pyarrow.string()
+    assert "fix:tag" not in member.metadata
 
 
 # -- the message layer, flattened ---------------------------------------------
@@ -278,8 +286,9 @@ def test_the_flat_layer_is_the_session_layer_and_what_a_trading_log_is_made_of()
 
 def test_snake_fix_names_do_not_alias_the_generic_event_envelope() -> None:
     assert {tag: COLUMNS[tag] for tag in RAW_TAGS} == RAW_TAGS
-    assert set(RAW_TAGS.values()) & set(Event.into_field().names) == {"seq"}
-    assert {"code", "seq", *RAW_TAGS.values()} <= set(Log.into_field().names)
+    assert set(RAW_TAGS.values()).isdisjoint(Event.into_field().names)
+    assert {"code", *RAW_TAGS.values()} <= set(Log.into_field().names)
+    assert Log.into_field().field("msg_seq_num").fix["tag"] == "34"
 
 
 def test_every_promoted_name_is_snake_case_with_acronyms_split() -> None:
@@ -300,7 +309,7 @@ def test_every_promoted_name_is_snake_case_with_acronyms_split() -> None:
 
 def test_no_other_lifted_column_lands_on_one_the_line_already_had() -> None:
     """Raw protocol fields and the generic envelope have separate names."""
-    assert set(FLAT_COLUMNS) & set(ENVELOPE + LINE + MESSAGE) == {"seq"}
+    assert set(FLAT_COLUMNS) & set(ENVELOPE + LINE + MESSAGE) == {"msg_seq_num"}
 
 
 def test_every_flat_column_is_the_type_the_dictionary_gives_its_tag(

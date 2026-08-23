@@ -39,6 +39,7 @@ Important FIX fields are promoted to snake-case columns. Their metadata keeps
 the canonical registry name, tag, datatype, description, version, and values.
 Examples include:
 
+- `msg_seq_num` / `MsgSeqNum`, retained only on the raw Log;
 - `msg_type` / `MsgType`;
 - `orig_cl_ord_id` / `OrigClOrdID`;
 - `transact_time` / `TransactTime`;

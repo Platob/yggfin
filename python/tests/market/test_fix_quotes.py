@@ -104,11 +104,10 @@ def test_a_quote_response_can_target_one_side() -> None:
     assert expired.indicative
 
 
-def test_a_quote_reject_code_becomes_an_auditable_error() -> None:
+def test_a_quote_reject_code_becomes_an_auditable_reason() -> None:
     rejected = events("35=AI|117=Q-1|55=AAPL|297=5|300=8|60=20260821-10:01:00")
     assert len(rejected) == 2
-    assert all(row.reason_code == 8 for row in rejected)
-    assert all(row.error == "QuoteRejectReason=8: Invalid price" for row in rejected)
+    assert all(row.reason == "QuoteRejectReason=8: Invalid price" for row in rejected)
     assert all(row.metadata["300"] == "8" for row in rejected)
 
 
@@ -147,7 +146,7 @@ def test_nested_mass_quote_sets_emit_every_entry_in_wire_order() -> None:
         ("NVDA", Side.BID, "ENTRY-3", 300.0, 30.0),
         ("NVDA", Side.ASK, "ENTRY-3", 301.0, 31.0),
     ]
-    assert [row.seq for row in rows] == [19] * 6
+    assert all(not hasattr(row, "seq") for row in rows)
 
 
 def test_nested_mass_quote_sets_project_each_instrument_once_in_wire_order() -> None:
