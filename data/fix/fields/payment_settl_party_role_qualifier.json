@@ -1,9 +1,0 @@
-{
- "name": "PaymentSettlPartyRoleQualifier",
- "tag": 40237,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

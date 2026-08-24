@@ -6,7 +6,6 @@ import dataclasses
 import functools
 import json
 import re
-import warnings
 from collections.abc import Iterable, Mapping
 from functools import cached_property
 from types import MappingProxyType
@@ -737,51 +736,26 @@ class FixCodec(Convertible):
         built = self.into_components()[column]
         key = (column, version)
         if key not in self._components:
-            components, fallback = self._component_declaration(built().component, version)
             self._components[key] = built(
-                components=components,
+                components=self._component_declarations(version),
                 names=self._tags(version),
-                fallback=fallback,
             )
         return self._components[key]
 
-    def _component_declaration(
-        self, component: str, version: str | None
-    ) -> tuple[list[SpecComponent], bool]:
-        """One version's Parties declaration, and whether to keep the legacy tags.
+    def _component_declarations(self, version: str | None) -> list[SpecComponent]:
+        """One version's component declarations, or none for a version with none.
 
-        Three answers, and the middle one is why this is not two lines. A
-        registry that *declares* the component answers it. A registry that
-        declares components and has no Parties among them answers nothing, and
-        is right to: 4.0 through 4.2 have no such component. A registry that
-        declares no components at all for a version it otherwise knows is
-        neither -- it is a store written before component declarations were
-        kept, or a projection that dropped them -- and answering nothing there
-        extracted no party from any message at all, silently, for every version
-        the wire named. That one says so and keeps the legacy tags.
+        None is an answer and not a gap: 4.0 through 4.2 declare no component
+        at all, and a regenerated dictionary always carries the declarations of
+        the versions that do -- so a version with none extracts none rather
+        than falling back on tags the extractor guessed.
         """
         if version is None:
-            return [], False
+            return []
         try:
-            declared = self.registry.components(version)
+            return list(self.registry.components(version))
         except (KeyError, OSError, ValueError):
-            declared = []
-        if any(found.name.lower() == component.lower() for found in declared):
-            return list(declared), False
-        try:
-            available = self.registry.components_available(version)
-        except (KeyError, OSError, ValueError):
-            available = False
-        if available:
-            return [], False
-        warnings.warn(
-            f"the FIX registry holds no component declarations for {version!r}: "
-            f"{component} extraction falls back to the legacy tags. Rebuild the "
-            "registry so its components travel with its fields.",
-            RuntimeWarning,
-            stacklevel=3,
-        )
-        return [], True
+            return []
 
     # -- held state ---------------------------------------------------------
 

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamCommodityRateReferencePageHeading",
- "tag": 41976,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

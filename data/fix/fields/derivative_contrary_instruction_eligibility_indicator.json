@@ -1,9 +1,0 @@
-{
- "name": "DerivativeContraryInstructionEligibilityIndicator",
- "tag": 2688,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

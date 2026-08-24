@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamMasterAgreementPaymentDatesIndicator",
- "tag": 41592,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

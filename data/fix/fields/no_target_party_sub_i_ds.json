@@ -1,9 +1,0 @@
-{
- "name": "NoTargetPartySubIDs",
- "tag": 2433,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

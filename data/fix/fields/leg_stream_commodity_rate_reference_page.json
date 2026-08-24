@@ -1,9 +1,0 @@
-{
- "name": "LegStreamCommodityRateReferencePage",
- "tag": 41659,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

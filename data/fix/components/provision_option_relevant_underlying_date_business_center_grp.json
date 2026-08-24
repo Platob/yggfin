@@ -1,24 +1,22 @@
 {
  "name": "ProvisionOptionRelevantUnderlyingDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 461,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoProvisionOptionRelevantUnderlyingDateBusinessCenters",
+   "required": false,
+   "tag": 40956,
    "members": [
     {
-     "kind": "group",
-     "name": "NoProvisionOptionRelevantUnderlyingDateBusinessCenters",
+     "kind": "field",
+     "name": "ProvisionOptionRelevantUnderlyingDateBusinessCenter",
      "required": false,
-     "tag": 40956,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ProvisionOptionRelevantUnderlyingDateBusinessCenter",
-       "required": false,
-       "tag": 40157
-      }
-     ]
+     "tag": 40157
     }
    ]
   }
- }
+ ]
 }

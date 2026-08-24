@@ -1,9 +1,0 @@
-{
- "name": "NoLegPaymentStreamCompoundingDatesBusinessCenters",
- "tag": 42419,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegSecurityXML",
- "tag": 1872,
- "versions": {
-  "5.0.SP2": {
-   "type": "XMLDATA"
-  }
- }
-}

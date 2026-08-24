@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamLinkEstimatedTradingDays",
- "tag": 42967,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

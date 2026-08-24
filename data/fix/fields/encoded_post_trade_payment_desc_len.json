@@ -1,9 +1,0 @@
-{
- "name": "EncodedPostTradePaymentDescLen",
- "tag": 2815,
- "versions": {
-  "5.0.SP2": {
-   "type": "LENGTH"
-  }
- }
-}

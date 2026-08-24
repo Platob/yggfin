@@ -1,24 +1,22 @@
 {
  "name": "ProvisionCashSettlValueDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 458,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoProvisionCashSettlValueDateBusinessCenters",
+   "required": false,
+   "tag": 40953,
    "members": [
     {
-     "kind": "group",
-     "name": "NoProvisionCashSettlValueDateBusinessCenters",
+     "kind": "field",
+     "name": "ProvisionCashSettlValueDateBusinessCenter",
      "required": false,
-     "tag": 40953,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ProvisionCashSettlValueDateBusinessCenter",
-       "required": false,
-       "tag": 40117
-      }
-     ]
+     "tag": 40117
     }
    ]
   }
- }
+ ]
 }

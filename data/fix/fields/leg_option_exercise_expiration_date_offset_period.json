@@ -1,9 +1,0 @@
-{
- "name": "LegOptionExerciseExpirationDateOffsetPeriod",
- "tag": 41519,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

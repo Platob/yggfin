@@ -1,9 +1,0 @@
-{
- "name": "LegAssetAttributeLimit",
- "tag": 2311,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "MDStatisticID",
- "tag": 2475,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

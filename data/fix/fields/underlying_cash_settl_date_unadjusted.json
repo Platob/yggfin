@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingCashSettlDateUnadjusted",
- "tag": 42790,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

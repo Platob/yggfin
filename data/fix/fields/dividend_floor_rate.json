@@ -1,9 +1,0 @@
-{
- "name": "DividendFloorRate",
- "tag": 42228,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

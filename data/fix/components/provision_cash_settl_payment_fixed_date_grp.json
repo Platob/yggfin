@@ -1,30 +1,28 @@
 {
  "name": "ProvisionCashSettlPaymentFixedDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 407,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoProvisionCashSettlPaymentDates",
+   "required": false,
+   "tag": 40171,
    "members": [
     {
-     "kind": "group",
-     "name": "NoProvisionCashSettlPaymentDates",
+     "kind": "field",
+     "name": "ProvisionCashSettlPaymentDate",
      "required": false,
-     "tag": 40171,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ProvisionCashSettlPaymentDate",
-       "required": false,
-       "tag": 40172
-      },
-      {
-       "kind": "field",
-       "name": "ProvisionCashSettlPaymentDateType",
-       "required": false,
-       "tag": 40173
-      }
-     ]
+     "tag": 40172
+    },
+    {
+     "kind": "field",
+     "name": "ProvisionCashSettlPaymentDateType",
+     "required": false,
+     "tag": 40173
     }
    ]
   }
- }
+ ]
 }

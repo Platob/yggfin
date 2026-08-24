@@ -1,9 +1,0 @@
-{
- "name": "NoLegPaymentStreamFormulas",
- "tag": 42485,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

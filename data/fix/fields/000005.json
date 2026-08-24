@@ -1,0 +1,4872 @@
+{
+ "2500": {
+  "name": "LegBrokerConfirmationDesc",
+  "tag": 2500,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2501": {
+  "name": "LegCreditSupportAgreementDate",
+  "tag": 2501,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2502": {
+  "name": "LegCreditSupportAgreementDesc",
+  "tag": 2502,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2503": {
+  "name": "LegCreditSupportAgreementID",
+  "tag": 2503,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2504": {
+  "name": "LegDeliveryType",
+  "tag": 2504,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2505": {
+  "name": "LegDocumentationText",
+  "tag": 2505,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2506": {
+  "name": "LegEndDate",
+  "tag": 2506,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2507": {
+  "name": "LegGoverningLaw",
+  "tag": 2507,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2508": {
+  "name": "LegMarginRatio",
+  "tag": 2508,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2509": {
+  "name": "LegMasterConfirmationAnnexDate",
+  "tag": 2509,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2510": {
+  "name": "LegMasterConfirmationDate",
+  "tag": 2510,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2511": {
+  "name": "LegMasterConfirmationDesc",
+  "tag": 2511,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2512": {
+  "name": "LegMasterConfirmationAnnexDesc",
+  "tag": 2512,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2513": {
+  "name": "LegStartDate",
+  "tag": 2513,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2514": {
+  "name": "LegTerminationType",
+  "tag": 2514,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2515": {
+  "name": "AllocCalculatedCcyQty",
+  "tag": 2515,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2516": {
+  "name": "CollateralRequestInstruction",
+  "tag": 2516,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2517": {
+  "name": "CollateralRequestLinkID",
+  "tag": 2517,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2518": {
+  "name": "CollateralRequestNumber",
+  "tag": 2518,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2519": {
+  "name": "TotNumCollateralRequests",
+  "tag": 2519,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2520": {
+  "name": "WarningText",
+  "tag": 2520,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2521": {
+  "name": "EncodedWarningText",
+  "tag": 2521,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2522": {
+  "name": "EncodedWarningTextLen",
+  "tag": 2522,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2523": {
+  "name": "CrossedIndicator",
+  "tag": 2523,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_CROSS",
+   "1": "CROSS_REJECTED",
+   "2": "CROSS_ACCEPTED"
+  },
+  "translations": {
+   "nocross": "0",
+   "crossrejected": "1",
+   "crossaccepted": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2524": {
+  "name": "TradeReportingIndicator",
+  "tag": 2524,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NOT_REPORTED",
+   "1": "ON_BOOK",
+   "2": "SI_SELLER",
+   "3": "SI_BUYER",
+   "4": "NON_SI_SELLER",
+   "5": "SUB_DELEGATION_BY_FIRM",
+   "6": "REPORTABLE",
+   "7": "NON_SI_BUYER",
+   "8": "OFF_BOOK",
+   "9": "NOT_REPORTABLE"
+  },
+  "translations": {
+   "notreported": "0",
+   "onbook": "1",
+   "siseller": "2",
+   "sibuyer": "3",
+   "nonsiseller": "4",
+   "subdelegationbyfirm": "5",
+   "reportable": "6",
+   "nonsibuyer": "7",
+   "offbook": "8",
+   "notreportable": "9",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9"
+  }
+ },
+ "2525": {
+  "name": "AffiliatedFirmsTradeIndicator",
+  "tag": 2525,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2526": {
+  "name": "InternationalSwapIndicator",
+  "tag": 2526,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2527": {
+  "name": "MultiAssetSwapIndicator",
+  "tag": 2527,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2528": {
+  "name": "ClearingSettlPrice",
+  "tag": 2528,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2529": {
+  "name": "NoRelativeValues",
+  "tag": 2529,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2530": {
+  "name": "RelativeValueType",
+  "tag": 2530,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "ASW_SPREAD",
+   "2": "OIS",
+   "3": "Z_SPREAD",
+   "4": "DISCOUNT_MARGIN",
+   "5": "I_SPREAD",
+   "6": "OAS",
+   "7": "G_SPREAD",
+   "8": "CDS_BASIS",
+   "9": "CDS_INTERPOLATED_BASIS",
+   "10": "DV01",
+   "11": "PV01",
+   "12": "CS01"
+  },
+  "translations": {
+   "aswspread": "1",
+   "ois": "2",
+   "zspread": "3",
+   "discountmargin": "4",
+   "ispread": "5",
+   "oas": "6",
+   "gspread": "7",
+   "cdsbasis": "8",
+   "cdsinterpolatedbasis": "9",
+   "dv01": "10",
+   "pv01": "11",
+   "cs01": "12",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12"
+  }
+ },
+ "2531": {
+  "name": "RelativeValue",
+  "tag": 2531,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2532": {
+  "name": "RelativeValueSide",
+  "tag": 2532,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "BID",
+   "2": "MID",
+   "3": "OFFER"
+  },
+  "translations": {
+   "bid": "1",
+   "mid": "2",
+   "offer": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2533": {
+  "name": "BidSpread",
+  "tag": 2533,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2534": {
+  "name": "OfferSpread",
+  "tag": 2534,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2535": {
+  "name": "MDReportEvent",
+  "tag": 2535,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "START_INSTRUMENT_REF_DATA",
+   "2": "END_INSTRUMENT_REF_DATA",
+   "3": "START_OFF_MARKET_TRADES",
+   "4": "END_OFF_MARKET_TRADES",
+   "5": "START_ORDER_BOOK_TRADES",
+   "6": "END_ORDER_BOOK_TRADES",
+   "7": "START_OPEN_INTEREST",
+   "8": "END_OPEN_INTEREST",
+   "9": "START_SETTLEMENT_PRICES",
+   "10": "END_SETTLEMENT_PRICES",
+   "11": "START_STATS_REF_DATA",
+   "12": "END_STATS_REF_DATA",
+   "13": "START_STATISTICS",
+   "14": "END_STATISTICS"
+  },
+  "translations": {
+   "startinstrumentrefdata": "1",
+   "endinstrumentrefdata": "2",
+   "startoffmarkettrades": "3",
+   "endoffmarkettrades": "4",
+   "startorderbooktrades": "5",
+   "endorderbooktrades": "6",
+   "startopeninterest": "7",
+   "endopeninterest": "8",
+   "startsettlementprices": "9",
+   "endsettlementprices": "10",
+   "startstatsrefdata": "11",
+   "endstatsrefdata": "12",
+   "startstatistics": "13",
+   "endstatistics": "14",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14"
+  }
+ },
+ "2536": {
+  "name": "MDReportCount",
+  "tag": 2536,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2537": {
+  "name": "TotNoMarketSegmentReports",
+  "tag": 2537,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2538": {
+  "name": "TotNoInstrumentReports",
+  "tag": 2538,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2539": {
+  "name": "TotNoPartyDetailReports",
+  "tag": 2539,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2540": {
+  "name": "TotNoEntitlementReports",
+  "tag": 2540,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2541": {
+  "name": "TotNoRiskLimitReports",
+  "tag": 2541,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2542": {
+  "name": "MarketSegmentStatus",
+  "tag": 2542,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "ACTIVE",
+   "2": "INACTIVE",
+   "3": "PUBLISHED"
+  },
+  "translations": {
+   "active": "1",
+   "inactive": "2",
+   "published": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2543": {
+  "name": "MarketSegmentType",
+  "tag": 2543,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "POOL",
+   "2": "RETAIL",
+   "3": "WHOLESALE"
+  },
+  "translations": {
+   "pool": "1",
+   "retail": "2",
+   "wholesale": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2544": {
+  "name": "MarketSegmentSubType",
+  "tag": 2544,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "INTER_PRODUCT_SPREAD"
+  },
+  "translations": {
+   "interproductspread": "1",
+   "1": "1"
+  }
+ },
+ "2545": {
+  "name": "NoRelatedMarketSegments",
+  "tag": 2545,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2546": {
+  "name": "RelatedMarketSegmentID",
+  "tag": 2546,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2547": {
+  "name": "MarketSegmentRelationship",
+  "tag": 2547,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "MARKET_SEGMENT_POOL_MEMBER",
+   "2": "RETAIL_SEGMENT",
+   "3": "WHOLESALE_SEGMENT"
+  },
+  "translations": {
+   "marketsegmentpoolmember": "1",
+   "retailsegment": "2",
+   "wholesalesegment": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2548": {
+  "name": "NoAuctionTypeRules",
+  "tag": 2548,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2549": {
+  "name": "AuctionTypeProductComplex",
+  "tag": 2549,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2550": {
+  "name": "NoPriceRangeRules",
+  "tag": 2550,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2551": {
+  "name": "StartPriceRange",
+  "tag": 2551,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2552": {
+  "name": "EndPriceRange",
+  "tag": 2552,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2553": {
+  "name": "PriceRangeValue",
+  "tag": 2553,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2554": {
+  "name": "PriceRangePercentage",
+  "tag": 2554,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2555": {
+  "name": "PriceRangeProductComplex",
+  "tag": 2555,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2556": {
+  "name": "PriceRangeRuleID",
+  "tag": 2556,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2557": {
+  "name": "FastMarketPercentage",
+  "tag": 2557,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2558": {
+  "name": "NoQuoteSizeRules",
+  "tag": 2558,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2559": {
+  "name": "QuoteSideIndicator",
+  "tag": 2559,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "N": "NO",
+   "Y": "YES"
+  },
+  "translations": {
+   "no": "N",
+   "yes": "Y",
+   "n": "N",
+   "y": "Y"
+  }
+ },
+ "2560": {
+  "name": "NoFlexProductEligibilities",
+  "tag": 2560,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2561": {
+  "name": "FlexProductEligibilityComplex",
+  "tag": 2561,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2562": {
+  "name": "NumOfComplexInstruments",
+  "tag": 2562,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2563": {
+  "name": "MarketDepthTimeInterval",
+  "tag": 2563,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2564": {
+  "name": "MarketDepthTimeIntervalUnit",
+  "tag": 2564,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2565": {
+  "name": "MDRecoveryTimeInterval",
+  "tag": 2565,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2566": {
+  "name": "MDRecoveryTimeIntervalUnit",
+  "tag": 2566,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2567": {
+  "name": "PrimaryServiceLocationID",
+  "tag": 2567,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2568": {
+  "name": "SecondaryServiceLocationID",
+  "tag": 2568,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2569": {
+  "name": "MatchRuleProductComplex",
+  "tag": 2569,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2570": {
+  "name": "CustomerPriority",
+  "tag": 2570,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_PRIORITY",
+   "1": "UNCONDITIONAL_PRIORITY"
+  },
+  "translations": {
+   "nopriority": "0",
+   "unconditionalpriority": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2571": {
+  "name": "TickRuleProductComplex",
+  "tag": 2571,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2572": {
+  "name": "PreviousAdjustedOpenInterest",
+  "tag": 2572,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2573": {
+  "name": "PreviousUnadjustedOpenInterest",
+  "tag": 2573,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2574": {
+  "name": "LowExercisePriceOptionIndicator",
+  "tag": 2574,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2575": {
+  "name": "BlockTradeEligibilityIndicator",
+  "tag": 2575,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2576": {
+  "name": "InstrumentPricePrecision",
+  "tag": 2576,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2577": {
+  "name": "StrikePricePrecision",
+  "tag": 2577,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2578": {
+  "name": "OrigStrikePrice",
+  "tag": 2578,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2579": {
+  "name": "SettlSubMethod",
+  "tag": 2579,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "SHARES",
+   "2": "DERIVATIVES",
+   "3": "PAYMENT_VS_PAYMENT",
+   "4": "NOTIONAL",
+   "5": "CASCADE",
+   "6": "REPURCHASE",
+   "99": "OTHER"
+  },
+  "translations": {
+   "shares": "1",
+   "derivatives": "2",
+   "paymentvspayment": "3",
+   "notional": "4",
+   "cascade": "5",
+   "repurchase": "6",
+   "other": "99",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "99": "99"
+  }
+ },
+ "2580": {
+  "name": "NoClearingPriceParameters",
+  "tag": 2580,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2581": {
+  "name": "BusinessDayType",
+  "tag": 2581,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2582": {
+  "name": "ClearingPriceOffset",
+  "tag": 2582,
+  "type": "PRICEOFFSET",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2583": {
+  "name": "VegaMultiplier",
+  "tag": 2583,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2584": {
+  "name": "AnnualTradingBusinessDays",
+  "tag": 2584,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2585": {
+  "name": "TotalTradingBusinessDays",
+  "tag": 2585,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2586": {
+  "name": "TradingBusinessDays",
+  "tag": 2586,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2587": {
+  "name": "RealizedVariance",
+  "tag": 2587,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2588": {
+  "name": "StandardVariance",
+  "tag": 2588,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2589": {
+  "name": "RelatedClosePrice",
+  "tag": 2589,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2590": {
+  "name": "OvernightInterestRate",
+  "tag": 2590,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2591": {
+  "name": "AccumulatedReturnModifiedVariationMargin",
+  "tag": 2591,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2592": {
+  "name": "CalculationMethod",
+  "tag": 2592,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "AUTOMATIC",
+   "1": "MANUAL"
+  },
+  "translations": {
+   "automatic": "0",
+   "manual": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2593": {
+  "name": "NoOrderAttributes",
+  "tag": 2593,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2594": {
+  "name": "OrderAttributeType",
+  "tag": 2594,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "AGGREGATED_ORDER",
+   "1": "PENDING_ALLOCATION",
+   "2": "LIQUIDITY_PROVISION_ACTIVITY_ORDER",
+   "3": "RISK_REDUCTION_ORDER",
+   "4": "ALGORITHMIC_ORDER",
+   "5": "SYSTEMATIC_INTERNALISER_ORDER",
+   "6": "ALL_EXECUTIONS_SUBMITTED_TO_APA",
+   "7": "ORDER_EXECUTION_INSTRUCTED_BY_CLIENT",
+   "8": "LARGE_IN_SCALE",
+   "9": "HIDDEN",
+   "10": "SUBJECT_TO_EUSTO",
+   "11": "SUBJECT_TO_UKSTO",
+   "12": "REPRESENTATIVE_ORDER",
+   "13": "LINKAGE_TYPE",
+   "14": "EXEMPT_FROM_STO"
+  },
+  "translations": {
+   "aggregatedorder": "0",
+   "pendingallocation": "1",
+   "liquidityprovisionactivityorder": "2",
+   "riskreductionorder": "3",
+   "algorithmicorder": "4",
+   "systematicinternaliserorder": "5",
+   "allexecutionssubmittedtoapa": "6",
+   "orderexecutioninstructedbyclient": "7",
+   "largeinscale": "8",
+   "hidden": "9",
+   "subjecttoeusto": "10",
+   "subjecttouksto": "11",
+   "representativeorder": "12",
+   "linkagetype": "13",
+   "exemptfromsto": "14",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14"
+  }
+ },
+ "2595": {
+  "name": "OrderAttributeValue",
+  "tag": 2595,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2596": {
+  "name": "DeltaCrossed",
+  "tag": 2596,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2597": {
+  "name": "ComplexEventFuturesPriceValuation",
+  "tag": 2597,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2598": {
+  "name": "ComplexEventOptionsPriceValuation",
+  "tag": 2598,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2599": {
+  "name": "ComplexEventPVFinalPriceElectionFallback",
+  "tag": 2599,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "CLOSE",
+   "1": "HEDGE_ELECTION"
+  },
+  "translations": {
+   "close": "0",
+   "hedgeelection": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2600": {
+  "name": "StrikeIndexCurvePoint",
+  "tag": 2600,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2601": {
+  "name": "StrikeIndexQuote",
+  "tag": 2601,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "BID",
+   "1": "MID",
+   "2": "OFFER"
+  },
+  "translations": {
+   "bid": "0",
+   "mid": "1",
+   "offer": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2602": {
+  "name": "ExtraordinaryEventAdjustmentMethod",
+  "tag": 2602,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "CALCULATION_AGENT",
+   "1": "OPTIONS_EXCHANGE"
+  },
+  "translations": {
+   "calculationagent": "0",
+   "optionsexchange": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2603": {
+  "name": "ExchangeLookAlike",
+  "tag": 2603,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2604": {
+  "name": "LegStrikeIndexCurvePoint",
+  "tag": 2604,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2605": {
+  "name": "LegStrikeIndexQuote",
+  "tag": 2605,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2606": {
+  "name": "LegExtraordinaryEventAdjustmentMethod",
+  "tag": 2606,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2607": {
+  "name": "LegExchangeLookAlike",
+  "tag": 2607,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2608": {
+  "name": "LegComplexEventFuturesPriceValuation",
+  "tag": 2608,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2609": {
+  "name": "LegComplexEventOptionsPriceValuation",
+  "tag": 2609,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2610": {
+  "name": "LegComplexEventPVFinalPriceElectionFallback",
+  "tag": 2610,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2611": {
+  "name": "UnderlyingComplexEventFuturesPriceValuation",
+  "tag": 2611,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2612": {
+  "name": "UnderlyingComplexEventOptionsPriceValuation",
+  "tag": 2612,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2613": {
+  "name": "UnderlyingComplexEventPVFinalPriceElectionFallback",
+  "tag": 2613,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2614": {
+  "name": "UnderlyingNotional",
+  "tag": 2614,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2615": {
+  "name": "UnderlyingNotionalCurrency",
+  "tag": 2615,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2616": {
+  "name": "UnderlyingNotionalDeterminationMethod",
+  "tag": 2616,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2617": {
+  "name": "UnderlyingNotionalAdjustments",
+  "tag": 2617,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "EXECUTION",
+   "1": "PORTFOLIO_REBALANCING",
+   "2": "STANDARD"
+  },
+  "translations": {
+   "execution": "0",
+   "portfoliorebalancing": "1",
+   "standard": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2618": {
+  "name": "PositionID",
+  "tag": 2618,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2619": {
+  "name": "UnderlyingNotionalXIDRef",
+  "tag": 2619,
+  "type": "XIDREF",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2620": {
+  "name": "UnderlyingFutureID",
+  "tag": 2620,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2621": {
+  "name": "UnderlyingFutureIDSource",
+  "tag": 2621,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2622": {
+  "name": "UnderlyingStrikeIndexCurvePoint",
+  "tag": 2622,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2623": {
+  "name": "UnderlyingStrikeIndexQuote",
+  "tag": 2623,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2624": {
+  "name": "UnderlyingExtraordinaryEventAdjustmentMethod",
+  "tag": 2624,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2625": {
+  "name": "UnderlyingExchangeLookAlike",
+  "tag": 2625,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2626": {
+  "name": "UnderlyingAverageVolumeLimitationPercentage",
+  "tag": 2626,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2627": {
+  "name": "UnderlyingAverageVolumeLimitationPeriodDays",
+  "tag": 2627,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2628": {
+  "name": "UnderlyingDepositoryReceiptIndicator",
+  "tag": 2628,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2629": {
+  "name": "UnderlyingOpenUnits",
+  "tag": 2629,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2630": {
+  "name": "UnderlyingBasketDivisor",
+  "tag": 2630,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2631": {
+  "name": "UnderlyingInstrumentXID",
+  "tag": 2631,
+  "type": "XID",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2632": {
+  "name": "CollateralAmountType",
+  "tag": 2632,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "MARKET_VALUATION",
+   "1": "PORTFOLIO_VALUE",
+   "2": "VALUE_CONFIRMED",
+   "3": "COLLATERAL_CREDIT_VALUE",
+   "4": "ADDITIONAL_COLLATERAL_VALUE",
+   "5": "ESTIMATED_MARKET_VALUATION"
+  },
+  "translations": {
+   "marketvaluation": "0",
+   "portfoliovalue": "1",
+   "valueconfirmed": "2",
+   "collateralcreditvalue": "3",
+   "additionalcollateralvalue": "4",
+   "estimatedmarketvaluation": "5",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5"
+  }
+ },
+ "2633": {
+  "name": "NoMiscFeeSubTypes",
+  "tag": 2633,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2634": {
+  "name": "MiscFeeSubType",
+  "tag": 2634,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2635": {
+  "name": "MiscFeeSubTypeAmt",
+  "tag": 2635,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2636": {
+  "name": "MiscFeeSubTypeDesc",
+  "tag": 2636,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2637": {
+  "name": "EncodedMiscFeeSubTypeDescLen",
+  "tag": 2637,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2638": {
+  "name": "EncodedMiscFeeSubTypeDesc",
+  "tag": 2638,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2639": {
+  "name": "NoCommissions",
+  "tag": 2639,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2640": {
+  "name": "CommissionAmount",
+  "tag": 2640,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2641": {
+  "name": "CommissionAmountType",
+  "tag": 2641,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "UNSPECIFIED",
+   "1": "ACCEPTANCE",
+   "2": "BROKER",
+   "3": "CLEARING_BROKER",
+   "4": "RETAIL",
+   "5": "SALES_COMMISSION",
+   "6": "LOCAL_COMMISSION",
+   "7": "RESEARCH_PAYMENT"
+  },
+  "translations": {
+   "unspecified": "0",
+   "acceptance": "1",
+   "broker": "2",
+   "clearingbroker": "3",
+   "retail": "4",
+   "salescommission": "5",
+   "localcommission": "6",
+   "researchpayment": "7",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7"
+  }
+ },
+ "2642": {
+  "name": "CommissionBasis",
+  "tag": 2642,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2643": {
+  "name": "CommissionCurrency",
+  "tag": 2643,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2644": {
+  "name": "CommissionUnitOfMeasure",
+  "tag": 2644,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2645": {
+  "name": "CommissionUnitOfMeasureCurrency",
+  "tag": 2645,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2646": {
+  "name": "CommissionRate",
+  "tag": 2646,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2647": {
+  "name": "CommissionSharedIndicator",
+  "tag": 2647,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2648": {
+  "name": "CommissionAmountShared",
+  "tag": 2648,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2649": {
+  "name": "CommissionLegRefID",
+  "tag": 2649,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2650": {
+  "name": "CommissionDesc",
+  "tag": 2650,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2651": {
+  "name": "EncodedCommissionDescLen",
+  "tag": 2651,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2652": {
+  "name": "EncodedCommissionDesc",
+  "tag": 2652,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2653": {
+  "name": "NoAllocCommissions",
+  "tag": 2653,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2654": {
+  "name": "AllocCommissionAmount",
+  "tag": 2654,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2655": {
+  "name": "AllocCommissionAmountType",
+  "tag": 2655,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2656": {
+  "name": "AllocCommissionBasis",
+  "tag": 2656,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2657": {
+  "name": "AllocCommissionCurrency",
+  "tag": 2657,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2658": {
+  "name": "AllocCommissionUnitOfMeasure",
+  "tag": 2658,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2659": {
+  "name": "AllocCommissionUnitOfMeasureCurrency",
+  "tag": 2659,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2660": {
+  "name": "AllocCommissionRate",
+  "tag": 2660,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2661": {
+  "name": "AllocCommissionSharedIndicator",
+  "tag": 2661,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2662": {
+  "name": "AllocCommissionAmountShared",
+  "tag": 2662,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2663": {
+  "name": "AllocCommissionLegRefID",
+  "tag": 2663,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2664": {
+  "name": "AllocCommissionDesc",
+  "tag": 2664,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2665": {
+  "name": "EncodedAllocCommissionDescLen",
+  "tag": 2665,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2666": {
+  "name": "EncodedAllocCommissionDesc",
+  "tag": 2666,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2667": {
+  "name": "AlgorithmicTradeIndicator",
+  "tag": 2667,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NON_ALGORITHMIC_TRADE",
+   "1": "ALGORITHMIC_TRADE"
+  },
+  "translations": {
+   "nonalgorithmictrade": "0",
+   "algorithmictrade": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2668": {
+  "name": "NoTrdRegPublications",
+  "tag": 2668,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2669": {
+  "name": "TrdRegPublicationType",
+  "tag": 2669,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "PRE_TRADE_TRANSPARENCY_WAIVER",
+   "1": "POST_TRADE_DEFERRAL",
+   "2": "EXEMPT_FROM_PUBLICATION",
+   "3": "ORDER_LEVEL_PUBLICATION_TO_SUBSCRIBERS",
+   "4": "PRICE_LEVEL_PUBLICATION_TO_SUBSCRIBERS",
+   "5": "ORDER_LEVEL_PUBLICATION_TO_THE_PUBLIC",
+   "6": "PUBLICATION_INTERNAL_TO_EXECUTION_VENUE"
+  },
+  "translations": {
+   "pretradetransparencywaiver": "0",
+   "posttradedeferral": "1",
+   "exemptfrompublication": "2",
+   "orderlevelpublicationtosubscribers": "3",
+   "pricelevelpublicationtosubscribers": "4",
+   "orderlevelpublicationtothepublic": "5",
+   "publicationinternaltoexecutionvenue": "6",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6"
+  }
+ },
+ "2670": {
+  "name": "TrdRegPublicationReason",
+  "tag": 2670,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_BOOK_ORDER_DUE_TO_AVERAGE_SPREAD_PRICE",
+   "1": "NO_BOOK_ORDER_DUE_TO_REF_PRICE",
+   "2": "NO_BOOK_ORDER_DUE_TO_OTHER_CONDITIONS",
+   "3": "NO_PUBLIC_PRICE_DUE_TO_REF_PRICE",
+   "4": "NO_PUBLIC_PRICE_DUE_TO_ILLIQUID",
+   "5": "NO_PUBLIC_PRICE_DUE_TO_ORDER_SIZE",
+   "6": "DEFERRAL_DUE_TO_LARGE_IN_SCALE",
+   "7": "DEFERRAL_DUE_TO_ILLIQUID",
+   "8": "DEFERRAL_DUE_TO_SIZE_SPECIFIC",
+   "9": "NO_PUBLIC_PRICE_DUE_TO_LARGE_IN_SCALE",
+   "10": "NO_PUBLIC_PRICE_SIZE_DUE_TO_ORDER_HIDDEN",
+   "11": "EXEMPTED_DUE_TO_SECURITIES_FINANCING_TRANSACTION",
+   "12": "EXEMPTED_DUE_TO_ESCB_POLICY_TRANSACTION",
+   "13": "EXCEPTION_DUE_TO_REPORT_BY_PAPER",
+   "14": "EXCEPTION_DUE_TO_TRADE_EXECUTED_WITH_NON_REPORTING_PARTY",
+   "15": "EXCEPTION_DUE_TO_INTRA_FIRM_ORDER",
+   "16": "REPORTED_OUTSIDE_REPORTING_HOURS"
+  },
+  "translations": {
+   "nobookorderduetoaveragespreadprice": "0",
+   "nobookorderduetorefprice": "1",
+   "nobookorderduetootherconditions": "2",
+   "nopublicpriceduetorefprice": "3",
+   "nopublicpriceduetoilliquid": "4",
+   "nopublicpriceduetoordersize": "5",
+   "deferralduetolargeinscale": "6",
+   "deferralduetoilliquid": "7",
+   "deferralduetosizespecific": "8",
+   "nopublicpriceduetolargeinscale": "9",
+   "nopublicpricesizeduetoorderhidden": "10",
+   "exemptedduetosecuritiesfinancingtransaction": "11",
+   "exemptedduetoescbpolicytransaction": "12",
+   "exceptionduetoreportbypaper": "13",
+   "exceptionduetotradeexecutedwithnonreportingparty": "14",
+   "exceptionduetointrafirmorder": "15",
+   "reportedoutsidereportinghours": "16",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16"
+  }
+ },
+ "2671": {
+  "name": "SideTradeReportingIndicator",
+  "tag": 2671,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2672": {
+  "name": "CrossRequestID",
+  "tag": 2672,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2673": {
+  "name": "FillMatchID",
+  "tag": 2673,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2674": {
+  "name": "FillMatchSubID",
+  "tag": 2674,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2675": {
+  "name": "MassActionReason",
+  "tag": 2675,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NONE",
+   "1": "TRADING_RISK_CONTROL",
+   "2": "CLEARING_RISK_CONTROL",
+   "3": "MARKET_MAKER_PROTECTION",
+   "4": "STOP_TRADING",
+   "5": "EMERGENCY_ACTION",
+   "6": "SESSION_LOSS_LOGOUT",
+   "7": "DUPLICATE_LOGIN",
+   "8": "PRODUCT_NOT_TRADED",
+   "9": "INSTRUMENT_NOT_TRADED",
+   "10": "COMPLE_INSTRUMENT_DELETED",
+   "11": "CIRCUIT_BREAKER_ACTIVATED",
+   "99": "OTHER"
+  },
+  "translations": {
+   "none": "0",
+   "tradingriskcontrol": "1",
+   "clearingriskcontrol": "2",
+   "marketmakerprotection": "3",
+   "stoptrading": "4",
+   "emergencyaction": "5",
+   "sessionlosslogout": "6",
+   "duplicatelogin": "7",
+   "productnottraded": "8",
+   "instrumentnottraded": "9",
+   "compleinstrumentdeleted": "10",
+   "circuitbreakeractivated": "11",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "99": "99"
+  }
+ },
+ "2676": {
+  "name": "MaximumPriceDeviation",
+  "tag": 2676,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2677": {
+  "name": "NotAffectedReason",
+  "tag": 2677,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ORDER_SUSPENDED",
+   "1": "INSTRUMENT_SUSPENDED"
+  },
+  "translations": {
+   "ordersuspended": "0",
+   "instrumentsuspended": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2678": {
+  "name": "TotalNotAffectedOrders",
+  "tag": 2678,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2679": {
+  "name": "OrderOwnershipIndicator",
+  "tag": 2679,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_CHANGE",
+   "1": "EXECUTING_PARTY_CHANGE",
+   "2": "ENTERING_PARTY_CHANGE",
+   "3": "SPECIFIED_PARTY_CHANGE"
+  },
+  "translations": {
+   "nochange": "0",
+   "executingpartychange": "1",
+   "enteringpartychange": "2",
+   "specifiedpartychange": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2680": {
+  "name": "LegAccount",
+  "tag": 2680,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2681": {
+  "name": "InTheMoneyCondition",
+  "tag": 2681,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "STANDARD_ITM",
+   "1": "ATMITM",
+   "2": "ATM_CALL_ITM",
+   "3": "ATM_PUT_ITM"
+  },
+  "translations": {
+   "standarditm": "0",
+   "atmitm": "1",
+   "atmcallitm": "2",
+   "atmputitm": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2682": {
+  "name": "LegInTheMoneyCondition",
+  "tag": 2682,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2683": {
+  "name": "UnderlyingInTheMoneyCondition",
+  "tag": 2683,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2684": {
+  "name": "DerivativeInTheMoneyCondition",
+  "tag": 2684,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2685": {
+  "name": "ContraryInstructionEligibilityIndicator",
+  "tag": 2685,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2686": {
+  "name": "LegContraryInstructionEligibilityIndicator",
+  "tag": 2686,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2687": {
+  "name": "UnderlyingContraryInstructionEligibilityIndicator",
+  "tag": 2687,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2688": {
+  "name": "DerivativeContraryInstructionEligibilityIndicator",
+  "tag": 2688,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2689": {
+  "name": "CollateralMarketPrice",
+  "tag": 2689,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2690": {
+  "name": "CollateralPercentOverage",
+  "tag": 2690,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2691": {
+  "name": "NoSideCollateralAmounts",
+  "tag": 2691,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2692": {
+  "name": "SideCollateralAmountMarketID",
+  "tag": 2692,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2693": {
+  "name": "SideCollateralAmountMarketSegmentID",
+  "tag": 2693,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2694": {
+  "name": "SideCollateralAmountType",
+  "tag": 2694,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2695": {
+  "name": "SideCollateralCurrency",
+  "tag": 2695,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2696": {
+  "name": "SideCollateralFXRate",
+  "tag": 2696,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2697": {
+  "name": "SideCollateralFXRateCalc",
+  "tag": 2697,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2698": {
+  "name": "SideCollateralMarketPrice",
+  "tag": 2698,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2699": {
+  "name": "SideCollateralPercentOverage",
+  "tag": 2699,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2700": {
+  "name": "SideCollateralPortfolioID",
+  "tag": 2700,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2701": {
+  "name": "SideCollateralType",
+  "tag": 2701,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2702": {
+  "name": "SideCurrentCollateralAmount",
+  "tag": 2702,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2703": {
+  "name": "SideHaircutIndicator",
+  "tag": 2703,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2704": {
+  "name": "ExDestinationType",
+  "tag": 2704,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_RESTRICTION",
+   "1": "TRADED_ONLY_ON_TRADING_VENUE",
+   "2": "TRADED_ONLY_ON_SI",
+   "3": "TRADED_ON_TRADING_VENUE_OR_SI"
+  },
+  "translations": {
+   "norestriction": "0",
+   "tradedonlyontradingvenue": "1",
+   "tradedonlyonsi": "2",
+   "tradedontradingvenueorsi": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2705": {
+  "name": "MarketCondition",
+  "tag": 2705,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NORMAL",
+   "1": "STRESSED",
+   "2": "EXCEPTIONAL"
+  },
+  "translations": {
+   "normal": "0",
+   "stressed": "1",
+   "exceptional": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2706": {
+  "name": "NoQuoteAttributes",
+  "tag": 2706,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2707": {
+  "name": "QuoteAttributeType",
+  "tag": 2707,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "QUOTE_ABOVE_STANDARD_MARKET_SIZE",
+   "1": "QUOTE_ABOVE_SPECIFIC_INSTRUMENT_SIZE",
+   "2": "QUOTE_APPLICABLE_FOR_LIQUIDTY_PROVISION_ACTIVITY",
+   "3": "QUOTE_ISSUER_STATUS",
+   "4": "BID_OR_ASK_REQUEST"
+  },
+  "translations": {
+   "quoteabovestandardmarketsize": "0",
+   "quoteabovespecificinstrumentsize": "1",
+   "quoteapplicableforliquidtyprovisionactivity": "2",
+   "quoteissuerstatus": "3",
+   "bidoraskrequest": "4",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4"
+  }
+ },
+ "2708": {
+  "name": "QuoteAttributeValue",
+  "tag": 2708,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2709": {
+  "name": "NoPriceQualifiers",
+  "tag": 2709,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2710": {
+  "name": "PriceQualifier",
+  "tag": 2710,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ACCRUED_INTEREST_IS_FACTORED",
+   "1": "TAX_IS_FACTORED",
+   "2": "BOND_AMORTIZATION_IS_FACTORED"
+  },
+  "translations": {
+   "accruedinterestisfactored": "0",
+   "taxisfactored": "1",
+   "bondamortizationisfactored": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2711": {
+  "name": "MDValueTier",
+  "tag": 2711,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "RANGE1",
+   "2": "RANGE2",
+   "3": "RANGE3"
+  },
+  "translations": {
+   "range1": "1",
+   "range2": "2",
+   "range3": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2712": {
+  "name": "MiscFeeQualifier",
+  "tag": 2712,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "CONTRIBUTES",
+   "1": "DOES_NOT_CONTRIBUTE"
+  },
+  "translations": {
+   "contributes": "0",
+   "doesnotcontribute": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2713": {
+  "name": "MiscFeeDesc",
+  "tag": 2713,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2714": {
+  "name": "FinancialInstrumentFullName",
+  "tag": 2714,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2715": {
+  "name": "EncodedFinancialInstrumentFullNameLen",
+  "tag": 2715,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2716": {
+  "name": "EncodedFinancialInstrumentFullName",
+  "tag": 2716,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2717": {
+  "name": "LegFinancialInstrumentFullName",
+  "tag": 2717,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2718": {
+  "name": "EncodedLegFinancialInstrumentFullNameLen",
+  "tag": 2718,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2719": {
+  "name": "EncodedLegFinancialInstrumentFullName",
+  "tag": 2719,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2720": {
+  "name": "UnderlyingFinancialInstrumentFullName",
+  "tag": 2720,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2721": {
+  "name": "EncodedUnderlyingFinancialInstrumentFullNameLen",
+  "tag": 2721,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2722": {
+  "name": "EncodedUnderlyingFinancialInstrumentFullName",
+  "tag": 2722,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2723": {
+  "name": "UnderlyingIndexCurveUnit",
+  "tag": 2723,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2724": {
+  "name": "UnderlyingIndexCurvePeriod",
+  "tag": 2724,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2725": {
+  "name": "CommissionAmountSubType",
+  "tag": 2725,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "RESEARCH_PAYMENT_ACCOUNT",
+   "1": "COMMISSION_SHARING_AGREEMENT",
+   "2": "OTHER_TYPE_RESEARCH_PAYMENT"
+  },
+  "translations": {
+   "researchpaymentaccount": "0",
+   "commissionsharingagreement": "1",
+   "othertyperesearchpayment": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2726": {
+  "name": "AllocCommissionAmountSubType",
+  "tag": 2726,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2727": {
+  "name": "AllocLegRefID",
+  "tag": 2727,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2728": {
+  "name": "FloatingRateIndexCurvePeriod",
+  "tag": 2728,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2729": {
+  "name": "FloatingRateIndexCurveSpread",
+  "tag": 2729,
+  "type": "PRICEOFFSET",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2730": {
+  "name": "FloatingRateIndexCurveUnit",
+  "tag": 2730,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2731": {
+  "name": "FloatingRateIndexID",
+  "tag": 2731,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2732": {
+  "name": "FloatingRateIndexIDSource",
+  "tag": 2732,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2733": {
+  "name": "IndexRollMonth",
+  "tag": 2733,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2734": {
+  "name": "NoIndexRollMonths",
+  "tag": 2734,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2735": {
+  "name": "AssetSubType",
+  "tag": 2735,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2736": {
+  "name": "CommodityFinalPriceType",
+  "tag": 2736,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ARGUS_MC_CLOSKEY",
+   "1": "BALTIC",
+   "2": "EXCHANGE",
+   "3": "GLOBAL_COAL",
+   "4": "IHS_MC_CLOSKEY",
+   "5": "PLATTS",
+   "99": "OTHER"
+  },
+  "translations": {
+   "argusmccloskey": "0",
+   "baltic": "1",
+   "exchange": "2",
+   "globalcoal": "3",
+   "ihsmccloskey": "4",
+   "platts": "5",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "99": "99"
+  }
+ },
+ "2737": {
+  "name": "FinancialInstrumentShortName",
+  "tag": 2737,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2738": {
+  "name": "NextIndexRollDate",
+  "tag": 2738,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2739": {
+  "name": "LegAssetSubType",
+  "tag": 2739,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2740": {
+  "name": "LegFinancialInstrumentShortName",
+  "tag": 2740,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2741": {
+  "name": "SecondaryAssetSubType",
+  "tag": 2741,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2742": {
+  "name": "UnderlyingFinancialInstrumentShortName",
+  "tag": 2742,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2743": {
+  "name": "LegSecondaryAssetSubType",
+  "tag": 2743,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2744": {
+  "name": "UnderlyingAssetSubType",
+  "tag": 2744,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2745": {
+  "name": "UnderlyingSecondaryAssetSubType",
+  "tag": 2745,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2746": {
+  "name": "NoReferenceDataDates",
+  "tag": 2746,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2747": {
+  "name": "ReferenceDataDate",
+  "tag": 2747,
+  "type": "UTCTIMESTAMP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2748": {
+  "name": "ReferenceDataDateType",
+  "tag": 2748,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ADMIT_TO_TRADE_REQUEST_DATE",
+   "1": "ADMIT_TO_TRADE_APPROVAL_DATE",
+   "2": "ADMIT_TO_TRADE_OR_FIRST_TRADE_DATE",
+   "3": "TERMINATION_DATE"
+  },
+  "translations": {
+   "admittotraderequestdate": "0",
+   "admittotradeapprovaldate": "1",
+   "admittotradeorfirsttradedate": "2",
+   "terminationdate": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2749": {
+  "name": "ExecutionTimestamp",
+  "tag": 2749,
+  "type": "UTCTIMESTAMP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2750": {
+  "name": "ReportingPx",
+  "tag": 2750,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2751": {
+  "name": "ReportingQty",
+  "tag": 2751,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2752": {
+  "name": "DeliveryRouteOrCharter",
+  "tag": 2752,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2753": {
+  "name": "ReturnTrigger",
+  "tag": 2753,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "DIVIDEND",
+   "2": "VARIANCE",
+   "3": "VOLATILITY",
+   "4": "TOTAL_RETURN",
+   "5": "CONTRACT_FOR_DIFFERENCE",
+   "6": "CREDIT_DEFAULT",
+   "7": "SPREAD_BET",
+   "8": "PRICE",
+   "9": "FORWARD_PRICE_UNDERLYING_INSTRUMENT",
+   "99": "OTHER"
+  },
+  "translations": {
+   "dividend": "1",
+   "variance": "2",
+   "volatility": "3",
+   "totalreturn": "4",
+   "contractfordifference": "5",
+   "creditdefault": "6",
+   "spreadbet": "7",
+   "price": "8",
+   "forwardpriceunderlyinginstrument": "9",
+   "other": "99",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "99": "99"
+  }
+ },
+ "2754": {
+  "name": "LegDeliveryRouteOrCharter",
+  "tag": 2754,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2755": {
+  "name": "LegReturnTrigger",
+  "tag": 2755,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2756": {
+  "name": "UnderlyingDeliveryRouteOrCharter",
+  "tag": 2756,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2757": {
+  "name": "UnderlyingReturnTrigger",
+  "tag": 2757,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2758": {
+  "name": "AllocRequestID",
+  "tag": 2758,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2759": {
+  "name": "GroupAmount",
+  "tag": 2759,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2760": {
+  "name": "GroupRemainingAmount",
+  "tag": 2760,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2761": {
+  "name": "AllocGroupAmount",
+  "tag": 2761,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2762": {
+  "name": "PriceMarkup",
+  "tag": 2762,
+  "type": "PRICEOFFSET",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2763": {
+  "name": "AveragePriceType",
+  "tag": 2763,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "TIME_WEIGHTED_AVERAGE_PRICE",
+   "1": "VOLUME_WEIGHTED_AVERAGE_PRICE",
+   "2": "PERCENT_OF_VOLUME_AVERAGE_PRICE",
+   "3": "LIMIT_ORDER_AVERAGE_PRICE"
+  },
+  "translations": {
+   "timeweightedaverageprice": "0",
+   "volumeweightedaverageprice": "1",
+   "percentofvolumeaverageprice": "2",
+   "limitorderaverageprice": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2764": {
+  "name": "AveragePriceStartTime",
+  "tag": 2764,
+  "type": "UTCTIMESTAMP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2765": {
+  "name": "AveragePriceEndTime",
+  "tag": 2765,
+  "type": "UTCTIMESTAMP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2766": {
+  "name": "OrderPercentOfTotalVolume",
+  "tag": 2766,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2767": {
+  "name": "AllocGroupStatus",
+  "tag": 2767,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ADDED",
+   "1": "CANCELED",
+   "2": "REPLACED",
+   "3": "CHANGED",
+   "4": "PENDING"
+  },
+  "translations": {
+   "added": "0",
+   "canceled": "1",
+   "replaced": "2",
+   "changed": "3",
+   "pending": "4",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4"
+  }
+ },
+ "2768": {
+  "name": "AllocRequestStatus",
+  "tag": 2768,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ACCEPTED",
+   "1": "REJECTED"
+  },
+  "translations": {
+   "accepted": "0",
+   "rejected": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2769": {
+  "name": "AllocAvgPxIndicator",
+  "tag": 2769,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2770": {
+  "name": "AllocAvgPxGroupID",
+  "tag": 2770,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2771": {
+  "name": "PreviousAllocGroupID",
+  "tag": 2771,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2772": {
+  "name": "NoMatchExceptions",
+  "tag": 2772,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2773": {
+  "name": "MatchExceptionType",
+  "tag": 2773,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_MATCHING_CONFIRMATION",
+   "1": "NO_MATCHING_ALLOCATION",
+   "2": "ALLOCATION_DATA_ELEMENT_MISSING",
+   "3": "CONFIRMATION_DATA_ELEMENT_MISSING",
+   "4": "DATA_DIFFERENCE_NOT_WITHIN_TOLERANCE",
+   "5": "MATCH_WITHIN_TOLERANCE",
+   "99": "OTHER"
+  },
+  "translations": {
+   "nomatchingconfirmation": "0",
+   "nomatchingallocation": "1",
+   "allocationdataelementmissing": "2",
+   "confirmationdataelementmissing": "3",
+   "datadifferencenotwithintolerance": "4",
+   "matchwithintolerance": "5",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "99": "99"
+  }
+ },
+ "2774": {
+  "name": "MatchExceptionElementType",
+  "tag": 2774,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "ACCRUED_INTEREST",
+   "2": "DEAL_PRICE",
+   "3": "TRADE_DATE",
+   "4": "SETTLEMENT_DATE",
+   "5": "SIDE_INDICATOR",
+   "6": "TRADED_CURRENCY",
+   "7": "ACCOUNT_ID",
+   "8": "EXECUTING_BROKER_ID",
+   "9": "SETTLEMENT_CURRENCY_AND_AMOUNT",
+   "10": "INVESTMENT_MANAGER_ID",
+   "11": "NET_AMOUNT",
+   "12": "PLACE_OF_SETTLEMENT",
+   "13": "COMMISSIONS",
+   "14": "SECURITY_IDENTIFIER",
+   "15": "QUALITY_ALLOCATED",
+   "16": "PRINCIPAL",
+   "17": "FEES",
+   "18": "TAX"
+  },
+  "translations": {
+   "accruedinterest": "1",
+   "dealprice": "2",
+   "tradedate": "3",
+   "settlementdate": "4",
+   "sideindicator": "5",
+   "tradedcurrency": "6",
+   "accountid": "7",
+   "executingbrokerid": "8",
+   "settlementcurrencyandamount": "9",
+   "investmentmanagerid": "10",
+   "netamount": "11",
+   "placeofsettlement": "12",
+   "commissions": "13",
+   "securityidentifier": "14",
+   "qualityallocated": "15",
+   "principal": "16",
+   "fees": "17",
+   "tax": "18",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "17": "17",
+   "18": "18"
+  }
+ },
+ "2775": {
+  "name": "MatchExceptionElementName",
+  "tag": 2775,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2776": {
+  "name": "MatchExceptionAllocValue",
+  "tag": 2776,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2777": {
+  "name": "MatchExceptionConfirmValue",
+  "tag": 2777,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2778": {
+  "name": "MatchExceptionToleranceValue",
+  "tag": 2778,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2779": {
+  "name": "MatchExceptionToleranceValueType",
+  "tag": 2779,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "FIXED_AMOUNT",
+   "2": "PERCENTAGE"
+  },
+  "translations": {
+   "fixedamount": "1",
+   "percentage": "2",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2780": {
+  "name": "MatchExceptionText",
+  "tag": 2780,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2781": {
+  "name": "NoMatchingDataPoints",
+  "tag": 2781,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2782": {
+  "name": "MatchingDataPointIndicator",
+  "tag": 2782,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "MANDATORY",
+   "2": "OPTIONAL"
+  },
+  "translations": {
+   "mandatory": "1",
+   "optional": "2",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2783": {
+  "name": "MatchingDataPointValue",
+  "tag": 2783,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2784": {
+  "name": "MatchingDataPointType",
+  "tag": 2784,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2785": {
+  "name": "MatchingDataPointName",
+  "tag": 2785,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2786": {
+  "name": "TradeAggregationRequestID",
+  "tag": 2786,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2787": {
+  "name": "TradeAggregationRequestRefID",
+  "tag": 2787,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2788": {
+  "name": "TradeAggregationTransType",
+  "tag": 2788,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NEW",
+   "1": "CANCEL",
+   "2": "REPLACE"
+  },
+  "translations": {
+   "new": "0",
+   "cancel": "1",
+   "replace": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2789": {
+  "name": "AggregatedQty",
+  "tag": 2789,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2790": {
+  "name": "TradeAggregationRequestStatus",
+  "tag": 2790,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ACCEPTED",
+   "1": "REJECTED"
+  },
+  "translations": {
+   "accepted": "0",
+   "rejected": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2791": {
+  "name": "TradeAggregationRejectReason",
+  "tag": 2791,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "UNKNOWN_ORDERS",
+   "1": "UNKNOWN_EXECUTION_FILLS",
+   "99": "OTHER"
+  },
+  "translations": {
+   "unknownorders": "0",
+   "unknownexecutionfills": "1",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "99": "99"
+  }
+ },
+ "2792": {
+  "name": "TradeAggregationReportID",
+  "tag": 2792,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2793": {
+  "name": "AvgSpotRate",
+  "tag": 2793,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2794": {
+  "name": "AvgForwardPoints",
+  "tag": 2794,
+  "type": "PRICEOFFSET",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2795": {
+  "name": "OffshoreIndicator",
+  "tag": 2795,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "REGULAR",
+   "1": "OFFSHORE",
+   "2": "ONSHORE"
+  },
+  "translations": {
+   "regular": "0",
+   "offshore": "1",
+   "onshore": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2796": {
+  "name": "FXBenchmarkRateFix",
+  "tag": 2796,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2797": {
+  "name": "EncodedMatchExceptionTextLen",
+  "tag": 2797,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2798": {
+  "name": "EncodedMatchExceptionText",
+  "tag": 2798,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2799": {
+  "name": "PayReportID",
+  "tag": 2799,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2800": {
+  "name": "PayDisputeReason",
+  "tag": 2800,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2801": {
+  "name": "EncodedReplaceText",
+  "tag": 2801,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2802": {
+  "name": "EncodedReplaceTextLen",
+  "tag": 2802,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2803": {
+  "name": "PayReportRefID",
+  "tag": 2803,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2804": {
+  "name": "PayReportTransType",
+  "tag": 2804,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NEW",
+   "1": "REPLACE",
+   "2": "STATUS"
+  },
+  "translations": {
+   "new": "0",
+   "replace": "1",
+   "status": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2805": {
+  "name": "ReplaceText",
+  "tag": 2805,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2806": {
+  "name": "PayReportStatus",
+  "tag": 2806,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "RECEIVED",
+   "1": "ACCEPTED",
+   "2": "REJECTED",
+   "3": "DISPUTED"
+  },
+  "translations": {
+   "received": "0",
+   "accepted": "1",
+   "rejected": "2",
+   "disputed": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2807": {
+  "name": "CancelText",
+  "tag": 2807,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2808": {
+  "name": "EncodedCancelText",
+  "tag": 2808,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2809": {
+  "name": "EncodedCancelTextLen",
+  "tag": 2809,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2810": {
+  "name": "PayRequestRefID",
+  "tag": 2810,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2811": {
+  "name": "PayRequestTransType",
+  "tag": 2811,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NEW",
+   "1": "CANCEL"
+  },
+  "translations": {
+   "new": "0",
+   "cancel": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2812": {
+  "name": "PayRequestID",
+  "tag": 2812,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2813": {
+  "name": "PayRequestStatus",
+  "tag": 2813,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "RECEIVED",
+   "1": "ACCEPTED",
+   "2": "REJECTED",
+   "3": "DISPUTED"
+  },
+  "translations": {
+   "received": "0",
+   "accepted": "1",
+   "rejected": "2",
+   "disputed": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2814": {
+  "name": "EncodedPostTradePaymentDesc",
+  "tag": 2814,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2815": {
+  "name": "EncodedPostTradePaymentDescLen",
+  "tag": 2815,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2816": {
+  "name": "PostTradePaymentAccount",
+  "tag": 2816,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2817": {
+  "name": "PostTradePaymentAmount",
+  "tag": 2817,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2818": {
+  "name": "PostTradePaymentCurrency",
+  "tag": 2818,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2819": {
+  "name": "PostTradePaymentDebitOrCredit",
+  "tag": 2819,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "DEBIT_PAY",
+   "1": "CREDIT_RECEIVE"
+  },
+  "translations": {
+   "debitpay": "0",
+   "creditreceive": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2820": {
+  "name": "PostTradePaymentDesc",
+  "tag": 2820,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2821": {
+  "name": "PostTradePaymentID",
+  "tag": 2821,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2822": {
+  "name": "PostTradePaymentLinkID",
+  "tag": 2822,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2823": {
+  "name": "PostTradePaymentStatus",
+  "tag": 2823,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NEW",
+   "1": "INITIATED",
+   "2": "PENDING",
+   "3": "CONFIRMED",
+   "4": "REJECTED"
+  },
+  "translations": {
+   "new": "0",
+   "initiated": "1",
+   "pending": "2",
+   "confirmed": "3",
+   "rejected": "4",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4"
+  }
+ },
+ "2824": {
+  "name": "PostTradePaymentType",
+  "tag": 2824,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2825": {
+  "name": "PostTradePaymentCalculationDate",
+  "tag": 2825,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2826": {
+  "name": "PostTradePaymentValueDate",
+  "tag": 2826,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2827": {
+  "name": "PostTradePaymentFinalValueDate",
+  "tag": 2827,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2828": {
+  "name": "CurrentDisplayPrice",
+  "tag": 2828,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2829": {
+  "name": "DuplicateClOrdIDIndicator",
+  "tag": 2829,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "N": "NO",
+   "Y": "YES"
+  },
+  "translations": {
+   "no": "N",
+   "yes": "Y",
+   "n": "N",
+   "y": "Y"
+  }
+ },
+ "2830": {
+  "name": "EventInitiatorType",
+  "tag": 2830,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "C": "CUSTOMER_OR_CLIENT",
+   "E": "EXCHANGE_OR_EXECUTION_VENUE",
+   "F": "FIRM_OR_BROKER"
+  },
+  "translations": {
+   "customerorclient": "C",
+   "exchangeorexecutionvenue": "E",
+   "firmorbroker": "F",
+   "c": "C",
+   "e": "E",
+   "f": "F"
+  }
+ },
+ "2831": {
+  "name": "NBBOEntryType",
+  "tag": 2831,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "BID",
+   "1": "OFFER",
+   "2": "MID_PRICE"
+  },
+  "translations": {
+   "bid": "0",
+   "offer": "1",
+   "midprice": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2832": {
+  "name": "NBBOPrice",
+  "tag": 2832,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2833": {
+  "name": "NBBOQty",
+  "tag": 2833,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2834": {
+  "name": "NBBOSource",
+  "tag": 2834,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NOT_APPLICABLE",
+   "1": "DIRECT",
+   "2": "SIP",
+   "3": "HYBRID"
+  },
+  "translations": {
+   "notapplicable": "0",
+   "direct": "1",
+   "sip": "2",
+   "hybrid": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "2835": {
+  "name": "OrderOriginationFirmID",
+  "tag": 2835,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2836": {
+  "name": "RelatedOrderTime",
+  "tag": 2836,
+  "type": "UTCTIMESTAMP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2837": {
+  "name": "SingleQuoteIndicator",
+  "tag": 2837,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "N": "NO",
+   "Y": "YES"
+  },
+  "translations": {
+   "no": "N",
+   "yes": "Y",
+   "n": "N",
+   "y": "Y"
+  }
+ },
+ "2838": {
+  "name": "CurrentWorkingPrice",
+  "tag": 2838,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2839": {
+  "name": "TrdRegTimestampManualIndicator",
+  "tag": 2839,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "N": "NO",
+   "Y": "YES"
+  },
+  "translations": {
+   "no": "N",
+   "yes": "Y",
+   "n": "N",
+   "y": "Y"
+  }
+ },
+ "2840": {
+  "name": "CollateralReinvestmentRate",
+  "tag": 2840,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2841": {
+  "name": "UnderlyingRefID",
+  "tag": 2841,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2842": {
+  "name": "CollateralReinvestmentAmount",
+  "tag": 2842,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2843": {
+  "name": "CollateralReinvestmentCurrency",
+  "tag": 2843,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2844": {
+  "name": "CollateralReinvestmentType",
+  "tag": 2844,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "MONEY_MARKET_FUND",
+   "1": "OTHER_COMINGLED_POOL",
+   "2": "REPO_MARKET",
+   "3": "DIRECT_PURCHASE_OF_SECURITIES",
+   "4": "OTHER_INVESTMENTS"
+  },
+  "translations": {
+   "moneymarketfund": "0",
+   "othercomingledpool": "1",
+   "repomarket": "2",
+   "directpurchaseofsecurities": "3",
+   "otherinvestments": "4",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4"
+  }
+ },
+ "2845": {
+  "name": "NoCollateralReinvestments",
+  "tag": 2845,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2846": {
+  "name": "FundingSource",
+  "tag": 2846,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "REPO",
+   "1": "CASH",
+   "2": "FREE_CEDITS",
+   "3": "CUSTOMER_SHORT_SALES",
+   "4": "BROKER_SHORT_SALES",
+   "5": "UNSECURED_BORROWING",
+   "99": "OTHER"
+  },
+  "translations": {
+   "repo": "0",
+   "cash": "1",
+   "freecedits": "2",
+   "customershortsales": "3",
+   "brokershortsales": "4",
+   "unsecuredborrowing": "5",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "99": "99"
+  }
+ },
+ "2847": {
+  "name": "FundingSourceCurrency",
+  "tag": 2847,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2848": {
+  "name": "FundingSourceMarketValue",
+  "tag": 2848,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2849": {
+  "name": "NoFundingSources",
+  "tag": 2849,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2851": {
+  "name": "MarginDirection",
+  "tag": 2851,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "POSTED",
+   "1": "RECEIVED"
+  },
+  "translations": {
+   "posted": "0",
+   "received": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2862": {
+  "name": "SideCollateralReinvestmentRate",
+  "tag": 2862,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2863": {
+  "name": "SideUnderlyingRefID",
+  "tag": 2863,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2864": {
+  "name": "NoSideCollateralReinvestments",
+  "tag": 2864,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2865": {
+  "name": "SideCollateralReinvestmentAmount",
+  "tag": 2865,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2866": {
+  "name": "SideCollateralReinvestmentCurrency",
+  "tag": 2866,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2867": {
+  "name": "SideCollateralReinvestmentType",
+  "tag": 2867,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2868": {
+  "name": "CollateralizationValueDate",
+  "tag": 2868,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2869": {
+  "name": "RegulatoryReportTypeBusinessDate",
+  "tag": 2869,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2870": {
+  "name": "ClearingPortfolioID",
+  "tag": 2870,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2871": {
+  "name": "NoTransactionAttributes",
+  "tag": 2871,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2872": {
+  "name": "TransactionAttributeType",
+  "tag": 2872,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "EXCLUSIVE_ARRANGEMENT",
+   "1": "COLLATERAL_REUSE",
+   "2": "COLLATERAL_ARRANGMENT_TYPE"
+  },
+  "translations": {
+   "exclusivearrangement": "0",
+   "collateralreuse": "1",
+   "collateralarrangmenttype": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2873": {
+  "name": "TransactionAttributeValue",
+  "tag": 2873,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2874": {
+  "name": "UnderlyingID",
+  "tag": 2874,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2876": {
+  "name": "PosAmtPrice",
+  "tag": 2876,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2877": {
+  "name": "PosAmtPriceType",
+  "tag": 2877,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2878": {
+  "name": "TerminationDate",
+  "tag": 2878,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2879": {
+  "name": "CouponOtherDayCount",
+  "tag": 2879,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2880": {
+  "name": "LegCouponOtherDayCount",
+  "tag": 2880,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2881": {
+  "name": "UnderlyingCouponOtherDayCount",
+  "tag": 2881,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2882": {
+  "name": "ContraOrderOrigination",
+  "tag": 2882,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2883": {
+  "name": "RoutingArrangmentIndicator",
+  "tag": 2883,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_ROUTING_ARRANGMENT_IN_PLACE",
+   "1": "ROUTING_ARRANGEMENT_IN_PLACE"
+  },
+  "translations": {
+   "noroutingarrangmentinplace": "0",
+   "routingarrangementinplace": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2884": {
+  "name": "ContraRoutingArrangmentIndicator",
+  "tag": 2884,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2885": {
+  "name": "UnderlyingAccruedInterestAmt",
+  "tag": 2885,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2886": {
+  "name": "UnderlyingNumDaysInterest",
+  "tag": 2886,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2887": {
+  "name": "RelatedOrderID",
+  "tag": 2887,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2888": {
+  "name": "RelatedOrderIDSource",
+  "tag": 2888,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NON_FIX_SOURCE",
+   "1": "SYSTEM_ORDER_IDENTIFIER",
+   "2": "CLIENT_ORDER_IDENTIFIER",
+   "3": "SECONDARY_ORDER_IDENTIFIER",
+   "4": "SECONDARY_CLIENT_ORDER_IDENTIFIER"
+  },
+  "translations": {
+   "nonfixsource": "0",
+   "systemorderidentifier": "1",
+   "clientorderidentifier": "2",
+   "secondaryorderidentifier": "3",
+   "secondaryclientorderidentifier": "4",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4"
+  }
+ },
+ "2889": {
+  "name": "RelatedOrderQty",
+  "tag": 2889,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2890": {
+  "name": "OrderRelationship",
+  "tag": 2890,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NOT_SPECIFIED",
+   "1": "ORDER_AGGREGATION",
+   "2": "ORDER_SPLIT"
+  },
+  "translations": {
+   "notspecified": "0",
+   "orderaggregation": "1",
+   "ordersplit": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "2891": {
+  "name": "UPICode",
+  "tag": 2891,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2892": {
+  "name": "DerivativeUPICode",
+  "tag": 2892,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2893": {
+  "name": "LegUPICode",
+  "tag": 2893,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2894": {
+  "name": "UnderlyingUPICode",
+  "tag": 2894,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2895": {
+  "name": "InstrumentScopeUPICode",
+  "tag": 2895,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2896": {
+  "name": "TertiaryTrdType",
+  "tag": 2896,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2897": {
+  "name": "CurrencyCodeSource",
+  "tag": 2897,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "CUSIP",
+   "2": "SEDOL",
+   "4": "ISIN_NUMBER",
+   "6": "ISO_CURRENCY_CODE",
+   "S": "FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER",
+   "Y": "DIGITAL_TOKEN_IDENTIFIER"
+  },
+  "translations": {
+   "cusip": "1",
+   "sedol": "2",
+   "isinnumber": "4",
+   "isocurrencycode": "6",
+   "financialinstrumentglobalidentifier": "S",
+   "digitaltokenidentifier": "Y",
+   "1": "1",
+   "2": "2",
+   "4": "4",
+   "6": "6",
+   "s": "S",
+   "y": "Y"
+  }
+ },
+ "2898": {
+  "name": "LegCurrencyCodeSource",
+  "tag": 2898,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2899": {
+  "name": "SettlCurrencyCodeSource",
+  "tag": 2899,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2900": {
+  "name": "LegSettlCurrencyCodeSource",
+  "tag": 2900,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2901": {
+  "name": "SideCurrencyCodeSource",
+  "tag": 2901,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2902": {
+  "name": "SideSettlCurrencyCodeSource",
+  "tag": 2902,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2903": {
+  "name": "SettlementAmountCurrencyCodeSource",
+  "tag": 2903,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2904": {
+  "name": "StrikeCurrencyCodeSource",
+  "tag": 2904,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2905": {
+  "name": "UnitOfMeasureCurrencyCodeSource",
+  "tag": 2905,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2906": {
+  "name": "PriceUnitOfMeasureCurrencyCodeSource",
+  "tag": 2906,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2907": {
+  "name": "PriceQuoteCurrencyCodeSource",
+  "tag": 2907,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2908": {
+  "name": "LegStrikeCurrencyCodeSource",
+  "tag": 2908,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2909": {
+  "name": "LegUnitOfMeasureCurrencyCodeSource",
+  "tag": 2909,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2910": {
+  "name": "LegPriceUnitOfMeasureCurrencyCodeSource",
+  "tag": 2910,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2911": {
+  "name": "LegPriceQuoteCurrencyCodeSource",
+  "tag": 2911,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2912": {
+  "name": "DerivativeStrikeCurrencyCodeSource",
+  "tag": 2912,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2913": {
+  "name": "DerivativeUnitOfMeasureCurrencyCodeSource",
+  "tag": 2913,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2914": {
+  "name": "DerivativePriceUnitOfMeasureCurrencyCodeSource",
+  "tag": 2914,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2915": {
+  "name": "DerivativePriceQuoteCurrencyCodeSource",
+  "tag": 2915,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2916": {
+  "name": "UnderlyingCurrencyCodeSource",
+  "tag": 2916,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2917": {
+  "name": "UnderlyingStrikeCurrencyCodeSource",
+  "tag": 2917,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2918": {
+  "name": "UnderlyingUnitOfMeasureCurrencyCodeSource",
+  "tag": 2918,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2919": {
+  "name": "UnderlyingPriceUnitOfMeasureCurrencyCodeSource",
+  "tag": 2919,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2920": {
+  "name": "UnderlyingPriceQuoteCurrencyCodeSource",
+  "tag": 2920,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2921": {
+  "name": "UnderlyingNotionalCurrencyCodeSource",
+  "tag": 2921,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2922": {
+  "name": "CommCurrencyCodeSource",
+  "tag": 2922,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2923": {
+  "name": "CommissionCurrencyCodeSource",
+  "tag": 2923,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2924": {
+  "name": "CommissionUnitOfMeasureCurrencyCodeSource",
+  "tag": 2924,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2925": {
+  "name": "AllocCommissionCurrencyCodeSource",
+  "tag": 2925,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2926": {
+  "name": "AllocCommissionUnitOfMeasureCurrencyCodeSource",
+  "tag": 2926,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2927": {
+  "name": "AllocSettlCurrencyCodeSource",
+  "tag": 2927,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2928": {
+  "name": "LegAllocSettlCurrencyCodeSource",
+  "tag": 2928,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2929": {
+  "name": "CollateralCurrencyCodeSource",
+  "tag": 2929,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2930": {
+  "name": "SideCollateralCurrencyCodeSource",
+  "tag": 2930,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2931": {
+  "name": "CollateralReinvestmentCurrencyCodeSource",
+  "tag": 2931,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2932": {
+  "name": "SideCollateralReinvestmentCurrencyCodeSource",
+  "tag": 2932,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2933": {
+  "name": "TradeAllocCurrencyCodeSource",
+  "tag": 2933,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2934": {
+  "name": "TradingCurrencyCodeSource",
+  "tag": 2934,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2935": {
+  "name": "LimitAmtCurrencyCodeSource",
+  "tag": 2935,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2936": {
+  "name": "PosQtyUnitOfMeasureCurrencyCodeSource",
+  "tag": 2936,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2937": {
+  "name": "PositionCurrencyCodeSource",
+  "tag": 2937,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2938": {
+  "name": "LegPosCurrencyCodeSource",
+  "tag": 2938,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2939": {
+  "name": "RiskLimitCurrencyCodeSource",
+  "tag": 2939,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2940": {
+  "name": "EntitlementAttribCurrencyCodeSource",
+  "tag": 2940,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2941": {
+  "name": "ComplexOptPayoutCurrencyCodeSource",
+  "tag": 2941,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2942": {
+  "name": "ComplexEventCurrencyOneCodeSource",
+  "tag": 2942,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2943": {
+  "name": "ComplexEventCurrencyTwoCodeSource",
+  "tag": 2943,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2944": {
+  "name": "LegComplexOptPayoutCurrencyCodeSource",
+  "tag": 2944,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2945": {
+  "name": "LegComplexEventCurrencyOneCodeSource",
+  "tag": 2945,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2946": {
+  "name": "LegComplexEventCurrencyTwoCodeSource",
+  "tag": 2946,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2947": {
+  "name": "UnderlyingComplexOptPayoutCurrencyCodeSource",
+  "tag": 2947,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2948": {
+  "name": "UnderlyingComplexEventCurrencyOneCodeSource",
+  "tag": 2948,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2949": {
+  "name": "UnderlyingComplexEventCurrencyTwoCodeSource",
+  "tag": 2949,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2950": {
+  "name": "BenchmarkCurveCurrencyCodeSource",
+  "tag": 2950,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2951": {
+  "name": "LegBenchmarkCurveCurrencyCodeSource",
+  "tag": 2951,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2952": {
+  "name": "AgreementCurrencyCodeSource",
+  "tag": 2952,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2953": {
+  "name": "LegAgreementCurrencyCodeSource",
+  "tag": 2953,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2954": {
+  "name": "FundingSourceCurrencyCodeSource",
+  "tag": 2954,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2955": {
+  "name": "PayCollectCurrencyCodeSource",
+  "tag": 2955,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2956": {
+  "name": "PostTradePaymentCurrencyCodeSource",
+  "tag": 2956,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2957": {
+  "name": "SymbolPositionNumber",
+  "tag": 2957,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2958": {
+  "name": "LegSymbolPositionNumber",
+  "tag": 2958,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2959": {
+  "name": "UnderlyingSymbolPositionNumber",
+  "tag": 2959,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2960": {
+  "name": "SettlPriceUnitOfMeasureCurrencyCodeSource",
+  "tag": 2960,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2961": {
+  "name": "AnonymousTradeIndicator",
+  "tag": 2961,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2962": {
+  "name": "SecurityReferenceDataSupplement",
+  "tag": 2962,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "2963": {
+  "name": "MultiJurisdictionReportingIndicator",
+  "tag": 2963,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NOT_MULTI_JRSDCTN_ELIGIBLE",
+   "1": "MULTI_JRSDCTN_ELIGIBLE"
+  },
+  "translations": {
+   "notmultijrsdctneligible": "0",
+   "multijrsdctneligible": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "2964": {
+  "name": "SelfMatchPreventionInstruction",
+  "tag": 2964,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "CANCEL_AGGRESSIVE",
+   "2": "CANCEL_PASSIVE",
+   "3": "CANCEL_AGGRESSIVE_PASSIVE"
+  },
+  "translations": {
+   "cancelaggressive": "1",
+   "cancelpassive": "2",
+   "cancelaggressivepassive": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ }
+}

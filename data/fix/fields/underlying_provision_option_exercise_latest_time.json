@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionOptionExerciseLatestTime",
- "tag": 42131,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTTIME"
-  }
- }
-}

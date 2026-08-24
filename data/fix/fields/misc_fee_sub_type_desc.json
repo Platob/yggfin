@@ -1,9 +1,0 @@
-{
- "name": "MiscFeeSubTypeDesc",
- "tag": 2636,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

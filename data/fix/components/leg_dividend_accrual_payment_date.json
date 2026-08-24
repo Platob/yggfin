@@ -1,57 +1,55 @@
 {
  "name": "LegDividendAccrualPaymentDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 118,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegDividendAccrualPaymentDateRelativeTo",
-     "required": false,
-     "tag": 42330
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendAccrualPaymentDateOffsetPeriod",
-     "required": false,
-     "tag": 42331
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendAccrualPaymentDateOffsetUnit",
-     "required": false,
-     "tag": 42332
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendAccrualPaymentDateOffsetDayType",
-     "required": false,
-     "tag": 42333
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendAccrualPaymentDateUnadjusted",
-     "required": false,
-     "tag": 42334
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendAccrualPaymentDateBusinessDayConvention",
-     "required": false,
-     "tag": 42335
-    },
-    {
-     "kind": "component",
-     "name": "LegDividendAccrualPaymentDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendAccrualPaymentDateAdjusted",
-     "required": false,
-     "tag": 42336
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegDividendAccrualPaymentDateRelativeTo",
+   "required": false,
+   "tag": 42330
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendAccrualPaymentDateOffsetPeriod",
+   "required": false,
+   "tag": 42331
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendAccrualPaymentDateOffsetUnit",
+   "required": false,
+   "tag": 42332
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendAccrualPaymentDateOffsetDayType",
+   "required": false,
+   "tag": 42333
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendAccrualPaymentDateUnadjusted",
+   "required": false,
+   "tag": 42334
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendAccrualPaymentDateBusinessDayConvention",
+   "required": false,
+   "tag": 42335
+  },
+  {
+   "kind": "component",
+   "name": "LegDividendAccrualPaymentDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendAccrualPaymentDateAdjusted",
+   "required": false,
+   "tag": 42336
   }
- }
+ ]
 }

@@ -1,35 +1,33 @@
 {
  "name": "LegStreamCommoditySettlDayGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 567,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegStreamCommoditySettlDays",
+   "required": false,
+   "tag": 41680,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegStreamCommoditySettlDays",
+     "kind": "field",
+     "name": "LegStreamCommoditySettlDay",
      "required": false,
-     "tag": 41680,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegStreamCommoditySettlDay",
-       "required": false,
-       "tag": 41681
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamCommoditySettlTotalHours",
-       "required": false,
-       "tag": 41682
-      },
-      {
-       "kind": "component",
-       "name": "LegStreamCommoditySettlTimeGrp",
-       "required": false
-      }
-     ]
+     "tag": 41681
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamCommoditySettlTotalHours",
+     "required": false,
+     "tag": 41682
+    },
+    {
+     "kind": "component",
+     "name": "LegStreamCommoditySettlTimeGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

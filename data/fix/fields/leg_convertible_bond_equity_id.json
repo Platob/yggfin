@@ -1,9 +1,0 @@
-{
- "name": "LegConvertibleBondEquityID",
- "tag": 2166,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

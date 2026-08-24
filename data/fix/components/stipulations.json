@@ -1,130 +1,32 @@
 {
  "name": "Stipulations",
- "versions": {
-  "5.0.SP2": {
-   "order": 170,
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoStipulations",
+   "required": false,
+   "tag": 232,
    "members": [
     {
-     "kind": "group",
-     "name": "NoStipulations",
+     "kind": "field",
+     "name": "StipulationType",
      "required": false,
-     "tag": 232,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StipulationType",
-       "required": false,
-       "tag": 233
-      },
-      {
-       "kind": "field",
-       "name": "StipulationValue",
-       "required": false,
-       "tag": 234
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 17,
-   "members": [
+     "tag": 233
+    },
     {
-     "kind": "group",
-     "name": "NoStipulations",
+     "kind": "field",
+     "name": "StipulationValue",
      "required": false,
-     "tag": 232,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StipulationType",
-       "required": false,
-       "tag": 233
-      },
-      {
-       "kind": "field",
-       "name": "StipulationValue",
-       "required": false,
-       "tag": 234
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 17,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoStipulations",
-     "required": false,
-     "tag": 232,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StipulationType",
-       "required": false,
-       "tag": 233
-      },
-      {
-       "kind": "field",
-       "name": "StipulationValue",
-       "required": false,
-       "tag": 234
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 17,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoStipulations",
-     "required": false,
-     "tag": 232,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StipulationType",
-       "required": false,
-       "tag": 233
-      },
-      {
-       "kind": "field",
-       "name": "StipulationValue",
-       "required": false,
-       "tag": 234
-      }
-     ]
-    }
-   ]
-  },
-  "4.3": {
-   "order": 7,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoStipulations",
-     "required": false,
-     "tag": 232,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StipulationType",
-       "required": false,
-       "tag": 233
-      },
-      {
-       "kind": "field",
-       "name": "StipulationValue",
-       "required": false,
-       "tag": 234
-      }
-     ]
+     "tag": 234
     }
    ]
   }
- }
+ ]
 }

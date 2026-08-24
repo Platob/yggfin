@@ -1,36 +1,34 @@
 {
  "name": "PaymentStreamFormulaMathGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 676,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPaymentStreamFormulas",
+   "required": false,
+   "tag": 42683,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPaymentStreamFormulas",
+     "kind": "field",
+     "name": "PaymentStreamFormulaLength",
      "required": false,
-     "tag": 42683,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PaymentStreamFormulaLength",
-       "required": false,
-       "tag": 43109
-      },
-      {
-       "kind": "field",
-       "name": "PaymentStreamFormula",
-       "required": false,
-       "tag": 42684
-      },
-      {
-       "kind": "field",
-       "name": "PaymentStreamFormulaDesc",
-       "required": false,
-       "tag": 42685
-      }
-     ]
+     "tag": 43109
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamFormula",
+     "required": false,
+     "tag": 42684
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamFormulaDesc",
+     "required": false,
+     "tag": 42685
     }
    ]
   }
- }
+ ]
 }

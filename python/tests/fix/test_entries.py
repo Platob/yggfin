@@ -1,9 +1,9 @@
-"""One entry per identity: what a file holds, and what it answers about it.
+"""One record per identity: what a shard holds, and what it answers about it.
 
-The unit half of the layout. `test_registry.py` reads a whole store and
-`test_data.py` reads the published one; these hold the entry itself to what a
-variant may state, what a rename does to it, and how the merged reading of a
-field is assembled from its versions.
+The unit half of the layout. `test_store.py` reads a whole store and
+`test_data.py` reads the published one; these hold the record itself to what it
+may state, how a version disagreement collapses into it, and how its
+translations are spelled.
 
 Every identity here is synthetic (`FAKE-*`, `Fake*`), because none of this is
 about which fields the standard has.
@@ -24,10 +24,12 @@ from rekep.fix.entries import (
     Alias,
     ComponentEntry,
     FieldEntry,
+    canonical_versions,
     fold,
-    merged_field,
+    newest_of,
     slug_of,
-    variant_of,
+    translation_key,
+    translations_of,
 )
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
@@ -38,10 +40,9 @@ def _entry(**changed: object) -> FieldEntry:
     declared: dict[str, object] = {
         "name": "FakeRole",
         "tag": 90001,
-        "variants": {
-            "4.4": {"type": "int", "description": "A role that no standard has."},
-            "4.2": {"type": "char", "name": "FakeRoleCode"},
-        },
+        "versions": ("4.2", "4.4"),
+        "type": "int",
+        "description": "A role that no standard has.",
     }
     return FieldEntry(**{**declared, **changed})
 
@@ -59,7 +60,7 @@ def _entry(**changed: object) -> FieldEntry:
         ("Fake Vendor Code", "fake_vendor_code"),
     ],
 )
-def test_a_name_slugs_to_the_file_it_is_stored_in(name: str, slug: str) -> None:
+def test_a_component_name_slugs_to_the_file_it_is_stored_in(name: str, slug: str) -> None:
     assert slug_of(name) == slug
 
 
@@ -85,14 +86,35 @@ def test_a_separator_is_part_of_a_name_and_not_folded_away(spelled: str) -> None
     assert fold(spelled) != fold("PartyRole")
 
 
-# -- what an entry refuses ---------------------------------------------------
+# -- which version owns a reading --------------------------------------------
 
 
-def test_an_entry_no_lookup_could_answer_for_is_refused() -> None:
+def test_versions_are_stored_oldest_first_with_the_transport_last() -> None:
+    """`versions.json`'s declared order, so one sort answers for every record."""
+    assert canonical_versions(("FIXT1.1", "5.0.SP2", "4.0", "4.10", "5.0")) == (
+        "4.0",
+        "4.10",
+        "5.0",
+        "5.0.SP2",
+        "FIXT1.1",
+    )
+
+
+def test_the_transport_never_owns_an_application_fields_reading() -> None:
+    """FIXT1.1 carries session fields; it does not redefine what they mean."""
+    assert newest_of(("4.4", "FIXT1.1", "5.0")) == "5.0"
+    assert newest_of(("FIXT1.1",)) == "FIXT1.1", "unless nothing else declares it"
+    assert _entry(versions=("4.4", "FIXT1.1")).newest == "4.4"
+
+
+# -- what a record refuses ---------------------------------------------------
+
+
+def test_a_record_no_lookup_could_answer_for_is_refused() -> None:
     with pytest.raises(ValueError, match="has no name"):
         _entry(name="")
     with pytest.raises(ValueError, match="declared for no version"):
-        _entry(variants={})
+        _entry(versions=())
     with pytest.raises(ValueError, match="has no tag"):
         _entry(tag=None)
     with pytest.raises(ValueError, match="unknown FIX field kind"):
@@ -106,49 +128,46 @@ def test_a_vendor_field_must_not_claim_a_tag() -> None:
     assert _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE).kind == NAMESPACE
 
 
-def test_a_variant_may_only_state_what_a_version_can_differ_on() -> None:
+def test_a_stored_record_may_only_state_what_the_schema_has() -> None:
     """A key the schema does not have is a fact nothing downstream would read."""
     with pytest.raises(ValueError, match="declares unknown"):
-        _entry(variants={"4.4": {"invented": "yes"}})
+        FieldEntry.from_dict({"name": "FakeRole", "tag": 1, "versions": ["4.4"], "invented": "y"})
 
 
-# -- what an entry answers ---------------------------------------------------
+# -- what a record answers ---------------------------------------------------
 
 
-def test_an_entry_reports_each_version_its_own_name_and_tag() -> None:
-    entry = _entry()
-    assert entry.names() == {"4.4": "FakeRole", "4.2": "FakeRoleCode"}
-    assert entry.tags() == {"4.4": 90001, "4.2": 90001}
-    assert entry.versions == ("4.4", "4.2")
+def test_a_record_is_keyed_by_its_tag_and_a_namespaced_one_by_its_name() -> None:
+    assert _entry().key == 90001
+    assert _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE).key == "fake.code"
 
 
-def test_an_entry_answers_to_its_names_in_resolution_order() -> None:
-    """Canonical first, then a name some version spells, then a declared alias."""
-    entry = _entry(aliases=(Alias(name="FakeRolle", source="brk", occurrences=12),))
+def test_a_record_answers_to_its_name_then_to_its_aliases() -> None:
+    """Two tiers, and the second is where a spelling only 4.2 used now lives."""
+    entry = _entry(aliases=(Alias(name="FakeRoleCode", source="4.2"), Alias(name="FakeRolle")))
     assert entry.spellings() == ("FakeRole", "FakeRoleCode", "FakeRolle")
 
 
-def test_an_alias_that_folds_to_a_name_the_entry_has_adds_nothing() -> None:
+def test_an_alias_that_folds_to_a_name_the_record_has_adds_nothing() -> None:
     """`FAKEROLE` is how a bridge shouts `FakeRole`, and matching folds case."""
-    entry = _entry(aliases=(Alias(name="FAKEROLE"),))
-    assert entry.spellings() == ("FakeRole", "FakeRoleCode")
+    assert _entry(aliases=(Alias(name="FAKEROLE"),)).spellings() == ("FakeRole",)
 
 
 def test_an_alias_spelled_with_separators_is_a_spelling_of_its_own() -> None:
     """It is not folded onto the name, so it has to be recorded to be matched."""
-    entry = _entry(aliases=(Alias(name="fake_role"),))
-    assert entry.spellings() == ("FakeRole", "FakeRoleCode", "fake_role")
+    assert _entry(aliases=(Alias(name="fake_role"),)).spellings() == ("FakeRole", "fake_role")
 
 
-def test_a_version_the_entry_never_saw_has_no_declaration() -> None:
+def test_a_version_the_record_never_saw_has_no_declaration() -> None:
     """Absent is not "present and untyped": a caller has to be able to tell."""
     assert _entry().into_field("4.0") is None
-    assert _entry().into_field("4.2").name == "FakeRoleCode"
+    assert _entry().into_field("4.2").name == "FakeRole", "one reading, for every version"
+    assert _entry().into_field("4.2").fix["version"] == "4.2", "and it says which was asked"
 
 
-def test_a_wildcard_variant_answers_for_every_version() -> None:
+def test_a_wildcard_record_answers_for_every_version() -> None:
     """What a field outside the standard has: one reading, whatever was negotiated."""
-    entry = _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE, variants={ANY_VERSION: {}})
+    entry = _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE, versions=(ANY_VERSION,))
     assert entry.into_field("4.0") is not None
     assert entry.into_field("5.0.SP2").fix["version"] == "5.0.SP2"
     assert "tag" not in entry.into_field("4.4").fix, "no tag, rather than tag zero"
@@ -157,23 +176,77 @@ def test_a_wildcard_variant_answers_for_every_version() -> None:
 
 def test_a_declared_column_travels_with_the_field() -> None:
     entry = _entry(
-        name="FAKE.CODE", tag=None, kind=NAMESPACE, variants={ANY_VERSION: {}}, column="fake"
+        name="FAKE.CODE", tag=None, kind=NAMESPACE, versions=(ANY_VERSION,), column="fake"
     )
     assert entry.into_field("4.4").fix["column"] == "fake"
 
 
-# -- reading a version's declaration back ------------------------------------
+# -- translations ------------------------------------------------------------
 
 
-def test_a_variant_states_only_what_it_does_not_share() -> None:
-    member = fix_field("FakeRole", 90001, "int", version="4.4")
-    assert variant_of(member, "FakeRole", 90001) == {"type": "int"}
-    assert variant_of(member, "FakeRoleCode", 90001) == {"name": "FakeRole", "type": "int"}
-    assert variant_of(member, "FakeRole", 90002)["tag"] == 90001
+@pytest.mark.parametrize(
+    "spelled",
+    [
+        "ORDER_SUBMISSION_TIME",
+        "Order Submission Time",
+        "order-submission-time",
+        "OrderSubmissionTime",
+    ],
+)
+def test_every_spelling_of_one_value_normalizes_to_one_key(spelled: str) -> None:
+    """Casefold alone leaves four keys; dropping what is not a letter or digit leaves one."""
+    assert translation_key(spelled) == "ordersubmissiontime"
 
 
-def test_an_entry_round_trips_through_the_document_it_is_stored_as() -> None:
-    entry = _entry(aliases=(Alias(name="FAKEROLE", source="pco", occurrences=3),))
+def test_a_value_resolves_from_its_prose_its_symbol_or_itself() -> None:
+    """One lookup path, not two: `Side=Buy`, `Side=BUY` and `Side=1` all reach `1`."""
+    entry = _entry(
+        values={"1": "Buy", "2": "Sell"},
+        value_names={"1": "BUY", "2": "SELL_SHORT"},
+    )
+    assert entry.translate("Buy") == "1"
+    assert entry.translate("BUY") == "1"
+    assert entry.translate("sell short") == "2", "the symbol, spaced as a person would write it"
+    assert entry.translate("1") == "1", "and a raw value maps to itself"
+    assert entry.translate("nothing here") == "nothing here", "or falls through untouched"
+
+
+def test_a_spelling_two_values_share_is_emitted_for_neither() -> None:
+    """An ambiguous translation that picks one silently is worse than none."""
+    found, collisions = translations_of({"1": "Cross", "2": "cross!"}, {})
+    assert "cross" not in found
+    assert collisions == {"cross": ["1", "2"]}
+    assert _entry(values={"1": "Cross", "2": "cross!"}).translate("Cross") == "Cross"
+
+
+def test_a_key_present_in_one_map_and_absent_from_the_other_is_tolerated() -> None:
+    """Tag 770 lists keys 8 to 34 under `value_names` and not under `values`."""
+    found, _ = translations_of({"1": "Execution Time"}, {"1": "EXECUTION_TIME", "10": "SUBMITTED"})
+    assert found["executiontime"] == "1"
+    assert found["submitted"] == "10"
+    assert found["10"] == "10", "and the raw value keys itself even with no prose"
+
+
+def test_a_hand_written_translation_survives_a_rebuild() -> None:
+    """The generated map is the default, not the whole map."""
+    entry = _entry(values={"1": "Buy"}, translations={"achat": "1"})
+    assert entry.translate("achat") == "1"
+    assert entry.translate("Buy") == "1", "and the generated ones are still there"
+    assert FieldEntry.from_dict(entry.into_dict()).translate("achat") == "1"
+
+
+# -- reading a record back ---------------------------------------------------
+
+
+def test_a_record_round_trips_through_the_document_it_is_stored_as() -> None:
+    entry = _entry(
+        aliases=(Alias(name="FAKEROLE", source="pco", occurrences=3),),
+        values={"1": "One"},
+        value_names={"1": "ONE"},
+        used_in=("Execution Report",),
+        components=("FakeParties",),
+        note="no longer used",
+    )
     assert FieldEntry.from_dict(entry.into_dict()) == entry
 
 
@@ -188,52 +261,34 @@ def test_a_stored_alias_may_be_a_bare_name_or_carry_its_provenance() -> None:
 
 
 def test_an_empty_part_is_not_written_into_the_document() -> None:
-    """A file per identity is a file people read; empties are noise in a diff."""
+    """A shard is a file people read; empties are noise in a diff."""
     stored = _entry().into_dict()
-    assert set(stored) == {"name", "tag", "versions"}
-    assert stored["versions"]["4.4"] == {
+    assert stored == {
+        "name": "FakeRole",
+        "tag": 90001,
         "type": "int",
         "description": "A role that no standard has.",
+        "versions": ["4.2", "4.4"],
     }
 
 
 # -- the merged reading ------------------------------------------------------
 
 
-def test_a_merged_field_keeps_the_newest_identity_and_every_versions_knowledge() -> None:
-    """One declaration carrying each version's disagreement, not resolving it away."""
-    entry = _entry(
-        variants={
-            "4.4": {"type": "int", "description": "A role.", "values": {"1": "One"}},
-            "4.2": {"type": "char", "name": "FakeRoleCode", "values": {"2": "Two"}},
-        }
-    )
-    merged = merged_field(entry.into_fields(("4.4", "4.2")))
+def test_a_merged_declaration_is_the_record_and_the_versions_that_declare_it() -> None:
+    entry = _entry(values={"1": "One", "2": "Two"}, aliases=(Alias(name="FakeRoleCode"),))
+    merged = entry.into_merged(("4.4", "4.2", "4.0"))
     assert merged.name == "FakeRole"
-    assert merged.arrow_type == pyarrow.int64(), "the newest version that types it"
-    assert json.loads(merged.fix["versions"]) == ["4.4", "4.2"]
-    assert json.loads(merged.fix["types"]) == {"4.4": "int", "4.2": "char"}
-    assert json.loads(merged.fix["names"]) == {"4.4": "FakeRole", "4.2": "FakeRoleCode"}
+    assert merged.arrow_type == pyarrow.int64()
+    assert json.loads(merged.fix["versions"]) == ["4.4", "4.2"], "newest first, and only those"
+    assert merged.fix["version"] == "4.4", "the version the reading was taken from"
     assert json.loads(merged.fix["values"]) == {"1": "One", "2": "Two"}
-    assert "tags" not in merged.fix, "the tag never moved, so nothing to say"
+    assert json.loads(merged.fix["aliases"])[0]["name"] == "FakeRoleCode"
 
 
-def test_a_merged_field_takes_the_newest_correction_of_one_code() -> None:
-    """Oldest first, so a newer reading wins without losing a value it dropped."""
-    entry = _entry(
-        variants={
-            "4.4": {"type": "int", "values": {"1": "Corrected"}},
-            "4.2": {"type": "int", "values": {"1": "Original", "2": "Dropped"}},
-        }
-    )
-    merged = merged_field(entry.into_fields(("4.4", "4.2")))
-    assert json.loads(merged.fix["values"]) == {"1": "Corrected", "2": "Dropped"}
-
-
-def test_a_merged_field_says_when_a_tag_moved() -> None:
-    entry = _entry(variants={"4.4": {"type": "int"}, "4.2": {"type": "int", "tag": 90009}})
-    merged = merged_field(entry.into_fields(("4.4", "4.2")))
-    assert json.loads(merged.fix["tags"]) == {"4.4": "90001", "4.2": "90009"}
+def test_a_merged_declaration_falls_back_to_the_records_own_order() -> None:
+    """A caller with no version list still gets the record, not an exception."""
+    assert _entry().into_merged().fix["version"] == "4.2"
 
 
 # -- components --------------------------------------------------------------
@@ -263,59 +318,71 @@ def _narrower() -> SpecComponent:
     )
 
 
-def test_a_component_entry_reports_each_versions_paths_and_delimiters() -> None:
+def test_a_component_record_keeps_the_newest_tree_and_reports_its_paths() -> None:
     """The derived half of a tree, so two readers cannot derive it differently."""
-    entry = ComponentEntry.from_components([_group(), _narrower()], ["4.4", "4.2"], [7, 3])
-    assert entry.paths("4.4") == {
+    entry = ComponentEntry.from_components([_narrower(), _group()], ["4.2", "4.4"])
+    assert entry.versions == ("4.2", "4.4") and entry.newest == "4.4"
+    assert entry.paths() == {
         "NoFakeParties": (),
         "FakePartyID": ("NoFakeParties",),
         "FakePartyRole": ("NoFakeParties",),
     }
-    assert entry.delimiters("4.4") == {("NoFakeParties",): "FakePartyID"}
-    assert entry.order("4.4") == 7 and entry.order("4.2") == 3
+    assert entry.delimiters() == {("NoFakeParties",): "FakePartyID"}
 
 
-def test_a_component_entry_diffs_its_versions_against_the_newest() -> None:
-    """What one file makes answerable that nine per-version blobs did not."""
-    entry = ComponentEntry.from_components([_narrower(), _group()], ["4.4", "4.2"])
-    assert entry.diff() == {"4.2": ("FakePartyRole",)}, "4.2 declares one the newest does not"
-
-
-def test_a_component_entry_round_trips_through_its_document() -> None:
-    entry = ComponentEntry.from_components([_group(), _narrower()], ["4.4", "4.2"], [7, 3])
+def test_a_component_record_round_trips_through_its_document() -> None:
+    entry = ComponentEntry.from_components([_narrower(), _group()], ["4.2", "4.4"])
     assert ComponentEntry.from_dict(entry.into_dict()) == entry
     assert entry.into_component("4.4") == _group()
     assert entry.into_component("4.0") is None
+
+
+def test_a_message_definition_carries_its_msg_type_and_nothing_else_does() -> None:
+    """`msg_type` is absent from a reusable block rather than written as null."""
+    declared = SpecComponent("FakeOrder", _group().members, "D")
+    entry = ComponentEntry.from_components([declared], ["4.4"])
+    assert entry.msg_type == "D"
+    assert entry.into_dict()["msg_type"] == "D"
+    assert "msg_type" not in ComponentEntry.from_components([_group()], ["4.4"]).into_dict()
 
 
 def test_a_component_declared_for_no_version_is_refused() -> None:
     with pytest.raises(ValueError, match="declared for no version"):
         ComponentEntry(name="FakeParties")
     with pytest.raises(ValueError, match="has no name"):
-        ComponentEntry(name="", variants={"4.4": {"members": []}})
+        ComponentEntry(name="", versions=("4.4",))
 
 
-# -- building an entry out of per-version readings ---------------------------
+# -- building a record out of per-version readings ---------------------------
 
 
-def test_an_entry_is_built_from_the_same_field_read_from_several_versions() -> None:
+def test_a_record_is_built_from_the_same_field_read_from_several_versions() -> None:
+    """Oldest first, so the newest reading is simply the last one written."""
     members = [
-        fix_field("FakeRole", 90001, "int", version="4.4"),
         fix_field("FakeRoleCode", 90001, "char", version="4.2"),
+        fix_field("FakeRole", 90001, "int", version="4.4"),
     ]
-    entry = FieldEntry.from_fields(members, ["4.4", "4.2"])
+    entry = FieldEntry.from_fields(members, ["4.2", "4.4"])
     assert entry.name == "FakeRole" and entry.tag == 90001 and entry.kind == STANDARD
-    assert entry.into_fields(("4.4", "4.2")) == members, "and reads back as what it was built from"
+    assert entry.type == "int" and entry.versions == ("4.2", "4.4")
 
 
-def test_an_entry_needs_at_least_one_reading() -> None:
+def test_a_records_values_are_the_union_with_the_newest_winning_per_key() -> None:
+    """A value that only ever existed in 4.2 still parses, and a correction still wins."""
+    older = fix_field("FakeRole", 90001, "int", version="4.2", values={"1": "First", "2": "Gone"})
+    newer = fix_field("FakeRole", 90001, "int", version="4.4", values={"1": "Corrected"})
+    entry = FieldEntry.from_fields([older, newer], ["4.2", "4.4"])
+    assert entry.values == {"1": "Corrected", "2": "Gone"}
+
+
+def test_a_record_needs_at_least_one_reading() -> None:
     with pytest.raises(ValueError, match="at least one declaration"):
         FieldEntry.from_fields([], [])
     with pytest.raises(ValueError, match="at least one declaration"):
         ComponentEntry.from_components([], [])
 
 
-def test_a_field_with_no_tag_becomes_a_vendor_entry() -> None:
+def test_a_field_with_no_tag_becomes_a_vendor_record() -> None:
     member = Field(name="FAKE.CODE", arrow_type=pyarrow.string(), metadata={"fix:type": "String"})
     entry = FieldEntry.from_fields([member], [ANY_VERSION])
     assert entry.kind == NAMESPACE and entry.tag is None

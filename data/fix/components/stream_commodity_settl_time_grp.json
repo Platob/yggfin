@@ -1,36 +1,34 @@
 {
  "name": "StreamCommoditySettlTimeGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 515,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoStreamCommoditySettlTimes",
+   "required": false,
+   "tag": 41286,
    "members": [
     {
-     "kind": "group",
-     "name": "NoStreamCommoditySettlTimes",
+     "kind": "field",
+     "name": "StreamCommoditySettlStart",
      "required": false,
-     "tag": 41286,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StreamCommoditySettlStart",
-       "required": false,
-       "tag": 41287
-      },
-      {
-       "kind": "field",
-       "name": "StreamCommoditySettlEnd",
-       "required": false,
-       "tag": 41288
-      },
-      {
-       "kind": "field",
-       "name": "StreamCommoditySettlTimeType",
-       "required": false,
-       "tag": 41588
-      }
-     ]
+     "tag": 41287
+    },
+    {
+     "kind": "field",
+     "name": "StreamCommoditySettlEnd",
+     "required": false,
+     "tag": 41288
+    },
+    {
+     "kind": "field",
+     "name": "StreamCommoditySettlTimeType",
+     "required": false,
+     "tag": 41588
     }
    ]
   }
- }
+ ]
 }

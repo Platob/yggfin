@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionCashSettlQuoteType",
- "tag": 42169,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamCashSettlIndicator",
- "tag": 42895,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

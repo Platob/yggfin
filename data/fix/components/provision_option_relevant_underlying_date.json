@@ -1,57 +1,55 @@
 {
  "name": "ProvisionOptionRelevantUnderlyingDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 55,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ProvisionOptionRelevantUnderlyingDateUnadjusted",
-     "required": false,
-     "tag": 40155
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionRelevantUnderlyingDateBusinessDayConvention",
-     "required": false,
-     "tag": 40156
-    },
-    {
-     "kind": "component",
-     "name": "ProvisionOptionRelevantUnderlyingDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionRelevantUnderlyingDateRelativeTo",
-     "required": false,
-     "tag": 40158
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionRelevantUnderlyingDateOffsetPeriod",
-     "required": false,
-     "tag": 40159
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionRelevantUnderlyingDateOffsetUnit",
-     "required": false,
-     "tag": 40160
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionRelevantUnderlyingDateOffsetDayType",
-     "required": false,
-     "tag": 40161
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionRelevantUnderlyingDateAdjusted",
-     "required": false,
-     "tag": 40162
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "ProvisionOptionRelevantUnderlyingDateUnadjusted",
+   "required": false,
+   "tag": 40155
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionRelevantUnderlyingDateBusinessDayConvention",
+   "required": false,
+   "tag": 40156
+  },
+  {
+   "kind": "component",
+   "name": "ProvisionOptionRelevantUnderlyingDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionRelevantUnderlyingDateRelativeTo",
+   "required": false,
+   "tag": 40158
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionRelevantUnderlyingDateOffsetPeriod",
+   "required": false,
+   "tag": 40159
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionRelevantUnderlyingDateOffsetUnit",
+   "required": false,
+   "tag": 40160
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionRelevantUnderlyingDateOffsetDayType",
+   "required": false,
+   "tag": 40161
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionRelevantUnderlyingDateAdjusted",
+   "required": false,
+   "tag": 40162
   }
- }
+ ]
 }

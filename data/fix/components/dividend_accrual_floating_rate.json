@@ -1,118 +1,116 @@
 {
  "name": "DividendAccrualFloatingRate",
- "versions": {
-  "5.0.SP2": {
-   "order": 112,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DividendFloatingRateIndex",
-     "required": false,
-     "tag": 42218
-    },
-    {
-     "kind": "field",
-     "name": "DividendFloatingRateIndexCurvePeriod",
-     "required": false,
-     "tag": 42219
-    },
-    {
-     "kind": "field",
-     "name": "DividendFloatingRateIndexCurveUnit",
-     "required": false,
-     "tag": 42220
-    },
-    {
-     "kind": "field",
-     "name": "DividendFloatingRateMultiplier",
-     "required": false,
-     "tag": 42221
-    },
-    {
-     "kind": "field",
-     "name": "DividendFloatingRateSpread",
-     "required": false,
-     "tag": 42222
-    },
-    {
-     "kind": "field",
-     "name": "DividendFloatingRateSpreadPositionType",
-     "required": false,
-     "tag": 42223
-    },
-    {
-     "kind": "field",
-     "name": "DividendFloatingRateTreatment",
-     "required": false,
-     "tag": 42224
-    },
-    {
-     "kind": "field",
-     "name": "DividendCapRate",
-     "required": false,
-     "tag": 42225
-    },
-    {
-     "kind": "field",
-     "name": "DividendCapRateBuySide",
-     "required": false,
-     "tag": 42226
-    },
-    {
-     "kind": "field",
-     "name": "DividendCapRateSellSide",
-     "required": false,
-     "tag": 42227
-    },
-    {
-     "kind": "field",
-     "name": "DividendFloorRate",
-     "required": false,
-     "tag": 42228
-    },
-    {
-     "kind": "field",
-     "name": "DividendFloorRateBuySide",
-     "required": false,
-     "tag": 42229
-    },
-    {
-     "kind": "field",
-     "name": "DividendFloorRateSellSide",
-     "required": false,
-     "tag": 42230
-    },
-    {
-     "kind": "field",
-     "name": "DividendInitialRate",
-     "required": false,
-     "tag": 42231
-    },
-    {
-     "kind": "field",
-     "name": "DividendFinalRateRoundingDirection",
-     "required": false,
-     "tag": 42232
-    },
-    {
-     "kind": "field",
-     "name": "DividendFinalRatePrecision",
-     "required": false,
-     "tag": 42233
-    },
-    {
-     "kind": "field",
-     "name": "DividendAveragingMethod",
-     "required": false,
-     "tag": 42234
-    },
-    {
-     "kind": "field",
-     "name": "DividendNegativeRateTreatment",
-     "required": false,
-     "tag": 42235
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "DividendFloatingRateIndex",
+   "required": false,
+   "tag": 42218
+  },
+  {
+   "kind": "field",
+   "name": "DividendFloatingRateIndexCurvePeriod",
+   "required": false,
+   "tag": 42219
+  },
+  {
+   "kind": "field",
+   "name": "DividendFloatingRateIndexCurveUnit",
+   "required": false,
+   "tag": 42220
+  },
+  {
+   "kind": "field",
+   "name": "DividendFloatingRateMultiplier",
+   "required": false,
+   "tag": 42221
+  },
+  {
+   "kind": "field",
+   "name": "DividendFloatingRateSpread",
+   "required": false,
+   "tag": 42222
+  },
+  {
+   "kind": "field",
+   "name": "DividendFloatingRateSpreadPositionType",
+   "required": false,
+   "tag": 42223
+  },
+  {
+   "kind": "field",
+   "name": "DividendFloatingRateTreatment",
+   "required": false,
+   "tag": 42224
+  },
+  {
+   "kind": "field",
+   "name": "DividendCapRate",
+   "required": false,
+   "tag": 42225
+  },
+  {
+   "kind": "field",
+   "name": "DividendCapRateBuySide",
+   "required": false,
+   "tag": 42226
+  },
+  {
+   "kind": "field",
+   "name": "DividendCapRateSellSide",
+   "required": false,
+   "tag": 42227
+  },
+  {
+   "kind": "field",
+   "name": "DividendFloorRate",
+   "required": false,
+   "tag": 42228
+  },
+  {
+   "kind": "field",
+   "name": "DividendFloorRateBuySide",
+   "required": false,
+   "tag": 42229
+  },
+  {
+   "kind": "field",
+   "name": "DividendFloorRateSellSide",
+   "required": false,
+   "tag": 42230
+  },
+  {
+   "kind": "field",
+   "name": "DividendInitialRate",
+   "required": false,
+   "tag": 42231
+  },
+  {
+   "kind": "field",
+   "name": "DividendFinalRateRoundingDirection",
+   "required": false,
+   "tag": 42232
+  },
+  {
+   "kind": "field",
+   "name": "DividendFinalRatePrecision",
+   "required": false,
+   "tag": 42233
+  },
+  {
+   "kind": "field",
+   "name": "DividendAveragingMethod",
+   "required": false,
+   "tag": 42234
+  },
+  {
+   "kind": "field",
+   "name": "DividendNegativeRateTreatment",
+   "required": false,
+   "tag": 42235
   }
- }
+ ]
 }

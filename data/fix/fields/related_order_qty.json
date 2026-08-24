@@ -1,9 +1,0 @@
-{
- "name": "RelatedOrderQty",
- "tag": 2889,
- "versions": {
-  "5.0.SP2": {
-   "type": "QTY"
-  }
- }
-}

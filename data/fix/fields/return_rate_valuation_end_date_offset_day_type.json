@@ -1,9 +1,0 @@
-{
- "name": "ReturnRateValuationEndDateOffsetDayType",
- "tag": 42725,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

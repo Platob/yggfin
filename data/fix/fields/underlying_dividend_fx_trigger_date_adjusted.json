@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDividendFXTriggerDateAdjusted",
- "tag": 42852,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

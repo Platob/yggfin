@@ -1,35 +1,33 @@
 {
  "name": "RelatedPartyDetailAltIDGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 326,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRelatedPartyDetailAltID",
+   "required": false,
+   "tag": 1569,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRelatedPartyDetailAltID",
+     "kind": "field",
+     "name": "RelatedPartyDetailAltID",
      "required": false,
-     "tag": 1569,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RelatedPartyDetailAltID",
-       "required": false,
-       "tag": 1570
-      },
-      {
-       "kind": "field",
-       "name": "RelatedPartyDetailAltIDSource",
-       "required": false,
-       "tag": 1571
-      },
-      {
-       "kind": "component",
-       "name": "RelatedPartyDetailAltSubGrp",
-       "required": false
-      }
-     ]
+     "tag": 1570
+    },
+    {
+     "kind": "field",
+     "name": "RelatedPartyDetailAltIDSource",
+     "required": false,
+     "tag": 1571
+    },
+    {
+     "kind": "component",
+     "name": "RelatedPartyDetailAltSubGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

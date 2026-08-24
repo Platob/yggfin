@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingReturnRateQuoteTimeType",
- "tag": 43047,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

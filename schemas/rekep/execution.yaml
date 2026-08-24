@@ -173,9 +173,8 @@ fields:
       Order - Cross","Indication of Interest","Quote Status Request","Security Definition
       Request","Security Definition"]'
     fix:components: '["BidCompReqGrp","BidCompRspGrp","InstrmtStrkPxGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","SettlInstGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
     fix:name: Side
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     enum:name: Side
     enum:key_type: int32
     enum:value_type: utf8
@@ -197,9 +196,8 @@ fields:
       Report","Trade Capture Report","Allocation Report","Security Status","Allocation
       Instruction","Don''t Know Trade","Allocation"]'
     fix:components: '["ExecAllocGrp","MDFullGrp","MDIncGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
     fix:name: LastPx
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: prev_px
   type: double
   nullable: true
@@ -235,9 +233,8 @@ fields:
       Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
       Order - Cross","Indication of Interest"]'
     fix:components: '["InstrmtMDReqGrp","InstrmtStrkPxGrp","ListOrdGrp","MDFullGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","RelSymDerivSecGrp","RelSymDerivSecUpdGrp","SecListGrp","SecLstUpdRelSymGrp","SettlObligationInstructions","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency","4.2":"Currency","4.1":"char","4.0":"char"}'
     fix:name: Currency
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     enum:name: Currency
     enum:key_type: int32
     enum:value_type: utf8
@@ -260,11 +257,10 @@ fields:
       Report","Trade Capture Report","Allocation Report","Allocation Instruction","Don''t
       Know Trade","Allocation"]'
     fix:components: '["ExecAllocGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
-    fix:names: '{"5.0.SP2":"LastQty","5.0.SP1":"LastQty","5.0":"LastQty","4.4":"LastQty","4.3":"LastShares
-      prior to FIX 4.3)","4.2":"LastShares","4.1":"LastShares","4.0":"LastShares"}'
     fix:name: LastQty
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:aliases: '[{"name":"LastShares","source":"4.0","occurrences":0},{"name":"LastShares
+      prior to FIX 4.3)","source":"4.3","occurrences":0}]'
 - name: prev_qty
   type: double
   nullable: true
@@ -310,9 +306,8 @@ fields:
       Response","Collateral Report","Collateral Inquiry","Collateral Inquiry Ack","Allocation
       Instruction","Don''t Know Trade","Allocation"]'
     fix:components: '["ExecAllocGrp","ExecCollGrp","ExecsGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"int"}'
     fix:name: ExecID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: exec_ref_id
   type: string
   nullable: true
@@ -323,10 +318,9 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:used_in: '["ExecutionReport","Execution Report"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"int"}'
     fix:components: '["TrdCapRptSideGrp"]'
     fix:name: ExecRefID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: trade_id
   type: string
   nullable: true
@@ -338,9 +332,8 @@ fields:
     fix:version: 5.0.SP2
     fix:used_in: '["TradeCaptureReportRequest","TradeCaptureReport","TradeCaptureReportRequestAck","TradeCaptureReportAck"]'
     fix:components: '["ExecAllocGrp","MDIncGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String"}'
     fix:name: TradeID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
 - name: order_id
   type: string
   nullable: true
@@ -362,9 +355,8 @@ fields:
       Order Cancel Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental
       Refresh","Multileg Order Cancel/Replace Request","Allocation"]'
     fix:components: '["MDFullGrp","MDIncGrp","OrdAllocGrp","OrdListStatGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: OrderID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: client_order_id
   type: string
   nullable: true
@@ -391,9 +383,8 @@ fields:
       Request","New Order - Multileg","Multileg Order Cancel/Replace Request","New
       Order - Single","New Order - List","Allocation","New Order - Cross"]'
     fix:components: '["InstrmtStrkPxGrp","ListOrdGrp","OrdAllocGrp","OrdListStatGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: ClOrdID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: prev_client_order_id
   type: string
   nullable: true
@@ -409,9 +400,8 @@ fields:
       Request","Order Cancel/Replace Request","Order Mass Cancel Report","Cross Order
       Cancel/Replace Request","Cross Order Cancel Request"]'
     fix:components: '["AffectedOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: OrigClOrdID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: filled_qty
   type: double
   nullable: true
@@ -424,9 +414,8 @@ fields:
     fix:used_in: '["ExecutionReport","ExecutionAcknowledgement","Execution Report","List
       Status"]'
     fix:components: '["OrdListStatGrp","TradeReportOrderDetail"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
     fix:name: CumQty
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: leaves_qty
   type: double
   nullable: true
@@ -440,9 +429,8 @@ fields:
     fix:version: 5.0.SP2
     fix:used_in: '["ExecutionReport","Execution Report","List Status"]'
     fix:components: '["OrdListStatGrp","TradeReportOrderDetail"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int"}'
     fix:name: LeavesQty
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
 - name: vwap
   type: double
   nullable: true
@@ -458,9 +446,8 @@ fields:
       Report","Trade Capture Report","Allocation Report","Allocation Instruction","List
       Status","Allocation"]'
     fix:components: '["OrdListStatGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
     fix:name: AvgPx
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: aggressor
   type: bool
   nullable: true
@@ -474,6 +461,5 @@ fields:
     fix:value_names: '{"Y":"YES","N":"NO"}'
     fix:used_in: '["ExecutionReport"]'
     fix:components: '["TrdCapRptAckSideGrp","TrdCapRptSideGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
-    fix:types: '{"5.0.SP2":"Boolean","5.0.SP1":"Boolean","5.0":"Boolean"}'
     fix:name: AggressorIndicator
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'

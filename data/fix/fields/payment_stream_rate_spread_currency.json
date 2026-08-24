@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamRateSpreadCurrency",
- "tag": 41203,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

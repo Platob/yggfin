@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentScheduleStepOffsetValue",
- "tag": 40392,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "ComplexEventSpotRate",
- "tag": 2407,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICE"
-  }
- }
-}

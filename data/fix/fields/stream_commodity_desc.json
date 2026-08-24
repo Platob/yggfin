@@ -1,9 +1,0 @@
-{
- "name": "StreamCommodityDesc",
- "tag": 41255,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

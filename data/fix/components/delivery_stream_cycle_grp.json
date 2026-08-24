@@ -1,36 +1,34 @@
 {
  "name": "DeliveryStreamCycleGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 494,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoDeliveryStreamCycles",
+   "required": false,
+   "tag": 41081,
    "members": [
     {
-     "kind": "group",
-     "name": "NoDeliveryStreamCycles",
+     "kind": "field",
+     "name": "DeliveryStreamCycleDesc",
      "required": false,
-     "tag": 41081,
-     "members": [
-      {
-       "kind": "field",
-       "name": "DeliveryStreamCycleDesc",
-       "required": false,
-       "tag": 41082
-      },
-      {
-       "kind": "field",
-       "name": "EncodedDeliveryStreamCycleDescLen",
-       "required": false,
-       "tag": 41083
-      },
-      {
-       "kind": "field",
-       "name": "EncodedDeliveryStreamCycleDesc",
-       "required": false,
-       "tag": 41084
-      }
-     ]
+     "tag": 41082
+    },
+    {
+     "kind": "field",
+     "name": "EncodedDeliveryStreamCycleDescLen",
+     "required": false,
+     "tag": 41083
+    },
+    {
+     "kind": "field",
+     "name": "EncodedDeliveryStreamCycleDesc",
+     "required": false,
+     "tag": 41084
     }
    ]
   }
- }
+ ]
 }

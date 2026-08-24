@@ -1,55 +1,29 @@
 {
  "name": "NestedInstrumentAttribute",
- "versions": {
-  "5.0.SP2": {
-   "order": 286,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoNestedInstrAttrib",
+   "required": false,
+   "tag": 1312,
    "members": [
     {
-     "kind": "group",
-     "name": "NoNestedInstrAttrib",
+     "kind": "field",
+     "name": "NestedInstrAttribType",
      "required": false,
-     "tag": 1312,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedInstrAttribType",
-       "required": false,
-       "tag": 1210
-      },
-      {
-       "kind": "field",
-       "name": "NestedInstrAttribValue",
-       "required": false,
-       "tag": 1211
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 143,
-   "members": [
+     "tag": 1210
+    },
     {
-     "kind": "group",
-     "name": "NoNestedInstrAttrib",
+     "kind": "field",
+     "name": "NestedInstrAttribValue",
      "required": false,
-     "tag": 1312,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedInstrAttribType",
-       "required": false,
-       "tag": 1210
-      },
-      {
-       "kind": "field",
-       "name": "NestedInstrAttribValue",
-       "required": false,
-       "tag": 1211
-      }
-     ]
+     "tag": 1211
     }
    ]
   }
- }
+ ]
 }

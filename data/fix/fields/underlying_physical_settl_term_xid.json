@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPhysicalSettlTermXID",
- "tag": 42064,
- "versions": {
-  "5.0.SP2": {
-   "type": "XID"
-  }
- }
-}

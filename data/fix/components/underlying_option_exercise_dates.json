@@ -1,134 +1,132 @@
 {
  "name": "UnderlyingOptionExerciseDates",
- "versions": {
-  "5.0.SP2": {
-   "order": 98,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseBusinessDayConvention",
-     "required": false,
-     "tag": 41822
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingOptionExerciseBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingOptionExerciseDateGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseEarliestDateOffsetDayType",
-     "required": false,
-     "tag": 41823
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseEarliestDateOffsetPeriod",
-     "required": false,
-     "tag": 41824
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseEarliestDateOffsetUnit",
-     "required": false,
-     "tag": 41825
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseFrequencyPeriod",
-     "required": false,
-     "tag": 41826
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseFrequencyUnit",
-     "required": false,
-     "tag": 41827
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseStartDateUnadjusted",
-     "required": false,
-     "tag": 41828
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseStartDateRelativeTo",
-     "required": false,
-     "tag": 41829
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseStartDateOffsetPeriod",
-     "required": false,
-     "tag": 41830
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseStartDateOffsetUnit",
-     "required": false,
-     "tag": 41831
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseStartDateOffsetDayType",
-     "required": false,
-     "tag": 41832
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseStartDateAdjusted",
-     "required": false,
-     "tag": 41833
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseSkip",
-     "required": false,
-     "tag": 41834
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseNominationDeadline",
-     "required": false,
-     "tag": 41835
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseFirstDateUnadjusted",
-     "required": false,
-     "tag": 41836
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseLastDateUnadjusted",
-     "required": false,
-     "tag": 41837
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseEarliestTime",
-     "required": false,
-     "tag": 41838
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseLatestTime",
-     "required": false,
-     "tag": 41839
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingOptionExerciseTimeBusinessCenter",
-     "required": false,
-     "tag": 41840
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseBusinessDayConvention",
+   "required": false,
+   "tag": 41822
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingOptionExerciseBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingOptionExerciseDateGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseEarliestDateOffsetDayType",
+   "required": false,
+   "tag": 41823
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseEarliestDateOffsetPeriod",
+   "required": false,
+   "tag": 41824
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseEarliestDateOffsetUnit",
+   "required": false,
+   "tag": 41825
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseFrequencyPeriod",
+   "required": false,
+   "tag": 41826
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseFrequencyUnit",
+   "required": false,
+   "tag": 41827
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseStartDateUnadjusted",
+   "required": false,
+   "tag": 41828
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseStartDateRelativeTo",
+   "required": false,
+   "tag": 41829
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseStartDateOffsetPeriod",
+   "required": false,
+   "tag": 41830
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseStartDateOffsetUnit",
+   "required": false,
+   "tag": 41831
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseStartDateOffsetDayType",
+   "required": false,
+   "tag": 41832
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseStartDateAdjusted",
+   "required": false,
+   "tag": 41833
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseSkip",
+   "required": false,
+   "tag": 41834
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseNominationDeadline",
+   "required": false,
+   "tag": 41835
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseFirstDateUnadjusted",
+   "required": false,
+   "tag": 41836
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseLastDateUnadjusted",
+   "required": false,
+   "tag": 41837
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseEarliestTime",
+   "required": false,
+   "tag": 41838
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseLatestTime",
+   "required": false,
+   "tag": 41839
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingOptionExerciseTimeBusinessCenter",
+   "required": false,
+   "tag": 41840
   }
- }
+ ]
 }

@@ -1,40 +1,38 @@
 {
  "name": "FloatingRateIndex",
- "versions": {
-  "5.0.SP2": {
-   "order": 161,
-   "members": [
-    {
-     "kind": "field",
-     "name": "FloatingRateIndexID",
-     "required": false,
-     "tag": 2731
-    },
-    {
-     "kind": "field",
-     "name": "FloatingRateIndexIDSource",
-     "required": false,
-     "tag": 2732
-    },
-    {
-     "kind": "field",
-     "name": "FloatingRateIndexCurveUnit",
-     "required": false,
-     "tag": 2730
-    },
-    {
-     "kind": "field",
-     "name": "FloatingRateIndexCurvePeriod",
-     "required": false,
-     "tag": 2728
-    },
-    {
-     "kind": "field",
-     "name": "FloatingRateIndexCurveSpread",
-     "required": false,
-     "tag": 2729
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "FloatingRateIndexID",
+   "required": false,
+   "tag": 2731
+  },
+  {
+   "kind": "field",
+   "name": "FloatingRateIndexIDSource",
+   "required": false,
+   "tag": 2732
+  },
+  {
+   "kind": "field",
+   "name": "FloatingRateIndexCurveUnit",
+   "required": false,
+   "tag": 2730
+  },
+  {
+   "kind": "field",
+   "name": "FloatingRateIndexCurvePeriod",
+   "required": false,
+   "tag": 2728
+  },
+  {
+   "kind": "field",
+   "name": "FloatingRateIndexCurveSpread",
+   "required": false,
+   "tag": 2729
   }
- }
+ ]
 }

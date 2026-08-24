@@ -1,69 +1,67 @@
 {
  "name": "ProvisionOptionExpirationDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 54,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ProvisionOptionExpirationDateUnadjusted",
-     "required": false,
-     "tag": 40145
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionExpirationDateBusinessDayConvention",
-     "required": false,
-     "tag": 40146
-    },
-    {
-     "kind": "component",
-     "name": "ProvisionOptionExpirationDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionExpirationDateRelativeTo",
-     "required": false,
-     "tag": 40148
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionExpirationDateOffsetPeriod",
-     "required": false,
-     "tag": 40149
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionExpirationDateOffsetUnit",
-     "required": false,
-     "tag": 40150
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionExpirationDateOffsetDayType",
-     "required": false,
-     "tag": 40151
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionExpirationDateAdjusted",
-     "required": false,
-     "tag": 40152
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionExpirationTime",
-     "required": false,
-     "tag": 40153
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionOptionExpirationTimeBusinessCenter",
-     "required": false,
-     "tag": 40154
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "ProvisionOptionExpirationDateUnadjusted",
+   "required": false,
+   "tag": 40145
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionExpirationDateBusinessDayConvention",
+   "required": false,
+   "tag": 40146
+  },
+  {
+   "kind": "component",
+   "name": "ProvisionOptionExpirationDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionExpirationDateRelativeTo",
+   "required": false,
+   "tag": 40148
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionExpirationDateOffsetPeriod",
+   "required": false,
+   "tag": 40149
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionExpirationDateOffsetUnit",
+   "required": false,
+   "tag": 40150
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionExpirationDateOffsetDayType",
+   "required": false,
+   "tag": 40151
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionExpirationDateAdjusted",
+   "required": false,
+   "tag": 40152
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionExpirationTime",
+   "required": false,
+   "tag": 40153
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionOptionExpirationTimeBusinessCenter",
+   "required": false,
+   "tag": 40154
   }
- }
+ ]
 }

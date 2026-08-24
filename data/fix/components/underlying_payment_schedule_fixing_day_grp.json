@@ -1,30 +1,28 @@
 {
  "name": "UnderlyingPaymentScheduleFixingDayGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 593,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingPaymentScheduleFixingDays",
+   "required": false,
+   "tag": 41878,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingPaymentScheduleFixingDays",
+     "kind": "field",
+     "name": "UnderlyingPaymentScheduleFixingDayOfWeek",
      "required": false,
-     "tag": 41878,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentScheduleFixingDayOfWeek",
-       "required": false,
-       "tag": 41879
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentScheduleFixingDayNumber",
-       "required": false,
-       "tag": 41880
-      }
-     ]
+     "tag": 41879
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentScheduleFixingDayNumber",
+     "required": false,
+     "tag": 41880
     }
    ]
   }
- }
+ ]
 }

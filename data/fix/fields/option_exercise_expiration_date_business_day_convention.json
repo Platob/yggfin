@@ -1,9 +1,0 @@
-{
- "name": "OptionExerciseExpirationDateBusinessDayConvention",
- "tag": 41142,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

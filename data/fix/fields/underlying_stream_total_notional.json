@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamTotalNotional",
- "tag": 42023,
- "versions": {
-  "5.0.SP2": {
-   "type": "QTY"
-  }
- }
-}

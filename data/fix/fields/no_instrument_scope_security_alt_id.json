@@ -1,9 +1,0 @@
-{
- "name": "NoInstrumentScopeSecurityAltID",
- "tag": 1540,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "EncodedAdditionalTermBondDesc",
- "tag": 40005,
- "versions": {
-  "5.0.SP2": {
-   "type": "DATA"
-  }
- }
-}

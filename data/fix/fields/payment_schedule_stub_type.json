@@ -1,9 +1,0 @@
-{
- "name": "PaymentScheduleStubType",
- "tag": 40830,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

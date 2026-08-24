@@ -1,9 +1,0 @@
-{
- "name": "PaymentStubIndex",
- "tag": 40878,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

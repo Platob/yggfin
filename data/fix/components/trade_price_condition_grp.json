@@ -1,24 +1,22 @@
 {
  "name": "TradePriceConditionGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 358,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoTradePriceConditions",
+   "required": false,
+   "tag": 1838,
    "members": [
     {
-     "kind": "group",
-     "name": "NoTradePriceConditions",
+     "kind": "field",
+     "name": "TradePriceCondition",
      "required": false,
-     "tag": 1838,
-     "members": [
-      {
-       "kind": "field",
-       "name": "TradePriceCondition",
-       "required": false,
-       "tag": 1839
-      }
-     ]
+     "tag": 1839
     }
    ]
   }
- }
+ ]
 }

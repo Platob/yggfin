@@ -1,9 +1,0 @@
-{
- "name": "NoLegCashSettlDateBusinessCenters",
- "tag": 42306,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

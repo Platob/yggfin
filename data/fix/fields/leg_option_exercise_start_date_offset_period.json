@@ -1,9 +1,0 @@
-{
- "name": "LegOptionExerciseStartDateOffsetPeriod",
- "tag": 41501,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

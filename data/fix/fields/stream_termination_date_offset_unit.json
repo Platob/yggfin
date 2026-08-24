@@ -1,9 +1,0 @@
-{
- "name": "StreamTerminationDateOffsetUnit",
- "tag": 40070,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

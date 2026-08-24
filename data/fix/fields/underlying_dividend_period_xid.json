@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDividendPeriodXID",
- "tag": 42881,
- "versions": {
-  "5.0.SP2": {
-   "type": "XID"
-  }
- }
-}

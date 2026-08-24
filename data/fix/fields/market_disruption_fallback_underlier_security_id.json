@@ -1,9 +1,0 @@
-{
- "name": "MarketDisruptionFallbackUnderlierSecurityID",
- "tag": 41098,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

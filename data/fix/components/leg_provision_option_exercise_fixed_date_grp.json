@@ -1,30 +1,28 @@
 {
  "name": "LegProvisionOptionExerciseFixedDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 386,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegProvisionOptionExerciseFixedDates",
+   "required": false,
+   "tag": 40495,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegProvisionOptionExerciseFixedDates",
+     "kind": "field",
+     "name": "LegProvisionOptionExerciseFixedDate",
      "required": false,
-     "tag": 40495,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegProvisionOptionExerciseFixedDate",
-       "required": false,
-       "tag": 40496
-      },
-      {
-       "kind": "field",
-       "name": "LegProvisionOptionExerciseFixedDateType",
-       "required": false,
-       "tag": 40497
-      }
-     ]
+     "tag": 40496
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionOptionExerciseFixedDateType",
+     "required": false,
+     "tag": 40497
     }
    ]
   }
- }
+ ]
 }

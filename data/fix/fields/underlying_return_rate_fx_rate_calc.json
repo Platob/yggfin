@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingReturnRateFXRateCalc",
- "tag": 43033,
- "versions": {
-  "5.0.SP2": {
-   "type": "CHAR"
-  }
- }
-}

@@ -1,952 +1,353 @@
 {
  "name": "AllocGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 177,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoAllocs",
+   "required": false,
+   "tag": 78,
    "members": [
     {
-     "kind": "group",
-     "name": "NoAllocs",
+     "kind": "field",
+     "name": "AllocAccount",
      "required": false,
-     "tag": 78,
-     "members": [
-      {
-       "kind": "field",
-       "name": "AllocAccount",
-       "required": false,
-       "tag": 79
-      },
-      {
-       "kind": "field",
-       "name": "AllocAcctIDSource",
-       "required": false,
-       "tag": 661
-      },
-      {
-       "kind": "field",
-       "name": "MatchStatus",
-       "required": false,
-       "tag": 573
-      },
-      {
-       "kind": "field",
-       "name": "AllocPrice",
-       "required": false,
-       "tag": 366
-      },
-      {
-       "kind": "field",
-       "name": "AllocQty",
-       "required": false,
-       "tag": 80
-      },
-      {
-       "kind": "field",
-       "name": "AllocCalculatedCcyQty",
-       "required": false,
-       "tag": 2515
-      },
-      {
-       "kind": "field",
-       "name": "CustodialLotID",
-       "required": false,
-       "tag": 1752
-      },
-      {
-       "kind": "field",
-       "name": "VersusPurchaseDate",
-       "required": false,
-       "tag": 1753
-      },
-      {
-       "kind": "field",
-       "name": "VersusPurchasePrice",
-       "required": false,
-       "tag": 1754
-      },
-      {
-       "kind": "field",
-       "name": "CurrentCostBasis",
-       "required": false,
-       "tag": 1755
-      },
-      {
-       "kind": "field",
-       "name": "IndividualAllocID",
-       "required": false,
-       "tag": 467
-      },
-      {
-       "kind": "field",
-       "name": "FirmMnemonic",
-       "required": false,
-       "tag": 1729
-      },
-      {
-       "kind": "field",
-       "name": "ParentAllocID",
-       "required": false,
-       "tag": 1593
-      },
-      {
-       "kind": "field",
-       "name": "AllocLegRefID",
-       "required": false,
-       "tag": 2727
-      },
-      {
-       "kind": "component",
-       "name": "AllocRegulatoryTradeIDGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "ProcessCode",
-       "required": false,
-       "tag": 81
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryIndividualAllocID",
-       "required": false,
-       "tag": 989
-      },
-      {
-       "kind": "field",
-       "name": "AllocMethod",
-       "required": false,
-       "tag": 1002
-      },
-      {
-       "kind": "field",
-       "name": "AllocationRollupInstruction",
-       "required": false,
-       "tag": 1735
-      },
-      {
-       "kind": "field",
-       "name": "AllocCustomerCapacity",
-       "required": false,
-       "tag": 993
-      },
-      {
-       "kind": "field",
-       "name": "AllocPositionEffect",
-       "required": false,
-       "tag": 1047
-      },
-      {
-       "kind": "field",
-       "name": "IndividualAllocType",
-       "required": false,
-       "tag": 992
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "NotifyBrokerOfCredit",
-       "required": false,
-       "tag": 208
-      },
-      {
-       "kind": "field",
-       "name": "AllocHandlInst",
-       "required": false,
-       "tag": 209
-      },
-      {
-       "kind": "field",
-       "name": "AllocText",
-       "required": false,
-       "tag": 161
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAllocTextLen",
-       "required": false,
-       "tag": 360
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAllocText",
-       "required": false,
-       "tag": 361
-      },
-      {
-       "kind": "field",
-       "name": "FirmAllocText",
-       "required": false,
-       "tag": 1732
-      },
-      {
-       "kind": "field",
-       "name": "EncodedFirmAllocTextLen",
-       "required": false,
-       "tag": 1733
-      },
-      {
-       "kind": "field",
-       "name": "EncodedFirmAllocText",
-       "required": false,
-       "tag": 1734
-      },
-      {
-       "kind": "component",
-       "name": "CommissionData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "AllocCommissionDataGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "AllocAvgPx",
-       "required": false,
-       "tag": 153
-      },
-      {
-       "kind": "field",
-       "name": "AllocNetMoney",
-       "required": false,
-       "tag": 154
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrAmt",
-       "required": false,
-       "tag": 119
-      },
-      {
-       "kind": "field",
-       "name": "AllocGrossTradeAmt",
-       "required": false,
-       "tag": 2300
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlCurrAmt",
-       "required": false,
-       "tag": 737
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlCurrency",
-       "required": false,
-       "tag": 736
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlCurrencyCodeSource",
-       "required": false,
-       "tag": 2927
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrFxRate",
-       "required": false,
-       "tag": 155
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrFxRateCalc",
-       "required": false,
-       "tag": 156
-      },
-      {
-       "kind": "field",
-       "name": "AllocAccruedInterestAmt",
-       "required": false,
-       "tag": 742
-      },
-      {
-       "kind": "field",
-       "name": "AllocInterestAtMaturity",
-       "required": false,
-       "tag": 741
-      },
-      {
-       "kind": "component",
-       "name": "MiscFeesGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "ClrInstGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "ClearingFeeIndicator",
-       "required": false,
-       "tag": 635
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlInstType",
-       "required": false,
-       "tag": 780
-      },
-      {
-       "kind": "component",
-       "name": "SettlInstructionsData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "AllocRefRiskLimitCheckID",
-       "required": false,
-       "tag": 2392
-      },
-      {
-       "kind": "field",
-       "name": "AllocRefRiskLimitCheckIDType",
-       "required": false,
-       "tag": 2393
-      },
-      {
-       "kind": "field",
-       "name": "AllocRiskLimitCheckStatus",
-       "required": false,
-       "tag": 2483
-      },
-      {
-       "kind": "field",
-       "name": "AllocGroupAmount",
-       "required": false,
-       "tag": 2761
-      },
-      {
-       "kind": "field",
-       "name": "AllocAvgPxGroupID",
-       "required": false,
-       "tag": 2770
-      },
-      {
-       "kind": "field",
-       "name": "AllocAvgPxIndicator",
-       "required": false,
-       "tag": 2769
-      },
-      {
-       "kind": "component",
-       "name": "TradeAllocAmtGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 26,
-   "members": [
+     "tag": 79
+    },
     {
-     "kind": "group",
-     "name": "NoAllocs",
+     "kind": "field",
+     "name": "AllocAcctIDSource",
      "required": false,
-     "tag": 78,
-     "members": [
-      {
-       "kind": "field",
-       "name": "AllocAccount",
-       "required": false,
-       "tag": 79
-      },
-      {
-       "kind": "field",
-       "name": "AllocAcctIDSource",
-       "required": false,
-       "tag": 661
-      },
-      {
-       "kind": "field",
-       "name": "MatchStatus",
-       "required": false,
-       "tag": 573
-      },
-      {
-       "kind": "field",
-       "name": "AllocPrice",
-       "required": false,
-       "tag": 366
-      },
-      {
-       "kind": "field",
-       "name": "AllocQty",
-       "required": false,
-       "tag": 80
-      },
-      {
-       "kind": "field",
-       "name": "IndividualAllocID",
-       "required": false,
-       "tag": 467
-      },
-      {
-       "kind": "field",
-       "name": "ProcessCode",
-       "required": false,
-       "tag": 81
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryIndividualAllocID",
-       "required": false,
-       "tag": 989
-      },
-      {
-       "kind": "field",
-       "name": "AllocMethod",
-       "required": false,
-       "tag": 1002
-      },
-      {
-       "kind": "field",
-       "name": "AllocCustomerCapacity",
-       "required": false,
-       "tag": 993
-      },
-      {
-       "kind": "field",
-       "name": "AllocPositionEffect",
-       "required": false,
-       "tag": 1047
-      },
-      {
-       "kind": "field",
-       "name": "IndividualAllocType",
-       "required": false,
-       "tag": 992
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "NotifyBrokerOfCredit",
-       "required": false,
-       "tag": 208
-      },
-      {
-       "kind": "field",
-       "name": "AllocHandlInst",
-       "required": false,
-       "tag": 209
-      },
-      {
-       "kind": "field",
-       "name": "AllocText",
-       "required": false,
-       "tag": 161
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAllocTextLen",
-       "required": false,
-       "tag": 360
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAllocText",
-       "required": false,
-       "tag": 361
-      },
-      {
-       "kind": "component",
-       "name": "CommissionData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "AllocAvgPx",
-       "required": false,
-       "tag": 153
-      },
-      {
-       "kind": "field",
-       "name": "AllocNetMoney",
-       "required": false,
-       "tag": 154
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrAmt",
-       "required": false,
-       "tag": 119
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlCurrAmt",
-       "required": false,
-       "tag": 737
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlCurrency",
-       "required": false,
-       "tag": 736
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrFxRate",
-       "required": false,
-       "tag": 155
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrFxRateCalc",
-       "required": false,
-       "tag": 156
-      },
-      {
-       "kind": "field",
-       "name": "AllocAccruedInterestAmt",
-       "required": false,
-       "tag": 742
-      },
-      {
-       "kind": "field",
-       "name": "AllocInterestAtMaturity",
-       "required": false,
-       "tag": 741
-      },
-      {
-       "kind": "component",
-       "name": "MiscFeesGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "ClrInstGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "ClearingFeeIndicator",
-       "required": false,
-       "tag": 635
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlInstType",
-       "required": false,
-       "tag": 780
-      },
-      {
-       "kind": "component",
-       "name": "SettlInstructionsData",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 26,
-   "members": [
+     "tag": 661
+    },
     {
-     "kind": "group",
-     "name": "NoAllocs",
+     "kind": "field",
+     "name": "MatchStatus",
      "required": false,
-     "tag": 78,
-     "members": [
-      {
-       "kind": "field",
-       "name": "AllocAccount",
-       "required": false,
-       "tag": 79
-      },
-      {
-       "kind": "field",
-       "name": "AllocAcctIDSource",
-       "required": false,
-       "tag": 661
-      },
-      {
-       "kind": "field",
-       "name": "MatchStatus",
-       "required": false,
-       "tag": 573
-      },
-      {
-       "kind": "field",
-       "name": "AllocPrice",
-       "required": false,
-       "tag": 366
-      },
-      {
-       "kind": "field",
-       "name": "AllocQty",
-       "required": false,
-       "tag": 80
-      },
-      {
-       "kind": "field",
-       "name": "IndividualAllocID",
-       "required": false,
-       "tag": 467
-      },
-      {
-       "kind": "field",
-       "name": "ProcessCode",
-       "required": false,
-       "tag": 81
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryIndividualAllocID",
-       "required": false,
-       "tag": 989
-      },
-      {
-       "kind": "field",
-       "name": "AllocMethod",
-       "required": false,
-       "tag": 1002
-      },
-      {
-       "kind": "field",
-       "name": "AllocCustomerCapacity",
-       "required": false,
-       "tag": 993
-      },
-      {
-       "kind": "field",
-       "name": "AllocPositionEffect",
-       "required": false,
-       "tag": 1047
-      },
-      {
-       "kind": "field",
-       "name": "IndividualAllocType",
-       "required": false,
-       "tag": 992
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "NotifyBrokerOfCredit",
-       "required": false,
-       "tag": 208
-      },
-      {
-       "kind": "field",
-       "name": "AllocHandlInst",
-       "required": false,
-       "tag": 209
-      },
-      {
-       "kind": "field",
-       "name": "AllocText",
-       "required": false,
-       "tag": 161
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAllocTextLen",
-       "required": false,
-       "tag": 360
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAllocText",
-       "required": false,
-       "tag": 361
-      },
-      {
-       "kind": "component",
-       "name": "CommissionData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "AllocAvgPx",
-       "required": false,
-       "tag": 153
-      },
-      {
-       "kind": "field",
-       "name": "AllocNetMoney",
-       "required": false,
-       "tag": 154
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrAmt",
-       "required": false,
-       "tag": 119
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlCurrAmt",
-       "required": false,
-       "tag": 737
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlCurrency",
-       "required": false,
-       "tag": 736
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrFxRate",
-       "required": false,
-       "tag": 155
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrFxRateCalc",
-       "required": false,
-       "tag": 156
-      },
-      {
-       "kind": "field",
-       "name": "AllocAccruedInterestAmt",
-       "required": false,
-       "tag": 742
-      },
-      {
-       "kind": "field",
-       "name": "AllocInterestAtMaturity",
-       "required": false,
-       "tag": 741
-      },
-      {
-       "kind": "component",
-       "name": "MiscFeesGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "ClrInstGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "ClearingFeeIndicator",
-       "required": false,
-       "tag": 635
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlInstType",
-       "required": false,
-       "tag": 780
-      },
-      {
-       "kind": "component",
-       "name": "SettlInstructionsData",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 26,
-   "members": [
+     "tag": 573
+    },
     {
-     "kind": "group",
-     "name": "NoAllocs",
+     "kind": "field",
+     "name": "AllocPrice",
      "required": false,
-     "tag": 78,
-     "members": [
-      {
-       "kind": "field",
-       "name": "AllocAccount",
-       "required": false,
-       "tag": 79
-      },
-      {
-       "kind": "field",
-       "name": "AllocAcctIDSource",
-       "required": false,
-       "tag": 661
-      },
-      {
-       "kind": "field",
-       "name": "MatchStatus",
-       "required": false,
-       "tag": 573
-      },
-      {
-       "kind": "field",
-       "name": "AllocPrice",
-       "required": false,
-       "tag": 366
-      },
-      {
-       "kind": "field",
-       "name": "AllocQty",
-       "required": false,
-       "tag": 80
-      },
-      {
-       "kind": "field",
-       "name": "IndividualAllocID",
-       "required": false,
-       "tag": 467
-      },
-      {
-       "kind": "field",
-       "name": "ProcessCode",
-       "required": false,
-       "tag": 81
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "NotifyBrokerOfCredit",
-       "required": false,
-       "tag": 208
-      },
-      {
-       "kind": "field",
-       "name": "AllocHandlInst",
-       "required": false,
-       "tag": 209
-      },
-      {
-       "kind": "field",
-       "name": "AllocText",
-       "required": false,
-       "tag": 161
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAllocTextLen",
-       "required": false,
-       "tag": 360
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAllocText",
-       "required": false,
-       "tag": 361
-      },
-      {
-       "kind": "component",
-       "name": "CommissionData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "AllocAvgPx",
-       "required": false,
-       "tag": 153
-      },
-      {
-       "kind": "field",
-       "name": "AllocNetMoney",
-       "required": false,
-       "tag": 154
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrAmt",
-       "required": false,
-       "tag": 119
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlCurrAmt",
-       "required": false,
-       "tag": 737
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlCurrency",
-       "required": false,
-       "tag": 736
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrFxRate",
-       "required": false,
-       "tag": 155
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrFxRateCalc",
-       "required": false,
-       "tag": 156
-      },
-      {
-       "kind": "field",
-       "name": "AllocAccruedInterestAmt",
-       "required": false,
-       "tag": 742
-      },
-      {
-       "kind": "field",
-       "name": "AllocInterestAtMaturity",
-       "required": false,
-       "tag": 741
-      },
-      {
-       "kind": "component",
-       "name": "MiscFeesGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "ClrInstGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "AllocSettlInstType",
-       "required": false,
-       "tag": 780
-      },
-      {
-       "kind": "component",
-       "name": "SettlInstructionsData",
-       "required": false
-      }
-     ]
+     "tag": 366
+    },
+    {
+     "kind": "field",
+     "name": "AllocQty",
+     "required": false,
+     "tag": 80
+    },
+    {
+     "kind": "field",
+     "name": "AllocCalculatedCcyQty",
+     "required": false,
+     "tag": 2515
+    },
+    {
+     "kind": "field",
+     "name": "CustodialLotID",
+     "required": false,
+     "tag": 1752
+    },
+    {
+     "kind": "field",
+     "name": "VersusPurchaseDate",
+     "required": false,
+     "tag": 1753
+    },
+    {
+     "kind": "field",
+     "name": "VersusPurchasePrice",
+     "required": false,
+     "tag": 1754
+    },
+    {
+     "kind": "field",
+     "name": "CurrentCostBasis",
+     "required": false,
+     "tag": 1755
+    },
+    {
+     "kind": "field",
+     "name": "IndividualAllocID",
+     "required": false,
+     "tag": 467
+    },
+    {
+     "kind": "field",
+     "name": "FirmMnemonic",
+     "required": false,
+     "tag": 1729
+    },
+    {
+     "kind": "field",
+     "name": "ParentAllocID",
+     "required": false,
+     "tag": 1593
+    },
+    {
+     "kind": "field",
+     "name": "AllocLegRefID",
+     "required": false,
+     "tag": 2727
+    },
+    {
+     "kind": "component",
+     "name": "AllocRegulatoryTradeIDGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "ProcessCode",
+     "required": false,
+     "tag": 81
+    },
+    {
+     "kind": "field",
+     "name": "SecondaryIndividualAllocID",
+     "required": false,
+     "tag": 989
+    },
+    {
+     "kind": "field",
+     "name": "AllocMethod",
+     "required": false,
+     "tag": 1002
+    },
+    {
+     "kind": "field",
+     "name": "AllocationRollupInstruction",
+     "required": false,
+     "tag": 1735
+    },
+    {
+     "kind": "field",
+     "name": "AllocCustomerCapacity",
+     "required": false,
+     "tag": 993
+    },
+    {
+     "kind": "field",
+     "name": "AllocPositionEffect",
+     "required": false,
+     "tag": 1047
+    },
+    {
+     "kind": "field",
+     "name": "IndividualAllocType",
+     "required": false,
+     "tag": 992
+    },
+    {
+     "kind": "component",
+     "name": "NestedParties",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "NotifyBrokerOfCredit",
+     "required": false,
+     "tag": 208
+    },
+    {
+     "kind": "field",
+     "name": "AllocHandlInst",
+     "required": false,
+     "tag": 209
+    },
+    {
+     "kind": "field",
+     "name": "AllocText",
+     "required": false,
+     "tag": 161
+    },
+    {
+     "kind": "field",
+     "name": "EncodedAllocTextLen",
+     "required": false,
+     "tag": 360
+    },
+    {
+     "kind": "field",
+     "name": "EncodedAllocText",
+     "required": false,
+     "tag": 361
+    },
+    {
+     "kind": "field",
+     "name": "FirmAllocText",
+     "required": false,
+     "tag": 1732
+    },
+    {
+     "kind": "field",
+     "name": "EncodedFirmAllocTextLen",
+     "required": false,
+     "tag": 1733
+    },
+    {
+     "kind": "field",
+     "name": "EncodedFirmAllocText",
+     "required": false,
+     "tag": 1734
+    },
+    {
+     "kind": "component",
+     "name": "CommissionData",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "AllocCommissionDataGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "AllocAvgPx",
+     "required": false,
+     "tag": 153
+    },
+    {
+     "kind": "field",
+     "name": "AllocNetMoney",
+     "required": false,
+     "tag": 154
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrAmt",
+     "required": false,
+     "tag": 119
+    },
+    {
+     "kind": "field",
+     "name": "AllocGrossTradeAmt",
+     "required": false,
+     "tag": 2300
+    },
+    {
+     "kind": "field",
+     "name": "AllocSettlCurrAmt",
+     "required": false,
+     "tag": 737
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrency",
+     "required": false,
+     "tag": 120
+    },
+    {
+     "kind": "field",
+     "name": "AllocSettlCurrency",
+     "required": false,
+     "tag": 736
+    },
+    {
+     "kind": "field",
+     "name": "AllocSettlCurrencyCodeSource",
+     "required": false,
+     "tag": 2927
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrFxRate",
+     "required": false,
+     "tag": 155
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrFxRateCalc",
+     "required": false,
+     "tag": 156
+    },
+    {
+     "kind": "field",
+     "name": "AllocAccruedInterestAmt",
+     "required": false,
+     "tag": 742
+    },
+    {
+     "kind": "field",
+     "name": "AllocInterestAtMaturity",
+     "required": false,
+     "tag": 741
+    },
+    {
+     "kind": "component",
+     "name": "MiscFeesGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "ClrInstGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "ClearingFeeIndicator",
+     "required": false,
+     "tag": 635
+    },
+    {
+     "kind": "field",
+     "name": "AllocSettlInstType",
+     "required": false,
+     "tag": 780
+    },
+    {
+     "kind": "component",
+     "name": "SettlInstructionsData",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "AllocRefRiskLimitCheckID",
+     "required": false,
+     "tag": 2392
+    },
+    {
+     "kind": "field",
+     "name": "AllocRefRiskLimitCheckIDType",
+     "required": false,
+     "tag": 2393
+    },
+    {
+     "kind": "field",
+     "name": "AllocRiskLimitCheckStatus",
+     "required": false,
+     "tag": 2483
+    },
+    {
+     "kind": "field",
+     "name": "AllocGroupAmount",
+     "required": false,
+     "tag": 2761
+    },
+    {
+     "kind": "field",
+     "name": "AllocAvgPxGroupID",
+     "required": false,
+     "tag": 2770
+    },
+    {
+     "kind": "field",
+     "name": "AllocAvgPxIndicator",
+     "required": false,
+     "tag": 2769
+    },
+    {
+     "kind": "component",
+     "name": "TradeAllocAmtGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

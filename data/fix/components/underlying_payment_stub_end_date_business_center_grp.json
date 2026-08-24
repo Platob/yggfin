@@ -1,24 +1,22 @@
 {
  "name": "UnderlyingPaymentStubEndDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 698,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingPaymentStubEndDateBusinessCenters",
+   "required": false,
+   "tag": 42991,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingPaymentStubEndDateBusinessCenters",
+     "kind": "field",
+     "name": "UnderlyingPaymentStubEndDateBusinessCenter",
      "required": false,
-     "tag": 42991,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubEndDateBusinessCenter",
-       "required": false,
-       "tag": 42992
-      }
-     ]
+     "tag": 42992
     }
    ]
   }
- }
+ ]
 }

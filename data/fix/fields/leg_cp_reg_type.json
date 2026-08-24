@@ -1,9 +1,0 @@
-{
- "name": "LegCPRegType",
- "tag": 2208,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

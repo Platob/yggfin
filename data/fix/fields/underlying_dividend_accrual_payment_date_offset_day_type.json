@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDividendAccrualPaymentDateOffsetDayType",
- "tag": 42822,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

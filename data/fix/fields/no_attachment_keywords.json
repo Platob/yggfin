@@ -1,9 +1,0 @@
-{
- "name": "NoAttachmentKeywords",
- "tag": 2113,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

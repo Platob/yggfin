@@ -1,24 +1,22 @@
 {
  "name": "LegPaymentStreamInitialFixingDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 436,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegPaymentStreamInitialFixingDateBusinessCenters",
+   "required": false,
+   "tag": 40932,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegPaymentStreamInitialFixingDateBusinessCenters",
+     "kind": "field",
+     "name": "LegPaymentStreamInitialFixingDateBusinessCenter",
      "required": false,
-     "tag": 40932,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegPaymentStreamInitialFixingDateBusinessCenter",
-       "required": false,
-       "tag": 40311
-      }
-     ]
+     "tag": 40311
     }
    ]
   }
- }
+ ]
 }

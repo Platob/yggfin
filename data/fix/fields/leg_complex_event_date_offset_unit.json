@@ -1,9 +1,0 @@
-{
- "name": "LegComplexEventDateOffsetUnit",
- "tag": 41392,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

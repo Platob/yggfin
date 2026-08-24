@@ -1,9 +1,0 @@
-{
- "name": "EventTimePeriod",
- "tag": 1826,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

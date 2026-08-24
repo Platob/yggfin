@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamPricingBusinessCalendar",
- "tag": 41585,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

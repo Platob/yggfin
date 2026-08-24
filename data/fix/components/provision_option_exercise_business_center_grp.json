@@ -1,24 +1,22 @@
 {
  "name": "ProvisionOptionExerciseBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 459,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoProvisionOptionExerciseBusinessCenters",
+   "required": false,
+   "tag": 40954,
    "members": [
     {
-     "kind": "group",
-     "name": "NoProvisionOptionExerciseBusinessCenters",
+     "kind": "field",
+     "name": "ProvisionOptionExerciseBusinessCenter",
      "required": false,
-     "tag": 40954,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ProvisionOptionExerciseBusinessCenter",
-       "required": false,
-       "tag": 40124
-      }
-     ]
+     "tag": 40124
     }
    ]
   }
- }
+ ]
 }

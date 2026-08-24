@@ -1,91 +1,89 @@
 {
  "name": "LegPaymentStreamPaymentDates",
- "versions": {
-  "5.0.SP2": {
-   "order": 35,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamPaymentDateBusinessDayConvention",
-     "required": false,
-     "tag": 40292
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStreamPaymentDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStreamPaymentDateGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamPaymentFrequencyPeriod",
-     "required": false,
-     "tag": 40294
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamPaymentFrequencyUnit",
-     "required": false,
-     "tag": 40295
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamPaymentRollConvention",
-     "required": false,
-     "tag": 40296
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFirstPaymentDateUnadjusted",
-     "required": false,
-     "tag": 40297
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamLastRegularPaymentDateUnadjusted",
-     "required": false,
-     "tag": 40298
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamPaymentDateRelativeTo",
-     "required": false,
-     "tag": 40299
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamPaymentDateOffsetPeriod",
-     "required": false,
-     "tag": 40300
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamPaymentDateOffsetUnit",
-     "required": false,
-     "tag": 40301
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamPaymentDateOffsetDayType",
-     "required": false,
-     "tag": 40302
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamMasterAgreementPaymentDatesIndicator",
-     "required": false,
-     "tag": 41592
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStreamFinalPricePaymentDate",
-     "required": false
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamPaymentDateBusinessDayConvention",
+   "required": false,
+   "tag": 40292
+  },
+  {
+   "kind": "component",
+   "name": "LegPaymentStreamPaymentDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "LegPaymentStreamPaymentDateGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamPaymentFrequencyPeriod",
+   "required": false,
+   "tag": 40294
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamPaymentFrequencyUnit",
+   "required": false,
+   "tag": 40295
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamPaymentRollConvention",
+   "required": false,
+   "tag": 40296
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFirstPaymentDateUnadjusted",
+   "required": false,
+   "tag": 40297
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamLastRegularPaymentDateUnadjusted",
+   "required": false,
+   "tag": 40298
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamPaymentDateRelativeTo",
+   "required": false,
+   "tag": 40299
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamPaymentDateOffsetPeriod",
+   "required": false,
+   "tag": 40300
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamPaymentDateOffsetUnit",
+   "required": false,
+   "tag": 40301
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamPaymentDateOffsetDayType",
+   "required": false,
+   "tag": 40302
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamMasterAgreementPaymentDatesIndicator",
+   "required": false,
+   "tag": 41592
+  },
+  {
+   "kind": "component",
+   "name": "LegPaymentStreamFinalPricePaymentDate",
+   "required": false
   }
- }
+ ]
 }

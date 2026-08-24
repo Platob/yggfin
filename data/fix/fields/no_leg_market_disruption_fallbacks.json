@@ -1,9 +1,0 @@
-{
- "name": "NoLegMarketDisruptionFallbacks",
- "tag": 41469,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

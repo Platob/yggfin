@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDividendFloatingRateSpread",
- "tag": 42805,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICEOFFSET"
-  }
- }
-}

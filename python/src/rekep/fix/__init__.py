@@ -21,11 +21,13 @@ from rekep.fix.components import (
 )
 from rekep.fix.entries import (
     ANY_VERSION,
+    NAMESPACE,
+    STANDARD,
     Alias,
     ComponentEntry,
     FieldEntry,
-    merged_field,
     slug_of,
+    translation_key,
 )
 from rekep.fix.fields import (
     FIX_SCALARS,
@@ -73,7 +75,13 @@ from rekep.fix.rules import (
     Rule,
     Rules,
 )
-from rekep.fix.store import COMPONENTS, EXPLODED, FIELDS, VERSIONED
+from rekep.fix.store import (
+    COMPONENTS,
+    FIELDS,
+    SHARD_SPAN,
+    ConflictReport,
+    shard_name,
+)
 from rekep.fix.transcribe import (
     NULL_VALUES,
     FixCodec,
@@ -93,7 +101,7 @@ __all__ = [
     "COMMON",
     "COMPONENTS",
     "ComponentEntry",
-    "EXPLODED",
+    "ConflictReport",
     "FIELDS",
     "FIX_SCALARS",
     "FLAT",
@@ -109,6 +117,7 @@ __all__ = [
     "MARKET_CATEGORY",
     "MISC_CATEGORY",
     "NAMED",
+    "NAMESPACE",
     "NO_PROTOCOL",
     "NULL_VALUES",
     "PARTIES",
@@ -123,8 +132,10 @@ __all__ = [
     "Rule",
     "Rules",
     "SESSION",
+    "SHARD_SPAN",
     "SOH",
     "SPEC_VERSIONS",
+    "STANDARD",
     "SpecComponent",
     "SpecComponentRef",
     "SpecField",
@@ -134,7 +145,6 @@ __all__ = [
     "TAG",
     "TagIndex",
     "UNKNOWN_CATEGORY",
-    "VERSIONED",
     "apply_report",
     "arrow_type_of",
     "cast_arrow_bool",
@@ -146,7 +156,6 @@ __all__ = [
     "detect_separator",
     "fix_field",
     "infer_version_from_pairs",
-    "merged_field",
     "message_bodies",
     "named_columns",
     "parse_arrow_array",
@@ -154,8 +163,10 @@ __all__ = [
     "parse_session",
     "parse_spec",
     "rendered_keys",
+    "shard_name",
     "slug_of",
     "spec_name",
+    "translation_key",
     "tag_arrow_array",
     "unix_of",
 ]

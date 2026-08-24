@@ -46,6 +46,14 @@ EXPECTED_LISTED = 4
 EXPECTED_SPEC_ONLY = 8
 EXPECTED_FIELDS = EXPECTED_LISTED + EXPECTED_SPEC_ONLY
 
+#: What a store of those twelve fields holds: two tag shards (the fixture's
+#: tags straddle 500), two components and the version index. Derived from the
+#: fixture, then pinned, so a layout that stopped sharding fails here.
+EXPECTED_DOCUMENTS = 5
+
+#: Where the fixture's `Side <54>` lands: tags 0 to 499.
+SIDE_SHARD = "fields/000000.json"
+
 
 class FixtureRegistry(FixRegistry):
     """The real registry over local fixture files instead of the network."""
@@ -165,6 +173,7 @@ def test_a_version_scrapes_every_listed_field(registry: FixtureRegistry) -> None
 
 
 def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegistry) -> None:
+    registry.fields("4.4")
     side = registry.field("Side", "4.4")
     assert side.name == "Side"
     assert side.arrow_type == pyarrow.string(), "char projects to string"
@@ -176,11 +185,13 @@ def test_the_field_pages_fill_name_type_comment_and_values(registry: FixtureRegi
 
 
 def test_a_boolean_field_projects_to_arrow_bool(registry: FixtureRegistry) -> None:
+    registry.fields("4.4")
     assert registry.field(43, "4.4").arrow_type == pyarrow.bool_()
 
 
 def test_a_missing_field_page_still_yields_the_field(registry: FixtureRegistry) -> None:
     """Tag 205 has no fixture page: the by-tag row alone is still a field."""
+    registry.fields("4.4")
     maturity = registry.field(205, "4.4")
     assert maturity.name == "MaturityDay"
     assert maturity.arrow_type == pyarrow.string()
@@ -375,6 +386,7 @@ def test_an_arrow_filesystem_directory_is_a_registry_store() -> None:
 def test_a_scrape_is_cached_in_an_arrow_filesystem_directory() -> None:
     filesystem = pyarrow.fs._MockFileSystem()
     registry = FixtureRegistry(cache_dir="registry", filesystem=filesystem)
+    registry.fields("4.4")
 
     assert registry.field("Side", "4.4").fix["tag"] == "54"
 
@@ -423,12 +435,11 @@ def test_the_archive_holds_one_member_per_file(dumped: Path, tmp_path: Path) -> 
         names = opened.namelist()
     written = [path.relative_to(dumped).as_posix() for path in dumped.rglob("*.json")]
     assert sorted(names) == sorted(written)
-    # Derived from the fixture, then pinned: twelve fields, two components and
-    # the version index, each in its own file. Not a size claim -- fifteen
-    # documents of a few hundred bytes each cost more in zip headers than
-    # deflating them saves, and what compresses is the whole dictionary
-    # (`tests/test_data.py`), not a fixture.
-    assert len(names) == EXPECTED_FIELDS + 3
+    # Twelve fields in two tag shards, two components and the version index.
+    # Not a size claim -- five documents of a few hundred bytes each cost more
+    # in zip headers than deflating them saves, and what compresses is the
+    # whole dictionary (`tests/test_data.py`), not a fixture.
+    assert len(names) == EXPECTED_DOCUMENTS
 
 
 def test_a_zip_made_of_the_folder_reads_the_same(dumped: Path, tmp_path: Path) -> None:
@@ -446,7 +457,7 @@ def test_a_scrape_lands_in_the_archive_it_was_pointed_at(tmp_path: Path) -> None
     assert len(archived.fields("4.4")) == EXPECTED_FIELDS
     with zipfile.ZipFile(tmp_path / "fix.zip") as opened:
         names = opened.namelist()
-    assert "fields/side.json" in names
+    assert SIDE_SHARD in names
     assert "components/parties.json" in names
     assert not [name for name in names if name.count("/") > 1], "no member nested twice"
     reopened = OfflineRegistry(cache_dir=tmp_path / "fix.zip")
@@ -460,7 +471,7 @@ def test_writing_a_member_twice_replaces_it(dumped: Path, tmp_path: Path) -> Non
     registry._store_fields("4.4", [fix_field("Side", 54, "String", version="4.4")])
     with zipfile.ZipFile(archive) as opened:
         names = opened.namelist()
-    assert names.count("fields/side.json") == 1
+    assert names.count(SIDE_SHARD) == 1
     assert len(names) == len(set(names))
     reopened = OfflineRegistry(cache_dir=archive)
     assert reopened.field("Side", "4.4").fix["type"] == "String", "the fresh reading"
@@ -476,7 +487,7 @@ def test_a_member_written_into_a_prefixed_zip_joins_its_neighbours(
     registry._store_fields("9.9", [fix_field("Marvellous", 9999, "char", version="9.9")])
     with zipfile.ZipFile(rooted) as opened:
         names = opened.namelist()
-    assert "fix/fields/marvellous.json" in names
+    assert "fix/fields/000019.json" in names, "tag 9999 shards into 9999 // 500"
     assert not [name for name in names if name.startswith("fields/")], "never at the root"
     reopened = OfflineRegistry(cache_dir=rooted)
     assert [member.name for member in reopened.fields("9.9")] == ["Marvellous"]
@@ -490,7 +501,7 @@ def test_a_torn_archive_is_a_cold_cache_and_not_a_dead_registry(tmp_path: Path) 
     assert registry.versions
     assert len(registry.fields("4.4")) == EXPECTED_FIELDS, "scraped over the wreck"
     with zipfile.ZipFile(torn) as opened:
-        assert "fields/side.json" in opened.namelist(), "and left a readable archive behind"
+        assert SIDE_SHARD in opened.namelist(), "and left a readable archive behind"
 
 
 def test_an_archive_that_holds_nothing_yet_is_not_an_error(tmp_path: Path) -> None:
@@ -511,7 +522,7 @@ def test_a_second_call_answers_from_the_cache(registry: FixtureRegistry) -> None
     fetched = len(registry.fetched)
     registry.fields("4.4")
     assert len(registry.fetched) == fetched, "no page is fetched twice"
-    assert (Path(registry.cache_dir) / "fields" / "side.json").exists()
+    assert (Path(registry.cache_dir) / SIDE_SHARD).exists()
 
 
 def test_the_cache_survives_offline(registry: FixtureRegistry) -> None:
@@ -533,16 +544,16 @@ def test_offline_with_only_field_caches_still_knows_its_versions(
 
 
 def test_a_torn_cache_file_is_scraped_over(registry: FixtureRegistry) -> None:
-    """One identity per file makes a torn write cost one field, not a version.
+    """A torn write costs one shard, and the store says so rather than answering short.
 
-    Which is better, and would be worse if it went unnoticed: the version
-    still answers, one field short, and nothing downstream can tell. So it
-    says so and writes the store again.
+    Which is what makes it survivable: a version that still answers, a few
+    fields short, is a silence nothing downstream can tell from the truth. So
+    it says so and writes the store again.
     """
     registry.fields("4.4")
-    (Path(registry.cache_dir) / "fields" / "side.json").write_text("{ torn")
+    (Path(registry.cache_dir) / SIDE_SHARD).write_text("{ torn")
     fresh = FixtureRegistry(cache_dir=registry.cache_dir)
-    with pytest.warns(RuntimeWarning, match=r"cannot read \['fields/side.json'\]"):
+    with pytest.warns(RuntimeWarning, match=r"cannot read \['fields/000000.json'\]"):
         assert len(fresh.fields("4.4")) == EXPECTED_FIELDS
     assert FixtureRegistry(cache_dir=registry.cache_dir).field("Side", "4.4").name == "Side"
 
@@ -552,10 +563,11 @@ def test_a_torn_cache_file_offline_is_reported_and_not_hidden(
 ) -> None:
     """Offline there is nothing to write over it with, so saying so is all there is."""
     registry.fields("4.4")
-    (Path(registry.cache_dir) / "fields" / "side.json").write_text("{ torn")
+    (Path(registry.cache_dir) / SIDE_SHARD).write_text("{ torn")
     offline = OfflineRegistry(cache_dir=registry.cache_dir, offline=True)
+    torn = len(json.loads((Path(registry.cache_dir) / "fields" / "000001.json").read_text()))
     with pytest.warns(RuntimeWarning, match="cannot read"):
-        assert len(offline.fields("4.4")) == EXPECTED_FIELDS - 1
+        assert len(offline.fields("4.4")) == torn, "the shard that still reads"
 
 
 def test_refresh_scrapes_again(registry: FixtureRegistry) -> None:
@@ -676,7 +688,7 @@ def test_the_builtin_registry_carries_quote_and_translation_controls() -> None:
     assert {name: int(registry.scalar(name).fix["tag"]) for name in expected} == expected
 
 
-def test_a_builtin_scalar_merges_cross_version_metadata() -> None:
+def test_a_builtin_scalar_is_one_record_and_every_version_that_declares_it() -> None:
     registry = FixRegistry.from_builtin()
     begin = registry.scalar("BeginString")
     assert begin.fix["name"] == "BeginString"
@@ -684,9 +696,11 @@ def test_a_builtin_scalar_merges_cross_version_metadata() -> None:
     assert json.loads(begin.fix["versions"]) == [
         member.fix["version"] for member in registry.lookup(8)
     ]
-    types = json.loads(begin.fix["types"])
-    assert types["5.0.SP2"] == "String"
-    assert types["4.0"] == "char"
+    # One reading, from the newest application version: 4.0 called tag 8 a
+    # `char`, and the collapse says so in `data/fix-conflicts.json` rather
+    # than in a per-version map here.
+    assert begin.fix["type"] == "String"
+    assert begin.fix["version"] == "5.0.SP2"
 
     side = registry.scalar("Side")
     assert json.loads(side.fix["values"])["1"] == "Buy"
@@ -705,7 +719,7 @@ def test_a_scalar_is_fresh_and_an_explicit_version_stays_exact() -> None:
 
     exact = registry.scalar("Side", version="4.4")
     assert exact.fix["version"] == "4.4"
-    assert "versions" not in exact.fix and "types" not in exact.fix
+    assert "versions" not in exact.fix, "an exact version is one version's reading"
 
 
 # -- search ------------------------------------------------------------------

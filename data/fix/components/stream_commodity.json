@@ -1,197 +1,195 @@
 {
  "name": "StreamCommodity",
- "versions": {
-  "5.0.SP2": {
-   "order": 86,
-   "members": [
-    {
-     "kind": "field",
-     "name": "StreamCommodityBase",
-     "required": false,
-     "tag": 41251
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityType",
-     "required": false,
-     "tag": 41252
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommoditySecurityID",
-     "required": false,
-     "tag": 41253
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommoditySecurityIDSource",
-     "required": false,
-     "tag": 41254
-    },
-    {
-     "kind": "component",
-     "name": "StreamCommodityAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityDesc",
-     "required": false,
-     "tag": 41255
-    },
-    {
-     "kind": "field",
-     "name": "EncodedStreamCommodityDescLen",
-     "required": false,
-     "tag": 41256
-    },
-    {
-     "kind": "field",
-     "name": "EncodedStreamCommodityDesc",
-     "required": false,
-     "tag": 41257
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityDeliveryPricingRegion",
-     "required": false,
-     "tag": 42587
-    },
-    {
-     "kind": "component",
-     "name": "StreamAssetAttributeGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityUnitOfMeasure",
-     "required": false,
-     "tag": 41258
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityCurrency",
-     "required": false,
-     "tag": 41259
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityExchange",
-     "required": false,
-     "tag": 41260
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityRateSource",
-     "required": false,
-     "tag": 41261
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityRateReferencePage",
-     "required": false,
-     "tag": 41262
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityRateReferencePageHeading",
-     "required": false,
-     "tag": 41263
-    },
-    {
-     "kind": "field",
-     "name": "StreamDataProvider",
-     "required": false,
-     "tag": 41264
-    },
-    {
-     "kind": "component",
-     "name": "StreamCommodityDataSourceGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityPricingType",
-     "required": false,
-     "tag": 41265
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityNearbySettlDayPeriod",
-     "required": false,
-     "tag": 41266
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityNearbySettlDayUnit",
-     "required": false,
-     "tag": 41267
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommoditySettlDateUnadjusted",
-     "required": false,
-     "tag": 41268
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommoditySettlDateBusinessDayConvention",
-     "required": false,
-     "tag": 41269
-    },
-    {
-     "kind": "component",
-     "name": "StreamCommoditySettlBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommoditySettlDateAdjusted",
-     "required": false,
-     "tag": 41270
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommoditySettlMonth",
-     "required": false,
-     "tag": 41271
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommoditySettlDateRollPeriod",
-     "required": false,
-     "tag": 41272
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommoditySettlDateRollUnit",
-     "required": false,
-     "tag": 41273
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommoditySettlDayType",
-     "required": false,
-     "tag": 41274
-    },
-    {
-     "kind": "component",
-     "name": "StreamCommoditySettlPeriodGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityXID",
-     "required": false,
-     "tag": 41275
-    },
-    {
-     "kind": "field",
-     "name": "StreamCommodityXIDRef",
-     "required": false,
-     "tag": 41276
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "StreamCommodityBase",
+   "required": false,
+   "tag": 41251
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityType",
+   "required": false,
+   "tag": 41252
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommoditySecurityID",
+   "required": false,
+   "tag": 41253
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommoditySecurityIDSource",
+   "required": false,
+   "tag": 41254
+  },
+  {
+   "kind": "component",
+   "name": "StreamCommodityAltIDGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityDesc",
+   "required": false,
+   "tag": 41255
+  },
+  {
+   "kind": "field",
+   "name": "EncodedStreamCommodityDescLen",
+   "required": false,
+   "tag": 41256
+  },
+  {
+   "kind": "field",
+   "name": "EncodedStreamCommodityDesc",
+   "required": false,
+   "tag": 41257
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityDeliveryPricingRegion",
+   "required": false,
+   "tag": 42587
+  },
+  {
+   "kind": "component",
+   "name": "StreamAssetAttributeGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityUnitOfMeasure",
+   "required": false,
+   "tag": 41258
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityCurrency",
+   "required": false,
+   "tag": 41259
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityExchange",
+   "required": false,
+   "tag": 41260
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityRateSource",
+   "required": false,
+   "tag": 41261
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityRateReferencePage",
+   "required": false,
+   "tag": 41262
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityRateReferencePageHeading",
+   "required": false,
+   "tag": 41263
+  },
+  {
+   "kind": "field",
+   "name": "StreamDataProvider",
+   "required": false,
+   "tag": 41264
+  },
+  {
+   "kind": "component",
+   "name": "StreamCommodityDataSourceGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityPricingType",
+   "required": false,
+   "tag": 41265
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityNearbySettlDayPeriod",
+   "required": false,
+   "tag": 41266
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityNearbySettlDayUnit",
+   "required": false,
+   "tag": 41267
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommoditySettlDateUnadjusted",
+   "required": false,
+   "tag": 41268
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommoditySettlDateBusinessDayConvention",
+   "required": false,
+   "tag": 41269
+  },
+  {
+   "kind": "component",
+   "name": "StreamCommoditySettlBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommoditySettlDateAdjusted",
+   "required": false,
+   "tag": 41270
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommoditySettlMonth",
+   "required": false,
+   "tag": 41271
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommoditySettlDateRollPeriod",
+   "required": false,
+   "tag": 41272
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommoditySettlDateRollUnit",
+   "required": false,
+   "tag": 41273
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommoditySettlDayType",
+   "required": false,
+   "tag": 41274
+  },
+  {
+   "kind": "component",
+   "name": "StreamCommoditySettlPeriodGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityXID",
+   "required": false,
+   "tag": 41275
+  },
+  {
+   "kind": "field",
+   "name": "StreamCommodityXIDRef",
+   "required": false,
+   "tag": 41276
   }
- }
+ ]
 }

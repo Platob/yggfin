@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamCommodityXID",
- "tag": 41988,
- "versions": {
-  "5.0.SP2": {
-   "type": "XID"
-  }
- }
-}

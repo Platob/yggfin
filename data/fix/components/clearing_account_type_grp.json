@@ -1,24 +1,22 @@
 {
  "name": "ClearingAccountTypeGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 372,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoClearingAccountTypes",
+   "required": false,
+   "tag": 1918,
    "members": [
     {
-     "kind": "group",
-     "name": "NoClearingAccountTypes",
+     "kind": "field",
+     "name": "ClearingAccountType",
      "required": false,
-     "tag": 1918,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ClearingAccountType",
-       "required": false,
-       "tag": 1816
-      }
-     ]
+     "tag": 1816
     }
    ]
   }
- }
+ ]
 }

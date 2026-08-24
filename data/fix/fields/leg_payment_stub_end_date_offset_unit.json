@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStubEndDateOffsetUnit",
- "tag": 42492,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

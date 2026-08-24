@@ -1,945 +1,295 @@
 {
  "name": "SideCrossOrdModGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 232,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoSides",
+   "required": false,
+   "tag": 552,
    "members": [
     {
-     "kind": "group",
-     "name": "NoSides",
+     "kind": "field",
+     "name": "Side",
+     "required": true,
+     "tag": 54
+    },
+    {
+     "kind": "field",
+     "name": "ShortMarkingExemptIndicator",
      "required": false,
-     "tag": 552,
-     "members": [
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": true,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "ShortMarkingExemptIndicator",
-       "required": false,
-       "tag": 2102
-      },
-      {
-       "kind": "field",
-       "name": "OrigClOrdID",
-       "required": false,
-       "tag": 41
-      },
-      {
-       "kind": "field",
-       "name": "ClOrdID",
-       "required": true,
-       "tag": 11
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryClOrdID",
-       "required": false,
-       "tag": 526
-      },
-      {
-       "kind": "field",
-       "name": "ClOrdLinkID",
-       "required": false,
-       "tag": 583
-      },
-      {
-       "kind": "field",
-       "name": "OrigOrdModTime",
-       "required": false,
-       "tag": 586
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SideCrossLegGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "SideShortSaleExemptionReason",
-       "required": false,
-       "tag": 1690
-      },
-      {
-       "kind": "field",
-       "name": "TradeOriginationDate",
-       "required": false,
-       "tag": 229
-      },
-      {
-       "kind": "field",
-       "name": "TradeDate",
-       "required": false,
-       "tag": 75
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      },
-      {
-       "kind": "field",
-       "name": "AccountType",
-       "required": false,
-       "tag": 581
-      },
-      {
-       "kind": "field",
-       "name": "DayBookingInst",
-       "required": false,
-       "tag": 589
-      },
-      {
-       "kind": "field",
-       "name": "BookingUnit",
-       "required": false,
-       "tag": 590
-      },
-      {
-       "kind": "field",
-       "name": "PreallocMethod",
-       "required": false,
-       "tag": 591
-      },
-      {
-       "kind": "field",
-       "name": "AllocID",
-       "required": false,
-       "tag": 70
-      },
-      {
-       "kind": "component",
-       "name": "PreAllocGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QtyType",
-       "required": false,
-       "tag": 854
-      },
-      {
-       "kind": "component",
-       "name": "OrderQtyData",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "CommissionData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "CommissionDataGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OrderCapacity",
-       "required": false,
-       "tag": 528
-      },
-      {
-       "kind": "field",
-       "name": "OrderRestrictions",
-       "required": false,
-       "tag": 529
-      },
-      {
-       "kind": "field",
-       "name": "OrderOrigination",
-       "required": false,
-       "tag": 1724
-      },
-      {
-       "kind": "field",
-       "name": "OriginatingDeptID",
-       "required": false,
-       "tag": 1725
-      },
-      {
-       "kind": "field",
-       "name": "ReceivingDeptID",
-       "required": false,
-       "tag": 1726
-      },
-      {
-       "kind": "field",
-       "name": "RoutingArrangmentIndicator",
-       "required": false,
-       "tag": 2883
-      },
-      {
-       "kind": "field",
-       "name": "PreTradeAnonymity",
-       "required": false,
-       "tag": 1091
-      },
-      {
-       "kind": "field",
-       "name": "CustOrderCapacity",
-       "required": false,
-       "tag": 582
-      },
-      {
-       "kind": "field",
-       "name": "ForexReq",
-       "required": false,
-       "tag": 121
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrencyCodeSource",
-       "required": false,
-       "tag": 2899
-      },
-      {
-       "kind": "field",
-       "name": "BookingType",
-       "required": false,
-       "tag": 775
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      },
-      {
-       "kind": "field",
-       "name": "ClearingAccountType",
-       "required": false,
-       "tag": 1816
-      },
-      {
-       "kind": "field",
-       "name": "PositionEffect",
-       "required": false,
-       "tag": 77
-      },
-      {
-       "kind": "field",
-       "name": "CoveredOrUncovered",
-       "required": false,
-       "tag": 203
-      },
-      {
-       "kind": "field",
-       "name": "CashMargin",
-       "required": false,
-       "tag": 544
-      },
-      {
-       "kind": "field",
-       "name": "ClearingFeeIndicator",
-       "required": false,
-       "tag": 635
-      },
-      {
-       "kind": "field",
-       "name": "SolicitedFlag",
-       "required": false,
-       "tag": 377
-      },
-      {
-       "kind": "field",
-       "name": "SideComplianceID",
-       "required": false,
-       "tag": 659
-      },
-      {
-       "kind": "field",
-       "name": "SideTimeInForce",
-       "required": false,
-       "tag": 962
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 81,
-   "members": [
+     "tag": 2102
+    },
     {
-     "kind": "group",
-     "name": "NoSides",
-     "required": true,
-     "tag": 552,
-     "members": [
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": true,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "OrigClOrdID",
-       "required": false,
-       "tag": 41
-      },
-      {
-       "kind": "field",
-       "name": "ClOrdID",
-       "required": true,
-       "tag": 11
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryClOrdID",
-       "required": false,
-       "tag": 526
-      },
-      {
-       "kind": "field",
-       "name": "ClOrdLinkID",
-       "required": false,
-       "tag": 583
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "TradeOriginationDate",
-       "required": false,
-       "tag": 229
-      },
-      {
-       "kind": "field",
-       "name": "TradeDate",
-       "required": false,
-       "tag": 75
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      },
-      {
-       "kind": "field",
-       "name": "AccountType",
-       "required": false,
-       "tag": 581
-      },
-      {
-       "kind": "field",
-       "name": "DayBookingInst",
-       "required": false,
-       "tag": 589
-      },
-      {
-       "kind": "field",
-       "name": "BookingUnit",
-       "required": false,
-       "tag": 590
-      },
-      {
-       "kind": "field",
-       "name": "PreallocMethod",
-       "required": false,
-       "tag": 591
-      },
-      {
-       "kind": "field",
-       "name": "AllocID",
-       "required": false,
-       "tag": 70
-      },
-      {
-       "kind": "component",
-       "name": "PreAllocGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QtyType",
-       "required": false,
-       "tag": 854
-      },
-      {
-       "kind": "component",
-       "name": "OrderQtyData",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "CommissionData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OrderCapacity",
-       "required": false,
-       "tag": 528
-      },
-      {
-       "kind": "field",
-       "name": "OrderRestrictions",
-       "required": false,
-       "tag": 529
-      },
-      {
-       "kind": "field",
-       "name": "PreTradeAnonymity",
-       "required": false,
-       "tag": 1091
-      },
-      {
-       "kind": "field",
-       "name": "CustOrderCapacity",
-       "required": false,
-       "tag": 582
-      },
-      {
-       "kind": "field",
-       "name": "ForexReq",
-       "required": false,
-       "tag": 121
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "BookingType",
-       "required": false,
-       "tag": 775
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      },
-      {
-       "kind": "field",
-       "name": "PositionEffect",
-       "required": false,
-       "tag": 77
-      },
-      {
-       "kind": "field",
-       "name": "CoveredOrUncovered",
-       "required": false,
-       "tag": 203
-      },
-      {
-       "kind": "field",
-       "name": "CashMargin",
-       "required": false,
-       "tag": 544
-      },
-      {
-       "kind": "field",
-       "name": "ClearingFeeIndicator",
-       "required": false,
-       "tag": 635
-      },
-      {
-       "kind": "field",
-       "name": "SolicitedFlag",
-       "required": false,
-       "tag": 377
-      },
-      {
-       "kind": "field",
-       "name": "SideComplianceID",
-       "required": false,
-       "tag": 659
-      },
-      {
-       "kind": "field",
-       "name": "SideTimeInForce",
-       "required": false,
-       "tag": 962
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 82,
-   "members": [
+     "kind": "field",
+     "name": "OrigClOrdID",
+     "required": false,
+     "tag": 41
+    },
     {
-     "kind": "group",
-     "name": "NoSides",
+     "kind": "field",
+     "name": "ClOrdID",
      "required": true,
-     "tag": 552,
-     "members": [
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": true,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "ClOrdID",
-       "required": true,
-       "tag": 11
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryClOrdID",
-       "required": false,
-       "tag": 526
-      },
-      {
-       "kind": "field",
-       "name": "ClOrdLinkID",
-       "required": false,
-       "tag": 583
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "TradeOriginationDate",
-       "required": false,
-       "tag": 229
-      },
-      {
-       "kind": "field",
-       "name": "TradeDate",
-       "required": false,
-       "tag": 75
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      },
-      {
-       "kind": "field",
-       "name": "AccountType",
-       "required": false,
-       "tag": 581
-      },
-      {
-       "kind": "field",
-       "name": "DayBookingInst",
-       "required": false,
-       "tag": 589
-      },
-      {
-       "kind": "field",
-       "name": "BookingUnit",
-       "required": false,
-       "tag": 590
-      },
-      {
-       "kind": "field",
-       "name": "PreallocMethod",
-       "required": false,
-       "tag": 591
-      },
-      {
-       "kind": "field",
-       "name": "AllocID",
-       "required": false,
-       "tag": 70
-      },
-      {
-       "kind": "component",
-       "name": "PreAllocGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QtyType",
-       "required": false,
-       "tag": 854
-      },
-      {
-       "kind": "component",
-       "name": "OrderQtyData",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "CommissionData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OrderCapacity",
-       "required": false,
-       "tag": 528
-      },
-      {
-       "kind": "field",
-       "name": "OrderRestrictions",
-       "required": false,
-       "tag": 529
-      },
-      {
-       "kind": "field",
-       "name": "PreTradeAnonymity",
-       "required": false,
-       "tag": 1091
-      },
-      {
-       "kind": "field",
-       "name": "CustOrderCapacity",
-       "required": false,
-       "tag": 582
-      },
-      {
-       "kind": "field",
-       "name": "ForexReq",
-       "required": false,
-       "tag": 121
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "BookingType",
-       "required": false,
-       "tag": 775
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      },
-      {
-       "kind": "field",
-       "name": "PositionEffect",
-       "required": false,
-       "tag": 77
-      },
-      {
-       "kind": "field",
-       "name": "CoveredOrUncovered",
-       "required": false,
-       "tag": 203
-      },
-      {
-       "kind": "field",
-       "name": "CashMargin",
-       "required": false,
-       "tag": 544
-      },
-      {
-       "kind": "field",
-       "name": "ClearingFeeIndicator",
-       "required": false,
-       "tag": 635
-      },
-      {
-       "kind": "field",
-       "name": "SolicitedFlag",
-       "required": false,
-       "tag": 377
-      },
-      {
-       "kind": "field",
-       "name": "SideComplianceID",
-       "required": false,
-       "tag": 659
-      },
-      {
-       "kind": "field",
-       "name": "SideTimeInForce",
-       "required": false,
-       "tag": 962
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 82,
-   "members": [
+     "tag": 11
+    },
     {
-     "kind": "group",
-     "name": "NoSides",
-     "required": true,
-     "tag": 552,
-     "members": [
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": true,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "ClOrdID",
-       "required": true,
-       "tag": 11
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryClOrdID",
-       "required": false,
-       "tag": 526
-      },
-      {
-       "kind": "field",
-       "name": "ClOrdLinkID",
-       "required": false,
-       "tag": 583
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "TradeOriginationDate",
-       "required": false,
-       "tag": 229
-      },
-      {
-       "kind": "field",
-       "name": "TradeDate",
-       "required": false,
-       "tag": 75
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      },
-      {
-       "kind": "field",
-       "name": "AccountType",
-       "required": false,
-       "tag": 581
-      },
-      {
-       "kind": "field",
-       "name": "DayBookingInst",
-       "required": false,
-       "tag": 589
-      },
-      {
-       "kind": "field",
-       "name": "BookingUnit",
-       "required": false,
-       "tag": 590
-      },
-      {
-       "kind": "field",
-       "name": "PreallocMethod",
-       "required": false,
-       "tag": 591
-      },
-      {
-       "kind": "field",
-       "name": "AllocID",
-       "required": false,
-       "tag": 70
-      },
-      {
-       "kind": "component",
-       "name": "PreAllocGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QtyType",
-       "required": false,
-       "tag": 854
-      },
-      {
-       "kind": "component",
-       "name": "OrderQtyData",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "CommissionData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OrderCapacity",
-       "required": false,
-       "tag": 528
-      },
-      {
-       "kind": "field",
-       "name": "OrderRestrictions",
-       "required": false,
-       "tag": 529
-      },
-      {
-       "kind": "field",
-       "name": "CustOrderCapacity",
-       "required": false,
-       "tag": 582
-      },
-      {
-       "kind": "field",
-       "name": "ForexReq",
-       "required": false,
-       "tag": 121
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "BookingType",
-       "required": false,
-       "tag": 775
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      },
-      {
-       "kind": "field",
-       "name": "PositionEffect",
-       "required": false,
-       "tag": 77
-      },
-      {
-       "kind": "field",
-       "name": "CoveredOrUncovered",
-       "required": false,
-       "tag": 203
-      },
-      {
-       "kind": "field",
-       "name": "CashMargin",
-       "required": false,
-       "tag": 544
-      },
-      {
-       "kind": "field",
-       "name": "ClearingFeeIndicator",
-       "required": false,
-       "tag": 635
-      },
-      {
-       "kind": "field",
-       "name": "SolicitedFlag",
-       "required": false,
-       "tag": 377
-      },
-      {
-       "kind": "field",
-       "name": "SideComplianceID",
-       "required": false,
-       "tag": 659
-      }
-     ]
+     "kind": "field",
+     "name": "SecondaryClOrdID",
+     "required": false,
+     "tag": 526
+    },
+    {
+     "kind": "field",
+     "name": "ClOrdLinkID",
+     "required": false,
+     "tag": 583
+    },
+    {
+     "kind": "field",
+     "name": "OrigOrdModTime",
+     "required": false,
+     "tag": 586
+    },
+    {
+     "kind": "component",
+     "name": "Parties",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "SideCrossLegGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "SideShortSaleExemptionReason",
+     "required": false,
+     "tag": 1690
+    },
+    {
+     "kind": "field",
+     "name": "TradeOriginationDate",
+     "required": false,
+     "tag": 229
+    },
+    {
+     "kind": "field",
+     "name": "TradeDate",
+     "required": false,
+     "tag": 75
+    },
+    {
+     "kind": "field",
+     "name": "Account",
+     "required": false,
+     "tag": 1
+    },
+    {
+     "kind": "field",
+     "name": "AcctIDSource",
+     "required": false,
+     "tag": 660
+    },
+    {
+     "kind": "field",
+     "name": "AccountType",
+     "required": false,
+     "tag": 581
+    },
+    {
+     "kind": "field",
+     "name": "DayBookingInst",
+     "required": false,
+     "tag": 589
+    },
+    {
+     "kind": "field",
+     "name": "BookingUnit",
+     "required": false,
+     "tag": 590
+    },
+    {
+     "kind": "field",
+     "name": "PreallocMethod",
+     "required": false,
+     "tag": 591
+    },
+    {
+     "kind": "field",
+     "name": "AllocID",
+     "required": false,
+     "tag": 70
+    },
+    {
+     "kind": "component",
+     "name": "PreAllocGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "QtyType",
+     "required": false,
+     "tag": 854
+    },
+    {
+     "kind": "component",
+     "name": "OrderQtyData",
+     "required": true
+    },
+    {
+     "kind": "component",
+     "name": "CommissionData",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "CommissionDataGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "OrderCapacity",
+     "required": false,
+     "tag": 528
+    },
+    {
+     "kind": "field",
+     "name": "OrderRestrictions",
+     "required": false,
+     "tag": 529
+    },
+    {
+     "kind": "field",
+     "name": "OrderOrigination",
+     "required": false,
+     "tag": 1724
+    },
+    {
+     "kind": "field",
+     "name": "OriginatingDeptID",
+     "required": false,
+     "tag": 1725
+    },
+    {
+     "kind": "field",
+     "name": "ReceivingDeptID",
+     "required": false,
+     "tag": 1726
+    },
+    {
+     "kind": "field",
+     "name": "RoutingArrangmentIndicator",
+     "required": false,
+     "tag": 2883
+    },
+    {
+     "kind": "field",
+     "name": "PreTradeAnonymity",
+     "required": false,
+     "tag": 1091
+    },
+    {
+     "kind": "field",
+     "name": "CustOrderCapacity",
+     "required": false,
+     "tag": 582
+    },
+    {
+     "kind": "field",
+     "name": "ForexReq",
+     "required": false,
+     "tag": 121
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrency",
+     "required": false,
+     "tag": 120
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrencyCodeSource",
+     "required": false,
+     "tag": 2899
+    },
+    {
+     "kind": "field",
+     "name": "BookingType",
+     "required": false,
+     "tag": 775
+    },
+    {
+     "kind": "field",
+     "name": "Text",
+     "required": false,
+     "tag": 58
+    },
+    {
+     "kind": "field",
+     "name": "EncodedTextLen",
+     "required": false,
+     "tag": 354
+    },
+    {
+     "kind": "field",
+     "name": "EncodedText",
+     "required": false,
+     "tag": 355
+    },
+    {
+     "kind": "field",
+     "name": "ClearingAccountType",
+     "required": false,
+     "tag": 1816
+    },
+    {
+     "kind": "field",
+     "name": "PositionEffect",
+     "required": false,
+     "tag": 77
+    },
+    {
+     "kind": "field",
+     "name": "CoveredOrUncovered",
+     "required": false,
+     "tag": 203
+    },
+    {
+     "kind": "field",
+     "name": "CashMargin",
+     "required": false,
+     "tag": 544
+    },
+    {
+     "kind": "field",
+     "name": "ClearingFeeIndicator",
+     "required": false,
+     "tag": 635
+    },
+    {
+     "kind": "field",
+     "name": "SolicitedFlag",
+     "required": false,
+     "tag": 377
+    },
+    {
+     "kind": "field",
+     "name": "SideComplianceID",
+     "required": false,
+     "tag": 659
+    },
+    {
+     "kind": "field",
+     "name": "SideTimeInForce",
+     "required": false,
+     "tag": 962
     }
    ]
   }
- }
+ ]
 }

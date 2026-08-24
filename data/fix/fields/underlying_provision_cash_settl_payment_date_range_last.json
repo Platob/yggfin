@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionCashSettlPaymentDateRangeLast",
- "tag": 42098,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

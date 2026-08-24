@@ -1,9 +1,0 @@
-{
- "name": "NoLegDividendPeriodBusinessCenters",
- "tag": 42386,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

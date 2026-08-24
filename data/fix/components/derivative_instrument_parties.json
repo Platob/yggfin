@@ -1,83 +1,46 @@
 {
  "name": "DerivativeInstrumentParties",
- "versions": {
-  "5.0.SP2": {
-   "order": 284,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoDerivativeInstrumentParties",
+   "required": false,
+   "tag": 1292,
    "members": [
     {
-     "kind": "group",
-     "name": "NoDerivativeInstrumentParties",
+     "kind": "field",
+     "name": "DerivativeInstrumentPartyID",
      "required": false,
-     "tag": 1292,
-     "members": [
-      {
-       "kind": "field",
-       "name": "DerivativeInstrumentPartyID",
-       "required": false,
-       "tag": 1293
-      },
-      {
-       "kind": "field",
-       "name": "DerivativeInstrumentPartyIDSource",
-       "required": false,
-       "tag": 1294
-      },
-      {
-       "kind": "field",
-       "name": "DerivativeInstrumentPartyRole",
-       "required": false,
-       "tag": 1295
-      },
-      {
-       "kind": "field",
-       "name": "DerivativeInstrumentPartyRoleQualifier",
-       "required": false,
-       "tag": 2377
-      },
-      {
-       "kind": "component",
-       "name": "DerivativeInstrumentPartySubIDsGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 141,
-   "members": [
+     "tag": 1293
+    },
     {
-     "kind": "group",
-     "name": "NoDerivativeInstrumentParties",
+     "kind": "field",
+     "name": "DerivativeInstrumentPartyIDSource",
      "required": false,
-     "tag": 1292,
-     "members": [
-      {
-       "kind": "field",
-       "name": "DerivativeInstrumentPartyID",
-       "required": false,
-       "tag": 1293
-      },
-      {
-       "kind": "field",
-       "name": "DerivativeInstrumentPartyIDSource",
-       "required": false,
-       "tag": 1294
-      },
-      {
-       "kind": "field",
-       "name": "DerivativeInstrumentPartyRole",
-       "required": false,
-       "tag": 1295
-      },
-      {
-       "kind": "component",
-       "name": "DerivativeInstrumentPartySubIDsGrp",
-       "required": false
-      }
-     ]
+     "tag": 1294
+    },
+    {
+     "kind": "field",
+     "name": "DerivativeInstrumentPartyRole",
+     "required": false,
+     "tag": 1295
+    },
+    {
+     "kind": "field",
+     "name": "DerivativeInstrumentPartyRoleQualifier",
+     "required": false,
+     "tag": 2377
+    },
+    {
+     "kind": "component",
+     "name": "DerivativeInstrumentPartySubIDsGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

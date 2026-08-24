@@ -1,9 +1,0 @@
-{
- "name": "FinancialInstrumentFullName",
- "tag": 2714,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

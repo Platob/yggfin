@@ -1,57 +1,55 @@
 {
  "name": "StreamEffectiveDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 57,
-   "members": [
-    {
-     "kind": "field",
-     "name": "StreamEffectiveDateUnadjusted",
-     "required": false,
-     "tag": 40907
-    },
-    {
-     "kind": "field",
-     "name": "StreamEffectiveDateBusinessDayConvention",
-     "required": false,
-     "tag": 40908
-    },
-    {
-     "kind": "component",
-     "name": "StreamEffectiveDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "StreamEffectiveDateRelativeTo",
-     "required": false,
-     "tag": 40910
-    },
-    {
-     "kind": "field",
-     "name": "StreamEffectiveDateOffsetPeriod",
-     "required": false,
-     "tag": 40911
-    },
-    {
-     "kind": "field",
-     "name": "StreamEffectiveDateOffsetUnit",
-     "required": false,
-     "tag": 40912
-    },
-    {
-     "kind": "field",
-     "name": "StreamEffectiveDateOffsetDayType",
-     "required": false,
-     "tag": 40913
-    },
-    {
-     "kind": "field",
-     "name": "StreamEffectiveDateAdjusted",
-     "required": false,
-     "tag": 40914
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "StreamEffectiveDateUnadjusted",
+   "required": false,
+   "tag": 40907
+  },
+  {
+   "kind": "field",
+   "name": "StreamEffectiveDateBusinessDayConvention",
+   "required": false,
+   "tag": 40908
+  },
+  {
+   "kind": "component",
+   "name": "StreamEffectiveDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "StreamEffectiveDateRelativeTo",
+   "required": false,
+   "tag": 40910
+  },
+  {
+   "kind": "field",
+   "name": "StreamEffectiveDateOffsetPeriod",
+   "required": false,
+   "tag": 40911
+  },
+  {
+   "kind": "field",
+   "name": "StreamEffectiveDateOffsetUnit",
+   "required": false,
+   "tag": 40912
+  },
+  {
+   "kind": "field",
+   "name": "StreamEffectiveDateOffsetDayType",
+   "required": false,
+   "tag": 40913
+  },
+  {
+   "kind": "field",
+   "name": "StreamEffectiveDateAdjusted",
+   "required": false,
+   "tag": 40914
   }
- }
+ ]
 }

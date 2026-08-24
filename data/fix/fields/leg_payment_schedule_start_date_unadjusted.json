@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentScheduleStartDateUnadjusted",
- "tag": 40377,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

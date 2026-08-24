@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentScheduleRateSpread",
- "tag": 40385,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICEOFFSET"
-  }
- }
-}

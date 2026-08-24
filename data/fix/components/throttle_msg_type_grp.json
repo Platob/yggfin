@@ -1,24 +1,22 @@
 {
  "name": "ThrottleMsgTypeGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 341,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoThrottleMsgType",
+   "required": false,
+   "tag": 1618,
    "members": [
     {
-     "kind": "group",
-     "name": "NoThrottleMsgType",
+     "kind": "field",
+     "name": "ThrottleMsgType",
      "required": false,
-     "tag": 1618,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ThrottleMsgType",
-       "required": false,
-       "tag": 1619
-      }
-     ]
+     "tag": 1619
     }
    ]
   }
- }
+ ]
 }

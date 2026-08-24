@@ -20,15 +20,18 @@ import pytest
 
 from rekep.fix import FIX_SCALARS, FixRegistry
 from rekep.fix.columns import _ORDER
-from rekep.fix.entries import ANY_VERSION, VARIANT_KEYS
+from rekep.fix.entries import ANY_VERSION, RECORD_KEYS
 from rekep.fix.publish import (
+    CONFLICT_BASELINE,
     LOG_FIELDS,
     MARKET_FIELDS,
     NAMESPACE_FIELDS,
     PROJECTED,
+    beyond_baseline,
     missing_from,
     publish_builtin,
 )
+from rekep.fix.store import NAMED_FILE, SHARD_SPAN, ConflictReport, shard_name
 from rekep.market.fix import CARRIED_FIELDS, market_tags
 
 #: The dictionary is at the repo root, beside `python/` -- published data,
@@ -57,15 +60,27 @@ def members(folder: str) -> dict[str, dict[str, object]]:
         }
 
 
+def records() -> dict[str, dict[str, object]]:
+    """Every field record in the archive, by the key its shard files it under."""
+    return {key: record for shard in members("fields").values() for key, record in shard.items()}
+
+
 INDEX: dict[str, object] = member("versions.json")
 VERSIONS: list[str] = INDEX["versions"]
 
-#: Derived from the archive, then pinned: one file per field identity and one
-#: per component identity, which is what the layout is for. Counts rather than
-#: a bare "more than zero", so a migration that lost half the dictionary and
-#: still produced a readable store fails here.
-EXPECTED_FIELD_FILES = 6072
+#: Derived from the archive, then pinned. Counts rather than a bare "more than
+#: zero", so a rebuild that lost half the dictionary and still produced a
+#: readable store fails here.
+#:
+#: Fourteen tag shards and `named.json`, against 6072 field documents before
+#: the records were made cross-version: the tag space is sparse, so 87 of the
+#: 101 possible shards hold nothing and are simply absent.
+EXPECTED_FIELD_DOCUMENTS = 15
+EXPECTED_FIELD_RECORDS = 6072
 EXPECTED_COMPONENT_FILES = 729
+
+#: The collapse report, committed beside the dictionary it describes.
+CONFLICTS = DATA.parent / "fix-conflicts.json"
 
 #: Pinned so a moved or half-written directory fails here rather than passing
 #: every test below by iterating over nothing.
@@ -88,15 +103,16 @@ def registry() -> OfflineRegistry:
     return OfflineRegistry(cache_dir=DATA)
 
 
-def test_the_archive_holds_one_file_per_identity() -> None:
-    """The layout itself: a folder of fields, a folder of components, an index."""
+def test_the_archive_holds_tag_shards_and_one_file_per_component() -> None:
+    """The layout itself: shards of fields, a folder of components, an index."""
     assert len(VERSIONS) == EXPECTED_VERSIONS
     with zipfile.ZipFile(DATA) as archive:
         names = archive.namelist()
     assert len(names) == len(set(names)), "one member per name, never a shadowed one"
     folders = {name.split("/")[0] if "/" in name else name for name in names}
     assert folders == {"fields", "components", "versions.json"}
-    assert len(members("fields")) == EXPECTED_FIELD_FILES
+    assert len(members("fields")) == EXPECTED_FIELD_DOCUMENTS
+    assert len(records()) == EXPECTED_FIELD_RECORDS
     assert len(members("components")) == EXPECTED_COMPONENT_FILES
     assert VERSIONS[0] == "5.0.SP2", "newest first"
     assert VERSIONS[-1] == "FIXT1.1", "and the transport last"
@@ -104,61 +120,92 @@ def test_the_archive_holds_one_file_per_identity() -> None:
     assert set(INDEX["declared"]) == set(VERSIONS), "every version's spec was read"
 
 
-def test_a_field_file_holds_one_identity_and_every_version_of_it() -> None:
-    """One file per field, and what a variant may and may not restate.
+def test_every_tag_is_in_the_shard_the_arithmetic_names() -> None:
+    """`tag // 500`: no index in `versions.json`, no lookup table, no scan."""
+    with zipfile.ZipFile(DATA) as archive:
+        shards = {
+            name: json.loads(archive.read(name).decode("utf-8"))
+            for name in sorted(archive.namelist())
+            if name.startswith("fields/") and name != NAMED_FILE
+        }
+    for name, shard in shards.items():
+        for key in shard:
+            assert shard_name(int(key)) == name, key
+    populated = {int(name[len("fields/") : -len(".json")]) for name in shards}
+    assert len(populated) == EXPECTED_FIELD_DOCUMENTS - 1
+    assert max(populated) * SHARD_SPAN >= 50000, "the extension packs, up at 50002"
 
-    The whole point of the layout: `SettlDate` is tag 64 in one file, saying in
-    passing that four older versions called it `FutSettDate` -- rather than
-    being two half-histories in nine documents nobody diffs.
+
+def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> None:
+    """The whole point of the shape: tag 64 is one record, not eight readings.
+
+    `SettlDate` is what 4.4 and after call it; the four versions before spelled
+    it `FutSettDate`, which the collapse kept as an alias so a capture still
+    writing it resolves.
     """
-    entries = members("fields")
-    assert entries["settl_date"]["tag"] == 64
-    named = {
-        version: variant.get("name")
-        for version, variant in entries["settl_date"]["versions"].items()
-    }
-    assert named == {
-        "5.0.SP2": None,
-        "5.0.SP1": None,
-        "5.0": None,
-        "4.4": None,
-        "4.3": "FutSettDate",
-        "4.2": "FutSettDate",
-        "4.1": "FutSettDate",
-        "4.0": "FutSettDate",
-    }, "a variant states what it does not share with the identity, and nothing else"
+    held = records()
+    settl = held["64"]
+    assert settl["name"] == "SettlDate" and settl["tag"] == 64
+    assert settl["versions"] == ["4.0", "4.1", "4.2", "4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"]
+    assert [alias["name"] for alias in settl["aliases"]] == ["FutSettDate"]
 
     tags = set()
     vendor = 0
-    for slug, entry in entries.items():
-        assert entry["name"], slug
-        assert entry["versions"], slug
-        for variant in entry["versions"].values():
-            assert set(variant) <= set(VARIANT_KEYS), slug
-        if entry.get("kind") == "namespace":
-            # A field FIX never numbered: no tag, and one variant that holds
-            # whichever version the session negotiated.
+    for key, record in held.items():
+        assert record["name"], key
+        assert record["versions"], key
+        assert set(record) <= set(RECORD_KEYS), key
+        if record.get("kind") == "namespace":
+            # A field FIX never numbered: no tag, keyed by name, and holding
+            # for whichever version the session negotiated.
             vendor += 1
-            assert "tag" not in entry, slug
-            assert set(entry["versions"]) == {ANY_VERSION}, slug
+            assert "tag" not in record, key
+            assert record["versions"] == [ANY_VERSION], key
             continue
-        assert entry["tag"] not in tags, f"{slug} repeats a tag"
-        tags.add(entry["tag"])
-        assert set(entry["versions"]) <= set(VERSIONS), slug
+        assert record["tag"] not in tags, f"{key} repeats a tag"
+        assert str(record["tag"]) == key, "a record is filed under its own tag"
+        tags.add(record["tag"])
+        assert set(record["versions"]) <= set(VERSIONS), key
     assert vendor == 1, "ISINCODE, and every other one the log gives a column"
-    assert entries["isincode"]["column"] == "isincode"
-    assert [alias["name"] for alias in entries["isincode"]["aliases"]] == ["AMON.ISINCODE"]
+    assert held["ISINCODE"]["column"] == "isincode"
+    assert [alias["name"] for alias in held["ISINCODE"]["aliases"]] == ["AMON.ISINCODE"]
 
 
-def test_a_component_file_holds_one_identity_and_every_version_of_it() -> None:
-    """The same for a component, plus where its version's spec declares it."""
+def test_a_component_record_is_one_member_tree_and_its_versions() -> None:
+    """The same for a component: the newest tree, and who declares it."""
     parties = members("components")["parties"]
     assert parties["name"] == "Parties"
-    assert set(parties["versions"]) == {"5.0.SP2", "5.0.SP1", "5.0", "4.4", "4.3"}
-    declared = parties["versions"]["4.4"]
-    assert declared["members"][0]["name"] == "NoPartyIDs"
-    assert declared["members"][0]["tag"] == 453
-    assert isinstance(declared["order"], int), "spec order is a fact about the version"
+    assert parties["versions"] == ["4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"]
+    assert parties["members"][0]["name"] == "NoPartyIDs"
+    assert parties["members"][0]["tag"] == 453
+    assert "msg_type" not in parties, "a reusable block is not a message definition"
+
+
+def test_a_value_resolves_from_its_prose_its_symbol_or_itself(registry: FixRegistry) -> None:
+    """`translations`, over the real dictionary: one lookup path, not two."""
+    stamps = registry.resolve("TrdRegTimestampType")
+    assert stamps.translate("Order Submission Time") == "10"
+    assert stamps.translate("ORDER_SUBMISSION_TIME") == "10"
+    assert stamps.translate("ordersubmissiontime") == "10"
+    assert stamps.translate("10") == "10"
+    assert records()["770"]["translations"]["ordersubmissiontime"] == "10"
+
+
+def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:
+    """152 fields where two versions give one enumerated value different meanings.
+
+    A reviewable list rather than a silent drop -- and a baseline, so a
+    dictionary refresh cannot quietly introduce conflicts nobody looked at.
+    """
+    report = ConflictReport.from_dict(json.loads(CONFLICTS.read_text()))
+    assert report.counts() == dict(CONFLICT_BASELINE)
+    assert beyond_baseline(report) == []
+    values = [one for one in report.collapses if one.part == "values"]
+    assert len(values) == CONFLICT_BASELINE["values"] == 152
+    assert {"AccountType", "AcctIDSource", "AllocStatus", "AllocTransType"} <= {
+        one.name for one in values
+    }
+    assert all(one.dropped for one in report.collapses), "an entry with no loss is not one"
 
 
 #: The prose the site wrote up, per version, derived then pinned as a floor.
@@ -173,10 +220,10 @@ EXPECTED_DESCRIBED: dict[str, int] = {
     "4.2": 406,
     "4.3": 658,
     "4.4": 954,
-    "5.0": 1131,
-    "5.0.SP1": 1379,
+    "5.0": 1130,
+    "5.0.SP1": 1378,
     "5.0.SP2": 1457,
-    "FIXT1.1": 74,
+    "FIXT1.1": 75,
 }
 
 
@@ -252,7 +299,7 @@ def test_a_projection_is_a_small_exact_offline_registry(
     assert target.stat().st_size < DATA.stat().st_size // 2
     with zipfile.ZipFile(target) as opened:
         fields = [name for name in opened.namelist() if name.startswith("fields/")]
-    assert sorted(fields) == ["fields/quote_id.json", "fields/side.json"]
+    assert sorted(fields) == ["fields/000000.json"], "both tags share one shard"
     for version in projected.versions:
         assert projected.components(version) == registry.components(version)
 
@@ -274,11 +321,12 @@ def test_the_builtin_projection_matches_the_published_versions(
 ) -> None:
     builtin = FixRegistry.from_builtin()
     assert builtin.versions == registry.versions
-    # Derived from `publish.PROJECTED`, then pinned: 171 keys resolve to 185
-    # distinct *numbered* names, because a version may spell one tag
-    # differently and the projection selects by tag once a key has resolved.
-    # `tags()` maps a name to a tag, so the one vendor field is not in it.
-    assert len(builtin.tags()) == 185
+    # Derived from `publish.PROJECTED`, then pinned: 171 keys resolve to 170
+    # records, because `FutSettDate` and `SettlDate` are one tag under two
+    # spellings and the collapse keeps the older one as an alias. One of the
+    # 170 is the vendor field, which `tags()` cannot map because it has no tag.
+    assert len(builtin.tags()) == 169
+    assert len(builtin.field_entries()) == 170
     assert builtin.resolve("ISINCODE").tag is None, "and is still resolvable by name"
     selected = {
         int(tag)
@@ -376,18 +424,17 @@ def test_the_archive_says_it_came_from_nowhere_in_particular() -> None:
 
 
 def test_the_archive_is_worth_being_an_archive() -> None:
-    """Derived, then pinned: the dictionary compresses to under two thirds.
+    """Derived, then pinned: the dictionary compresses to under a third.
 
-    Under two thirds and not under a sixth: one member per identity is seven
-    thousand members, each a few hundred bytes, so deflate has little per
-    member to work with and the zip's own directory is a quarter of the file.
-    That is what a store a person can diff one field at a time costs, and the
-    bound is here to catch a *stored* archive, not to chase the last percent.
+    Under a third, where one document per identity managed two thirds: seven
+    hundred members give deflate whole shards of repeated keys to work with,
+    and the zip's own directory stops being a quarter of the file. The bound is
+    here to catch a *stored* archive, not to chase the last percent.
     """
     with zipfile.ZipFile(DATA) as archive:
         stored = sum(entry.file_size for entry in archive.infolist())
     assert stored > 2_500_000, "the JSON inside is the whole dictionary"
-    assert DATA.stat().st_size < stored * 2 // 3
+    assert DATA.stat().st_size < stored // 3
 
 
 def test_the_dictionary_is_ascii_where_it_matters(registry: FixRegistry) -> None:
@@ -423,10 +470,11 @@ def test_every_datatype_the_dictionary_names_is_projected(registry: FixRegistry)
     }
     assert {"char", "String", "Price", "UTCTimestamp", "Boolean"} <= spelled
     guessed = sorted(spelling for spelling in spelled if spelling.lower() not in FIX_SCALARS)
-    assert guessed == ["Stirng", "month"], "both are a string either way"
-    assert registry.field("RatioQty", "4.3").arrow_type == pyarrow.float64(), (
-        "`Quantity` is the dictionary's spelling of Qty, and a quantity is not text"
-    )
+    assert guessed == [], "every spelling a record keeps projects to a type"
+    # The dictionary's own slips (`Quantity`, `Day`, `Stirng`) are older
+    # versions' spellings, and a record keeps the newest -- which is the
+    # correct one in each case, and never a string standing in for a number.
+    assert registry.field("RatioQty", "4.3").arrow_type == pyarrow.float64()
     assert registry.field("MaturityDay", "4.1").arrow_type == pyarrow.int64()
     assert registry.field("LegFutSettDate", "4.3").arrow_type == pyarrow.date32()
 
@@ -456,15 +504,15 @@ def test_every_version_published_here_has_its_symbols(registry: OfflineRegistry)
         for version in registry.versions
     }
     assert counted == {
-        "4.0": 39,
-        "4.1": 53,
-        "4.2": 104,
-        "4.3": 159,
-        "4.4": 245,
-        "5.0": 290,
-        "5.0.SP1": 327,
-        "5.0.SP2": 668,
-        "FIXT1.1": 9,
+        "4.0": 43,
+        "4.1": 59,
+        "4.2": 117,
+        "4.3": 176,
+        "4.4": 263,
+        "5.0": 305,
+        "5.0.SP1": 341,
+        "5.0.SP2": 681,
+        "FIXT1.1": 13,
     }
 
 

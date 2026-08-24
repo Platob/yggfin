@@ -1,9 +1,0 @@
-{
- "name": "NoPaymentSchedules",
- "tag": 40828,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

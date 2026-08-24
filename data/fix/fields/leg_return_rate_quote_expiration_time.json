@@ -1,9 +1,0 @@
-{
- "name": "LegReturnRateQuoteExpirationTime",
- "tag": 42550,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTTIME"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "ComplexEventReferencePage",
- "tag": 41016,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

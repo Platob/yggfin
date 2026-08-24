@@ -1,9 +1,0 @@
-{
- "name": "LegDetachmentPoint",
- "tag": 2154,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

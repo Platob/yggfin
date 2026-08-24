@@ -1,36 +1,34 @@
 {
  "name": "SettlementAmountGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 342,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoSettlementAmounts",
+   "required": false,
+   "tag": 1700,
    "members": [
     {
-     "kind": "group",
-     "name": "NoSettlementAmounts",
+     "kind": "field",
+     "name": "SettlementAmount",
      "required": false,
-     "tag": 1700,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SettlementAmount",
-       "required": false,
-       "tag": 1701
-      },
-      {
-       "kind": "field",
-       "name": "SettlementAmountCurrency",
-       "required": false,
-       "tag": 1702
-      },
-      {
-       "kind": "field",
-       "name": "SettlementAmountCurrencyCodeSource",
-       "required": false,
-       "tag": 2903
-      }
-     ]
+     "tag": 1701
+    },
+    {
+     "kind": "field",
+     "name": "SettlementAmountCurrency",
+     "required": false,
+     "tag": 1702
+    },
+    {
+     "kind": "field",
+     "name": "SettlementAmountCurrencyCodeSource",
+     "required": false,
+     "tag": 2903
     }
    ]
   }
- }
+ ]
 }

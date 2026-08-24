@@ -275,7 +275,7 @@ def test_the_report_reads_as_lines_before_it_reads_as_json(report: KeyReport) ->
 @pytest.fixture
 def editable(tmp_path: Path, registry: FixRegistry) -> FixRegistry:
     """A writable copy of the published dictionary, for the apply path."""
-    return registry.migrate(tmp_path / "fix")
+    return FixRegistry(cache_dir=registry.into_zip(tmp_path / "fix.zip"), offline=True)
 
 
 def test_nothing_is_applied_unless_it_is_asked_for(
@@ -350,7 +350,9 @@ def test_a_report_read_back_from_disk_applies_the_same(
     written.write_text(report_document(report))
     read = KeyReport.from_dict(json.loads(written.read_text()))
     assert apply_report(editable, read, aliases=True) == apply_report(
-        editable.migrate(tmp_path / "again"), report, aliases=True
+        FixRegistry(cache_dir=editable.into_zip(tmp_path / "again.zip"), offline=True),
+        report,
+        aliases=True,
     )
 
 
@@ -359,7 +361,7 @@ def test_a_counted_name_declares_itself_as_the_entry_it_would_be() -> None:
     count = KeyCount(name="FAKE.VENDOR.CODE", marked=7, sources=("brk",))
     row = Classified(count, NAMESPACE)
     assert row.into_entry() == FieldEntry(
-        name="FAKE.VENDOR.CODE", kind=NAMESPACE, variants={ANY_VERSION: {"type": "String"}}
+        name="FAKE.VENDOR.CODE", kind=NAMESPACE, versions=(ANY_VERSION,), type="String"
     )
     assert Classified(count, NEAR, "FakeCode", 1).into_alias() == Alias(
         name="FAKE.VENDOR.CODE", source="brk", occurrences=7

@@ -1,9 +1,0 @@
-{
- "name": "CashSettlMinimumQuoteAmount",
- "tag": 40030,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

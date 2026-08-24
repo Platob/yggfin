@@ -1,9 +1,0 @@
-{
- "name": "TradingCurrencyCodeSource",
- "tag": 2934,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

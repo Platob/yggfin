@@ -1,9 +1,0 @@
-{
- "name": "LegReturnRateValuationFrequencyPeriod",
- "tag": 42526,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

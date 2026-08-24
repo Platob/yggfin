@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDeliveryScheduleType",
- "tag": 41757,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

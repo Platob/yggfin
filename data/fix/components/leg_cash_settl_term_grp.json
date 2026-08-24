@@ -1,148 +1,146 @@
 {
  "name": "LegCashSettlTermGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 522,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegCashSettlTerms",
+   "required": false,
+   "tag": 41344,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegCashSettlTerms",
+     "kind": "field",
+     "name": "LegCashSettlCurrency",
      "required": false,
-     "tag": 41344,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegCashSettlCurrency",
-       "required": false,
-       "tag": 41345
-      },
-      {
-       "kind": "field",
-       "name": "LegCasSettlValuationFirstBusinessDayOffset",
-       "required": false,
-       "tag": 41346
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlValuationSubsequentBusinessDaysOffset",
-       "required": false,
-       "tag": 41347
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlNumOfValuationDates",
-       "required": false,
-       "tag": 41348
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlValuationTime",
-       "required": false,
-       "tag": 41349
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlBusinessCenter",
-       "required": false,
-       "tag": 41350
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlQuoteMethod",
-       "required": false,
-       "tag": 41351
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlQuoteAmount",
-       "required": false,
-       "tag": 41352
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlQuoteCurrency",
-       "required": false,
-       "tag": 41353
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlMinimumQuoteAmount",
-       "required": false,
-       "tag": 41354
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlMinimumQuoteCurrency",
-       "required": false,
-       "tag": 41355
-      },
-      {
-       "kind": "component",
-       "name": "LegCashSettlDealerGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlPriceSource",
-       "required": false,
-       "tag": 42308
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlPriceDefault",
-       "required": false,
-       "tag": 42309
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlBusinessDays",
-       "required": false,
-       "tag": 41356
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlAmount",
-       "required": false,
-       "tag": 41357
-      },
-      {
-       "kind": "component",
-       "name": "LegCashSettlDate",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlRecoveryFactor",
-       "required": false,
-       "tag": 41358
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlFixedTermIndicator",
-       "required": false,
-       "tag": 41359
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlAccruedInterestIndicator",
-       "required": false,
-       "tag": 41360
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlValuationMethod",
-       "required": false,
-       "tag": 41361
-      },
-      {
-       "kind": "field",
-       "name": "LegCashSettlTermXID",
-       "required": false,
-       "tag": 41362
-      }
-     ]
+     "tag": 41345
+    },
+    {
+     "kind": "field",
+     "name": "LegCasSettlValuationFirstBusinessDayOffset",
+     "required": false,
+     "tag": 41346
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlValuationSubsequentBusinessDaysOffset",
+     "required": false,
+     "tag": 41347
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlNumOfValuationDates",
+     "required": false,
+     "tag": 41348
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlValuationTime",
+     "required": false,
+     "tag": 41349
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlBusinessCenter",
+     "required": false,
+     "tag": 41350
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlQuoteMethod",
+     "required": false,
+     "tag": 41351
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlQuoteAmount",
+     "required": false,
+     "tag": 41352
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlQuoteCurrency",
+     "required": false,
+     "tag": 41353
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlMinimumQuoteAmount",
+     "required": false,
+     "tag": 41354
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlMinimumQuoteCurrency",
+     "required": false,
+     "tag": 41355
+    },
+    {
+     "kind": "component",
+     "name": "LegCashSettlDealerGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlPriceSource",
+     "required": false,
+     "tag": 42308
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlPriceDefault",
+     "required": false,
+     "tag": 42309
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlBusinessDays",
+     "required": false,
+     "tag": 41356
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlAmount",
+     "required": false,
+     "tag": 41357
+    },
+    {
+     "kind": "component",
+     "name": "LegCashSettlDate",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlRecoveryFactor",
+     "required": false,
+     "tag": 41358
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlFixedTermIndicator",
+     "required": false,
+     "tag": 41359
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlAccruedInterestIndicator",
+     "required": false,
+     "tag": 41360
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlValuationMethod",
+     "required": false,
+     "tag": 41361
+    },
+    {
+     "kind": "field",
+     "name": "LegCashSettlTermXID",
+     "required": false,
+     "tag": 41362
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "DeliveryScheduleNotionalUnitOfMeasure",
- "tag": 41041,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

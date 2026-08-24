@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDeliveryScheduleSettlTimeType",
- "tag": 41776,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,24 +1,22 @@
 {
  "name": "UnderlyingPricingDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 598,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingPricingDateBusinessCenters",
+   "required": false,
+   "tag": 41947,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingPricingDateBusinessCenters",
+     "kind": "field",
+     "name": "UnderlyingPricingDateBusinessCenter",
      "required": false,
-     "tag": 41947,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingPricingDateBusinessCenter",
-       "required": false,
-       "tag": 41948
-      }
-     ]
+     "tag": 41948
     }
    ]
   }
- }
+ ]
 }

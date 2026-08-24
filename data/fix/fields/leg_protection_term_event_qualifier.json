@@ -1,9 +1,0 @@
-{
- "name": "LegProtectionTermEventQualifier",
- "tag": 41634,
- "versions": {
-  "5.0.SP2": {
-   "type": "CHAR"
-  }
- }
-}

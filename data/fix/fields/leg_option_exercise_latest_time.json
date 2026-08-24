@@ -1,9 +1,0 @@
-{
- "name": "LegOptionExerciseLatestTime",
- "tag": 41510,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTTIME"
-  }
- }
-}

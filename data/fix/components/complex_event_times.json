@@ -1,30 +1,28 @@
 {
  "name": "ComplexEventTimes",
- "versions": {
-  "5.0.SP2": {
-   "order": 306,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoComplexEventTimes",
+   "required": false,
+   "tag": 1494,
    "members": [
     {
-     "kind": "group",
-     "name": "NoComplexEventTimes",
+     "kind": "field",
+     "name": "ComplexEventStartTime",
      "required": false,
-     "tag": 1494,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ComplexEventStartTime",
-       "required": false,
-       "tag": 1495
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventEndTime",
-       "required": false,
-       "tag": 1496
-      }
-     ]
+     "tag": 1495
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventEndTime",
+     "required": false,
+     "tag": 1496
     }
    ]
   }
- }
+ ]
 }

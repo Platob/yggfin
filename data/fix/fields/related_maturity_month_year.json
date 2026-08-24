@@ -1,9 +1,0 @@
-{
- "name": "RelatedMaturityMonthYear",
- "tag": 1653,
- "versions": {
-  "5.0.SP2": {
-   "type": "MONTHYEAR"
-  }
- }
-}

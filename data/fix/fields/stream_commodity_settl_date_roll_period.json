@@ -1,9 +1,0 @@
-{
- "name": "StreamCommoditySettlDateRollPeriod",
- "tag": 41272,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

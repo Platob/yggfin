@@ -1,9 +1,0 @@
-{
- "name": "LegReturnRateNotionalReset",
- "tag": 42467,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "DividendFloatingRateMultiplier",
- "tag": 42221,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

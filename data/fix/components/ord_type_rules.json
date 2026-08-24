@@ -1,43 +1,23 @@
 {
  "name": "OrdTypeRules",
- "versions": {
-  "5.0.SP2": {
-   "order": 280,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoOrdTypeRules",
+   "required": false,
+   "tag": 1237,
    "members": [
     {
-     "kind": "group",
-     "name": "NoOrdTypeRules",
+     "kind": "field",
+     "name": "OrdType",
      "required": false,
-     "tag": 1237,
-     "members": [
-      {
-       "kind": "field",
-       "name": "OrdType",
-       "required": false,
-       "tag": 40
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 135,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoOrdTypeRules",
-     "required": false,
-     "tag": 1237,
-     "members": [
-      {
-       "kind": "field",
-       "name": "OrdType",
-       "required": false,
-       "tag": 40
-      }
-     ]
+     "tag": 40
     }
    ]
   }
- }
+ ]
 }

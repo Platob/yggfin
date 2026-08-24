@@ -1,273 +1,73 @@
 {
  "name": "BidCompReqGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 178,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoBidComponents",
+   "required": false,
+   "tag": 420,
    "members": [
     {
-     "kind": "group",
-     "name": "NoBidComponents",
+     "kind": "field",
+     "name": "ListID",
      "required": false,
-     "tag": 420,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ListID",
-       "required": false,
-       "tag": 66
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "NetGrossInd",
-       "required": false,
-       "tag": 430
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 27,
-   "members": [
+     "tag": 66
+    },
     {
-     "kind": "group",
-     "name": "NoBidComponents",
+     "kind": "field",
+     "name": "Side",
      "required": false,
-     "tag": 420,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ListID",
-       "required": false,
-       "tag": 66
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "NetGrossInd",
-       "required": false,
-       "tag": 430
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 27,
-   "members": [
+     "tag": 54
+    },
     {
-     "kind": "group",
-     "name": "NoBidComponents",
+     "kind": "field",
+     "name": "TradingSessionID",
      "required": false,
-     "tag": 420,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ListID",
-       "required": false,
-       "tag": 66
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "NetGrossInd",
-       "required": false,
-       "tag": 430
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 27,
-   "members": [
+     "tag": 336
+    },
     {
-     "kind": "group",
-     "name": "NoBidComponents",
+     "kind": "field",
+     "name": "TradingSessionSubID",
      "required": false,
-     "tag": 420,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ListID",
-       "required": false,
-       "tag": 66
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "NetGrossInd",
-       "required": false,
-       "tag": 430
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      }
-     ]
+     "tag": 625
+    },
+    {
+     "kind": "field",
+     "name": "NetGrossInd",
+     "required": false,
+     "tag": 430
+    },
+    {
+     "kind": "field",
+     "name": "SettlType",
+     "required": false,
+     "tag": 63
+    },
+    {
+     "kind": "field",
+     "name": "SettlDate",
+     "required": false,
+     "tag": 64
+    },
+    {
+     "kind": "field",
+     "name": "Account",
+     "required": false,
+     "tag": 1
+    },
+    {
+     "kind": "field",
+     "name": "AcctIDSource",
+     "required": false,
+     "tag": 660
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "UPICode",
- "tag": 2891,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

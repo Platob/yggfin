@@ -1,9 +1,0 @@
-{
- "name": "LegComplexEventCondition",
- "tag": 2232,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

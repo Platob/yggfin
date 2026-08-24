@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingReturnRateValuationDateBusinessCenters",
- "tag": 43069,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

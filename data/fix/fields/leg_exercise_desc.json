@@ -1,9 +1,0 @@
-{
- "name": "LegExerciseDesc",
- "tag": 41481,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

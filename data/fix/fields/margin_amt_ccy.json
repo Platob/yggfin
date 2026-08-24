@@ -1,9 +1,0 @@
-{
- "name": "MarginAmtCcy",
- "tag": 1646,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

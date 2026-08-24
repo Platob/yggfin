@@ -1,9 +1,0 @@
-{
- "name": "LegTradeID",
- "tag": 1894,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

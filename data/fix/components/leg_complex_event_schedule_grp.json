@@ -1,48 +1,46 @@
 {
  "name": "LegComplexEventScheduleGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 534,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegComplexEventSchedules",
+   "required": false,
+   "tag": 41400,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegComplexEventSchedules",
+     "kind": "field",
+     "name": "LegComplexEventScheduleStartDate",
      "required": false,
-     "tag": 41400,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegComplexEventScheduleStartDate",
-       "required": false,
-       "tag": 41401
-      },
-      {
-       "kind": "field",
-       "name": "LegComplexEventScheduleEndDate",
-       "required": false,
-       "tag": 41402
-      },
-      {
-       "kind": "field",
-       "name": "LegComplexEventScheduleFrequencyPeriod",
-       "required": false,
-       "tag": 41403
-      },
-      {
-       "kind": "field",
-       "name": "LegComplexEventScheduleFrequencyUnit",
-       "required": false,
-       "tag": 41404
-      },
-      {
-       "kind": "field",
-       "name": "LegComplexEventScheduleRollConvention",
-       "required": false,
-       "tag": 41405
-      }
-     ]
+     "tag": 41401
+    },
+    {
+     "kind": "field",
+     "name": "LegComplexEventScheduleEndDate",
+     "required": false,
+     "tag": 41402
+    },
+    {
+     "kind": "field",
+     "name": "LegComplexEventScheduleFrequencyPeriod",
+     "required": false,
+     "tag": 41403
+    },
+    {
+     "kind": "field",
+     "name": "LegComplexEventScheduleFrequencyUnit",
+     "required": false,
+     "tag": 41404
+    },
+    {
+     "kind": "field",
+     "name": "LegComplexEventScheduleRollConvention",
+     "required": false,
+     "tag": 41405
     }
    ]
   }
- }
+ ]
 }

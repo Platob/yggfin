@@ -1,30 +1,28 @@
 {
  "name": "UnderlyingPaymentStreamPricingDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 596,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingPaymentStreamPricingDates",
+   "required": false,
+   "tag": 41941,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingPaymentStreamPricingDates",
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamPricingDate",
      "required": false,
-     "tag": 41941,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStreamPricingDate",
-       "required": false,
-       "tag": 41942
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStreamPricingDateType",
-       "required": false,
-       "tag": 41943
-      }
-     ]
+     "tag": 41942
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamPricingDateType",
+     "required": false,
+     "tag": 41943
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "PaymentScheduleFixedCurrency",
- "tag": 40843,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

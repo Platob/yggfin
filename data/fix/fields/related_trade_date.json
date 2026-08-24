@@ -1,9 +1,0 @@
-{
- "name": "RelatedTradeDate",
- "tag": 1858,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

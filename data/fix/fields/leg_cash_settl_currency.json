@@ -1,9 +1,0 @@
-{
- "name": "LegCashSettlCurrency",
- "tag": 41345,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

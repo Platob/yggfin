@@ -1,9 +1,0 @@
-{
- "name": "HaircutIndicator",
- "tag": 1902,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

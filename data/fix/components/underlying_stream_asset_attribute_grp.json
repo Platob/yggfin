@@ -1,36 +1,34 @@
 {
  "name": "UnderlyingStreamAssetAttributeGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 583,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingStreamAssetAttributes",
+   "required": false,
+   "tag": 41800,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingStreamAssetAttributes",
+     "kind": "field",
+     "name": "UnderlyingStreamAssetAttributeType",
      "required": false,
-     "tag": 41800,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamAssetAttributeType",
-       "required": false,
-       "tag": 41801
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamAssetAttributeValue",
-       "required": false,
-       "tag": 41802
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamAssetAttributeLimit",
-       "required": false,
-       "tag": 41803
-      }
-     ]
+     "tag": 41801
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamAssetAttributeValue",
+     "required": false,
+     "tag": 41802
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamAssetAttributeLimit",
+     "required": false,
+     "tag": 41803
     }
    ]
   }
- }
+ ]
 }

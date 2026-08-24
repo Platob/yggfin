@@ -1,192 +1,49 @@
 {
  "name": "NestedParties",
- "versions": {
-  "5.0.SP2": {
-   "order": 165,
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoNestedPartyIDs",
+   "required": false,
+   "tag": 539,
    "members": [
     {
-     "kind": "group",
-     "name": "NoNestedPartyIDs",
+     "kind": "field",
+     "name": "NestedPartyID",
      "required": false,
-     "tag": 539,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedPartyID",
-       "required": false,
-       "tag": 524
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyIDSource",
-       "required": false,
-       "tag": 525
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyRole",
-       "required": false,
-       "tag": 538
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyRoleQualifier",
-       "required": false,
-       "tag": 2384
-      },
-      {
-       "kind": "component",
-       "name": "NstdPtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 8,
-   "members": [
+     "tag": 524
+    },
     {
-     "kind": "group",
-     "name": "NoNestedPartyIDs",
+     "kind": "field",
+     "name": "NestedPartyIDSource",
      "required": false,
-     "tag": 539,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedPartyID",
-       "required": false,
-       "tag": 524
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyIDSource",
-       "required": false,
-       "tag": 525
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyRole",
-       "required": false,
-       "tag": 538
-      },
-      {
-       "kind": "component",
-       "name": "NstdPtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 8,
-   "members": [
+     "tag": 525
+    },
     {
-     "kind": "group",
-     "name": "NoNestedPartyIDs",
+     "kind": "field",
+     "name": "NestedPartyRole",
      "required": false,
-     "tag": 539,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedPartyID",
-       "required": false,
-       "tag": 524
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyIDSource",
-       "required": false,
-       "tag": 525
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyRole",
-       "required": false,
-       "tag": 538
-      },
-      {
-       "kind": "component",
-       "name": "NstdPtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 8,
-   "members": [
+     "tag": 538
+    },
     {
-     "kind": "group",
-     "name": "NoNestedPartyIDs",
+     "kind": "field",
+     "name": "NestedPartyRoleQualifier",
      "required": false,
-     "tag": 539,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedPartyID",
-       "required": false,
-       "tag": 524
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyIDSource",
-       "required": false,
-       "tag": 525
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyRole",
-       "required": false,
-       "tag": 538
-      },
-      {
-       "kind": "component",
-       "name": "NstdPtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "4.3": {
-   "order": 3,
-   "members": [
+     "tag": 2384
+    },
     {
-     "kind": "group",
-     "name": "NoNestedPartyIDs",
-     "required": false,
-     "tag": 539,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedPartyID",
-       "required": false,
-       "tag": 524
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyIDSource",
-       "required": false,
-       "tag": 525
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartyRole",
-       "required": false,
-       "tag": 538
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartySubID",
-       "required": false,
-       "tag": 545
-      }
-     ]
+     "kind": "component",
+     "name": "NstdPtysSubGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

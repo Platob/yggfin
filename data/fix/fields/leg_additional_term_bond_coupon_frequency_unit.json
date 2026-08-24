@@ -1,9 +1,0 @@
-{
- "name": "LegAdditionalTermBondCouponFrequencyUnit",
- "tag": 41333,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDividendPeriodBusinessDayConvention",
- "tag": 42868,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

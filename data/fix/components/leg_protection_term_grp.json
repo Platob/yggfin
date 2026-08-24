@@ -1,81 +1,79 @@
 {
  "name": "LegProtectionTermGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 559,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegProtectionTerms",
+   "required": false,
+   "tag": 41616,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegProtectionTerms",
+     "kind": "field",
+     "name": "LegProtectionTermNotional",
      "required": false,
-     "tag": 41616,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegProtectionTermNotional",
-       "required": false,
-       "tag": 41618
-      },
-      {
-       "kind": "field",
-       "name": "LegProtectionTermCurrency",
-       "required": false,
-       "tag": 41619
-      },
-      {
-       "kind": "field",
-       "name": "LegProtectionTermSellerNotifies",
-       "required": false,
-       "tag": 41620
-      },
-      {
-       "kind": "field",
-       "name": "LegProtectionTermBuyerNotifies",
-       "required": false,
-       "tag": 41621
-      },
-      {
-       "kind": "field",
-       "name": "LegProtectionTermEventBusinessCenter",
-       "required": false,
-       "tag": 41622
-      },
-      {
-       "kind": "field",
-       "name": "LegProtectionTermStandardSources",
-       "required": false,
-       "tag": 41623
-      },
-      {
-       "kind": "field",
-       "name": "LegProtectionTermEventMinimumSources",
-       "required": false,
-       "tag": 41624
-      },
-      {
-       "kind": "component",
-       "name": "LegProtectionTermEventNewsSourceGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegProtectionTermEventGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegProtectionTermObligationGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegProtectionTermXID",
-       "required": false,
-       "tag": 41617
-      }
-     ]
+     "tag": 41618
+    },
+    {
+     "kind": "field",
+     "name": "LegProtectionTermCurrency",
+     "required": false,
+     "tag": 41619
+    },
+    {
+     "kind": "field",
+     "name": "LegProtectionTermSellerNotifies",
+     "required": false,
+     "tag": 41620
+    },
+    {
+     "kind": "field",
+     "name": "LegProtectionTermBuyerNotifies",
+     "required": false,
+     "tag": 41621
+    },
+    {
+     "kind": "field",
+     "name": "LegProtectionTermEventBusinessCenter",
+     "required": false,
+     "tag": 41622
+    },
+    {
+     "kind": "field",
+     "name": "LegProtectionTermStandardSources",
+     "required": false,
+     "tag": 41623
+    },
+    {
+     "kind": "field",
+     "name": "LegProtectionTermEventMinimumSources",
+     "required": false,
+     "tag": 41624
+    },
+    {
+     "kind": "component",
+     "name": "LegProtectionTermEventNewsSourceGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegProtectionTermEventGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegProtectionTermObligationGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegProtectionTermXID",
+     "required": false,
+     "tag": 41617
     }
    ]
   }
- }
+ ]
 }

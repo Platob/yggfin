@@ -1,47 +1,45 @@
 {
  "name": "UnderlyingProvisionParties",
- "versions": {
-  "5.0.SP2": {
-   "order": 621,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingProvisionPartyIDs",
+   "required": false,
+   "tag": 42173,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingProvisionPartyIDs",
+     "kind": "field",
+     "name": "UnderlyingProvisionPartyID",
      "required": false,
-     "tag": 42173,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingProvisionPartyID",
-       "required": false,
-       "tag": 42174
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingProvisionPartyIDSource",
-       "required": false,
-       "tag": 42175
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingProvisionPartyRole",
-       "required": false,
-       "tag": 42176
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingProvisionPartyRoleQualifier",
-       "required": false,
-       "tag": 40918
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingProvisionPtysSubGrp",
-       "required": false
-      }
-     ]
+     "tag": 42174
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionPartyIDSource",
+     "required": false,
+     "tag": 42175
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionPartyRole",
+     "required": false,
+     "tag": 42176
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionPartyRoleQualifier",
+     "required": false,
+     "tag": 40918
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingProvisionPtysSubGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

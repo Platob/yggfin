@@ -1,9 +1,0 @@
-{
- "name": "SideCurrentCollateralAmount",
- "tag": 2702,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

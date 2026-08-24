@@ -1,197 +1,195 @@
 {
  "name": "LegStreamCommodity",
- "versions": {
-  "5.0.SP2": {
-   "order": 94,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityBase",
-     "required": false,
-     "tag": 41648
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityType",
-     "required": false,
-     "tag": 41649
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySecurityID",
-     "required": false,
-     "tag": 41650
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySecurityIDSource",
-     "required": false,
-     "tag": 41651
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamCommodityAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityDesc",
-     "required": false,
-     "tag": 41652
-    },
-    {
-     "kind": "field",
-     "name": "EncodedLegStreamCommodityDescLen",
-     "required": false,
-     "tag": 41653
-    },
-    {
-     "kind": "field",
-     "name": "EncodedLegStreamCommodityDesc",
-     "required": false,
-     "tag": 41654
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityDeliveryPricingRegion",
-     "required": false,
-     "tag": 42588
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamAssetAttributeGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityUnitOfMeasure",
-     "required": false,
-     "tag": 41655
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityCurrency",
-     "required": false,
-     "tag": 41656
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityExchange",
-     "required": false,
-     "tag": 41657
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityRateSource",
-     "required": false,
-     "tag": 41658
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityRateReferencePage",
-     "required": false,
-     "tag": 41659
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityRateReferencePageHeading",
-     "required": false,
-     "tag": 41660
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamDataProvider",
-     "required": false,
-     "tag": 41661
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamCommodityDataSourceGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityPricingType",
-     "required": false,
-     "tag": 41662
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityNearbySettlDayPeriod",
-     "required": false,
-     "tag": 41663
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityNearbySettlDayUnit",
-     "required": false,
-     "tag": 41664
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlDateUnadjusted",
-     "required": false,
-     "tag": 41665
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlDateBusinessDayConvention",
-     "required": false,
-     "tag": 41666
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamCommoditySettlBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlDateAdjusted",
-     "required": false,
-     "tag": 41667
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlMonth",
-     "required": false,
-     "tag": 41668
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlDateRollPeriod",
-     "required": false,
-     "tag": 41669
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlDateRollUnit",
-     "required": false,
-     "tag": 41670
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommoditySettlDayType",
-     "required": false,
-     "tag": 41671
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamCommoditySettlPeriodGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityXID",
-     "required": false,
-     "tag": 41672
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCommodityXIDRef",
-     "required": false,
-     "tag": 41673
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityBase",
+   "required": false,
+   "tag": 41648
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityType",
+   "required": false,
+   "tag": 41649
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommoditySecurityID",
+   "required": false,
+   "tag": 41650
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommoditySecurityIDSource",
+   "required": false,
+   "tag": 41651
+  },
+  {
+   "kind": "component",
+   "name": "LegStreamCommodityAltIDGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityDesc",
+   "required": false,
+   "tag": 41652
+  },
+  {
+   "kind": "field",
+   "name": "EncodedLegStreamCommodityDescLen",
+   "required": false,
+   "tag": 41653
+  },
+  {
+   "kind": "field",
+   "name": "EncodedLegStreamCommodityDesc",
+   "required": false,
+   "tag": 41654
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityDeliveryPricingRegion",
+   "required": false,
+   "tag": 42588
+  },
+  {
+   "kind": "component",
+   "name": "LegStreamAssetAttributeGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityUnitOfMeasure",
+   "required": false,
+   "tag": 41655
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityCurrency",
+   "required": false,
+   "tag": 41656
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityExchange",
+   "required": false,
+   "tag": 41657
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityRateSource",
+   "required": false,
+   "tag": 41658
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityRateReferencePage",
+   "required": false,
+   "tag": 41659
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityRateReferencePageHeading",
+   "required": false,
+   "tag": 41660
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamDataProvider",
+   "required": false,
+   "tag": 41661
+  },
+  {
+   "kind": "component",
+   "name": "LegStreamCommodityDataSourceGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityPricingType",
+   "required": false,
+   "tag": 41662
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityNearbySettlDayPeriod",
+   "required": false,
+   "tag": 41663
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityNearbySettlDayUnit",
+   "required": false,
+   "tag": 41664
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommoditySettlDateUnadjusted",
+   "required": false,
+   "tag": 41665
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommoditySettlDateBusinessDayConvention",
+   "required": false,
+   "tag": 41666
+  },
+  {
+   "kind": "component",
+   "name": "LegStreamCommoditySettlBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommoditySettlDateAdjusted",
+   "required": false,
+   "tag": 41667
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommoditySettlMonth",
+   "required": false,
+   "tag": 41668
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommoditySettlDateRollPeriod",
+   "required": false,
+   "tag": 41669
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommoditySettlDateRollUnit",
+   "required": false,
+   "tag": 41670
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommoditySettlDayType",
+   "required": false,
+   "tag": 41671
+  },
+  {
+   "kind": "component",
+   "name": "LegStreamCommoditySettlPeriodGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityXID",
+   "required": false,
+   "tag": 41672
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCommodityXIDRef",
+   "required": false,
+   "tag": 41673
   }
- }
+ ]
 }

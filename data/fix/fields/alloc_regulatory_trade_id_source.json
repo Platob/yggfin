@@ -1,9 +1,0 @@
-{
- "name": "AllocRegulatoryTradeIDSource",
- "tag": 1910,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

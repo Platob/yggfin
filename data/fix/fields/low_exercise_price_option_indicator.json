@@ -1,9 +1,0 @@
-{
- "name": "LowExercisePriceOptionIndicator",
- "tag": 2574,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

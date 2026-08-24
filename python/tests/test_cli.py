@@ -8,9 +8,11 @@ import pyarrow
 import pytest
 
 from rekep import Field, Log, StructField, cli
+from rekep.fix import registry as registry_module
 from rekep.fix.entries import Alias, FieldEntry
 from rekep.fix.fields import fix_field
 from rekep.fix.registry import FixRegistry
+from rekep.fix.store import Collapse, ConflictReport, Dropped
 
 #: The contracts this repository publishes, which the CLI has to be able to
 #: read -- the same directory `tests/test_schemas.py` pins.
@@ -207,7 +209,7 @@ def test_from_file_is_what_load_reads_with(tmp_path: Path) -> None:
 
 @pytest.fixture
 def store(tmp_path: Path) -> Path:
-    """A registry holding one synthetic field, in the exploded layout."""
+    """A registry holding one synthetic field, in its tag shard."""
     registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
     registry._store_versions(("9.1",))
     registry._store_fields("9.1", [fix_field("FakeRole", 90001, "int", version="9.1")])
@@ -375,19 +377,15 @@ def test_a_component_is_registered_from_a_declaration_and_removed(
         json.dumps(
             {
                 "name": "FakeParties",
-                "versions": {
-                    "9.1": {
-                        "order": 0,
-                        "members": [
-                            {
-                                "kind": "group",
-                                "name": "NoFakeParties",
-                                "tag": 90004,
-                                "members": [{"kind": "field", "name": "FakeRole", "tag": 90001}],
-                            }
-                        ],
+                "versions": ["9.1"],
+                "members": [
+                    {
+                        "kind": "group",
+                        "name": "NoFakeParties",
+                        "tag": 90004,
+                        "members": [{"kind": "field", "name": "FakeRole", "tag": 90001}],
                     }
-                },
+                ],
             }
         )
     )
@@ -439,31 +437,44 @@ def test_check_reports_an_inconsistent_store_and_says_a_sound_one_is_sound(
         name="FakeOther",
         tag=90003,
         aliases=(Alias(name="FakeRole"),),
-        variants={"9.1": {"type": "String"}},
+        versions=("9.1",),
+        type="String",
     )
-    reopened(store)._editable.store_field(clashing)
+    reopened(store)._layout.store_field(clashing)
     assert run("fix", "registry", "check", "--store", str(store)) == 1
     assert "FakeRole" in capsys.readouterr().err
 
 
-def test_migrate_rewrites_a_versioned_store_one_file_per_identity(tmp_path: Path) -> None:
-    """The command that moves an existing `~/.config/fix` onto the new layout."""
-    old = FixRegistry(cache_dir=tmp_path / "old", offline=True, layout="versioned")
-    old._store_versions(("9.1",))
-    old._store_fields("9.1", [fix_field("FakeRole", 90001, "int", version="9.1")])
-    assert (tmp_path / "old" / "9.1.json").exists()
+def test_bootstrap_fills_a_cold_store_and_writes_what_it_collapsed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The one command that fetches the dictionary, and the report a build reads."""
 
-    assert (
-        run(
-            "fix",
-            "registry",
-            "migrate",
-            "--store",
-            str(tmp_path / "old"),
-            "--target",
-            str(tmp_path / "new"),
-        )
-        == 0
-    )
-    assert (tmp_path / "new" / "fields" / "fake_role.json").exists()
-    assert not old.verify(reopened(tmp_path / "new")), "and answers exactly what it did"
+    class Fetching(FixRegistry):
+        """A bootstrap whose scrape is one synthetic version."""
+
+        def rebuild(self, *versions: str) -> ConflictReport:
+            self._store_versions(("9.1",))
+            self._store_fields("9.1", [fix_field("FakeRole", 90001, "int", version="9.1")])
+            report = ConflictReport(
+                collapses=(
+                    Collapse("FakeRole", "values", "9.1", (Dropped("9.0", "Buy", "1"),), 90001),
+                )
+            )
+            self.__dict__["_conflicts"] = report
+            return report
+
+    monkeypatch.setattr(cli, "FixRegistry", Fetching)
+    target = tmp_path / "fresh"
+    report = tmp_path / "conflicts.json"
+    assert run("fix", "registry", "bootstrap", "--store", str(target), "--report", str(report)) == 0
+    # Naming the default store makes construction pay for the scrape, and the
+    # verb must not then pay for a second one.
+    monkeypatch.setattr(registry_module, "CACHE_DIRECTORY", tmp_path / "default")
+    with pytest.warns(RuntimeWarning):
+        assert run("fix", "registry", "bootstrap", "--store", str(tmp_path / "default")) == 0
+    assert reopened(tmp_path / "default").field("FakeRole", "9.1").name == "FakeRole"
+    assert reopened(target).field("FakeRole", "9.1").name == "FakeRole"
+    written = json.loads(report.read_text())
+    assert written["counts"]["values"] == 1
+    assert written["collapses"][0]["dropped"] == [{"version": "9.0", "reading": "Buy", "key": "1"}]

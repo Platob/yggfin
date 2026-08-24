@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamReferenceLevel",
- "tag": 41200,
- "versions": {
-  "5.0.SP2": {
-   "type": "QTY"
-  }
- }
-}

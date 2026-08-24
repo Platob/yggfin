@@ -1,30 +1,28 @@
 {
  "name": "StreamCommodityAltIDGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 512,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoStreamCommodityAltIDs",
+   "required": false,
+   "tag": 41277,
    "members": [
     {
-     "kind": "group",
-     "name": "NoStreamCommodityAltIDs",
+     "kind": "field",
+     "name": "StreamCommodityAltID",
      "required": false,
-     "tag": 41277,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StreamCommodityAltID",
-       "required": false,
-       "tag": 41278
-      },
-      {
-       "kind": "field",
-       "name": "StreamCommodityAltIDSource",
-       "required": false,
-       "tag": 41279
-      }
-     ]
+     "tag": 41278
+    },
+    {
+     "kind": "field",
+     "name": "StreamCommodityAltIDSource",
+     "required": false,
+     "tag": 41279
     }
    ]
   }
- }
+ ]
 }

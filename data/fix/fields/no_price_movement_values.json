@@ -1,9 +1,0 @@
-{
- "name": "NoPriceMovementValues",
- "tag": 1920,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

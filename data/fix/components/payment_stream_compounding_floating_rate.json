@@ -1,118 +1,116 @@
 {
  "name": "PaymentStreamCompoundingFloatingRate",
- "versions": {
-  "5.0.SP2": {
-   "order": 135,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingRateIndex",
-     "required": false,
-     "tag": 42628
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingRateIndexCurvePeriod",
-     "required": false,
-     "tag": 42629
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingRateIndexCurveUnit",
-     "required": false,
-     "tag": 42630
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingRateMultiplier",
-     "required": false,
-     "tag": 42631
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingRateSpread",
-     "required": false,
-     "tag": 42632
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingRateSpreadPositionType",
-     "required": false,
-     "tag": 42633
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingRateTreatment",
-     "required": false,
-     "tag": 42634
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingCapRate",
-     "required": false,
-     "tag": 42635
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingCapRateBuySide",
-     "required": false,
-     "tag": 42636
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingCapRateSellSide",
-     "required": false,
-     "tag": 42637
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingFloorRate",
-     "required": false,
-     "tag": 42638
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingFloorRateBuySide",
-     "required": false,
-     "tag": 42639
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingFloorRateSellSide",
-     "required": false,
-     "tag": 42640
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingInitialRate",
-     "required": false,
-     "tag": 42641
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingFinalRateRoundingDirection",
-     "required": false,
-     "tag": 42642
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingFinalRatePrecision",
-     "required": false,
-     "tag": 42643
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingAveragingMethod",
-     "required": false,
-     "tag": 42644
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingNegativeRateTreatment",
-     "required": false,
-     "tag": 42645
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingRateIndex",
+   "required": false,
+   "tag": 42628
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingRateIndexCurvePeriod",
+   "required": false,
+   "tag": 42629
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingRateIndexCurveUnit",
+   "required": false,
+   "tag": 42630
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingRateMultiplier",
+   "required": false,
+   "tag": 42631
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingRateSpread",
+   "required": false,
+   "tag": 42632
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingRateSpreadPositionType",
+   "required": false,
+   "tag": 42633
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingRateTreatment",
+   "required": false,
+   "tag": 42634
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingCapRate",
+   "required": false,
+   "tag": 42635
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingCapRateBuySide",
+   "required": false,
+   "tag": 42636
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingCapRateSellSide",
+   "required": false,
+   "tag": 42637
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingFloorRate",
+   "required": false,
+   "tag": 42638
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingFloorRateBuySide",
+   "required": false,
+   "tag": 42639
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingFloorRateSellSide",
+   "required": false,
+   "tag": 42640
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingInitialRate",
+   "required": false,
+   "tag": 42641
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingFinalRateRoundingDirection",
+   "required": false,
+   "tag": 42642
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingFinalRatePrecision",
+   "required": false,
+   "tag": 42643
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingAveragingMethod",
+   "required": false,
+   "tag": 42644
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingNegativeRateTreatment",
+   "required": false,
+   "tag": 42645
   }
- }
+ ]
 }

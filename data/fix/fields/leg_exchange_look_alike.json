@@ -1,9 +1,0 @@
-{
- "name": "LegExchangeLookAlike",
- "tag": 2607,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

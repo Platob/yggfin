@@ -1,9 +1,0 @@
-{
- "name": "AllocCommissionRate",
- "tag": 2660,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

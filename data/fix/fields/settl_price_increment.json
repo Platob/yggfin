@@ -1,9 +1,0 @@
-{
- "name": "SettlPriceIncrement",
- "tag": 1830,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICE"
-  }
- }
-}

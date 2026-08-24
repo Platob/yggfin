@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamFutureValueDateAdjusted",
- "tag": 40788,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

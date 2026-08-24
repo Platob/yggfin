@@ -1,24 +1,22 @@
 {
  "name": "SettlMethodElectionDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 686,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoSettlMethodElectionDateBusinessCenters",
+   "required": false,
+   "tag": 42775,
    "members": [
     {
-     "kind": "group",
-     "name": "NoSettlMethodElectionDateBusinessCenters",
+     "kind": "field",
+     "name": "SettlMethodElectionDateBusinessCenter",
      "required": false,
-     "tag": 42775,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SettlMethodElectionDateBusinessCenter",
-       "required": false,
-       "tag": 42776
-      }
-     ]
+     "tag": 42776
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "ListManualOrderIndicator",
- "tag": 2401,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

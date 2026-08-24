@@ -1,116 +1,42 @@
 {
  "name": "UnderlyingAmount",
- "versions": {
-  "5.0.SP2": {
-   "order": 256,
+ "versions": [
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingAmounts",
+   "required": false,
+   "tag": 984,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingAmounts",
+     "kind": "field",
+     "name": "UnderlyingPayAmount",
      "required": false,
-     "tag": 984,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingPayAmount",
-       "required": false,
-       "tag": 985
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingCollectAmount",
-       "required": false,
-       "tag": 986
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingSettlementDate",
-       "required": false,
-       "tag": 987
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingSettlementStatus",
-       "required": false,
-       "tag": 988
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 105,
-   "members": [
+     "tag": 985
+    },
     {
-     "kind": "group",
-     "name": "NoUnderlyingAmounts",
+     "kind": "field",
+     "name": "UnderlyingCollectAmount",
      "required": false,
-     "tag": 984,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingPayAmount",
-       "required": false,
-       "tag": 985
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingCollectAmount",
-       "required": false,
-       "tag": 986
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingSettlementDate",
-       "required": false,
-       "tag": 987
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingSettlementStatus",
-       "required": false,
-       "tag": 988
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 107,
-   "members": [
+     "tag": 986
+    },
     {
-     "kind": "group",
-     "name": "NoUnderlyingAmounts",
+     "kind": "field",
+     "name": "UnderlyingSettlementDate",
      "required": false,
-     "tag": 984,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingPayAmount",
-       "required": false,
-       "tag": 985
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingCollectAmount",
-       "required": false,
-       "tag": 986
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingSettlementDate",
-       "required": false,
-       "tag": 987
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingSettlementStatus",
-       "required": false,
-       "tag": 988
-      }
-     ]
+     "tag": 987
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingSettlementStatus",
+     "required": false,
+     "tag": 988
     }
    ]
   }
- }
+ ]
 }

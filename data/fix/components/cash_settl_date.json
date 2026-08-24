@@ -1,57 +1,55 @@
 {
  "name": "CashSettlDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 111,
-   "members": [
-    {
-     "kind": "field",
-     "name": "CashSettlDateUnadjusted",
-     "required": false,
-     "tag": 42207
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlDateBusinessDayConvention",
-     "required": false,
-     "tag": 42208
-    },
-    {
-     "kind": "component",
-     "name": "CashSettlDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlDateRelativeTo",
-     "required": false,
-     "tag": 42209
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlDateOffsetPeriod",
-     "required": false,
-     "tag": 42210
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlDateOffsetUnit",
-     "required": false,
-     "tag": 42211
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlDateOffsetDayType",
-     "required": false,
-     "tag": 42212
-    },
-    {
-     "kind": "field",
-     "name": "CashSettlDateAdjusted",
-     "required": false,
-     "tag": 42213
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "CashSettlDateUnadjusted",
+   "required": false,
+   "tag": 42207
+  },
+  {
+   "kind": "field",
+   "name": "CashSettlDateBusinessDayConvention",
+   "required": false,
+   "tag": 42208
+  },
+  {
+   "kind": "component",
+   "name": "CashSettlDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "CashSettlDateRelativeTo",
+   "required": false,
+   "tag": 42209
+  },
+  {
+   "kind": "field",
+   "name": "CashSettlDateOffsetPeriod",
+   "required": false,
+   "tag": 42210
+  },
+  {
+   "kind": "field",
+   "name": "CashSettlDateOffsetUnit",
+   "required": false,
+   "tag": 42211
+  },
+  {
+   "kind": "field",
+   "name": "CashSettlDateOffsetDayType",
+   "required": false,
+   "tag": 42212
+  },
+  {
+   "kind": "field",
+   "name": "CashSettlDateAdjusted",
+   "required": false,
+   "tag": 42213
   }
- }
+ ]
 }

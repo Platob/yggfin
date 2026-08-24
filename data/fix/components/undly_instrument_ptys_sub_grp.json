@@ -1,80 +1,30 @@
 {
  "name": "UndlyInstrumentPtysSubGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 263,
+ "versions": [
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUndlyInstrumentPartySubIDs",
+   "required": false,
+   "tag": 1062,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUndlyInstrumentPartySubIDs",
+     "kind": "field",
+     "name": "UnderlyingInstrumentPartySubID",
      "required": false,
-     "tag": 1062,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingInstrumentPartySubID",
-       "required": false,
-       "tag": 1063
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingInstrumentPartySubIDType",
-       "required": false,
-       "tag": 1064
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 112,
-   "members": [
+     "tag": 1063
+    },
     {
-     "kind": "group",
-     "name": "NoUndlyInstrumentPartySubIDs",
+     "kind": "field",
+     "name": "UnderlyingInstrumentPartySubIDType",
      "required": false,
-     "tag": 1062,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UndlyInstrumentPartySubID",
-       "required": false,
-       "tag": 1063
-      },
-      {
-       "kind": "field",
-       "name": "UndlyInstrumentPartySubIDType",
-       "required": false,
-       "tag": 1064
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 114,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoUndlyInstrumentPartySubIDs",
-     "required": false,
-     "tag": 1062,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UndlyInstrumentPartySubID",
-       "required": false,
-       "tag": 1063
-      },
-      {
-       "kind": "field",
-       "name": "UndlyInstrumentPartySubIDType",
-       "required": false,
-       "tag": 1064
-      }
-     ]
+     "tag": 1064
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "AdditionalTermBondCouponType",
- "tag": 40011,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

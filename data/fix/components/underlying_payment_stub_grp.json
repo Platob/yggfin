@@ -1,202 +1,200 @@
 {
  "name": "UnderlyingPaymentStubGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 424,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingPaymentStubs",
+   "required": false,
+   "tag": 40708,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingPaymentStubs",
+     "kind": "field",
+     "name": "UnderlyingPaymentStubType",
      "required": false,
-     "tag": 40708,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubType",
-       "required": false,
-       "tag": 40709
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubLength",
-       "required": false,
-       "tag": 40710
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingPaymentStubStartDate",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingPaymentStubEndDate",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubRate",
-       "required": false,
-       "tag": 40711
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubFixedAmount",
-       "required": false,
-       "tag": 40712
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubFixedCurrency",
-       "required": false,
-       "tag": 40713
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex",
-       "required": false,
-       "tag": 40714
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexSource",
-       "required": false,
-       "tag": 40715
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexCurvePeriod",
-       "required": false,
-       "tag": 40716
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexCurveUnit",
-       "required": false,
-       "tag": 40717
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexRateMultiplier",
-       "required": false,
-       "tag": 40718
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexRateSpread",
-       "required": false,
-       "tag": 40719
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexRateSpreadPositionType",
-       "required": false,
-       "tag": 40720
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexRateTreatment",
-       "required": false,
-       "tag": 40721
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexCapRate",
-       "required": false,
-       "tag": 40722
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexCapRateBuySide",
-       "required": false,
-       "tag": 40723
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexCapRateSellSide",
-       "required": false,
-       "tag": 40724
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexFloorRate",
-       "required": false,
-       "tag": 40725
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexFloorRateBuySide",
-       "required": false,
-       "tag": 40726
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndexFloorRateSellSide",
-       "required": false,
-       "tag": 40727
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex2",
-       "required": false,
-       "tag": 40728
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex2Source",
-       "required": false,
-       "tag": 40729
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex2CurvePeriod",
-       "required": false,
-       "tag": 40730
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex2CurveUnit",
-       "required": false,
-       "tag": 40731
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex2RateMultiplier",
-       "required": false,
-       "tag": 40732
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex2RateSpread",
-       "required": false,
-       "tag": 40733
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex2RateSpreadPositionType",
-       "required": false,
-       "tag": 40734
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex2RateTreatment",
-       "required": false,
-       "tag": 40735
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex2CapRate",
-       "required": false,
-       "tag": 40736
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentStubIndex2FloorRate",
-       "required": false,
-       "tag": 40737
-      }
-     ]
+     "tag": 40709
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubLength",
+     "required": false,
+     "tag": 40710
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStubStartDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStubEndDate",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubRate",
+     "required": false,
+     "tag": 40711
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubFixedAmount",
+     "required": false,
+     "tag": 40712
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubFixedCurrency",
+     "required": false,
+     "tag": 40713
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex",
+     "required": false,
+     "tag": 40714
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexSource",
+     "required": false,
+     "tag": 40715
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexCurvePeriod",
+     "required": false,
+     "tag": 40716
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexCurveUnit",
+     "required": false,
+     "tag": 40717
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexRateMultiplier",
+     "required": false,
+     "tag": 40718
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexRateSpread",
+     "required": false,
+     "tag": 40719
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexRateSpreadPositionType",
+     "required": false,
+     "tag": 40720
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexRateTreatment",
+     "required": false,
+     "tag": 40721
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexCapRate",
+     "required": false,
+     "tag": 40722
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexCapRateBuySide",
+     "required": false,
+     "tag": 40723
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexCapRateSellSide",
+     "required": false,
+     "tag": 40724
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexFloorRate",
+     "required": false,
+     "tag": 40725
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexFloorRateBuySide",
+     "required": false,
+     "tag": 40726
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndexFloorRateSellSide",
+     "required": false,
+     "tag": 40727
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex2",
+     "required": false,
+     "tag": 40728
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex2Source",
+     "required": false,
+     "tag": 40729
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex2CurvePeriod",
+     "required": false,
+     "tag": 40730
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex2CurveUnit",
+     "required": false,
+     "tag": 40731
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex2RateMultiplier",
+     "required": false,
+     "tag": 40732
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex2RateSpread",
+     "required": false,
+     "tag": 40733
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex2RateSpreadPositionType",
+     "required": false,
+     "tag": 40734
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex2RateTreatment",
+     "required": false,
+     "tag": 40735
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex2CapRate",
+     "required": false,
+     "tag": 40736
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubIndex2FloorRate",
+     "required": false,
+     "tag": 40737
     }
    ]
   }
- }
+ ]
 }

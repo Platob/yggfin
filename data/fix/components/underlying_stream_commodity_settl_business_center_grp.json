@@ -1,24 +1,22 @@
 {
  "name": "UnderlyingStreamCommoditySettlBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 600,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingStreamCommoditySettlBusinessCenters",
+   "required": false,
+   "tag": 41962,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingStreamCommoditySettlBusinessCenters",
+     "kind": "field",
+     "name": "UnderlyingStreamCommoditySettlBusinessCenter",
      "required": false,
-     "tag": 41962,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamCommoditySettlBusinessCenter",
-       "required": false,
-       "tag": 41963
-      }
-     ]
+     "tag": 41963
     }
    ]
   }
- }
+ ]
 }

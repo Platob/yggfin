@@ -1,9 +1,0 @@
-{
- "name": "PaymentRateResetFrequencyUnit",
- "tag": 43105,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

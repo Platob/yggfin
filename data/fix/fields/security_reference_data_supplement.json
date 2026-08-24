@@ -1,9 +1,0 @@
-{
- "name": "SecurityReferenceDataSupplement",
- "tag": 2962,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

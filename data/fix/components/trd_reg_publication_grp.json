@@ -1,30 +1,28 @@
 {
  "name": "TrdRegPublicationGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 709,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoTrdRegPublications",
+   "required": false,
+   "tag": 2668,
    "members": [
     {
-     "kind": "group",
-     "name": "NoTrdRegPublications",
+     "kind": "field",
+     "name": "TrdRegPublicationType",
      "required": false,
-     "tag": 2668,
-     "members": [
-      {
-       "kind": "field",
-       "name": "TrdRegPublicationType",
-       "required": false,
-       "tag": 2669
-      },
-      {
-       "kind": "field",
-       "name": "TrdRegPublicationReason",
-       "required": false,
-       "tag": 2670
-      }
-     ]
+     "tag": 2669
+    },
+    {
+     "kind": "field",
+     "name": "TrdRegPublicationReason",
+     "required": false,
+     "tag": 2670
     }
    ]
   }
- }
+ ]
 }

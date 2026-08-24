@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentScheduleStepFrequencyUnit",
- "tag": 40391,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

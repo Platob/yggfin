@@ -1,9 +1,0 @@
-{
- "name": "DeliveryStreamDeliverAtSourceIndicator",
- "tag": 41066,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

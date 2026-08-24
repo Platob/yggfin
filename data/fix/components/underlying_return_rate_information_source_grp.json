@@ -1,36 +1,34 @@
 {
  "name": "UnderlyingReturnRateInformationSourceGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 704,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingReturnRateInformationSources",
+   "required": false,
+   "tag": 43060,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingReturnRateInformationSources",
+     "kind": "field",
+     "name": "UnderlyingReturnRateInformationSource",
      "required": false,
-     "tag": 43060,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingReturnRateInformationSource",
-       "required": false,
-       "tag": 43061
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingReturnRateReferencePage",
-       "required": false,
-       "tag": 43062
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingReturnRateReferencePageHeading",
-       "required": false,
-       "tag": 43063
-      }
-     ]
+     "tag": 43061
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingReturnRateReferencePage",
+     "required": false,
+     "tag": 43062
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingReturnRateReferencePageHeading",
+     "required": false,
+     "tag": 43063
     }
    ]
   }
- }
+ ]
 }

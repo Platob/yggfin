@@ -1,55 +1,29 @@
 {
  "name": "UnderlyingLegSecurityAltIDGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 290,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingLegSecurityAltID",
+   "required": false,
+   "tag": 1334,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingLegSecurityAltID",
+     "kind": "field",
+     "name": "UnderlyingLegSecurityAltID",
      "required": false,
-     "tag": 1334,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingLegSecurityAltID",
-       "required": false,
-       "tag": 1335
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingLegSecurityAltIDSource",
-       "required": false,
-       "tag": 1336
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 150,
-   "members": [
+     "tag": 1335
+    },
     {
-     "kind": "group",
-     "name": "NoUnderlyingLegSecurityAltID",
+     "kind": "field",
+     "name": "UnderlyingLegSecurityAltIDSource",
      "required": false,
-     "tag": 1334,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingLegSecurityAltID",
-       "required": false,
-       "tag": 1335
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingLegSecurityAltIDSource",
-       "required": false,
-       "tag": 1336
-      }
-     ]
+     "tag": 1336
     }
    ]
   }
- }
+ ]
 }

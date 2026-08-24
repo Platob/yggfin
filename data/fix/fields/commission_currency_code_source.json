@@ -1,9 +1,0 @@
-{
- "name": "CommissionCurrencyCodeSource",
- "tag": 2923,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

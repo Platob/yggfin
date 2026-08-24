@@ -238,11 +238,12 @@ class Classified(Convertible):
         )
 
     def into_entry(self) -> FieldEntry:
-        """This namespaced name as the entry declaring it would be."""
+        """This namespaced name as the record declaring it would be."""
         return FieldEntry(
             name=self.name,
             kind="namespace",
-            variants={ANY_VERSION: {"type": "String"}},
+            versions=(ANY_VERSION,),
+            type="String",
         )
 
 

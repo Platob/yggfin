@@ -1,42 +1,40 @@
 {
  "name": "UnderlyingSecondaryAssetGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 425,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingSecondaryAssetClasses",
+   "required": false,
+   "tag": 2080,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingSecondaryAssetClasses",
+     "kind": "field",
+     "name": "UnderlyingSecondaryAssetClass",
      "required": false,
-     "tag": 2080,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingSecondaryAssetClass",
-       "required": false,
-       "tag": 2081
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingSecondaryAssetSubClass",
-       "required": false,
-       "tag": 2082
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingSecondaryAssetType",
-       "required": false,
-       "tag": 2083
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingSecondaryAssetSubType",
-       "required": false,
-       "tag": 2745
-      }
-     ]
+     "tag": 2081
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingSecondaryAssetSubClass",
+     "required": false,
+     "tag": 2082
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingSecondaryAssetType",
+     "required": false,
+     "tag": 2083
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingSecondaryAssetSubType",
+     "required": false,
+     "tag": 2745
     }
    ]
   }
- }
+ ]
 }

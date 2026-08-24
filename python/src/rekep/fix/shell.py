@@ -22,6 +22,7 @@ from rekep.console import Console
 from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
 from rekep.fix.fields import FIX_SCALARS
 from rekep.fix.registry import FixRegistry
+from rekep.fix.store import field_document
 
 #: What a bare Enter means at a yes/no question, per question.
 YES = ("y", "yes")
@@ -160,31 +161,33 @@ class Shell:
         self.console.line()
 
     def _show(self, rest: str) -> None:
-        """One field identity, and what each version says about it."""
+        """One field identity: its reading, the versions declaring it, its values."""
         entry = self._entry(rest)
         if entry is None:
             return
         rows = [
             f"{self.console.style('tag', 'grey')}      {entry.tag if entry.tag else '-'}",
             f"{self.console.style('kind', 'grey')}     {entry.kind}",
+            f"{self.console.style('type', 'grey')}     {entry.type or '-'}",
             f"{self.console.style('column', 'grey')}   {entry.column or '-'}",
+            f"{self.console.style('versions', 'grey')} {', '.join(entry.versions)}",
             f"{self.console.style('spellings', 'grey')} {', '.join(entry.spellings())}",
+            f"{self.console.style('about', 'grey')}    "
+            f"{_clipped(entry.description, max(20, self.console.width - 14)) or '-'}",
         ]
         self.console.panel(entry.name, rows)
-        self.console.table(
-            ("version", "name", "type", "description"),
-            [
-                (
-                    self.console.style(version, "bright_cyan"),
-                    str(variant.get("name") or entry.name),
-                    str(variant.get("type") or "-"),
-                    _clipped(
-                        str(variant.get("description") or ""), max(20, self.console.width - 44)
-                    ),
-                )
-                for version, variant in entry.variants.items()
-            ],
-        )
+        if entry.values or entry.value_names:
+            self.console.table(
+                ("value", "means", "symbol"),
+                [
+                    (
+                        self.console.style(value, "bright_cyan"),
+                        _clipped(entry.values.get(value, ""), max(20, self.console.width - 44)),
+                        entry.value_names.get(value, "-"),
+                    )
+                    for value in {**entry.values, **entry.value_names}
+                ],
+            )
         self.console.line()
 
     def _components(self, rest: str) -> None:
@@ -213,7 +216,7 @@ class Shell:
             self.console.warn("name one: `component Parties`")
             return
         entry = self.registry.merged_component(rest)
-        version = entry.versions[0]
+        version = entry.newest
         declared = entry.into_component(version)
         self.console.panel(
             f"{entry.name} @ {version}", [f"{len(declared.members)} top-level members"]
@@ -240,7 +243,7 @@ class Shell:
         if entry is None:
             return
         self.registry.add_field(entry)
-        self.console.ok(f"added {entry.name} {self.console.glyph('arrow')} fields/{entry.slug}")
+        self.console.ok(f"added {entry.name} {self.console.glyph('arrow')} {field_document(entry)}")
 
     def _edit(self, rest: str) -> None:
         """Change one stored identity, keeping every part left unanswered."""
@@ -273,15 +276,16 @@ class Shell:
             console.warn(f"{tag!r} is not a tag")
             return None
         version = self._ask_for(
-            "version (`*` holds for all of them)",
-            held.versions[0] if held else self._newest(),
+            "versions it is declared for, comma separated (`*` holds for all of them)",
+            ", ".join(held.versions) if held else self._newest(),
         )
-        variant = dict((held.variant(version) if held else None) or {})
+        versions = tuple(part.strip() for part in version.split(",") if part.strip())
+        if not versions:
+            console.warn("a field is declared for at least one version")
+            return None
         console.note(f"types: {', '.join(sorted(FIX_SCALARS)[:12])}{console.glyph('ellipsis')}")
-        datatype = self._ask_for("FIX datatype", str(variant.get("type") or "String"))
-        described = self._ask_for(
-            "one factual line about it", str(variant.get("description") or "")
-        )
+        datatype = self._ask_for("FIX datatype", (held.type if held else "") or "String")
+        described = self._ask_for("one factual line about it", held.description if held else "")
         column = self._ask_for(
             "parsed-log column, when the log declares one", held.column if held else ""
         )
@@ -290,7 +294,11 @@ class Shell:
             tag=int(tag) if tag else None,
             kind=STANDARD if tag else NAMESPACE,
             aliases=held.aliases if held else (),
-            variants={version: {**variant, "type": datatype, "description": described}},
+            versions=versions,
+            type=datatype,
+            description=described,
+            values=dict(held.values) if held else {},
+            value_names=dict(held.value_names) if held else {},
             column=column,
         )
         console.panel(
@@ -298,7 +306,7 @@ class Shell:
             [
                 f"{console.style('tag', 'grey')}         {entry.tag if entry.tag else '-'}",
                 f"{console.style('kind', 'grey')}        {entry.kind}",
-                f"{console.style('version', 'grey')}     {version}",
+                f"{console.style('versions', 'grey')}    {', '.join(versions)}",
                 f"{console.style('type', 'grey')}        {datatype}",
                 f"{console.style('description', 'grey')} {_clipped(described, 60) or '-'}",
                 f"{console.style('column', 'grey')}      {column or '-'}",
@@ -357,7 +365,7 @@ class Shell:
         self.console.line()
 
     def _load(self, rest: str) -> None:
-        """Open another store, so one session can compare or migrate two."""
+        """Open another store, so one session can read two."""
         if not rest:
             self.console.warn("say which: `load ../data/fix`")
             return
@@ -368,16 +376,12 @@ class Shell:
         self.console.ok(f"{rest} {self.console.glyph('arrow')} {len(versions)} versions")
 
     def _dump(self, rest: str) -> None:
-        """Write this store somewhere else: a directory, or a `.zip` of one."""
+        """Write this store into one archive, which is how it travels."""
         if not rest:
             self.console.warn("say where: `dump ../data/fix.zip`")
             return
         with self.console.spinner(f"writing {rest}"):
-            written = (
-                self.registry.into_zip(rest)
-                if str(rest).endswith(".zip")
-                else self.registry.migrate(rest).cache_dir
-            )
+            written = self.registry.into_zip(rest)
         self.console.ok(f"wrote {written}")
 
     def _quit(self, rest: str) -> bool:

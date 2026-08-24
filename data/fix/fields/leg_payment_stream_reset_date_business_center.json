@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamResetDateBusinessCenter",
- "tag": 40305,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

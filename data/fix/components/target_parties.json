@@ -1,47 +1,45 @@
 {
  "name": "TargetParties",
- "versions": {
-  "5.0.SP2": {
-   "order": 302,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoTargetPartyIDs",
+   "required": false,
+   "tag": 1461,
    "members": [
     {
-     "kind": "group",
-     "name": "NoTargetPartyIDs",
+     "kind": "field",
+     "name": "TargetPartyID",
      "required": false,
-     "tag": 1461,
-     "members": [
-      {
-       "kind": "field",
-       "name": "TargetPartyID",
-       "required": false,
-       "tag": 1462
-      },
-      {
-       "kind": "field",
-       "name": "TargetPartyIDSource",
-       "required": false,
-       "tag": 1463
-      },
-      {
-       "kind": "field",
-       "name": "TargetPartyRole",
-       "required": false,
-       "tag": 1464
-      },
-      {
-       "kind": "field",
-       "name": "TargetPartyRoleQualifier",
-       "required": false,
-       "tag": 1818
-      },
-      {
-       "kind": "component",
-       "name": "TargetPtysSubGrp",
-       "required": false
-      }
-     ]
+     "tag": 1462
+    },
+    {
+     "kind": "field",
+     "name": "TargetPartyIDSource",
+     "required": false,
+     "tag": 1463
+    },
+    {
+     "kind": "field",
+     "name": "TargetPartyRole",
+     "required": false,
+     "tag": 1464
+    },
+    {
+     "kind": "field",
+     "name": "TargetPartyRoleQualifier",
+     "required": false,
+     "tag": 1818
+    },
+    {
+     "kind": "component",
+     "name": "TargetPtysSubGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

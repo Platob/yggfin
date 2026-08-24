@@ -1,9 +1,0 @@
-{
- "name": "LegFlexProductEligibilityIndicator",
- "tag": 2203,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

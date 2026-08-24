@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStubFixedCurrency",
- "tag": 40713,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

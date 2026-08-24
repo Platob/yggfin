@@ -1,30 +1,28 @@
 {
  "name": "UnderlyingStreamCalculationPeriodDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 599,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingStreamCalculationPeriodDates",
+   "required": false,
+   "tag": 41954,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingStreamCalculationPeriodDates",
+     "kind": "field",
+     "name": "UnderlyingStreamCalculationPeriodDate",
      "required": false,
-     "tag": 41954,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamCalculationPeriodDate",
-       "required": false,
-       "tag": 41955
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamCalculationPeriodDateType",
-       "required": false,
-       "tag": 41956
-      }
-     ]
+     "tag": 41955
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamCalculationPeriodDateType",
+     "required": false,
+     "tag": 41956
     }
    ]
   }
- }
+ ]
 }

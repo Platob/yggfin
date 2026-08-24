@@ -1,46 +1,44 @@
 {
  "name": "UnderlyingPaymentStreamFinalPricePaymentDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 155,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamFinalPricePaymentDateUnadjusted",
-     "required": false,
-     "tag": 42949
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamFinalPricePaymentDateRelativeTo",
-     "required": false,
-     "tag": 42950
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamFinalPricePaymentDateOffsetPeriod",
-     "required": false,
-     "tag": 42951
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamFinalPricePaymentDateOffsetUnit",
-     "required": false,
-     "tag": 42952
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamFinalPricePaymentDateOffsetDayType",
-     "required": false,
-     "tag": 42953
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamFinalPricePaymentDateAdjusted",
-     "required": false,
-     "tag": 42954
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamFinalPricePaymentDateUnadjusted",
+   "required": false,
+   "tag": 42949
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamFinalPricePaymentDateRelativeTo",
+   "required": false,
+   "tag": 42950
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamFinalPricePaymentDateOffsetPeriod",
+   "required": false,
+   "tag": 42951
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamFinalPricePaymentDateOffsetUnit",
+   "required": false,
+   "tag": 42952
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamFinalPricePaymentDateOffsetDayType",
+   "required": false,
+   "tag": 42953
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamFinalPricePaymentDateAdjusted",
+   "required": false,
+   "tag": 42954
   }
- }
+ ]
 }

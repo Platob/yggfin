@@ -1,0 +1,36 @@
+{
+ "50000": {
+  "name": "BatchID",
+  "tag": 50000,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "50001": {
+  "name": "BatchTotalMessages",
+  "tag": 50001,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "50002": {
+  "name": "BatchProcessMode",
+  "tag": 50002,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "UPDATE",
+   "1": "SNAPSHOT"
+  },
+  "translations": {
+   "update": "0",
+   "snapshot": "1",
+   "0": "0",
+   "1": "1"
+  }
+ }
+}

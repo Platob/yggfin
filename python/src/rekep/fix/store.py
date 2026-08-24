@@ -1,18 +1,17 @@
-"""Where a FIX dictionary is kept, in either of the two layouts it is kept in.
+"""Where a FIX dictionary is kept: tag-range shards of fields, and components.
 
-Two layouts, one interface. The **versioned** one is a file per FIX version
-holding every field that version declares; it is what every store written
-before this module holds, including a user's own `~/.config/fix`. The
-**exploded** one is a file per field or component *identity* under `fields/`
-and `components/`; it is what the published dictionary and the wheel now ship,
-because one identity per file makes "how does this differ across versions" a
-single-file diff and adding a field one small reviewable edit.
+One layout. Fields live in shards of five hundred tags under `fields/`, named
+by the shard index, so the file holding a tag is arithmetic -- no index, no
+lookup table, no scan -- and a single-tag lookup reads one document rather than
+the dictionary. The tag space is sparse (nothing between 2999 and 40000), and
+an empty shard is simply absent: fourteen files answer for six thousand fields.
+Fields FIX never numbered have no tag to shard on and share `fields/named.json`.
 
-Which one a store is is read off what it holds, so both keep working and
-neither has to be declared. A cold store is written exploded.
+Components stay one document per identity under `components/`, because they are
+keyed by name and there is no arithmetic to do.
 
-Both spellings live on a directory or inside a zip -- the extension decides,
-exactly as it did before -- and neither ever reaches the network.
+A store lives on a directory or inside a zip -- the extension decides -- and
+never reaches the network.
 """
 
 from __future__ import annotations
@@ -29,15 +28,26 @@ from typing import Any, Protocol
 
 import pyarrow.fs
 
+from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.filesystems import write_bytes
-from rekep.fix.entries import ANY_VERSION, ComponentEntry, FieldEntry, slug_of, variant_of
-from rekep.fix.quickfix import SpecComponent
+from rekep.fix.entries import (
+    ANY_VERSION,
+    Alias,
+    ComponentEntry,
+    FieldEntry,
+    fold,
+    newest_of,
+    newest_rank,
+    slug_of,
+    translations_of,
+)
+from rekep.fix.quickfix import SpecComponent, SpecComponentRef, SpecMember
 from rekep.require import require
 from rekep.urls import LOCAL, Url
 
-#: What the exploded layout calls its two folders. Named here because the
-#: reader, the writer, the migration and the tests must all spell them alike.
+#: What the layout calls its two folders. Named here because the reader, the
+#: writer and the tests must all spell them alike.
 FIELDS = "fields"
 COMPONENTS = "components"
 
@@ -52,25 +62,28 @@ DOCUMENT_SUFFIXES: tuple[str, ...] = (".json", ".yaml")
 DOCUMENT_SUFFIX = DOCUMENT_SUFFIXES[0]
 
 
-#: Where the exploded layout keeps what belongs to no single identity: the
-#: version list, each version's session layer, and which versions have had
-#: their components read at all.
+#: Where the layout keeps what belongs to no single identity: the version
+#: list, each version's session layer, and which versions have had their
+#: components read at all.
 VERSIONS_FILE = f"versions{DOCUMENT_SUFFIX}"
 SESSIONS = "sessions"
 STORED = "stored"
 DECLARED = "declared"
 
-VERSIONED = "versioned"
-EXPLODED = "exploded"
-LAYOUTS: tuple[str, ...] = (VERSIONED, EXPLODED)
+#: How many tags one shard holds, and where the fields FIX never numbered go.
+#: Five hundred: wide enough that the populated ranges are fourteen files
+#: rather than a hundred, narrow enough that a single-tag lookup parses a few
+#: hundred records instead of six thousand.
+SHARD_SPAN = 500
+NAMED_FILE = f"{FIELDS}/named{DOCUMENT_SUFFIX}"
 
 
 class Documents(Protocol):
     """Reading and writing named JSON documents, wherever they are kept.
 
-    The whole of what a layout needs from a place. `FixRegistry` owns one of
-    these; a directory and a zip are two implementations of it, and neither
-    layout below knows which it has.
+    The whole of what the layout needs from a place. `FixRegistry` owns one of
+    these; a directory and a zip are two implementations of it, and the layout
+    below never knows which it has.
     """
 
     def read(self, name: str) -> dict[str, Any] | None:
@@ -101,10 +114,9 @@ class Documents(Protocol):
     def read_many(self, prefix: str) -> dict[str, dict[str, Any]]:
         """Every document under `prefix`, in one pass over the place.
 
-        The exploded layout reads a folder whole or not at all -- "the fields
-        of 4.4" is a question about every identity -- and a place that can
-        answer two thousand documents more cheaply together than one at a time
-        says so here.
+        "The fields of 4.4" is a question about every identity, so the shards
+        are read together; a place that can answer many documents more cheaply
+        at once than one at a time says so here.
         """
         ...
 
@@ -414,8 +426,8 @@ def _archive_prefix(members: Sequence[str]) -> str:
     `zip -r fix.zip fix/` puts every member under `fix/`, and a member written
     into such an archive has to join its neighbours rather than land at a root
     where nothing else is. So a prefix is a folder *every* member shares --
-    never merely the first one's folder, which for an exploded store is
-    `fields/` and made the next write land in `fields/fields/`.
+    never merely the first one's folder, which for this store is `fields/` and
+    made the next write land in `fields/fields/`.
     """
     leading = {name.split("/", 1)[0] for name in members if is_document(name)}
     if len(leading) != 1:
@@ -426,197 +438,39 @@ def _archive_prefix(members: Sequence[str]) -> str:
     return f"{folder}/"
 
 
-# -- the two layouts ---------------------------------------------------------
+# -- the layout ---------------------------------------------------------------
+
+
+def shard_name(tag: int) -> str:
+    """The document holding one tag: `fields/000000.json` for tags 0 to 499.
+
+    `tag // SHARD_SPAN`, zero-padded, and that is the whole mapping: no index
+    in `versions.json`, no lookup table, no scan.
+    """
+    return f"{FIELDS}/{int(tag) // SHARD_SPAN:06d}{DOCUMENT_SUFFIX}"
 
 
 @dataclasses.dataclass(eq=False)
-class VersionedLayout:
-    """A file per FIX version, each listing every field that version declares.
+class ShardedLayout:
+    """A FIX dictionary as tag-range shards, cross-version records inside them.
 
-    What every store written before the exploded layout holds. Read, never
-    written to: a store in this shape keeps answering, and `migrate` is how it
-    becomes the other one.
+    Each shard is `{"<tag>": {record}}` in numeric tag order, and is read and
+    held whole -- a tag lookup parses the few hundred records that share its
+    range, never the dictionary. Questions about a whole version read every
+    shard, once, and hold those too.
     """
 
     documents: Documents
 
-    layout: str = VERSIONED
+    # -- what belongs to no identity -----------------------------------------
 
     def versions(self) -> tuple[str, ...]:
         """The version list the store holds; empty when it holds none."""
-        stored = self.documents.read(VERSIONS_FILE)
-        return tuple(str(version) for version in stored["versions"]) if stored else ()
-
-    def store_versions(self, versions: Sequence[str]) -> None:
-        """Keep the version list, so the front page is fetched once."""
-        self.documents.write(VERSIONS_FILE, {"versions": list(versions)})
-
-    def spellings(self) -> tuple[str, ...]:
-        """Every version this store has fields for, spelled as it stored them."""
-        return tuple(
-            sorted(
-                document_stem(name)
-                for name in self.documents.names()
-                if "/" not in name and document_stem(name) != document_stem(VERSIONS_FILE)
-            )
-        )
-
-    def fields(self, version: str) -> list[Field] | None:
-        """One version's fields; None when the store does not hold that version."""
-        stored = self.documents.read(f"{version}{DOCUMENT_SUFFIX}")
-        if stored is None:
-            return None
-        return [Field.from_dict(member) for member in stored["fields"]]
-
-    def components(self, version: str) -> list[SpecComponent] | None:
-        """Stored component declarations; None means this store predates them."""
-        stored = self.documents.read(f"{version}{DOCUMENT_SUFFIX}")
-        if stored is None or "components" not in stored:
-            return None
-        return [SpecComponent.from_dict(member) for member in stored["components"]]
-
-    def session(self, version: str) -> tuple[tuple[str, bool], ...]:
-        """`((name, required), ...)`: the standard header, then the trailer."""
-        stored = self.documents.read(f"{version}{DOCUMENT_SUFFIX}")
-        if not stored:
-            return ()
-        return tuple((str(name), bool(required)) for name, required in stored.get("session", ()))
-
-    def store(
-        self,
-        version: str,
-        fields: Sequence[Field],
-        session: Sequence[tuple[str, bool]] = (),
-        components: Sequence[SpecComponent] | None = None,
-        url: str = "",
-    ) -> None:
-        """Keep one version's fields and optional spec declarations."""
-        payload: dict[str, Any] = {
-            "version": version,
-            "url": url,
-            "fields": [member.into_dict() for member in fields],
-        }
-        if session:
-            payload["session"] = [[name, required] for name, required in session]
-        if components is not None:
-            payload["components"] = [member.into_dict() for member in components]
-        self.documents.write(f"{version}{DOCUMENT_SUFFIX}", payload)
-
-
-@dataclasses.dataclass(eq=False)
-class ExplodedLayout:
-    """A file per field or component identity, under `fields/` and `components/`.
-
-    Every read walks the whole of one folder, so it is walked once and held:
-    "the fields of 4.4" is a question about every identity, not about one file,
-    and answering it per call would read two thousand documents per version.
-    """
-
-    documents: Documents
-
-    layout: str = EXPLODED
-
-    def versions(self) -> tuple[str, ...]:
-        """The version list the store holds; empty when it holds none."""
-        stored = self._index()
-        return tuple(str(version) for version in stored.get("versions", ()))
+        return tuple(str(version) for version in self._index().get("versions", ()))
 
     def store_versions(self, versions: Sequence[str]) -> None:
         """Keep the version list, so the front page is fetched once."""
         self._store_index({**self._index(), "versions": list(versions)})
-
-    def _index(self) -> dict[str, Any]:
-        """`versions.json`: everything about a version that is not an identity."""
-        return self.documents.read(VERSIONS_FILE) or {}
-
-    def _store_index(self, payload: Mapping[str, Any]) -> None:
-        self.documents.write(VERSIONS_FILE, {key: payload[key] for key in sorted(payload)})
-
-    @property
-    def field_entries(self) -> dict[str, FieldEntry]:
-        """`{slug: entry}` for every field identity, read once and held."""
-        held = self.__dict__.get("_fields")
-        if held is None:
-            held = self.__dict__["_fields"] = self._read(FIELDS, FieldEntry)
-        return held
-
-    @property
-    def slugs(self) -> dict[tuple[str, Any], str]:
-        """`{identity: the file it is stored in}`, so a rename can find it."""
-        return {entry_identity(entry): slug for slug, entry in self.field_entries.items()}
-
-    @property
-    def component_entries(self) -> dict[str, ComponentEntry]:
-        """`{slug: entry}` for every component identity, read once and held."""
-        held = self.__dict__.get("_components")
-        if held is None:
-            held = self.__dict__["_components"] = self._read(COMPONENTS, ComponentEntry)
-        return held
-
-    def forget(self) -> None:
-        """Drop the held entries, so the next read sees what was just written."""
-        self.__dict__.pop("_fields", None)
-        self.__dict__.pop("_components", None)
-        self.__dict__.pop("_torn", None)
-
-    def spellings(self) -> tuple[str, ...]:
-        """Every version any identity is declared for, the session layer included.
-
-        The wildcard a namespaced field carries is not a version and never appears
-        here: it means "whichever version this store already has".
-        """
-        found = {
-            version
-            for entry in (*self.field_entries.values(), *self.component_entries.values())
-            for version in entry.versions
-        }
-        index = self._index()
-        found.update(index.get(SESSIONS, {}))
-        found.update(index.get(STORED, ()))
-        found.update(index.get(DECLARED, ()))
-        found.discard(ANY_VERSION)
-        return tuple(sorted(found))
-
-    def fields(self, version: str) -> list[Field] | None:
-        """One version's fields in tag order; None when it declares none.
-
-        Tag order because that is the order the versioned layout stored them
-        in, and a migration that reordered a version's fields would be a
-        migration nobody could check by comparing the two.
-        """
-        entries = self.field_entries
-        if not entries:
-            return None
-        found = [
-            member
-            for entry in entries.values()
-            if (member := entry.into_field(version)) is not None
-        ]
-        if found:
-            return sorted(found, key=_field_order)
-        # No identity declares this version. Whether that is "nobody has read
-        # it" or "it has none of the fields this store keeps" -- which is what
-        # a projection of two fields leaves FIXT1.1 as -- is what the index
-        # remembers, and answering the second as the first would send an
-        # offline registry to the network for a version it already holds.
-        return [] if self.stored(version) else None
-
-    def components(self, version: str) -> list[SpecComponent] | None:
-        """One version's component declarations; None when the store has none.
-
-        None and `[]` are different answers -- "nobody ever read this version's
-        spec" against "its spec declares none" -- and telling them apart is
-        what makes a stale artifact detectable instead of silently extracting
-        nothing. The version list is what remembers which.
-        """
-        found = [
-            (entry.order(version), declared)
-            for entry in self.component_entries.values()
-            if (declared := entry.into_component(version)) is not None
-        ]
-        if found:
-            return [declared for _, declared in sorted(found, key=lambda pair: pair[0])]
-        return [] if self.declared(version) else None
 
     def session(self, version: str) -> tuple[tuple[str, bool], ...]:
         """`((name, required), ...)`: the standard header, then the trailer."""
@@ -624,7 +478,7 @@ class ExplodedLayout:
         return tuple((str(name), bool(required)) for name, required in stored)
 
     def store_session(self, version: str, session: Sequence[tuple[str, bool]]) -> None:
-        """Keep one version's session layer beside the identities."""
+        """Keep one version's session layer beside the records."""
         index = self._index()
         stored = dict(index.get(SESSIONS, {}))
         if session:
@@ -641,8 +495,7 @@ class ExplodedLayout:
         artifact extract nothing and say nothing.
         """
         index = self._index()
-        declared = sorted({*index.get(DECLARED, ()), version})
-        self._store_index({**index, DECLARED: declared})
+        self._store_index({**index, DECLARED: sorted({*index.get(DECLARED, ()), version})})
 
     def declared(self, version: str) -> bool:
         """Whether this store has ever been told what components `version` has."""
@@ -657,33 +510,181 @@ class ExplodedLayout:
         """Whether this store has ever been written for `version` at all."""
         return version in set(self._index().get(STORED, ()))
 
-    def store_field(self, entry: FieldEntry, slug: str = "") -> str:
-        """Write one field identity, and name the file it landed in."""
-        held = self.slugs.get(entry_identity(entry))
-        chosen = slug or held or allocate_slug(entry, self._taken())
-        if held is not None and held != chosen:
-            # The identity moved -- a newer version renamed the tag -- so the
-            # file it used to be in goes rather than shadowing the new one.
-            self.remove_field(held)
-        self.documents.write(f"{FIELDS}/{chosen}{DOCUMENT_SUFFIX}", entry.into_dict())
-        self.field_entries[chosen] = entry
-        return chosen
+    def spellings(self) -> tuple[str, ...]:
+        """Every version any record is declared for, the session layer included.
 
-    def _taken(self) -> dict[str, tuple[str, Any]]:
-        """`{slug: (name, identity)}` for every field this store already holds."""
-        return {
-            slug: (entry.name, entry_identity(entry)) for slug, entry in self.field_entries.items()
+        The wildcard a namespaced field carries is not a version and never
+        appears here: it means "whichever version this store already has".
+        """
+        found = {
+            version
+            for entry in (*self.field_entries.values(), *self.component_entries.values())
+            for version in entry.versions
         }
+        index = self._index()
+        found.update(index.get(SESSIONS, {}))
+        found.update(index.get(STORED, ()))
+        found.update(index.get(DECLARED, ()))
+        found.discard(ANY_VERSION)
+        return tuple(sorted(found))
+
+    def _index(self) -> dict[str, Any]:
+        """`versions.json`: everything about a version that is not an identity."""
+        return self.documents.read(VERSIONS_FILE) or {}
+
+    def _store_index(self, payload: Mapping[str, Any]) -> None:
+        self.documents.write(VERSIONS_FILE, {key: payload[key] for key in sorted(payload)})
+
+    # -- one tag, one shard --------------------------------------------------
+
+    def record(self, tag: int) -> FieldEntry | None:
+        """One field by tag, reading only the shard that can hold it.
+
+        The whole point of the arithmetic: asking what tag 54 is opens
+        `fields/000000.json` and nothing else.
+        """
+        return self._shard(shard_name(int(tag))).get(int(tag))
+
+    def _shard(self, name: str) -> dict[int | str, FieldEntry]:
+        """One shard's records, read once and held."""
+        held = self.__dict__.setdefault("_shards", {})
+        found = held.get(name)
+        if found is None:
+            found = held[name] = self._read_shard(name)
+        return found
+
+    def _read_shard(self, name: str) -> dict[int | str, FieldEntry]:
+        document = self.documents.read(name)
+        if document is None:
+            if name in self.documents.names():
+                self.__dict__.setdefault("_torn", set()).add(name)
+            return {}
+        return {_record_key(key): FieldEntry.from_dict(record) for key, record in document.items()}
+
+    @property
+    def field_entries(self) -> dict[int | str, FieldEntry]:
+        """`{tag or folded name: record}` for every field, every shard read once."""
+        held = self.__dict__.get("_fields")
+        if held is None:
+            shards = self.__dict__.setdefault("_shards", {})
+            for name in self.documents.names():
+                if name.startswith(f"{FIELDS}/"):
+                    shards.setdefault(name, self._read_shard(name))
+            held = self.__dict__["_fields"] = {
+                key: entry
+                for name in sorted(shards)
+                if name.startswith(f"{FIELDS}/")
+                for key, entry in shards[name].items()
+            }
+        return held
+
+    @property
+    def component_entries(self) -> dict[str, ComponentEntry]:
+        """`{slug: record}` for every component identity, read once and held."""
+        held = self.__dict__.get("_components")
+        if held is None:
+            prefix = f"{COMPONENTS}/"
+            readable = self.documents.read_many(prefix)
+            torn = self.__dict__.setdefault("_torn", set())
+            torn.update(name for name in self.documents.names() if name.startswith(prefix))
+            torn.difference_update(readable)
+            held = self.__dict__["_components"] = {
+                document_stem(name[len(prefix) :]): ComponentEntry.from_dict(document)
+                for name, document in sorted(readable.items())
+            }
+        return held
+
+    def forget(self) -> None:
+        """Drop the held records, so the next read sees what was just written."""
+        self.__dict__.pop("_shards", None)
+        self.__dict__.pop("_fields", None)
+        self.__dict__.pop("_components", None)
+        self.__dict__.pop("_torn", None)
+
+    @property
+    def torn(self) -> tuple[str, ...]:
+        """Documents this store holds and cannot read; empty when it is sound.
+
+        A torn write costs one shard here, which is worse than one field and
+        far better than a whole version answering short in silence. The
+        registry treats a torn store as one to write again.
+        """
+        self.field_entries, self.component_entries  # noqa: B018 - both are read once
+        return tuple(sorted(self.__dict__.get("_torn", ())))
+
+    # -- what a version declares ---------------------------------------------
+
+    def fields(self, version: str) -> list[Field] | None:
+        """One version's fields in tag order; None when it declares none."""
+        entries = self.field_entries
+        if not entries:
+            return None
+        found = [
+            member
+            for entry in entries.values()
+            if (member := entry.into_field(version)) is not None
+        ]
+        if found:
+            return sorted(found, key=_field_order)
+        # No record declares this version. Whether that is "nobody has read it"
+        # or "it has none of the fields this store keeps" -- which is what a
+        # projection of two fields leaves FIXT1.1 as -- is what the index
+        # remembers, and answering the second as the first would send an
+        # offline registry to the network for a version it already holds.
+        return [] if self.stored(version) else None
+
+    def components(self, version: str) -> list[SpecComponent] | None:
+        """What it takes to read one version's components, by name; None when it has none.
+
+        The components that version declares, *and* the ones their trees
+        reference: a record keeps the newest member tree, and 4.3's `Parties`
+        is now the tree that reaches `PartySubID` through `PtysSubGrp` rather
+        than naming it directly -- so a reader handed 4.3's declarations
+        without `PtysSubGrp` would split the group and lose the member.
+
+        None and `[]` are different answers -- "nobody ever read this version's
+        spec" against "its spec declares none" -- and telling them apart is
+        what makes a stale artifact detectable instead of silently extracting
+        nothing. The version list is what remembers which.
+        """
+        held = self.component_entries
+        wanted = {entry.folded for entry in held.values() if entry.declares(version)}
+        if not wanted:
+            return [] if self.declared(version) else None
+        by_name = {entry.folded: entry for entry in held.values()}
+        wanted = component_closure(wanted, by_name)
+        return [
+            entry.into_component() for _, entry in sorted(held.items()) if entry.folded in wanted
+        ]
+
+    # -- writing -------------------------------------------------------------
+
+    def store_field(self, entry: FieldEntry) -> str:
+        """Write one field record, and name the document it landed in."""
+        name = field_document(entry)
+        shard = self._shard(name)
+        shard[entry.key] = entry
+        self.documents.write(name, _shard_document(shard))
+        self.__dict__.pop("_fields", None)
+        return name
+
+    def remove_field(self, key: int | str) -> bool:
+        """Delete one field record by tag or folded name; False when absent."""
+        name = shard_name(key) if isinstance(key, int) else NAMED_FILE
+        shard = self._shard(name)
+        if key not in shard:
+            return False
+        del shard[key]
+        self.__dict__.pop("_fields", None)
+        if shard:
+            self.documents.write(name, _shard_document(shard))
+            return True
+        return self.documents.remove(name)
 
     def store_component(self, entry: ComponentEntry) -> None:
-        """Write one component identity, replacing what was under its slug."""
+        """Write one component record, replacing what was under its slug."""
         self.documents.write(f"{COMPONENTS}/{entry.slug}{DOCUMENT_SUFFIX}", entry.into_dict())
         self.component_entries[entry.slug] = entry
-
-    def remove_field(self, slug: str) -> bool:
-        """Delete one field identity; False when the store did not hold it."""
-        self.field_entries.pop(slug, None)
-        return self.documents.remove(f"{FIELDS}/{slug}{DOCUMENT_SUFFIX}")
 
     def remove_component(self, slug: str) -> bool:
         """Delete one component identity; False when the store did not hold it."""
@@ -698,104 +699,91 @@ class ExplodedLayout:
         components: Sequence[SpecComponent] | None = None,
         url: str = "",
     ) -> None:
-        """Fold one whole version into the identities already stored.
+        """Fold one whole version into the records already stored.
 
-        A scrape still arrives one version at a time, so this is where the
-        per-version shape meets the per-identity one: each field joins the
-        entry that owns its name, replacing that version's variant and leaving
-        every other version of it alone.
+        A scrape still arrives one version at a time, so this is where a
+        version's reading meets the cross-version record: each field joins the
+        record that owns its tag, and whether it owns the reading is decided
+        the same way `collapse` decides it -- the newest application version
+        wins, and everything older only adds enumerated values.
         """
-        del url  # An identity is not stored per version, so it carries no URL.
-        newest = self._is_newest(version)
-        by_identity = {entry_identity(entry): entry for entry in self.field_entries.values()}
-        named = set()
+        del url  # A record is not stored per version, so it carries no URL.
+        held = dict(self.field_entries)
+        written: set[int | str] = set()
         for member in fields:
-            identity = identity_of(member)
-            held = by_identity.get(identity)
-            entry = fold_field(held, member, version, newest=newest or held is None)
+            key = _field_key(member)
+            entry = fold_field(held.get(key), member, version)
             self.store_field(entry)
-            by_identity[identity] = entry
-            named.add(identity)
-        for identity, entry in list(by_identity.items()):
-            if identity in named or version not in entry.variants:
+            held[key] = entry
+            written.add(key)
+        for key, entry in held.items():
+            if key in written or version not in entry.versions:
                 continue
             # This call is what the version declares, so a field it no longer
-            # names has lost that version -- the same thing rewriting a version
-            # file used to say by leaving the field out of it.
-            self._narrowed(entry, version)
+            # names has lost that version.
+            remaining = tuple(one for one in entry.versions if one != version)
+            if remaining:
+                self.store_field(dataclasses.replace(entry, versions=remaining))
+            else:
+                self.remove_field(key)
         if components is not None:
-            declared = {found.name for found in components}
-            for order, found in enumerate(components):
-                slug = slug_of(found.name)
-                self.store_component(
-                    fold_component(self.component_entries.get(slug), found, version, order)
-                )
-            for slug, entry in list(self.component_entries.items()):
-                if entry.name in declared or version not in entry.variants:
-                    continue
-                # The version declares components and not this one, so this
-                # version's variant of it is gone rather than merely unstated.
-                remaining = {
-                    spelled: variant
-                    for spelled, variant in entry.variants.items()
-                    if spelled != version
-                }
-                if remaining:
-                    self.store_component(dataclasses.replace(entry, variants=remaining))
-                else:
-                    self.remove_component(slug)
+            self._store_components(version, components)
             self.store_declared(version)
         self.store_stored(version)
         self.store_session(version, session)
 
-    def _narrowed(self, entry: FieldEntry, version: str) -> None:
-        """Drop one version from an entry, and the entry when that was its last."""
-        remaining = {
-            spelled: variant for spelled, variant in entry.variants.items() if spelled != version
-        }
-        slug = self.slugs.get(entry_identity(entry))
-        if not remaining:
-            if slug is not None:
-                self.remove_field(slug)
-            return
-        self.store_field(dataclasses.replace(entry, variants=remaining), slug or "")
+    def _store_components(self, version: str, components: Sequence[SpecComponent]) -> None:
+        """Fold one version's component declarations into the records."""
+        declared = {found.name for found in components}
+        for found in components:
+            slug = slug_of(found.name)
+            self.store_component(fold_component(self.component_entries.get(slug), found, version))
+        for slug, entry in list(self.component_entries.items()):
+            if entry.name in declared or version not in entry.versions:
+                continue
+            # The version declares components and not this one, so this
+            # version's declaration of it is gone rather than merely unstated.
+            remaining = tuple(one for one in entry.versions if one != version)
+            if remaining:
+                self.store_component(dataclasses.replace(entry, versions=remaining))
+            else:
+                self.remove_component(slug)
 
-    def _is_newest(self, version: str) -> bool:
-        """Whether `version` outranks every version this store already holds.
 
-        The store's own version list is newest first, so a version at or above
-        the newest one already stored owns the identities it declares. A
-        version the list has never heard of is not assumed to be newer.
-        """
-        listed = self.versions()
-        if version not in listed:
-            return not self.field_entries
-        stored = {spelled for entry in self.field_entries.values() for spelled in entry.versions}
-        rank = listed.index(version)
-        return all(rank <= listed.index(other) for other in stored if other in listed)
+def field_document(entry: FieldEntry) -> str:
+    """The document one field record belongs in: its shard, or `named.json`."""
+    return shard_name(entry.tag) if entry.tag is not None else NAMED_FILE
 
-    @property
-    def torn(self) -> tuple[str, ...]:
-        """Documents this store holds and cannot read; empty when it is sound.
 
-        A torn write costs one identity here where it used to cost a whole
-        version, which is better -- and would be worse if it went unnoticed,
-        because the version still answers and answers short. The registry
-        treats a torn store as one to write again.
-        """
-        self.field_entries, self.component_entries  # noqa: B018 - both are read once
-        return tuple(sorted(self.__dict__.get("_torn", ())))
+def _record_key(stored: str) -> int | str:
+    """One shard key read back: a tag where it is one, a folded name otherwise."""
+    return int(stored) if str(stored).isdigit() else fold(stored)
 
-    def _read(self, folder: str, kind: Any) -> dict[str, Any]:
-        prefix = f"{folder}/"
-        readable = self.documents.read_many(prefix)
-        torn = self.__dict__.setdefault("_torn", set())
-        torn.update(name for name in self.documents.names() if name.startswith(prefix))
-        torn.difference_update(readable)
-        return {
-            document_stem(name[len(prefix) :]): kind.from_dict(document)
-            for name, document in sorted(readable.items())
-        }
+
+def _field_key(member: Field) -> int | str:
+    """What makes two readings of a field the same field: its tag, else its name.
+
+    Its tag, when it has one: a version may rename a tag -- 64 is
+    `FutSettDate` through 4.3 and `SettlDate` after -- and a store that keyed
+    on the name would hold two records for one field, each half its history.
+    """
+    tag = member.fix.get("tag")
+    return int(tag) if tag else fold(member.name)
+
+
+def _shard_document(shard: Mapping[int | str, FieldEntry]) -> dict[str, Any]:
+    """One shard as it is written: numeric tag order, then the names.
+
+    Keyed by the tag, or by the *canonical* name for a field FIX never
+    numbered -- the key is what a person reads first, and folding it there
+    would spell `AMON.ISINCODE` in a case nothing else in the document uses.
+    """
+    tags = sorted(key for key in shard if isinstance(key, int))
+    names = sorted(key for key in shard if not isinstance(key, int))
+    return {
+        (str(key) if isinstance(key, int) else shard[key].name): shard[key].into_dict()
+        for key in (*tags, *names)
+    }
 
 
 def _field_order(member: Field) -> tuple[int, int, str]:
@@ -804,189 +792,438 @@ def _field_order(member: Field) -> tuple[int, int, str]:
     return (0, int(tag), "") if tag else (1, 0, member.name)
 
 
-def entry_identity(entry: FieldEntry) -> tuple[str, Any]:
-    """What makes two entries the same field: the tag, or the folded name."""
-    return ("tag", int(entry.tag)) if entry.tag else ("name", entry.slug)
+def fold_field(held: FieldEntry | None, member: Field, version: str) -> FieldEntry:
+    """One version's reading of a field, folded into the record that owns it.
 
-
-def identity_of(member: Field) -> tuple[str, Any]:
-    """What makes two readings of a field the same field.
-
-    Its tag, when it has one: a version may rename a tag -- 64 is
-    `FutSettDate` through 4.3 and `SettlDate` after -- and a store that keyed
-    on the name would hold two entries for one field, each half its history.
-    A field FIX never numbered has only its name, folded as every name here is.
+    The reading is kept when `version` is the newest application version the
+    record then has; older versions only contribute enumerated values, which
+    is what keeps a value that disappeared after 4.2 parsing. A spelling the
+    newer reading displaces becomes an alias, so a rename -- tag 64 is
+    `FutSettDate` through 4.3 and `SettlDate` after -- stays one identity that
+    still answers to both.
     """
-    tag = member.fix.get("tag")
-    return ("tag", int(tag)) if tag else ("name", slug_of(member.name))
-
-
-def fold_field(held: FieldEntry | None, member: Field, version: str, newest: bool) -> FieldEntry:
-    """One version's reading of a field, folded into the identity that owns it.
-
-    `newest` says whether this reading is the newest one the entry will hold,
-    which is what decides the canonical name and tag: everything older is a
-    variant of them, and a rename -- tag 64 is `FutSettDate` through 4.3 and
-    `SettlDate` after -- is a variant rather than a second entry.
-    """
+    fresh = FieldEntry.from_fields([member], [version])
     if held is None:
-        return FieldEntry.from_fields([member], [version])
-    tag = member.fix.get("tag")
-    name, number = (member.name, int(tag) if tag else None) if newest else (held.name, held.tag)
-    return FieldEntry(
-        name=name,
-        tag=number,
-        kind=held.kind,
-        aliases=held.aliases,
-        variants={
-            **_restated(held.variants, held.name, held.tag, name, number),
-            version: variant_of(member, name, number),
-        },
-        column=held.column or member.fix.get("column", ""),
+        return fresh
+    versions = (*held.versions, version)
+    if newest_of(versions) == version:
+        return dataclasses.replace(
+            fresh,
+            versions=versions,
+            values={**held.values, **fresh.values},
+            value_names={**held.value_names, **fresh.value_names},
+            used_in=_union(held.used_in, fresh.used_in),
+            components=_union(held.components, fresh.components),
+            translations=dict(held.translations),
+            aliases=_displaced(held, fresh.name),
+            column=held.column or fresh.column,
+        )
+    return dataclasses.replace(
+        held,
+        versions=versions,
+        values={**fresh.values, **held.values},
+        value_names={**fresh.value_names, **held.value_names},
+        used_in=_union(held.used_in, fresh.used_in),
+        components=_union(held.components, fresh.components),
+        column=held.column or fresh.column,
     )
 
 
-def _restated(
-    variants: Mapping[str, Mapping[str, Any]],
-    was: str,
-    had: int | None,
-    name: str,
-    tag: int | None,
-) -> dict[str, Mapping[str, Any]]:
-    """Variants restated against a canonical name and tag that just moved.
-
-    A variant states only what it does not share with the identity, so what it
-    states depends on what the identity is. When a newer version renames a tag,
-    every older variant has to start saying the name it used to share
-    silently -- otherwise the rename reads as though every version had the new
-    name.
-    """
-    if (was, had) == (name, tag):
-        return dict(variants)
-    restated: dict[str, Mapping[str, Any]] = {}
-    for version, variant in variants.items():
-        rewritten = {key: value for key, value in variant.items() if key not in ("name", "tag")}
-        spelled = str(variant.get("name") or was)
-        if spelled != name:
-            rewritten["name"] = spelled
-        own = variant.get("tag") or had
-        if own is not None and int(own) != (tag or 0):
-            rewritten["tag"] = int(own)
-        restated[version] = rewritten
-    return restated
-
-
 def fold_component(
-    held: ComponentEntry | None, declared: SpecComponent, version: str, order: int = 0
+    held: ComponentEntry | None, declared: SpecComponent, version: str
 ) -> ComponentEntry:
-    """One version's component folded into the identity that owns it."""
-    fresh = ComponentEntry.from_components([declared], [version], [order])
+    """One version's component folded into the record that owns it."""
+    fresh = ComponentEntry.from_components([declared], [version])
     if held is None:
         return fresh
-    return dataclasses.replace(held, variants={**held.variants, **fresh.variants})
+    versions = (*held.versions, version)
+    if newest_of(versions) == version:
+        return dataclasses.replace(fresh, versions=versions, aliases=held.aliases)
+    return dataclasses.replace(held, versions=versions)
 
 
-Layout = VersionedLayout | ExplodedLayout
+def _displaced(held: FieldEntry, name: str) -> tuple[Alias, ...]:
+    """The record's aliases, plus the spelling a newer reading just displaced."""
+    if fold(held.name) == fold(name):
+        return held.aliases
+    spelled = {alias.folded for alias in held.aliases}
+    if fold(held.name) in spelled:
+        return held.aliases
+    return (*held.aliases, Alias(name=held.name, source=held.newest))
 
 
-def layout_of(documents: Documents, default: str = EXPLODED) -> Layout:
-    """Which layout a store is in, read off what it holds.
+def _union(held: Sequence[str], fresh: Sequence[str]) -> tuple[str, ...]:
+    """Both lists, in order, with nothing said twice."""
+    return tuple(dict.fromkeys((*held, *fresh)))
 
-    Off what it holds and not off a setting, for the same reason the archive
-    is read off the extension: a store has to say what it is before anything
-    asks it, and a copied-in dictionary carries no setting with it. A store
-    holding neither shape is cold and is written in `default`.
+
+# -- collapsing per-version declarations into records --------------------------
+
+
+@dataclasses.dataclass(frozen=True)
+class Dropped(Convertible):
+    """One reading a collapse did not keep, and the version that stated it."""
+
+    version: str
+    reading: str
+    #: The enumerated value this reading belongs to, where the part has keys.
+    key: str = ""
+
+    def into_dict(self) -> dict[str, Any]:
+        """The dropped reading as the report holds it."""
+        declared = {"version": self.version, "reading": self.reading}
+        return {**declared, "key": self.key} if self.key else declared
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> Dropped:
+        """Read one dropped reading back out of a report."""
+        return cls(
+            version=str(mapping.get("version") or ""),
+            reading=str(mapping.get("reading") or ""),
+            key=str(mapping.get("key") or ""),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class Collapse(Convertible):
+    """What one identity lost when its versions disagreed, and what was kept.
+
+    One entry per identity and part, not per key: a field whose enumeration
+    two versions spell differently is one decision to review, however many of
+    its values moved. `kept` names the version whose reading the record holds;
+    for a keyed part the surviving reading of each key is the record's own.
     """
-    names = documents.names()
-    if any(name.startswith((f"{FIELDS}/", f"{COMPONENTS}/")) for name in names):
-        return ExplodedLayout(documents)
-    if any("/" not in name and name != VERSIONS_FILE for name in names):
-        return VersionedLayout(documents)
-    if default not in LAYOUTS:
-        raise ValueError(f"unknown FIX registry layout {default!r}; one of {list(LAYOUTS)}")
-    return ExplodedLayout(documents) if default == EXPLODED else VersionedLayout(documents)
+
+    name: str
+    part: str
+    kept: str
+    dropped: tuple[Dropped, ...] = ()
+    tag: int | None = None
+
+    def into_dict(self) -> dict[str, Any]:
+        """The collapse as the report holds it."""
+        return {
+            "name": self.name,
+            "tag": self.tag,
+            "part": self.part,
+            "kept": self.kept,
+            "dropped": [one.into_dict() for one in self.dropped],
+        }
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> Collapse:
+        """Read one collapse back out of a report."""
+        tag = mapping.get("tag")
+        return cls(
+            name=str(mapping.get("name") or ""),
+            part=str(mapping.get("part") or ""),
+            kept=str(mapping.get("kept") or ""),
+            dropped=tuple(Dropped.from_dict(one) for one in mapping.get("dropped") or ()),
+            tag=int(tag) if tag is not None else None,
+        )
 
 
-# -- turning one into the other ----------------------------------------------
+@dataclasses.dataclass(frozen=True)
+class Collision(Convertible):
+    """One translation spelling two values both normalize to, so neither has it."""
+
+    name: str
+    key: str
+    values: tuple[str, ...] = ()
+    tag: int | None = None
+
+    def into_dict(self) -> dict[str, Any]:
+        """The collision as the report holds it."""
+        return {"name": self.name, "tag": self.tag, "key": self.key, "values": list(self.values)}
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> Collision:
+        """Read one collision back out of a report."""
+        tag = mapping.get("tag")
+        return cls(
+            name=str(mapping.get("name") or ""),
+            key=str(mapping.get("key") or ""),
+            values=tuple(str(value) for value in mapping.get("values") or ()),
+            tag=int(tag) if tag is not None else None,
+        )
 
 
-def explode(
-    versions: Sequence[str],
+#: The parts of a reading a collapse can drop. Prose is not among them: a
+#: description that grew a sentence between versions loses nothing by taking
+#: the newest, and reporting six thousand of those would bury the ones that
+#: matter.
+VALUES = "values"
+VALUE_NAMES = "value_names"
+TYPE = "type"
+NAME = "name"
+NOTE = "note"
+MEMBERS = "members"
+PARTS: tuple[str, ...] = (VALUES, VALUE_NAMES, TYPE, NAME, NOTE, MEMBERS)
+
+
+@dataclasses.dataclass(frozen=True)
+class ConflictReport(Convertible):
+    """Every reading a build dropped, and every translation it could not spell.
+
+    A dictionary is collapsed once and read forever, so the judgement it makes
+    is written down rather than inferred: a silent drop is a reading nobody can
+    find again. `counts` is what a build holds to its baseline.
+    """
+
+    collapses: tuple[Collapse, ...] = ()
+    collisions: tuple[Collision, ...] = ()
+
+    def counts(self) -> dict[str, int]:
+        """`{part: identities collapsed there}`, with the translations beside them."""
+        counted = dict.fromkeys(PARTS, 0)
+        for collapse in self.collapses:
+            counted[collapse.part] = counted.get(collapse.part, 0) + 1
+        counted["translations"] = len(self.collisions)
+        return counted
+
+    def exceeds(self, baseline: Mapping[str, int]) -> list[str]:
+        """Which counts grew past `baseline`, as lines; empty when none did."""
+        counted = self.counts()
+        return [
+            f"{part}: {counted.get(part, 0)} conflicts against a baseline of {allowed}"
+            for part, allowed in sorted(baseline.items())
+            if counted.get(part, 0) > allowed
+        ]
+
+    def into_dict(self) -> dict[str, Any]:
+        """The report as the committed artifact holds it."""
+        return {
+            "counts": self.counts(),
+            "collapses": [collapse.into_dict() for collapse in self.collapses],
+            "collisions": [collision.into_dict() for collision in self.collisions],
+        }
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> ConflictReport:
+        """Read a committed report back, so a test can hold a build to it."""
+        return cls(
+            collapses=tuple(Collapse.from_dict(one) for one in mapping.get("collapses") or ()),
+            collisions=tuple(Collision.from_dict(one) for one in mapping.get("collisions") or ()),
+        )
+
+
+def collapse(
+    order: Sequence[str],
     fields: Mapping[str, Sequence[Field]],
     components: Mapping[str, Sequence[SpecComponent]],
-) -> tuple[dict[str, FieldEntry], dict[str, ComponentEntry]]:
-    """Per-version declarations as per-identity entries, newest version first.
+) -> tuple[dict[int | str, FieldEntry], dict[str, ComponentEntry], ConflictReport]:
+    """Per-version declarations as cross-version records, and what that cost.
 
-    `versions` runs newest first and decides which reading owns each identity:
-    the newest version's name and tag are the canonical ones, and everything
-    older is a variant of them. Two identities whose canonical names would be
-    stored in one file are refused rather than one silently overwriting the
-    other.
+    The newest *application* version owns each reading -- name, datatype,
+    prose, note -- and the enumerated values are the union across versions with
+    the newest winning per key, so a value that only ever existed in 4.2 still
+    parses. Every disagreement the collapse resolved is in the report; two
+    identities claiming one tag or one name are refused outright, because a
+    dictionary that ships with them answers differently on two machines.
     """
-    by_identity: dict[tuple[str, Any], FieldEntry] = {}
-    for version in versions:
+    readings: dict[int | str, list[tuple[str, Field]]] = {}
+    for version in order:
         for member in fields.get(version, ()):
-            identity = identity_of(member)
-            held = by_identity.get(identity)
-            by_identity[identity] = fold_field(held, member, version, newest=held is None)
-    field_entries: dict[str, FieldEntry] = {}
-    taken: dict[str, tuple[str, Any]] = {}
-    # A store is created here, so the two ways one lookup could answer with
-    # whichever entry was read first are refused here rather than reported by
-    # a later `check`: a dictionary that ships with them answers differently
-    # on two machines, and nothing downstream can see why.
-    by_tag: dict[int, str] = {}
+            readings.setdefault(_field_key(member), []).append((version, member))
+
+    collapses: list[Collapse] = []
+    collisions: list[Collision] = []
+    entries: dict[int | str, FieldEntry] = {}
     by_name: dict[str, str] = {}
-    for entry in by_identity.values():
-        if entry.tag is not None and (held := by_tag.get(int(entry.tag))) is not None:
-            raise ValueError(
-                f"FIX tag {entry.tag} is claimed by {held!r} and {entry.name!r}: one tag is "
-                "one identity, so record the second spelling as an alias of the first"
-            )
-        if (held := by_name.get(entry.folded)) is not None:
+    for key, found in readings.items():
+        found.sort(key=lambda pair: newest_rank(pair[0]))
+        entry = FieldEntry.from_fields(
+            [member for _, member in found], [version for version, _ in found]
+        )
+        collapses.extend(_field_collapses(entry, found))
+        _, clashing = translations_of(entry.values, entry.value_names)
+        collisions.extend(
+            Collision(entry.name, spelling, tuple(owners), entry.tag)
+            for spelling, owners in sorted(clashing.items())
+        )
+        held = by_name.get(entry.folded)
+        if held is not None:
             raise ValueError(
                 f"FIX field name {entry.folded!r} is claimed by {held!r} and {entry.name!r}: "
                 "one name is one identity, so rename one or record it as an alias"
             )
-        slug = allocate_slug(entry, taken)
-        if slug in field_entries:
-            raise ValueError(
-                f"FIX fields {field_entries[slug].name!r} and {entry.name!r} are both "
-                f"stored as {FIELDS}/{slug}{DOCUMENT_SUFFIX}"
-            )
-        if entry.tag is not None:
-            by_tag[int(entry.tag)] = entry.name
         by_name[entry.folded] = entry.name
-        field_entries[slug] = entry
-        taken[slug] = (entry.name, entry_identity(entry))
+        entries[key] = entry
 
+    entries = _aliased(entries, collapses, by_name)
+
+    component_readings: dict[str, list[tuple[str, SpecComponent]]] = {}
+    for version in order:
+        for declared in components.get(version, ()):
+            component_readings.setdefault(slug_of(declared.name), []).append((version, declared))
     component_entries: dict[str, ComponentEntry] = {}
-    for version in versions:
-        for order, declared in enumerate(components.get(version, ())):
-            slug = slug_of(declared.name)
-            component_entries[slug] = fold_component(
-                component_entries.get(slug), declared, version, order
-            )
-    return field_entries, component_entries
+    for slug, found in sorted(component_readings.items()):
+        found.sort(key=lambda pair: newest_rank(pair[0]))
+        component_entries[slug] = ComponentEntry.from_components(
+            [declared for _, declared in found], [version for version, _ in found]
+        )
+    # After every record exists, because what a tree still reaches runs through
+    # the components it references.
+    by_component = {entry.folded: entry for entry in component_entries.values()}
+    for slug, entry in component_entries.items():
+        collapses.extend(_component_collapses(entry, component_readings[slug], by_component))
+    return entries, component_entries, ConflictReport(tuple(collapses), tuple(collisions))
+
+
+def _field_collapses(entry: FieldEntry, found: Sequence[tuple[str, Field]]) -> list[Collapse]:
+    """Every reading of one field the collapse dropped, one entry per part."""
+    parts: dict[str, list[tuple[str, str]]] = {
+        NAME: [(version, member.name) for version, member in found],
+        TYPE: [(version, str(member.fix.get("type") or "")) for version, member in found],
+        NOTE: [(version, str(member.fix.get("note") or "")) for version, member in found],
+    }
+    collapses = [
+        one
+        for part, readings in parts.items()
+        if (one := _collapsed(entry, part, readings)) is not None
+    ]
+    for part in (VALUES, VALUE_NAMES):
+        keyed: dict[str, list[tuple[str, str]]] = {}
+        for version, member in found:
+            for value, reading in _json_mapping(member.fix.get(part)).items():
+                keyed.setdefault(value, []).append((version, reading))
+        dropped = [
+            Dropped(version, reading, value)
+            for value, readings in sorted(keyed.items())
+            for version, reading in readings
+            if reading != readings[-1][1]
+        ]
+        if dropped:
+            collapses.append(Collapse(entry.name, part, entry.newest, tuple(dropped), entry.tag))
+    return collapses
+
+
+def _collapsed(
+    entry: FieldEntry, part: str, readings: Sequence[tuple[str, str]]
+) -> Collapse | None:
+    """One part of a reading, as a collapse when the versions did not agree."""
+    kept = readings[-1][1]
+    dropped = tuple(
+        Dropped(version, reading) for version, reading in readings if reading and reading != kept
+    )
+    return Collapse(entry.name, part, entry.newest, dropped, entry.tag) if dropped else None
+
+
+def component_closure(wanted: Iterable[str], by_name: Mapping[str, ComponentEntry]) -> set[str]:
+    """`wanted`, plus every component their trees reference, however deeply."""
+    found: set[str] = set()
+    pending = list(wanted)
+    while pending:
+        key = pending.pop()
+        if key in found:
+            continue
+        found.add(key)
+        entry = by_name.get(key)
+        if entry is None:
+            continue
+        pending.extend(
+            fold(member.name)
+            for member in _members_of(entry.members)
+            if isinstance(member, SpecComponentRef)
+        )
+    return found
+
+
+def _component_collapses(
+    entry: ComponentEntry,
+    found: Sequence[tuple[str, SpecComponent]],
+    by_name: Mapping[str, ComponentEntry],
+) -> list[Collapse]:
+    """Members an older version declared that the newest tree no longer reaches.
+
+    Reaches, not names: a member the newest tree moved into a referenced
+    component is still read, and reporting it as dropped would send a reader
+    looking for a loss that is not there.
+    """
+    kept = _reachable(entry.members, by_name)
+    dropped = tuple(
+        Dropped(version, name)
+        for version, declared in found
+        for name in sorted(_reachable(declared.members, by_name) - kept)
+    )
+    return [Collapse(entry.name, MEMBERS, entry.newest, dropped)] if dropped else []
+
+
+def _reachable(members: Sequence[SpecMember], by_name: Mapping[str, ComponentEntry]) -> set[str]:
+    """Every member name one tree reads, following the components it references."""
+    found = {member.name for member in _members_of(members)}
+    for key in component_closure(
+        (fold(one.name) for one in _members_of(members) if isinstance(one, SpecComponentRef)),
+        by_name,
+    ):
+        entry = by_name.get(key)
+        if entry is not None:
+            found.update(member.name for member in _members_of(entry.members))
+    return found
+
+
+def _members_of(members: Sequence[SpecMember]) -> Iterable[SpecMember]:
+    """Every member under `members`, however deeply a group nests it."""
+    for member in members:
+        yield member
+        yield from _members_of(getattr(member, "members", ()))
+
+
+def _aliased(
+    entries: Mapping[int | str, FieldEntry],
+    collapses: Sequence[Collapse],
+    by_name: Mapping[str, str],
+) -> dict[int | str, FieldEntry]:
+    """Records with every dropped spelling recorded as an alias that can resolve.
+
+    A rename is a collapse like any other -- tag 64 is `FutSettDate` through
+    4.3 and `SettlDate` after -- but the older spelling is a name real traffic
+    still carries, so it is kept as an alias with the version that spelled it.
+    One that another identity already claims as its canonical name cannot be,
+    and stays in the report as the dropped reading it is.
+    """
+    dropped: dict[str, list[Dropped]] = {}
+    for collapse in collapses:
+        if collapse.part == NAME:
+            dropped.setdefault(fold(collapse.name), []).extend(collapse.dropped)
+    if not dropped:
+        return dict(entries)
+    aliased: dict[int | str, FieldEntry] = {}
+    for key, entry in entries.items():
+        spellings = dropped.get(entry.folded, ())
+        held = {alias.folded for alias in entry.aliases}
+        fresh = []
+        for one in spellings:
+            folded = fold(one.reading)
+            if folded in held or folded in by_name:
+                continue
+            held.add(folded)
+            fresh.append(Alias(name=one.reading, source=one.version))
+        aliased[key] = (
+            dataclasses.replace(entry, aliases=(*entry.aliases, *fresh)) if fresh else entry
+        )
+    return aliased
+
+
+# -- a whole store, ready to write --------------------------------------------
 
 
 def documents_of(
     versions: Sequence[str],
-    field_entries: Mapping[str, FieldEntry],
+    field_entries: Mapping[int | str, FieldEntry],
     component_entries: Mapping[str, ComponentEntry],
     sessions: Mapping[str, Sequence[tuple[str, bool]]],
     declared: Iterable[str] = (),
     suffix: str = DOCUMENT_SUFFIX,
 ) -> dict[str, dict[str, Any]]:
-    """A whole exploded store as `{document name: document}`, ready to write.
+    """A whole store as `{document name: document}`, ready to write.
 
     `declared` names the versions whose components have been read, however few
     each has: a version missing from it answers "nobody asked" rather than
     "this version declares none".
 
     `suffix` is what the documents are named -- and so what they are written
-    in, since `document_text` reads the name. A store written for people keeps
-    the default; one written to be loaded says so.
+    in, since `document_text` reads the name.
     """
     documents: dict[str, dict[str, Any]] = {}
     index: dict[str, Any] = {}
@@ -1007,8 +1244,12 @@ def documents_of(
         documents[f"{document_stem(VERSIONS_FILE)}{suffix}"] = {
             key: index[key] for key in sorted(index)
         }
-    for slug, entry in field_entries.items():
-        documents[f"{FIELDS}/{slug}{suffix}"] = entry.into_dict()
+    shards: dict[str, dict[int | str, FieldEntry]] = {}
+    for entry in field_entries.values():
+        name = document_stem(field_document(entry)) + suffix
+        shards.setdefault(name, {})[entry.key] = entry
+    for name, shard in shards.items():
+        documents[name] = _shard_document(shard)
     for slug, entry in component_entries.items():
         documents[f"{COMPONENTS}/{slug}{suffix}"] = entry.into_dict()
     return documents
@@ -1032,31 +1273,20 @@ def write_archive(
     return pathlib.Path(parsed.store_path) if parsed.scheme in LOCAL else parsed.into_string()
 
 
-def allocate_slug(entry: FieldEntry, taken: Mapping[str, tuple[str, Any]]) -> str:
-    """The file name one field entry is stored under, given what is already stored.
-
-    Its name, which is what makes `fields/party_role.json` readable. Two
-    identities can still share a name -- two venue dialects each numbering
-    their own `MsgType` -- and there the tag joins the file name, for both of
-    them, so which file an identity lands in never depends on which was read
-    first.
-    """
-    slug = entry.slug
-    identity = entry_identity(entry)
-    held = taken.get(slug)
-    if held is None or held[1] == identity:
-        return slug
-    return _qualified(entry)
-
-
-def _qualified(entry: FieldEntry) -> str:
-    """A slug that carries the identity, for a name two fields both claim."""
-    return f"{entry.slug}_{entry.tag}" if entry.tag else entry.slug
-
-
 def slug_collisions(names: Iterable[str]) -> dict[str, list[str]]:
     """`{slug: the names that share it}` -- empty when every identity is its own file."""
     found: dict[str, list[str]] = {}
     for name in names:
         found.setdefault(slug_of(name), []).append(name)
     return {slug: shared for slug, shared in found.items() if len(shared) > 1}
+
+
+def _json_mapping(value: str | None) -> dict[str, str]:
+    """One `fix:` metadata mapping, or nothing for anything that is not one."""
+    try:
+        decoded = json.loads(value or "{}")
+    except (TypeError, ValueError):  # pragma: no cover - the registry writes these
+        return {}
+    return (
+        {str(key): str(item) for key, item in decoded.items()} if isinstance(decoded, dict) else {}
+    )

@@ -1,9 +1,0 @@
-{
- "name": "NoStreamAssetAttributes",
- "tag": 41237,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

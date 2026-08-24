@@ -1,9 +1,0 @@
-{
- "name": "InstrumentPartyRoleQualifier",
- "tag": 2378,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

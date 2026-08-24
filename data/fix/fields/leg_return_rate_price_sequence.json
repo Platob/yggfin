@@ -1,9 +1,0 @@
-{
- "name": "LegReturnRatePriceSequence",
- "tag": 42535,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

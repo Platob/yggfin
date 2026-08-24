@@ -1,9 +1,0 @@
-{
- "name": "LegMinPriceIncrementAmount",
- "tag": 2191,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

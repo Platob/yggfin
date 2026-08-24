@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDeliveryStreamRouteOrCharter",
- "tag": 43096,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

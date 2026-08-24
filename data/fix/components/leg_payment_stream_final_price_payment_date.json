@@ -1,46 +1,44 @@
 {
  "name": "LegPaymentStreamFinalPricePaymentDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 127,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFinalPricePaymentDateUnadjusted",
-     "required": false,
-     "tag": 42453
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFinalPricePaymentDateRelativeTo",
-     "required": false,
-     "tag": 42454
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFinalPricePaymentDateOffsetPeriod",
-     "required": false,
-     "tag": 42455
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFinalPricePaymentDateOffsetUnit",
-     "required": false,
-     "tag": 42456
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFinalPricePaymentDateOffsetDayType",
-     "required": false,
-     "tag": 42457
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFinalPricePaymentDateAdjusted",
-     "required": false,
-     "tag": 42458
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFinalPricePaymentDateUnadjusted",
+   "required": false,
+   "tag": 42453
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFinalPricePaymentDateRelativeTo",
+   "required": false,
+   "tag": 42454
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFinalPricePaymentDateOffsetPeriod",
+   "required": false,
+   "tag": 42455
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFinalPricePaymentDateOffsetUnit",
+   "required": false,
+   "tag": 42456
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFinalPricePaymentDateOffsetDayType",
+   "required": false,
+   "tag": 42457
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFinalPricePaymentDateAdjusted",
+   "required": false,
+   "tag": 42458
   }
- }
+ ]
 }

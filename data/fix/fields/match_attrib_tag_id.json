@@ -1,9 +1,0 @@
-{
- "name": "MatchAttribTagID",
- "tag": 1626,
- "versions": {
-  "5.0.SP2": {
-   "type": "TAGNUM"
-  }
- }
-}

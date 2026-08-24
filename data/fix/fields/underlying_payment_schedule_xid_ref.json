@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentScheduleXIDRef",
- "tag": 41882,
- "versions": {
-  "5.0.SP2": {
-   "type": "XIDREF"
-  }
- }
-}

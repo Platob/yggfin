@@ -1,237 +1,64 @@
 {
  "name": "RFQReqGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 224,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRelatedSym",
+   "required": false,
+   "tag": 146,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
+     "kind": "component",
+     "name": "Instrument",
+     "required": true
+    },
+    {
+     "kind": "component",
+     "name": "UndInstrmtGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "InstrmtLegGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PrevClosePx",
      "required": false,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "UndInstrmtGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "InstrmtLegGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PrevClosePx",
-       "required": false,
-       "tag": 140
-      },
-      {
-       "kind": "field",
-       "name": "QuoteRequestType",
-       "required": false,
-       "tag": 303
-      },
-      {
-       "kind": "field",
-       "name": "QuoteType",
-       "required": false,
-       "tag": 537
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 73,
-   "members": [
+     "tag": 140
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": true,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "UndInstrmtGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "InstrmtLegGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PrevClosePx",
-       "required": false,
-       "tag": 140
-      },
-      {
-       "kind": "field",
-       "name": "QuoteRequestType",
-       "required": false,
-       "tag": 303
-      },
-      {
-       "kind": "field",
-       "name": "QuoteType",
-       "required": false,
-       "tag": 537
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 74,
-   "members": [
+     "kind": "field",
+     "name": "QuoteRequestType",
+     "required": false,
+     "tag": 303
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": true,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "UndInstrmtGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "InstrmtLegGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PrevClosePx",
-       "required": false,
-       "tag": 140
-      },
-      {
-       "kind": "field",
-       "name": "QuoteRequestType",
-       "required": false,
-       "tag": 303
-      },
-      {
-       "kind": "field",
-       "name": "QuoteType",
-       "required": false,
-       "tag": 537
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 74,
-   "members": [
+     "kind": "field",
+     "name": "QuoteType",
+     "required": false,
+     "tag": 537
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": true,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "UndInstrmtGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "InstrmtLegGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PrevClosePx",
-       "required": false,
-       "tag": 140
-      },
-      {
-       "kind": "field",
-       "name": "QuoteRequestType",
-       "required": false,
-       "tag": 303
-      },
-      {
-       "kind": "field",
-       "name": "QuoteType",
-       "required": false,
-       "tag": 537
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      }
-     ]
+     "kind": "field",
+     "name": "TradingSessionID",
+     "required": false,
+     "tag": 336
+    },
+    {
+     "kind": "field",
+     "name": "TradingSessionSubID",
+     "required": false,
+     "tag": 625
     }
    ]
   }
- }
+ ]
 }

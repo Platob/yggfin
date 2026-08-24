@@ -1,9 +1,0 @@
-{
- "name": "NoDeliveryScheduleSettlTimes",
- "tag": 41054,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

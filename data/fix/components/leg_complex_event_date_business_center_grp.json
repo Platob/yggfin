@@ -1,24 +1,22 @@
 {
  "name": "LegComplexEventDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 529,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegComplexEventDateBusinessCenters",
+   "required": false,
+   "tag": 41387,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegComplexEventDateBusinessCenters",
+     "kind": "field",
+     "name": "LegComplexEventDateBusinessCenter",
      "required": false,
-     "tag": 41387,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegComplexEventDateBusinessCenter",
-       "required": false,
-       "tag": 41388
-      }
-     ]
+     "tag": 41388
     }
    ]
   }
- }
+ ]
 }

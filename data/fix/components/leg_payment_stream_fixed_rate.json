@@ -1,70 +1,68 @@
 {
  "name": "LegPaymentStreamFixedRate",
- "versions": {
-  "5.0.SP2": {
-   "order": 32,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamRate",
-     "required": false,
-     "tag": 40326
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFixedAmount",
-     "required": false,
-     "tag": 40327
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamRateOrAmountCurrency",
-     "required": false,
-     "tag": 40328
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFixedAmountUnitOfMeasure",
-     "required": false,
-     "tag": 41556
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamTotalFixedAmount",
-     "required": false,
-     "tag": 41557
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFutureValueNotional",
-     "required": false,
-     "tag": 40329
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFutureValueDateAdjusted",
-     "required": false,
-     "tag": 40330
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamWorldScaleRate",
-     "required": false,
-     "tag": 41558
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamContractPrice",
-     "required": false,
-     "tag": 41559
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamContractPriceCurrency",
-     "required": false,
-     "tag": 41560
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamRate",
+   "required": false,
+   "tag": 40326
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFixedAmount",
+   "required": false,
+   "tag": 40327
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamRateOrAmountCurrency",
+   "required": false,
+   "tag": 40328
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFixedAmountUnitOfMeasure",
+   "required": false,
+   "tag": 41556
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamTotalFixedAmount",
+   "required": false,
+   "tag": 41557
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFutureValueNotional",
+   "required": false,
+   "tag": 40329
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFutureValueDateAdjusted",
+   "required": false,
+   "tag": 40330
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamWorldScaleRate",
+   "required": false,
+   "tag": 41558
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamContractPrice",
+   "required": false,
+   "tag": 41559
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamContractPriceCurrency",
+   "required": false,
+   "tag": 41560
   }
- }
+ ]
 }

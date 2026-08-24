@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDividendAccrualPaymentDateBusinessDayConvention",
- "tag": 42824,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

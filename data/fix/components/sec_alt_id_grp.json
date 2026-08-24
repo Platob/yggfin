@@ -1,111 +1,37 @@
 {
  "name": "SecAltIDGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 242,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoSecurityAltID",
+   "required": false,
+   "tag": 454,
    "members": [
     {
-     "kind": "group",
-     "name": "NoSecurityAltID",
+     "kind": "field",
+     "name": "SecurityAltID",
      "required": false,
-     "tag": 454,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SecurityAltID",
-       "required": false,
-       "tag": 455
-      },
-      {
-       "kind": "field",
-       "name": "SecurityAltIDSource",
-       "required": false,
-       "tag": 456
-      },
-      {
-       "kind": "field",
-       "name": "SymbolPositionNumber",
-       "required": false,
-       "tag": 2957
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 91,
-   "members": [
+     "tag": 455
+    },
     {
-     "kind": "group",
-     "name": "NoSecurityAltID",
+     "kind": "field",
+     "name": "SecurityAltIDSource",
      "required": false,
-     "tag": 454,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SecurityAltID",
-       "required": false,
-       "tag": 455
-      },
-      {
-       "kind": "field",
-       "name": "SecurityAltIDSource",
-       "required": false,
-       "tag": 456
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 93,
-   "members": [
+     "tag": 456
+    },
     {
-     "kind": "group",
-     "name": "NoSecurityAltID",
+     "kind": "field",
+     "name": "SymbolPositionNumber",
      "required": false,
-     "tag": 454,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SecurityAltID",
-       "required": false,
-       "tag": 455
-      },
-      {
-       "kind": "field",
-       "name": "SecurityAltIDSource",
-       "required": false,
-       "tag": 456
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 93,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoSecurityAltID",
-     "required": false,
-     "tag": 454,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SecurityAltID",
-       "required": false,
-       "tag": 455
-      },
-      {
-       "kind": "field",
-       "name": "SecurityAltIDSource",
-       "required": false,
-       "tag": 456
-      }
-     ]
+     "tag": 2957
     }
    ]
   }
- }
+ ]
 }

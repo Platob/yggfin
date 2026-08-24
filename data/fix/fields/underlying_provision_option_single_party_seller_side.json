@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionOptionSinglePartySellerSide",
- "tag": 42158,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStubIndex2CurveUnit",
- "tag": 40731,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

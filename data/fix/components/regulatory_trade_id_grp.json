@@ -1,54 +1,52 @@
 {
  "name": "RegulatoryTradeIDGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 412,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRegulatoryTradeIDs",
+   "required": false,
+   "tag": 1907,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRegulatoryTradeIDs",
+     "kind": "field",
+     "name": "RegulatoryTradeID",
      "required": false,
-     "tag": 1907,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RegulatoryTradeID",
-       "required": false,
-       "tag": 1903
-      },
-      {
-       "kind": "field",
-       "name": "RegulatoryTradeIDSource",
-       "required": false,
-       "tag": 1905
-      },
-      {
-       "kind": "field",
-       "name": "RegulatoryTradeIDEvent",
-       "required": false,
-       "tag": 1904
-      },
-      {
-       "kind": "field",
-       "name": "RegulatoryTradeIDType",
-       "required": false,
-       "tag": 1906
-      },
-      {
-       "kind": "field",
-       "name": "RegulatoryLegRefID",
-       "required": false,
-       "tag": 2411
-      },
-      {
-       "kind": "field",
-       "name": "RegulatoryTradeIDScope",
-       "required": false,
-       "tag": 2397
-      }
-     ]
+     "tag": 1903
+    },
+    {
+     "kind": "field",
+     "name": "RegulatoryTradeIDSource",
+     "required": false,
+     "tag": 1905
+    },
+    {
+     "kind": "field",
+     "name": "RegulatoryTradeIDEvent",
+     "required": false,
+     "tag": 1904
+    },
+    {
+     "kind": "field",
+     "name": "RegulatoryTradeIDType",
+     "required": false,
+     "tag": 1906
+    },
+    {
+     "kind": "field",
+     "name": "RegulatoryLegRefID",
+     "required": false,
+     "tag": 2411
+    },
+    {
+     "kind": "field",
+     "name": "RegulatoryTradeIDScope",
+     "required": false,
+     "tag": 2397
     }
    ]
   }
- }
+ ]
 }

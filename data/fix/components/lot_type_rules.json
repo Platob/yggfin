@@ -1,55 +1,29 @@
 {
  "name": "LotTypeRules",
- "versions": {
-  "5.0.SP2": {
-   "order": 276,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLotTypeRules",
+   "required": false,
+   "tag": 1234,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLotTypeRules",
+     "kind": "field",
+     "name": "LotType",
      "required": false,
-     "tag": 1234,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LotType",
-       "required": false,
-       "tag": 1093
-      },
-      {
-       "kind": "field",
-       "name": "MinLotSize",
-       "required": false,
-       "tag": 1231
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 131,
-   "members": [
+     "tag": 1093
+    },
     {
-     "kind": "group",
-     "name": "NoLotTypeRules",
+     "kind": "field",
+     "name": "MinLotSize",
      "required": false,
-     "tag": 1234,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LotType",
-       "required": false,
-       "tag": 1093
-      },
-      {
-       "kind": "field",
-       "name": "MinLotSize",
-       "required": false,
-       "tag": 1231
-      }
-     ]
+     "tag": 1231
     }
    ]
   }
- }
+ ]
 }

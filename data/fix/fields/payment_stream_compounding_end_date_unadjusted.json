@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamCompoundingEndDateUnadjusted",
- "tag": 42622,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

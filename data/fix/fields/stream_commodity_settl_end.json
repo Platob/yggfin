@@ -1,9 +1,0 @@
-{
- "name": "StreamCommoditySettlEnd",
- "tag": 41288,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

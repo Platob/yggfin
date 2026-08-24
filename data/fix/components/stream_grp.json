@@ -1,189 +1,187 @@
 {
  "name": "StreamGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 416,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoStreams",
+   "required": false,
+   "tag": 40049,
    "members": [
     {
-     "kind": "group",
-     "name": "NoStreams",
+     "kind": "field",
+     "name": "StreamType",
      "required": false,
-     "tag": 40049,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StreamType",
-       "required": false,
-       "tag": 40050
-      },
-      {
-       "kind": "field",
-       "name": "StreamXID",
-       "required": false,
-       "tag": 41303
-      },
-      {
-       "kind": "field",
-       "name": "StreamDesc",
-       "required": false,
-       "tag": 40051
-      },
-      {
-       "kind": "field",
-       "name": "StreamVersion",
-       "required": false,
-       "tag": 42784
-      },
-      {
-       "kind": "field",
-       "name": "StreamVersionEffectiveDate",
-       "required": false,
-       "tag": 42785
-      },
-      {
-       "kind": "field",
-       "name": "StreamPaySide",
-       "required": false,
-       "tag": 40052
-      },
-      {
-       "kind": "field",
-       "name": "StreamReceiveSide",
-       "required": false,
-       "tag": 40053
-      },
-      {
-       "kind": "field",
-       "name": "StreamNotionalXIDRef",
-       "required": false,
-       "tag": 41305
-      },
-      {
-       "kind": "field",
-       "name": "StreamNotional",
-       "required": false,
-       "tag": 40054
-      },
-      {
-       "kind": "field",
-       "name": "StreamCurrency",
-       "required": false,
-       "tag": 40055
-      },
-      {
-       "kind": "field",
-       "name": "StreamNotionalDeterminationMethod",
-       "required": false,
-       "tag": 42786
-      },
-      {
-       "kind": "field",
-       "name": "StreamNotionalAdjustments",
-       "required": false,
-       "tag": 42787
-      },
-      {
-       "kind": "field",
-       "name": "StreamNotionalFrequencyPeriod",
-       "required": false,
-       "tag": 41306
-      },
-      {
-       "kind": "field",
-       "name": "StreamNotionalFrequencyUnit",
-       "required": false,
-       "tag": 41307
-      },
-      {
-       "kind": "field",
-       "name": "StreamNotionalCommodityFrequency",
-       "required": false,
-       "tag": 41308
-      },
-      {
-       "kind": "field",
-       "name": "StreamNotionalUnitOfMeasure",
-       "required": false,
-       "tag": 41309
-      },
-      {
-       "kind": "field",
-       "name": "StreamTotalNotional",
-       "required": false,
-       "tag": 41310
-      },
-      {
-       "kind": "field",
-       "name": "StreamTotalNotionalUnitOfMeasure",
-       "required": false,
-       "tag": 41311
-      },
-      {
-       "kind": "component",
-       "name": "StreamCommodity",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "StreamEffectiveDate",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "StreamTerminationDate",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "StreamCalculationPeriodDates",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "PaymentStream",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "PaymentScheduleGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "PaymentStubGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "DeliveryStream",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "DeliveryScheduleGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "StreamText",
-       "required": false,
-       "tag": 40056
-      },
-      {
-       "kind": "field",
-       "name": "EncodedStreamTextLen",
-       "required": false,
-       "tag": 40982
-      },
-      {
-       "kind": "field",
-       "name": "EncodedStreamText",
-       "required": false,
-       "tag": 40983
-      }
-     ]
+     "tag": 40050
+    },
+    {
+     "kind": "field",
+     "name": "StreamXID",
+     "required": false,
+     "tag": 41303
+    },
+    {
+     "kind": "field",
+     "name": "StreamDesc",
+     "required": false,
+     "tag": 40051
+    },
+    {
+     "kind": "field",
+     "name": "StreamVersion",
+     "required": false,
+     "tag": 42784
+    },
+    {
+     "kind": "field",
+     "name": "StreamVersionEffectiveDate",
+     "required": false,
+     "tag": 42785
+    },
+    {
+     "kind": "field",
+     "name": "StreamPaySide",
+     "required": false,
+     "tag": 40052
+    },
+    {
+     "kind": "field",
+     "name": "StreamReceiveSide",
+     "required": false,
+     "tag": 40053
+    },
+    {
+     "kind": "field",
+     "name": "StreamNotionalXIDRef",
+     "required": false,
+     "tag": 41305
+    },
+    {
+     "kind": "field",
+     "name": "StreamNotional",
+     "required": false,
+     "tag": 40054
+    },
+    {
+     "kind": "field",
+     "name": "StreamCurrency",
+     "required": false,
+     "tag": 40055
+    },
+    {
+     "kind": "field",
+     "name": "StreamNotionalDeterminationMethod",
+     "required": false,
+     "tag": 42786
+    },
+    {
+     "kind": "field",
+     "name": "StreamNotionalAdjustments",
+     "required": false,
+     "tag": 42787
+    },
+    {
+     "kind": "field",
+     "name": "StreamNotionalFrequencyPeriod",
+     "required": false,
+     "tag": 41306
+    },
+    {
+     "kind": "field",
+     "name": "StreamNotionalFrequencyUnit",
+     "required": false,
+     "tag": 41307
+    },
+    {
+     "kind": "field",
+     "name": "StreamNotionalCommodityFrequency",
+     "required": false,
+     "tag": 41308
+    },
+    {
+     "kind": "field",
+     "name": "StreamNotionalUnitOfMeasure",
+     "required": false,
+     "tag": 41309
+    },
+    {
+     "kind": "field",
+     "name": "StreamTotalNotional",
+     "required": false,
+     "tag": 41310
+    },
+    {
+     "kind": "field",
+     "name": "StreamTotalNotionalUnitOfMeasure",
+     "required": false,
+     "tag": 41311
+    },
+    {
+     "kind": "component",
+     "name": "StreamCommodity",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "StreamEffectiveDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "StreamTerminationDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "StreamCalculationPeriodDates",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "PaymentStream",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "PaymentScheduleGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "PaymentStubGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "DeliveryStream",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "DeliveryScheduleGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "StreamText",
+     "required": false,
+     "tag": 40056
+    },
+    {
+     "kind": "field",
+     "name": "EncodedStreamTextLen",
+     "required": false,
+     "tag": 40982
+    },
+    {
+     "kind": "field",
+     "name": "EncodedStreamText",
+     "required": false,
+     "tag": 40983
     }
    ]
   }
- }
+ ]
 }

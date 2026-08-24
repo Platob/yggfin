@@ -1,9 +1,0 @@
-{
- "name": "DeliveryStreamDeliveryPoint",
- "tag": 41062,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

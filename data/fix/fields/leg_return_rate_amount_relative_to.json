@@ -1,9 +1,0 @@
-{
- "name": "LegReturnRateAmountRelativeTo",
- "tag": 42541,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

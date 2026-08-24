@@ -1,9 +1,0 @@
-{
- "name": "LegComplexEventFixingTime",
- "tag": 41396,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTTIME"
-  }
- }
-}

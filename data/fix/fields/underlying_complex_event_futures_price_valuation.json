@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingComplexEventFuturesPriceValuation",
- "tag": 2611,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

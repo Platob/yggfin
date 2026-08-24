@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStrikeValue",
- "tag": 2022,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

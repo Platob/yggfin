@@ -1,105 +1,31 @@
 {
  "name": "RoutingGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 227,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRoutingIDs",
+   "required": false,
+   "tag": 215,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRoutingIDs",
+     "kind": "field",
+     "name": "RoutingType",
      "required": false,
-     "tag": 215,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RoutingType",
-       "required": false,
-       "tag": 216
-      },
-      {
-       "kind": "field",
-       "name": "RoutingID",
-       "required": false,
-       "tag": 217
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 76,
-   "members": [
+     "tag": 216
+    },
     {
-     "kind": "group",
-     "name": "NoRoutingIDs",
+     "kind": "field",
+     "name": "RoutingID",
      "required": false,
-     "tag": 215,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RoutingType",
-       "required": false,
-       "tag": 216
-      },
-      {
-       "kind": "field",
-       "name": "RoutingID",
-       "required": false,
-       "tag": 217
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 77,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoRoutingIDs",
-     "required": false,
-     "tag": 215,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RoutingType",
-       "required": false,
-       "tag": 216
-      },
-      {
-       "kind": "field",
-       "name": "RoutingID",
-       "required": false,
-       "tag": 217
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 77,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoRoutingIDs",
-     "required": false,
-     "tag": 215,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RoutingType",
-       "required": false,
-       "tag": 216
-      },
-      {
-       "kind": "field",
-       "name": "RoutingID",
-       "required": false,
-       "tag": 217
-      }
-     ]
+     "tag": 217
     }
    ]
   }
- }
+ ]
 }

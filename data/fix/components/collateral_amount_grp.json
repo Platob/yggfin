@@ -1,113 +1,111 @@
 {
  "name": "CollateralAmountGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 343,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoCollateralAmounts",
+   "required": false,
+   "tag": 1703,
    "members": [
     {
-     "kind": "group",
-     "name": "NoCollateralAmounts",
+     "kind": "field",
+     "name": "CurrentCollateralAmount",
      "required": false,
-     "tag": 1703,
-     "members": [
-      {
-       "kind": "field",
-       "name": "CurrentCollateralAmount",
-       "required": false,
-       "tag": 1704
-      },
-      {
-       "kind": "field",
-       "name": "CollateralCurrency",
-       "required": false,
-       "tag": 1705
-      },
-      {
-       "kind": "field",
-       "name": "CollateralCurrencyCodeSource",
-       "required": false,
-       "tag": 2929
-      },
-      {
-       "kind": "field",
-       "name": "CollateralAmountType",
-       "required": false,
-       "tag": 2632
-      },
-      {
-       "kind": "field",
-       "name": "CollateralFXRate",
-       "required": false,
-       "tag": 2090
-      },
-      {
-       "kind": "field",
-       "name": "CollateralFXRateCalc",
-       "required": false,
-       "tag": 2091
-      },
-      {
-       "kind": "field",
-       "name": "CollateralType",
-       "required": false,
-       "tag": 1706
-      },
-      {
-       "kind": "field",
-       "name": "CollateralAmountMarketSegmentID",
-       "required": false,
-       "tag": 2092
-      },
-      {
-       "kind": "field",
-       "name": "CollateralAmountMarketID",
-       "required": false,
-       "tag": 2093
-      },
-      {
-       "kind": "field",
-       "name": "HaircutIndicator",
-       "required": false,
-       "tag": 1902
-      },
-      {
-       "kind": "field",
-       "name": "CollateralPortfolioID",
-       "required": false,
-       "tag": 2350
-      },
-      {
-       "kind": "field",
-       "name": "CollateralPercentOverage",
-       "required": false,
-       "tag": 2690
-      },
-      {
-       "kind": "field",
-       "name": "CollateralMarketPrice",
-       "required": false,
-       "tag": 2689
-      },
-      {
-       "kind": "field",
-       "name": "CollateralReinvestmentRate",
-       "required": false,
-       "tag": 2840
-      },
-      {
-       "kind": "component",
-       "name": "CollateralReinvestmentGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingRefID",
-       "required": false,
-       "tag": 2841
-      }
-     ]
+     "tag": 1704
+    },
+    {
+     "kind": "field",
+     "name": "CollateralCurrency",
+     "required": false,
+     "tag": 1705
+    },
+    {
+     "kind": "field",
+     "name": "CollateralCurrencyCodeSource",
+     "required": false,
+     "tag": 2929
+    },
+    {
+     "kind": "field",
+     "name": "CollateralAmountType",
+     "required": false,
+     "tag": 2632
+    },
+    {
+     "kind": "field",
+     "name": "CollateralFXRate",
+     "required": false,
+     "tag": 2090
+    },
+    {
+     "kind": "field",
+     "name": "CollateralFXRateCalc",
+     "required": false,
+     "tag": 2091
+    },
+    {
+     "kind": "field",
+     "name": "CollateralType",
+     "required": false,
+     "tag": 1706
+    },
+    {
+     "kind": "field",
+     "name": "CollateralAmountMarketSegmentID",
+     "required": false,
+     "tag": 2092
+    },
+    {
+     "kind": "field",
+     "name": "CollateralAmountMarketID",
+     "required": false,
+     "tag": 2093
+    },
+    {
+     "kind": "field",
+     "name": "HaircutIndicator",
+     "required": false,
+     "tag": 1902
+    },
+    {
+     "kind": "field",
+     "name": "CollateralPortfolioID",
+     "required": false,
+     "tag": 2350
+    },
+    {
+     "kind": "field",
+     "name": "CollateralPercentOverage",
+     "required": false,
+     "tag": 2690
+    },
+    {
+     "kind": "field",
+     "name": "CollateralMarketPrice",
+     "required": false,
+     "tag": 2689
+    },
+    {
+     "kind": "field",
+     "name": "CollateralReinvestmentRate",
+     "required": false,
+     "tag": 2840
+    },
+    {
+     "kind": "component",
+     "name": "CollateralReinvestmentGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingRefID",
+     "required": false,
+     "tag": 2841
     }
    ]
   }
- }
+ ]
 }

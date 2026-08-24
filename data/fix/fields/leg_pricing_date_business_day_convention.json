@@ -1,9 +1,0 @@
-{
- "name": "LegPricingDateBusinessDayConvention",
- "tag": 41610,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

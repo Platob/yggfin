@@ -1,9 +1,0 @@
-{
- "name": "ProvisionOptionSinglePartySellerSide",
- "tag": 40100,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

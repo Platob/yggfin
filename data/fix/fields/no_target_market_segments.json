@@ -1,9 +1,0 @@
-{
- "name": "NoTargetMarketSegments",
- "tag": 1789,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

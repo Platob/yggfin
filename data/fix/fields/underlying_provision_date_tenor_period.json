@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionDateTenorPeriod",
- "tag": 42154,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

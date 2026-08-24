@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingCashSettlValuationSubsequentBusinessDaysOffset",
- "tag": 42044,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

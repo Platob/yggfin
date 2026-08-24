@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamTotalFixedAmount",
- "tag": 41557,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

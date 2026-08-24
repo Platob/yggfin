@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentScheduleStepRate",
- "tag": 40683,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

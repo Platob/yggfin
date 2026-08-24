@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamPaymentDateBusinessCenter",
- "tag": 40582,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

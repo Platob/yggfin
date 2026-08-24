@@ -1,24 +1,22 @@
 {
  "name": "PaymentStreamCompoundingDatesBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 674,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPaymentStreamCompoundingDatesBusinessCenters",
+   "required": false,
+   "tag": 42620,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPaymentStreamCompoundingDatesBusinessCenters",
+     "kind": "field",
+     "name": "PaymentStreamCompoundingDatesBusinessCenter",
      "required": false,
-     "tag": 42620,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PaymentStreamCompoundingDatesBusinessCenter",
-       "required": false,
-       "tag": 42621
-      }
-     ]
+     "tag": 42621
     }
    ]
   }
- }
+ ]
 }

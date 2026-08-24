@@ -1,9 +1,0 @@
-{
- "name": "MatchExceptionToleranceValue",
- "tag": 2778,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

@@ -1,24 +1,22 @@
 {
  "name": "DividendFXTriggerDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 649,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoDividendFXTriggerDateBusinessCenters",
+   "required": false,
+   "tag": 42272,
    "members": [
     {
-     "kind": "group",
-     "name": "NoDividendFXTriggerDateBusinessCenters",
+     "kind": "field",
+     "name": "DividendFXTriggerDateBusinessCenter",
      "required": false,
-     "tag": 42272,
-     "members": [
-      {
-       "kind": "field",
-       "name": "DividendFXTriggerDateBusinessCenter",
-       "required": false,
-       "tag": 42273
-      }
-     ]
+     "tag": 42273
     }
    ]
   }
- }
+ ]
 }

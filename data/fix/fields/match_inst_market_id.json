@@ -1,9 +1,0 @@
-{
- "name": "MatchInstMarketID",
- "tag": 1673,
- "versions": {
-  "5.0.SP2": {
-   "type": "EXCHANGE"
-  }
- }
-}

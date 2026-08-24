@@ -1,78 +1,76 @@
 {
  "name": "RelatedInstrumentGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 315,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRelatedInstruments",
+   "required": false,
+   "tag": 1647,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRelatedInstruments",
+     "kind": "field",
+     "name": "RelatedInstrumentType",
      "required": false,
-     "tag": 1647,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RelatedInstrumentType",
-       "required": false,
-       "tag": 1648
-      },
-      {
-       "kind": "field",
-       "name": "RelatedSymbol",
-       "required": false,
-       "tag": 1649
-      },
-      {
-       "kind": "field",
-       "name": "RelatedSecurityID",
-       "required": false,
-       "tag": 1650
-      },
-      {
-       "kind": "field",
-       "name": "RelatedSecurityIDSource",
-       "required": false,
-       "tag": 1651
-      },
-      {
-       "kind": "field",
-       "name": "RelatedSecurityType",
-       "required": false,
-       "tag": 1652
-      },
-      {
-       "kind": "field",
-       "name": "RelatedMaturityMonthYear",
-       "required": false,
-       "tag": 1653
-      },
-      {
-       "kind": "field",
-       "name": "RelatedToSecurityID",
-       "required": false,
-       "tag": 2413
-      },
-      {
-       "kind": "field",
-       "name": "RelatedToSecurityIDSource",
-       "required": false,
-       "tag": 2414
-      },
-      {
-       "kind": "field",
-       "name": "RelatedToStreamXIDRef",
-       "required": false,
-       "tag": 2415
-      },
-      {
-       "kind": "field",
-       "name": "RelatedToDividendPeriodXIDRef",
-       "required": false,
-       "tag": 2417
-      }
-     ]
+     "tag": 1648
+    },
+    {
+     "kind": "field",
+     "name": "RelatedSymbol",
+     "required": false,
+     "tag": 1649
+    },
+    {
+     "kind": "field",
+     "name": "RelatedSecurityID",
+     "required": false,
+     "tag": 1650
+    },
+    {
+     "kind": "field",
+     "name": "RelatedSecurityIDSource",
+     "required": false,
+     "tag": 1651
+    },
+    {
+     "kind": "field",
+     "name": "RelatedSecurityType",
+     "required": false,
+     "tag": 1652
+    },
+    {
+     "kind": "field",
+     "name": "RelatedMaturityMonthYear",
+     "required": false,
+     "tag": 1653
+    },
+    {
+     "kind": "field",
+     "name": "RelatedToSecurityID",
+     "required": false,
+     "tag": 2413
+    },
+    {
+     "kind": "field",
+     "name": "RelatedToSecurityIDSource",
+     "required": false,
+     "tag": 2414
+    },
+    {
+     "kind": "field",
+     "name": "RelatedToStreamXIDRef",
+     "required": false,
+     "tag": 2415
+    },
+    {
+     "kind": "field",
+     "name": "RelatedToDividendPeriodXIDRef",
+     "required": false,
+     "tag": 2417
     }
    ]
   }
- }
+ ]
 }

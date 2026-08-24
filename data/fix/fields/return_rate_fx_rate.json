@@ -1,9 +1,0 @@
-{
- "name": "ReturnRateFXRate",
- "tag": 42733,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

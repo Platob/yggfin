@@ -1,9 +1,0 @@
-{
- "name": "LegReturnRateTotalCommissionPerTrade",
- "tag": 42539,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

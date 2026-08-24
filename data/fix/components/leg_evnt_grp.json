@@ -1,78 +1,76 @@
 {
  "name": "LegEvntGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 380,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegEvents",
+   "required": false,
+   "tag": 2059,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegEvents",
+     "kind": "field",
+     "name": "LegEventType",
      "required": false,
-     "tag": 2059,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegEventType",
-       "required": false,
-       "tag": 2060
-      },
-      {
-       "kind": "field",
-       "name": "LegEventDate",
-       "required": false,
-       "tag": 2061
-      },
-      {
-       "kind": "field",
-       "name": "LegEventTime",
-       "required": false,
-       "tag": 2062
-      },
-      {
-       "kind": "field",
-       "name": "LegEventTimeUnit",
-       "required": false,
-       "tag": 2063
-      },
-      {
-       "kind": "field",
-       "name": "LegEventTimePeriod",
-       "required": false,
-       "tag": 2064
-      },
-      {
-       "kind": "field",
-       "name": "LegEventMonthYear",
-       "required": false,
-       "tag": 2341
-      },
-      {
-       "kind": "field",
-       "name": "LegEventPx",
-       "required": false,
-       "tag": 2065
-      },
-      {
-       "kind": "field",
-       "name": "LegEventText",
-       "required": false,
-       "tag": 2066
-      },
-      {
-       "kind": "field",
-       "name": "EncodedLegEventTextLen",
-       "required": false,
-       "tag": 2074
-      },
-      {
-       "kind": "field",
-       "name": "EncodedLegEventText",
-       "required": false,
-       "tag": 2075
-      }
-     ]
+     "tag": 2060
+    },
+    {
+     "kind": "field",
+     "name": "LegEventDate",
+     "required": false,
+     "tag": 2061
+    },
+    {
+     "kind": "field",
+     "name": "LegEventTime",
+     "required": false,
+     "tag": 2062
+    },
+    {
+     "kind": "field",
+     "name": "LegEventTimeUnit",
+     "required": false,
+     "tag": 2063
+    },
+    {
+     "kind": "field",
+     "name": "LegEventTimePeriod",
+     "required": false,
+     "tag": 2064
+    },
+    {
+     "kind": "field",
+     "name": "LegEventMonthYear",
+     "required": false,
+     "tag": 2341
+    },
+    {
+     "kind": "field",
+     "name": "LegEventPx",
+     "required": false,
+     "tag": 2065
+    },
+    {
+     "kind": "field",
+     "name": "LegEventText",
+     "required": false,
+     "tag": 2066
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegEventTextLen",
+     "required": false,
+     "tag": 2074
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegEventText",
+     "required": false,
+     "tag": 2075
     }
    ]
   }
- }
+ ]
 }

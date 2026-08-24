@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingAdditionalTermBondCurrency",
- "tag": 41712,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

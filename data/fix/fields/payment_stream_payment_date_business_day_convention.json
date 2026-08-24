@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamPaymentDateBusinessDayConvention",
- "tag": 40751,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

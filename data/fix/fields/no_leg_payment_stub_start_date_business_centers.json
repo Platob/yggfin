@@ -1,9 +1,0 @@
-{
- "name": "NoLegPaymentStubStartDateBusinessCenters",
- "tag": 42504,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

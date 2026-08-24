@@ -1,9 +1,0 @@
-{
- "name": "LegDividendAccrualPaymentDateRelativeTo",
- "tag": 42330,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,30 +1,28 @@
 {
  "name": "QuoteAttributeGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 712,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoQuoteAttributes",
+   "required": false,
+   "tag": 2706,
    "members": [
     {
-     "kind": "group",
-     "name": "NoQuoteAttributes",
+     "kind": "field",
+     "name": "QuoteAttributeType",
      "required": false,
-     "tag": 2706,
-     "members": [
-      {
-       "kind": "field",
-       "name": "QuoteAttributeType",
-       "required": false,
-       "tag": 2707
-      },
-      {
-       "kind": "field",
-       "name": "QuoteAttributeValue",
-       "required": false,
-       "tag": 2708
-      }
-     ]
+     "tag": 2707
+    },
+    {
+     "kind": "field",
+     "name": "QuoteAttributeValue",
+     "required": false,
+     "tag": 2708
     }
    ]
   }
- }
+ ]
 }

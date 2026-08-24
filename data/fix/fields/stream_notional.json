@@ -1,9 +1,0 @@
-{
- "name": "StreamNotional",
- "tag": 40054,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

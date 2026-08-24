@@ -1,9 +1,0 @@
-{
- "name": "PayAmount",
- "tag": 1710,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

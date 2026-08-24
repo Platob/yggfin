@@ -1,9 +1,0 @@
-{
- "name": "RequestedPartyRole",
- "tag": 1509,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

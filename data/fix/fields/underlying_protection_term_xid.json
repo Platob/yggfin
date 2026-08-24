@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProtectionTermXID",
- "tag": 42076,
- "versions": {
-  "5.0.SP2": {
-   "type": "XID"
-  }
- }
-}

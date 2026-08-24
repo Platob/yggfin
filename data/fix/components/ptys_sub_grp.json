@@ -1,105 +1,31 @@
 {
  "name": "PtysSubGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 248,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPartySubIDs",
+   "required": false,
+   "tag": 802,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPartySubIDs",
+     "kind": "field",
+     "name": "PartySubID",
      "required": false,
-     "tag": 802,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartySubID",
-       "required": false,
-       "tag": 523
-      },
-      {
-       "kind": "field",
-       "name": "PartySubIDType",
-       "required": false,
-       "tag": 803
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 97,
-   "members": [
+     "tag": 523
+    },
     {
-     "kind": "group",
-     "name": "NoPartySubIDs",
+     "kind": "field",
+     "name": "PartySubIDType",
      "required": false,
-     "tag": 802,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartySubID",
-       "required": false,
-       "tag": 523
-      },
-      {
-       "kind": "field",
-       "name": "PartySubIDType",
-       "required": false,
-       "tag": 803
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 99,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoPartySubIDs",
-     "required": false,
-     "tag": 802,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartySubID",
-       "required": false,
-       "tag": 523
-      },
-      {
-       "kind": "field",
-       "name": "PartySubIDType",
-       "required": false,
-       "tag": 803
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 99,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoPartySubIDs",
-     "required": false,
-     "tag": 802,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartySubID",
-       "required": false,
-       "tag": 523
-      },
-      {
-       "kind": "field",
-       "name": "PartySubIDType",
-       "required": false,
-       "tag": 803
-      }
-     ]
+     "tag": 803
     }
    ]
   }
- }
+ ]
 }

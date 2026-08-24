@@ -1,9 +1,0 @@
-{
- "name": "LegCommonPricingIndicator",
- "tag": 2212,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

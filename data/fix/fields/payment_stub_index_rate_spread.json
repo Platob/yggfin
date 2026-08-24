@@ -1,9 +1,0 @@
-{
- "name": "PaymentStubIndexRateSpread",
- "tag": 40883,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICEOFFSET"
-  }
- }
-}

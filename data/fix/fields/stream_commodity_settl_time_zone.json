@@ -1,9 +1,0 @@
-{
- "name": "StreamCommoditySettlTimeZone",
- "tag": 41291,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

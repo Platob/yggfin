@@ -1,340 +1,164 @@
 {
  "name": "FinancingDetails",
- "versions": {
-  "5.0.SP2": {
-   "order": 2,
-   "members": [
-    {
-     "kind": "field",
-     "name": "AgreementDesc",
-     "required": false,
-     "tag": 913
-    },
-    {
-     "kind": "field",
-     "name": "AgreementID",
-     "required": false,
-     "tag": 914
-    },
-    {
-     "kind": "field",
-     "name": "AgreementVersion",
-     "required": false,
-     "tag": 1961
-    },
-    {
-     "kind": "field",
-     "name": "AgreementDate",
-     "required": false,
-     "tag": 915
-    },
-    {
-     "kind": "field",
-     "name": "AgreementCurrency",
-     "required": false,
-     "tag": 918
-    },
-    {
-     "kind": "field",
-     "name": "AgreementCurrencyCodeSource",
-     "required": false,
-     "tag": 2952
-    },
-    {
-     "kind": "field",
-     "name": "MasterConfirmationDesc",
-     "required": false,
-     "tag": 1962
-    },
-    {
-     "kind": "field",
-     "name": "MasterConfirmationDate",
-     "required": false,
-     "tag": 1963
-    },
-    {
-     "kind": "field",
-     "name": "MasterConfirmationAnnexDesc",
-     "required": false,
-     "tag": 1964
-    },
-    {
-     "kind": "field",
-     "name": "MasterConfirmationAnnexDate",
-     "required": false,
-     "tag": 1965
-    },
-    {
-     "kind": "field",
-     "name": "BrokerConfirmationDesc",
-     "required": false,
-     "tag": 1966
-    },
-    {
-     "kind": "component",
-     "name": "FinancingContractualDefinitionGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "FinancingTermSupplementGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "FinancingContractualMatrixGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "CreditSupportAgreementDesc",
-     "required": false,
-     "tag": 1967
-    },
-    {
-     "kind": "field",
-     "name": "CreditSupportAgreementDate",
-     "required": false,
-     "tag": 1968
-    },
-    {
-     "kind": "field",
-     "name": "CreditSupportAgreementID",
-     "required": false,
-     "tag": 1969
-    },
-    {
-     "kind": "field",
-     "name": "GoverningLaw",
-     "required": false,
-     "tag": 1970
-    },
-    {
-     "kind": "field",
-     "name": "DocumentationText",
-     "required": false,
-     "tag": 1513
-    },
-    {
-     "kind": "field",
-     "name": "EncodedDocumentationTextLen",
-     "required": false,
-     "tag": 1525
-    },
-    {
-     "kind": "field",
-     "name": "EncodedDocumentationText",
-     "required": false,
-     "tag": 1527
-    },
-    {
-     "kind": "field",
-     "name": "TerminationType",
-     "required": false,
-     "tag": 788
-    },
-    {
-     "kind": "field",
-     "name": "StartDate",
-     "required": false,
-     "tag": 916
-    },
-    {
-     "kind": "field",
-     "name": "EndDate",
-     "required": false,
-     "tag": 917
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryType",
-     "required": false,
-     "tag": 919
-    },
-    {
-     "kind": "field",
-     "name": "MarginRatio",
-     "required": false,
-     "tag": 898
-    }
-   ]
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "AgreementDesc",
+   "required": false,
+   "tag": 913
   },
-  "5.0.SP1": {
-   "order": 2,
-   "members": [
-    {
-     "kind": "field",
-     "name": "AgreementDesc",
-     "required": false,
-     "tag": 913
-    },
-    {
-     "kind": "field",
-     "name": "AgreementID",
-     "required": false,
-     "tag": 914
-    },
-    {
-     "kind": "field",
-     "name": "AgreementDate",
-     "required": false,
-     "tag": 915
-    },
-    {
-     "kind": "field",
-     "name": "AgreementCurrency",
-     "required": false,
-     "tag": 918
-    },
-    {
-     "kind": "field",
-     "name": "TerminationType",
-     "required": false,
-     "tag": 788
-    },
-    {
-     "kind": "field",
-     "name": "StartDate",
-     "required": false,
-     "tag": 916
-    },
-    {
-     "kind": "field",
-     "name": "EndDate",
-     "required": false,
-     "tag": 917
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryType",
-     "required": false,
-     "tag": 919
-    },
-    {
-     "kind": "field",
-     "name": "MarginRatio",
-     "required": false,
-     "tag": 898
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "AgreementID",
+   "required": false,
+   "tag": 914
   },
-  "5.0": {
-   "order": 2,
-   "members": [
-    {
-     "kind": "field",
-     "name": "AgreementDesc",
-     "required": false,
-     "tag": 913
-    },
-    {
-     "kind": "field",
-     "name": "AgreementID",
-     "required": false,
-     "tag": 914
-    },
-    {
-     "kind": "field",
-     "name": "AgreementDate",
-     "required": false,
-     "tag": 915
-    },
-    {
-     "kind": "field",
-     "name": "AgreementCurrency",
-     "required": false,
-     "tag": 918
-    },
-    {
-     "kind": "field",
-     "name": "TerminationType",
-     "required": false,
-     "tag": 788
-    },
-    {
-     "kind": "field",
-     "name": "StartDate",
-     "required": false,
-     "tag": 916
-    },
-    {
-     "kind": "field",
-     "name": "EndDate",
-     "required": false,
-     "tag": 917
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryType",
-     "required": false,
-     "tag": 919
-    },
-    {
-     "kind": "field",
-     "name": "MarginRatio",
-     "required": false,
-     "tag": 898
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "AgreementVersion",
+   "required": false,
+   "tag": 1961
   },
-  "4.4": {
-   "order": 2,
-   "members": [
-    {
-     "kind": "field",
-     "name": "AgreementDesc",
-     "required": false,
-     "tag": 913
-    },
-    {
-     "kind": "field",
-     "name": "AgreementID",
-     "required": false,
-     "tag": 914
-    },
-    {
-     "kind": "field",
-     "name": "AgreementDate",
-     "required": false,
-     "tag": 915
-    },
-    {
-     "kind": "field",
-     "name": "AgreementCurrency",
-     "required": false,
-     "tag": 918
-    },
-    {
-     "kind": "field",
-     "name": "TerminationType",
-     "required": false,
-     "tag": 788
-    },
-    {
-     "kind": "field",
-     "name": "StartDate",
-     "required": false,
-     "tag": 916
-    },
-    {
-     "kind": "field",
-     "name": "EndDate",
-     "required": false,
-     "tag": 917
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryType",
-     "required": false,
-     "tag": 919
-    },
-    {
-     "kind": "field",
-     "name": "MarginRatio",
-     "required": false,
-     "tag": 898
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "AgreementDate",
+   "required": false,
+   "tag": 915
+  },
+  {
+   "kind": "field",
+   "name": "AgreementCurrency",
+   "required": false,
+   "tag": 918
+  },
+  {
+   "kind": "field",
+   "name": "AgreementCurrencyCodeSource",
+   "required": false,
+   "tag": 2952
+  },
+  {
+   "kind": "field",
+   "name": "MasterConfirmationDesc",
+   "required": false,
+   "tag": 1962
+  },
+  {
+   "kind": "field",
+   "name": "MasterConfirmationDate",
+   "required": false,
+   "tag": 1963
+  },
+  {
+   "kind": "field",
+   "name": "MasterConfirmationAnnexDesc",
+   "required": false,
+   "tag": 1964
+  },
+  {
+   "kind": "field",
+   "name": "MasterConfirmationAnnexDate",
+   "required": false,
+   "tag": 1965
+  },
+  {
+   "kind": "field",
+   "name": "BrokerConfirmationDesc",
+   "required": false,
+   "tag": 1966
+  },
+  {
+   "kind": "component",
+   "name": "FinancingContractualDefinitionGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "FinancingTermSupplementGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "FinancingContractualMatrixGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "CreditSupportAgreementDesc",
+   "required": false,
+   "tag": 1967
+  },
+  {
+   "kind": "field",
+   "name": "CreditSupportAgreementDate",
+   "required": false,
+   "tag": 1968
+  },
+  {
+   "kind": "field",
+   "name": "CreditSupportAgreementID",
+   "required": false,
+   "tag": 1969
+  },
+  {
+   "kind": "field",
+   "name": "GoverningLaw",
+   "required": false,
+   "tag": 1970
+  },
+  {
+   "kind": "field",
+   "name": "DocumentationText",
+   "required": false,
+   "tag": 1513
+  },
+  {
+   "kind": "field",
+   "name": "EncodedDocumentationTextLen",
+   "required": false,
+   "tag": 1525
+  },
+  {
+   "kind": "field",
+   "name": "EncodedDocumentationText",
+   "required": false,
+   "tag": 1527
+  },
+  {
+   "kind": "field",
+   "name": "TerminationType",
+   "required": false,
+   "tag": 788
+  },
+  {
+   "kind": "field",
+   "name": "StartDate",
+   "required": false,
+   "tag": 916
+  },
+  {
+   "kind": "field",
+   "name": "EndDate",
+   "required": false,
+   "tag": 917
+  },
+  {
+   "kind": "field",
+   "name": "DeliveryType",
+   "required": false,
+   "tag": 919
+  },
+  {
+   "kind": "field",
+   "name": "MarginRatio",
+   "required": false,
+   "tag": 898
   }
- }
+ ]
 }

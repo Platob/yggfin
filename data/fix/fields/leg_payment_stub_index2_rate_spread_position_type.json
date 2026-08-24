@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStubIndex2RateSpreadPositionType",
- "tag": 40444,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

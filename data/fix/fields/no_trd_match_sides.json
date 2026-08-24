@@ -1,9 +1,0 @@
-{
- "name": "NoTrdMatchSides",
- "tag": 1890,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

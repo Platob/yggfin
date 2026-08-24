@@ -1,81 +1,25 @@
 {
  "name": "ClrInstGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 181,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoClearingInstructions",
+   "required": false,
+   "tag": 576,
    "members": [
     {
-     "kind": "group",
-     "name": "NoClearingInstructions",
+     "kind": "field",
+     "name": "ClearingInstruction",
      "required": false,
-     "tag": 576,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ClearingInstruction",
-       "required": false,
-       "tag": 577
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 30,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoClearingInstructions",
-     "required": false,
-     "tag": 576,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ClearingInstruction",
-       "required": false,
-       "tag": 577
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 30,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoClearingInstructions",
-     "required": false,
-     "tag": 576,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ClearingInstruction",
-       "required": false,
-       "tag": 577
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 30,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoClearingInstructions",
-     "required": false,
-     "tag": 576,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ClearingInstruction",
-       "required": false,
-       "tag": 577
-      }
-     ]
+     "tag": 577
     }
    ]
   }
- }
+ ]
 }

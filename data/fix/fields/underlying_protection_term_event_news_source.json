@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProtectionTermEventNewsSource",
- "tag": 42091,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

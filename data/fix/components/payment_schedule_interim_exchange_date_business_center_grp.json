@@ -1,24 +1,22 @@
 {
  "name": "PaymentScheduleInterimExchangeDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 450,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPaymentScheduleInterimExchangeDateBusinessCenters",
+   "required": false,
+   "tag": 40945,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPaymentScheduleInterimExchangeDateBusinessCenters",
+     "kind": "field",
+     "name": "PaymentScheduleInterimExchangeDatesBusinessCenter",
      "required": false,
-     "tag": 40945,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PaymentScheduleInterimExchangeDatesBusinessCenter",
-       "required": false,
-       "tag": 40863
-      }
-     ]
+     "tag": 40863
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "EncodedLegExerciseDescLen",
- "tag": 41482,
- "versions": {
-  "5.0.SP2": {
-   "type": "LENGTH"
-  }
- }
-}

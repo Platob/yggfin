@@ -1,9 +1,0 @@
-{
- "name": "DividendFXTriggerDateOffsetDayType",
- "tag": 42268,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

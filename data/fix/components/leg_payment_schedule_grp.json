@@ -1,356 +1,354 @@
 {
  "name": "LegPaymentScheduleGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 381,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegPaymentSchedules",
+   "required": false,
+   "tag": 40374,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegPaymentSchedules",
+     "kind": "field",
+     "name": "LegPaymentScheduleType",
      "required": false,
-     "tag": 40374,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleType",
-       "required": false,
-       "tag": 40375
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleXID",
-       "required": false,
-       "tag": 41533
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleXIDRef",
-       "required": false,
-       "tag": 41534
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleStubType",
-       "required": false,
-       "tag": 40376
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleStartDateUnadjusted",
-       "required": false,
-       "tag": 40377
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleEndDateUnadjusted",
-       "required": false,
-       "tag": 40378
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentSchedulePaySide",
-       "required": false,
-       "tag": 40379
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleReceiveSide",
-       "required": false,
-       "tag": 40380
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleNotional",
-       "required": false,
-       "tag": 40381
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleCurrency",
-       "required": false,
-       "tag": 40382
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleRate",
-       "required": false,
-       "tag": 40383
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleRateMultiplier",
-       "required": false,
-       "tag": 40384
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleRateSpread",
-       "required": false,
-       "tag": 40385
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleRateCurrency",
-       "required": false,
-       "tag": 41535
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleRateUnitOfMeasure",
-       "required": false,
-       "tag": 41536
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleRateConversionFactor",
-       "required": false,
-       "tag": 41537
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleRateSpreadType",
-       "required": false,
-       "tag": 41538
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleRateSpreadPositionType",
-       "required": false,
-       "tag": 40386
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleRateTreatment",
-       "required": false,
-       "tag": 40387
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixedAmount",
-       "required": false,
-       "tag": 40388
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixedCurrency",
-       "required": false,
-       "tag": 40389
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleSettlPeriodPrice",
-       "required": false,
-       "tag": 41539
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleSettlPeriodPriceCurrency",
-       "required": false,
-       "tag": 41540
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleSettlPeriodPriceUnitOfMeasure",
-       "required": false,
-       "tag": 41541
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleStepUnitOfMeasure",
-       "required": false,
-       "tag": 41542
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleStepFrequencyPeriod",
-       "required": false,
-       "tag": 40390
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleStepFrequencyUnit",
-       "required": false,
-       "tag": 40391
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleStepOffsetValue",
-       "required": false,
-       "tag": 40392
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleStepRate",
-       "required": false,
-       "tag": 40393
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleStepOffsetRate",
-       "required": false,
-       "tag": 40394
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleStepRelativeTo",
-       "required": false,
-       "tag": 40395
-      },
-      {
-       "kind": "component",
-       "name": "LegPaymentScheduleRateSourceGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDateUnadjusted",
-       "required": false,
-       "tag": 40396
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleWeight",
-       "required": false,
-       "tag": 40397
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDateRelativeTo",
-       "required": false,
-       "tag": 40398
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDateBusinessDayConvention",
-       "required": false,
-       "tag": 40399
-      },
-      {
-       "kind": "component",
-       "name": "LegPaymentScheduleFixingDateBusinessCenterGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDateOffsetPeriod",
-       "required": false,
-       "tag": 40401
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDateOffsetUnit",
-       "required": false,
-       "tag": 40402
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDateOffsetDayType",
-       "required": false,
-       "tag": 40403
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDayDistribution",
-       "required": false,
-       "tag": 41543
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDayCount",
-       "required": false,
-       "tag": 41544
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDateAdjusted",
-       "required": false,
-       "tag": 40404
-      },
-      {
-       "kind": "component",
-       "name": "LegPaymentScheduleFixingDayGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingLagPeriod",
-       "required": false,
-       "tag": 41545
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingLagUnit",
-       "required": false,
-       "tag": 41546
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingFirstObservationDateOffsetPeriod",
-       "required": false,
-       "tag": 41547
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingFirstObservationDateOffsetUnit",
-       "required": false,
-       "tag": 41548
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingTime",
-       "required": false,
-       "tag": 40405
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingTimeBusinessCenter",
-       "required": false,
-       "tag": 40406
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleInterimExchangePaymentDateRelativeTo",
-       "required": false,
-       "tag": 40407
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleInterimExchangeDatesBusinessDayConvention",
-       "required": false,
-       "tag": 40408
-      },
-      {
-       "kind": "component",
-       "name": "LegPaymentScheduleInterimExchangeDateBusinessCenterGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleInterimExchangeDatesOffsetPeriod",
-       "required": false,
-       "tag": 40410
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleInterimExchangeDatesOffsetUnit",
-       "required": false,
-       "tag": 40411
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleInterimExchangeDatesOffsetDayType",
-       "required": false,
-       "tag": 40412
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleInterimExchangeDateAdjusted",
-       "required": false,
-       "tag": 40413
-      }
-     ]
+     "tag": 40375
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleXID",
+     "required": false,
+     "tag": 41533
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleXIDRef",
+     "required": false,
+     "tag": 41534
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleStubType",
+     "required": false,
+     "tag": 40376
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleStartDateUnadjusted",
+     "required": false,
+     "tag": 40377
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleEndDateUnadjusted",
+     "required": false,
+     "tag": 40378
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentSchedulePaySide",
+     "required": false,
+     "tag": 40379
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleReceiveSide",
+     "required": false,
+     "tag": 40380
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleNotional",
+     "required": false,
+     "tag": 40381
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleCurrency",
+     "required": false,
+     "tag": 40382
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleRate",
+     "required": false,
+     "tag": 40383
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleRateMultiplier",
+     "required": false,
+     "tag": 40384
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleRateSpread",
+     "required": false,
+     "tag": 40385
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleRateCurrency",
+     "required": false,
+     "tag": 41535
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleRateUnitOfMeasure",
+     "required": false,
+     "tag": 41536
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleRateConversionFactor",
+     "required": false,
+     "tag": 41537
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleRateSpreadType",
+     "required": false,
+     "tag": 41538
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleRateSpreadPositionType",
+     "required": false,
+     "tag": 40386
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleRateTreatment",
+     "required": false,
+     "tag": 40387
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixedAmount",
+     "required": false,
+     "tag": 40388
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixedCurrency",
+     "required": false,
+     "tag": 40389
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleSettlPeriodPrice",
+     "required": false,
+     "tag": 41539
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleSettlPeriodPriceCurrency",
+     "required": false,
+     "tag": 41540
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleSettlPeriodPriceUnitOfMeasure",
+     "required": false,
+     "tag": 41541
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleStepUnitOfMeasure",
+     "required": false,
+     "tag": 41542
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleStepFrequencyPeriod",
+     "required": false,
+     "tag": 40390
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleStepFrequencyUnit",
+     "required": false,
+     "tag": 40391
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleStepOffsetValue",
+     "required": false,
+     "tag": 40392
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleStepRate",
+     "required": false,
+     "tag": 40393
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleStepOffsetRate",
+     "required": false,
+     "tag": 40394
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleStepRelativeTo",
+     "required": false,
+     "tag": 40395
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentScheduleRateSourceGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDateUnadjusted",
+     "required": false,
+     "tag": 40396
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleWeight",
+     "required": false,
+     "tag": 40397
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDateRelativeTo",
+     "required": false,
+     "tag": 40398
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDateBusinessDayConvention",
+     "required": false,
+     "tag": 40399
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentScheduleFixingDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDateOffsetPeriod",
+     "required": false,
+     "tag": 40401
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDateOffsetUnit",
+     "required": false,
+     "tag": 40402
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDateOffsetDayType",
+     "required": false,
+     "tag": 40403
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDayDistribution",
+     "required": false,
+     "tag": 41543
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDayCount",
+     "required": false,
+     "tag": 41544
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDateAdjusted",
+     "required": false,
+     "tag": 40404
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentScheduleFixingDayGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingLagPeriod",
+     "required": false,
+     "tag": 41545
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingLagUnit",
+     "required": false,
+     "tag": 41546
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingFirstObservationDateOffsetPeriod",
+     "required": false,
+     "tag": 41547
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingFirstObservationDateOffsetUnit",
+     "required": false,
+     "tag": 41548
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingTime",
+     "required": false,
+     "tag": 40405
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingTimeBusinessCenter",
+     "required": false,
+     "tag": 40406
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleInterimExchangePaymentDateRelativeTo",
+     "required": false,
+     "tag": 40407
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleInterimExchangeDatesBusinessDayConvention",
+     "required": false,
+     "tag": 40408
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentScheduleInterimExchangeDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleInterimExchangeDatesOffsetPeriod",
+     "required": false,
+     "tag": 40410
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleInterimExchangeDatesOffsetUnit",
+     "required": false,
+     "tag": 40411
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleInterimExchangeDatesOffsetDayType",
+     "required": false,
+     "tag": 40412
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleInterimExchangeDateAdjusted",
+     "required": false,
+     "tag": 40413
     }
    ]
   }
- }
+ ]
 }

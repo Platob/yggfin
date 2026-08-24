@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionPartySubIDType",
- "tag": 42179,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

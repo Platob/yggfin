@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamCommodityUnitOfMeasure",
- "tag": 41971,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

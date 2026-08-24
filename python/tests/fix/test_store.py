@@ -1,10 +1,10 @@
-"""A whole store: which layout it is, editing it, keeping it fresh, migrating it.
+"""A whole store: the shards it is written in, editing it, bootstrapping it.
 
-`test_entries.py` holds one identity to its schema and `test_data.py` reads the
-published dictionary. These are about the store around them -- how a directory
-or a zip says which layout it is in, what a change to one entry is allowed to
-do, what a name resolves to and in what order, and what a TTL does and does not
-refetch.
+`test_entries.py` holds one record to its schema and `test_data.py` reads the
+published dictionary. These are about the store around them -- which document a
+tag lands in and how few are read to answer for it, what a change to one record
+is allowed to do, what a name resolves to, what a cold registry does about
+being cold, and what a TTL does and does not refetch.
 
 Every identity is synthetic. The one real name any of this uses is a FIX
 version, which is a schema fact and not data.
@@ -12,32 +12,37 @@ version, which is a schema fact and not data.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
+import re
+import socket
 import time
 import urllib.request
 import zipfile
 from pathlib import Path
+from typing import Any
 
 import pyarrow
 import pytest
 
+import rekep
 from rekep.fields import Field
+from rekep.fix import registry as registry_module
 from rekep.fix.entries import ANY_VERSION, NAMESPACE, Alias, ComponentEntry, FieldEntry
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
 from rekep.fix.registry import FixRegistry, _problems
 from rekep.fix.store import (
-    EXPLODED,
-    VERSIONED,
-    ExplodedLayout,
-    VersionedLayout,
-    explode,
-    layout_of,
+    NAMED_FILE,
+    SHARD_SPAN,
+    ConflictReport,
+    collapse,
+    shard_name,
 )
 from rekep.fix.transcribe import FixCodec
 
-#: The published dictionary, for the migration that has to lose nothing.
+#: The published dictionary, for the reads that have to answer over the real one.
 PUBLISHED = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
 
@@ -70,6 +75,11 @@ def store(tmp_path: Path) -> Offline:
     registry = Offline(cache_dir=tmp_path / "fix", offline=True)
     registry._store_versions(("9.1", "9.0"))
     registry._store_fields(
+        "9.0",
+        [_field("FakeRoleCode", 90001, "9.0", "char"), _field("FakeCode", 90002, "9.0")],
+        components=[],
+    )
+    registry._store_fields(
         "9.1",
         [_field("FakeRole", 90001, "9.1", "int"), _field("FakeCode", 90002, "9.1")],
         session=(("FakeRole", True),),
@@ -84,87 +94,132 @@ def store(tmp_path: Path) -> Offline:
             )
         ],
     )
-    registry._store_fields(
-        "9.0",
-        [_field("FakeRoleCode", 90001, "9.0", "char"), _field("FakeCode", 90002, "9.0")],
-        components=[],
-    )
     return registry
 
 
-# -- which layout a store is in ----------------------------------------------
+# -- the one layout ----------------------------------------------------------
 
 
-def test_a_cold_store_is_written_one_file_per_identity(store: Offline) -> None:
+def test_a_cold_store_is_written_as_tag_shards(store: Offline) -> None:
     folder = Path(store.cache_dir)
     assert sorted(path.name for path in folder.iterdir()) == [
         "components",
         "fields",
         "versions.json",
     ]
-    assert sorted(path.name for path in (folder / "fields").iterdir()) == [
-        "fake_code.json",
-        "fake_role.json",
+    # Tags 90001 and 90002 both sit in 90000 // 500, which is shard 180.
+    assert [path.name for path in (folder / "fields").iterdir()] == ["000180.json"]
+    assert sorted(json.loads((folder / "fields" / "000180.json").read_text())) == [
+        "90001",
+        "90002",
     ]
 
 
-def test_a_layout_is_read_off_what_a_store_holds_never_off_a_setting(
-    store: Offline, tmp_path: Path
-) -> None:
-    """A copied-in dictionary brings no setting with it, so it has to say."""
-    assert isinstance(store._layout, ExplodedLayout)
-    versioned = FixRegistry(cache_dir=tmp_path / "old", offline=True, layout=VERSIONED)
-    versioned._store_fields("9.1", [_field("FakeRole", 90001, "9.1")])
-    assert (Path(versioned.cache_dir) / "9.1.json").exists()
-    assert isinstance(FixRegistry(cache_dir=versioned.cache_dir)._layout, VersionedLayout)
-    assert isinstance(FixRegistry(cache_dir=store.cache_dir)._layout, ExplodedLayout)
+@pytest.mark.parametrize(
+    ("tag", "document"),
+    [
+        (0, "fields/000000.json"),
+        (54, "fields/000000.json"),
+        (499, "fields/000000.json"),
+        (500, "fields/000001.json"),
+        (40000, "fields/000080.json"),
+        (50002, "fields/000100.json"),
+    ],
+)
+def test_which_document_holds_a_tag_is_arithmetic(tag: int, document: str) -> None:
+    """No index, no lookup table, no scan: `tag // 500`, zero-padded."""
+    assert shard_name(tag) == document
+    assert SHARD_SPAN == 500
 
 
-def test_a_store_that_holds_nothing_is_written_in_the_layout_it_was_asked_for(
-    tmp_path: Path,
-) -> None:
-    documents = FixRegistry(cache_dir=tmp_path / "cold", offline=True)._documents
-    assert isinstance(layout_of(documents, EXPLODED), ExplodedLayout)
-    assert isinstance(layout_of(documents, VERSIONED), VersionedLayout)
-    with pytest.raises(ValueError, match="unknown FIX registry layout"):
-        layout_of(documents, "invented")
-    with pytest.raises(ValueError, match="unknown FIX registry layout"):
-        FixRegistry(cache_dir=tmp_path / "cold", layout="invented")
+class Counting:
+    """A `Documents` that records every name it was asked to read."""
+
+    def __init__(self, documents: Any) -> None:
+        self.documents = documents
+        self.read_names: list[str] = []
+
+    def read(self, name: str) -> dict[str, Any] | None:
+        self.read_names.append(name)
+        return self.documents.read(name)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.documents, name)
 
 
-def test_a_versioned_store_still_answers_everything_an_exploded_one_does(
-    store: Offline, tmp_path: Path
-) -> None:
-    """An old `~/.config/fix` keeps working; it is not rewritten by being read."""
-    versioned = FixRegistry(cache_dir=tmp_path / "old", offline=True, layout=VERSIONED)
-    versioned._store_versions(store.versions)
-    for version in store.versions:
-        versioned._store_fields(
-            version, store.fields(version), store.session(version), store.components(version)
+def test_a_single_tag_lookup_deserializes_one_shard() -> None:
+    """Over the published dictionary: fourteen shards, and a tag reads one."""
+    registry = FixRegistry(cache_dir=PUBLISHED, offline=True)
+    counted = Counting(registry._documents)
+    registry.__dict__["_documents"] = counted
+
+    assert registry.field(54).name == "Side"
+
+    opened = [name for name in counted.read_names if name.startswith("fields/")]
+    assert opened == ["fields/000000.json"], "the shard tag 54 is in, and no other"
+    assert "_fields" not in registry._layout.__dict__, "the dictionary was never read whole"
+
+
+def test_one_layout_is_all_that_is_left_of_the_store() -> None:
+    """Grep, as a test: a reader nothing writes is what this shape removed.
+
+    A store is sharded, and there is no second spelling to sniff for -- so the
+    detection, the two layout classes and the component extractor's legacy tags
+    are gone from the package rather than left behind unused.
+    """
+    source = Path(rekep.__file__).parent
+    gone = re.compile(
+        r"\b(VERSIONED|EXPLODED|LAYOUTS|layout_of|ExplodedLayout|VersionedLayout|into_fallback)\b"
+    )
+    found = {
+        f"{path.relative_to(source)}:{number}"
+        for path in sorted(source.rglob("*.py"))
+        for number, line in enumerate(path.read_text().splitlines(), start=1)
+        if gone.search(line)
+    }
+    assert found == set()
+
+
+def test_a_field_fix_never_numbered_is_kept_where_a_name_can_be_found(store: Offline) -> None:
+    """It has no tag to shard on, so it shares the one document those live in."""
+    store.add_field(
+        FieldEntry(
+            name="FAKE.VENDOR.CODE",
+            kind=NAMESPACE,
+            versions=(ANY_VERSION,),
+            type="String",
+            column="fake_vendor_code",
         )
-    assert not versioned.verify(store)
-    assert versioned.resolve("FakeRoleCode").name == "FakeRole", "and merges the same"
+    )
+    assert (Path(store.cache_dir) / NAMED_FILE).exists()
+    assert list(json.loads((Path(store.cache_dir) / NAMED_FILE).read_text())) == [
+        "FAKE.VENDOR.CODE"
+    ]
+    assert Offline(cache_dir=store.cache_dir, offline=True).resolve("fake.vendor.code") is not None
 
 
 # -- what a rename does ------------------------------------------------------
 
 
-def test_a_renamed_tag_is_one_identity_and_not_two(store: Offline) -> None:
-    """The whole point of storing by identity: one file, saying what each version called it."""
+def test_a_renamed_tag_is_one_identity_and_the_older_spelling_an_alias(store: Offline) -> None:
+    """One tag, one record, and the name 9.0 used still resolves to it."""
     entry = store.resolve("FakeRole")
-    assert entry.tag == 90001
-    assert entry.names() == {"9.1": "FakeRole", "9.0": "FakeRoleCode"}
-    assert not (Path(store.cache_dir) / "fields" / "fake_role_code.json").exists()
-    stored = json.loads((Path(store.cache_dir) / "fields" / "fake_role.json").read_text())
-    assert stored["versions"]["9.0"]["name"] == "FakeRoleCode"
-    assert "name" not in stored["versions"]["9.1"], "the newest version is the identity"
+    assert entry.tag == 90001 and entry.name == "FakeRole"
+    assert entry.versions == ("9.0", "9.1")
+    assert [alias.name for alias in entry.aliases] == ["FakeRoleCode"]
+    assert store.resolve("FakeRoleCode") is entry
+    stored = json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
+    assert stored["90001"]["aliases"] == [
+        {"name": "FakeRoleCode", "source": "9.0", "occurrences": 0}
+    ]
 
 
-def test_each_version_still_reads_back_its_own_name(store: Offline) -> None:
+def test_every_version_reads_back_the_one_reading(store: Offline) -> None:
+    """The collapse, seen from a lookup: the newest name and type, whichever was asked."""
     assert store.field(90001, "9.1").name == "FakeRole"
-    assert store.field(90001, "9.0").name == "FakeRoleCode"
-    assert store.lookup("FakeRoleCode", "9.1") == [], "9.1 does not spell it that way"
-    assert store.lookup("FakeRoleCode", "9.0")[0].name == "FakeRoleCode"
+    assert store.field(90001, "9.0").name == "FakeRole"
+    assert store.field(90001, "9.0").fix["type"] == "int", "9.0 said char, and 9.1 won"
+    assert store.field(90001, "9.0").fix["version"] == "9.0", "and it says which was asked"
 
 
 def test_storing_a_version_says_what_that_version_has(store: Offline) -> None:
@@ -173,21 +228,21 @@ def test_storing_a_version_says_what_that_version_has(store: Offline) -> None:
     assert [member.name for member in store.fields("9.0")] == ["FakeCode"]
     assert store.resolve("FakeRole").versions == ("9.1",)
     store._store_fields("9.1", [_field("FakeCode", 90002, "9.1")])
-    assert store.resolve("FakeRole") is None, "its last version went, and so did the file"
-    assert not (Path(store.cache_dir) / "fields" / "fake_role.json").exists()
+    assert store.resolve("FakeRole") is None, "its last version went, and so did the record"
+    assert "90001" not in json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
 
 
 # -- resolving a name --------------------------------------------------------
 
 
-def test_a_name_resolves_canonical_then_per_version_then_alias(store: Offline) -> None:
-    """The three tiers, in the order a rendered key is tried against them."""
+def test_a_name_resolves_canonical_then_alias(store: Offline) -> None:
+    """Two tiers, in the order a rendered key is tried against them."""
     store.alias_field("FakeRole", Alias(name="FakeRolle", source="brk", occurrences=9))
     assert store.resolve("FakeRole").tag == 90001, "tier one: an identity's own name"
     assert store.resolve("FakeCode").tag == 90002
-    assert store.resolve("FakeRoleCode").tag == 90001, "tier two: what 9.0 calls that tag"
-    assert store.resolve("FakeRolle").tag == 90001, "tier three: a spelling somebody recorded"
-    assert store.resolve("FAKEROLLE").tag == 90001, "and matching folds case, and only case"
+    assert store.resolve("FakeRoleCode").tag == 90001, "tier two: what 9.0 called that tag"
+    assert store.resolve("FakeRolle").tag == 90001, "and a spelling somebody recorded"
+    assert store.resolve("FAKEROLLE").tag == 90001, "matching folds case, and only case"
     assert store.resolve("fake_rolle") is None, "a separator is part of a name, not noise"
     assert store.resolve("FakeNothing") is None, "and a name nothing here has is unknown"
     assert store.alias_conflicts() == {}
@@ -196,8 +251,8 @@ def test_a_name_resolves_canonical_then_per_version_then_alias(store: Offline) -
 def test_an_alias_an_earlier_tier_already_answers_for_is_refused(store: Offline) -> None:
     """Recording a spelling nothing will ever reach is a mistake, not precedence."""
     with pytest.raises(ValueError, match="already FakeRole's"):
-        store.alias_field("FakeCode", Alias(name="FakeRoleCode"))
-    assert store.resolve("FakeRoleCode").tag == 90001, "unchanged, because it was refused"
+        store.alias_field("FakeCode", Alias(name="FakeRole"))
+    assert store.resolve("FakeRole").tag == 90001, "unchanged, because it was refused"
 
 
 def test_two_fields_claiming_one_name_in_one_tier_fails_the_check(store: Offline) -> None:
@@ -209,28 +264,21 @@ def test_two_fields_claiming_one_name_in_one_tier_fails_the_check(store: Offline
 
     # Written past the API, so the check has something to find.
     entry = store.resolve("FakeCode")
-    store._editable.store_field(
-        FieldEntry(
-            name=entry.name,
-            tag=entry.tag,
-            aliases=(Alias(name="FakeSpelling"),),
-            variants=dict(entry.variants),
-        )
-    )
+    store._layout.store_field(dataclasses.replace(entry, aliases=(Alias(name="FakeSpelling"),)))
     store._forget()
-    assert store.check() == ["'fakespelling' is claimed by ['FakeCode', 'FakeRole']"]
+    assert store.check() == ["'fakespelling' is claimed by ['FakeRole', 'FakeCode']"]
 
 
 def test_an_alias_is_data_and_carries_where_it_came_from(store: Offline) -> None:
     """A near miss counted in a capture is evidence; a name typed in is not."""
     entry = store.alias_field("FakeRole", Alias(name="FakeRolle", source="brk", occurrences=41))
     assert store.resolve("FakeRolle").tag == 90001
-    stored = json.loads((Path(store.cache_dir) / "fields" / "fake_role.json").read_text())
-    assert stored["aliases"] == [{"name": "FakeRolle", "source": "brk", "occurrences": 41}]
-    assert entry.aliases[0].occurrences == 41
+    stored = json.loads((Path(store.cache_dir) / shard_name(90001)).read_text())
+    assert {"name": "FakeRolle", "source": "brk", "occurrences": 41} in stored["90001"]["aliases"]
+    assert entry.aliases[-1].occurrences == 41
 
     again = store.alias_field("FakeRole", "FakeRolle")
-    assert len(again.aliases) == 1, "a spelling already recorded is not recorded twice"
+    assert len(again.aliases) == len(entry.aliases), "a spelling already recorded is not twice"
 
 
 def test_aliasing_a_field_nothing_resolves_is_refused(store: Offline) -> None:
@@ -245,15 +293,16 @@ def test_a_field_identity_is_created_updated_and_removed(store: Offline) -> None
     entry = FieldEntry(
         name="FAKE.VENDOR.CODE",
         kind=NAMESPACE,
-        variants={ANY_VERSION: {"type": "String", "description": "A vendor's own."}},
+        versions=(ANY_VERSION,),
+        type="String",
+        description="A vendor's own.",
         column="fake_vendor_code",
     )
     store.add_field(entry)
-    assert (Path(store.cache_dir) / "fields" / "fake_vendor_code.json").exists()
     assert store.resolve("FAKE.VENDOR.CODE").column == "fake_vendor_code"
     assert store.field("FAKE.VENDOR.CODE", "9.1").fix["kind"] == NAMESPACE
 
-    store.update_field(dataclasses_replace(entry, column="renamed"))
+    store.update_field(dataclasses.replace(entry, column="renamed"))
     assert store.resolve("FAKE.VENDOR.CODE").column == "renamed"
 
     assert store.remove_field("FAKE.VENDOR.CODE")
@@ -264,11 +313,10 @@ def test_a_field_identity_is_created_updated_and_removed(store: Offline) -> None
 def test_creating_one_that_is_already_there_and_updating_one_that_is_not_are_refused(
     store: Offline,
 ) -> None:
-    entry = FieldEntry(name="FakeRole", tag=90001, variants={"9.1": {"type": "int"}})
     with pytest.raises(KeyError, match="already stored"):
-        store.add_field(entry)
+        store.add_field(FieldEntry(name="FakeRole", tag=90001, versions=("9.1",), type="int"))
     with pytest.raises(KeyError, match="no FIX field stored"):
-        store.update_field(FieldEntry(name="FakeAbsent", tag=90099, variants={"9.1": {}}))
+        store.update_field(FieldEntry(name="FakeAbsent", tag=90099, versions=("9.1",)))
 
 
 def test_a_change_is_validated_against_the_whole_store_before_it_is_written(
@@ -279,7 +327,8 @@ def test_a_change_is_validated_against_the_whole_store_before_it_is_written(
         name="FakeOther",
         tag=90004,
         aliases=(Alias(name="FakeCode"),),
-        variants={"9.1": {"type": "String"}},
+        versions=("9.1",),
+        type="String",
     )
     # `FakeCode` is another field's canonical name, so this alias could never
     # resolve. Precedence is the rule; recording a spelling nothing will ever
@@ -287,7 +336,7 @@ def test_a_change_is_validated_against_the_whole_store_before_it_is_written(
     with pytest.raises(ValueError, match="already FakeCode's"):
         store.add_field(clashing)
     assert store.resolve("FakeOther") is None, "refused whole, never written half"
-    assert not (Path(store.cache_dir) / "fields" / "fake_other.json").exists()
+    assert "90004" not in json.loads((Path(store.cache_dir) / shard_name(90004)).read_text())
 
 
 def test_a_component_identity_is_created_updated_and_removed(store: Offline) -> None:
@@ -312,16 +361,6 @@ def test_a_component_identity_is_created_updated_and_removed(store: Offline) -> 
         store.component("FakeInstrument", "9.1")
 
 
-def test_a_store_kept_one_file_per_version_cannot_be_edited_one_identity_at_a_time(
-    tmp_path: Path,
-) -> None:
-    """It has no file to write, so it says to migrate rather than inventing one."""
-    versioned = FixRegistry(cache_dir=tmp_path / "old", offline=True, layout=VERSIONED)
-    versioned._store_fields("9.1", [_field("FakeRole", 90001, "9.1")])
-    with pytest.raises(TypeError, match="migrate it first"):
-        versioned.alias_field("FakeRole", "FakeRolle")
-
-
 # -- the merged views --------------------------------------------------------
 
 
@@ -333,63 +372,206 @@ def test_the_whole_unified_table_comes_back_in_one_call(store: Offline) -> None:
     assert merged["FakeRole"].name == scalar.name
     assert merged["FakeRole"].arrow_type == scalar.arrow_type
     assert merged["FakeRole"].metadata == scalar.metadata, "the same declaration, in bulk"
-    assert json.loads(merged["FakeRole"].fix["names"]) == {
-        "9.1": "FakeRole",
-        "9.0": "FakeRoleCode",
-    }
+    assert json.loads(merged["FakeRole"].fix["versions"]) == ["9.1", "9.0"]
 
 
 def test_a_merged_field_carries_the_spellings_it_answers_to(store: Offline) -> None:
     store.alias_field("FakeRole", Alias(name="FakeRolle", source="pco", occurrences=7))
     merged = store.merged_fields()["FakeRole"]
-    assert json.loads(merged.fix["aliases"]) == [
-        {"name": "FakeRolle", "source": "pco", "occurrences": 7}
-    ]
+    assert {alias["name"] for alias in json.loads(merged.fix["aliases"])} == {
+        "FakeRoleCode",
+        "FakeRolle",
+    }
 
 
 def test_a_component_is_one_queryable_object_across_every_version(store: Offline) -> None:
     """Not "pick the newest match and hope", which is what `component()` does."""
     entry = store.merged_component("fakeparties")
     assert entry.name == "FakeParties" and entry.versions == ("9.1",)
-    assert entry.delimiters("9.1") == {("NoFakeParties",): "FakeRole"}
+    assert entry.delimiters() == {("NoFakeParties",): "FakeRole"}
     assert store.merged_components()["FakeParties"] is entry
     with pytest.raises(KeyError, match="FakeAbsent"):
         store.merged_component("FakeAbsent")
 
 
-# -- migrating ---------------------------------------------------------------
+# -- collapsing, and what it costs -------------------------------------------
 
 
-def test_migrating_the_published_dictionary_changes_no_answer(tmp_path: Path) -> None:
+def test_a_collapse_keeps_the_newest_reading_and_reports_what_it_dropped() -> None:
+    """The judgement the shape asks for, written down rather than inferred."""
+    older = fix_field("FakeRole", 90001, "char", version="9.0", values={"1": "Was", "2": "Gone"})
+    newer = fix_field("FakeRole", 90001, "int", version="9.1", values={"1": "Is"})
+    entries, _, report = collapse(("9.1", "9.0"), {"9.1": [newer], "9.0": [older]}, {})
+
+    entry = entries[90001]
+    assert entry.type == "int" and entry.versions == ("9.0", "9.1")
+    assert entry.values == {"1": "Is", "2": "Gone"}, "the union, newest winning per key"
+
+    counts = report.counts()
+    assert counts["type"] == 1 and counts["values"] == 1
+    (values,) = [one for one in report.collapses if one.part == "values"]
+    assert values.tag == 90001 and values.kept == "9.1"
+    assert [(one.version, one.key, one.reading) for one in values.dropped] == [("9.0", "1", "Was")]
+
+
+def test_a_collapse_reports_every_translation_two_values_share() -> None:
+    member = fix_field(
+        "FakeRole", 90001, "char", version="9.1", values={"1": "Cross", "2": "cross"}
+    )
+    _, _, report = collapse(("9.1",), {"9.1": [member]}, {})
+    assert report.counts()["translations"] == 1
+    assert report.collisions[0].key == "cross" and report.collisions[0].values == ("1", "2")
+
+
+def test_a_report_round_trips_and_says_which_counts_grew() -> None:
+    older = fix_field("FakeRole", 90001, "char", version="9.0")
+    newer = fix_field("FakeRole", 90001, "int", version="9.1")
+    _, _, report = collapse(("9.1", "9.0"), {"9.1": [newer], "9.0": [older]}, {})
+    assert ConflictReport.from_dict(report.into_dict()) == report
+    assert report.exceeds({"type": 1}) == []
+    assert report.exceeds({"type": 0}) == ["type: 1 conflicts against a baseline of 0"]
+
+
+def test_two_identities_claiming_one_name_are_refused_when_a_store_is_built() -> None:
+    """One name is one identity: a store holding two answers whichever it read first.
+
+    Two *tags* cannot reach here -- a tag is what an identity is, so a second
+    reading of one folds into the record that already owns it -- but two tags
+    spelled alike are two identities, and that is the collision.
+    """
+    with pytest.raises(ValueError, match="FIX field name 'fakerole' is claimed by"):
+        collapse(
+            ("9.1",),
+            {"9.1": [_field("FakeRole", 90001, "9.1"), _field("FAKEROLE", 90002, "9.1")]},
+            {},
+        )
+
+
+def test_a_write_that_would_duplicate_a_tag_is_refused_whole(store: Offline) -> None:
+    """Checked against what the store would hold after, and refused before writing."""
+    with pytest.raises(KeyError, match="tag 90001 is already claimed by"):
+        store.add_field(FieldEntry(name="FakeOther", tag=90001, versions=("9.1",), type="String"))
+    assert store.resolve("FakeOther") is None, "and nothing was written"
+
+
+def test_check_reports_a_duplicate_tag_the_same_way_a_write_refuses_it(store: Offline) -> None:
+    """One authority for both, so `check` and a write never disagree."""
+    entry = FieldEntry(name="FakeOther", tag=90001, versions=("9.1",), type="String")
+    problems = _problems(({**store._entries[0], "spare": entry}, store._entries[1]))
+    assert any("FIX tag 90001 is claimed by" in problem for problem in problems)
+
+
+# -- copying a store ---------------------------------------------------------
+
+
+def test_a_store_travels_as_a_directory_or_as_a_zip(store: Offline, tmp_path: Path) -> None:
+    archived = FixRegistry(cache_dir=store.into_zip(tmp_path / "copy.zip"), offline=True)
+    assert not store.verify(archived)
+    with zipfile.ZipFile(tmp_path / "copy.zip") as opened:
+        names = opened.namelist()
+    assert shard_name(90001) in names
+    assert "components/fake_parties.json" in names
+
+
+def test_the_published_dictionary_answers_what_a_copy_of_it_answers(tmp_path: Path) -> None:
     """Zero regressions, checked rather than asserted: every version, every field."""
     published = FixRegistry(cache_dir=PUBLISHED, offline=True)
-    migrated = published.migrate(tmp_path / "migrated")
-    assert published.verify(migrated) == []
-    assert (tmp_path / "migrated" / "fields").is_dir()
-    assert (tmp_path / "migrated" / "components" / "parties.json").exists()
+    copied = FixRegistry(cache_dir=published.into_zip(tmp_path / "copy.zip"), offline=True)
+    assert published.verify(copied) == []
 
 
-def test_a_migration_that_changed_an_answer_is_refused(store: Offline, tmp_path: Path) -> None:
-    """The check is the migration, not a thing run after it."""
-
-    class Lossy(Offline):
-        def verify(self, other: FixRegistry) -> list[str]:
-            return ["a difference this test invented"]
-
-    lossy = Lossy(cache_dir=store.cache_dir, offline=True)
-    with pytest.raises(ValueError, match="changed what it answers"):
-        lossy.migrate(tmp_path / "migrated")
+# -- bootstrapping the default store -----------------------------------------
 
 
-def test_a_migrated_store_travels_as_a_directory_or_as_a_zip(
-    store: Offline, tmp_path: Path
+class Scraping(FixRegistry):
+    """A registry whose whole scrape is one synthetic version, and is counted."""
+
+    def _fetch(self, url: str) -> str:
+        self.__dict__.setdefault("fetched", []).append(url)
+        raise OSError(f"no page at {url}")
+
+    def rebuild(self, *versions: str) -> ConflictReport:
+        self.__dict__.setdefault("fetched", []).append("rebuild")
+        self._store_versions(("9.1",))
+        self._store_fields("9.1", [_field("FakeRole", 90001, "9.1", "int")])
+        return ConflictReport()
+
+
+class Refused(FixRegistry):
+    """A registry whose bootstrap cannot reach the site at all."""
+
+    def rebuild(self, *versions: str) -> ConflictReport:
+        raise OSError("the dictionary host is down")
+
+
+@pytest.fixture
+def default_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """`CACHE_DIRECTORY`, pointed somewhere a test may write."""
+    target = tmp_path / "config-fix"
+    monkeypatch.setattr(registry_module, "CACHE_DIRECTORY", target)
+    return target
+
+
+def test_a_cold_default_store_is_fetched_once_and_says_so_both_times(
+    default_store: Path,
 ) -> None:
-    archived = store.migrate(tmp_path / "migrated.zip")
-    assert not store.verify(archived)
-    with zipfile.ZipFile(tmp_path / "migrated.zip") as opened:
-        names = opened.namelist()
-    assert "fields/fake_role.json" in names
-    assert "components/fake_parties.json" in names
+    """Announced before, announced after, and the next process finds a store."""
+    said: list[str] = []
+    with pytest.warns(RuntimeWarning, match="no FIX registry at"):
+        first = Scraping(announce=said.append)
+    assert first.__dict__["fetched"] == ["rebuild"] and first.installed
+    assert len(said) == 2, "one line before the fetch and one after it"
+    assert "fetching the dictionary from" in said[0]
+    assert "offline=True" in said[0], "and how to avoid paying for it"
+    assert "is installed at" in said[1]
+    assert (default_store / "fields" / "000180.json").exists(), "the sharded layout, cold"
+
+    second = Scraping(announce=said.append)
+    assert "fetched" not in second.__dict__ and not second.installed, "one scrape, ever"
+    assert len(said) == 2, "and a store that is there is served silently"
+    assert second.field(90001, "9.1").name == "FakeRole"
+
+
+def test_a_bootstrap_the_network_refuses_serves_the_projection_and_says_it_is_reduced(
+    default_store: Path,
+) -> None:
+    said: list[str] = []
+    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
+        registry = Refused(announce=said.append)
+    assert not default_store.exists(), "nothing was installed over a failed fetch"
+    assert "misses the long tail" in said[-1]
+    assert "rekep fix registry bootstrap" in said[-1]
+    assert registry.field("Side").fix["tag"] == "54", "and the projection answers"
+
+
+def test_a_cold_offline_default_store_opens_no_socket(
+    default_store: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Offline is offline: asserted at the socket, not inferred from a counter."""
+
+    def refuse(*_: object, **__: object) -> None:
+        raise AssertionError("an offline registry opened a socket")
+
+    monkeypatch.setattr(socket, "socket", refuse)
+    monkeypatch.setattr(socket, "create_connection", refuse)
+    said: list[str] = []
+    with pytest.warns(RuntimeWarning, match="this registry is offline"):
+        registry = FixRegistry(offline=True, announce=said.append)
+    assert "rekep fix registry bootstrap" in said[-1]
+    assert registry.field("Side").fix["tag"] == "54", "served reduced, and never silently"
+
+
+def test_a_store_somebody_named_is_that_store_cold_or_not(tmp_path: Path) -> None:
+    """Only the default store is bootstrapped; a named one is about to be written."""
+    registry = Refused(cache_dir=tmp_path / "named", offline=True)
+    assert registry._stored_versions() == ()
+    assert registry.lookup("Side") == [], "no packaged projection stood in for it"
+
+
+def test_the_packaged_projection_is_bootstrapped_by_being_what_it_is() -> None:
+    """`from_builtin` names its store, so it is served rather than announced."""
+    builtin = FixRegistry.from_builtin()
+    assert builtin.offline and builtin.field("Side").fix["tag"] == "54"
 
 
 # -- keeping it fresh --------------------------------------------------------
@@ -432,7 +614,7 @@ _SPEC = """<fix major='9' minor='1'>
 """
 
 
-def test_a_ttl_of_zero_never_reaches_upstream(store: Offline, tmp_path: Path) -> None:
+def test_a_ttl_of_zero_never_reaches_upstream(store: Offline) -> None:
     """The default, and what every pipeline reading a packaged dictionary wants."""
     registry = Refetching(cache_dir=store.cache_dir, cache_ttl=0.0)
     assert registry.fields("9.1")
@@ -493,13 +675,6 @@ def test_a_negative_ttl_is_refused(tmp_path: Path) -> None:
         FixRegistry(cache_dir=tmp_path / "fix", cache_ttl=-1.0)
 
 
-def dataclasses_replace(entry: FieldEntry, **changed: object) -> FieldEntry:
-    """`dataclasses.replace`, named so the test reads as what it is doing."""
-    import dataclasses
-
-    return dataclasses.replace(entry, **changed)
-
-
 # -- a field FIX never numbered, end to end ----------------------------------
 
 
@@ -512,14 +687,16 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     a hand-written Python literal, and adding a second meant editing the
     package. Here a synthetic one is declared into the store, projected into a
     registry a codec reads, and lifted out of a bridge line into the column its
-    entry names.
+    record names.
     """
     store.add_field(
         FieldEntry(
             name="FAKE.VENDOR.CODE",
             kind=NAMESPACE,
             aliases=(Alias(name="FAKEVENDORCODE", source="brk", occurrences=5),),
-            variants={ANY_VERSION: {"type": "String", "description": "A vendor's own code."}},
+            versions=(ANY_VERSION,),
+            type="String",
+            description="A vendor's own code.",
             column="fake_vendor_code",
         )
     )
@@ -530,14 +707,18 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     assert store.field("FAKE.VENDOR.CODE", "9.1").fix["kind"] == NAMESPACE
     assert "FAKE.VENDOR.CODE" not in store.tags(), "it has no tag to be mapped to"
 
-    # Stored, as one reviewable file that says what it is.
-    stored = json.loads((Path(store.cache_dir) / "fields" / "fake_vendor_code.json").read_text())
+    # Stored, in the one document the fields with no tag share.
+    stored = json.loads((Path(store.cache_dir) / NAMED_FILE).read_text())
     assert stored == {
-        "name": "FAKE.VENDOR.CODE",
-        "kind": "namespace",
-        "column": "fake_vendor_code",
-        "aliases": [{"name": "FAKEVENDORCODE", "source": "brk", "occurrences": 5}],
-        "versions": {"*": {"type": "String", "description": "A vendor's own code."}},
+        "FAKE.VENDOR.CODE": {
+            "name": "FAKE.VENDOR.CODE",
+            "kind": "namespace",
+            "column": "fake_vendor_code",
+            "type": "String",
+            "description": "A vendor's own code.",
+            "versions": ["*"],
+            "aliases": [{"name": "FAKEVENDORCODE", "source": "brk", "occurrences": 5}],
+        }
     }
 
     # Projected, whole rather than per version, into a registry of its own.
@@ -596,7 +777,7 @@ def test_a_codec_over_a_dictionary_that_declares_none_lifts_none(store: Offline)
     assert [key for key, _ in _pairs(rest)] == ["FAKEVENDORCODE", "Y"]
 
 
-def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline, tmp_path: Path) -> None:
+def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline) -> None:
     """A namespace is part of the name, and matching on the tail would merge them.
 
     Two vendors each render a `CLIENTID`. Reducing a rendered key to its last
@@ -608,7 +789,8 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline, tmp_p
             FieldEntry(
                 name=f"{vendor}.CLIENTID",
                 kind=NAMESPACE,
-                variants={ANY_VERSION: {"type": "String"}},
+                versions=(ANY_VERSION,),
+                type="String",
                 column=column,
             )
         )
@@ -627,56 +809,10 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline, tmp_p
     assert [key for key, _ in _pairs(rest)] == ["CLIENTID"], "the bare one is nobody's"
 
 
-# -- what a store refuses to be built with -----------------------------------
-
-
-def test_two_identities_claiming_one_name_are_refused_when_a_store_is_built() -> None:
-    """One name is one identity: a store holding two answers whichever it read first.
-
-    Two *tags* cannot reach here -- a tag is what an identity is, so a second
-    reading of one folds into the entry that already owns it -- but two tags
-    spelled alike are two identities, and that is the collision.
-    """
-    with pytest.raises(ValueError, match="FIX field name 'fakerole' is claimed by"):
-        explode(
-            ("9.1",),
-            {"9.1": [_field("FakeRole", 90001, "9.1"), _field("FAKEROLE", 90002, "9.1")]},
-            {},
-        )
-
-
-def test_a_write_that_would_duplicate_a_tag_is_refused_whole(store: Offline) -> None:
-    """Checked against what the store would hold after, and refused before writing."""
-    with pytest.raises(ValueError, match="FIX tag 90001 is claimed by"):
-        store.add_field(
-            FieldEntry(name="FakeOther", tag=90001, variants={"9.1": {"type": "String"}})
-        )
-    assert store.resolve("FakeOther") is None, "and nothing was written"
-
-
-def test_the_refusal_says_how_many_problems_and_what_they_are(store: Offline) -> None:
-    with pytest.raises(ValueError, match="nothing was written"):
-        store.add_field(
-            FieldEntry(name="FakeOther", tag=90001, variants={"9.1": {"type": "String"}})
-        )
-
-
-def test_check_reports_a_duplicate_tag_the_same_way_a_write_refuses_it(
-    store: Offline, tmp_path: Path
-) -> None:
-    """One authority for both, so `check` and a write never disagree."""
-    entry = FieldEntry(name="FakeOther", tag=90001, variants={"9.1": {"type": "String"}})
-    held = dict(store._entries[0])
-    problems = _problems(({**held, entry.slug: entry}, store._entries[1]))
-    assert any("FIX tag 90001 is claimed by" in problem for problem in problems)
-
-
 # -- what a component declaration says a member must carry -------------------
 
 
-def test_a_component_projects_with_the_nullability_its_spec_declares(
-    store: Offline,
-) -> None:
+def test_a_component_projects_with_the_nullability_its_spec_declares(store: Offline) -> None:
     """`required` is the whole rule: a member a message must carry is NOT NULL."""
     field = store.component_field("FakeParties", "9.1")
     (group,) = field.fields

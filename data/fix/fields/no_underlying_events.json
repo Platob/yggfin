@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingEvents",
- "tag": 1981,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

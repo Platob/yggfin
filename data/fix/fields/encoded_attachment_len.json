@@ -1,9 +1,0 @@
-{
- "name": "EncodedAttachmentLen",
- "tag": 2111,
- "versions": {
-  "5.0.SP2": {
-   "type": "LENGTH"
-  }
- }
-}

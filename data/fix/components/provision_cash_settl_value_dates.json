@@ -1,63 +1,61 @@
 {
  "name": "ProvisionCashSettlValueDates",
- "versions": {
-  "5.0.SP2": {
-   "order": 52,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ProvisionCashSettlValueTime",
-     "required": false,
-     "tag": 40114
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionCashSettlValueTimeBusinessCenter",
-     "required": false,
-     "tag": 40115
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionCashSettlValueDateBusinessDayConvention",
-     "required": false,
-     "tag": 40116
-    },
-    {
-     "kind": "component",
-     "name": "ProvisionCashSettlValueDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionCashSettlValueDateRelativeTo",
-     "required": false,
-     "tag": 40118
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionCashSettlValueDateOffsetPeriod",
-     "required": false,
-     "tag": 40119
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionCashSettlValueDateOffsetUnit",
-     "required": false,
-     "tag": 40120
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionCashSettlValueDateOffsetDayType",
-     "required": false,
-     "tag": 40121
-    },
-    {
-     "kind": "field",
-     "name": "ProvisionCashSettlValueDateAdjusted",
-     "required": false,
-     "tag": 40122
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "ProvisionCashSettlValueTime",
+   "required": false,
+   "tag": 40114
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionCashSettlValueTimeBusinessCenter",
+   "required": false,
+   "tag": 40115
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionCashSettlValueDateBusinessDayConvention",
+   "required": false,
+   "tag": 40116
+  },
+  {
+   "kind": "component",
+   "name": "ProvisionCashSettlValueDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionCashSettlValueDateRelativeTo",
+   "required": false,
+   "tag": 40118
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionCashSettlValueDateOffsetPeriod",
+   "required": false,
+   "tag": 40119
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionCashSettlValueDateOffsetUnit",
+   "required": false,
+   "tag": 40120
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionCashSettlValueDateOffsetDayType",
+   "required": false,
+   "tag": 40121
+  },
+  {
+   "kind": "field",
+   "name": "ProvisionCashSettlValueDateAdjusted",
+   "required": false,
+   "tag": 40122
   }
- }
+ ]
 }

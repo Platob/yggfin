@@ -1,9 +1,0 @@
-{
- "name": "LegStreamCommoditySettlTimeType",
- "tag": 41935,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,30 +1,28 @@
 {
  "name": "UnderlyingStreamCommodityDataSourceGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 602,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingStreamCommodityDataSources",
+   "required": false,
+   "tag": 41993,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingStreamCommodityDataSources",
+     "kind": "field",
+     "name": "UnderlyingStreamCommodityDataSourceID",
      "required": false,
-     "tag": 41993,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamCommodityDataSourceID",
-       "required": false,
-       "tag": 41994
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamCommodityDataSourceIDType",
-       "required": false,
-       "tag": 41995
-      }
-     ]
+     "tag": 41994
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamCommodityDataSourceIDType",
+     "required": false,
+     "tag": 41995
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "LegDividendPeriodUnderlierRefID",
- "tag": 42370,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

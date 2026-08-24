@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentScheduleCurrency",
- "tag": 40382,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

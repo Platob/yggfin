@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamTerminationDateOffsetPeriod",
- "tag": 40552,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

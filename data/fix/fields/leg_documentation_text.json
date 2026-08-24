@@ -1,9 +1,0 @@
-{
- "name": "LegDocumentationText",
- "tag": 2505,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

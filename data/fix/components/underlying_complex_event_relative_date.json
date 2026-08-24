@@ -1,69 +1,67 @@
 {
  "name": "UnderlyingComplexEventRelativeDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 95,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventDateUnadjusted",
-     "required": false,
-     "tag": 41739
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventDateRelativeTo",
-     "required": false,
-     "tag": 41740
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventDateOffsetPeriod",
-     "required": false,
-     "tag": 41741
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventDateOffsetUnit",
-     "required": false,
-     "tag": 41742
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventDateOffsetDayType",
-     "required": false,
-     "tag": 41743
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventDateBusinessDayConvention",
-     "required": false,
-     "tag": 41744
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingComplexEventDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventDateAdjusted",
-     "required": false,
-     "tag": 41745
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventFixingTime",
-     "required": false,
-     "tag": 41746
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingComplexEventFixingTimeBusinessCenter",
-     "required": false,
-     "tag": 41747
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingComplexEventDateUnadjusted",
+   "required": false,
+   "tag": 41739
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingComplexEventDateRelativeTo",
+   "required": false,
+   "tag": 41740
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingComplexEventDateOffsetPeriod",
+   "required": false,
+   "tag": 41741
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingComplexEventDateOffsetUnit",
+   "required": false,
+   "tag": 41742
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingComplexEventDateOffsetDayType",
+   "required": false,
+   "tag": 41743
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingComplexEventDateBusinessDayConvention",
+   "required": false,
+   "tag": 41744
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingComplexEventDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingComplexEventDateAdjusted",
+   "required": false,
+   "tag": 41745
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingComplexEventFixingTime",
+   "required": false,
+   "tag": 41746
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingComplexEventFixingTimeBusinessCenter",
+   "required": false,
+   "tag": 41747
   }
- }
+ ]
 }

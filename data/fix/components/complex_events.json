@@ -1,276 +1,274 @@
 {
  "name": "ComplexEvents",
- "versions": {
-  "5.0.SP2": {
-   "order": 304,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoComplexEvents",
+   "required": false,
+   "tag": 1483,
    "members": [
     {
-     "kind": "group",
-     "name": "NoComplexEvents",
+     "kind": "field",
+     "name": "ComplexEventType",
      "required": false,
-     "tag": 1483,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ComplexEventType",
-       "required": false,
-       "tag": 1484
-      },
-      {
-       "kind": "field",
-       "name": "ComplexOptPayoutPaySide",
-       "required": false,
-       "tag": 2117
-      },
-      {
-       "kind": "field",
-       "name": "ComplexOptPayoutReceiveSide",
-       "required": false,
-       "tag": 2118
-      },
-      {
-       "kind": "field",
-       "name": "ComplexOptPayoutUnderlier",
-       "required": false,
-       "tag": 2119
-      },
-      {
-       "kind": "field",
-       "name": "ComplexOptPayoutAmount",
-       "required": false,
-       "tag": 1485
-      },
-      {
-       "kind": "field",
-       "name": "ComplexOptPayoutPercentage",
-       "required": false,
-       "tag": 2120
-      },
-      {
-       "kind": "field",
-       "name": "ComplexOptPayoutTime",
-       "required": false,
-       "tag": 2121
-      },
-      {
-       "kind": "field",
-       "name": "ComplexOptPayoutCurrency",
-       "required": false,
-       "tag": 2122
-      },
-      {
-       "kind": "field",
-       "name": "ComplexOptPayoutCurrencyCodeSource",
-       "required": false,
-       "tag": 2941
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventPrice",
-       "required": false,
-       "tag": 1486
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventPricePercentage",
-       "required": false,
-       "tag": 2123
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventPriceBoundaryMethod",
-       "required": false,
-       "tag": 1487
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventPriceBoundaryPrecision",
-       "required": false,
-       "tag": 1488
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventPriceTimeType",
-       "required": false,
-       "tag": 1489
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCondition",
-       "required": false,
-       "tag": 1490
-      },
-      {
-       "kind": "component",
-       "name": "ComplexEventDates",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCurrencyOne",
-       "required": false,
-       "tag": 2124
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCurrencyOneCodeSource",
-       "required": false,
-       "tag": 2942
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCurrencyTwo",
-       "required": false,
-       "tag": 2125
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCurrencyTwoCodeSource",
-       "required": false,
-       "tag": 2943
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventQuoteBasis",
-       "required": false,
-       "tag": 2126
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventFixedFXRate",
-       "required": false,
-       "tag": 2127
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventSpotRate",
-       "required": false,
-       "tag": 2407
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventForwardPoints",
-       "required": false,
-       "tag": 2408
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventDeterminationMethod",
-       "required": false,
-       "tag": 2128
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCalculationAgent",
-       "required": false,
-       "tag": 2129
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventStrikePrice",
-       "required": false,
-       "tag": 2130
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventStrikeFactor",
-       "required": false,
-       "tag": 2131
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventStrikeNumberOfOptions",
-       "required": false,
-       "tag": 2132
-      },
-      {
-       "kind": "component",
-       "name": "ComplexEventRateSourceGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "ComplexEventRelativeDate",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "ComplexEventPeriodGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCreditEventsXIDRef",
-       "required": false,
-       "tag": 2133
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCreditEventNotifyingParty",
-       "required": false,
-       "tag": 2134
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCreditEventBusinessCenter",
-       "required": false,
-       "tag": 2135
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCreditEventStandardSources",
-       "required": false,
-       "tag": 2136
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventCreditEventMinimumSources",
-       "required": false,
-       "tag": 2137
-      },
-      {
-       "kind": "component",
-       "name": "ComplexEventCreditEventSourceGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "ComplexEventCreditEventGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventFuturesPriceValuation",
-       "required": false,
-       "tag": 2597
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventOptionsPriceValuation",
-       "required": false,
-       "tag": 2598
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventPVFinalPriceElectionFallback",
-       "required": false,
-       "tag": 2599
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventXID",
-       "required": false,
-       "tag": 2138
-      },
-      {
-       "kind": "field",
-       "name": "ComplexEventXIDRef",
-       "required": false,
-       "tag": 2139
-      }
-     ]
+     "tag": 1484
+    },
+    {
+     "kind": "field",
+     "name": "ComplexOptPayoutPaySide",
+     "required": false,
+     "tag": 2117
+    },
+    {
+     "kind": "field",
+     "name": "ComplexOptPayoutReceiveSide",
+     "required": false,
+     "tag": 2118
+    },
+    {
+     "kind": "field",
+     "name": "ComplexOptPayoutUnderlier",
+     "required": false,
+     "tag": 2119
+    },
+    {
+     "kind": "field",
+     "name": "ComplexOptPayoutAmount",
+     "required": false,
+     "tag": 1485
+    },
+    {
+     "kind": "field",
+     "name": "ComplexOptPayoutPercentage",
+     "required": false,
+     "tag": 2120
+    },
+    {
+     "kind": "field",
+     "name": "ComplexOptPayoutTime",
+     "required": false,
+     "tag": 2121
+    },
+    {
+     "kind": "field",
+     "name": "ComplexOptPayoutCurrency",
+     "required": false,
+     "tag": 2122
+    },
+    {
+     "kind": "field",
+     "name": "ComplexOptPayoutCurrencyCodeSource",
+     "required": false,
+     "tag": 2941
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventPrice",
+     "required": false,
+     "tag": 1486
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventPricePercentage",
+     "required": false,
+     "tag": 2123
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventPriceBoundaryMethod",
+     "required": false,
+     "tag": 1487
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventPriceBoundaryPrecision",
+     "required": false,
+     "tag": 1488
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventPriceTimeType",
+     "required": false,
+     "tag": 1489
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCondition",
+     "required": false,
+     "tag": 1490
+    },
+    {
+     "kind": "component",
+     "name": "ComplexEventDates",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCurrencyOne",
+     "required": false,
+     "tag": 2124
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCurrencyOneCodeSource",
+     "required": false,
+     "tag": 2942
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCurrencyTwo",
+     "required": false,
+     "tag": 2125
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCurrencyTwoCodeSource",
+     "required": false,
+     "tag": 2943
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventQuoteBasis",
+     "required": false,
+     "tag": 2126
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventFixedFXRate",
+     "required": false,
+     "tag": 2127
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventSpotRate",
+     "required": false,
+     "tag": 2407
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventForwardPoints",
+     "required": false,
+     "tag": 2408
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventDeterminationMethod",
+     "required": false,
+     "tag": 2128
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCalculationAgent",
+     "required": false,
+     "tag": 2129
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventStrikePrice",
+     "required": false,
+     "tag": 2130
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventStrikeFactor",
+     "required": false,
+     "tag": 2131
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventStrikeNumberOfOptions",
+     "required": false,
+     "tag": 2132
+    },
+    {
+     "kind": "component",
+     "name": "ComplexEventRateSourceGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "ComplexEventRelativeDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "ComplexEventPeriodGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCreditEventsXIDRef",
+     "required": false,
+     "tag": 2133
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCreditEventNotifyingParty",
+     "required": false,
+     "tag": 2134
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCreditEventBusinessCenter",
+     "required": false,
+     "tag": 2135
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCreditEventStandardSources",
+     "required": false,
+     "tag": 2136
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventCreditEventMinimumSources",
+     "required": false,
+     "tag": 2137
+    },
+    {
+     "kind": "component",
+     "name": "ComplexEventCreditEventSourceGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "ComplexEventCreditEventGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventFuturesPriceValuation",
+     "required": false,
+     "tag": 2597
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventOptionsPriceValuation",
+     "required": false,
+     "tag": 2598
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventPVFinalPriceElectionFallback",
+     "required": false,
+     "tag": 2599
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventXID",
+     "required": false,
+     "tag": 2138
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventXIDRef",
+     "required": false,
+     "tag": 2139
     }
    ]
   }
- }
+ ]
 }

@@ -1,29 +1,27 @@
 {
  "name": "MDStatisticReqGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 632,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoMDStatistics",
+   "required": false,
+   "tag": 2474,
    "members": [
     {
-     "kind": "group",
-     "name": "NoMDStatistics",
+     "kind": "field",
+     "name": "MDStatisticID",
      "required": false,
-     "tag": 2474,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MDStatisticID",
-       "required": false,
-       "tag": 2475
-      },
-      {
-       "kind": "component",
-       "name": "MDStatisticParameters",
-       "required": false
-      }
-     ]
+     "tag": 2475
+    },
+    {
+     "kind": "component",
+     "name": "MDStatisticParameters",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

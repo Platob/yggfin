@@ -1,775 +1,425 @@
 {
  "name": "DerivativeInstrument",
- "versions": {
-  "5.0.SP2": {
-   "order": 21,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DerivativeSymbol",
-     "required": false,
-     "tag": 1214
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSymbolSfx",
-     "required": false,
-     "tag": 1215
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityID",
-     "required": false,
-     "tag": 1216
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityIDSource",
-     "required": false,
-     "tag": 1217
-    },
-    {
-     "kind": "component",
-     "name": "DerivativeSecurityAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeProduct",
-     "required": false,
-     "tag": 1246
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeProductComplex",
-     "required": false,
-     "tag": 1228
-    },
-    {
-     "kind": "field",
-     "name": "DerivFlexProductEligibilityIndicator",
-     "required": false,
-     "tag": 1243
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityGroup",
-     "required": false,
-     "tag": 1247
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeCFICode",
-     "required": false,
-     "tag": 1248
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeUPICode",
-     "required": false,
-     "tag": 2892
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityType",
-     "required": false,
-     "tag": 1249
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecuritySubType",
-     "required": false,
-     "tag": 1250
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeMaturityMonthYear",
-     "required": false,
-     "tag": 1251
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeMaturityDate",
-     "required": false,
-     "tag": 1252
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeMaturityTime",
-     "required": false,
-     "tag": 1253
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSettleOnOpenFlag",
-     "required": false,
-     "tag": 1254
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeInstrmtAssignmentMethod",
-     "required": false,
-     "tag": 1255
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityStatus",
-     "required": false,
-     "tag": 1256
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeIssueDate",
-     "required": false,
-     "tag": 1276
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeInstrRegistry",
-     "required": false,
-     "tag": 1257
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeCountryOfIssue",
-     "required": false,
-     "tag": 1258
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStateOrProvinceOfIssue",
-     "required": false,
-     "tag": 1259
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeLocaleOfIssue",
-     "required": false,
-     "tag": 1260
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStrikePrice",
-     "required": false,
-     "tag": 1261
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStrikeCurrency",
-     "required": false,
-     "tag": 1262
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStrikeCurrencyCodeSource",
-     "required": false,
-     "tag": 2912
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStrikeMultiplier",
-     "required": false,
-     "tag": 1263
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStrikeValue",
-     "required": false,
-     "tag": 1264
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeOptAttribute",
-     "required": false,
-     "tag": 1265
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeContractMultiplier",
-     "required": false,
-     "tag": 1266
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeContractMultiplierUnit",
-     "required": false,
-     "tag": 1438
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeFlowScheduleType",
-     "required": false,
-     "tag": 1442
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeMinPriceIncrement",
-     "required": false,
-     "tag": 1267
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeMinPriceIncrementAmount",
-     "required": false,
-     "tag": 1268
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeUnitOfMeasure",
-     "required": false,
-     "tag": 1269
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeUnitOfMeasureQty",
-     "required": false,
-     "tag": 1270
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeUnitOfMeasureCurrency",
-     "required": false,
-     "tag": 1722
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeUnitOfMeasureCurrencyCodeSource",
-     "required": false,
-     "tag": 2913
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePriceUnitOfMeasure",
-     "required": false,
-     "tag": 1315
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePriceUnitOfMeasureQty",
-     "required": false,
-     "tag": 1316
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePriceUnitOfMeasureCurrency",
-     "required": false,
-     "tag": 1723
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePriceUnitOfMeasureCurrencyCodeSource",
-     "required": false,
-     "tag": 2914
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSettlMethod",
-     "required": false,
-     "tag": 1317
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePriceQuoteMethod",
-     "required": false,
-     "tag": 1318
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeValuationMethod",
-     "required": false,
-     "tag": 1319
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePriceQuoteCurrency",
-     "required": false,
-     "tag": 1576
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePriceQuoteCurrencyCodeSource",
-     "required": false,
-     "tag": 2915
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeListMethod",
-     "required": false,
-     "tag": 1320
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeCapPrice",
-     "required": false,
-     "tag": 1321
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeFloorPrice",
-     "required": false,
-     "tag": 1322
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePutOrCall",
-     "required": false,
-     "tag": 1323
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeInTheMoneyCondition",
-     "required": false,
-     "tag": 2684
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeContraryInstructionEligibilityIndicator",
-     "required": false,
-     "tag": 2688
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeExerciseStyle",
-     "required": false,
-     "tag": 1299
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeOptPayAmount",
-     "required": false,
-     "tag": 1225
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeTimeUnit",
-     "required": false,
-     "tag": 1271
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityExchange",
-     "required": false,
-     "tag": 1272
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePositionLimit",
-     "required": false,
-     "tag": 1273
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeNTPositionLimit",
-     "required": false,
-     "tag": 1274
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeIssuer",
-     "required": false,
-     "tag": 1275
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEncodedIssuerLen",
-     "required": false,
-     "tag": 1277
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEncodedIssuer",
-     "required": false,
-     "tag": 1278
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityDesc",
-     "required": false,
-     "tag": 1279
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEncodedSecurityDescLen",
-     "required": false,
-     "tag": 1280
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEncodedSecurityDesc",
-     "required": false,
-     "tag": 1281
-    },
-    {
-     "kind": "component",
-     "name": "DerivativeSecurityXML",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeContractSettlMonth",
-     "required": false,
-     "tag": 1285
-    },
-    {
-     "kind": "component",
-     "name": "DerivativeEventsGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "DerivativeInstrumentParties",
-     "required": false
-    }
-   ]
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "DerivativeSymbol",
+   "required": false,
+   "tag": 1214
   },
-  "5.0.SP1": {
-   "order": 144,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DerivativeSymbol",
-     "required": false,
-     "tag": 1214
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSymbolSfx",
-     "required": false,
-     "tag": 1215
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityID",
-     "required": false,
-     "tag": 1216
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityIDSource",
-     "required": false,
-     "tag": 1217
-    },
-    {
-     "kind": "component",
-     "name": "DerivativeSecurityAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeProduct",
-     "required": false,
-     "tag": 1246
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeProductComplex",
-     "required": false,
-     "tag": 1228
-    },
-    {
-     "kind": "field",
-     "name": "DerivFlexProductEligibilityIndicator",
-     "required": false,
-     "tag": 1243
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityGroup",
-     "required": false,
-     "tag": 1247
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeCFICode",
-     "required": false,
-     "tag": 1248
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityType",
-     "required": false,
-     "tag": 1249
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecuritySubType",
-     "required": false,
-     "tag": 1250
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeMaturityMonthYear",
-     "required": false,
-     "tag": 1251
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeMaturityDate",
-     "required": false,
-     "tag": 1252
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeMaturityTime",
-     "required": false,
-     "tag": 1253
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSettleOnOpenFlag",
-     "required": false,
-     "tag": 1254
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeInstrmtAssignmentMethod",
-     "required": false,
-     "tag": 1255
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityStatus",
-     "required": false,
-     "tag": 1256
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeIssueDate",
-     "required": false,
-     "tag": 1276
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeInstrRegistry",
-     "required": false,
-     "tag": 1257
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeCountryOfIssue",
-     "required": false,
-     "tag": 1258
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStateOrProvinceOfIssue",
-     "required": false,
-     "tag": 1259
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeLocaleOfIssue",
-     "required": false,
-     "tag": 1260
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStrikePrice",
-     "required": false,
-     "tag": 1261
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStrikeCurrency",
-     "required": false,
-     "tag": 1262
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStrikeMultiplier",
-     "required": false,
-     "tag": 1263
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeStrikeValue",
-     "required": false,
-     "tag": 1264
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeOptAttribute",
-     "required": false,
-     "tag": 1265
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeContractMultiplier",
-     "required": false,
-     "tag": 1266
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeMinPriceIncrement",
-     "required": false,
-     "tag": 1267
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeMinPriceIncrementAmount",
-     "required": false,
-     "tag": 1268
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeUnitOfMeasure",
-     "required": false,
-     "tag": 1269
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeUnitOfMeasureQty",
-     "required": false,
-     "tag": 1270
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePriceUnitOfMeasure",
-     "required": false,
-     "tag": 1315
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePriceUnitOfMeasureQty",
-     "required": false,
-     "tag": 1316
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSettlMethod",
-     "required": false,
-     "tag": 1317
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePriceQuoteMethod",
-     "required": false,
-     "tag": 1318
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeFuturesValuationMethod",
-     "required": false,
-     "tag": 1319
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeListMethod",
-     "required": false,
-     "tag": 1320
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeCapPrice",
-     "required": false,
-     "tag": 1321
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeFloorPrice",
-     "required": false,
-     "tag": 1322
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePutOrCall",
-     "required": false,
-     "tag": 1323
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeExerciseStyle",
-     "required": false,
-     "tag": 1299
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeOptPayAmount",
-     "required": false,
-     "tag": 1225
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeTimeUnit",
-     "required": false,
-     "tag": 1271
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityExchange",
-     "required": false,
-     "tag": 1272
-    },
-    {
-     "kind": "field",
-     "name": "DerivativePositionLimit",
-     "required": false,
-     "tag": 1273
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeNTPositionLimit",
-     "required": false,
-     "tag": 1274
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeIssuer",
-     "required": false,
-     "tag": 1275
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEncodedIssuerLen",
-     "required": false,
-     "tag": 1277
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEncodedIssuer",
-     "required": false,
-     "tag": 1278
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityDesc",
-     "required": false,
-     "tag": 1279
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEncodedSecurityDescLen",
-     "required": false,
-     "tag": 1280
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeEncodedSecurityDesc",
-     "required": false,
-     "tag": 1281
-    },
-    {
-     "kind": "component",
-     "name": "DerivativeSecurityXML",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeContractSettlMonth",
-     "required": false,
-     "tag": 1285
-    },
-    {
-     "kind": "component",
-     "name": "DerivativeEventsGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "DerivativeInstrumentParties",
-     "required": false
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "DerivativeSymbolSfx",
+   "required": false,
+   "tag": 1215
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSecurityID",
+   "required": false,
+   "tag": 1216
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSecurityIDSource",
+   "required": false,
+   "tag": 1217
+  },
+  {
+   "kind": "component",
+   "name": "DerivativeSecurityAltIDGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeProduct",
+   "required": false,
+   "tag": 1246
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeProductComplex",
+   "required": false,
+   "tag": 1228
+  },
+  {
+   "kind": "field",
+   "name": "DerivFlexProductEligibilityIndicator",
+   "required": false,
+   "tag": 1243
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSecurityGroup",
+   "required": false,
+   "tag": 1247
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeCFICode",
+   "required": false,
+   "tag": 1248
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeUPICode",
+   "required": false,
+   "tag": 2892
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSecurityType",
+   "required": false,
+   "tag": 1249
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSecuritySubType",
+   "required": false,
+   "tag": 1250
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeMaturityMonthYear",
+   "required": false,
+   "tag": 1251
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeMaturityDate",
+   "required": false,
+   "tag": 1252
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeMaturityTime",
+   "required": false,
+   "tag": 1253
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSettleOnOpenFlag",
+   "required": false,
+   "tag": 1254
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeInstrmtAssignmentMethod",
+   "required": false,
+   "tag": 1255
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSecurityStatus",
+   "required": false,
+   "tag": 1256
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeIssueDate",
+   "required": false,
+   "tag": 1276
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeInstrRegistry",
+   "required": false,
+   "tag": 1257
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeCountryOfIssue",
+   "required": false,
+   "tag": 1258
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeStateOrProvinceOfIssue",
+   "required": false,
+   "tag": 1259
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeLocaleOfIssue",
+   "required": false,
+   "tag": 1260
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeStrikePrice",
+   "required": false,
+   "tag": 1261
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeStrikeCurrency",
+   "required": false,
+   "tag": 1262
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeStrikeCurrencyCodeSource",
+   "required": false,
+   "tag": 2912
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeStrikeMultiplier",
+   "required": false,
+   "tag": 1263
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeStrikeValue",
+   "required": false,
+   "tag": 1264
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeOptAttribute",
+   "required": false,
+   "tag": 1265
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeContractMultiplier",
+   "required": false,
+   "tag": 1266
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeContractMultiplierUnit",
+   "required": false,
+   "tag": 1438
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeFlowScheduleType",
+   "required": false,
+   "tag": 1442
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeMinPriceIncrement",
+   "required": false,
+   "tag": 1267
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeMinPriceIncrementAmount",
+   "required": false,
+   "tag": 1268
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeUnitOfMeasure",
+   "required": false,
+   "tag": 1269
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeUnitOfMeasureQty",
+   "required": false,
+   "tag": 1270
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeUnitOfMeasureCurrency",
+   "required": false,
+   "tag": 1722
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeUnitOfMeasureCurrencyCodeSource",
+   "required": false,
+   "tag": 2913
+  },
+  {
+   "kind": "field",
+   "name": "DerivativePriceUnitOfMeasure",
+   "required": false,
+   "tag": 1315
+  },
+  {
+   "kind": "field",
+   "name": "DerivativePriceUnitOfMeasureQty",
+   "required": false,
+   "tag": 1316
+  },
+  {
+   "kind": "field",
+   "name": "DerivativePriceUnitOfMeasureCurrency",
+   "required": false,
+   "tag": 1723
+  },
+  {
+   "kind": "field",
+   "name": "DerivativePriceUnitOfMeasureCurrencyCodeSource",
+   "required": false,
+   "tag": 2914
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSettlMethod",
+   "required": false,
+   "tag": 1317
+  },
+  {
+   "kind": "field",
+   "name": "DerivativePriceQuoteMethod",
+   "required": false,
+   "tag": 1318
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeValuationMethod",
+   "required": false,
+   "tag": 1319
+  },
+  {
+   "kind": "field",
+   "name": "DerivativePriceQuoteCurrency",
+   "required": false,
+   "tag": 1576
+  },
+  {
+   "kind": "field",
+   "name": "DerivativePriceQuoteCurrencyCodeSource",
+   "required": false,
+   "tag": 2915
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeListMethod",
+   "required": false,
+   "tag": 1320
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeCapPrice",
+   "required": false,
+   "tag": 1321
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeFloorPrice",
+   "required": false,
+   "tag": 1322
+  },
+  {
+   "kind": "field",
+   "name": "DerivativePutOrCall",
+   "required": false,
+   "tag": 1323
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeInTheMoneyCondition",
+   "required": false,
+   "tag": 2684
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeContraryInstructionEligibilityIndicator",
+   "required": false,
+   "tag": 2688
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeExerciseStyle",
+   "required": false,
+   "tag": 1299
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeOptPayAmount",
+   "required": false,
+   "tag": 1225
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeTimeUnit",
+   "required": false,
+   "tag": 1271
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSecurityExchange",
+   "required": false,
+   "tag": 1272
+  },
+  {
+   "kind": "field",
+   "name": "DerivativePositionLimit",
+   "required": false,
+   "tag": 1273
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeNTPositionLimit",
+   "required": false,
+   "tag": 1274
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeIssuer",
+   "required": false,
+   "tag": 1275
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeEncodedIssuerLen",
+   "required": false,
+   "tag": 1277
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeEncodedIssuer",
+   "required": false,
+   "tag": 1278
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSecurityDesc",
+   "required": false,
+   "tag": 1279
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeEncodedSecurityDescLen",
+   "required": false,
+   "tag": 1280
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeEncodedSecurityDesc",
+   "required": false,
+   "tag": 1281
+  },
+  {
+   "kind": "component",
+   "name": "DerivativeSecurityXML",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeContractSettlMonth",
+   "required": false,
+   "tag": 1285
+  },
+  {
+   "kind": "component",
+   "name": "DerivativeEventsGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "DerivativeInstrumentParties",
+   "required": false
   }
- }
+ ]
 }

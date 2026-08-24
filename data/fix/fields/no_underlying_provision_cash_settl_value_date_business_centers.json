@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingProvisionCashSettlValueDateBusinessCenters",
- "tag": 42182,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

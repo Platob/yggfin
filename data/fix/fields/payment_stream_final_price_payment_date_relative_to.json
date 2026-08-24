@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamFinalPricePaymentDateRelativeTo",
- "tag": 42655,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

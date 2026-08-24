@@ -1,192 +1,49 @@
 {
  "name": "Parties",
- "versions": {
-  "5.0.SP2": {
-   "order": 166,
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPartyIDs",
+   "required": false,
+   "tag": 453,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPartyIDs",
+     "kind": "field",
+     "name": "PartyID",
      "required": false,
-     "tag": 453,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartyID",
-       "required": false,
-       "tag": 448
-      },
-      {
-       "kind": "field",
-       "name": "PartyIDSource",
-       "required": false,
-       "tag": 447
-      },
-      {
-       "kind": "field",
-       "name": "PartyRole",
-       "required": false,
-       "tag": 452
-      },
-      {
-       "kind": "field",
-       "name": "PartyRoleQualifier",
-       "required": false,
-       "tag": 2376
-      },
-      {
-       "kind": "component",
-       "name": "PtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 10,
-   "members": [
+     "tag": 448
+    },
     {
-     "kind": "group",
-     "name": "NoPartyIDs",
+     "kind": "field",
+     "name": "PartyIDSource",
      "required": false,
-     "tag": 453,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartyID",
-       "required": false,
-       "tag": 448
-      },
-      {
-       "kind": "field",
-       "name": "PartyIDSource",
-       "required": false,
-       "tag": 447
-      },
-      {
-       "kind": "field",
-       "name": "PartyRole",
-       "required": false,
-       "tag": 452
-      },
-      {
-       "kind": "component",
-       "name": "PtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 10,
-   "members": [
+     "tag": 447
+    },
     {
-     "kind": "group",
-     "name": "NoPartyIDs",
+     "kind": "field",
+     "name": "PartyRole",
      "required": false,
-     "tag": 453,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartyID",
-       "required": false,
-       "tag": 448
-      },
-      {
-       "kind": "field",
-       "name": "PartyIDSource",
-       "required": false,
-       "tag": 447
-      },
-      {
-       "kind": "field",
-       "name": "PartyRole",
-       "required": false,
-       "tag": 452
-      },
-      {
-       "kind": "component",
-       "name": "PtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 10,
-   "members": [
+     "tag": 452
+    },
     {
-     "kind": "group",
-     "name": "NoPartyIDs",
+     "kind": "field",
+     "name": "PartyRoleQualifier",
      "required": false,
-     "tag": 453,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartyID",
-       "required": false,
-       "tag": 448
-      },
-      {
-       "kind": "field",
-       "name": "PartyIDSource",
-       "required": false,
-       "tag": 447
-      },
-      {
-       "kind": "field",
-       "name": "PartyRole",
-       "required": false,
-       "tag": 452
-      },
-      {
-       "kind": "component",
-       "name": "PtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "4.3": {
-   "order": 5,
-   "members": [
+     "tag": 2376
+    },
     {
-     "kind": "group",
-     "name": "NoPartyIDs",
-     "required": false,
-     "tag": 453,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartyID",
-       "required": false,
-       "tag": 448
-      },
-      {
-       "kind": "field",
-       "name": "PartyIDSource",
-       "required": false,
-       "tag": 447
-      },
-      {
-       "kind": "field",
-       "name": "PartyRole",
-       "required": false,
-       "tag": 452
-      },
-      {
-       "kind": "field",
-       "name": "PartySubID",
-       "required": false,
-       "tag": 523
-      }
-     ]
+     "kind": "component",
+     "name": "PtysSubGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

@@ -1,24 +1,22 @@
 {
  "name": "UnderlyingCashSettlDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 687,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingCashSettlDateBusinessCenters",
+   "required": false,
+   "tag": 42788,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingCashSettlDateBusinessCenters",
+     "kind": "field",
+     "name": "UnderlyingCashSettlDateBusinessCenter",
      "required": false,
-     "tag": 42788,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingCashSettlDateBusinessCenter",
-       "required": false,
-       "tag": 42789
-      }
-     ]
+     "tag": 42789
     }
    ]
   }
- }
+ ]
 }

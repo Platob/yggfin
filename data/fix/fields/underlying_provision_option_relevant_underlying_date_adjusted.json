@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionOptionRelevantUnderlyingDateAdjusted",
- "tag": 42148,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

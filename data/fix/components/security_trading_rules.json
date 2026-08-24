@@ -1,45 +1,24 @@
 {
  "name": "SecurityTradingRules",
- "versions": {
-  "5.0.SP2": {
-   "order": 15,
-   "members": [
-    {
-     "kind": "component",
-     "name": "BaseTradingRules",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "TradingSessionRulesGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "NestedInstrumentAttribute",
-     "required": false
-    }
-   ]
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "component",
+   "name": "BaseTradingRules",
+   "required": false
   },
-  "5.0.SP1": {
-   "order": 119,
-   "members": [
-    {
-     "kind": "component",
-     "name": "BaseTradingRules",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "TradingSessionRulesGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "NestedInstrumentAttribute",
-     "required": false
-    }
-   ]
+  {
+   "kind": "component",
+   "name": "TradingSessionRulesGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "NestedInstrumentAttribute",
+   "required": false
   }
- }
+ ]
 }

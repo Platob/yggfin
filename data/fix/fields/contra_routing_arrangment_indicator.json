@@ -1,9 +1,0 @@
-{
- "name": "ContraRoutingArrangmentIndicator",
- "tag": 2884,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

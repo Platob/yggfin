@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamCommoditySecurityIDSource",
- "tag": 41967,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

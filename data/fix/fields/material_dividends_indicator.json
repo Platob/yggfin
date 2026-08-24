@@ -1,9 +1,0 @@
-{
- "name": "MaterialDividendsIndicator",
- "tag": 42261,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

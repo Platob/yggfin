@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingComplexEventReferencePageHeading",
- "tag": 41736,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,45 +1,43 @@
 {
  "name": "UnderlyingComplexEventPeriodGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 575,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingComplexEventPeriods",
+   "required": false,
+   "tag": 41729,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingComplexEventPeriods",
+     "kind": "field",
+     "name": "UnderlyingComplexEventPeriodType",
      "required": false,
-     "tag": 41729,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventPeriodType",
-       "required": false,
-       "tag": 41730
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventBusinessCenter",
-       "required": false,
-       "tag": 41731
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingComplexEventScheduleGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingComplexEventPeriodDateGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingComplexEventAveragingObservationGrp",
-       "required": false
-      }
-     ]
+     "tag": 41730
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingComplexEventBusinessCenter",
+     "required": false,
+     "tag": 41731
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingComplexEventScheduleGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingComplexEventPeriodDateGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingComplexEventAveragingObservationGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

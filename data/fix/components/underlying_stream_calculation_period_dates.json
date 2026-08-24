@@ -1,115 +1,113 @@
 {
  "name": "UnderlyingStreamCalculationPeriodDates",
- "versions": {
-  "5.0.SP2": {
-   "order": 65,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCalculationPeriodDatesXID",
-     "required": false,
-     "tag": 41957
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCalculationPeriodDatesXIDRef",
-     "required": false,
-     "tag": 41958
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCalculationPeriodBusinessDayConvention",
-     "required": false,
-     "tag": 40556
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingStreamCalculationPeriodBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingStreamCalculationPeriodDateGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamFirstPeriodStartDateUnadjusted",
-     "required": false,
-     "tag": 40558
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamFirstPeriodStartDateBusinessDayConvention",
-     "required": false,
-     "tag": 40559
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamFirstPeriodStartDateAdjusted",
-     "required": false,
-     "tag": 40561
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamFirstRegularPeriodStartDateUnadjusted",
-     "required": false,
-     "tag": 40562
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamFirstCompoundingPeriodEndDateUnadjusted",
-     "required": false,
-     "tag": 40563
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamLastRegularPeriodEndDateUnadjusted",
-     "required": false,
-     "tag": 40564
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCalculationFrequencyPeriod",
-     "required": false,
-     "tag": 40565
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCalculationFrequencyUnit",
-     "required": false,
-     "tag": 40566
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCalculationRollConvention",
-     "required": false,
-     "tag": 40567
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCalculationBalanceOfFirstPeriod",
-     "required": false,
-     "tag": 41959
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCalculationCorrectionPeriod",
-     "required": false,
-     "tag": 41960
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamCalculationCorrectionUnit",
-     "required": false,
-     "tag": 41961
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamCalculationPeriodDatesXID",
+   "required": false,
+   "tag": 41957
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamCalculationPeriodDatesXIDRef",
+   "required": false,
+   "tag": 41958
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamCalculationPeriodBusinessDayConvention",
+   "required": false,
+   "tag": 40556
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingStreamCalculationPeriodBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingStreamCalculationPeriodDateGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamFirstPeriodStartDateUnadjusted",
+   "required": false,
+   "tag": 40558
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamFirstPeriodStartDateBusinessDayConvention",
+   "required": false,
+   "tag": 40559
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamFirstPeriodStartDateAdjusted",
+   "required": false,
+   "tag": 40561
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamFirstRegularPeriodStartDateUnadjusted",
+   "required": false,
+   "tag": 40562
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamFirstCompoundingPeriodEndDateUnadjusted",
+   "required": false,
+   "tag": 40563
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamLastRegularPeriodEndDateUnadjusted",
+   "required": false,
+   "tag": 40564
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamCalculationFrequencyPeriod",
+   "required": false,
+   "tag": 40565
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamCalculationFrequencyUnit",
+   "required": false,
+   "tag": 40566
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamCalculationRollConvention",
+   "required": false,
+   "tag": 40567
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamCalculationBalanceOfFirstPeriod",
+   "required": false,
+   "tag": 41959
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamCalculationCorrectionPeriod",
+   "required": false,
+   "tag": 41960
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamCalculationCorrectionUnit",
+   "required": false,
+   "tag": 41961
   }
- }
+ ]
 }

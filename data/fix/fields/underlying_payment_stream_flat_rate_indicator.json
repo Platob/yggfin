@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamFlatRateIndicator",
- "tag": 41897,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

@@ -1,24 +1,22 @@
 {
  "name": "RequestedRiskLimitTypesGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 333,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRequestedRiskLimitType",
+   "required": false,
+   "tag": 1668,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRequestedRiskLimitType",
+     "kind": "field",
+     "name": "RiskLimitType",
      "required": false,
-     "tag": 1668,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RiskLimitType",
-       "required": false,
-       "tag": 1530
-      }
-     ]
+     "tag": 1530
     }
    ]
   }
- }
+ ]
 }

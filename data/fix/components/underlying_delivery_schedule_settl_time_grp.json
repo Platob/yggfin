@@ -1,36 +1,34 @@
 {
  "name": "UnderlyingDeliveryScheduleSettlTimeGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 582,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingDeliveryScheduleSettlTimes",
+   "required": false,
+   "tag": 41773,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingDeliveryScheduleSettlTimes",
+     "kind": "field",
+     "name": "UnderlyingDeliveryScheduleSettlStart",
      "required": false,
-     "tag": 41773,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingDeliveryScheduleSettlStart",
-       "required": false,
-       "tag": 41774
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingDeliveryScheduleSettlEnd",
-       "required": false,
-       "tag": 41775
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingDeliveryScheduleSettlTimeType",
-       "required": false,
-       "tag": 41776
-      }
-     ]
+     "tag": 41774
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryScheduleSettlEnd",
+     "required": false,
+     "tag": 41775
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryScheduleSettlTimeType",
+     "required": false,
+     "tag": 41776
     }
    ]
   }
- }
+ ]
 }

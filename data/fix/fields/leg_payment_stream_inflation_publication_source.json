@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamInflationPublicationSource",
- "tag": 40355,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

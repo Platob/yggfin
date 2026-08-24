@@ -1,9 +1,0 @@
-{
- "name": "LegReturnRateFXRateCalc",
- "tag": 42533,
- "versions": {
-  "5.0.SP2": {
-   "type": "CHAR"
-  }
- }
-}

@@ -1,70 +1,68 @@
 {
  "name": "PaymentStreamFixedRate",
- "versions": {
-  "5.0.SP2": {
-   "order": 46,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PaymentStreamRate",
-     "required": false,
-     "tag": 40784
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamFixedAmount",
-     "required": false,
-     "tag": 40785
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamRateOrAmountCurrency",
-     "required": false,
-     "tag": 40786
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamFixedAmountUnitOfMeasure",
-     "required": false,
-     "tag": 41187
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamTotalFixedAmount",
-     "required": false,
-     "tag": 41188
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamFutureValueNotional",
-     "required": false,
-     "tag": 40787
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamFutureValueDateAdjusted",
-     "required": false,
-     "tag": 40788
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamWorldScaleRate",
-     "required": false,
-     "tag": 41189
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamContractPrice",
-     "required": false,
-     "tag": 41190
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamContractPriceCurrency",
-     "required": false,
-     "tag": 41191
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "PaymentStreamRate",
+   "required": false,
+   "tag": 40784
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamFixedAmount",
+   "required": false,
+   "tag": 40785
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamRateOrAmountCurrency",
+   "required": false,
+   "tag": 40786
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamFixedAmountUnitOfMeasure",
+   "required": false,
+   "tag": 41187
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamTotalFixedAmount",
+   "required": false,
+   "tag": 41188
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamFutureValueNotional",
+   "required": false,
+   "tag": 40787
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamFutureValueDateAdjusted",
+   "required": false,
+   "tag": 40788
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamWorldScaleRate",
+   "required": false,
+   "tag": 41189
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamContractPrice",
+   "required": false,
+   "tag": 41190
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamContractPriceCurrency",
+   "required": false,
+   "tag": 41191
   }
- }
+ ]
 }

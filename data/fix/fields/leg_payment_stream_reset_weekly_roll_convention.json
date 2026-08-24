@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamResetWeeklyRollConvention",
- "tag": 40308,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

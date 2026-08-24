@@ -137,9 +137,6 @@ fields:
     fix:tag: '55'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","Security Definition Request","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -147,7 +144,9 @@ fields:
       Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
       Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
       Data - Incremental Refresh","Quote Cancel"]'
+    fix:components: '["Instrument"]'
     fix:name: Symbol
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: kind
   type: int32
   description: What it settles as, read from the first character of the CFI code.
@@ -165,9 +164,6 @@ fields:
     fix:tag: '48'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -175,7 +171,9 @@ fields:
       Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
       Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
       Data - Incremental Refresh","Quote Cancel"]'
+    fix:components: '["Instrument"]'
     fix:name: SecurityID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: security_id_source
   type: string
   nullable: true
@@ -193,11 +191,6 @@ fields:
       Reporting Authority","K":"ISDA/FpML Product URL (URL in SecurityID)","L":"Letter
       of Credit","M":"Marketplace-assigned Identifier"}'
     fix:value_names: '{"1":"CUSIP","2":"SEDOL","3":"QUIK","4":"ISIN_NUMBER","5":"RIC_CODE","6":"ISO_CURRENCY_CODE","7":"ISO_COUNTRY_CODE","8":"EXCHANGE_SYMBOL","9":"CONSOLIDATED_TAPE_ASSOCIATION","E":"SICOVAM","F":"BELGIAN","D":"VALOREN","C":"DUTCH","B":"WERTPAPIER","A":"BLOOMBERG_SYMBOL","G":"COMMON","H":"CLEARING_HOUSE","I":"ISDA_FP_ML_SPECIFICATION","J":"OPTION_PRICE_REPORTING_AUTHORITY","K":"ISDA_FP_MLURL","L":"LETTER_OF_CREDIT","M":"MARKETPLACE_ASSIGNED_IDENTIFIER","N":"MARKIT_RED_ENTITY_CLIP","P":"MARKIT_RED_PAIR_CLIP","Q":"CFTC_COMMODITY_CODE","R":"ISDA_COMMODITY_REFERENCE_PRICE","S":"FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER","T":"LEGAL_ENTITY_IDENTIFIER","U":"SYNTHETIC","V":"FIDESSA_INSTRUMENT_MNEMONIC","W":"INDEX_NAME","X":"UNIFORM_SYMBOL","Y":"DIGITAL_TOKEN_IDENTIFIER"}'
-    fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
-    fix:names: '{"5.0.SP2":"SecurityIDSource","5.0.SP1":"SecurityIDSource","5.0":"SecurityIDSource","4.4":"SecurityIDSource","4.3":"IDSource
-      prior to FIX 4.3)","4.2":"IDSource","4.1":"IDSource","4.0":"IDSource"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -205,7 +198,11 @@ fields:
       Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
       Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
       Data - Incremental Refresh","Quote Cancel"]'
+    fix:components: '["Instrument"]'
     fix:name: SecurityIDSource
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:aliases: '[{"name":"IDSource","source":"4.0","occurrences":0},{"name":"IDSource
+      prior to FIX 4.3)","source":"4.3","occurrences":0}]'
 - name: isin_code
   type: string
   nullable: true
@@ -289,9 +286,8 @@ fields:
       Strike Price","Don''t Know Trade","Quote Request","Quote","Market Data Request","Market
       Data - Snapshot/Full Refresh","Market Data - Incremental Refresh","Quote Cancel"]'
     fix:components: '["Instrument","SecTypesGrp","SettlInstGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char"}'
     fix:name: SecurityType
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
 - name: cfi
   type: string
   nullable: true
@@ -310,9 +306,8 @@ fields:
     fix:used_in: '["SettlementInstructionRequest","Settlement Instruction Request","Settlement
       Instructions","Security Types"]'
     fix:components: '["Instrument","SecTypesGrp","SettlInstGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
     fix:name: CFICode
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
 - name: exchange
   type: string
   nullable: true
@@ -330,9 +325,8 @@ fields:
       Data Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental
       Refresh","Quote Cancel"]'
     fix:components: '["Instrument","TrdSessLstGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-    fix:types: '{"5.0.SP2":"Exchange","5.0.SP1":"Exchange","5.0":"Exchange","4.4":"Exchange","4.3":"Exchange","4.2":"Exchange","4.1":"char"}'
     fix:name: SecurityExchange
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
 - name: currency
   type: int32
   nullable: true
@@ -360,9 +354,8 @@ fields:
       Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
       Order - Cross","Indication of Interest"]'
     fix:components: '["InstrmtMDReqGrp","InstrmtStrkPxGrp","ListOrdGrp","MDFullGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","RelSymDerivSecGrp","RelSymDerivSecUpdGrp","SecListGrp","SecLstUpdRelSymGrp","SettlObligationInstructions","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency","4.2":"Currency","4.1":"char","4.0":"char"}'
     fix:name: Currency
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     enum:name: Currency
     enum:key_type: int32
     enum:value_type: utf8
@@ -388,9 +381,6 @@ fields:
     fix:tag: '231'
     fix:type: float
     fix:version: 5.0.SP2
-    fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"float","5.0.SP1":"float","5.0":"float","4.4":"float","4.3":"float","4.2":"float"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -398,7 +388,9 @@ fields:
       Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
       Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
       Data - Incremental Refresh","Quote Cancel"]'
+    fix:components: '["Instrument"]'
     fix:name: ContractMultiplier
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
 - name: tick
   type: double
   nullable: true
@@ -408,9 +400,8 @@ fields:
     fix:type: float
     fix:version: 5.0.SP2
     fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
-    fix:types: '{"5.0.SP2":"float","5.0.SP1":"float","5.0":"float"}'
     fix:name: MinPriceIncrement
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
 - name: lot
   type: double
   nullable: true
@@ -419,12 +410,11 @@ fields:
     fix:tag: '561'
     fix:type: Qty
     fix:version: 5.0.SP2
-    fix:components: '["BaseTradingRules","SecListGrp","SecLstUpdRelSymGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty"}'
     fix:used_in: '["SecurityDefinitionUpdateReport","SecurityDefinition","Security
       Definition","Security List"]'
+    fix:components: '["BaseTradingRules","SecListGrp","SecLstUpdRelSymGrp"]'
     fix:name: RoundLot
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
 - name: maturity
   type: date32[day]
   nullable: true
@@ -434,9 +424,8 @@ fields:
     fix:type: LocalMktDate
     fix:version: 5.0.SP2
     fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-    fix:types: '{"5.0.SP2":"LocalMktDate","5.0.SP1":"LocalMktDate","5.0":"LocalMktDate","4.4":"LocalMktDate","4.3":"LocalMktDate"}'
     fix:name: MaturityDate
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
 - name: strike
   type: double
   nullable: true
@@ -445,9 +434,6 @@ fields:
     fix:tag: '202'
     fix:type: Price
     fix:version: 5.0.SP2
-    fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -455,7 +441,9 @@ fields:
       Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
       Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
       Data - Incremental Refresh","Quote Cancel"]'
+    fix:components: '["Instrument"]'
     fix:name: StrikePrice
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
 - name: option_kind
   type: int32
   description: Indicates whether an option contract is a put or call
@@ -465,10 +453,6 @@ fields:
     fix:version: 5.0.SP2
     fix:values: '{"0":"Put","1":"Call"}'
     fix:value_names: '{"0":"PUT","1":"CALL","2":"OTHER","3":"CHOOSER"}'
-    fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int","4.1":"int"}'
-    fix:names: '{"5.0.SP2":"PutOrCall","5.0.SP1":"PutOrCall","5.0":"PutOrCall","4.4":"PutOrCall","4.3":"PutOrCall(replaced)","4.2":"PutOrCall","4.1":"PutOrCall"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -476,7 +460,10 @@ fields:
       Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
       Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
       Data - Incremental Refresh","Quote Cancel"]'
+    fix:components: '["Instrument"]'
     fix:name: PutOrCall
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
+    fix:aliases: '[{"name":"PutOrCall(replaced)","source":"4.3","occurrences":0}]'
     enum:name: OptionKind
     enum:key_type: int32
     enum:value_type: utf8
@@ -490,9 +477,6 @@ fields:
     fix:tag: '107'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -500,7 +484,9 @@ fields:
       Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
       Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
       Data - Incremental Refresh","Quote Cancel"]'
+    fix:components: '["Instrument"]'
     fix:name: SecurityDesc
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: legs
   type: list
   nullable: true
@@ -521,9 +507,8 @@ fields:
         fix:type: String
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
         fix:name: LegSymbol
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: side
       type: int32
       description: The side of this individual leg (multileg security). See Side <54>
@@ -533,9 +518,8 @@ fields:
         fix:type: char
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char"}'
         fix:name: LegSide
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
         enum:name: Side
         enum:key_type: int32
         enum:value_type: utf8
@@ -555,9 +539,8 @@ fields:
         fix:type: float
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"float","5.0.SP1":"float","5.0":"float","4.4":"float","4.3":"float"}'
         fix:name: LegRatioQty
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: kind
       type: int32
       description: What the leg settles as, read from `LegCFICode <608>` or `LegSecurityType
@@ -577,9 +560,8 @@ fields:
         fix:type: String
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
         fix:name: LegSecurityID
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: security_id_source
       type: string
       nullable: true
@@ -590,9 +572,8 @@ fields:
         fix:type: String
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
         fix:name: LegSecurityIDSource
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: cfi
       type: string
       nullable: true
@@ -603,9 +584,8 @@ fields:
         fix:type: String
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
         fix:name: LegCFICode
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: security_type
       type: string
       nullable: true
@@ -615,9 +595,8 @@ fields:
         fix:type: String
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
         fix:name: LegSecurityType
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: exchange
       type: string
       nullable: true
@@ -628,9 +607,8 @@ fields:
         fix:type: Exchange
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"Exchange","5.0.SP1":"Exchange","5.0":"Exchange","4.4":"Exchange","4.3":"Exchange"}'
         fix:name: LegSecurityExchange
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: currency
       type: int32
       nullable: true
@@ -639,12 +617,11 @@ fields:
         fix:tag: '556'
         fix:type: Currency
         fix:version: 5.0.SP2
-        fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency"}'
         fix:used_in: '["Derivative Security List","Security Definition Request","Security
           Definition","Security List"]'
+        fix:components: '["InstrumentLeg"]'
         fix:name: LegCurrency
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
         enum:name: Currency
         enum:key_type: int32
         enum:value_type: utf8
@@ -664,9 +641,8 @@ fields:
         fix:type: float
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"float","5.0.SP1":"float","5.0":"float","4.4":"float","4.3":"float"}'
         fix:name: LegContractMultiplier
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: maturity
       type: date32[day]
       nullable: true
@@ -677,9 +653,8 @@ fields:
         fix:type: LocalMktDate
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"LocalMktDate","5.0.SP1":"LocalMktDate","5.0":"LocalMktDate","4.4":"LocalMktDate","4.3":"LocalMktDate"}'
         fix:name: LegMaturityDate
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: strike
       type: double
       nullable: true
@@ -690,9 +665,8 @@ fields:
         fix:type: Price
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price"}'
         fix:name: LegStrikePrice
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: option_kind
       type: int32
       description: Refer to definition of PutOrCall <201>
@@ -701,9 +675,8 @@ fields:
         fix:type: int
         fix:version: 5.0.SP2
         fix:components: '["InstrumentLeg"]'
-        fix:versions: '["5.0.SP2","5.0.SP1"]'
-        fix:types: '{"5.0.SP2":"int","5.0.SP1":"int"}'
         fix:name: LegPutOrCall
+        fix:versions: '["5.0.SP2","5.0.SP1"]'
         enum:name: OptionKind
         enum:key_type: int32
         enum:value_type: utf8

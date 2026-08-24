@@ -1,24 +1,22 @@
 {
  "name": "CashSettlDealerGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 428,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoCashSettlDealers",
+   "required": false,
+   "tag": 40277,
    "members": [
     {
-     "kind": "group",
-     "name": "NoCashSettlDealers",
+     "kind": "field",
+     "name": "CashSettlDealer",
      "required": false,
-     "tag": 40277,
-     "members": [
-      {
-       "kind": "field",
-       "name": "CashSettlDealer",
-       "required": false,
-       "tag": 40032
-      }
-     ]
+     "tag": 40032
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "PaymentDateOffsetPeriod",
- "tag": 41157,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

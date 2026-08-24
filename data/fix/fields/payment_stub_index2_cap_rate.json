@@ -1,9 +1,0 @@
-{
- "name": "PaymentStubIndex2CapRate",
- "tag": 40900,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

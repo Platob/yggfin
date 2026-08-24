@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDeliveryStreamNegativeTolerance",
- "tag": 41790,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

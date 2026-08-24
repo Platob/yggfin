@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamCompoundingStartDateUnadjusted",
- "tag": 42445,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

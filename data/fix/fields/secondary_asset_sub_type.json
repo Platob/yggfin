@@ -1,9 +1,0 @@
-{
- "name": "SecondaryAssetSubType",
- "tag": 2741,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

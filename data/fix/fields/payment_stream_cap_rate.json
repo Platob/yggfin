@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamCapRate",
- "tag": 40797,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

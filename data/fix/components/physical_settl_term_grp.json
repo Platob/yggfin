@@ -1,47 +1,45 @@
 {
  "name": "PhysicalSettlTermGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 401,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPhysicalSettlTerms",
+   "required": false,
+   "tag": 40204,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPhysicalSettlTerms",
+     "kind": "component",
+     "name": "PhysicalSettlDeliverableObligationGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PhysicalSettlCurrency",
      "required": false,
-     "tag": 40204,
-     "members": [
-      {
-       "kind": "component",
-       "name": "PhysicalSettlDeliverableObligationGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PhysicalSettlCurrency",
-       "required": false,
-       "tag": 40205
-      },
-      {
-       "kind": "field",
-       "name": "PhysicalSettlBusinessDays",
-       "required": false,
-       "tag": 40206
-      },
-      {
-       "kind": "field",
-       "name": "PhysicalSettlMaximumBusinessDays",
-       "required": false,
-       "tag": 40207
-      },
-      {
-       "kind": "field",
-       "name": "PhysicalSettlTermXID",
-       "required": false,
-       "tag": 40208
-      }
-     ]
+     "tag": 40205
+    },
+    {
+     "kind": "field",
+     "name": "PhysicalSettlBusinessDays",
+     "required": false,
+     "tag": 40206
+    },
+    {
+     "kind": "field",
+     "name": "PhysicalSettlMaximumBusinessDays",
+     "required": false,
+     "tag": 40207
+    },
+    {
+     "kind": "field",
+     "name": "PhysicalSettlTermXID",
+     "required": false,
+     "tag": 40208
     }
    ]
   }
- }
+ ]
 }

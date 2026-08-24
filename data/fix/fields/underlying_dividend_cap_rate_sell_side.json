@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDividendCapRateSellSide",
- "tag": 42810,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

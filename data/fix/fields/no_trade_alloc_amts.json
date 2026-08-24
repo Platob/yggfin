@@ -1,9 +1,0 @@
-{
- "name": "NoTradeAllocAmts",
- "tag": 1844,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

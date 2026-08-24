@@ -184,8 +184,8 @@ def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
     ccy = MarketEvent.into_field().field("ccy")
     assert ccy.nullable and ccy.arrow_type == pyarrow.int32()
     assert ccy.fix["name"] == "Currency" and ccy.fix["tag"] == "15"
-    assert json.loads(ccy.fix["types"])["5.0.SP2"] == "Currency"
-    assert json.loads(ccy.fix["types"])["4.0"] == "char"
+    assert ccy.fix["type"] == "Currency", "the newest reading, and 4.0's char is collapsed"
+    assert json.loads(ccy.fix["versions"])[0] == "5.0.SP2"
     assert MarketEvent.into_field().field("px_unit").arrow_type == pyarrow.string()
 
 

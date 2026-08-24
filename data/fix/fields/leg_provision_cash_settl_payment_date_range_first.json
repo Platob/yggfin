@@ -1,9 +1,0 @@
-{
- "name": "LegProvisionCashSettlPaymentDateRangeFirst",
- "tag": 40522,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

@@ -1,52 +1,50 @@
 {
  "name": "PartyRiskLimitsUpdateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 345,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPartyRiskLimits",
+   "required": false,
+   "tag": 1677,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPartyRiskLimits",
+     "kind": "field",
+     "name": "ListUpdateAction",
      "required": false,
-     "tag": 1677,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ListUpdateAction",
-       "required": false,
-       "tag": 1324
-      },
-      {
-       "kind": "component",
-       "name": "PartyDetailGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "RiskLimitsGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "RiskLimitID",
-       "required": false,
-       "tag": 1670
-      },
-      {
-       "kind": "field",
-       "name": "RiskLimitCheckModelType",
-       "required": false,
-       "tag": 2339
-      },
-      {
-       "kind": "field",
-       "name": "PartyRiskLimitStatus",
-       "required": false,
-       "tag": 2355
-      }
-     ]
+     "tag": 1324
+    },
+    {
+     "kind": "component",
+     "name": "PartyDetailGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "RiskLimitsGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "RiskLimitID",
+     "required": false,
+     "tag": 1670
+    },
+    {
+     "kind": "field",
+     "name": "RiskLimitCheckModelType",
+     "required": false,
+     "tag": 2339
+    },
+    {
+     "kind": "field",
+     "name": "PartyRiskLimitStatus",
+     "required": false,
+     "tag": 2355
     }
    ]
   }
- }
+ ]
 }

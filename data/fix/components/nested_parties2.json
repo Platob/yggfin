@@ -1,155 +1,48 @@
 {
  "name": "NestedParties2",
- "versions": {
-  "5.0.SP2": {
-   "order": 173,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoNested2PartyIDs",
+   "required": false,
+   "tag": 756,
    "members": [
     {
-     "kind": "group",
-     "name": "NoNested2PartyIDs",
+     "kind": "field",
+     "name": "Nested2PartyID",
      "required": false,
-     "tag": 756,
-     "members": [
-      {
-       "kind": "field",
-       "name": "Nested2PartyID",
-       "required": false,
-       "tag": 757
-      },
-      {
-       "kind": "field",
-       "name": "Nested2PartyIDSource",
-       "required": false,
-       "tag": 758
-      },
-      {
-       "kind": "field",
-       "name": "Nested2PartyRole",
-       "required": false,
-       "tag": 759
-      },
-      {
-       "kind": "field",
-       "name": "Nested2PartyRoleQualifier",
-       "required": false,
-       "tag": 2381
-      },
-      {
-       "kind": "component",
-       "name": "NstdPtys2SubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 22,
-   "members": [
+     "tag": 757
+    },
     {
-     "kind": "group",
-     "name": "NoNested2PartyIDs",
+     "kind": "field",
+     "name": "Nested2PartyIDSource",
      "required": false,
-     "tag": 756,
-     "members": [
-      {
-       "kind": "field",
-       "name": "Nested2PartyID",
-       "required": false,
-       "tag": 757
-      },
-      {
-       "kind": "field",
-       "name": "Nested2PartyIDSource",
-       "required": false,
-       "tag": 758
-      },
-      {
-       "kind": "field",
-       "name": "Nested2PartyRole",
-       "required": false,
-       "tag": 759
-      },
-      {
-       "kind": "component",
-       "name": "NstdPtys2SubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 22,
-   "members": [
+     "tag": 758
+    },
     {
-     "kind": "group",
-     "name": "NoNested2PartyIDs",
+     "kind": "field",
+     "name": "Nested2PartyRole",
      "required": false,
-     "tag": 756,
-     "members": [
-      {
-       "kind": "field",
-       "name": "Nested2PartyID",
-       "required": false,
-       "tag": 757
-      },
-      {
-       "kind": "field",
-       "name": "Nested2PartyIDSource",
-       "required": false,
-       "tag": 758
-      },
-      {
-       "kind": "field",
-       "name": "Nested2PartyRole",
-       "required": false,
-       "tag": 759
-      },
-      {
-       "kind": "component",
-       "name": "NstdPtys2SubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 22,
-   "members": [
+     "tag": 759
+    },
     {
-     "kind": "group",
-     "name": "NoNested2PartyIDs",
+     "kind": "field",
+     "name": "Nested2PartyRoleQualifier",
      "required": false,
-     "tag": 756,
-     "members": [
-      {
-       "kind": "field",
-       "name": "Nested2PartyID",
-       "required": false,
-       "tag": 757
-      },
-      {
-       "kind": "field",
-       "name": "Nested2PartyIDSource",
-       "required": false,
-       "tag": 758
-      },
-      {
-       "kind": "field",
-       "name": "Nested2PartyRole",
-       "required": false,
-       "tag": 759
-      },
-      {
-       "kind": "component",
-       "name": "NstdPtys2SubGrp",
-       "required": false
-      }
-     ]
+     "tag": 2381
+    },
+    {
+     "kind": "component",
+     "name": "NstdPtys2SubGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

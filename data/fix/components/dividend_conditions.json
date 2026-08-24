@@ -1,150 +1,148 @@
 {
  "name": "DividendConditions",
- "versions": {
-  "5.0.SP2": {
-   "order": 114,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DividendReinvestmentIndicator",
-     "required": false,
-     "tag": 42245
-    },
-    {
-     "kind": "field",
-     "name": "DividendEntitlementEvent",
-     "required": false,
-     "tag": 42246
-    },
-    {
-     "kind": "field",
-     "name": "DividendAmountType",
-     "required": false,
-     "tag": 42247
-    },
-    {
-     "kind": "field",
-     "name": "DividendUnderlierRefID",
-     "required": false,
-     "tag": 42248
-    },
-    {
-     "kind": "component",
-     "name": "DividendPeriodGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ExtraordinaryDividendPartySide",
-     "required": false,
-     "tag": 42249
-    },
-    {
-     "kind": "field",
-     "name": "ExtraordinaryDividendAmountType",
-     "required": false,
-     "tag": 42250
-    },
-    {
-     "kind": "field",
-     "name": "ExtraordinaryDividendCurrency",
-     "required": false,
-     "tag": 42251
-    },
-    {
-     "kind": "field",
-     "name": "ExtraordinaryDividendDeterminationMethod",
-     "required": false,
-     "tag": 42252
-    },
-    {
-     "kind": "component",
-     "name": "DividendFXTriggerDate",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "DividendAccrualFloatingRate",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DividendAccrualFixedRate",
-     "required": false,
-     "tag": 42253
-    },
-    {
-     "kind": "component",
-     "name": "DividendAccrualPaymentDate",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DividendCompoundingMethod",
-     "required": false,
-     "tag": 42254
-    },
-    {
-     "kind": "field",
-     "name": "DividendNumOfIndexUnits",
-     "required": false,
-     "tag": 42255
-    },
-    {
-     "kind": "field",
-     "name": "DividendCashPercentage",
-     "required": false,
-     "tag": 42256
-    },
-    {
-     "kind": "field",
-     "name": "DividendCashEquivalentPercentage",
-     "required": false,
-     "tag": 42257
-    },
-    {
-     "kind": "field",
-     "name": "NonCashDividendTreatment",
-     "required": false,
-     "tag": 42258
-    },
-    {
-     "kind": "field",
-     "name": "DividendComposition",
-     "required": false,
-     "tag": 42259
-    },
-    {
-     "kind": "field",
-     "name": "SpecialDividendsIndicator",
-     "required": false,
-     "tag": 42260
-    },
-    {
-     "kind": "field",
-     "name": "MaterialDividendsIndicator",
-     "required": false,
-     "tag": 42261
-    },
-    {
-     "kind": "field",
-     "name": "OptionsExchangeDividendsIndicator",
-     "required": false,
-     "tag": 42262
-    },
-    {
-     "kind": "field",
-     "name": "AdditionalDividendsIndicator",
-     "required": false,
-     "tag": 42263
-    },
-    {
-     "kind": "field",
-     "name": "AllDividendsIndicator",
-     "required": false,
-     "tag": 42264
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "DividendReinvestmentIndicator",
+   "required": false,
+   "tag": 42245
+  },
+  {
+   "kind": "field",
+   "name": "DividendEntitlementEvent",
+   "required": false,
+   "tag": 42246
+  },
+  {
+   "kind": "field",
+   "name": "DividendAmountType",
+   "required": false,
+   "tag": 42247
+  },
+  {
+   "kind": "field",
+   "name": "DividendUnderlierRefID",
+   "required": false,
+   "tag": 42248
+  },
+  {
+   "kind": "component",
+   "name": "DividendPeriodGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "ExtraordinaryDividendPartySide",
+   "required": false,
+   "tag": 42249
+  },
+  {
+   "kind": "field",
+   "name": "ExtraordinaryDividendAmountType",
+   "required": false,
+   "tag": 42250
+  },
+  {
+   "kind": "field",
+   "name": "ExtraordinaryDividendCurrency",
+   "required": false,
+   "tag": 42251
+  },
+  {
+   "kind": "field",
+   "name": "ExtraordinaryDividendDeterminationMethod",
+   "required": false,
+   "tag": 42252
+  },
+  {
+   "kind": "component",
+   "name": "DividendFXTriggerDate",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "DividendAccrualFloatingRate",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "DividendAccrualFixedRate",
+   "required": false,
+   "tag": 42253
+  },
+  {
+   "kind": "component",
+   "name": "DividendAccrualPaymentDate",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "DividendCompoundingMethod",
+   "required": false,
+   "tag": 42254
+  },
+  {
+   "kind": "field",
+   "name": "DividendNumOfIndexUnits",
+   "required": false,
+   "tag": 42255
+  },
+  {
+   "kind": "field",
+   "name": "DividendCashPercentage",
+   "required": false,
+   "tag": 42256
+  },
+  {
+   "kind": "field",
+   "name": "DividendCashEquivalentPercentage",
+   "required": false,
+   "tag": 42257
+  },
+  {
+   "kind": "field",
+   "name": "NonCashDividendTreatment",
+   "required": false,
+   "tag": 42258
+  },
+  {
+   "kind": "field",
+   "name": "DividendComposition",
+   "required": false,
+   "tag": 42259
+  },
+  {
+   "kind": "field",
+   "name": "SpecialDividendsIndicator",
+   "required": false,
+   "tag": 42260
+  },
+  {
+   "kind": "field",
+   "name": "MaterialDividendsIndicator",
+   "required": false,
+   "tag": 42261
+  },
+  {
+   "kind": "field",
+   "name": "OptionsExchangeDividendsIndicator",
+   "required": false,
+   "tag": 42262
+  },
+  {
+   "kind": "field",
+   "name": "AdditionalDividendsIndicator",
+   "required": false,
+   "tag": 42263
+  },
+  {
+   "kind": "field",
+   "name": "AllDividendsIndicator",
+   "required": false,
+   "tag": 42264
   }
- }
+ ]
 }

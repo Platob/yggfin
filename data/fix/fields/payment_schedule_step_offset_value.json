@@ -1,9 +1,0 @@
-{
- "name": "PaymentScheduleStepOffsetValue",
- "tag": 40846,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

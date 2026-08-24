@@ -1,9 +1,0 @@
-{
- "name": "LegDividendCompoundingMethod",
- "tag": 42346,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

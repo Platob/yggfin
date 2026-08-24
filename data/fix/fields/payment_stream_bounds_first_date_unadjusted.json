@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamBoundsFirstDateUnadjusted",
- "tag": 42618,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDividendPeriodValuationDateUnadjusted",
- "tag": 42869,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

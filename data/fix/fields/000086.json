@@ -1,0 +1,994 @@
+{
+ "43000": {
+  "name": "NoUnderlyingPaymentStubStartDateBusinessCenters",
+  "tag": 43000,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43001": {
+  "name": "UnderlyingPaymentStubStartDateBusinessCenter",
+  "tag": 43001,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43002": {
+  "name": "UnderlyingProvisionBreakFeeElection",
+  "tag": 43002,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43003": {
+  "name": "UnderlyingProvisionBreakFeeRate",
+  "tag": 43003,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43004": {
+  "name": "UnderlyingRateSpreadInitialValue",
+  "tag": 43004,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43005": {
+  "name": "NoUnderlyingRateSpreadSteps",
+  "tag": 43005,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43006": {
+  "name": "UnderlyingRateSpreadStepDate",
+  "tag": 43006,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43007": {
+  "name": "UnderlyingRateSpreadStepValue",
+  "tag": 43007,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43008": {
+  "name": "NoUnderlyingReturnRateDates",
+  "tag": 43008,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43009": {
+  "name": "UnderlyingReturnRateDateMode",
+  "tag": 43009,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43010": {
+  "name": "UnderlyingReturnRateValuationDateRelativeTo",
+  "tag": 43010,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43011": {
+  "name": "UnderlyingReturnRateValuationDateOffsetPeriod",
+  "tag": 43011,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43012": {
+  "name": "UnderlyingReturnRateValuationDateOffsetUnit",
+  "tag": 43012,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43013": {
+  "name": "UnderlyingReturnRateValuationDateOffsetDayType",
+  "tag": 43013,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43014": {
+  "name": "UnderlyingReturnRateValuationStartDateUnadjusted",
+  "tag": 43014,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43015": {
+  "name": "UnderlyingReturnRateValuationStartDateRelativeTo",
+  "tag": 43015,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43016": {
+  "name": "UnderlyingReturnRateValuationStartDateOffsetPeriod",
+  "tag": 43016,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43017": {
+  "name": "UnderlyingReturnRateValuationStartDateOffsetUnit",
+  "tag": 43017,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43018": {
+  "name": "UnderlyingReturnRateValuationStartDateOffsetDayType",
+  "tag": 43018,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43019": {
+  "name": "UnderlyingReturnRateValuationStartDateAdjusted",
+  "tag": 43019,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43020": {
+  "name": "UnderlyingReturnRateValuationEndDateUnadjusted",
+  "tag": 43020,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43021": {
+  "name": "UnderlyingReturnRateValuationEndDateRelativeTo",
+  "tag": 43021,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43022": {
+  "name": "UnderlyingReturnRateValuationEndDateOffsetPeriod",
+  "tag": 43022,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43023": {
+  "name": "UnderlyingReturnRateValuationEndDateOffsetUnit",
+  "tag": 43023,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43024": {
+  "name": "UnderlyingReturnRateValuationEndDateOffsetDayType",
+  "tag": 43024,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43025": {
+  "name": "UnderlyingReturnRateValuationEndDateAdjusted",
+  "tag": 43025,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43026": {
+  "name": "UnderlyingReturnRateValuationFrequencyPeriod",
+  "tag": 43026,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43027": {
+  "name": "UnderlyingReturnRateValuationFrequencyUnit",
+  "tag": 43027,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43028": {
+  "name": "UnderlyingReturnRateValuationFrequencyRollConvention",
+  "tag": 43028,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43029": {
+  "name": "UnderlyingReturnRateValuationDateBusinessDayConvention",
+  "tag": 43029,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43030": {
+  "name": "NoUnderlyingReturnRateFXConversions",
+  "tag": 43030,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43031": {
+  "name": "UnderlyingReturnRateFXCurrencySymbol",
+  "tag": 43031,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43032": {
+  "name": "UnderlyingReturnRateFXRate",
+  "tag": 43032,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43033": {
+  "name": "UnderlyingReturnRateFXRateCalc",
+  "tag": 43033,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43034": {
+  "name": "NoUnderlyingReturnRates",
+  "tag": 43034,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43035": {
+  "name": "UnderlyingReturnRatePriceSequence",
+  "tag": 43035,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43036": {
+  "name": "UnderlyingReturnRateCommissionBasis",
+  "tag": 43036,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43037": {
+  "name": "UnderlyingReturnRateCommissionAmount",
+  "tag": 43037,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43038": {
+  "name": "UnderlyingReturnRateCommissionCurrency",
+  "tag": 43038,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43039": {
+  "name": "UnderlyingReturnRateTotalCommissionPerTrade",
+  "tag": 43039,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43040": {
+  "name": "UnderlyingReturnRateDeterminationMethod",
+  "tag": 43040,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43041": {
+  "name": "UnderlyingReturnRateAmountRelativeTo",
+  "tag": 43041,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43042": {
+  "name": "UnderlyingReturnRateQuoteMeasureType",
+  "tag": 43042,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43043": {
+  "name": "UnderlyingReturnRateQuoteUnits",
+  "tag": 43043,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43044": {
+  "name": "UnderlyingReturnRateQuoteMethod",
+  "tag": 43044,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43045": {
+  "name": "UnderlyingReturnRateQuoteCurrency",
+  "tag": 43045,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43046": {
+  "name": "UnderlyingReturnRateQuoteCurrencyType",
+  "tag": 43046,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43047": {
+  "name": "UnderlyingReturnRateQuoteTimeType",
+  "tag": 43047,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43048": {
+  "name": "UnderlyingReturnRateQuoteTime",
+  "tag": 43048,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43049": {
+  "name": "UnderlyingReturnRateQuoteDate",
+  "tag": 43049,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43050": {
+  "name": "UnderlyingReturnRateQuoteExpirationTime",
+  "tag": 43050,
+  "type": "LOCALMKTTIME",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43051": {
+  "name": "UnderlyingReturnRateQuoteBusinessCenter",
+  "tag": 43051,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43052": {
+  "name": "UnderlyingReturnRateQuoteExchange",
+  "tag": 43052,
+  "type": "EXCHANGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43053": {
+  "name": "UnderlyingReturnRateQuotePricingModel",
+  "tag": 43053,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43054": {
+  "name": "UnderlyingReturnRateCashFlowType",
+  "tag": 43054,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43055": {
+  "name": "UnderlyingReturnRateValuationTimeType",
+  "tag": 43055,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43056": {
+  "name": "UnderlyingReturnRateValuationTime",
+  "tag": 43056,
+  "type": "LOCALMKTTIME",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43057": {
+  "name": "UnderlyingReturnRateValuationTimeBusinessCenter",
+  "tag": 43057,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43058": {
+  "name": "UnderlyingReturnRateValuationPriceOption",
+  "tag": 43058,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43059": {
+  "name": "UnderlyingReturnRateFinalPriceFallback",
+  "tag": 43059,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43060": {
+  "name": "NoUnderlyingReturnRateInformationSources",
+  "tag": 43060,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43061": {
+  "name": "UnderlyingReturnRateInformationSource",
+  "tag": 43061,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43062": {
+  "name": "UnderlyingReturnRateReferencePage",
+  "tag": 43062,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43063": {
+  "name": "UnderlyingReturnRateReferencePageHeading",
+  "tag": 43063,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43064": {
+  "name": "NoUnderlyingReturnRatePrices",
+  "tag": 43064,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43065": {
+  "name": "UnderlyingReturnRatePriceBasis",
+  "tag": 43065,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43066": {
+  "name": "UnderlyingReturnRatePrice",
+  "tag": 43066,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43067": {
+  "name": "UnderlyingReturnRatePriceCurrency",
+  "tag": 43067,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43068": {
+  "name": "UnderlyingReturnRatePriceType",
+  "tag": 43068,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43069": {
+  "name": "NoUnderlyingReturnRateValuationDateBusinessCenters",
+  "tag": 43069,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43070": {
+  "name": "UnderlyingReturnRateValuationDateBusinessCenter",
+  "tag": 43070,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43071": {
+  "name": "NoUnderlyingReturnRateValuationDates",
+  "tag": 43071,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43072": {
+  "name": "UnderlyingReturnRateValuationDate",
+  "tag": 43072,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43073": {
+  "name": "UnderlyingReturnRateValuationDateType",
+  "tag": 43073,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43074": {
+  "name": "NoUnderlyingSettlMethodElectionDateBusinessCenters",
+  "tag": 43074,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43075": {
+  "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
+  "tag": 43075,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43076": {
+  "name": "UnderlyingSettlMethodElectionDateUnadjusted",
+  "tag": 43076,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43077": {
+  "name": "UnderlyingSettlMethodElectionDateBusinessDayConvention",
+  "tag": 43077,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43078": {
+  "name": "UnderlyingSettlMethodElectionDateRelativeTo",
+  "tag": 43078,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43079": {
+  "name": "UnderlyingSettlMethodElectionDateOffsetPeriod",
+  "tag": 43079,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43080": {
+  "name": "UnderlyingSettlMethodElectionDateOffsetUnit",
+  "tag": 43080,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43081": {
+  "name": "UnderlyingSettlMethodElectionDateOffsetDayType",
+  "tag": 43081,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43082": {
+  "name": "UnderlyingSettlMethodElectionDateAdjusted",
+  "tag": 43082,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43083": {
+  "name": "UnderlyingStreamVersion",
+  "tag": 43083,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43084": {
+  "name": "UnderlyingStreamVersionEffectiveDate",
+  "tag": 43084,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43085": {
+  "name": "UnderlyingStreamNotionalDeterminationMethod",
+  "tag": 43085,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43086": {
+  "name": "UnderlyingStreamNotionalAdjustments",
+  "tag": 43086,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43087": {
+  "name": "PaymentDesc",
+  "tag": 43087,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43088": {
+  "name": "LegPaymentStreamRateIndexID",
+  "tag": 43088,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43089": {
+  "name": "LegPaymentStreamRateIndexIDSource",
+  "tag": 43089,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43090": {
+  "name": "PaymentStreamRateIndexID",
+  "tag": 43090,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43091": {
+  "name": "PaymentStreamRateIndexIDSource",
+  "tag": 43091,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43092": {
+  "name": "UnderlyingPaymentStreamRateIndexID",
+  "tag": 43092,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43093": {
+  "name": "UnderlyingPaymentStreamRateIndexIDSource",
+  "tag": 43093,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43094": {
+  "name": "DeliveryStreamRouteOrCharter",
+  "tag": 43094,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43095": {
+  "name": "LegDeliveryStreamRouteOrCharter",
+  "tag": 43095,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43096": {
+  "name": "UnderlyingDeliveryStreamRouteOrCharter",
+  "tag": 43096,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43097": {
+  "name": "PaymentFixedRate",
+  "tag": 43097,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43098": {
+  "name": "PaymentFloatingRateIndex",
+  "tag": 43098,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43099": {
+  "name": "PaymentFloatingRateIndexCurvePeriod",
+  "tag": 43099,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43100": {
+  "name": "PaymentFloatingRateIndexCurveUnit",
+  "tag": 43100,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43101": {
+  "name": "PaymentFloatingRateSpread",
+  "tag": 43101,
+  "type": "PRICEOFFSET",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43102": {
+  "name": "PaymentFrequencyPeriod",
+  "tag": 43102,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43103": {
+  "name": "PaymentFrequencyUnit",
+  "tag": 43103,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43104": {
+  "name": "PaymentRateResetFrequencyPeriod",
+  "tag": 43104,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43105": {
+  "name": "PaymentRateResetFrequencyUnit",
+  "tag": 43105,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43106": {
+  "name": "PaymentStreamOtherDayCount",
+  "tag": 43106,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43107": {
+  "name": "UnderlyingPaymentStreamOtherDayCount",
+  "tag": 43107,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43108": {
+  "name": "LegPaymentStreamOtherDayCount",
+  "tag": 43108,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43109": {
+  "name": "PaymentStreamFormulaLength",
+  "tag": 43109,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43110": {
+  "name": "LegPaymentStreamFormulaLength",
+  "tag": 43110,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43111": {
+  "name": "UnderlyingPaymentStreamFormulaLength",
+  "tag": 43111,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43112": {
+  "name": "PaymentStreamRateIndex2",
+  "tag": 43112,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43113": {
+  "name": "PaymentStreamRateIndex2Source",
+  "tag": 43113,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43114": {
+  "name": "PaymentStreamRateIndex2ID",
+  "tag": 43114,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43115": {
+  "name": "PaymentStreamRateIndex2IDSource",
+  "tag": 43115,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43116": {
+  "name": "LegPaymentStreamRateIndex2",
+  "tag": 43116,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43117": {
+  "name": "LegPaymentStreamRateIndex2Source",
+  "tag": 43117,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43118": {
+  "name": "LegPaymentStreamRateIndex2ID",
+  "tag": 43118,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43119": {
+  "name": "LegPaymentStreamRateIndex2IDSource",
+  "tag": 43119,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43120": {
+  "name": "UnderlyingPaymentStreamRateIndex2",
+  "tag": 43120,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43121": {
+  "name": "UnderlyingPaymentStreamRateIndex2Source",
+  "tag": 43121,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43122": {
+  "name": "UnderlyingPaymentStreamRateIndex2ID",
+  "tag": 43122,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "43123": {
+  "name": "UnderlyingPaymentStreamRateIndex2IDSource",
+  "tag": 43123,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ }
+}

@@ -1,9 +1,0 @@
-{
- "name": "LastUpfrontPrice",
- "tag": 1743,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICE"
-  }
- }
-}

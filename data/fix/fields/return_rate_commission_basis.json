@@ -1,9 +1,0 @@
-{
- "name": "ReturnRateCommissionBasis",
- "tag": 42737,
- "versions": {
-  "5.0.SP2": {
-   "type": "CHAR"
-  }
- }
-}

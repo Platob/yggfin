@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamFormulaImageLength",
- "tag": 42451,
- "versions": {
-  "5.0.SP2": {
-   "type": "LENGTH"
-  }
- }
-}

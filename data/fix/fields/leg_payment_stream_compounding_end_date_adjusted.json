@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamCompoundingEndDateAdjusted",
- "tag": 42426,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

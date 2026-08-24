@@ -1,9 +1,0 @@
-{
- "name": "EncodedFirmAllocTextLen",
- "tag": 1733,
- "versions": {
-  "5.0.SP2": {
-   "type": "LENGTH"
-  }
- }
-}

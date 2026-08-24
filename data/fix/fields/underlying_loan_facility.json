@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingLoanFacility",
- "tag": 1999,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

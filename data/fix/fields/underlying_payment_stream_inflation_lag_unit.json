@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamInflationLagUnit",
- "tag": 40640,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

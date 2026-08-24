@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDividendPaymentAmount",
- "tag": 42857,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegStreamCommoditySettlPeriodFrequencyPeriod",
- "tag": 41692,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

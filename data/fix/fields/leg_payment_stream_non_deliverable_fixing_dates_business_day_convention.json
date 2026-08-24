@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessDayConvention",
- "tag": 40360,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

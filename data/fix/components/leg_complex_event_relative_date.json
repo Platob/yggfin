@@ -1,69 +1,67 @@
 {
  "name": "LegComplexEventRelativeDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 87,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegComplexEventDateUnadjusted",
-     "required": false,
-     "tag": 41389
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventDateRelativeTo",
-     "required": false,
-     "tag": 41390
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventDateOffsetPeriod",
-     "required": false,
-     "tag": 41391
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventDateOffsetUnit",
-     "required": false,
-     "tag": 41392
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventDateOffsetDayType",
-     "required": false,
-     "tag": 41393
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventDateBusinessDayConvention",
-     "required": false,
-     "tag": 41394
-    },
-    {
-     "kind": "component",
-     "name": "LegComplexEventDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventDateAdjusted",
-     "required": false,
-     "tag": 41395
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventFixingTime",
-     "required": false,
-     "tag": 41396
-    },
-    {
-     "kind": "field",
-     "name": "LegComplexEventFixingTimeBusinessCenter",
-     "required": false,
-     "tag": 41397
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegComplexEventDateUnadjusted",
+   "required": false,
+   "tag": 41389
+  },
+  {
+   "kind": "field",
+   "name": "LegComplexEventDateRelativeTo",
+   "required": false,
+   "tag": 41390
+  },
+  {
+   "kind": "field",
+   "name": "LegComplexEventDateOffsetPeriod",
+   "required": false,
+   "tag": 41391
+  },
+  {
+   "kind": "field",
+   "name": "LegComplexEventDateOffsetUnit",
+   "required": false,
+   "tag": 41392
+  },
+  {
+   "kind": "field",
+   "name": "LegComplexEventDateOffsetDayType",
+   "required": false,
+   "tag": 41393
+  },
+  {
+   "kind": "field",
+   "name": "LegComplexEventDateBusinessDayConvention",
+   "required": false,
+   "tag": 41394
+  },
+  {
+   "kind": "component",
+   "name": "LegComplexEventDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegComplexEventDateAdjusted",
+   "required": false,
+   "tag": 41395
+  },
+  {
+   "kind": "field",
+   "name": "LegComplexEventFixingTime",
+   "required": false,
+   "tag": 41396
+  },
+  {
+   "kind": "field",
+   "name": "LegComplexEventFixingTimeBusinessCenter",
+   "required": false,
+   "tag": 41397
   }
- }
+ ]
 }

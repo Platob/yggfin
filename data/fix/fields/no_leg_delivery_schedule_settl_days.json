@@ -1,9 +1,0 @@
-{
- "name": "NoLegDeliveryScheduleSettlDays",
- "tag": 41422,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

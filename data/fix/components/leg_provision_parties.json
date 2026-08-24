@@ -1,47 +1,45 @@
 {
  "name": "LegProvisionParties",
- "versions": {
-  "5.0.SP2": {
-   "order": 388,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegProvisionPartyIDs",
+   "required": false,
+   "tag": 40533,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegProvisionPartyIDs",
+     "kind": "field",
+     "name": "LegProvisionPartyID",
      "required": false,
-     "tag": 40533,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegProvisionPartyID",
-       "required": false,
-       "tag": 40534
-      },
-      {
-       "kind": "field",
-       "name": "LegProvisionPartyIDSource",
-       "required": false,
-       "tag": 40535
-      },
-      {
-       "kind": "field",
-       "name": "LegProvisionPartyRole",
-       "required": false,
-       "tag": 40536
-      },
-      {
-       "kind": "field",
-       "name": "LegProvisionPartyRoleQualifier",
-       "required": false,
-       "tag": 2380
-      },
-      {
-       "kind": "component",
-       "name": "LegProvisionPtysSubGrp",
-       "required": false
-      }
-     ]
+     "tag": 40534
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionPartyIDSource",
+     "required": false,
+     "tag": 40535
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionPartyRole",
+     "required": false,
+     "tag": 40536
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionPartyRoleQualifier",
+     "required": false,
+     "tag": 2380
+    },
+    {
+     "kind": "component",
+     "name": "LegProvisionPtysSubGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

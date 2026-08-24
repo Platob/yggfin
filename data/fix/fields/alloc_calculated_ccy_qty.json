@@ -1,9 +1,0 @@
-{
- "name": "AllocCalculatedCcyQty",
- "tag": 2515,
- "versions": {
-  "5.0.SP2": {
-   "type": "QTY"
-  }
- }
-}

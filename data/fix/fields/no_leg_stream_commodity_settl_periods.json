@@ -1,9 +1,0 @@
-{
- "name": "NoLegStreamCommoditySettlPeriods",
- "tag": 41686,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

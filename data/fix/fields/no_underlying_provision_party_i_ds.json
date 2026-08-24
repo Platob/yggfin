@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingProvisionPartyIDs",
- "tag": 42173,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

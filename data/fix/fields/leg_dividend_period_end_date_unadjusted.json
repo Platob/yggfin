@@ -1,9 +1,0 @@
-{
- "name": "LegDividendPeriodEndDateUnadjusted",
- "tag": 42369,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

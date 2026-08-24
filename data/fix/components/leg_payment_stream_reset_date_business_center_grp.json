@@ -1,24 +1,22 @@
 {
  "name": "LegPaymentStreamResetDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 435,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegPaymentStreamResetDateBusinessCenters",
+   "required": false,
+   "tag": 40931,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegPaymentStreamResetDateBusinessCenters",
+     "kind": "field",
+     "name": "LegPaymentStreamResetDateBusinessCenter",
      "required": false,
-     "tag": 40931,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegPaymentStreamResetDateBusinessCenter",
-       "required": false,
-       "tag": 40305
-      }
-     ]
+     "tag": 40305
     }
    ]
   }
- }
+ ]
 }

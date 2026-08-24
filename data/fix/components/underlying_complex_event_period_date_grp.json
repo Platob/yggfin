@@ -1,30 +1,28 @@
 {
  "name": "UnderlyingComplexEventPeriodDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 574,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingComplexEventPeriodDateTimes",
+   "required": false,
+   "tag": 41726,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingComplexEventPeriodDateTimes",
+     "kind": "field",
+     "name": "UnderlyingComplexEventPeriodDate",
      "required": false,
-     "tag": 41726,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventPeriodDate",
-       "required": false,
-       "tag": 41727
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventPeriodTime",
-       "required": false,
-       "tag": 41728
-      }
-     ]
+     "tag": 41727
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingComplexEventPeriodTime",
+     "required": false,
+     "tag": 41728
     }
    ]
   }
- }
+ ]
 }

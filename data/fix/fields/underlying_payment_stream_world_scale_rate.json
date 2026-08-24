@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamWorldScaleRate",
- "tag": 41906,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

@@ -1,24 +1,22 @@
 {
  "name": "LegDeliveryStreamCommoditySourceGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 540,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegDeliveryStreamCommoditySources",
+   "required": false,
+   "tag": 41460,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegDeliveryStreamCommoditySources",
+     "kind": "field",
+     "name": "LegDeliveryStreamCommoditySource",
      "required": false,
-     "tag": 41460,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegDeliveryStreamCommoditySource",
-       "required": false,
-       "tag": 41461
-      }
-     ]
+     "tag": 41461
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
- "tag": 40560,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,189 +1,187 @@
 {
  "name": "UnderlyingStreamGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 427,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingStreams",
+   "required": false,
+   "tag": 40540,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingStreams",
+     "kind": "field",
+     "name": "UnderlyingStreamType",
      "required": false,
-     "tag": 40540,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamType",
-       "required": false,
-       "tag": 40541
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamXID",
-       "required": false,
-       "tag": 42016
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamDesc",
-       "required": false,
-       "tag": 40542
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamVersion",
-       "required": false,
-       "tag": 43083
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamVersionEffectiveDate",
-       "required": false,
-       "tag": 43084
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamPaySide",
-       "required": false,
-       "tag": 40543
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamReceiveSide",
-       "required": false,
-       "tag": 40544
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamNotionalXIDRef",
-       "required": false,
-       "tag": 42018
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamNotional",
-       "required": false,
-       "tag": 40545
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamCurrency",
-       "required": false,
-       "tag": 40546
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamNotionalDeterminationMethod",
-       "required": false,
-       "tag": 43085
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamNotionalAdjustments",
-       "required": false,
-       "tag": 43086
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamNotionalFrequencyPeriod",
-       "required": false,
-       "tag": 42019
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamNotionalFrequencyUnit",
-       "required": false,
-       "tag": 42020
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamNotionalCommodityFrequency",
-       "required": false,
-       "tag": 42021
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamNotionalUnitOfMeasure",
-       "required": false,
-       "tag": 42022
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamTotalNotional",
-       "required": false,
-       "tag": 42023
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamTotalNotionalUnitOfMeasure",
-       "required": false,
-       "tag": 42024
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingStreamCommodity",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingStreamEffectiveDate",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingStreamTerminationDate",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingStreamCalculationPeriodDates",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingPaymentStream",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingPaymentScheduleGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingPaymentStubGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingDeliveryStream",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingDeliveryScheduleGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamText",
-       "required": false,
-       "tag": 40547
-      },
-      {
-       "kind": "field",
-       "name": "EncodedUnderlyingStreamTextLen",
-       "required": false,
-       "tag": 40988
-      },
-      {
-       "kind": "field",
-       "name": "EncodedUnderlyingStreamText",
-       "required": false,
-       "tag": 40989
-      }
-     ]
+     "tag": 40541
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamXID",
+     "required": false,
+     "tag": 42016
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamDesc",
+     "required": false,
+     "tag": 40542
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamVersion",
+     "required": false,
+     "tag": 43083
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamVersionEffectiveDate",
+     "required": false,
+     "tag": 43084
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamPaySide",
+     "required": false,
+     "tag": 40543
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamReceiveSide",
+     "required": false,
+     "tag": 40544
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamNotionalXIDRef",
+     "required": false,
+     "tag": 42018
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamNotional",
+     "required": false,
+     "tag": 40545
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamCurrency",
+     "required": false,
+     "tag": 40546
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamNotionalDeterminationMethod",
+     "required": false,
+     "tag": 43085
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamNotionalAdjustments",
+     "required": false,
+     "tag": 43086
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamNotionalFrequencyPeriod",
+     "required": false,
+     "tag": 42019
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamNotionalFrequencyUnit",
+     "required": false,
+     "tag": 42020
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamNotionalCommodityFrequency",
+     "required": false,
+     "tag": 42021
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamNotionalUnitOfMeasure",
+     "required": false,
+     "tag": 42022
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamTotalNotional",
+     "required": false,
+     "tag": 42023
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamTotalNotionalUnitOfMeasure",
+     "required": false,
+     "tag": 42024
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingStreamCommodity",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingStreamEffectiveDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingStreamTerminationDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingStreamCalculationPeriodDates",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStream",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentScheduleGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStubGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingDeliveryStream",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingDeliveryScheduleGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamText",
+     "required": false,
+     "tag": 40547
+    },
+    {
+     "kind": "field",
+     "name": "EncodedUnderlyingStreamTextLen",
+     "required": false,
+     "tag": 40988
+    },
+    {
+     "kind": "field",
+     "name": "EncodedUnderlyingStreamText",
+     "required": false,
+     "tag": 40989
     }
    ]
   }
- }
+ ]
 }

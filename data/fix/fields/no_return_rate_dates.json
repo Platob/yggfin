@@ -1,9 +1,0 @@
-{
- "name": "NoReturnRateDates",
- "tag": 42709,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

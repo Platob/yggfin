@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingOptionExerciseExpirationTimeBusinessCenter",
- "tag": 41855,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

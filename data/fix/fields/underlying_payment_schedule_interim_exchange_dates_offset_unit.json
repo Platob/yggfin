@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetUnit",
- "tag": 40701,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

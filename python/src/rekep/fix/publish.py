@@ -12,9 +12,29 @@ from __future__ import annotations
 
 import os
 import pathlib
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from types import MappingProxyType
 
 from rekep.fix.registry import FixRegistry
+from rekep.fix.store import ConflictReport
+
+#: How many identities the published dictionary collapses, per part, today.
+#: A record keeps one reading and the versions that declare it, so every
+#: disagreement between versions is a decision -- and 152 fields where two
+#: versions give one enumerated value different meanings is a list somebody
+#: can read. A refresh that grows any of these introduced conflicts nobody
+#: looked at, and fails rather than shipping them.
+CONFLICT_BASELINE: Mapping[str, int] = MappingProxyType(
+    {
+        "values": 152,
+        "value_names": 24,
+        "type": 214,
+        "name": 63,
+        "note": 18,
+        "members": 15,
+        "translations": 135,
+    }
+)
 
 #: Session and application fields the parsed log lifts into its own columns.
 #: `rekep.fix.columns` is the authority; a test holds this list to it.
@@ -227,3 +247,8 @@ def publish_builtin(
 def missing_from(registry: FixRegistry, keys: Sequence[str] = PROJECTED) -> list[str]:
     """Which `keys` a registry cannot answer, so a short artifact fails loudly."""
     return [key for key in keys if not registry.lookup(key)]
+
+
+def beyond_baseline(report: ConflictReport) -> list[str]:
+    """Which collapse counts a rebuild grew past `CONFLICT_BASELINE`, as lines."""
+    return report.exceeds(CONFLICT_BASELINE)

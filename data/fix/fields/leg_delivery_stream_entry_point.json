@@ -1,9 +1,0 @@
-{
- "name": "LegDeliveryStreamEntryPoint",
- "tag": 41431,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

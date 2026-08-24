@@ -1,9 +1,0 @@
-{
- "name": "ProvisionCashSettlValueDateBusinessCenter",
- "tag": 40117,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

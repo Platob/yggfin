@@ -1,9 +1,0 @@
-{
- "name": "ProvisionCashSettlValueDateOffsetDayType",
- "tag": 40121,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

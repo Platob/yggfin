@@ -1,9 +1,0 @@
-{
- "name": "LegStreamTotalNotional",
- "tag": 41707,
- "versions": {
-  "5.0.SP2": {
-   "type": "QTY"
-  }
- }
-}

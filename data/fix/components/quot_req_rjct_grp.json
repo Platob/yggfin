@@ -1,832 +1,230 @@
 {
  "name": "QuotReqRjctGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 220,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRelatedSym",
+   "required": false,
+   "tag": 146,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
+     "kind": "component",
+     "name": "Instrument",
+     "required": true
+    },
+    {
+     "kind": "component",
+     "name": "FinancingDetails",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UndInstrmtGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PrevClosePx",
      "required": false,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "FinancingDetails",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UndInstrmtGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PrevClosePx",
-       "required": false,
-       "tag": 140
-      },
-      {
-       "kind": "field",
-       "name": "QuoteRequestType",
-       "required": false,
-       "tag": 303
-      },
-      {
-       "kind": "field",
-       "name": "QuoteType",
-       "required": false,
-       "tag": 537
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "TradeOriginationDate",
-       "required": false,
-       "tag": 229
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "QtyType",
-       "required": false,
-       "tag": 854
-      },
-      {
-       "kind": "component",
-       "name": "OrderQtyData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate2",
-       "required": false,
-       "tag": 193
-      },
-      {
-       "kind": "field",
-       "name": "OrderQty2",
-       "required": false,
-       "tag": 192
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "field",
-       "name": "CurrencyCodeSource",
-       "required": false,
-       "tag": 2897
-      },
-      {
-       "kind": "component",
-       "name": "Stipulations",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      },
-      {
-       "kind": "field",
-       "name": "AccountType",
-       "required": false,
-       "tag": 581
-      },
-      {
-       "kind": "component",
-       "name": "QuotReqLegsGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "QuotQualGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "NegotiationMethod",
-       "required": false,
-       "tag": 2115
-      },
-      {
-       "kind": "field",
-       "name": "QuotePriceType",
-       "required": false,
-       "tag": 692
-      },
-      {
-       "kind": "component",
-       "name": "PriceQualifierGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OrdType",
-       "required": false,
-       "tag": 40
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "TransactTime",
-       "required": false,
-       "tag": 60
-      },
-      {
-       "kind": "component",
-       "name": "SpreadOrBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PriceType",
-       "required": false,
-       "tag": 423
-      },
-      {
-       "kind": "field",
-       "name": "Price",
-       "required": false,
-       "tag": 44
-      },
-      {
-       "kind": "field",
-       "name": "Price2",
-       "required": false,
-       "tag": 640
-      },
-      {
-       "kind": "component",
-       "name": "YieldData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "StrikeTime",
-       "required": false,
-       "tag": 443
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 69,
-   "members": [
+     "tag": 140
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": true,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "FinancingDetails",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UndInstrmtGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PrevClosePx",
-       "required": false,
-       "tag": 140
-      },
-      {
-       "kind": "field",
-       "name": "QuoteRequestType",
-       "required": false,
-       "tag": 303
-      },
-      {
-       "kind": "field",
-       "name": "QuoteType",
-       "required": false,
-       "tag": 537
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "TradeOriginationDate",
-       "required": false,
-       "tag": 229
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "QtyType",
-       "required": false,
-       "tag": 854
-      },
-      {
-       "kind": "component",
-       "name": "OrderQtyData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate2",
-       "required": false,
-       "tag": 193
-      },
-      {
-       "kind": "field",
-       "name": "OrderQty2",
-       "required": false,
-       "tag": 192
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "component",
-       "name": "Stipulations",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      },
-      {
-       "kind": "field",
-       "name": "AccountType",
-       "required": false,
-       "tag": 581
-      },
-      {
-       "kind": "component",
-       "name": "QuotReqLegsGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "QuotQualGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QuotePriceType",
-       "required": false,
-       "tag": 692
-      },
-      {
-       "kind": "field",
-       "name": "OrdType",
-       "required": false,
-       "tag": 40
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "TransactTime",
-       "required": false,
-       "tag": 60
-      },
-      {
-       "kind": "component",
-       "name": "SpreadOrBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PriceType",
-       "required": false,
-       "tag": 423
-      },
-      {
-       "kind": "field",
-       "name": "Price",
-       "required": false,
-       "tag": 44
-      },
-      {
-       "kind": "field",
-       "name": "Price2",
-       "required": false,
-       "tag": 640
-      },
-      {
-       "kind": "component",
-       "name": "YieldData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 70,
-   "members": [
+     "kind": "field",
+     "name": "QuoteRequestType",
+     "required": false,
+     "tag": 303
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": true,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "FinancingDetails",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UndInstrmtGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PrevClosePx",
-       "required": false,
-       "tag": 140
-      },
-      {
-       "kind": "field",
-       "name": "QuoteRequestType",
-       "required": false,
-       "tag": 303
-      },
-      {
-       "kind": "field",
-       "name": "QuoteType",
-       "required": false,
-       "tag": 537
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "TradeOriginationDate",
-       "required": false,
-       "tag": 229
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "QtyType",
-       "required": false,
-       "tag": 854
-      },
-      {
-       "kind": "component",
-       "name": "OrderQtyData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate2",
-       "required": false,
-       "tag": 193
-      },
-      {
-       "kind": "field",
-       "name": "OrderQty2",
-       "required": false,
-       "tag": 192
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "component",
-       "name": "Stipulations",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      },
-      {
-       "kind": "field",
-       "name": "AccountType",
-       "required": false,
-       "tag": 581
-      },
-      {
-       "kind": "component",
-       "name": "QuotReqLegsGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "QuotQualGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QuotePriceType",
-       "required": false,
-       "tag": 692
-      },
-      {
-       "kind": "field",
-       "name": "OrdType",
-       "required": false,
-       "tag": 40
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "TransactTime",
-       "required": false,
-       "tag": 60
-      },
-      {
-       "kind": "component",
-       "name": "SpreadOrBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PriceType",
-       "required": false,
-       "tag": 423
-      },
-      {
-       "kind": "field",
-       "name": "Price",
-       "required": false,
-       "tag": 44
-      },
-      {
-       "kind": "field",
-       "name": "Price2",
-       "required": false,
-       "tag": 640
-      },
-      {
-       "kind": "component",
-       "name": "YieldData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 70,
-   "members": [
+     "kind": "field",
+     "name": "QuoteType",
+     "required": false,
+     "tag": 537
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": true,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": true
-      },
-      {
-       "kind": "component",
-       "name": "FinancingDetails",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UndInstrmtGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PrevClosePx",
-       "required": false,
-       "tag": 140
-      },
-      {
-       "kind": "field",
-       "name": "QuoteRequestType",
-       "required": false,
-       "tag": 303
-      },
-      {
-       "kind": "field",
-       "name": "QuoteType",
-       "required": false,
-       "tag": 537
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "TradeOriginationDate",
-       "required": false,
-       "tag": 229
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "QtyType",
-       "required": false,
-       "tag": 854
-      },
-      {
-       "kind": "component",
-       "name": "OrderQtyData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate2",
-       "required": false,
-       "tag": 193
-      },
-      {
-       "kind": "field",
-       "name": "OrderQty2",
-       "required": false,
-       "tag": 192
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "component",
-       "name": "Stipulations",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Account",
-       "required": false,
-       "tag": 1
-      },
-      {
-       "kind": "field",
-       "name": "AcctIDSource",
-       "required": false,
-       "tag": 660
-      },
-      {
-       "kind": "field",
-       "name": "AccountType",
-       "required": false,
-       "tag": 581
-      },
-      {
-       "kind": "component",
-       "name": "QuotReqLegsGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "QuotQualGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QuotePriceType",
-       "required": false,
-       "tag": 692
-      },
-      {
-       "kind": "field",
-       "name": "OrdType",
-       "required": false,
-       "tag": 40
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "TransactTime",
-       "required": false,
-       "tag": 60
-      },
-      {
-       "kind": "component",
-       "name": "SpreadOrBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PriceType",
-       "required": false,
-       "tag": 423
-      },
-      {
-       "kind": "field",
-       "name": "Price",
-       "required": false,
-       "tag": 44
-      },
-      {
-       "kind": "field",
-       "name": "Price2",
-       "required": false,
-       "tag": 640
-      },
-      {
-       "kind": "component",
-       "name": "YieldData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      }
-     ]
+     "kind": "field",
+     "name": "TradingSessionID",
+     "required": false,
+     "tag": 336
+    },
+    {
+     "kind": "field",
+     "name": "TradingSessionSubID",
+     "required": false,
+     "tag": 625
+    },
+    {
+     "kind": "field",
+     "name": "TradeOriginationDate",
+     "required": false,
+     "tag": 229
+    },
+    {
+     "kind": "field",
+     "name": "Side",
+     "required": false,
+     "tag": 54
+    },
+    {
+     "kind": "field",
+     "name": "QtyType",
+     "required": false,
+     "tag": 854
+    },
+    {
+     "kind": "component",
+     "name": "OrderQtyData",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "SettlType",
+     "required": false,
+     "tag": 63
+    },
+    {
+     "kind": "field",
+     "name": "SettlDate",
+     "required": false,
+     "tag": 64
+    },
+    {
+     "kind": "field",
+     "name": "SettlDate2",
+     "required": false,
+     "tag": 193
+    },
+    {
+     "kind": "field",
+     "name": "OrderQty2",
+     "required": false,
+     "tag": 192
+    },
+    {
+     "kind": "field",
+     "name": "Currency",
+     "required": false,
+     "tag": 15
+    },
+    {
+     "kind": "field",
+     "name": "CurrencyCodeSource",
+     "required": false,
+     "tag": 2897
+    },
+    {
+     "kind": "component",
+     "name": "Stipulations",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "Account",
+     "required": false,
+     "tag": 1
+    },
+    {
+     "kind": "field",
+     "name": "AcctIDSource",
+     "required": false,
+     "tag": 660
+    },
+    {
+     "kind": "field",
+     "name": "AccountType",
+     "required": false,
+     "tag": 581
+    },
+    {
+     "kind": "component",
+     "name": "QuotReqLegsGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "QuotQualGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "NegotiationMethod",
+     "required": false,
+     "tag": 2115
+    },
+    {
+     "kind": "field",
+     "name": "QuotePriceType",
+     "required": false,
+     "tag": 692
+    },
+    {
+     "kind": "component",
+     "name": "PriceQualifierGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "OrdType",
+     "required": false,
+     "tag": 40
+    },
+    {
+     "kind": "field",
+     "name": "ExpireTime",
+     "required": false,
+     "tag": 126
+    },
+    {
+     "kind": "field",
+     "name": "TransactTime",
+     "required": false,
+     "tag": 60
+    },
+    {
+     "kind": "component",
+     "name": "SpreadOrBenchmarkCurveData",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PriceType",
+     "required": false,
+     "tag": 423
+    },
+    {
+     "kind": "field",
+     "name": "Price",
+     "required": false,
+     "tag": 44
+    },
+    {
+     "kind": "field",
+     "name": "Price2",
+     "required": false,
+     "tag": 640
+    },
+    {
+     "kind": "component",
+     "name": "YieldData",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "Parties",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "StrikeTime",
+     "required": false,
+     "tag": 443
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "SecondaryAssetSubClass",
- "tag": 1978,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "FloatingRateIndexCurveSpread",
- "tag": 2729,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICEOFFSET"
-  }
- }
-}

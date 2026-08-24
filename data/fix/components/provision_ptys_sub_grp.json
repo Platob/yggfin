@@ -1,30 +1,28 @@
 {
  "name": "ProvisionPtysSubGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 411,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoProvisionPartySubIDs",
+   "required": false,
+   "tag": 40178,
    "members": [
     {
-     "kind": "group",
-     "name": "NoProvisionPartySubIDs",
+     "kind": "field",
+     "name": "ProvisionPartySubID",
      "required": false,
-     "tag": 40178,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ProvisionPartySubID",
-       "required": false,
-       "tag": 40179
-      },
-      {
-       "kind": "field",
-       "name": "ProvisionPartySubIDType",
-       "required": false,
-       "tag": 40180
-      }
-     ]
+     "tag": 40179
+    },
+    {
+     "kind": "field",
+     "name": "ProvisionPartySubIDType",
+     "required": false,
+     "tag": 40180
     }
    ]
   }
- }
+ ]
 }

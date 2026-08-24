@@ -1,52 +1,50 @@
 {
  "name": "UnderlyingOptionExerciseMakeWholeProvision",
- "versions": {
-  "5.0.SP2": {
-   "order": 149,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingMakeWholeDate",
-     "required": false,
-     "tag": 42888
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingMakeWholeAmount",
-     "required": false,
-     "tag": 42889
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingMakeWholeBenchmarkCurveName",
-     "required": false,
-     "tag": 42890
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingMakeWholeBenchmarkCurvePoint",
-     "required": false,
-     "tag": 42891
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingMakeWholeRecallSpread",
-     "required": false,
-     "tag": 42892
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingMakeWholeBenchmarkQuote",
-     "required": false,
-     "tag": 42893
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingMakeWholeInterpolationMethod",
-     "required": false,
-     "tag": 42894
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingMakeWholeDate",
+   "required": false,
+   "tag": 42888
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingMakeWholeAmount",
+   "required": false,
+   "tag": 42889
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingMakeWholeBenchmarkCurveName",
+   "required": false,
+   "tag": 42890
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingMakeWholeBenchmarkCurvePoint",
+   "required": false,
+   "tag": 42891
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingMakeWholeRecallSpread",
+   "required": false,
+   "tag": 42892
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingMakeWholeBenchmarkQuote",
+   "required": false,
+   "tag": 42893
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingMakeWholeInterpolationMethod",
+   "required": false,
+   "tag": 42894
   }
- }
+ ]
 }

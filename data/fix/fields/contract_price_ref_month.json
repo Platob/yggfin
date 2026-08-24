@@ -1,9 +1,0 @@
-{
- "name": "ContractPriceRefMonth",
- "tag": 1953,
- "versions": {
-  "5.0.SP2": {
-   "type": "MONTHYEAR"
-  }
- }
-}

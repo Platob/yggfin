@@ -1,9 +1,0 @@
-{
- "name": "StreamCalculationFrequencyUnit",
- "tag": 40083,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

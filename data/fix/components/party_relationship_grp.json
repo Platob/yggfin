@@ -1,24 +1,22 @@
 {
  "name": "PartyRelationshipGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 317,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPartyRelationships",
+   "required": false,
+   "tag": 1514,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPartyRelationships",
+     "kind": "field",
+     "name": "PartyRelationship",
      "required": false,
-     "tag": 1514,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartyRelationship",
-       "required": false,
-       "tag": 1515
-      }
-     ]
+     "tag": 1515
     }
    ]
   }
- }
+ ]
 }

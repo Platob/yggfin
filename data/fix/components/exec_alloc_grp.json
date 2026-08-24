@@ -1,265 +1,95 @@
 {
  "name": "ExecAllocGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 188,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoExecs",
+   "required": false,
+   "tag": 124,
    "members": [
     {
-     "kind": "group",
-     "name": "NoExecs",
+     "kind": "field",
+     "name": "LastQty",
      "required": false,
-     "tag": 124,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LastQty",
-       "required": false,
-       "tag": 32
-      },
-      {
-       "kind": "field",
-       "name": "ExecID",
-       "required": false,
-       "tag": 17
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryExecID",
-       "required": false,
-       "tag": 527
-      },
-      {
-       "kind": "field",
-       "name": "LastPx",
-       "required": false,
-       "tag": 31
-      },
-      {
-       "kind": "field",
-       "name": "LastParPx",
-       "required": false,
-       "tag": 669
-      },
-      {
-       "kind": "field",
-       "name": "LastCapacity",
-       "required": false,
-       "tag": 29
-      },
-      {
-       "kind": "field",
-       "name": "TradeID",
-       "required": false,
-       "tag": 1003
-      },
-      {
-       "kind": "field",
-       "name": "FirmTradeID",
-       "required": false,
-       "tag": 1041
-      },
-      {
-       "kind": "field",
-       "name": "TrdMatchID",
-       "required": false,
-       "tag": 880
-      },
-      {
-       "kind": "field",
-       "name": "ExecutionTimestamp",
-       "required": false,
-       "tag": 2749
-      },
-      {
-       "kind": "field",
-       "name": "TradeReportingIndicator",
-       "required": false,
-       "tag": 2524
-      },
-      {
-       "kind": "component",
-       "name": "TrdRegPublicationGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "TradePriceConditionGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 37,
-   "members": [
+     "tag": 32
+    },
     {
-     "kind": "group",
-     "name": "NoExecs",
+     "kind": "field",
+     "name": "ExecID",
      "required": false,
-     "tag": 124,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LastQty",
-       "required": false,
-       "tag": 32
-      },
-      {
-       "kind": "field",
-       "name": "ExecID",
-       "required": false,
-       "tag": 17
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryExecID",
-       "required": false,
-       "tag": 527
-      },
-      {
-       "kind": "field",
-       "name": "LastPx",
-       "required": false,
-       "tag": 31
-      },
-      {
-       "kind": "field",
-       "name": "LastParPx",
-       "required": false,
-       "tag": 669
-      },
-      {
-       "kind": "field",
-       "name": "LastCapacity",
-       "required": false,
-       "tag": 29
-      },
-      {
-       "kind": "field",
-       "name": "TradeID",
-       "required": false,
-       "tag": 1003
-      },
-      {
-       "kind": "field",
-       "name": "FirmTradeID",
-       "required": false,
-       "tag": 1041
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 37,
-   "members": [
+     "tag": 17
+    },
     {
-     "kind": "group",
-     "name": "NoExecs",
+     "kind": "field",
+     "name": "SecondaryExecID",
      "required": false,
-     "tag": 124,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LastQty",
-       "required": false,
-       "tag": 32
-      },
-      {
-       "kind": "field",
-       "name": "ExecID",
-       "required": false,
-       "tag": 17
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryExecID",
-       "required": false,
-       "tag": 527
-      },
-      {
-       "kind": "field",
-       "name": "LastPx",
-       "required": false,
-       "tag": 31
-      },
-      {
-       "kind": "field",
-       "name": "LastParPx",
-       "required": false,
-       "tag": 669
-      },
-      {
-       "kind": "field",
-       "name": "LastCapacity",
-       "required": false,
-       "tag": 29
-      },
-      {
-       "kind": "field",
-       "name": "TradeID",
-       "required": false,
-       "tag": 1003
-      },
-      {
-       "kind": "field",
-       "name": "FirmTradeID",
-       "required": false,
-       "tag": 1041
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 37,
-   "members": [
+     "tag": 527
+    },
     {
-     "kind": "group",
-     "name": "NoExecs",
+     "kind": "field",
+     "name": "LastPx",
      "required": false,
-     "tag": 124,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LastQty",
-       "required": false,
-       "tag": 32
-      },
-      {
-       "kind": "field",
-       "name": "ExecID",
-       "required": false,
-       "tag": 17
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryExecID",
-       "required": false,
-       "tag": 527
-      },
-      {
-       "kind": "field",
-       "name": "LastPx",
-       "required": false,
-       "tag": 31
-      },
-      {
-       "kind": "field",
-       "name": "LastParPx",
-       "required": false,
-       "tag": 669
-      },
-      {
-       "kind": "field",
-       "name": "LastCapacity",
-       "required": false,
-       "tag": 29
-      }
-     ]
+     "tag": 31
+    },
+    {
+     "kind": "field",
+     "name": "LastParPx",
+     "required": false,
+     "tag": 669
+    },
+    {
+     "kind": "field",
+     "name": "LastCapacity",
+     "required": false,
+     "tag": 29
+    },
+    {
+     "kind": "field",
+     "name": "TradeID",
+     "required": false,
+     "tag": 1003
+    },
+    {
+     "kind": "field",
+     "name": "FirmTradeID",
+     "required": false,
+     "tag": 1041
+    },
+    {
+     "kind": "field",
+     "name": "TrdMatchID",
+     "required": false,
+     "tag": 880
+    },
+    {
+     "kind": "field",
+     "name": "ExecutionTimestamp",
+     "required": false,
+     "tag": 2749
+    },
+    {
+     "kind": "field",
+     "name": "TradeReportingIndicator",
+     "required": false,
+     "tag": 2524
+    },
+    {
+     "kind": "component",
+     "name": "TrdRegPublicationGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "TradePriceConditionGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamFirstPeriodStartDateBusinessDayConvention",
- "tag": 40559,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

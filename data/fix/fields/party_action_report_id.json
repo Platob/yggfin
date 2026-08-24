@@ -1,9 +1,0 @@
-{
- "name": "PartyActionReportID",
- "tag": 2331,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

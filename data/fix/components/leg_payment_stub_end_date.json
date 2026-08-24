@@ -1,57 +1,55 @@
 {
  "name": "LegPaymentStubEndDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 129,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStubEndDateUnadjusted",
-     "required": false,
-     "tag": 42488
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubEndDateBusinessDayConvention",
-     "required": false,
-     "tag": 42489
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStubEndDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubEndDateRelativeTo",
-     "required": false,
-     "tag": 42490
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubEndDateOffsetPeriod",
-     "required": false,
-     "tag": 42491
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubEndDateOffsetUnit",
-     "required": false,
-     "tag": 42492
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubEndDateOffsetDayType",
-     "required": false,
-     "tag": 42493
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubEndDateAdjusted",
-     "required": false,
-     "tag": 42494
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegPaymentStubEndDateUnadjusted",
+   "required": false,
+   "tag": 42488
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubEndDateBusinessDayConvention",
+   "required": false,
+   "tag": 42489
+  },
+  {
+   "kind": "component",
+   "name": "LegPaymentStubEndDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubEndDateRelativeTo",
+   "required": false,
+   "tag": 42490
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubEndDateOffsetPeriod",
+   "required": false,
+   "tag": 42491
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubEndDateOffsetUnit",
+   "required": false,
+   "tag": 42492
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubEndDateOffsetDayType",
+   "required": false,
+   "tag": 42493
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubEndDateAdjusted",
+   "required": false,
+   "tag": 42494
   }
- }
+ ]
 }

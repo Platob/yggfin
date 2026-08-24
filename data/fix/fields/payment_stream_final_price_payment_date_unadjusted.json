@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamFinalPricePaymentDateUnadjusted",
- "tag": 42654,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "PricingTime",
- "tag": 41235,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTTIME"
-  }
- }
-}

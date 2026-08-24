@@ -1,1470 +1,597 @@
 {
  "name": "MDFullGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 204,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoMDEntries",
+   "required": false,
+   "tag": 268,
    "members": [
     {
-     "kind": "group",
-     "name": "NoMDEntries",
+     "kind": "field",
+     "name": "MDEntryType",
+     "required": true,
+     "tag": 269
+    },
+    {
+     "kind": "field",
+     "name": "MDEntryID",
      "required": false,
-     "tag": 268,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MDEntryType",
-       "required": true,
-       "tag": 269
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryID",
-       "required": false,
-       "tag": 278
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryPx",
-       "required": false,
-       "tag": 270
-      },
-      {
-       "kind": "field",
-       "name": "PriceType",
-       "required": false,
-       "tag": 423
-      },
-      {
-       "kind": "component",
-       "name": "PriceQualifierGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "AvgPxIndicator",
-       "required": false,
-       "tag": 819
-      },
-      {
-       "kind": "component",
-       "name": "YieldData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SpreadOrBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OrdType",
-       "required": false,
-       "tag": 40
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "field",
-       "name": "CurrencyCodeSource",
-       "required": false,
-       "tag": 2897
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrencyCodeSource",
-       "required": false,
-       "tag": 2899
-      },
-      {
-       "kind": "component",
-       "name": "RateSource",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySize",
-       "required": false,
-       "tag": 271
-      },
-      {
-       "kind": "component",
-       "name": "SecSizesGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LotType",
-       "required": false,
-       "tag": 1093
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryDate",
-       "required": false,
-       "tag": 272
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryTime",
-       "required": false,
-       "tag": 273
-      },
-      {
-       "kind": "field",
-       "name": "TickDirection",
-       "required": false,
-       "tag": 274
-      },
-      {
-       "kind": "field",
-       "name": "MDMkt",
-       "required": false,
-       "tag": 275
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "SecurityTradingStatus",
-       "required": false,
-       "tag": 326
-      },
-      {
-       "kind": "field",
-       "name": "HaltReasonInt",
-       "required": false,
-       "tag": 327
-      },
-      {
-       "kind": "field",
-       "name": "FastMarketIndicator",
-       "required": false,
-       "tag": 2447
-      },
-      {
-       "kind": "field",
-       "name": "MarketCondition",
-       "required": false,
-       "tag": 2705
-      },
-      {
-       "kind": "field",
-       "name": "QuoteCondition",
-       "required": false,
-       "tag": 276
-      },
-      {
-       "kind": "field",
-       "name": "TradeCondition",
-       "required": false,
-       "tag": 277
-      },
-      {
-       "kind": "component",
-       "name": "TradePriceConditionGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "AnonymousTradeIndicator",
-       "required": false,
-       "tag": 2961
-      },
-      {
-       "kind": "field",
-       "name": "AlgorithmicTradeIndicator",
-       "required": false,
-       "tag": 2667
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryOriginator",
-       "required": false,
-       "tag": 282
-      },
-      {
-       "kind": "field",
-       "name": "LocationID",
-       "required": false,
-       "tag": 283
-      },
-      {
-       "kind": "field",
-       "name": "DeskID",
-       "required": false,
-       "tag": 284
-      },
-      {
-       "kind": "field",
-       "name": "OpenCloseSettlFlag",
-       "required": false,
-       "tag": 286
-      },
-      {
-       "kind": "field",
-       "name": "TimeInForce",
-       "required": false,
-       "tag": 59
-      },
-      {
-       "kind": "field",
-       "name": "ExpireDate",
-       "required": false,
-       "tag": 432
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "ExposureDuration",
-       "required": false,
-       "tag": 1629
-      },
-      {
-       "kind": "field",
-       "name": "ExposureDurationUnit",
-       "required": false,
-       "tag": 1916
-      },
-      {
-       "kind": "field",
-       "name": "MinQty",
-       "required": false,
-       "tag": 110
-      },
-      {
-       "kind": "field",
-       "name": "ExecInst",
-       "required": false,
-       "tag": 18
-      },
-      {
-       "kind": "field",
-       "name": "SellerDays",
-       "required": false,
-       "tag": 287
-      },
-      {
-       "kind": "field",
-       "name": "OrderID",
-       "required": false,
-       "tag": 37
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryOrderID",
-       "required": false,
-       "tag": 198
-      },
-      {
-       "kind": "field",
-       "name": "QuoteEntryID",
-       "required": false,
-       "tag": 299
-      },
-      {
-       "kind": "field",
-       "name": "TradeID",
-       "required": false,
-       "tag": 1003
-      },
-      {
-       "kind": "field",
-       "name": "StrategyLinkID",
-       "required": false,
-       "tag": 1851
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryBuyer",
-       "required": false,
-       "tag": 288
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySeller",
-       "required": false,
-       "tag": 289
-      },
-      {
-       "kind": "field",
-       "name": "NumberOfBuyOrders",
-       "required": false,
-       "tag": 2449
-      },
-      {
-       "kind": "field",
-       "name": "NumberOfSellOrders",
-       "required": false,
-       "tag": 2450
-      },
-      {
-       "kind": "field",
-       "name": "NumberOfOrders",
-       "required": false,
-       "tag": 346
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryPositionNo",
-       "required": false,
-       "tag": 290
-      },
-      {
-       "kind": "field",
-       "name": "Scope",
-       "required": false,
-       "tag": 546
-      },
-      {
-       "kind": "field",
-       "name": "PriceDelta",
-       "required": false,
-       "tag": 811
-      },
-      {
-       "kind": "field",
-       "name": "TrdType",
-       "required": false,
-       "tag": 828
-      },
-      {
-       "kind": "field",
-       "name": "TrdSubType",
-       "required": false,
-       "tag": 829
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryTrdType",
-       "required": false,
-       "tag": 855
-      },
-      {
-       "kind": "field",
-       "name": "TertiaryTrdType",
-       "required": false,
-       "tag": 2896
-      },
-      {
-       "kind": "field",
-       "name": "RegulatoryReportType",
-       "required": false,
-       "tag": 1934
-      },
-      {
-       "kind": "field",
-       "name": "MultiJurisdictionReportingIndicator",
-       "required": false,
-       "tag": 2963
-      },
-      {
-       "kind": "field",
-       "name": "ExecMethod",
-       "required": false,
-       "tag": 2405
-      },
-      {
-       "kind": "field",
-       "name": "MatchType",
-       "required": false,
-       "tag": 574
-      },
-      {
-       "kind": "field",
-       "name": "OrderCategory",
-       "required": false,
-       "tag": 1115
-      },
-      {
-       "kind": "field",
-       "name": "TradePublishIndicator",
-       "required": false,
-       "tag": 1390
-      },
-      {
-       "kind": "component",
-       "name": "TrdRegPublicationGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "IntraFirmTradeIndicator",
-       "required": false,
-       "tag": 2373
-      },
-      {
-       "kind": "field",
-       "name": "PreviouslyReported",
-       "required": false,
-       "tag": 570
-      },
-      {
-       "kind": "component",
-       "name": "RelatedTradeGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      },
-      {
-       "kind": "field",
-       "name": "MDPriceLevel",
-       "required": false,
-       "tag": 1023
-      },
-      {
-       "kind": "field",
-       "name": "OrderCapacity",
-       "required": false,
-       "tag": 528
-      },
-      {
-       "kind": "field",
-       "name": "MDOriginType",
-       "required": false,
-       "tag": 1024
-      },
-      {
-       "kind": "field",
-       "name": "HighPx",
-       "required": false,
-       "tag": 332
-      },
-      {
-       "kind": "field",
-       "name": "LowPx",
-       "required": false,
-       "tag": 333
-      },
-      {
-       "kind": "field",
-       "name": "FirstPx",
-       "required": false,
-       "tag": 1025
-      },
-      {
-       "kind": "field",
-       "name": "LastPx",
-       "required": false,
-       "tag": 31
-      },
-      {
-       "kind": "field",
-       "name": "DiscountFactor",
-       "required": false,
-       "tag": 1592
-      },
-      {
-       "kind": "field",
-       "name": "TradeVolume",
-       "required": false,
-       "tag": 1020
-      },
-      {
-       "kind": "component",
-       "name": "PriceLimits",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "MaxPriceVariation",
-       "required": false,
-       "tag": 1143
-      },
-      {
-       "kind": "field",
-       "name": "SettlPriceType",
-       "required": false,
-       "tag": 731
-      },
-      {
-       "kind": "field",
-       "name": "SettlPriceDeterminationMethod",
-       "required": false,
-       "tag": 2451
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "MDQuoteType",
-       "required": false,
-       "tag": 1070
-      },
-      {
-       "kind": "field",
-       "name": "RptSeq",
-       "required": false,
-       "tag": 83
-      },
-      {
-       "kind": "field",
-       "name": "DealingCapacity",
-       "required": false,
-       "tag": 1048
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySpotRate",
-       "required": false,
-       "tag": 1026
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryForwardPoints",
-       "required": false,
-       "tag": 1027
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "AggressorTime",
-       "required": false,
-       "tag": 2445
-      },
-      {
-       "kind": "field",
-       "name": "AggressorSide",
-       "required": false,
-       "tag": 2446
-      },
-      {
-       "kind": "field",
-       "name": "LegRefID",
-       "required": false,
-       "tag": 654
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 53,
-   "members": [
+     "tag": 278
+    },
     {
-     "kind": "group",
-     "name": "NoMDEntries",
-     "required": true,
-     "tag": 268,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MDEntryType",
-       "required": true,
-       "tag": 269
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryID",
-       "required": false,
-       "tag": 278
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryPx",
-       "required": false,
-       "tag": 270
-      },
-      {
-       "kind": "field",
-       "name": "PriceType",
-       "required": false,
-       "tag": 423
-      },
-      {
-       "kind": "component",
-       "name": "YieldData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SpreadOrBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OrdType",
-       "required": false,
-       "tag": 40
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySize",
-       "required": false,
-       "tag": 271
-      },
-      {
-       "kind": "component",
-       "name": "SecSizesGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LotType",
-       "required": false,
-       "tag": 1093
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryDate",
-       "required": false,
-       "tag": 272
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryTime",
-       "required": false,
-       "tag": 273
-      },
-      {
-       "kind": "field",
-       "name": "TickDirection",
-       "required": false,
-       "tag": 274
-      },
-      {
-       "kind": "field",
-       "name": "MDMkt",
-       "required": false,
-       "tag": 275
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "SecurityTradingStatus",
-       "required": false,
-       "tag": 326
-      },
-      {
-       "kind": "field",
-       "name": "HaltReasonChar",
-       "required": false,
-       "tag": 327
-      },
-      {
-       "kind": "field",
-       "name": "QuoteCondition",
-       "required": false,
-       "tag": 276
-      },
-      {
-       "kind": "field",
-       "name": "TradeCondition",
-       "required": false,
-       "tag": 277
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryOriginator",
-       "required": false,
-       "tag": 282
-      },
-      {
-       "kind": "field",
-       "name": "LocationID",
-       "required": false,
-       "tag": 283
-      },
-      {
-       "kind": "field",
-       "name": "DeskID",
-       "required": false,
-       "tag": 284
-      },
-      {
-       "kind": "field",
-       "name": "OpenCloseSettlFlag",
-       "required": false,
-       "tag": 286
-      },
-      {
-       "kind": "field",
-       "name": "TimeInForce",
-       "required": false,
-       "tag": 59
-      },
-      {
-       "kind": "field",
-       "name": "ExpireDate",
-       "required": false,
-       "tag": 432
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "MinQty",
-       "required": false,
-       "tag": 110
-      },
-      {
-       "kind": "field",
-       "name": "ExecInst",
-       "required": false,
-       "tag": 18
-      },
-      {
-       "kind": "field",
-       "name": "SellerDays",
-       "required": false,
-       "tag": 287
-      },
-      {
-       "kind": "field",
-       "name": "OrderID",
-       "required": false,
-       "tag": 37
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryOrderID",
-       "required": false,
-       "tag": 198
-      },
-      {
-       "kind": "field",
-       "name": "QuoteEntryID",
-       "required": false,
-       "tag": 299
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryBuyer",
-       "required": false,
-       "tag": 288
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySeller",
-       "required": false,
-       "tag": 289
-      },
-      {
-       "kind": "field",
-       "name": "NumberOfOrders",
-       "required": false,
-       "tag": 346
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryPositionNo",
-       "required": false,
-       "tag": 290
-      },
-      {
-       "kind": "field",
-       "name": "Scope",
-       "required": false,
-       "tag": 546
-      },
-      {
-       "kind": "field",
-       "name": "PriceDelta",
-       "required": false,
-       "tag": 811
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      },
-      {
-       "kind": "field",
-       "name": "MDPriceLevel",
-       "required": false,
-       "tag": 1023
-      },
-      {
-       "kind": "field",
-       "name": "OrderCapacity",
-       "required": false,
-       "tag": 528
-      },
-      {
-       "kind": "field",
-       "name": "MDOriginType",
-       "required": false,
-       "tag": 1024
-      },
-      {
-       "kind": "field",
-       "name": "HighPx",
-       "required": false,
-       "tag": 332
-      },
-      {
-       "kind": "field",
-       "name": "LowPx",
-       "required": false,
-       "tag": 333
-      },
-      {
-       "kind": "field",
-       "name": "TradeVolume",
-       "required": false,
-       "tag": 1020
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "MDQuoteType",
-       "required": false,
-       "tag": 1070
-      },
-      {
-       "kind": "field",
-       "name": "RptSeq",
-       "required": false,
-       "tag": 83
-      },
-      {
-       "kind": "field",
-       "name": "DealingCapacity",
-       "required": false,
-       "tag": 1048
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySpotRate",
-       "required": false,
-       "tag": 1026
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryForwardPoints",
-       "required": false,
-       "tag": 1027
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 54,
-   "members": [
+     "kind": "field",
+     "name": "MDEntryPx",
+     "required": false,
+     "tag": 270
+    },
     {
-     "kind": "group",
-     "name": "NoMDEntries",
-     "required": true,
-     "tag": 268,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MDEntryType",
-       "required": true,
-       "tag": 269
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryID",
-       "required": false,
-       "tag": 278
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryPx",
-       "required": false,
-       "tag": 270
-      },
-      {
-       "kind": "field",
-       "name": "OrdType",
-       "required": false,
-       "tag": 40
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySize",
-       "required": false,
-       "tag": 271
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryDate",
-       "required": false,
-       "tag": 272
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryTime",
-       "required": false,
-       "tag": 273
-      },
-      {
-       "kind": "field",
-       "name": "TickDirection",
-       "required": false,
-       "tag": 274
-      },
-      {
-       "kind": "field",
-       "name": "MDMkt",
-       "required": false,
-       "tag": 275
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "QuoteCondition",
-       "required": false,
-       "tag": 276
-      },
-      {
-       "kind": "field",
-       "name": "TradeCondition",
-       "required": false,
-       "tag": 277
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryOriginator",
-       "required": false,
-       "tag": 282
-      },
-      {
-       "kind": "field",
-       "name": "LocationID",
-       "required": false,
-       "tag": 283
-      },
-      {
-       "kind": "field",
-       "name": "DeskID",
-       "required": false,
-       "tag": 284
-      },
-      {
-       "kind": "field",
-       "name": "OpenCloseSettlFlag",
-       "required": false,
-       "tag": 286
-      },
-      {
-       "kind": "field",
-       "name": "TimeInForce",
-       "required": false,
-       "tag": 59
-      },
-      {
-       "kind": "field",
-       "name": "ExpireDate",
-       "required": false,
-       "tag": 432
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "MinQty",
-       "required": false,
-       "tag": 110
-      },
-      {
-       "kind": "field",
-       "name": "ExecInst",
-       "required": false,
-       "tag": 18
-      },
-      {
-       "kind": "field",
-       "name": "SellerDays",
-       "required": false,
-       "tag": 287
-      },
-      {
-       "kind": "field",
-       "name": "OrderID",
-       "required": false,
-       "tag": 37
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryOrderID",
-       "required": false,
-       "tag": 198
-      },
-      {
-       "kind": "field",
-       "name": "QuoteEntryID",
-       "required": false,
-       "tag": 299
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryBuyer",
-       "required": false,
-       "tag": 288
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySeller",
-       "required": false,
-       "tag": 289
-      },
-      {
-       "kind": "field",
-       "name": "NumberOfOrders",
-       "required": false,
-       "tag": 346
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryPositionNo",
-       "required": false,
-       "tag": 290
-      },
-      {
-       "kind": "field",
-       "name": "Scope",
-       "required": false,
-       "tag": 546
-      },
-      {
-       "kind": "field",
-       "name": "PriceDelta",
-       "required": false,
-       "tag": 811
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      },
-      {
-       "kind": "field",
-       "name": "MDPriceLevel",
-       "required": false,
-       "tag": 1023
-      },
-      {
-       "kind": "field",
-       "name": "OrderCapacity",
-       "required": false,
-       "tag": 528
-      },
-      {
-       "kind": "field",
-       "name": "MDOriginType",
-       "required": false,
-       "tag": 1024
-      },
-      {
-       "kind": "field",
-       "name": "HighPx",
-       "required": false,
-       "tag": 332
-      },
-      {
-       "kind": "field",
-       "name": "LowPx",
-       "required": false,
-       "tag": 333
-      },
-      {
-       "kind": "field",
-       "name": "TradeVolume",
-       "required": false,
-       "tag": 1020
-      },
-      {
-       "kind": "field",
-       "name": "SettlType",
-       "required": false,
-       "tag": 63
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "field",
-       "name": "MDQuoteType",
-       "required": false,
-       "tag": 1070
-      },
-      {
-       "kind": "field",
-       "name": "RptSeq",
-       "required": false,
-       "tag": 83
-      },
-      {
-       "kind": "field",
-       "name": "DealingCapacity",
-       "required": false,
-       "tag": 1048
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySpotRate",
-       "required": false,
-       "tag": 1026
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryForwardPoints",
-       "required": false,
-       "tag": 1027
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 54,
-   "members": [
+     "kind": "field",
+     "name": "PriceType",
+     "required": false,
+     "tag": 423
+    },
     {
-     "kind": "group",
-     "name": "NoMDEntries",
-     "required": true,
-     "tag": 268,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MDEntryType",
-       "required": true,
-       "tag": 269
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryPx",
-       "required": false,
-       "tag": 270
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySize",
-       "required": false,
-       "tag": 271
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryDate",
-       "required": false,
-       "tag": 272
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryTime",
-       "required": false,
-       "tag": 273
-      },
-      {
-       "kind": "field",
-       "name": "TickDirection",
-       "required": false,
-       "tag": 274
-      },
-      {
-       "kind": "field",
-       "name": "MDMkt",
-       "required": false,
-       "tag": 275
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "QuoteCondition",
-       "required": false,
-       "tag": 276
-      },
-      {
-       "kind": "field",
-       "name": "TradeCondition",
-       "required": false,
-       "tag": 277
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryOriginator",
-       "required": false,
-       "tag": 282
-      },
-      {
-       "kind": "field",
-       "name": "LocationID",
-       "required": false,
-       "tag": 283
-      },
-      {
-       "kind": "field",
-       "name": "DeskID",
-       "required": false,
-       "tag": 284
-      },
-      {
-       "kind": "field",
-       "name": "OpenCloseSettlFlag",
-       "required": false,
-       "tag": 286
-      },
-      {
-       "kind": "field",
-       "name": "TimeInForce",
-       "required": false,
-       "tag": 59
-      },
-      {
-       "kind": "field",
-       "name": "ExpireDate",
-       "required": false,
-       "tag": 432
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "MinQty",
-       "required": false,
-       "tag": 110
-      },
-      {
-       "kind": "field",
-       "name": "ExecInst",
-       "required": false,
-       "tag": 18
-      },
-      {
-       "kind": "field",
-       "name": "SellerDays",
-       "required": false,
-       "tag": 287
-      },
-      {
-       "kind": "field",
-       "name": "OrderID",
-       "required": false,
-       "tag": 37
-      },
-      {
-       "kind": "field",
-       "name": "QuoteEntryID",
-       "required": false,
-       "tag": 299
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryBuyer",
-       "required": false,
-       "tag": 288
-      },
-      {
-       "kind": "field",
-       "name": "MDEntrySeller",
-       "required": false,
-       "tag": 289
-      },
-      {
-       "kind": "field",
-       "name": "NumberOfOrders",
-       "required": false,
-       "tag": 346
-      },
-      {
-       "kind": "field",
-       "name": "MDEntryPositionNo",
-       "required": false,
-       "tag": 290
-      },
-      {
-       "kind": "field",
-       "name": "Scope",
-       "required": false,
-       "tag": 546
-      },
-      {
-       "kind": "field",
-       "name": "PriceDelta",
-       "required": false,
-       "tag": 811
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      }
-     ]
+     "kind": "component",
+     "name": "PriceQualifierGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "AvgPxIndicator",
+     "required": false,
+     "tag": 819
+    },
+    {
+     "kind": "component",
+     "name": "YieldData",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "SpreadOrBenchmarkCurveData",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "OrdType",
+     "required": false,
+     "tag": 40
+    },
+    {
+     "kind": "field",
+     "name": "Currency",
+     "required": false,
+     "tag": 15
+    },
+    {
+     "kind": "field",
+     "name": "CurrencyCodeSource",
+     "required": false,
+     "tag": 2897
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrency",
+     "required": false,
+     "tag": 120
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrencyCodeSource",
+     "required": false,
+     "tag": 2899
+    },
+    {
+     "kind": "component",
+     "name": "RateSource",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "MDEntrySize",
+     "required": false,
+     "tag": 271
+    },
+    {
+     "kind": "component",
+     "name": "SecSizesGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LotType",
+     "required": false,
+     "tag": 1093
+    },
+    {
+     "kind": "field",
+     "name": "MDEntryDate",
+     "required": false,
+     "tag": 272
+    },
+    {
+     "kind": "field",
+     "name": "MDEntryTime",
+     "required": false,
+     "tag": 273
+    },
+    {
+     "kind": "field",
+     "name": "TickDirection",
+     "required": false,
+     "tag": 274
+    },
+    {
+     "kind": "field",
+     "name": "MDMkt",
+     "required": false,
+     "tag": 275
+    },
+    {
+     "kind": "field",
+     "name": "TradingSessionID",
+     "required": false,
+     "tag": 336
+    },
+    {
+     "kind": "field",
+     "name": "TradingSessionSubID",
+     "required": false,
+     "tag": 625
+    },
+    {
+     "kind": "field",
+     "name": "SecurityTradingStatus",
+     "required": false,
+     "tag": 326
+    },
+    {
+     "kind": "field",
+     "name": "HaltReasonInt",
+     "required": false,
+     "tag": 327
+    },
+    {
+     "kind": "field",
+     "name": "FastMarketIndicator",
+     "required": false,
+     "tag": 2447
+    },
+    {
+     "kind": "field",
+     "name": "MarketCondition",
+     "required": false,
+     "tag": 2705
+    },
+    {
+     "kind": "field",
+     "name": "QuoteCondition",
+     "required": false,
+     "tag": 276
+    },
+    {
+     "kind": "field",
+     "name": "TradeCondition",
+     "required": false,
+     "tag": 277
+    },
+    {
+     "kind": "component",
+     "name": "TradePriceConditionGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "AnonymousTradeIndicator",
+     "required": false,
+     "tag": 2961
+    },
+    {
+     "kind": "field",
+     "name": "AlgorithmicTradeIndicator",
+     "required": false,
+     "tag": 2667
+    },
+    {
+     "kind": "field",
+     "name": "MDEntryOriginator",
+     "required": false,
+     "tag": 282
+    },
+    {
+     "kind": "field",
+     "name": "LocationID",
+     "required": false,
+     "tag": 283
+    },
+    {
+     "kind": "field",
+     "name": "DeskID",
+     "required": false,
+     "tag": 284
+    },
+    {
+     "kind": "field",
+     "name": "OpenCloseSettlFlag",
+     "required": false,
+     "tag": 286
+    },
+    {
+     "kind": "field",
+     "name": "TimeInForce",
+     "required": false,
+     "tag": 59
+    },
+    {
+     "kind": "field",
+     "name": "ExpireDate",
+     "required": false,
+     "tag": 432
+    },
+    {
+     "kind": "field",
+     "name": "ExpireTime",
+     "required": false,
+     "tag": 126
+    },
+    {
+     "kind": "field",
+     "name": "ExposureDuration",
+     "required": false,
+     "tag": 1629
+    },
+    {
+     "kind": "field",
+     "name": "ExposureDurationUnit",
+     "required": false,
+     "tag": 1916
+    },
+    {
+     "kind": "field",
+     "name": "MinQty",
+     "required": false,
+     "tag": 110
+    },
+    {
+     "kind": "field",
+     "name": "ExecInst",
+     "required": false,
+     "tag": 18
+    },
+    {
+     "kind": "field",
+     "name": "SellerDays",
+     "required": false,
+     "tag": 287
+    },
+    {
+     "kind": "field",
+     "name": "OrderID",
+     "required": false,
+     "tag": 37
+    },
+    {
+     "kind": "field",
+     "name": "SecondaryOrderID",
+     "required": false,
+     "tag": 198
+    },
+    {
+     "kind": "field",
+     "name": "QuoteEntryID",
+     "required": false,
+     "tag": 299
+    },
+    {
+     "kind": "field",
+     "name": "TradeID",
+     "required": false,
+     "tag": 1003
+    },
+    {
+     "kind": "field",
+     "name": "StrategyLinkID",
+     "required": false,
+     "tag": 1851
+    },
+    {
+     "kind": "field",
+     "name": "MDEntryBuyer",
+     "required": false,
+     "tag": 288
+    },
+    {
+     "kind": "field",
+     "name": "MDEntrySeller",
+     "required": false,
+     "tag": 289
+    },
+    {
+     "kind": "field",
+     "name": "NumberOfBuyOrders",
+     "required": false,
+     "tag": 2449
+    },
+    {
+     "kind": "field",
+     "name": "NumberOfSellOrders",
+     "required": false,
+     "tag": 2450
+    },
+    {
+     "kind": "field",
+     "name": "NumberOfOrders",
+     "required": false,
+     "tag": 346
+    },
+    {
+     "kind": "field",
+     "name": "MDEntryPositionNo",
+     "required": false,
+     "tag": 290
+    },
+    {
+     "kind": "field",
+     "name": "Scope",
+     "required": false,
+     "tag": 546
+    },
+    {
+     "kind": "field",
+     "name": "PriceDelta",
+     "required": false,
+     "tag": 811
+    },
+    {
+     "kind": "field",
+     "name": "TrdType",
+     "required": false,
+     "tag": 828
+    },
+    {
+     "kind": "field",
+     "name": "TrdSubType",
+     "required": false,
+     "tag": 829
+    },
+    {
+     "kind": "field",
+     "name": "SecondaryTrdType",
+     "required": false,
+     "tag": 855
+    },
+    {
+     "kind": "field",
+     "name": "TertiaryTrdType",
+     "required": false,
+     "tag": 2896
+    },
+    {
+     "kind": "field",
+     "name": "RegulatoryReportType",
+     "required": false,
+     "tag": 1934
+    },
+    {
+     "kind": "field",
+     "name": "MultiJurisdictionReportingIndicator",
+     "required": false,
+     "tag": 2963
+    },
+    {
+     "kind": "field",
+     "name": "ExecMethod",
+     "required": false,
+     "tag": 2405
+    },
+    {
+     "kind": "field",
+     "name": "MatchType",
+     "required": false,
+     "tag": 574
+    },
+    {
+     "kind": "field",
+     "name": "OrderCategory",
+     "required": false,
+     "tag": 1115
+    },
+    {
+     "kind": "field",
+     "name": "TradePublishIndicator",
+     "required": false,
+     "tag": 1390
+    },
+    {
+     "kind": "component",
+     "name": "TrdRegPublicationGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "IntraFirmTradeIndicator",
+     "required": false,
+     "tag": 2373
+    },
+    {
+     "kind": "field",
+     "name": "PreviouslyReported",
+     "required": false,
+     "tag": 570
+    },
+    {
+     "kind": "component",
+     "name": "RelatedTradeGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "Text",
+     "required": false,
+     "tag": 58
+    },
+    {
+     "kind": "field",
+     "name": "EncodedTextLen",
+     "required": false,
+     "tag": 354
+    },
+    {
+     "kind": "field",
+     "name": "EncodedText",
+     "required": false,
+     "tag": 355
+    },
+    {
+     "kind": "field",
+     "name": "MDPriceLevel",
+     "required": false,
+     "tag": 1023
+    },
+    {
+     "kind": "field",
+     "name": "OrderCapacity",
+     "required": false,
+     "tag": 528
+    },
+    {
+     "kind": "field",
+     "name": "MDOriginType",
+     "required": false,
+     "tag": 1024
+    },
+    {
+     "kind": "field",
+     "name": "HighPx",
+     "required": false,
+     "tag": 332
+    },
+    {
+     "kind": "field",
+     "name": "LowPx",
+     "required": false,
+     "tag": 333
+    },
+    {
+     "kind": "field",
+     "name": "FirstPx",
+     "required": false,
+     "tag": 1025
+    },
+    {
+     "kind": "field",
+     "name": "LastPx",
+     "required": false,
+     "tag": 31
+    },
+    {
+     "kind": "field",
+     "name": "DiscountFactor",
+     "required": false,
+     "tag": 1592
+    },
+    {
+     "kind": "field",
+     "name": "TradeVolume",
+     "required": false,
+     "tag": 1020
+    },
+    {
+     "kind": "component",
+     "name": "PriceLimits",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "MaxPriceVariation",
+     "required": false,
+     "tag": 1143
+    },
+    {
+     "kind": "field",
+     "name": "SettlPriceType",
+     "required": false,
+     "tag": 731
+    },
+    {
+     "kind": "field",
+     "name": "SettlPriceDeterminationMethod",
+     "required": false,
+     "tag": 2451
+    },
+    {
+     "kind": "field",
+     "name": "SettlType",
+     "required": false,
+     "tag": 63
+    },
+    {
+     "kind": "field",
+     "name": "SettlDate",
+     "required": false,
+     "tag": 64
+    },
+    {
+     "kind": "field",
+     "name": "MDQuoteType",
+     "required": false,
+     "tag": 1070
+    },
+    {
+     "kind": "field",
+     "name": "RptSeq",
+     "required": false,
+     "tag": 83
+    },
+    {
+     "kind": "field",
+     "name": "DealingCapacity",
+     "required": false,
+     "tag": 1048
+    },
+    {
+     "kind": "field",
+     "name": "MDEntrySpotRate",
+     "required": false,
+     "tag": 1026
+    },
+    {
+     "kind": "field",
+     "name": "MDEntryForwardPoints",
+     "required": false,
+     "tag": 1027
+    },
+    {
+     "kind": "component",
+     "name": "Parties",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "AggressorTime",
+     "required": false,
+     "tag": 2445
+    },
+    {
+     "kind": "field",
+     "name": "AggressorSide",
+     "required": false,
+     "tag": 2446
+    },
+    {
+     "kind": "field",
+     "name": "LegRefID",
+     "required": false,
+     "tag": 654
     }
    ]
   }
- }
+ ]
 }

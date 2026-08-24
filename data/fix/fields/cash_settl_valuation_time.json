@@ -1,9 +1,0 @@
-{
- "name": "CashSettlValuationTime",
- "tag": 40025,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTTIME"
-  }
- }
-}

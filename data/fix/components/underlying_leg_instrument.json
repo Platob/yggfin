@@ -1,205 +1,104 @@
 {
  "name": "UnderlyingLegInstrument",
- "versions": {
-  "5.0.SP2": {
-   "order": 24,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSymbol",
-     "required": false,
-     "tag": 1330
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSymbolSfx",
-     "required": false,
-     "tag": 1331
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityID",
-     "required": false,
-     "tag": 1332
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityIDSource",
-     "required": false,
-     "tag": 1333
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingLegSecurityAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegCFICode",
-     "required": false,
-     "tag": 1344
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityType",
-     "required": false,
-     "tag": 1337
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecuritySubType",
-     "required": false,
-     "tag": 1338
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegMaturityMonthYear",
-     "required": false,
-     "tag": 1339
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegMaturityDate",
-     "required": false,
-     "tag": 1345
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegMaturityTime",
-     "required": false,
-     "tag": 1405
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegStrikePrice",
-     "required": false,
-     "tag": 1340
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegOptAttribute",
-     "required": false,
-     "tag": 1391
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegPutOrCall",
-     "required": false,
-     "tag": 1343
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityExchange",
-     "required": false,
-     "tag": 1341
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityDesc",
-     "required": false,
-     "tag": 1392
-    }
-   ]
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingLegSymbol",
+   "required": false,
+   "tag": 1330
   },
-  "5.0.SP1": {
-   "order": 151,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSymbol",
-     "required": false,
-     "tag": 1330
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSymbolSfx",
-     "required": false,
-     "tag": 1331
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityID",
-     "required": false,
-     "tag": 1332
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityIDSource",
-     "required": false,
-     "tag": 1333
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingLegSecurityAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegCFICode",
-     "required": false,
-     "tag": 1344
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityType",
-     "required": false,
-     "tag": 1337
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecuritySubType",
-     "required": false,
-     "tag": 1338
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegMaturityMonthYear",
-     "required": false,
-     "tag": 1339
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegMaturityDate",
-     "required": false,
-     "tag": 1345
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegMaturityTime",
-     "required": false,
-     "tag": 1405
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegStrikePrice",
-     "required": false,
-     "tag": 1340
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegOptAttribute",
-     "required": false,
-     "tag": 1391
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegPutOrCall",
-     "required": false,
-     "tag": 1343
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityExchange",
-     "required": false,
-     "tag": 1341
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLegSecurityDesc",
-     "required": false,
-     "tag": 1392
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "UnderlyingLegSymbolSfx",
+   "required": false,
+   "tag": 1331
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegSecurityID",
+   "required": false,
+   "tag": 1332
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegSecurityIDSource",
+   "required": false,
+   "tag": 1333
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingLegSecurityAltIDGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegCFICode",
+   "required": false,
+   "tag": 1344
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegSecurityType",
+   "required": false,
+   "tag": 1337
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegSecuritySubType",
+   "required": false,
+   "tag": 1338
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegMaturityMonthYear",
+   "required": false,
+   "tag": 1339
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegMaturityDate",
+   "required": false,
+   "tag": 1345
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegMaturityTime",
+   "required": false,
+   "tag": 1405
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegStrikePrice",
+   "required": false,
+   "tag": 1340
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegOptAttribute",
+   "required": false,
+   "tag": 1391
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegPutOrCall",
+   "required": false,
+   "tag": 1343
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegSecurityExchange",
+   "required": false,
+   "tag": 1341
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLegSecurityDesc",
+   "required": false,
+   "tag": 1392
   }
- }
+ ]
 }

@@ -1,24 +1,22 @@
 {
  "name": "LegStreamTerminationDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 447,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegStreamTerminationDateBusinessCenters",
+   "required": false,
+   "tag": 40943,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegStreamTerminationDateBusinessCenters",
+     "kind": "field",
+     "name": "LegStreamTerminationDateBusinessCenter",
      "required": false,
-     "tag": 40943,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegStreamTerminationDateBusinessCenter",
-       "required": false,
-       "tag": 40259
-      }
-     ]
+     "tag": 40259
     }
    ]
   }
- }
+ ]
 }

@@ -1,46 +1,44 @@
 {
  "name": "LegPaymentStreamCompoundingEndDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 123,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamCompoundingEndDateUnadjusted",
-     "required": false,
-     "tag": 42421
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamCompoundingEndDateRelativeTo",
-     "required": false,
-     "tag": 42422
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamCompoundingEndDateOffsetPeriod",
-     "required": false,
-     "tag": 42423
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamCompoundingEndDateOffsetUnit",
-     "required": false,
-     "tag": 42424
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamCompoundingEndDateOffsetDayType",
-     "required": false,
-     "tag": 42425
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamCompoundingEndDateAdjusted",
-     "required": false,
-     "tag": 42426
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamCompoundingEndDateUnadjusted",
+   "required": false,
+   "tag": 42421
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamCompoundingEndDateRelativeTo",
+   "required": false,
+   "tag": 42422
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamCompoundingEndDateOffsetPeriod",
+   "required": false,
+   "tag": 42423
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamCompoundingEndDateOffsetUnit",
+   "required": false,
+   "tag": 42424
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamCompoundingEndDateOffsetDayType",
+   "required": false,
+   "tag": 42425
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamCompoundingEndDateAdjusted",
+   "required": false,
+   "tag": 42426
   }
- }
+ ]
 }

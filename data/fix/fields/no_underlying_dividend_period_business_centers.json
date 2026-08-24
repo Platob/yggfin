@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingDividendPeriodBusinessCenters",
- "tag": 42882,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

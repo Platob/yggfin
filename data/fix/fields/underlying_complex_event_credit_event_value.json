@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingComplexEventCreditEventValue",
- "tag": 41718,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

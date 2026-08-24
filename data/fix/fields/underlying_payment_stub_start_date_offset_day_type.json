@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStubStartDateOffsetDayType",
- "tag": 42998,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "EntitlementAttribValue",
- "tag": 1780,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

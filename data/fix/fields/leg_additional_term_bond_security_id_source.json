@@ -1,9 +1,0 @@
-{
- "name": "LegAdditionalTermBondSecurityIDSource",
- "tag": 41318,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

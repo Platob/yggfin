@@ -1,9 +1,0 @@
-{
- "name": "LegAgreementCurrency",
- "tag": 2495,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

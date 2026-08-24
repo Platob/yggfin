@@ -1,9 +1,0 @@
-{
- "name": "LegDividendFloatingRateSpread",
- "tag": 42316,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICEOFFSET"
-  }
- }
-}

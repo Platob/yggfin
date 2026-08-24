@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingEquityIDSource",
- "tag": 1997,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

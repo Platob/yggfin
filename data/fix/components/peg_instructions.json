@@ -1,259 +1,77 @@
 {
  "name": "PegInstructions",
- "versions": {
-  "5.0.SP2": {
-   "order": 8,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PegOffsetValue",
-     "required": false,
-     "tag": 211
-    },
-    {
-     "kind": "field",
-     "name": "PegPriceType",
-     "required": false,
-     "tag": 1094
-    },
-    {
-     "kind": "field",
-     "name": "PegMoveType",
-     "required": false,
-     "tag": 835
-    },
-    {
-     "kind": "field",
-     "name": "PegOffsetType",
-     "required": false,
-     "tag": 836
-    },
-    {
-     "kind": "field",
-     "name": "PegLimitType",
-     "required": false,
-     "tag": 837
-    },
-    {
-     "kind": "field",
-     "name": "PegRoundDirection",
-     "required": false,
-     "tag": 838
-    },
-    {
-     "kind": "field",
-     "name": "PegScope",
-     "required": false,
-     "tag": 840
-    },
-    {
-     "kind": "field",
-     "name": "PegSecurityIDSource",
-     "required": false,
-     "tag": 1096
-    },
-    {
-     "kind": "field",
-     "name": "PegSecurityID",
-     "required": false,
-     "tag": 1097
-    },
-    {
-     "kind": "field",
-     "name": "PegSymbol",
-     "required": false,
-     "tag": 1098
-    },
-    {
-     "kind": "field",
-     "name": "PegSecurityDesc",
-     "required": false,
-     "tag": 1099
-    }
-   ]
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "PegOffsetValue",
+   "required": false,
+   "tag": 211
   },
-  "5.0.SP1": {
-   "order": 11,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PegOffsetValue",
-     "required": false,
-     "tag": 211
-    },
-    {
-     "kind": "field",
-     "name": "PegPriceType",
-     "required": false,
-     "tag": 1094
-    },
-    {
-     "kind": "field",
-     "name": "PegMoveType",
-     "required": false,
-     "tag": 835
-    },
-    {
-     "kind": "field",
-     "name": "PegOffsetType",
-     "required": false,
-     "tag": 836
-    },
-    {
-     "kind": "field",
-     "name": "PegLimitType",
-     "required": false,
-     "tag": 837
-    },
-    {
-     "kind": "field",
-     "name": "PegRoundDirection",
-     "required": false,
-     "tag": 838
-    },
-    {
-     "kind": "field",
-     "name": "PegScope",
-     "required": false,
-     "tag": 840
-    },
-    {
-     "kind": "field",
-     "name": "PegSecurityIDSource",
-     "required": false,
-     "tag": 1096
-    },
-    {
-     "kind": "field",
-     "name": "PegSecurityID",
-     "required": false,
-     "tag": 1097
-    },
-    {
-     "kind": "field",
-     "name": "PegSymbol",
-     "required": false,
-     "tag": 1098
-    },
-    {
-     "kind": "field",
-     "name": "PegSecurityDesc",
-     "required": false,
-     "tag": 1099
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "PegPriceType",
+   "required": false,
+   "tag": 1094
   },
-  "5.0": {
-   "order": 11,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PegOffsetValue",
-     "required": false,
-     "tag": 211
-    },
-    {
-     "kind": "field",
-     "name": "PegPriceType",
-     "required": false,
-     "tag": 1094
-    },
-    {
-     "kind": "field",
-     "name": "PegMoveType",
-     "required": false,
-     "tag": 835
-    },
-    {
-     "kind": "field",
-     "name": "PegOffsetType",
-     "required": false,
-     "tag": 836
-    },
-    {
-     "kind": "field",
-     "name": "PegLimitType",
-     "required": false,
-     "tag": 837
-    },
-    {
-     "kind": "field",
-     "name": "PegRoundDirection",
-     "required": false,
-     "tag": 838
-    },
-    {
-     "kind": "field",
-     "name": "PegScope",
-     "required": false,
-     "tag": 840
-    },
-    {
-     "kind": "field",
-     "name": "PegSecurityIDSource",
-     "required": false,
-     "tag": 1096
-    },
-    {
-     "kind": "field",
-     "name": "PegSecurityID",
-     "required": false,
-     "tag": 1097
-    },
-    {
-     "kind": "field",
-     "name": "PegSymbol",
-     "required": false,
-     "tag": 1098
-    },
-    {
-     "kind": "field",
-     "name": "PegSecurityDesc",
-     "required": false,
-     "tag": 1099
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "PegMoveType",
+   "required": false,
+   "tag": 835
   },
-  "4.4": {
-   "order": 11,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PegOffsetValue",
-     "required": false,
-     "tag": 211
-    },
-    {
-     "kind": "field",
-     "name": "PegMoveType",
-     "required": false,
-     "tag": 835
-    },
-    {
-     "kind": "field",
-     "name": "PegOffsetType",
-     "required": false,
-     "tag": 836
-    },
-    {
-     "kind": "field",
-     "name": "PegLimitType",
-     "required": false,
-     "tag": 837
-    },
-    {
-     "kind": "field",
-     "name": "PegRoundDirection",
-     "required": false,
-     "tag": 838
-    },
-    {
-     "kind": "field",
-     "name": "PegScope",
-     "required": false,
-     "tag": 840
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "PegOffsetType",
+   "required": false,
+   "tag": 836
+  },
+  {
+   "kind": "field",
+   "name": "PegLimitType",
+   "required": false,
+   "tag": 837
+  },
+  {
+   "kind": "field",
+   "name": "PegRoundDirection",
+   "required": false,
+   "tag": 838
+  },
+  {
+   "kind": "field",
+   "name": "PegScope",
+   "required": false,
+   "tag": 840
+  },
+  {
+   "kind": "field",
+   "name": "PegSecurityIDSource",
+   "required": false,
+   "tag": 1096
+  },
+  {
+   "kind": "field",
+   "name": "PegSecurityID",
+   "required": false,
+   "tag": 1097
+  },
+  {
+   "kind": "field",
+   "name": "PegSymbol",
+   "required": false,
+   "tag": 1098
+  },
+  {
+   "kind": "field",
+   "name": "PegSecurityDesc",
+   "required": false,
+   "tag": 1099
   }
- }
+ ]
 }

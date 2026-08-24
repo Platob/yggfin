@@ -1,9 +1,0 @@
-{
- "name": "PaymentScheduleReferencePage",
- "tag": 40871,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

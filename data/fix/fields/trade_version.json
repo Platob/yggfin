@@ -1,9 +1,0 @@
-{
- "name": "TradeVersion",
- "tag": 2302,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

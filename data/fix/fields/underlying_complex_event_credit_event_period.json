@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingComplexEventCreditEventPeriod",
- "tag": 41720,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

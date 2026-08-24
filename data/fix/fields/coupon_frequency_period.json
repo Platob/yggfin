@@ -1,9 +1,0 @@
-{
- "name": "CouponFrequencyPeriod",
- "tag": 1948,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

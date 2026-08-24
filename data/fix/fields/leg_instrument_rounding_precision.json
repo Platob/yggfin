@@ -1,9 +1,0 @@
-{
- "name": "LegInstrumentRoundingPrecision",
- "tag": 2215,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegOptionExerciseFrequencyUnit",
- "tag": 41498,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

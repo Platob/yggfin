@@ -1,9 +1,0 @@
-{
- "name": "LegDeliveryStreamTotalPositiveTolerance",
- "tag": 41447,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegDividendFloatingRateIndexCurvePeriod",
- "tag": 42313,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

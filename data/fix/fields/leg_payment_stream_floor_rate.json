@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamFloorRate",
- "tag": 40342,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

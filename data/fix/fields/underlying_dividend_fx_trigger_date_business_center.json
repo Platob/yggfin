@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
- "tag": 42854,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

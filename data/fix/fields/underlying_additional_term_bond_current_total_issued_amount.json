@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingAdditionalTermBondCurrentTotalIssuedAmount",
- "tag": 42032,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

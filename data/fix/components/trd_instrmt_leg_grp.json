@@ -1,581 +1,241 @@
 {
  "name": "TrdInstrmtLegGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 236,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegs",
+   "required": false,
+   "tag": 555,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegs",
-     "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegFinancingDetails",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegPositionAmountData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegOrderQty",
-       "required": false,
-       "tag": 685
-      },
-      {
-       "kind": "field",
-       "name": "LegQty",
-       "required": false,
-       "tag": 687
-      },
-      {
-       "kind": "field",
-       "name": "LegMidPx",
-       "required": false,
-       "tag": 2346
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "field",
-       "name": "LegReportID",
-       "required": false,
-       "tag": 990
-      },
-      {
-       "kind": "field",
-       "name": "LegNumber",
-       "required": false,
-       "tag": 1152
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegAccount",
-       "required": false,
-       "tag": 2680
-      },
-      {
-       "kind": "field",
-       "name": "LegClearingAccountType",
-       "required": false,
-       "tag": 1817
-      },
-      {
-       "kind": "field",
-       "name": "LegPositionEffect",
-       "required": false,
-       "tag": 564
-      },
-      {
-       "kind": "field",
-       "name": "LegCoveredOrUncovered",
-       "required": false,
-       "tag": 565
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegRefID",
-       "required": false,
-       "tag": 654
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlDate",
-       "required": false,
-       "tag": 588
-      },
-      {
-       "kind": "field",
-       "name": "LegLastPx",
-       "required": false,
-       "tag": 637
-      },
-      {
-       "kind": "field",
-       "name": "LegPriceType",
-       "required": false,
-       "tag": 686
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlCurrency",
-       "required": false,
-       "tag": 675
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlCurrencyCodeSource",
-       "required": false,
-       "tag": 2900
-      },
-      {
-       "kind": "field",
-       "name": "LegLastForwardPoints",
-       "required": false,
-       "tag": 1073
-      },
-      {
-       "kind": "field",
-       "name": "LegCalculatedCcyLastQty",
-       "required": false,
-       "tag": 1074
-      },
-      {
-       "kind": "field",
-       "name": "LegGrossTradeAmt",
-       "required": false,
-       "tag": 1075
-      },
-      {
-       "kind": "field",
-       "name": "LegShortSaleExemptionReason",
-       "required": false,
-       "tag": 1689
-      },
-      {
-       "kind": "field",
-       "name": "LegVolatility",
-       "required": false,
-       "tag": 1379
-      },
-      {
-       "kind": "field",
-       "name": "LegDividendYield",
-       "required": false,
-       "tag": 1381
-      },
-      {
-       "kind": "field",
-       "name": "LegCurrencyRatio",
-       "required": false,
-       "tag": 1383
-      },
-      {
-       "kind": "field",
-       "name": "LegExecInst",
-       "required": false,
-       "tag": 1384
-      },
-      {
-       "kind": "field",
-       "name": "LegLastQty",
-       "required": false,
-       "tag": 1418
-      },
-      {
-       "kind": "field",
-       "name": "LegQtyType",
-       "required": false,
-       "tag": 1591
-      },
-      {
-       "kind": "field",
-       "name": "LegLastMultipliedQty",
-       "required": false,
-       "tag": 2358
-      },
-      {
-       "kind": "field",
-       "name": "LegTotalTradeQty",
-       "required": false,
-       "tag": 2357
-      },
-      {
-       "kind": "field",
-       "name": "LegTotalTradeMultipliedQty",
-       "required": false,
-       "tag": 2360
-      },
-      {
-       "kind": "field",
-       "name": "LegTotalGrossTradeAmt",
-       "required": false,
-       "tag": 2359
-      },
-      {
-       "kind": "component",
-       "name": "TradeCapLegUnderlyingsGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegDifferentialPrice",
-       "required": false,
-       "tag": 2492
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 85,
-   "members": [
+     "kind": "component",
+     "name": "InstrumentLeg",
+     "required": false
+    },
     {
-     "kind": "group",
-     "name": "NoLegs",
-     "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegQty",
-       "required": false,
-       "tag": 687
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "field",
-       "name": "LegReportID",
-       "required": false,
-       "tag": 990
-      },
-      {
-       "kind": "field",
-       "name": "LegNumber",
-       "required": false,
-       "tag": 1152
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegPositionEffect",
-       "required": false,
-       "tag": 564
-      },
-      {
-       "kind": "field",
-       "name": "LegCoveredOrUncovered",
-       "required": false,
-       "tag": 565
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegRefID",
-       "required": false,
-       "tag": 654
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlDate",
-       "required": false,
-       "tag": 588
-      },
-      {
-       "kind": "field",
-       "name": "LegLastPx",
-       "required": false,
-       "tag": 637
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlCurrency",
-       "required": false,
-       "tag": 675
-      },
-      {
-       "kind": "field",
-       "name": "LegLastForwardPoints",
-       "required": false,
-       "tag": 1073
-      },
-      {
-       "kind": "field",
-       "name": "LegCalculatedCcyLastQty",
-       "required": false,
-       "tag": 1074
-      },
-      {
-       "kind": "field",
-       "name": "LegGrossTradeAmt",
-       "required": false,
-       "tag": 1075
-      },
-      {
-       "kind": "field",
-       "name": "LegVolatility",
-       "required": false,
-       "tag": 1379
-      },
-      {
-       "kind": "field",
-       "name": "LegDividendYield",
-       "required": false,
-       "tag": 1381
-      },
-      {
-       "kind": "field",
-       "name": "LegCurrencyRatio",
-       "required": false,
-       "tag": 1383
-      },
-      {
-       "kind": "field",
-       "name": "LegExecInst",
-       "required": false,
-       "tag": 1384
-      },
-      {
-       "kind": "field",
-       "name": "LegLastQty",
-       "required": false,
-       "tag": 1418
-      },
-      {
-       "kind": "component",
-       "name": "TradeCapLegUnderlyingsGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 86,
-   "members": [
+     "kind": "component",
+     "name": "LegFinancingDetails",
+     "required": false
+    },
     {
-     "kind": "group",
-     "name": "NoLegs",
-     "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegQty",
-       "required": false,
-       "tag": 687
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "field",
-       "name": "LegReportID",
-       "required": false,
-       "tag": 990
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegPositionEffect",
-       "required": false,
-       "tag": 564
-      },
-      {
-       "kind": "field",
-       "name": "LegCoveredOrUncovered",
-       "required": false,
-       "tag": 565
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegRefID",
-       "required": false,
-       "tag": 654
-      },
-      {
-       "kind": "field",
-       "name": "LegPrice",
-       "required": false,
-       "tag": 566
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlDate",
-       "required": false,
-       "tag": 588
-      },
-      {
-       "kind": "field",
-       "name": "LegLastPx",
-       "required": false,
-       "tag": 637
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlCurrency",
-       "required": false,
-       "tag": 675
-      },
-      {
-       "kind": "field",
-       "name": "LegLastForwardPoints",
-       "required": false,
-       "tag": 1073
-      },
-      {
-       "kind": "field",
-       "name": "LegCalculatedCcyLastQty",
-       "required": false,
-       "tag": 1074
-      },
-      {
-       "kind": "field",
-       "name": "LegGrossTradeAmt",
-       "required": false,
-       "tag": 1075
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 86,
-   "members": [
+     "kind": "component",
+     "name": "LegPositionAmountData",
+     "required": false
+    },
     {
-     "kind": "group",
-     "name": "NoLegs",
+     "kind": "field",
+     "name": "LegOrderQty",
      "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegQty",
-       "required": false,
-       "tag": 687
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegPositionEffect",
-       "required": false,
-       "tag": 564
-      },
-      {
-       "kind": "field",
-       "name": "LegCoveredOrUncovered",
-       "required": false,
-       "tag": 565
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegRefID",
-       "required": false,
-       "tag": 654
-      },
-      {
-       "kind": "field",
-       "name": "LegPrice",
-       "required": false,
-       "tag": 566
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlDate",
-       "required": false,
-       "tag": 588
-      },
-      {
-       "kind": "field",
-       "name": "LegLastPx",
-       "required": false,
-       "tag": 637
-      }
-     ]
+     "tag": 685
+    },
+    {
+     "kind": "field",
+     "name": "LegQty",
+     "required": false,
+     "tag": 687
+    },
+    {
+     "kind": "field",
+     "name": "LegMidPx",
+     "required": false,
+     "tag": 2346
+    },
+    {
+     "kind": "field",
+     "name": "LegSwapType",
+     "required": false,
+     "tag": 690
+    },
+    {
+     "kind": "field",
+     "name": "LegReportID",
+     "required": false,
+     "tag": 990
+    },
+    {
+     "kind": "field",
+     "name": "LegNumber",
+     "required": false,
+     "tag": 1152
+    },
+    {
+     "kind": "component",
+     "name": "LegStipulations",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegAccount",
+     "required": false,
+     "tag": 2680
+    },
+    {
+     "kind": "field",
+     "name": "LegClearingAccountType",
+     "required": false,
+     "tag": 1817
+    },
+    {
+     "kind": "field",
+     "name": "LegPositionEffect",
+     "required": false,
+     "tag": 564
+    },
+    {
+     "kind": "field",
+     "name": "LegCoveredOrUncovered",
+     "required": false,
+     "tag": 565
+    },
+    {
+     "kind": "component",
+     "name": "NestedParties",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegRefID",
+     "required": false,
+     "tag": 654
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlType",
+     "required": false,
+     "tag": 587
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlDate",
+     "required": false,
+     "tag": 588
+    },
+    {
+     "kind": "field",
+     "name": "LegLastPx",
+     "required": false,
+     "tag": 637
+    },
+    {
+     "kind": "field",
+     "name": "LegPriceType",
+     "required": false,
+     "tag": 686
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlCurrency",
+     "required": false,
+     "tag": 675
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlCurrencyCodeSource",
+     "required": false,
+     "tag": 2900
+    },
+    {
+     "kind": "field",
+     "name": "LegLastForwardPoints",
+     "required": false,
+     "tag": 1073
+    },
+    {
+     "kind": "field",
+     "name": "LegCalculatedCcyLastQty",
+     "required": false,
+     "tag": 1074
+    },
+    {
+     "kind": "field",
+     "name": "LegGrossTradeAmt",
+     "required": false,
+     "tag": 1075
+    },
+    {
+     "kind": "field",
+     "name": "LegShortSaleExemptionReason",
+     "required": false,
+     "tag": 1689
+    },
+    {
+     "kind": "field",
+     "name": "LegVolatility",
+     "required": false,
+     "tag": 1379
+    },
+    {
+     "kind": "field",
+     "name": "LegDividendYield",
+     "required": false,
+     "tag": 1381
+    },
+    {
+     "kind": "field",
+     "name": "LegCurrencyRatio",
+     "required": false,
+     "tag": 1383
+    },
+    {
+     "kind": "field",
+     "name": "LegExecInst",
+     "required": false,
+     "tag": 1384
+    },
+    {
+     "kind": "field",
+     "name": "LegLastQty",
+     "required": false,
+     "tag": 1418
+    },
+    {
+     "kind": "field",
+     "name": "LegQtyType",
+     "required": false,
+     "tag": 1591
+    },
+    {
+     "kind": "field",
+     "name": "LegLastMultipliedQty",
+     "required": false,
+     "tag": 2358
+    },
+    {
+     "kind": "field",
+     "name": "LegTotalTradeQty",
+     "required": false,
+     "tag": 2357
+    },
+    {
+     "kind": "field",
+     "name": "LegTotalTradeMultipliedQty",
+     "required": false,
+     "tag": 2360
+    },
+    {
+     "kind": "field",
+     "name": "LegTotalGrossTradeAmt",
+     "required": false,
+     "tag": 2359
+    },
+    {
+     "kind": "component",
+     "name": "TradeCapLegUnderlyingsGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegDifferentialPrice",
+     "required": false,
+     "tag": 2492
     }
    ]
   }
- }
+ ]
 }

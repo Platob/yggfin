@@ -1,9 +1,0 @@
-{
- "name": "ReturnRateQuoteCurrency",
- "tag": 42746,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

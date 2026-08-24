@@ -1,245 +1,66 @@
 {
  "name": "RgstDtlsGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 226,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRegistDtls",
+   "required": false,
+   "tag": 473,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRegistDtls",
+     "kind": "field",
+     "name": "RegistDtls",
      "required": false,
-     "tag": 473,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RegistDtls",
-       "required": false,
-       "tag": 509
-      },
-      {
-       "kind": "field",
-       "name": "RegistEmail",
-       "required": false,
-       "tag": 511
-      },
-      {
-       "kind": "field",
-       "name": "MailingDtls",
-       "required": false,
-       "tag": 474
-      },
-      {
-       "kind": "field",
-       "name": "MailingInst",
-       "required": false,
-       "tag": 482
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OwnerType",
-       "required": false,
-       "tag": 522
-      },
-      {
-       "kind": "field",
-       "name": "DateOfBirth",
-       "required": false,
-       "tag": 486
-      },
-      {
-       "kind": "field",
-       "name": "InvestorCountryOfResidence",
-       "required": false,
-       "tag": 475
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 75,
-   "members": [
+     "tag": 509
+    },
     {
-     "kind": "group",
-     "name": "NoRegistDtls",
+     "kind": "field",
+     "name": "RegistEmail",
      "required": false,
-     "tag": 473,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RegistDtls",
-       "required": false,
-       "tag": 509
-      },
-      {
-       "kind": "field",
-       "name": "RegistEmail",
-       "required": false,
-       "tag": 511
-      },
-      {
-       "kind": "field",
-       "name": "MailingDtls",
-       "required": false,
-       "tag": 474
-      },
-      {
-       "kind": "field",
-       "name": "MailingInst",
-       "required": false,
-       "tag": 482
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OwnerType",
-       "required": false,
-       "tag": 522
-      },
-      {
-       "kind": "field",
-       "name": "DateOfBirth",
-       "required": false,
-       "tag": 486
-      },
-      {
-       "kind": "field",
-       "name": "InvestorCountryOfResidence",
-       "required": false,
-       "tag": 475
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 76,
-   "members": [
+     "tag": 511
+    },
     {
-     "kind": "group",
-     "name": "NoRegistDtls",
+     "kind": "field",
+     "name": "MailingDtls",
      "required": false,
-     "tag": 473,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RegistDtls",
-       "required": false,
-       "tag": 509
-      },
-      {
-       "kind": "field",
-       "name": "RegistEmail",
-       "required": false,
-       "tag": 511
-      },
-      {
-       "kind": "field",
-       "name": "MailingDtls",
-       "required": false,
-       "tag": 474
-      },
-      {
-       "kind": "field",
-       "name": "MailingInst",
-       "required": false,
-       "tag": 482
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OwnerType",
-       "required": false,
-       "tag": 522
-      },
-      {
-       "kind": "field",
-       "name": "DateOfBirth",
-       "required": false,
-       "tag": 486
-      },
-      {
-       "kind": "field",
-       "name": "InvestorCountryOfResidence",
-       "required": false,
-       "tag": 475
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 76,
-   "members": [
+     "tag": 474
+    },
     {
-     "kind": "group",
-     "name": "NoRegistDtls",
+     "kind": "field",
+     "name": "MailingInst",
      "required": false,
-     "tag": 473,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RegistDtls",
-       "required": false,
-       "tag": 509
-      },
-      {
-       "kind": "field",
-       "name": "RegistEmail",
-       "required": false,
-       "tag": 511
-      },
-      {
-       "kind": "field",
-       "name": "MailingDtls",
-       "required": false,
-       "tag": 474
-      },
-      {
-       "kind": "field",
-       "name": "MailingInst",
-       "required": false,
-       "tag": 482
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "OwnerType",
-       "required": false,
-       "tag": 522
-      },
-      {
-       "kind": "field",
-       "name": "DateOfBirth",
-       "required": false,
-       "tag": 486
-      },
-      {
-       "kind": "field",
-       "name": "InvestorCountryOfResidence",
-       "required": false,
-       "tag": 475
-      }
-     ]
+     "tag": 482
+    },
+    {
+     "kind": "component",
+     "name": "NestedParties",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "OwnerType",
+     "required": false,
+     "tag": 522
+    },
+    {
+     "kind": "field",
+     "name": "DateOfBirth",
+     "required": false,
+     "tag": 486
+    },
+    {
+     "kind": "field",
+     "name": "InvestorCountryOfResidence",
+     "required": false,
+     "tag": 475
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStubIndexRateSpread",
- "tag": 40429,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICEOFFSET"
-  }
- }
-}

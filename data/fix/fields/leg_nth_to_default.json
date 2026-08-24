@@ -1,9 +1,0 @@
-{
- "name": "LegNthToDefault",
- "tag": 2157,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

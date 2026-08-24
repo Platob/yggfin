@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingInterestAccrualDate",
- "tag": 2042,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

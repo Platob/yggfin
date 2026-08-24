@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingStreamTerminationDateBusinessCenters",
- "tag": 40976,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

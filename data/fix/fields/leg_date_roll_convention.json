@@ -1,9 +1,0 @@
-{
- "name": "LegDateRollConvention",
- "tag": 40926,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

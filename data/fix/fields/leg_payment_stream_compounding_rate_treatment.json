@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamCompoundingRateTreatment",
- "tag": 42433,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

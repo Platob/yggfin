@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamPricingDayDistribution",
- "tag": 41583,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "MakeWholeBenchmarkCurveName",
- "tag": 42593,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

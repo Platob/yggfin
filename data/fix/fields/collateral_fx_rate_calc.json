@@ -1,9 +1,0 @@
-{
- "name": "CollateralFXRateCalc",
- "tag": 2091,
- "versions": {
-  "5.0.SP2": {
-   "type": "CHAR"
-  }
- }
-}

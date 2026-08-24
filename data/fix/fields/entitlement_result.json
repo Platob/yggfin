@@ -1,9 +1,0 @@
-{
- "name": "EntitlementResult",
- "tag": 1884,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

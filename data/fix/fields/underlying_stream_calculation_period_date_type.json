@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamCalculationPeriodDateType",
- "tag": 41956,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

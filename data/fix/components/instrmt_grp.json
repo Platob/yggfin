@@ -1,92 +1,39 @@
 {
  "name": "InstrmtGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 190,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRelatedSym",
+   "required": false,
+   "tag": 146,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": false,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "InstrumentExtension",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "FinancingDetails",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "RelatedInstrumentGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 39,
-   "members": [
+     "kind": "component",
+     "name": "Instrument",
+     "required": false
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": false,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 40,
-   "members": [
+     "kind": "component",
+     "name": "InstrumentExtension",
+     "required": false
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": false,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 40,
-   "members": [
+     "kind": "component",
+     "name": "FinancingDetails",
+     "required": false
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": false,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": false
-      }
-     ]
+     "kind": "component",
+     "name": "RelatedInstrumentGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

@@ -1,118 +1,116 @@
 {
  "name": "LegDividendAccrualFloatingRate",
- "versions": {
-  "5.0.SP2": {
-   "order": 117,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegDividendFloatingRateIndex",
-     "required": false,
-     "tag": 42312
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFloatingRateIndexCurvePeriod",
-     "required": false,
-     "tag": 42313
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFloatingRateIndexCurveUnit",
-     "required": false,
-     "tag": 42314
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFloatingRateMultiplier",
-     "required": false,
-     "tag": 42315
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFloatingRateSpread",
-     "required": false,
-     "tag": 42316
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFloatingRateSpreadPositionType",
-     "required": false,
-     "tag": 42317
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFloatingRateTreatment",
-     "required": false,
-     "tag": 42318
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendCapRate",
-     "required": false,
-     "tag": 42319
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendCapRateBuySide",
-     "required": false,
-     "tag": 42320
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendCapRateSellSide",
-     "required": false,
-     "tag": 42321
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFloorRate",
-     "required": false,
-     "tag": 42322
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFloorRateBuySide",
-     "required": false,
-     "tag": 42323
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFloorRateSellSide",
-     "required": false,
-     "tag": 42324
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendInitialRate",
-     "required": false,
-     "tag": 42325
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFinalRateRoundingDirection",
-     "required": false,
-     "tag": 42326
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendFinalRatePrecision",
-     "required": false,
-     "tag": 42327
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendAveragingMethod",
-     "required": false,
-     "tag": 42328
-    },
-    {
-     "kind": "field",
-     "name": "LegDividendNegativeRateTreatment",
-     "required": false,
-     "tag": 42329
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegDividendFloatingRateIndex",
+   "required": false,
+   "tag": 42312
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFloatingRateIndexCurvePeriod",
+   "required": false,
+   "tag": 42313
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFloatingRateIndexCurveUnit",
+   "required": false,
+   "tag": 42314
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFloatingRateMultiplier",
+   "required": false,
+   "tag": 42315
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFloatingRateSpread",
+   "required": false,
+   "tag": 42316
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFloatingRateSpreadPositionType",
+   "required": false,
+   "tag": 42317
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFloatingRateTreatment",
+   "required": false,
+   "tag": 42318
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendCapRate",
+   "required": false,
+   "tag": 42319
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendCapRateBuySide",
+   "required": false,
+   "tag": 42320
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendCapRateSellSide",
+   "required": false,
+   "tag": 42321
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFloorRate",
+   "required": false,
+   "tag": 42322
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFloorRateBuySide",
+   "required": false,
+   "tag": 42323
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFloorRateSellSide",
+   "required": false,
+   "tag": 42324
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendInitialRate",
+   "required": false,
+   "tag": 42325
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFinalRateRoundingDirection",
+   "required": false,
+   "tag": 42326
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendFinalRatePrecision",
+   "required": false,
+   "tag": 42327
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendAveragingMethod",
+   "required": false,
+   "tag": 42328
+  },
+  {
+   "kind": "field",
+   "name": "LegDividendNegativeRateTreatment",
+   "required": false,
+   "tag": 42329
   }
- }
+ ]
 }

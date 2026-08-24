@@ -1,9 +1,0 @@
-{
- "name": "TargetMarketSegmentID",
- "tag": 1790,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

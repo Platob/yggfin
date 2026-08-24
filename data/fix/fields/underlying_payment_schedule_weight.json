@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentScheduleWeight",
- "tag": 40687,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

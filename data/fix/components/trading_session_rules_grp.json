@@ -1,65 +1,34 @@
 {
  "name": "TradingSessionRulesGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 281,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoTradingSessionRules",
+   "required": false,
+   "tag": 1309,
    "members": [
     {
-     "kind": "group",
-     "name": "NoTradingSessionRules",
+     "kind": "field",
+     "name": "TradingSessionID",
      "required": false,
-     "tag": 1309,
-     "members": [
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "component",
-       "name": "TradingSessionRules",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 137,
-   "members": [
+     "tag": 336
+    },
     {
-     "kind": "group",
-     "name": "NoTradingSessionRules",
+     "kind": "field",
+     "name": "TradingSessionSubID",
      "required": false,
-     "tag": 1309,
-     "members": [
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "component",
-       "name": "TradingSessionRules",
-       "required": false
-      }
-     ]
+     "tag": 625
+    },
+    {
+     "kind": "component",
+     "name": "TradingSessionRules",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

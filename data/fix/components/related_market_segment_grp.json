@@ -1,30 +1,28 @@
 {
  "name": "RelatedMarketSegmentGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 642,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRelatedMarketSegments",
+   "required": false,
+   "tag": 2545,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRelatedMarketSegments",
+     "kind": "field",
+     "name": "RelatedMarketSegmentID",
      "required": false,
-     "tag": 2545,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RelatedMarketSegmentID",
-       "required": false,
-       "tag": 2546
-      },
-      {
-       "kind": "field",
-       "name": "MarketSegmentRelationship",
-       "required": false,
-       "tag": 2547
-      }
-     ]
+     "tag": 2546
+    },
+    {
+     "kind": "field",
+     "name": "MarketSegmentRelationship",
+     "required": false,
+     "tag": 2547
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingIndexAnnexSource",
- "tag": 2006,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

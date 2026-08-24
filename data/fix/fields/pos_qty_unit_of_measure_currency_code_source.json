@@ -1,9 +1,0 @@
-{
- "name": "PosQtyUnitOfMeasureCurrencyCodeSource",
- "tag": 2936,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

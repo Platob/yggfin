@@ -1,9 +1,0 @@
-{
- "name": "LegStreamCommodityExchange",
- "tag": 41657,
- "versions": {
-  "5.0.SP2": {
-   "type": "EXCHANGE"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "DeliveryScheduleSettlTimeZone",
- "tag": 41048,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingExerciseConfirmationMethod",
- "tag": 41815,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

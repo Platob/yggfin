@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamDayCount",
- "tag": 40742,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

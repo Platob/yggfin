@@ -1,80 +1,30 @@
 {
  "name": "ExpirationQty",
- "versions": {
-  "5.0.SP2": {
-   "order": 257,
+ "versions": [
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoExpiration",
+   "required": false,
+   "tag": 981,
    "members": [
     {
-     "kind": "group",
-     "name": "NoExpiration",
+     "kind": "field",
+     "name": "ExpirationQtyType",
      "required": false,
-     "tag": 981,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ExpirationQtyType",
-       "required": false,
-       "tag": 982
-      },
-      {
-       "kind": "field",
-       "name": "ExpQty",
-       "required": false,
-       "tag": 983
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 106,
-   "members": [
+     "tag": 982
+    },
     {
-     "kind": "group",
-     "name": "NoExpiration",
+     "kind": "field",
+     "name": "ExpQty",
      "required": false,
-     "tag": 981,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ExpirationQtyType",
-       "required": false,
-       "tag": 982
-      },
-      {
-       "kind": "field",
-       "name": "ExpQty",
-       "required": false,
-       "tag": 983
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 108,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoExpiration",
-     "required": false,
-     "tag": 981,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ExpType",
-       "required": false,
-       "tag": 982
-      },
-      {
-       "kind": "field",
-       "name": "ExpQty",
-       "required": false,
-       "tag": 983
-      }
-     ]
+     "tag": 983
     }
    ]
   }
- }
+ ]
 }

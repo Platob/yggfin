@@ -1,9 +1,0 @@
-{
- "name": "LegContractualMatrixTerm",
- "tag": 42206,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

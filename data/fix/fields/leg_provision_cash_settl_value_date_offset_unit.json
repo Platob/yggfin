@@ -1,9 +1,0 @@
-{
- "name": "LegProvisionCashSettlValueDateOffsetUnit",
- "tag": 40530,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

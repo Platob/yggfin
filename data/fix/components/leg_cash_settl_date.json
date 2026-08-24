@@ -1,57 +1,55 @@
 {
  "name": "LegCashSettlDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 116,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegCashSettlDateUnadjusted",
-     "required": false,
-     "tag": 42299
-    },
-    {
-     "kind": "field",
-     "name": "LegCashSettlDateBusinessDayConvention",
-     "required": false,
-     "tag": 42300
-    },
-    {
-     "kind": "component",
-     "name": "LegCashSettlDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegCashSettlDateRelativeTo",
-     "required": false,
-     "tag": 42301
-    },
-    {
-     "kind": "field",
-     "name": "LegCashSettlDateOffsetPeriod",
-     "required": false,
-     "tag": 42302
-    },
-    {
-     "kind": "field",
-     "name": "LegCashSettlDateOffsetUnit",
-     "required": false,
-     "tag": 42303
-    },
-    {
-     "kind": "field",
-     "name": "LegCashSettlDateOffsetDayType",
-     "required": false,
-     "tag": 42304
-    },
-    {
-     "kind": "field",
-     "name": "LegCashSettlDateAdjusted",
-     "required": false,
-     "tag": 42305
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegCashSettlDateUnadjusted",
+   "required": false,
+   "tag": 42299
+  },
+  {
+   "kind": "field",
+   "name": "LegCashSettlDateBusinessDayConvention",
+   "required": false,
+   "tag": 42300
+  },
+  {
+   "kind": "component",
+   "name": "LegCashSettlDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegCashSettlDateRelativeTo",
+   "required": false,
+   "tag": 42301
+  },
+  {
+   "kind": "field",
+   "name": "LegCashSettlDateOffsetPeriod",
+   "required": false,
+   "tag": 42302
+  },
+  {
+   "kind": "field",
+   "name": "LegCashSettlDateOffsetUnit",
+   "required": false,
+   "tag": 42303
+  },
+  {
+   "kind": "field",
+   "name": "LegCashSettlDateOffsetDayType",
+   "required": false,
+   "tag": 42304
+  },
+  {
+   "kind": "field",
+   "name": "LegCashSettlDateAdjusted",
+   "required": false,
+   "tag": 42305
   }
- }
+ ]
 }
