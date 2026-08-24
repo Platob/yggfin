@@ -16,6 +16,7 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.enums import EventType
 from rekep.fields import Field, scalar
+from rekep.fields.arrays import groups_of, scattered
 from rekep.fix.access import Entry, FieldAccess, Reading
 from rekep.fix.columns import DECLARATIONS, ISIN_CODE, KWARG_PARTS, KWARGS
 from rekep.fix.components import (
@@ -26,15 +27,26 @@ from rekep.fix.components import (
     SideTrdRegTimestamp,
     TrdRegTimestamp,
 )
+from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL
-from rekep.market.event import Event
+from rekep.fix.transcribe import GROUP_ENTRY, NO_SOURCE
+from rekep.market.event import Event, hour_arrow
 from rekep.market.identity import NIL
 
 _EVENT_CODE = pyarrow.int32()
 _CONTRACT_METADATA = MappingProxyType({"version": "2"})
 _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
+
+# A `MsgType <35>` of our own, in the range FIX reserves for exactly this: `U`
+# followed by digits is user-defined, so a synthesized instrument can never
+# collide with a standard type a future FIX version adds. It is a type and not
+# a marker beside one: these rows go back out as FIX messages, and a consumer
+# holding only the message has no `etype` -- it has tag 35. Reusing `d` would
+# have made a synthesized instrument indistinguishable from a
+# `SecurityDefinition` a real bridge sent.
+_INSTRUMENT_MSG_TYPE = "U1"
 _INSTRUMENT_KIND = "rekep.kind"
 _INSTRUMENT_XHASH = "rekep.xhash"
 
@@ -66,6 +78,12 @@ class FixMessage(Event):
     def into_instrument_protocol(cls) -> str:
         """Protocol marker for normalized internal rows."""
         return _INSTRUMENT_PROTOCOL
+
+    @classmethod
+    @functools.cache
+    def into_instrument_msg_type(cls) -> str:
+        """`MsgType <35>` a synthesized instrument row carries."""
+        return _INSTRUMENT_MSG_TYPE
 
     xhash: int = NIL
     """Digest of `code`, or the raw-line digest when no correlation code exists."""
@@ -118,8 +136,14 @@ class FixMessage(Event):
     plugin_code: str = ""
     """Contents of the second bracketed field -- the emitting module."""
 
-    message: str = ""
-    """Payload with the header and level stripped, continuation lines folded in."""
+    # Nullable, and null on `fixmessage.market`: there `kwargs` carries every
+    # field the line held, so keeping the raw string beside it would store the
+    # same content twice. An all-null column run-length and dictionary encodes
+    # to nothing on disk, which is what makes one stored shape across the
+    # three tables affordable -- the same reasoning `_zeros` applies to the
+    # envelope members a parsed line leaves unset.
+    message: str | None = None
+    """Payload with the header and level stripped; null where `kwargs` holds it all."""
 
     protocol_code: str = NO_PROTOCOL
     """Which protocol the line carries; OTHER is a line that carries none."""
@@ -129,6 +153,19 @@ class FixMessage(Event):
     # Empty means no clock answered at all, which is a row with no time.
     unix_source: str = ""
     """Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock."""
+
+    # One column, not a FIX-specific one: every protocol with versions has a
+    # version, and a `fix_version` beside it would duplicate itself the first
+    # time a second versioned protocol appeared. Resolved once, at the message
+    # stage, so nothing downstream re-derives it.
+    protocol_version: str | None = None
+    """Which version of `protocol_code` the line is read under; null when unresolved."""
+
+    # Null because the message carried no version, or null because nothing
+    # tried? A consumer cannot tell the two apart from the value, and they are
+    # different facts about the row.
+    protocol_version_source: str = NO_SOURCE
+    """What resolved `protocol_version`: a BeginString, an application version, or nothing."""
 
     msg_seq_num: Annotated[int | None, DECLARATIONS[34]] = None
     """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
@@ -448,9 +485,12 @@ class FixMessage(Event):
                 "source_rownum": 0,
                 "thread_name": "",
                 "plugin_code": cls.into_instrument_plugin(),
-                "message": "",
+                # Null for the same reason a market row's is: `kwargs` below
+                # carries every fact this row states, so a raw line beside it
+                # would be the same content twice -- and there was no line.
+                "message": None,
                 "protocol_code": cls.into_instrument_protocol(),
-                "msg_type": "d",
+                "msg_type": cls.into_instrument_msg_type(),
                 "symbol": known.symbol or None,
                 "security_id": known.security_id,
                 "security_id_source": known.security_id_source,
@@ -509,11 +549,160 @@ class FixMessage(Event):
 
     @property
     def is_instrument_version(self) -> bool:
-        """Whether this row is a normalized instrument lifecycle version."""
-        return (
-            self.etype is EventType.INSTRUMENT
-            and self.plugin_code == type(self).into_instrument_plugin()
+        """Whether this row is a normalized instrument lifecycle version.
+
+        One column answers it, and it is the one a message carries: these rows
+        are reinjected as FIX, and a consumer holding only the message has no
+        `etype` to dispatch on. `MsgType <35>` survives that round trip.
+        """
+        return self.msg_type == type(self).into_instrument_msg_type()
+
+    # -- the FIX stage --------------------------------------------------------
+
+    @classmethod
+    def resolve_arrow_batch(cls, batch: pyarrow.RecordBatch, codec: Any) -> pyarrow.RecordBatch:
+        """One batch of message-stage rows, resolved against the dictionary.
+
+        What `parse_fix` does to what `parse_messages` stored: the same
+        `kwargs` column filled the rest of the way, the fields that earn a
+        column lifted out of it, the structured components built, the
+        transaction time resolved now that those exist, and the digest taken
+        over the parsed values. `message` is never re-read -- everything comes
+        from the stored column, which is what makes a re-parse cheap.
+        """
+        rows = batch.num_rows
+        if not rows:
+            return batch
+        columns = {name: batch.column(name) for name in batch.schema.names}
+        columns.update(cls.resolved_columns(columns, codec, rows))
+        return cls._identified(columns, batch.schema, rows)
+
+    @classmethod
+    def resolved_columns(cls, columns: Mapping[str, Any], codec: Any, rows: int) -> dict[str, Any]:
+        """Message-stage columns, resolved -- the one implementation of that.
+
+        Called from both stages: the parser runs it straight after
+        structuration when it is reading a capture whole, and `parse_fix` runs
+        it over stored rows. Split by the *stored* `protocol_version` rather
+        than by re-deriving one, which is the whole saving -- a batch carries
+        several dictionary versions and each slice is homogeneous.
+        """
+        compute = pyarrow.compute
+        versions = compute.fill_null(columns["protocol_version"], "")
+        parts, positions = [], []
+        for version, where in groups_of(versions):
+            taken = {
+                name: column if len(where) == rows else compute.take(column, where)
+                for name, column in columns.items()
+            }
+            parts.append(cls._resolved_columns(taken, codec, version.as_py() or None, len(where)))
+            positions.append(where)
+        if not parts:
+            return {}
+        return {name: scattered([part[name] for part in parts], positions) for name in parts[0]}
+
+    @classmethod
+    def _resolved_columns(
+        cls, columns: Mapping[str, Any], codec: Any, version: str | None, rows: int
+    ) -> dict[str, Any]:
+        """One homogeneous slice: `kwargs` completed, and what it gives up to columns."""
+        kwargs = codec.complete_kwargs(columns["kwargs"], version)
+        components, kwargs = codec.into_component_columns(kwargs, version)
+        lifted, kwargs = codec.into_lifted_columns(kwargs, version)
+        found: dict[str, Any] = {"kwargs": kwargs, **components, **lifted}
+        # A lifted value only fills a column the message stage left empty:
+        # `msg_type` is read off the front of the message before any of this,
+        # and the wire is the authority on what it says.
+        for name, column in found.items():
+            stored = columns.get(name)
+            if name != "kwargs" and stored is not None and stored.null_count < rows:
+                found[name] = pyarrow.compute.coalesce(cast_arrow_fix(column, stored.type), stored)
+        return found
+
+    @classmethod
+    def _identified(
+        cls, columns: dict[str, Any], schema: pyarrow.Schema, rows: int
+    ) -> pyarrow.RecordBatch:
+        """The envelope a resolved row earns: its instrument, its time, its identity."""
+        from rekep.market.transacted import resolve_arrow
+
+        compute = pyarrow.compute
+        columns["symbol"] = cls.symbol_arrow(columns, rows)
+        columns["code"] = cls.code_arrow(columns, rows)
+        columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
+        columns["unix"], columns["unix_source"] = resolve_arrow(columns, columns["runix"], rows)
+        columns["unix_hour"] = hour_arrow(columns["unix"])
+        columns["cunix"] = columns["unix"]
+        columns["hash"] = cls.version_hash_arrow(columns, rows)
+        linked = compute.not_equal(columns["code"], "")
+        columns["xhash"] = compute.if_else(linked, cls.hash_arrow(columns["code"]), columns["hash"])
+        return pyarrow.RecordBatch.from_arrays(
+            [cast_arrow_fix(columns[name], schema.field(name).type) for name in schema.names],
+            schema=schema,
         )
+
+    @classmethod
+    @functools.cache
+    def into_digest_columns(cls) -> tuple[str, ...]:
+        """What a stored row's `hash` is taken over, in this order.
+
+        The **parsed** values and never the raw line, so a message reformatted
+        but not changed hashes alike -- a bridge that rewrites its separator
+        or pads a fraction has not produced a second version of anything.
+
+        The tuple is the identity, so each member earns its place:
+
+        - `unix` and `unix_source`, because a row is a version of something
+          *at an instant*, and a re-parse that resolves the instant from a
+          different rung has genuinely learnt something new about the row.
+          Item 6's resolved time is deliberately in the digest for that
+          reason: two rows agreeing on content but not on when they happened
+          are two versions, not one.
+        - `source_url` and `source_rownum`, which are where the line was, and
+          together are unique across a capture -- so two identical lines in
+          one file stay two rows rather than collapsing into one.
+        - `protocol_code`, `protocol_version` and `msg_type`, which are what
+          the row was read *as*: the same bytes read under a different
+          dictionary is a different reading and deserves a different version.
+        - `kwargs`, which is the parsed content itself, in wire order.
+
+        `runix` is not here, and neither is `message`: when a line was written
+        down is not what it says, and the raw text is a spelling of `kwargs`.
+        """
+        return (
+            "unix",
+            "unix_source",
+            "source_url",
+            "source_rownum",
+            "protocol_code",
+            "protocol_version",
+            "msg_type",
+            "kwargs",
+        )
+
+    @classmethod
+    def version_hash_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
+        """One digest per row, over the parsed values rather than the raw line.
+
+        A row that could not be read as a message has no parsed values, so it
+        hashes on the raw line instead -- which is the one stated exception to
+        the rule, and honest: for such a row the raw string *is* the content.
+        """
+        compute = pyarrow.compute
+        parsed = [_digest_text(columns.get(name), rows) for name in cls.into_digest_columns()]
+        digests = cls.hash_arrow(*parsed)
+        stored = columns.get("kwargs")
+        if stored is None:
+            return digests
+        unread = compute.is_null(stored)
+        if not compute.any(unread, min_count=0).as_py():
+            return digests
+        raw = cls.hash_arrow(
+            _digest_text(columns.get("message"), rows),
+            _digest_text(columns.get("source_url"), rows),
+            _digest_text(columns.get("source_rownum"), rows),
+        )
+        return compute.if_else(unread, raw, digests)
 
     @classmethod
     def code_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
@@ -982,11 +1171,10 @@ def _pair_date(value: Any) -> datetime.date | None:
         return None
 
 
-#: The one segment of a rendered key that is a component and not a namespace
-#: without a dictionary to ask: an entry of a repeating group, which is what
-#: `_instrument_pairs` and every FIX renderer write with a subscript. Everything
-#: else in front of a name here is a namespace, which is what `rekep.kind` is.
-_GROUP_ENTRY = re.compile(r"\[[0-9]+\]$")
+#: The scalar reading of `FixCodec`'s own rule, compiled from its source: an
+#: entry of a repeating group is what carries a subscript, and everything else
+#: in front of a name is a namespace. One declaration, two engines.
+_GROUP_ENTRY = re.compile(GROUP_ENTRY)
 
 
 def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | None:
@@ -1061,3 +1249,42 @@ def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
         lead = entry.get("namespace") or entry.get("comp")
         name = entry["key"]
         yield (f"{lead}.{name}" if lead else name), entry.get("value")
+
+
+def _digest_text(column: Any, rows: int) -> pyarrow.Array:
+    """One column as the text its digest is taken over.
+
+    Text for every member, so the tuple hashes the same way whatever Arrow
+    type each column happens to be -- and a stored list of fields hashes as
+    the fields it holds, in order, rather than as an address.
+    """
+    compute = pyarrow.compute
+    if column is None:
+        return pyarrow.repeat("", rows)
+    if isinstance(column, pyarrow.ChunkedArray):
+        column = column.combine_chunks()
+    if pyarrow.types.is_list(column.type):
+        return _stored_text(column, rows)
+    return compute.fill_null(column.cast(pyarrow.string(), safe=False), "")
+
+
+def _stored_text(column: Any, rows: int) -> pyarrow.Array:
+    """A `KWARGS` column as one string per row: every field, in wire order."""
+    compute = pyarrow.compute
+    entries = compute.list_flatten(column)
+    spelled = compute.binary_join_element_wise(
+        compute.fill_null(compute.struct_field(entries, "tag").cast(pyarrow.string()), ""),
+        compute.fill_null(compute.struct_field(entries, "comp"), ""),
+        compute.fill_null(compute.struct_field(entries, "namespace"), ""),
+        compute.fill_null(compute.struct_field(entries, "key"), ""),
+        compute.fill_null(compute.struct_field(entries, "value"), ""),
+        "\x1f",
+    )
+    lengths = compute.fill_null(compute.list_value_length(column), 0).cast(pyarrow.int32())
+    offsets = pyarrow.concat_arrays(
+        [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(lengths)]
+    )
+    listed = pyarrow.ListArray.from_arrays(offsets, spelled)
+    joined = compute.binary_join(listed, "\x1e")
+    del rows
+    return compute.fill_null(joined, "")

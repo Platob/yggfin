@@ -25,7 +25,7 @@ from rekep.filesystems import resolve
 from rekep.fix.access import first_arrow_tags
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.transcribe import FixCodec
-from rekep.market.event import CODES_TYPE, HOUR
+from rekep.market.event import CODES_TYPE, hour_arrow
 from rekep.market.identity import HASH, hash_bytes
 from rekep.market.transacted import resolve_arrow
 from rekep.text.fixmessage import FixMessage, FixMessageRules, MessageCodec
@@ -165,6 +165,14 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: parses nothing -- so a file that declares no rules reads exactly as it
     #: did before any of this existed.
     codec: MessageCodec = dataclass_field(default_factory=FixCodec)
+
+    #: Whether to resolve the fields a message carries against the dictionary,
+    #: or only to structure them. Off is the message stage: a line is split
+    #: into the same `kwargs` struct at its unresolved fill level, with the
+    #: protocol, its version and `MsgType <35>` beside it, and no field, no
+    #: component and no enumerated value looked up. `parse_fix` completes the
+    #: same column later, so a re-parse tokenises nothing twice.
+    resolved: bool = True
 
     #: IANA zone the wall clock in the header belongs to (`Europe/Paris`).
     #: None keeps the historical reading: the clock *is* UTC. Naming the real
@@ -430,7 +438,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             # what *recorded* it. Seeded with the header clock so a row whose
             # message says nothing about time still sorts where it was read.
             "unix": unix,
-            "unix_hour": _hour_nanos(unix),
+            "unix_hour": hour_arrow(unix),
             "etype": self.rules.etype_arrow(message),
             # A line is created when it is stamped. `runix` is when somebody
             # wrote it down *here*, which for a captured log is exactly what
@@ -468,7 +476,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         # After the message columns, because that is what it reads: the
         # regulatory groups and the clocks a line carried are columns by now.
         columns["unix"], columns["unix_source"] = resolve_arrow(columns, unix, count)
-        columns["unix_hour"] = _hour_nanos(columns["unix"])
+        columns["unix_hour"] = hour_arrow(columns["unix"])
         columns["cunix"] = columns["unix"]
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
@@ -514,23 +522,22 @@ class TextFile(Dataset, io.BufferedIOBase):
     def _message_columns(self, messages: Any, plugins: Any, count: int) -> dict[str, Any]:
         """What a message fills: which protocol it is, its fields, its columns.
 
-        A batch mixes protocols and dictionary versions, and both are read per
-        row; the codec is handed one homogeneous slice at a time and the slices
-        are scattered back into the batch's own order.
+        Two stages, and the second is optional. Structuration always runs --
+        which protocol the line is, its fields cut into the stored struct, its
+        protocol version and `MsgType <35>` -- and `resolved` decides whether
+        the dictionary is then applied. Reading a capture whole runs both;
+        `parse_messages` runs only the first and lets `parse_fix` run the
+        second later, off the stored column, so a re-parse tokenises nothing
+        twice.
+
+        The resolution is `FixMessage.resolved_columns`, which is also what
+        `parse_fix` calls -- so reading a capture in one pass and reading it in
+        two cannot disagree about what a line says.
         """
-        del count
-        compute = pyarrow.compute
-        protocols = self.codec.categorise(messages, plugins)
-        parts = []
-        for name, slice_, where in _grouped(protocols, messages):
-            pairs = self.codec.into_pairs(slice_, name.as_py())
-            versions = compute.fill_null(self.codec.versions_of_pairs(pairs), "")
-            for version, read, inner in _grouped(versions, pairs):
-                rows = where if len(inner) == len(where) else compute.take(where, inner)
-                parts.append(
-                    (self.codec.into_fixmessage_columns(read, version.as_py() or None), rows)
-                )
-        return {"protocol_code": protocols, **_scattered_columns(parts)}
+        staged = self.codec.into_message_columns(messages, plugins)
+        if not self.resolved:
+            return staged
+        return {**staged, **self.into_row().resolved_columns(staged, self.codec, count)}
 
     def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
         """Cut newline-delimited lines out of fixed-size reads.
@@ -941,17 +948,6 @@ def _datetime_micros(value: datetime.datetime) -> int:
     """A naive datetime as exact microseconds since the Unix epoch."""
     delta = value - datetime.datetime(1970, 1, 1)
     return (delta.days * 86_400 + delta.seconds) * 1_000_000 + delta.microseconds
-
-
-def _hour_nanos(unix: pyarrow.Array) -> pyarrow.Array:
-    """`unix` truncated down to the hour it falls in -- the partition column."""
-    compute = pyarrow.compute
-    hour = pyarrow.scalar(HOUR, pyarrow.int64())
-    remainder = compute.subtract(unix, compute.multiply(compute.divide(unix, hour), hour))
-    return compute.subtract(
-        unix,
-        compute.if_else(compute.less(remainder, 0), compute.add(remainder, hour), remainder),
-    )
 
 
 def _mic_arrow(columns: Mapping[str, Any], messages: Any, rows: int) -> Any:

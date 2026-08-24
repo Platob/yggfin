@@ -12,6 +12,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Annotated, Any, Self
 
 import pyarrow
+import pyarrow.compute
 
 from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Side, State
 from rekep.fields import Field, scalar
@@ -823,6 +824,23 @@ class MarketEvent(Event):
             [projected[name] for name in field.names], names=field.names
         )
         return field.cast_arrow_batch(raw)
+
+
+def hour_arrow(unix: Any) -> pyarrow.Array:
+    """`unix` truncated down to the hour it falls in -- the partition column.
+
+    The columnar twin of what `__post_init__` computes for one row, and here
+    rather than in a parser because the rule belongs to the column: a
+    partition that stopped being a function of `unix` would break every
+    ordered read that prunes on it.
+    """
+    compute = pyarrow.compute
+    hour = pyarrow.scalar(HOUR, pyarrow.int64())
+    remainder = compute.subtract(unix, compute.multiply(compute.divide(unix, hour), hour))
+    return compute.subtract(
+        unix,
+        compute.if_else(compute.less(remainder, 0), compute.add(remainder, hour), remainder),
+    )
 
 
 @functools.lru_cache(maxsize=65_536)

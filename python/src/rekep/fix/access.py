@@ -421,6 +421,40 @@ def _KEY_TAIL(spelling: str) -> str | int:
 # -- whole columns ------------------------------------------------------------
 
 
+def first_named(stored: Any, tag: int, name: str, rows: int) -> Any:
+    """First value of one field per row, by its tag *or* by its name.
+
+    What the message stage reads a field with, before anything has resolved a
+    name: a wire message spells the key `35` and a rendered one spells it
+    `MsgType`, and both are the same field. Two comparisons over the child
+    array, and no dictionary -- which is the point, since this runs before one
+    is consulted.
+    """
+    import pyarrow
+
+    compute = pyarrow.compute
+    if isinstance(stored, pyarrow.ChunkedArray):
+        stored = stored.combine_chunks()
+    if not rows or stored is None or stored.null_count == rows:
+        return pyarrow.nulls(rows, pyarrow.string())
+    from rekep.fields.arrays import sequence
+
+    parents = compute.list_parent_indices(stored).cast(pyarrow.int32())
+    entries = compute.list_flatten(stored)
+    values = compute.struct_field(entries, "value")
+    numbered = compute.fill_null(compute.equal(compute.struct_field(entries, "tag"), tag), False)
+    named = compute.fill_null(
+        compute.equal(compute.utf8_lower(compute.struct_field(entries, "key")), name.lower()),
+        False,
+    )
+    matches = compute.or_(numbered, named)
+    if not compute.any(matches, min_count=0).as_py():
+        return pyarrow.nulls(rows, pyarrow.string())
+    where = compute.filter(parents, matches)
+    found = compute.filter(values, matches)
+    return compute.take(found, compute.index_in(sequence(rows), value_set=where))
+
+
 def first_arrow_tags(stored: Any, wanted: Sequence[int], rows: int) -> dict[int, Any]:
     """First value of each wanted tag out of a stored `kwargs` column.
 

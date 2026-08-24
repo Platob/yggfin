@@ -736,9 +736,19 @@ def _lifted(table: pyarrow.Table, row: int) -> int:
     return sum(table.column(name)[row].as_py() is not None for name in FLAT_NAMES)
 
 
+def _semantic_floor(table: pyarrow.Table, row: int) -> int:
+    """What a row fills before any dictionary is consulted: `MsgType <35>`, or nothing."""
+    return 1 if table.column("msg_type")[row].as_py() is not None else 0
+
+
 def _assert_no_semantic_columns(table: pyarrow.Table, row: int) -> None:
-    """Unknown-version rows retain pairs without publishing interpreted values."""
-    assert _lifted(table, row) == 0
+    """Unknown-version rows retain pairs without publishing interpreted values.
+
+    `msg_type` is the one column such a row may still fill: it is one tag off
+    the front of a message, found without a dictionary, and a row whose
+    version nothing resolved still knows what kind of message it is.
+    """
+    assert _lifted(table, row) == _semantic_floor(table, row)
     assert _component_fields(table, row) == 0
     assert table.column("parties")[row].as_py() is None
 
@@ -896,3 +906,186 @@ def test_the_parse_and_the_translation_resolve_one_row_alike(
         if not row.message or "8=FIX" not in row.message:
             continue
         assert (found.unix, found.source) == (row.unix, row.unix_source), row.message
+
+
+# -- the two stages ----------------------------------------------------------
+
+#: One capture reaching all three destinations, in every spelling that matters:
+#: a wire message, a rendered one, recognised operational traffic, and a line
+#: whose transport nothing recognises.
+STAGED_LINES = (
+    "2026-08-14 00:05:01.147 [t] [FixSession_XPAR] (INFO) 8=FIX.4.4|35=D|11=C1|54=1|55=IBM|"
+    "453=1|448=BUYSIDE|447=D|452=1|60=20260814-09:30:00.000|10=000\n"
+    "2026-08-14 00:05:02.147 [t] [ULBridge] (INFO) toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|"
+    "#SIDE=Buy|#SYMBOL=TTF|#NOPARTYIDS[0].PARTYID=ABC|#TECH.CLIENTID=42\n"
+    "2026-08-14 00:05:03.147 [t] [HealthMonitor] (INFO) heartbeat sent on session 3\n"
+    "2026-08-14 00:05:04.147 [t] [ExperimentalAdapter] (INFO) opaque payload nobody reads\n"
+)
+
+
+@pytest.fixture
+def staged(tmp_path: Path, codec: FixCodec) -> pyarrow.Table:
+    """What `parse_messages` writes: structured, and resolved against nothing."""
+    path = tmp_path / "staged.txt"
+    path.write_text(STAGED_LINES)
+    with TextFile.from_path(path, codec=codec, resolved=False) as log:
+        return log.read_arrow_table()
+
+
+@pytest.fixture
+def resolved(staged: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
+    """What `parse_fix` makes of it, off the stored columns alone."""
+    return pyarrow.Table.from_batches(
+        [FixMessage.resolve_arrow_batch(batch, codec) for batch in staged.to_batches()]
+    )
+
+
+def test_the_message_stage_structures_without_resolving(staged: pyarrow.Table) -> None:
+    """`tag == 0` is what says an entry is unresolved, and it is NOT NULL."""
+    assert staged.column("protocol_code").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]
+    assert staged.column("protocol_version").to_pylist() == ["4.4", "4.4", None, None]
+    assert staged.column("protocol_version_source").to_pylist() == [
+        "begin_string",
+        "begin_string",
+        "none",
+        "none",
+    ]
+    assert staged.column("msg_type").to_pylist() == ["D", "D", None, None]
+    rendered = staged.column("kwargs").to_pylist()[1]
+    assert [entry["tag"] for entry in rendered] == [0] * len(rendered), "nothing resolved a name"
+    assert staged.column("side").to_pylist() == [None] * 4, "and nothing was lifted"
+
+
+def test_the_two_fill_levels_are_one_struct(staged: pyarrow.Table, resolved: pyarrow.Table) -> None:
+    """`parse_fix` fills the same column; it does not convert a shape."""
+    assert staged.schema.field("kwargs").type == resolved.schema.field("kwargs").type
+
+
+def test_resolution_changes_only_the_tag_the_key_and_the_value(
+    staged: pyarrow.Table, resolved: pyarrow.Table
+) -> None:
+    """Where a field stood is settled at the message stage and never revised."""
+    for before, after in zip(
+        staged.column("kwargs").to_pylist(), resolved.column("kwargs").to_pylist(), strict=True
+    ):
+        if before is None:
+            continue
+        placed = {(entry["key"], entry["namespace"], entry["comp"]) for entry in before}
+        for entry in after or ():
+            match = [
+                one for one in placed if one[0].lower() in {entry["key"].lower(), one[0].lower()}
+            ]
+            assert match, entry
+        kept = [(entry["namespace"], entry["comp"]) for entry in before]
+        # Every entry `parse_fix` still holds stands where the message stage
+        # put it: resolution reorders nothing and re-places nothing.
+        for entry in after or ():
+            assert (entry["namespace"], entry["comp"]) in kept, entry
+
+
+def test_resolution_reads_the_stored_column_and_never_the_raw_line(
+    staged: pyarrow.Table, codec: FixCodec
+) -> None:
+    """A row with its `message` blanked resolves to exactly the same thing."""
+    at = staged.schema.get_field_index("message")
+    columns = list(staged.columns)
+    columns[at] = pyarrow.nulls(staged.num_rows, staged.schema.field(at).type)
+    blanked = pyarrow.Table.from_arrays(columns, schema=staged.schema)
+    whole = FixMessage.resolve_arrow_batch(staged.to_batches()[0], codec)
+    without = FixMessage.resolve_arrow_batch(blanked.to_batches()[0], codec)
+    for name in ("kwargs", "side", "symbol", "msg_type", "protocol_version", "unix"):
+        assert whole.column(name).to_pylist() == without.column(name).to_pylist(), name
+
+
+def test_the_redirection_sends_one_input_to_all_three_tables(
+    resolved: pyarrow.Table,
+) -> None:
+    """One condition, one place: what `etype` the rules made of the line.
+
+    The second row is the interesting one. It resolves against the dictionary
+    perfectly well -- `#MSGTYPE=D` becomes tag 35 -- and still lands in
+    `misc`, because the event rules read the *raw text* and a bridge spelling
+    its type as a named key matches neither `35=D` nor `NewOrderSingle`. What
+    routes a row is what kind of event it is, not whether its fields resolved,
+    and those are different questions.
+    """
+    rules = Rules()
+    categories = rules.into_arrow_category_array(
+        resolved.column("protocol_code").combine_chunks(),
+        resolved.column("etype").combine_chunks(),
+    )
+    assert categories.to_pylist() == ["market", "misc", "misc", "unknown"]
+
+
+def test_a_misc_row_keeps_its_raw_line_and_a_market_row_gives_it_up() -> None:
+    """The one stored shape: two content columns, and which is filled where."""
+    market = FixMessage(unix=1, hash=1, message=None, kwargs=[])
+    misc = FixMessage(unix=2, hash=2, message="heartbeat", kwargs=None)
+    assert market.message is None and market.kwargs == []
+    assert misc.message == "heartbeat"
+    field = FixMessage.into_field()
+    assert field.field("message").nullable, "a market row leaves it null"
+
+
+def test_protocol_version_agrees_with_the_columns_it_derives_from(
+    resolved: pyarrow.Table,
+) -> None:
+    """A row where the stored version and its own evidence disagree is corrupt."""
+    for version, begin, appl in zip(
+        resolved.column("protocol_version").to_pylist(),
+        resolved.column("begin_string").to_pylist(),
+        resolved.column("appl_ver_id").to_pylist(),
+        strict=True,
+    ):
+        if begin is None:
+            continue
+        if str(begin).upper().startswith("FIXT"):
+            assert appl is None or version is not None
+            continue
+        assert version is not None, begin
+        assert version.replace(".", "") in str(begin).replace(".", ""), (version, begin)
+
+
+def test_a_version_nothing_infers_stays_null_and_says_why(codec: FixCodec) -> None:
+    """Null because the message carried none, told apart from null because nothing tried."""
+    messages = pyarrow.array(
+        ["8=FIXT.1.1|35=D|11=C1|10=000", "nothing about this line is a message"],
+        pyarrow.string(),
+    )
+    columns = codec.into_message_columns(messages)
+    assert columns["protocol_version"].to_pylist() == [None, None]
+    assert columns["protocol_version_source"].to_pylist() == ["none", "none"], (
+        "a FIXT header with no ApplVerID resolves nothing, and neither does a non-message"
+    )
+
+
+def test_a_fixt_message_resolves_through_its_application_version(codec: FixCodec) -> None:
+    """FIXT is the transport; `ApplVerID <1128>` says which application version."""
+    messages = pyarrow.array(["8=FIXT.1.1|35=D|1128=9|11=C1|10=000"], pyarrow.string())
+    columns = codec.into_message_columns(messages)
+    assert columns["protocol_version"].to_pylist() == ["5.0.SP2"]
+    assert columns["protocol_version_source"].to_pylist() == ["application_version"]
+
+
+def test_wire_order_survives_both_stages(codec: FixCodec) -> None:
+    """Order is the identity: repeating-group entries are told apart by position."""
+    line = "8=FIX.4.4|35=D|453=3|448=ONE|448=TWO|448=THREE|10=000"
+    columns = codec.into_message_columns(pyarrow.array([line], pyarrow.string()))
+    staged = [entry["value"] for entry in columns["kwargs"].to_pylist()[0] if entry["tag"] == 448]
+    assert staged == ["ONE", "TWO", "THREE"], "the sequence, not the set"
+    done = codec.complete_kwargs(columns["kwargs"], "4.4").to_pylist()[0]
+    assert [entry["value"] for entry in done if entry["tag"] == 448] == ["ONE", "TWO", "THREE"]
+
+
+def test_the_split_key_still_spells_what_the_line_wrote(codec: FixCodec) -> None:
+    """`namespace`/`comp` joined to `key` is the rendered key, at both fill levels."""
+    line = "send #NOPARTYIDS[0].PARTYID=ABC|#TECH.CLIENTID=42"
+    columns = codec.into_message_columns(pyarrow.array([line], pyarrow.string()))
+    for level in (columns["kwargs"], codec.complete_kwargs(columns["kwargs"], "4.4")):
+        rebuilt = [
+            ".".join(
+                part for part in (entry["namespace"] or entry["comp"], entry["key"]) if part
+            ).upper()
+            for entry in level.to_pylist()[0]
+        ]
+        assert rebuilt == ["NOPARTYIDS[0].PARTYID", "TECH.CLIENTID"]

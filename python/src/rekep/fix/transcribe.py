@@ -89,6 +89,13 @@ _CONTAINED_KEY = r"(?s)^(?:.*\.)?(?P<inner>[^.]*?)(?:\[[0-9]+\])?\.[^.]*$"
 #: the *last* dot is the cut and a deeper path keeps its depth.
 _NAMESPACED_KEY = r"(?s)^(?:(?P<namespace>.*)\.)?(?P<key>[^.]*)$"
 
+#: The one thing in front of a name that is a container and not a namespace
+#: without a dictionary to ask: an entry of a repeating group, which is what
+#: every FIX renderer writes with a subscript. Everything else in front of a
+#: name is a vendor's own prefix, which is what `rekep.kind` is. The message
+#: stage splits on this alone, and `_stored_entry` reads it scalar-wise.
+GROUP_ENTRY = r"\[[0-9]+\]$"
+
 #: A key that is already a tag: digits, and few enough of them to be one.
 #: Ten digits can overflow an `int32` and no FIX tag has ten, so the width is
 #: the guard -- an epoch-millis key is not a tag, and letting it through would
@@ -512,20 +519,228 @@ class FixCodec(Convertible):
         and to `namespace` where it does not.
         """
         compute = pyarrow.compute
-        tags, _, _, contained = self.index_of(version).resolve_with_match(keys)
-        parts = compute.extract_regex(keys, _NAMESPACED_KEY)
-        # Kept whole, entry index and all, so `lead.key` is the rendered key
-        # back again and `NoPartyIDs[0]` stays a different place from `[1]`.
-        lead = compute.struct_field(parts, "namespace")
-        led = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
-        nothing = pyarrow.scalar(None, pyarrow.string())
+        tags, _, _, _ = self.index_of(version).resolve_with_match(keys)
+        # The split is `structure`'s, not a second rule: where a field stood is
+        # a fact about the spelling, so the message stage settles it and the
+        # dictionary never revises it. What the dictionary adds is the tag.
+        _, key, _, namespace, comp = self.structure(keys, values)
         return (
             compute.fill_null(tags, pyarrow.scalar(0, TAG)),
+            key,
+            values,
+            namespace,
+            comp,
+        )
+
+    # -- the message stage ----------------------------------------------------
+    #
+    # Structuration without the dictionary: what a line spells, cut into the
+    # same struct the resolved rows use. `parse_fix` completes the same column
+    # in place rather than converting a shape.
+
+    def into_message_kwargs(self, pairs: Any) -> Any:
+        """Every field a message carried, structured but not resolved.
+
+        The same `KWARGS` struct at its unresolved fill level: `key`, `value`,
+        `namespace` and `comp` are what the line spells, and `tag` is the
+        number only where the line spelled one -- `0` otherwise, which is what
+        says an entry is unresolved. No name is looked up and no value is
+        translated, so this needs no dictionary at all.
+        """
+        rows = len(pairs)
+        if isinstance(pairs, pyarrow.ChunkedArray):
+            parts = [self.into_message_kwargs(chunk) for chunk in pairs.chunks]
+            return pyarrow.chunked_array(parts, type=KWARGS)
+        if not rows or pairs.null_count == rows:
+            return pyarrow.nulls(rows, KWARGS)
+        lengths, keys, values = _entries_of(pairs)
+        return _kwargs(
+            pairs,
+            lengths,
+            pyarrow.repeat(True, len(keys)),
+            *self.structure(keys, values),
+        )
+
+    def structure(self, keys: Any, values: Any) -> tuple[Any, Any, Any, Any, Any]:
+        """`(tag, key, value, namespace, comp)` from the spelling alone.
+
+        The dictionary-free half of `transcribe`, and the same split: whatever
+        the line wrote in front of a name goes to `comp` when it is a group
+        entry and to `namespace` when it is not. Telling those apart needs no
+        dictionary either -- an entry of a repeating group is what carries a
+        subscript, which is what `_GROUP_ENTRY` matches, and everything else in
+        front of a name is a vendor's own prefix.
+        """
+        compute = pyarrow.compute
+        numeric = compute.fill_null(compute.match_substring_regex(keys, _IS_TAG), False)
+        tags = compute.if_else(numeric, keys, pyarrow.scalar("0")).cast(TAG)
+        parts = compute.extract_regex(keys, _NAMESPACED_KEY)
+        lead = compute.struct_field(parts, "namespace")
+        led = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
+        entry = compute.fill_null(compute.match_substring_regex(lead, GROUP_ENTRY), False)
+        nothing = pyarrow.scalar(None, pyarrow.string())
+        return (
+            tags,
             compute.fill_null(compute.struct_field(parts, "key"), keys),
             values,
-            compute.if_else(compute.and_(led, compute.invert(contained)), lead, nothing),
-            compute.if_else(compute.and_(led, contained), lead, nothing),
+            compute.if_else(compute.and_(led, compute.invert(entry)), lead, nothing),
+            compute.if_else(compute.and_(led, entry), lead, nothing),
         )
+
+    def into_message_columns(self, messages: Any, plugins: Any = None) -> dict[str, Any]:
+        """What a line carries, before any of it is resolved.
+
+        The message stage in one call: which protocol the line is, its fields
+        structured into the stored struct, the protocol version and where that
+        came from, and `MsgType <35>` -- which is one tag off the front of a
+        message and wants no registry to find.
+        """
+        # At the call, because `fix.access` reads this module's own `TagIndex`:
+        # the accessor is built on the transcription, so the transcription
+        # reaches back into it here rather than at import.
+        from rekep.fix.access import first_named
+
+        compute = pyarrow.compute
+        protocols = self.categorise(messages, plugins)
+        rows = len(messages)
+        parts, positions = [], []
+        for name, where in groups_of(protocols):
+            slice_ = messages if len(where) == rows else compute.take(messages, where)
+            pairs = self.into_pairs(slice_, name.as_py())
+            parts.append(self.into_message_kwargs(pairs))
+            positions.append(where)
+        kwargs = scattered(parts, positions) if parts else pyarrow.nulls(rows, KWARGS)
+        version, source = self.versions_of_kwargs(kwargs)
+        return {
+            "protocol_code": protocols,
+            "kwargs": kwargs,
+            "protocol_version": version,
+            "protocol_version_source": source,
+            "msg_type": first_named(kwargs, 35, "MsgType", rows),
+        }
+
+    def versions_of_kwargs(self, kwargs: Any) -> tuple[Any, Any]:
+        """`(version, where it came from)` per row, off the structured fields.
+
+        Off `kwargs` rather than off the message, because by this point the
+        message has been split once and splitting it again is the work this
+        stage exists to stop paying twice. Reads only `registry.versions` --
+        the version list -- and no field, component or enumerated value.
+        """
+        from rekep.fix.access import first_named
+
+        rows = len(kwargs)
+        if not rows:
+            empty = pyarrow.array([], pyarrow.string())
+            return empty, empty
+        begins = first_named(kwargs, 8, "BeginString", rows)
+        application = first_named(kwargs, 1128, "ApplVerID", rows)
+        default = first_named(kwargs, 1137, "DefaultApplVerID", rows)
+        spellings = self._spellings
+        versions: list[str | None] = []
+        sources: list[str] = []
+        # One reading per *distinct* evidence triple rather than per row: a
+        # capture is one session and answers the same way on every line.
+        seen: dict[tuple[Any, Any, Any], tuple[str | None, str]] = {}
+        for evidence in zip(
+            begins.to_pylist(), application.to_pylist(), default.to_pylist(), strict=True
+        ):
+            found = seen.get(evidence)
+            if found is None:
+                found = seen[evidence] = _version_from_evidence(*evidence, spellings)
+            versions.append(found[0])
+            sources.append(found[1])
+        return (
+            pyarrow.array(versions, pyarrow.string()),
+            pyarrow.array(sources, pyarrow.string()),
+        )
+
+    def complete_kwargs(self, kwargs: Any, version: str | None = None) -> Any:
+        """A message-stage `kwargs` column, resolved the rest of the way.
+
+        Three members are filled and nothing else is touched: `tag` for a key
+        the dictionary answers for, `key` canonicalized to the registry's own
+        spelling, and `value` translated where its field enumerates its values.
+        `namespace` and `comp` come through byte-identical, because where a
+        field stood was settled from the spelling alone and a dictionary has
+        nothing to add to it.
+
+        Not a shape conversion: the column already has the right type, and
+        this is a fill.
+        """
+        rows = len(kwargs)
+        if isinstance(kwargs, pyarrow.ChunkedArray):
+            parts = [self.complete_kwargs(chunk, version) for chunk in kwargs.chunks]
+            return pyarrow.chunked_array(parts, type=KWARGS)
+        if not rows or kwargs.null_count == rows or version is None:
+            return kwargs
+        compute = pyarrow.compute
+        lengths, _, entries = _flattened(kwargs)
+        stored = compute.struct_field(entries, "tag")
+        keys = compute.struct_field(entries, "key")
+        values = compute.struct_field(entries, "value")
+        namespace = compute.struct_field(entries, "namespace")
+        comp = compute.struct_field(entries, "comp")
+        # A stored key is the field's own name with its container beside it, so
+        # the container goes back in front before it is resolved: that is the
+        # spelling `resolve_with_match` reads, and `TECH.CLIENTID` must not
+        # resolve as `CLIENTID`.
+        lead = compute.coalesce(namespace, comp)
+        whole = compute.if_else(
+            compute.is_valid(lead),
+            compute.binary_join_element_wise(compute.fill_null(lead, ""), keys, "."),
+            keys,
+        )
+        tags, matched, _, _ = self.index_of(version).resolve_with_match(whole)
+        # Only an unresolved entry is filled: one the message stage already
+        # numbered was numbered off the wire, and the wire is the authority.
+        fill = compute.and_(compute.equal(stored, 0), compute.fill_null(matched, False))
+        tags = compute.if_else(fill, compute.fill_null(tags, pyarrow.scalar(0, TAG)), stored)
+        return _kwargs(
+            kwargs,
+            lengths,
+            pyarrow.repeat(True, len(keys)),
+            tags,
+            self._canonical(keys, tags, version),
+            self._translated(tags, values, version),
+            namespace,
+            comp,
+        )
+
+    def _canonical(self, keys: Any, tags: Any, version: str | None) -> Any:
+        """Each key as the registry spells it, where the registry answers for it."""
+        compute = pyarrow.compute
+        spelled, named = self._canonical_names(version)
+        if not len(spelled):
+            return keys
+        found = compute.take(named, compute.index_in(tags, value_set=spelled))
+        return compute.if_else(compute.is_valid(found), found, keys)
+
+    def _translated(self, tags: Any, values: Any, version: str | None) -> Any:
+        """Each value as the dictionary reads its spelling, where it enumerates any."""
+        compute = pyarrow.compute
+        spelled, resolved = self._translations(version)
+        if not len(spelled):
+            return values
+        composite = compute.binary_join_element_wise(
+            compute.fill_null(tags, 0).cast(pyarrow.string()),
+            compute.utf8_lower(compute.fill_null(values, "")),
+            "\x00",
+        )
+        found = compute.take(resolved, compute.index_in(composite, value_set=spelled))
+        return compute.if_else(compute.is_valid(found), found, values)
+
+    def _canonical_names(self, version: str | None) -> tuple[Any, Any]:
+        """`(tag, the registry's spelling of it)` for one version, built once."""
+        if version not in self._canonicals:
+            self._canonicals[version] = _canonical_names(self.registry, version)
+        return self._canonicals[version]
+
+    def _translations(self, version: str | None) -> tuple[Any, Any]:
+        """`(tag and folded spelling, the value it names)` for one version."""
+        if version not in self._translated_values:
+            self._translated_values[version] = _translations(self.registry, version)
+        return self._translated_values[version]
 
     def into_fixmessage_columns(
         self, pairs: Any, version: str | None = None
@@ -814,6 +1029,14 @@ class FixCodec(Convertible):
 
     @cached_property
     def _flat_fields(self) -> dict[str | None, dict[int, Field]]:
+        return {}
+
+    @cached_property
+    def _canonicals(self) -> dict[str | None, tuple[Any, Any]]:
+        return {}
+
+    @cached_property
+    def _translated_values(self) -> dict[str | None, tuple[Any, Any]]:
         return {}
 
     @cached_property
@@ -1214,6 +1437,52 @@ def _cast(column: Any, field: Field, arrow_type: pyarrow.DataType) -> Any:
 def _tags_of(fields: Mapping[int, Field]) -> pyarrow.Array:
     """The tags a version can lift, as the value set a probe takes."""
     return pyarrow.array(sorted(fields), TAG)
+
+
+def _canonical_names(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
+    """`(tag, canonical spelling)` for every field one version numbers.
+
+    What `parse_fix` canonicalizes a key to: a bridge writes `PARTYID` and the
+    registry spells it `PartyID`, and a stored column read by a person should
+    say what the standard says.
+    """
+    tags: list[int] = []
+    names: list[str] = []
+    if version is not None:
+        try:
+            members = registry.fields(version)
+        except (KeyError, OSError, ValueError):
+            members = []
+        for member in members:
+            tag = member.fix.get("tag")
+            if tag:
+                tags.append(int(tag))
+                names.append(member.name)
+    return pyarrow.array(tags, TAG), pyarrow.array(names, pyarrow.string())
+
+
+def _translations(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
+    """`(tag and folded spelling, the value it names)` for one version.
+
+    The dictionary's own `translations`, as the value set one kernel probes:
+    `Side=Buy` and `Side=BUY` both reach `1`, and a spelling two values share
+    reaches neither -- which is the record's rule, applied here rather than
+    reimplemented.
+    """
+    spelled: list[str] = []
+    resolved: list[str] = []
+    if version is not None:
+        try:
+            entries = registry.field_entries()
+        except (KeyError, OSError, ValueError):
+            entries = {}
+        for entry in entries.values():
+            if entry.tag is None or not entry.translations or not entry.declares(version):
+                continue
+            for spelling, value in entry.translations.items():
+                spelled.append(f"{entry.tag}\x00{spelling}")
+                resolved.append(value)
+    return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(resolved, pyarrow.string())
 
 
 def _entries_of(pairs: Any) -> tuple[Any, Any, Any]:

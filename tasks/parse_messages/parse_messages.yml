@@ -1,13 +1,17 @@
-name: parse_fix
-notebook: parse_fix.ipynb
+name: parse_messages
+notebook: parse_messages.ipynb
 parameters:
   project_root: .
-  # Structured, unresolved message rows -- what `parse_messages` wrote. This
-  # stage never reads text, and never re-splits a line.
-  source: text.messages
+  # Raw input may be an S3 prefix, for example: s3://example-bucket/capture
+  source: data/capture
+  pattern: "*.log*"
+  recursive: true
+  timezone: Europe/Paris
   start: null
   end: null
+  # The version list alone is read here -- no field, no component, no value.
   fix_dictionary: data/fix
+  null_values: ["", "null", "<null>", "n/a"]
   rules: null
   protocols: null
   # AWS Glue with an S3 warehouse (replace the active local block):
@@ -24,9 +28,9 @@ parameters:
     type: sql
     uri: sqlite:///data/catalog.db
     warehouse: file://data/warehouse
-  target_pattern: "fixmessage.{category}"
-  instrument_source: market.instruments
-  instrument_snapshot_every: 3600000000000
+  # Retained, not transient: `parse_fix` re-reads it whenever the dictionary
+  # or the rules change, which is what the split is for.
+  target: text.messages
   static_values:
     bridge: bridge-1
     environment: prod

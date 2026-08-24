@@ -381,6 +381,8 @@ LINE_COLUMNS = [
     "message",
     "protocol_code",
     "unix_source",
+    "protocol_version",
+    "protocol_version_source",
     "msg_seq_num",
     "kwargs",
     "parties",
@@ -466,8 +468,8 @@ LINE_COLUMNS = [
 ]
 
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LINE_COLUMNS = 89
-EXPECTED_LOG_COLUMNS = 107
+EXPECTED_LINE_COLUMNS = 91
+EXPECTED_LOG_COLUMNS = 109
 
 
 def test_schema(plain: Path) -> None:
@@ -1179,10 +1181,10 @@ def test_a_pre_epoch_timestamp_lands_in_the_hour_that_contains_it() -> None:
     the hour *after* the one containing it."""
     import pyarrow
 
-    from rekep.text.text_file import _hour_nanos
+    from rekep.market.event import hour_arrow
 
     before = pyarrow.array([-1, -HOUR - 1, 0, HOUR, 3 * HOUR + 5], type=pyarrow.int64())
-    assert _hour_nanos(before).to_pylist() == [-HOUR, -2 * HOUR, 0, HOUR, 3 * HOUR]
+    assert hour_arrow(before).to_pylist() == [-HOUR, -2 * HOUR, 0, HOUR, 3 * HOUR]
 
 
 # -- static values ----------------------------------------------------------

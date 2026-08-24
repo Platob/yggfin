@@ -116,6 +116,11 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: codec belongs to the set and every file it opens is handed this one.
     codec: MessageCodec = dataclass_field(default_factory=FixCodec)
 
+    #: Whether the files this set opens resolve their fields against the
+    #: dictionary, or only structure them. Belongs to the set for the same
+    #: reason the codec does: a folder is read at one stage, not file by file.
+    resolved: bool = True
+
     def __post_init__(self) -> None:
         """Resolve one filesystem for every root, and rewrite the roots as paths on it."""
         self.roots = tuple(self.roots)
@@ -316,6 +321,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 static_values=self.static_values,
                 rules=self.rules,
                 codec=self.codec,
+                resolved=self.resolved,
             )
 
     def _walk(self, directory: str, seen: set[str] | None = None) -> Iterator[pyarrow.fs.FileInfo]:

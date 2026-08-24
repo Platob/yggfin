@@ -77,7 +77,7 @@ VERSIONS: list[str] = INDEX["versions"]
 #: 101 possible shards hold nothing and are simply absent.
 EXPECTED_FIELD_DOCUMENTS = 15
 EXPECTED_FIELD_RECORDS = 6072
-EXPECTED_COMPONENT_FILES = 729
+EXPECTED_COMPONENT_FILES = 730
 
 #: The collapse report, committed beside the dictionary it describes.
 CONFLICTS = DATA.parent / "fix-conflicts.json"

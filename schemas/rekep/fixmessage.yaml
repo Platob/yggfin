@@ -142,8 +142,9 @@ fields:
   description: Contents of the second bracketed field -- the emitting module.
 - name: message
   type: string
-  description: Payload with the header and level stripped, continuation lines folded
-    in.
+  nullable: true
+  description: Payload with the header and level stripped; null where `kwargs` holds
+    it all.
 - name: protocol_code
   type: string
   description: Which protocol the line carries; OTHER is a line that carries none.
@@ -151,6 +152,15 @@ fields:
   type: string
   description: Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own
     clock.
+- name: protocol_version
+  type: string
+  nullable: true
+  description: Which version of `protocol_code` the line is read under; null when
+    unresolved.
+- name: protocol_version_source
+  type: string
+  description: 'What resolved `protocol_version`: a BeginString, an application version,
+    or nothing.'
 - name: msg_seq_num
   type: int64
   nullable: true

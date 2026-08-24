@@ -10,6 +10,8 @@ products: FIX messages, instruments, books, orders, and executions.
 ```text
 TextFile(s)
     |
+parse_messages -------------> text.messages
+    |
 parse_fix ------------------> fixmessage tables
     |\
     | `---------------------> flatten_instruments -> instrument

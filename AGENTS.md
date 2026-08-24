@@ -152,13 +152,13 @@ configuration. Airflow executes the notebooks through its Papermill provider.
 The supported graph is:
 
 ```text
-parse_fix -> parse_market -> flatten_orders
-     |             `-------> flatten_executions
-     `------------> flatten_instruments
+parse_messages -> parse_fix -> parse_market -> flatten_orders
+                      |             `-------> flatten_executions
+                      `------------> flatten_instruments
 ```
 
-Inputs are text files. Persisted outputs are log, instrument, book, order, and
-execution tables.
+Inputs are text files. Persisted outputs are the structured message table,
+the three FixMessage tables, and instrument, book, order and execution tables.
 
 ## Tests and benchmarks
 

@@ -68,6 +68,7 @@ def notebook_task(task_id: str, document: str) -> PapermillOperator:
     tags=["rekep", "arrow", "iceberg", "market", "notebook"],
 )
 def market_pipeline() -> None:
+    messages = notebook_task("parse_messages", "tasks/parse_messages/parse_messages.yml")
     parsed = notebook_task("parse_fix", "tasks/parse_fix/parse_fix.yml")
     instruments = notebook_task(
         "flatten_instruments", "tasks/flatten_instruments/flatten_instruments.yml"
@@ -78,7 +79,7 @@ def market_pipeline() -> None:
         "flatten_executions", "tasks/flatten_executions/flatten_executions.yml"
     )
 
-    parsed >> [instruments, market]
+    messages >> parsed >> [instruments, market]
     market >> [orders, executions]
 
 

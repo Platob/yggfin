@@ -43,6 +43,8 @@ LINE = ["source_url", "source_rownum", "thread_name", "plugin_code", "message"]
 MESSAGE = [
     "protocol_code",
     "unix_source",
+    "protocol_version",
+    "protocol_version_source",
     "msg_seq_num",
     "kwargs",
     "parties",
@@ -64,7 +66,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 107
+EXPECTED_LOG_COLUMNS = 109
 
 
 @pytest.fixture(scope="module")
@@ -92,10 +94,21 @@ def test_the_envelope_is_the_same_one_every_other_event_carries() -> None:
     assert Event.into_field().names == ENVELOPE
 
 
-def test_every_column_a_line_adds_is_required() -> None:
-    """A line always has a file, a thread, a plugin and a payload, even an empty one."""
+def test_every_column_a_line_adds_is_required_except_the_payload() -> None:
+    """A line always has a file, a thread and a plugin, even an empty one.
+
+    `message` is the exception, and deliberately: on `fixmessage.market`
+    `kwargs` carries every field the line held, so the raw string is dropped
+    rather than stored a second time. An all-null column costs nothing on
+    disk, which is what makes one stored shape across the three tables
+    affordable.
+    """
+    field = FixMessage.into_field()
     for name in LINE:
-        assert not FixMessage.into_field().field(name).nullable, name
+        if name == "message":
+            assert field.field(name).nullable, "a market row leaves the raw line null"
+            continue
+        assert not field.field(name).nullable, name
 
 
 def test_a_line_always_says_which_protocol_it_carries() -> None:

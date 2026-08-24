@@ -28,9 +28,9 @@ structured components.
 The project workflow is intentionally outside the package:
 
 ```text
-parse_fix -> parse_market -> flatten_orders
-     |             `-------> flatten_executions
-     `------------> flatten_instruments
+parse_messages -> parse_fix -> parse_market -> flatten_orders
+                      |             `-------> flatten_executions
+                      `------------> flatten_instruments
 ```
 
 Each step is a notebook under `tasks/<step>/` with an adjacent YAML config.

@@ -44,6 +44,7 @@ nav:
       - Notebook workflow:
           - Overview: tasks.md
           - End-to-end run: workflow-run.md
+          - Parse messages: tasks/parse-messages.md
           - Parse FIX: tasks/parse-fix.md
           - Flatten instruments: tasks/flatten-instruments.md
           - Parse market: tasks/parse-market.md
