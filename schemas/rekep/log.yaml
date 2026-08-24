@@ -149,6 +149,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"SeqNum"}'
+    fix:names: '{"5.0.SP2":"MsgSeqNum","5.0.SP1":"MsgSeqNum","5.0":"MsgSeqNum","4.4":"MsgSeqNum","4.3":"MsgSeqNum","4.2":"MsgSeqNum","4.1":"MsgSeqNum","4.0":"MsgSeqNum","FIXT1.1":"MsgSeqNum"}'
+    fix:tags: '{"5.0.SP2":"34","5.0.SP1":"34","5.0":"34","4.4":"34","4.3":"34","4.2":"34","4.1":"34","4.0":"34","FIXT1.1":"34"}'
     fix:name: MsgSeqNum
 - name: fix_tags
   type: list
@@ -198,6 +200,8 @@ fields:
         fix:version: 5.0.SP2
         fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
         fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
+        fix:names: '{"5.0.SP2":"PartyID","5.0.SP1":"PartyID","5.0":"PartyID","4.4":"PartyID","4.3":"PartyID"}'
+        fix:tags: '{"5.0.SP2":"448","5.0.SP1":"448","5.0":"448","4.4":"448","4.3":"448"}'
         fix:name: PartyID
     - name: party_id_source
       type: string
@@ -226,6 +230,8 @@ fields:
         fix:value_names: '{"5":"CHINESE_INVESTOR_ID","8":"US_EMPLOYER_OR_TAX_ID_NUMBER","A":"AUSTRALIAN_TAX_FILE_NUMBER","9":"AUSTRALIAN_BUSINESS_NUMBER","E":"ISO_COUNTRY_CODE","B":"BIC","7":"US_SOCIAL_SECURITY_NUMBER","D":"PROPRIETARY","F":"SETTLEMENT_ENTITY_LOCATION","1":"KOREAN_INVESTOR_ID","2":"TAIWANESE_FOREIGN_INVESTOR_ID","3":"TAIWANESE_TRADING_ACCT","4":"MALAYSIAN_CENTRAL_DEPOSITORY","6":"UK_NATIONAL_INSURANCE_OR_PENSION_NUMBER","C":"GENERAL_IDENTIFIER","G":"MIC","H":"CSD_PARTICIPANT","I":"ISITC_ACRONYM","J":"TAX_ID","K":"AUSTRALIAN_COMPANY_NUMBER","L":"AUSTRALIAN_REGISTERED_BODY_NUMBER","M":"CFTC_REPORTING_FIRM_IDENTIFIER","N":"LEGAL_ENTITY_IDENTIFIER","O":"INTERIM_IDENTIFIER","P":"SHORT_CODE_IDENTIFIER","Q":"NATIONAL_ID_NATURAL_PERSON","R":"INDIA_PERMANENT_ACCOUNT_NUMBER","S":"FDID","T":"SPSAID","U":"MASTER_SPSAID"}'
         fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
         fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char"}'
+        fix:names: '{"5.0.SP2":"PartyIDSource","5.0.SP1":"PartyIDSource","5.0":"PartyIDSource","4.4":"PartyIDSource","4.3":"PartyIDSource"}'
+        fix:tags: '{"5.0.SP2":"447","5.0.SP1":"447","5.0":"447","4.4":"447","4.3":"447"}'
         fix:name: PartyIDSource
     - name: party_role
       type: int64
@@ -273,6 +279,8 @@ fields:
         fix:value_names: '{"15":"CORRESPONDANT_CLEARING_FIRM","3":"CLIENT_ID","20":"UNDERLYING_CONTRA_FIRM","19":"SPONSORING_FIRM","18":"CONTRA_CLEARING_FIRM","17":"CONTRA_FIRM","16":"EXECUTING_SYSTEM","7":"ENTERING_FIRM","1":"EXECUTING_FIRM","2":"BROKER_OF_CREDIT","5":"INVESTOR_ID","6":"INTRODUCING_FIRM","14":"GIVEUP_CLEARING_FIRM_DEPR","8":"LOCATE","9":"FUND_MANAGER_CLIENT_ID","10":"SETTLEMENT_LOCATION","11":"ORDER_ORIGINATION_TRADER","12":"EXECUTING_TRADER","13":"ORDER_ORIGINATION_FIRM","4":"CLEARING_FIRM","21":"CLEARING_ORGANIZATION","22":"EXCHANGE","24":"CUSTOMER_ACCOUNT","25":"CORRESPONDENT_CLEARING_ORGANIZATION","26":"CORRESPONDENT_BROKER","27":"BUYER","28":"CUSTODIAN","29":"INTERMEDIARY","30":"AGENT","31":"SUB_CUSTODIAN","32":"BENEFICIARY","33":"INTERESTED_PARTY","34":"REGULATORY_BODY","35":"LIQUIDITY_PROVIDER","36":"ENTERING_TRADER","37":"CONTRA_TRADER","38":"POSITION_ACCOUNT","39":"CONTRA_INVESTOR_ID","40":"TRANSFER_TO_FIRM","41":"CONTRA_POSITION_ACCOUNT","42":"CONTRA_EXCHANGE","43":"INTERNAL_CARRY_ACCOUNT","44":"ORDER_ENTRY_OPERATOR_ID","45":"SECONDARY_ACCOUNT_NUMBER","46":"FOREIGN_FIRM","47":"THIRD_PARTY_ALLOCATION_FIRM","48":"CLAIMING_ACCOUNT","49":"ASSET_MANAGER","50":"PLEDGOR_ACCOUNT","51":"PLEDGEE_ACCOUNT","52":"LARGE_TRADER_REPORTABLE_ACCOUNT","53":"TRADER_MNEMONIC","54":"SENDER_LOCATION","55":"SESSION_ID","56":"ACCEPTABLE_COUNTERPARTY","57":"UNACCEPTABLE_COUNTERPARTY","58":"ENTERING_UNIT","59":"EXECUTING_UNIT","60":"INTRODUCING_BROKER","61":"QUOTE_ORIGINATOR","62":"REPORT_ORIGINATOR","63":"SYSTEMATIC_INTERNALISER","64":"MULTILATERAL_TRADING_FACILITY","65":"REGULATED_MARKET","66":"MARKET_MAKER","67":"INVESTMENT_FIRM","68":"HOST_COMPETENT_AUTHORITY","69":"HOME_COMPETENT_AUTHORITY","70":"COMPETENT_AUTHORITY_LIQUIDITY","71":"COMPETENT_AUTHORITY_TRANSACTION_VENUE","72":"REPORTING_INTERMEDIARY","73":"EXECUTION_VENUE","74":"MARKET_DATA_ENTRY_ORIGINATOR","75":"LOCATION_ID","76":"DESK_ID","77":"MARKET_DATA_MARKET","78":"ALLOCATION_ENTITY","79":"PRIME_BROKER","80":"STEP_OUT_FIRM","81":"BROKER_CLEARING_ID","82":"CENTRAL_REGISTRATION_DEPOSITORY","83":"CLEARING_ACCOUNT","84":"ACCEPTABLE_SETTLING_COUNTERPARTY","85":"UNACCEPTABLE_SETTLING_COUNTERPARTY","86":"CLS_MEMBER_BANK","87":"IN_CONCERT_GROUP","88":"IN_CONCERT_CONTROLLING_ENTITY","89":"LARGE_POSITIONS_REPORTING_ACCOUNT","90":"SETTLEMENT_FIRM","91":"SETTLEMENT_ACCOUNT","92":"REPORTING_MARKET_CENTER","93":"RELATED_REPORTING_MARKET_CENTER","94":"AWAY_MARKET","95":"GIVEUP_TRADING_FIRM","96":"TAKEUP_TRADING_FIRM","97":"GIVEUP_CLEARING_FIRM","98":"TAKEUP_CLEARING_FIRM","99":"ORIGINATING_MARKET","100":"MARGIN_ACCOUNT","101":"COLLATERAL_ASSET_ACCOUNT","102":"DATA_REPOSITORY","103":"CALCULATION_AGENT","104":"EXERCISE_NOTICE_SENDER","105":"EXERCISE_NOTICE_RECEIVER","106":"RATE_REFERENCE_BANK","107":"CORRESPONDENT","109":"BENEFICIARY_BANK","110":"BORROWER","111":"PRIMARY_OBLIGATOR","112":"GUARANTOR","113":"EXCLUDED_REFERENCE_ENTITY","114":"DETERMINING_PARTY","115":"HEDGING_PARTY","116":"REPORTING_ENTITY","117":"SALES_PERSON","118":"OPERATOR","119":"CSD","120":"ICSD","121":"TRADING_SUB_ACCOUNT","122":"INVESTMENT_DECISION_MAKER","123":"PUBLISHING_INTERMEDIARY","124":"CSD_PARTICIPANT","125":"ISSUER","126":"CONTRA_CUSTOMER_ACCOUNT","127":"CONTRA_INVESTMENT_DECISION_MAKER"}'
         fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
         fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int"}'
+        fix:names: '{"5.0.SP2":"PartyRole","5.0.SP1":"PartyRole","5.0":"PartyRole","4.4":"PartyRole","4.3":"PartyRole"}'
+        fix:tags: '{"5.0.SP2":"452","5.0.SP1":"452","5.0":"452","4.4":"452","4.3":"452"}'
         fix:name: PartyRole
     - name: buffer
       type: map
@@ -301,6 +309,8 @@ fields:
     fix:value_names: '{"FIX.4.2":"FIX42","FIX.4.4":"FIX44","FIXT.1.1":"FIXT11"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"BeginString","5.0.SP1":"BeginString","5.0":"BeginString","4.4":"BeginString","4.3":"BeginString","4.2":"BeginString","4.1":"BeginString","4.0":"BeginString","FIXT1.1":"BeginString"}'
+    fix:tags: '{"5.0.SP2":"8","5.0.SP1":"8","5.0":"8","4.4":"8","4.3":"8","4.2":"8","4.1":"8","4.0":"8","FIXT1.1":"8"}'
     fix:name: BeginString
 - name: body_length
   type: int64
@@ -313,6 +323,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"Length"}'
+    fix:names: '{"5.0.SP2":"BodyLength","5.0.SP1":"BodyLength","5.0":"BodyLength","4.4":"BodyLength","4.3":"BodyLength","4.2":"BodyLength","4.1":"BodyLength","4.0":"BodyLength","FIXT1.1":"BodyLength"}'
+    fix:tags: '{"5.0.SP2":"9","5.0.SP1":"9","5.0":"9","4.4":"9","4.3":"9","4.2":"9","4.1":"9","4.0":"9","FIXT1.1":"9"}'
     fix:name: BodyLength
 - name: msg_type
   type: string
@@ -369,6 +381,8 @@ fields:
     fix:value_names: '{"0":"HEARTBEAT","1":"TEST_REQUEST","2":"RESEND_REQUEST","3":"REJECT","4":"SEQUENCE_RESET","5":"LOGOUT","6":"IOI","7":"ADVERTISEMENT","8":"EXECUTION_REPORT","9":"ORDER_CANCEL_REJECT","A":"LOGON","B":"NEWS","C":"EMAIL","D":"NEW_ORDER_SINGLE","E":"NEW_ORDER_LIST","F":"ORDER_CANCEL_REQUEST","G":"ORDER_CANCEL_REPLACE_REQUEST","H":"ORDER_STATUS_REQUEST","J":"ALLOCATION_INSTRUCTION","K":"LIST_CANCEL_REQUEST","L":"LIST_EXECUTE","M":"LIST_STATUS_REQUEST","N":"LIST_STATUS","P":"ALLOCATION_INSTRUCTION_ACK","Q":"DONT_KNOW_TRADE","R":"QUOTE_REQUEST","S":"QUOTE","T":"SETTLEMENT_INSTRUCTIONS","V":"MARKET_DATA_REQUEST","W":"MARKET_DATA_SNAPSHOT_FULL_REFRESH","X":"MARKET_DATA_INCREMENTAL_REFRESH","Y":"MARKET_DATA_REQUEST_REJECT","Z":"QUOTE_CANCEL","a":"QUOTE_STATUS_REQUEST","b":"MASS_QUOTE_ACK","c":"SECURITY_DEFINITION_REQUEST","d":"SECURITY_DEFINITION","e":"SECURITY_STATUS_REQUEST","f":"SECURITY_STATUS","g":"TRADING_SESSION_STATUS_REQUEST","h":"TRADING_SESSION_STATUS","i":"MASS_QUOTE","j":"BUSINESS_MESSAGE_REJECT","k":"BID_REQUEST","l":"BID_RESPONSE","m":"LIST_STRIKE_PRICE","AA":"DERIVATIVE_SECURITY_LIST","AB":"NEW_ORDER_MULTILEG","AC":"MULTILEG_ORDER_CANCEL_REPLACE","AD":"TRADE_CAPTURE_REPORT_REQUEST","AE":"TRADE_CAPTURE_REPORT","AF":"ORDER_MASS_STATUS_REQUEST","AG":"QUOTE_REQUEST_REJECT","AH":"RFQ_REQUEST","AI":"QUOTE_STATUS_REPORT","n":"XM_LNON_FIX","o":"REGISTRATION_INSTRUCTIONS","p":"REGISTRATION_INSTRUCTIONS_RESPONSE","q":"ORDER_MASS_CANCEL_REQUEST","r":"ORDER_MASS_CANCEL_REPORT","s":"NEW_ORDER_CROSS","t":"CROSS_ORDER_CANCEL_REPLACE_REQUEST","u":"CROSS_ORDER_CANCEL_REQUEST","v":"SECURITY_TYPE_REQUEST","w":"SECURITY_TYPES","x":"SECURITY_LIST_REQUEST","y":"SECURITY_LIST","z":"DERIVATIVE_SECURITY_LIST_REQUEST","AJ":"QUOTE_RESPONSE","AK":"CONFIRMATION","AL":"POSITION_MAINTENANCE_REQUEST","AM":"POSITION_MAINTENANCE_REPORT","AN":"REQUEST_FOR_POSITIONS","AO":"REQUEST_FOR_POSITIONS_ACK","AP":"POSITION_REPORT","AQ":"TRADE_CAPTURE_REPORT_REQUEST_ACK","AR":"TRADE_CAPTURE_REPORT_ACK","AS":"ALLOCATION_REPORT","AT":"ALLOCATION_REPORT_ACK","AU":"CONFIRMATION_ACK","AV":"SETTLEMENT_INSTRUCTION_REQUEST","AW":"ASSIGNMENT_REPORT","AX":"COLLATERAL_REQUEST","AY":"COLLATERAL_ASSIGNMENT","AZ":"COLLATERAL_RESPONSE","BA":"COLLATERAL_REPORT","BB":"COLLATERAL_INQUIRY","BC":"NETWORK_COUNTERPARTY_SYSTEM_STATUS_REQUEST","BD":"NETWORK_COUNTERPARTY_SYSTEM_STATUS_RESPONSE","BE":"USER_REQUEST","BF":"USER_RESPONSE","BG":"COLLATERAL_INQUIRY_ACK","BH":"CONFIRMATION_REQUEST","BI":"TRADING_SESSION_LIST_REQUEST","BJ":"TRADING_SESSION_LIST","BK":"SECURITY_LIST_UPDATE_REPORT","BL":"ADJUSTED_POSITION_REPORT","BM":"ALLOCATION_INSTRUCTION_ALERT","BN":"EXECUTION_ACK","BO":"CONTRARY_INTENTION_REPORT","BP":"SECURITY_DEFINITION_UPDATE_REPORT","BQ":"SETTLEMENT_OBLIGATION_REPORT","BR":"DERIVATIVE_SECURITY_LIST_UPDATE_REPORT","BS":"TRADING_SESSION_LIST_UPDATE_REPORT","BT":"MARKET_DEFINITION_REQUEST","BU":"MARKET_DEFINITION","BV":"MARKET_DEFINITION_UPDATE_REPORT","BW":"APPLICATION_MESSAGE_REQUEST","BX":"APPLICATION_MESSAGE_REQUEST_ACK","BY":"APPLICATION_MESSAGE_REPORT","BZ":"ORDER_MASS_ACTION_REPORT","CA":"ORDER_MASS_ACTION_REQUEST","CB":"USER_NOTIFICATION","CC":"STREAM_ASSIGNMENT_REQUEST","CD":"STREAM_ASSIGNMENT_REPORT","CE":"STREAM_ASSIGNMENT_REPORT_ACK","CF":"PARTY_DETAILS_LIST_REQUEST","CG":"PARTY_DETAILS_LIST_REPORT","CH":"MARGIN_REQUIREMENT_INQUIRY","CI":"MARGIN_REQUIREMENT_INQUIRY_ACK","CJ":"MARGIN_REQUIREMENT_REPORT","CK":"PARTY_DETAILS_LIST_UPDATE_REPORT","CL":"PARTY_RISK_LIMITS_REQUEST","CM":"PARTY_RISK_LIMITS_REPORT","CN":"SECURITY_MASS_STATUS_REQUEST","CO":"SECURITY_MASS_STATUS","CQ":"ACCOUNT_SUMMARY_REPORT","CR":"PARTY_RISK_LIMITS_UPDATE_REPORT","CS":"PARTY_RISK_LIMITS_DEFINITION_REQUEST","CT":"PARTY_RISK_LIMITS_DEFINITION_REQUEST_ACK","CU":"PARTY_ENTITLEMENTS_REQUEST","CV":"PARTY_ENTITLEMENTS_REPORT","CW":"QUOTE_ACK","CX":"PARTY_DETAILS_DEFINITION_REQUEST","CY":"PARTY_DETAILS_DEFINITION_REQUEST_ACK","CZ":"PARTY_ENTITLEMENTS_UPDATE_REPORT","DA":"PARTY_ENTITLEMENTS_DEFINITION_REQUEST","DB":"PARTY_ENTITLEMENTS_DEFINITION_REQUEST_ACK","DC":"TRADE_MATCH_REPORT","DD":"TRADE_MATCH_REPORT_ACK","DE":"PARTY_RISK_LIMITS_REPORT_ACK","DF":"PARTY_RISK_LIMIT_CHECK_REQUEST","DG":"PARTY_RISK_LIMIT_CHECK_REQUEST_ACK","DH":"PARTY_ACTION_REQUEST","DI":"PARTY_ACTION_REPORT","DJ":"MASS_ORDER","DK":"MASS_ORDER_ACK","DL":"POSITION_TRANSFER_INSTRUCTION","DM":"POSITION_TRANSFER_INSTRUCTION_ACK","DN":"POSITION_TRANSFER_REPORT","DO":"MARKET_DATA_STATISTICS_REQUEST","DP":"MARKET_DATA_STATISTICS_REPORT","DQ":"COLLATERAL_REPORT_ACK","DR":"MARKET_DATA_REPORT","DS":"CROSS_REQUEST","DT":"CROSS_REQUEST_ACK","DU":"ALLOCATION_INSTRUCTION_ALERT_REQUEST","DV":"ALLOCATION_INSTRUCTION_ALERT_REQUEST_ACK","DW":"TRADE_AGGREGATION_REQUEST","DX":"TRADE_AGGREGATION_REPORT","EA":"PAY_MANAGEMENT_REPORT","EB":"PAY_MANAGEMENT_REPORT_ACK","DY":"PAY_MANAGEMENT_REQUEST","DZ":"PAY_MANAGEMENT_REQUEST_ACK"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"MsgType","5.0.SP1":"MsgType","5.0":"MsgType","4.4":"MsgType","4.3":"MsgType","4.2":"MsgType","4.1":"MsgType","4.0":"MsgType","FIXT1.1":"MsgType"}'
+    fix:tags: '{"5.0.SP2":"35","5.0.SP1":"35","5.0":"35","4.4":"35","4.3":"35","4.2":"35","4.1":"35","4.0":"35","FIXT1.1":"35"}'
     fix:name: MsgType
 - name: check_sum
   type: string
@@ -383,6 +397,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"CheckSum","5.0.SP1":"CheckSum","5.0":"CheckSum","4.4":"CheckSum","4.3":"CheckSum","4.2":"CheckSum","4.1":"CheckSum","4.0":"CheckSum","FIXT1.1":"CheckSum"}'
+    fix:tags: '{"5.0.SP2":"10","5.0.SP1":"10","5.0":"10","4.4":"10","4.3":"10","4.2":"10","4.1":"10","4.0":"10","FIXT1.1":"10"}'
     fix:name: CheckSum
 - name: sender_comp_id
   type: string
@@ -394,6 +410,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"SenderCompID","5.0.SP1":"SenderCompID","5.0":"SenderCompID","4.4":"SenderCompID","4.3":"SenderCompID","4.2":"SenderCompID","4.1":"SenderCompID","4.0":"SenderCompID","FIXT1.1":"SenderCompID"}'
+    fix:tags: '{"5.0.SP2":"49","5.0.SP1":"49","5.0":"49","4.4":"49","4.3":"49","4.2":"49","4.1":"49","4.0":"49","FIXT1.1":"49"}'
     fix:name: SenderCompID
 - name: sender_sub_id
   type: string
@@ -406,6 +424,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"SenderSubID","5.0.SP1":"SenderSubID","5.0":"SenderSubID","4.4":"SenderSubID","4.3":"SenderSubID","4.2":"SenderSubID","4.1":"SenderSubID","4.0":"SenderSubID","FIXT1.1":"SenderSubID"}'
+    fix:tags: '{"5.0.SP2":"50","5.0.SP1":"50","5.0":"50","4.4":"50","4.3":"50","4.2":"50","4.1":"50","4.0":"50","FIXT1.1":"50"}'
     fix:name: SenderSubID
 - name: sender_location_id
   type: string
@@ -418,6 +438,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"SenderLocationID","5.0.SP1":"SenderLocationID","5.0":"SenderLocationID","4.4":"SenderLocationID","4.3":"SenderLocationID","4.2":"SenderLocationID","4.1":"SenderLocationID","FIXT1.1":"SenderLocationID"}'
+    fix:tags: '{"5.0.SP2":"142","5.0.SP1":"142","5.0":"142","4.4":"142","4.3":"142","4.2":"142","4.1":"142","FIXT1.1":"142"}'
     fix:name: SenderLocationID
 - name: target_comp_id
   type: string
@@ -429,6 +451,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"TargetCompID","5.0.SP1":"TargetCompID","5.0":"TargetCompID","4.4":"TargetCompID","4.3":"TargetCompID","4.2":"TargetCompID","4.1":"TargetCompID","4.0":"TargetCompID","FIXT1.1":"TargetCompID"}'
+    fix:tags: '{"5.0.SP2":"56","5.0.SP1":"56","5.0":"56","4.4":"56","4.3":"56","4.2":"56","4.1":"56","4.0":"56","FIXT1.1":"56"}'
     fix:name: TargetCompID
 - name: target_sub_id
   type: string
@@ -442,6 +466,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"TargetSubID","5.0.SP1":"TargetSubID","5.0":"TargetSubID","4.4":"TargetSubID","4.3":"TargetSubID","4.2":"TargetSubID","4.1":"TargetSubID","4.0":"TargetSubID","FIXT1.1":"TargetSubID"}'
+    fix:tags: '{"5.0.SP2":"57","5.0.SP1":"57","5.0":"57","4.4":"57","4.3":"57","4.2":"57","4.1":"57","4.0":"57","FIXT1.1":"57"}'
     fix:name: TargetSubID
 - name: target_location_id
   type: string
@@ -454,6 +480,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"TargetLocationID","5.0.SP1":"TargetLocationID","5.0":"TargetLocationID","4.4":"TargetLocationID","4.3":"TargetLocationID","4.2":"TargetLocationID","4.1":"TargetLocationID","FIXT1.1":"TargetLocationID"}'
+    fix:tags: '{"5.0.SP2":"143","5.0.SP1":"143","5.0":"143","4.4":"143","4.3":"143","4.2":"143","4.1":"143","FIXT1.1":"143"}'
     fix:name: TargetLocationID
 - name: on_behalf_of_comp_id
   type: string
@@ -467,6 +495,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"OnBehalfOfCompID","5.0.SP1":"OnBehalfOfCompID","5.0":"OnBehalfOfCompID","4.4":"OnBehalfOfCompID","4.3":"OnBehalfOfCompID","4.2":"OnBehalfOfCompID","4.1":"OnBehalfOfCompID","4.0":"OnBehalfOfCompID","FIXT1.1":"OnBehalfOfCompID"}'
+    fix:tags: '{"5.0.SP2":"115","5.0.SP1":"115","5.0":"115","4.4":"115","4.3":"115","4.2":"115","4.1":"115","4.0":"115","FIXT1.1":"115"}'
     fix:name: OnBehalfOfCompID
 - name: on_behalf_of_sub_id
   type: string
@@ -479,6 +509,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"OnBehalfOfSubID","5.0.SP1":"OnBehalfOfSubID","5.0":"OnBehalfOfSubID","4.4":"OnBehalfOfSubID","4.3":"OnBehalfOfSubID","4.2":"OnBehalfOfSubID","4.1":"OnBehalfOfSubID","4.0":"OnBehalfOfSubID","FIXT1.1":"OnBehalfOfSubID"}'
+    fix:tags: '{"5.0.SP2":"116","5.0.SP1":"116","5.0":"116","4.4":"116","4.3":"116","4.2":"116","4.1":"116","4.0":"116","FIXT1.1":"116"}'
     fix:name: OnBehalfOfSubID
 - name: on_behalf_of_location_id
   type: string
@@ -492,6 +524,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"OnBehalfOfLocationID","5.0.SP1":"OnBehalfOfLocationID","5.0":"OnBehalfOfLocationID","4.4":"OnBehalfOfLocationID","4.3":"OnBehalfOfLocationID","4.2":"OnBehalfOfLocationID","4.1":"OnBehalfOfLocationID","FIXT1.1":"OnBehalfOfLocationID"}'
+    fix:tags: '{"5.0.SP2":"144","5.0.SP1":"144","5.0":"144","4.4":"144","4.3":"144","4.2":"144","4.1":"144","FIXT1.1":"144"}'
     fix:name: OnBehalfOfLocationID
 - name: deliver_to_comp_id
   type: string
@@ -506,6 +540,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"DeliverToCompID","5.0.SP1":"DeliverToCompID","5.0":"DeliverToCompID","4.4":"DeliverToCompID","4.3":"DeliverToCompID","4.2":"DeliverToCompID","4.1":"DeliverToCompID","4.0":"DeliverToCompID","FIXT1.1":"DeliverToCompID"}'
+    fix:tags: '{"5.0.SP2":"128","5.0.SP1":"128","5.0":"128","4.4":"128","4.3":"128","4.2":"128","4.1":"128","4.0":"128","FIXT1.1":"128"}'
     fix:name: DeliverToCompID
 - name: deliver_to_sub_id
   type: string
@@ -518,6 +554,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"DeliverToSubID","5.0.SP1":"DeliverToSubID","5.0":"DeliverToSubID","4.4":"DeliverToSubID","4.3":"DeliverToSubID","4.2":"DeliverToSubID","4.1":"DeliverToSubID","4.0":"DeliverToSubID","FIXT1.1":"DeliverToSubID"}'
+    fix:tags: '{"5.0.SP2":"129","5.0.SP1":"129","5.0":"129","4.4":"129","4.3":"129","4.2":"129","4.1":"129","4.0":"129","FIXT1.1":"129"}'
     fix:name: DeliverToSubID
 - name: deliver_to_location_id
   type: string
@@ -531,6 +569,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"DeliverToLocationID","5.0.SP1":"DeliverToLocationID","5.0":"DeliverToLocationID","4.4":"DeliverToLocationID","4.3":"DeliverToLocationID","4.2":"DeliverToLocationID","4.1":"DeliverToLocationID","FIXT1.1":"DeliverToLocationID"}'
+    fix:tags: '{"5.0.SP2":"145","5.0.SP1":"145","5.0":"145","4.4":"145","4.3":"145","4.2":"145","4.1":"145","FIXT1.1":"145"}'
     fix:name: DeliverToLocationID
 - name: last_msg_seq_num_processed
   type: int64
@@ -544,6 +584,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","FIXT1.1":"SeqNum"}'
+    fix:names: '{"5.0.SP2":"LastMsgSeqNumProcessed","5.0.SP1":"LastMsgSeqNumProcessed","5.0":"LastMsgSeqNumProcessed","4.4":"LastMsgSeqNumProcessed","4.3":"LastMsgSeqNumProcessed","4.2":"LastMsgSeqNumProcessed","FIXT1.1":"LastMsgSeqNumProcessed"}'
+    fix:tags: '{"5.0.SP2":"369","5.0.SP1":"369","5.0":"369","4.4":"369","4.3":"369","4.2":"369","FIXT1.1":"369"}'
     fix:name: LastMsgSeqNumProcessed
 - name: poss_dup_flag
   type: bool
@@ -557,6 +599,8 @@ fields:
     fix:value_names: '{"N":"NO","Y":"YES"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"Boolean","5.0.SP1":"Boolean","5.0":"Boolean","4.4":"Boolean","4.3":"Boolean","4.2":"Boolean","4.1":"char","4.0":"char","FIXT1.1":"Boolean"}'
+    fix:names: '{"5.0.SP2":"PossDupFlag","5.0.SP1":"PossDupFlag","5.0":"PossDupFlag","4.4":"PossDupFlag","4.3":"PossDupFlag","4.2":"PossDupFlag","4.1":"PossDupFlag","4.0":"PossDupFlag","FIXT1.1":"PossDupFlag"}'
+    fix:tags: '{"5.0.SP2":"43","5.0.SP1":"43","5.0":"43","4.4":"43","4.3":"43","4.2":"43","4.1":"43","4.0":"43","FIXT1.1":"43"}'
     fix:name: PossDupFlag
 - name: poss_resend
   type: bool
@@ -571,6 +615,8 @@ fields:
     fix:value_names: '{"N":"NO","Y":"YES"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"Boolean","5.0.SP1":"Boolean","5.0":"Boolean","4.4":"Boolean","4.3":"Boolean","4.2":"Boolean","4.1":"char","4.0":"char","FIXT1.1":"Boolean"}'
+    fix:names: '{"5.0.SP2":"PossResend","5.0.SP1":"PossResend","5.0":"PossResend","4.4":"PossResend","4.3":"PossResend","4.2":"PossResend","4.1":"PossResend","4.0":"PossResend","FIXT1.1":"PossResend"}'
+    fix:tags: '{"5.0.SP2":"97","5.0.SP1":"97","5.0":"97","4.4":"97","4.3":"97","4.2":"97","4.1":"97","4.0":"97","FIXT1.1":"97"}'
     fix:name: PossResend
 - name: sending_time
   type: timestamp[us, tz=UTC]
@@ -583,6 +629,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time","FIXT1.1":"UTCTimestamp"}'
+    fix:names: '{"5.0.SP2":"SendingTime","5.0.SP1":"SendingTime","5.0":"SendingTime","4.4":"SendingTime","4.3":"SendingTime","4.2":"SendingTime","4.1":"SendingTime","4.0":"SendingTime","FIXT1.1":"SendingTime"}'
+    fix:tags: '{"5.0.SP2":"52","5.0.SP1":"52","5.0":"52","4.4":"52","4.3":"52","4.2":"52","4.1":"52","4.0":"52","FIXT1.1":"52"}'
     fix:name: SendingTime
 - name: orig_sending_time
   type: timestamp[us, tz=UTC]
@@ -596,6 +644,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time","FIXT1.1":"UTCTimestamp"}'
+    fix:names: '{"5.0.SP2":"OrigSendingTime","5.0.SP1":"OrigSendingTime","5.0":"OrigSendingTime","4.4":"OrigSendingTime","4.3":"OrigSendingTime","4.2":"OrigSendingTime","4.1":"OrigSendingTime","4.0":"OrigSendingTime","FIXT1.1":"OrigSendingTime"}'
+    fix:tags: '{"5.0.SP2":"122","5.0.SP1":"122","5.0":"122","4.4":"122","4.3":"122","4.2":"122","4.1":"122","4.0":"122","FIXT1.1":"122"}'
     fix:name: OrigSendingTime
 - name: on_behalf_of_sending_time
   type: timestamp[us, tz=UTC]
@@ -615,6 +665,7 @@ fields:
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp"}'
     fix:names: '{"5.0.SP2":"OnBehalfOfSendingTime","5.0.SP1":"OnBehalfOfSendingTime","5.0":"OnBehalfOfSendingTime","4.4":"OnBehalfOfSendingTime","4.3":"OnBehalfOfSendingTime(Deprecated)","4.2":"OnBehalfOfSendingTime"}'
+    fix:tags: '{"5.0.SP2":"370","5.0.SP1":"370","5.0":"370","4.4":"370","4.3":"370","4.2":"370"}'
     fix:name: OnBehalfOfSendingTime
 - name: appl_ver_id
   type: string
@@ -629,6 +680,8 @@ fields:
     fix:value_names: '{"0":"FIX27","1":"FIX30","2":"FIX40","3":"FIX41","4":"FIX42","5":"FIX43","6":"FIX44","7":"FIX50","8":"FIX50_SP1","9":"FIX50_SP2","10":"FIX_LATEST"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"ApplVerID","5.0.SP1":"ApplVerID","5.0":"ApplVerID","FIXT1.1":"ApplVerID"}'
+    fix:tags: '{"5.0.SP2":"1128","5.0.SP1":"1128","5.0":"1128","FIXT1.1":"1128"}'
     fix:name: ApplVerID
 - name: cstm_appl_ver_id
   type: string
@@ -641,6 +694,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"CstmApplVerID","5.0.SP1":"CstmApplVerID","5.0":"CstmApplVerID","FIXT1.1":"CstmApplVerID"}'
+    fix:tags: '{"5.0.SP2":"1129","5.0.SP1":"1129","5.0":"1129","FIXT1.1":"1129"}'
     fix:name: CstmApplVerID
 - name: appl_ext_id
   type: int64
@@ -652,6 +707,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","FIXT1.1":"int"}'
+    fix:names: '{"5.0.SP2":"ApplExtID","5.0.SP1":"ApplExtID","FIXT1.1":"ApplExtID"}'
+    fix:tags: '{"5.0.SP2":"1156","5.0.SP1":"1156","FIXT1.1":"1156"}'
     fix:name: ApplExtID
 - name: message_encoding
   type: string
@@ -664,6 +721,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"MessageEncoding","5.0.SP1":"MessageEncoding","5.0":"MessageEncoding","4.4":"MessageEncoding","4.3":"MessageEncoding","4.2":"MessageEncoding","FIXT1.1":"MessageEncoding"}'
+    fix:tags: '{"5.0.SP2":"347","5.0.SP1":"347","5.0":"347","4.4":"347","4.3":"347","4.2":"347","FIXT1.1":"347"}'
     fix:value_names: '{"EUC-JP":"EUCJP","ISO-2022-JP":"ISO2022_JP","Shift_JIS":"SHIFT_JIS","UTF-8":"UTF8"}'
     fix:name: MessageEncoding
 - name: xml_data_len
@@ -676,6 +735,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"Length","FIXT1.1":"Length"}'
+    fix:names: '{"5.0.SP2":"XmlDataLen","5.0.SP1":"XmlDataLen","5.0":"XmlDataLen","4.4":"XmlDataLen","4.3":"XmlDataLen","4.2":"XmlDataLen","FIXT1.1":"XmlDataLen"}'
+    fix:tags: '{"5.0.SP2":"212","5.0.SP1":"212","5.0":"212","4.4":"212","4.3":"212","4.2":"212","FIXT1.1":"212"}'
     fix:name: XmlDataLen
 - name: xml_data
   type: binary
@@ -688,6 +749,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"data","5.0.SP1":"data","5.0":"data","4.4":"data","4.3":"data","4.2":"data","FIXT1.1":"data"}'
+    fix:names: '{"5.0.SP2":"XmlData","5.0.SP1":"XmlData","5.0":"XmlData","4.4":"XmlData","4.3":"XmlData","4.2":"XmlData","FIXT1.1":"XmlData"}'
+    fix:tags: '{"5.0.SP2":"213","5.0.SP1":"213","5.0":"213","4.4":"213","4.3":"213","4.2":"213","FIXT1.1":"213"}'
     fix:name: XmlData
 - name: secure_data_len
   type: int64
@@ -699,6 +762,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"Length","4.1":"Length","4.0":"Length","FIXT1.1":"Length"}'
+    fix:names: '{"5.0.SP2":"SecureDataLen","5.0.SP1":"SecureDataLen","5.0":"SecureDataLen","4.4":"SecureDataLen","4.3":"SecureDataLen","4.2":"SecureDataLen","4.1":"SecureDataLen","4.0":"SecureDataLen","FIXT1.1":"SecureDataLen"}'
+    fix:tags: '{"5.0.SP2":"90","5.0.SP1":"90","5.0":"90","4.4":"90","4.3":"90","4.2":"90","4.1":"90","4.0":"90","FIXT1.1":"90"}'
     fix:name: SecureDataLen
 - name: secure_data
   type: binary
@@ -710,6 +775,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"data","5.0.SP1":"data","5.0":"data","4.4":"data","4.3":"data","4.2":"data","4.1":"data","4.0":"data","FIXT1.1":"data"}'
+    fix:names: '{"5.0.SP2":"SecureData","5.0.SP1":"SecureData","5.0":"SecureData","4.4":"SecureData","4.3":"SecureData","4.2":"SecureData","4.1":"SecureData","4.0":"SecureData","FIXT1.1":"SecureData"}'
+    fix:tags: '{"5.0.SP2":"91","5.0.SP1":"91","5.0":"91","4.4":"91","4.3":"91","4.2":"91","4.1":"91","4.0":"91","FIXT1.1":"91"}'
     fix:name: SecureData
 - name: signature_length
   type: int64
@@ -721,6 +788,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"Length","4.1":"Length","4.0":"Length","FIXT1.1":"Length"}'
+    fix:names: '{"5.0.SP2":"SignatureLength","5.0.SP1":"SignatureLength","5.0":"SignatureLength","4.4":"SignatureLength","4.3":"SignatureLength","4.2":"SignatureLength","4.1":"SignatureLength","4.0":"SignatureLength","FIXT1.1":"SignatureLength"}'
+    fix:tags: '{"5.0.SP2":"93","5.0.SP1":"93","5.0":"93","4.4":"93","4.3":"93","4.2":"93","4.1":"93","4.0":"93","FIXT1.1":"93"}'
     fix:name: SignatureLength
 - name: signature
   type: binary
@@ -732,6 +801,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"data","5.0.SP1":"data","5.0":"data","4.4":"data","4.3":"data","4.2":"data","4.1":"data","4.0":"data","FIXT1.1":"data"}'
+    fix:names: '{"5.0.SP2":"Signature","5.0.SP1":"Signature","5.0":"Signature","4.4":"Signature","4.3":"Signature","4.2":"Signature","4.1":"Signature","4.0":"Signature","FIXT1.1":"Signature"}'
+    fix:tags: '{"5.0.SP2":"89","5.0.SP1":"89","5.0":"89","4.4":"89","4.3":"89","4.2":"89","4.1":"89","4.0":"89","FIXT1.1":"89"}'
     fix:name: Signature
 - name: symbol
   type: string
@@ -746,6 +817,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"Symbol","5.0.SP1":"Symbol","5.0":"Symbol","4.4":"Symbol","4.3":"Symbol","4.2":"Symbol","4.1":"Symbol","4.0":"Symbol"}'
+    fix:tags: '{"5.0.SP2":"55","5.0.SP1":"55","5.0":"55","4.4":"55","4.3":"55","4.2":"55","4.1":"55","4.0":"55"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","Security Definition Request","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -765,6 +838,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"SecurityID","5.0.SP1":"SecurityID","5.0":"SecurityID","4.4":"SecurityID","4.3":"SecurityID","4.2":"SecurityID","4.1":"SecurityID","4.0":"SecurityID"}'
+    fix:tags: '{"5.0.SP2":"48","5.0.SP1":"48","5.0":"48","4.4":"48","4.3":"48","4.2":"48","4.1":"48","4.0":"48"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -794,6 +869,7 @@ fields:
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:names: '{"5.0.SP2":"SecurityIDSource","5.0.SP1":"SecurityIDSource","5.0":"SecurityIDSource","4.4":"SecurityIDSource","4.3":"IDSource
       prior to FIX 4.3)","4.2":"IDSource","4.1":"IDSource","4.0":"IDSource"}'
+    fix:tags: '{"5.0.SP2":"22","5.0.SP1":"22","5.0":"22","4.4":"22","4.3":"22","4.2":"22","4.1":"22","4.0":"22"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -871,6 +947,8 @@ fields:
     fix:value_names: '{"BA":"BANKERS_ACCEPTANCE","CD":"CERTIFICATE_OF_DEPOSIT","CMO":"COLLATERALIZED_MORTGAGE_OBLIGATION","CORP":"CORPORATE_BOND","CP":"COMMERCIAL_PAPER","CPP":"CORPORATE_PRIVATE_PLACEMENT","CS":"COMMON_STOCK","FHA":"FEDERAL_HOUSING_AUTHORITY","FHL":"FEDERAL_HOME_LOAN","FN":"FEDERAL_NATIONAL_MORTGAGE_ASSOCIATION","FOR":"FOREIGN_EXCHANGE_CONTRACT","FUT":"FUTURE","GN":"GOVERNMENT_NATIONAL_MORTGAGE_ASSOCIATION","GOVT":"TREASURIES_AGENCY_DEBENTURE","MF":"MUTUAL_FUND","MIO":"MORTGAGE_INTEREST_ONLY","MPO":"MORTGAGE_PRINCIPAL_ONLY","MPP":"MORTGAGE_PRIVATE_PLACEMENT","MPT":"MISCELLANEOUS_PASS_THROUGH","MUNI":"MUNICIPAL_BOND","NONE":"NO_SECURITY_TYPE","OPT":"OPTION","PS":"PREFERRED_STOCK","RP":"REPURCHASE_AGREEMENT","RVRP":"REVERSE_REPURCHASE_AGREEMENT","SL":"STUDENT_LOAN_MARKETING_ASSOCIATION","TD":"TIME_DEPOSIT","USTB":"US_TREASURY_BILL_OLD","WAR":"WARRANT","ZOO":"CATS_TIGERS_AND_LIONS","?":"WILDCARD","CB":"CONVERTIBLE_BOND","IET":"IOETTE_MORTGAGE","VRDN":"VARIABLE_RATE_DEMAND_NOTE","PZFJ":"PLAZOS_FIJOS","PN":"PROMISSORY_NOTE","ONITE":"OVERNIGHT","MTN":"MEDIUM_TERM_NOTES","TECP":"TAX_EXEMPT_COMMERCIAL_PAPER","AMENDED":"AMENDED","BRIDGE":"BRIDGE_LOAN","LOFC":"LETTER_OF_CREDIT","SWING":"SWING_LINE_FACILITY","DINP":"DEBTOR_IN_POSSESSION","DEFLTED":"DEFAULTED","WITHDRN":"WITHDRAWN","LQN":"LIQUIDITY_NOTE","MATURED":"MATURED","DN":"DEPOSIT_NOTES","RETIRED":"RETIRED","BN":"BANK_NOTES","BOX":"BILL_OF_EXCHANGES","CL":"CALL_LOANS","REPLACD":"REPLACED","MT":"MANDATORY_TENDER","RVLVTRM":"REVOLVER","STN":"SHORT_TERM_LOAN_NOTE","TBA":"TO_BE_ANNOUNCED","AN":"OTHER_ANTICIPATION_NOTES","COFP":"CERTIFICATE_OF_PARTICIPATION","MBS":"MORTGAGE_BACKED_SECURITIES","REV":"REVENUE_BONDS","SPCLA":"SPECIAL_ASSESSMENT","SPCLO":"SPECIAL_OBLIGATION","SPCLT":"SPECIAL_TAX","TAN":"TAX_ANTICIPATION_NOTE","TAXA":"TAX_ALLOCATION","COFO":"CERTIFICATE_OF_OBLIGATION","GO":"GENERAL_OBLIGATION_BONDS","MLEG":"MULTILEG_INSTRUMENT","TRAN":"TAX_REVENUE_ANTICIPATION_NOTE","XCN":"EXTENDED_COMM_NOTE","POOL":"AGENCY_POOLS","ABS":"ASSET_BACKED_SECURITIES","CMBS":"CORP","RAN":"REVENUE_ANTICIPATION_NOTE","RVLV":"REVOLVER_LOAN","FAC":"FEDERAL_AGENCY_COUPON","FADN":"FEDERAL_AGENCY_DISCOUNT_NOTE","PEF":"PRIVATE_EXPORT_FUNDING","DUAL":"DUAL_CURRENCY","XLINKD":"INDEXED_LINKED","YANK":"YANKEE_CORPORATE_BOND","BRADY":"BRADY_BOND","TBOND":"US_TREASURY_BOND","TINT":"INTEREST_STRIP_FROM_ANY_BOND_OR_NOTE","TIPS":"TREASURY_INFLATION_PROTECTED_SECURITIES","TCAL":"PRINCIPAL_STRIP_OF_A_CALLABLE_BOND_OR_NOTE","TPRN":"PRINCIPAL_STRIP_FROM_A_NON_CALLABLE_BOND_OR_NOTE","UST":"US_TREASURY_NOTE_OLD","TERM":"TERM_LOAN","STRUCT":"STRUCTURED_NOTES","EUSUPRA":"EURO_SUPRANATIONAL_COUPONS","SUPRA":"USD_SUPRANATIONAL_COUPONS","EUCORP":"EURO_CORPORATE_BOND","EUSOV":"EURO_SOVEREIGNS","TNOTE":"US_TREASURY_NOTE","TBILL":"US_TREASURY_BILL","REPO":"REPURCHASE","FORWARD":"FORWARD","BUYSELL":"BUY_SELLBACK","SECLOAN":"SECURITIES_LOAN","SECPLEDGE":"SECURITIES_PLEDGE","EUCD":"EURO_CERTIFICATE_OF_DEPOSIT","EUCP":"EURO_COMMERCIAL_PAPER","YCD":"YANKEE_CERTIFICATE_OF_DEPOSIT","PFAND":"PFANDBRIEF","OOF":"OPTIONS_ON_FUTURES","OOP":"OPTIONS_ON_PHYSICAL","WLD":"WILDCARD_ENTRY","CASH":"CASH","EUFRN":"EURO_CORPORATE_FLOATING_RATE_NOTES","FRN":"US_CORPORATE_FLOATING_RATE_NOTES","CDS":"CREDIT_DEFAULT_SWAP","IRS":"INTEREST_RATE_SWAP","OOC":"OPTIONS_ON_COMBO","CAN":"CANADIAN_TREASURY_NOTES","CTB":"CANADIAN_TREASURY_BILLS","PROV":"CANADIAN_PROVINCIAL_BONDS","TB":"TREASURY_BILL","BDN":"BANK_DEPOSITORY_NOTE","CAMM":"CANADIAN_MONEY_MARKETS","SLQN":"SECURED_LIQUIDITY_NOTE","TLQN":"TERM_LIQUIDITY_NOTE","CMB":"CANADIAN_MORTGAGE_BONDS","TMCP":"TAXABLE_MUNICIPAL_CP","DIMSUMCORP":"OFFSHORE_ISSUED_CHINESE_YUAN_CORPORATE_BOND","PRCORP":"PREFERRED_CORPORATE_BOND","FXNDF":"NON_DELIVERABLE_FORWARD","FXSPOT":"FX_SPOT","FXFWD":"FX_FORWARD","FXSWAP":"FX_SWAP","FXNDS":"NON_DELIVERABLE_SWAP","FXBN":"FX_BANK_NOTE","FXDN":"FOREIGN_CURRENCY_DISCOUNT_NOTE","CAP":"CAP","CLLR":"COLLAR","CMDTYSWAP":"COMMODITY_SWAP","EXOTIC":"EXOTIC","FLR":"FLOOR","FRA":"FRA","FWD":"DERIVATIVE_FORWARD","TRS":"TOTAL_RETURN_SWAP","LOANLEASE":"LOAN_LEASE","SPOTFWD":"SPOT_FORWARD","SWAPTION":"SWAP_OPTION","XMISSION":"TRANSMISSION","INDEX":"INDEX","BDBSKT":"BOND_BASKET","CFD":"CONTRACT_FOR_DIFFERENCE","CRLTNSWAP":"CORRELATION_SWAP","DVDNDSWAP":"DIVIEND_SWAP","EQBSKT":"EQUITY_BASKET","EQFWD":"EQUITY_FORWARD","RTRNSWAP":"RETURN_SWAP","VARSWAP":"VARIANCE_SWAP","PRTFLIOSWAP":"PORTFOLIO_SWAPS","FUTSWAP":"FUTURES_ON_A_SWAP","FWDSWAP":"FORWARDS_ON_A_SWAP","FWDFRTAGMT":"FORWARD_FREIGHT_AGREEMENT","SPREADBET":"SPREAD_BETTING","ETC":"EXCHANGE_TRADED_COMMODITY","DR":"DEPOSITORY_RECEIPTS","DVPLDG":"DELIVERY_VERSUS_PLEDGE","COLLBSKT":"COLLATERAL_BASKET","SFP":"STRUCTURED_FINANCE_PRODUCT","MRGNLOAN":"MARGIN_LOAN","DIMSUMSOV":"OFFSHORE_ISSUED_CHINESE_YUAN_SOVEREIGN_BOND","SOV":"SOVEREIGN_BOND","TFRN":"US_TREASURY_FLOATING_RATE_NOTE","BAB":"BANK_ACCEPTED_BILL","BNST":"SHORT_TERM_BANK_NOTE","CLCP":"CALLABLE_COMMERCIAL_PAPER","CN":"COMMERCIAL_NOTE","CPIB":"INTEREST_BEARING_COMMERCIAL_PAPER","EUMTN":"EURO_MEDIUM_TERM_NOTE","EUNCP":"EURO_NEGOTIABLE_COMMERCIAL_PAPER","EUSTLQN":"EURO_STRUCTURED_LIQUIDITY_NOTE","EUTD":"EURO_TIME_DEPOSIT","JCD":"JUMBO_CERTIFICATE_OF_DEPOSIT","MMF":"MONEY_MARKET_FUND","MN":"MASTER_NOTE","NCD":"NEGOTIABLE_CERTIFICATE_OF_DEPOSIT","NCP":"NEGOTIABLE_COMMERCIAL_PAPER","RCD":"RETAIL_CERTIFICATE_OF_DEPOSIT","TDR":"TERM_DEPOSIT_RECEIPT","MCPIB":"MUNICIPAL_INTEREST_BEARING_COMMERCIAL_PAPER","TMB":"TAXABLE_MUNICIPAL_BOND","VRDO":"VARIABLE_RATE_DEMAND_OBLIGATION","Other":"OTHER","ETN":"EXCHANGE_TRADED_NOTE","SECDERIV":"SECURITIZED_DERIVATIVE","ETF":"EXCHANGE_TRADED_FUND","DIGITAL":"DIGITAL_ASSET"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char"}'
+    fix:names: '{"5.0.SP2":"SecurityType","5.0.SP1":"SecurityType","5.0":"SecurityType","4.4":"SecurityType","4.3":"SecurityType","4.2":"SecurityType","4.1":"SecurityType"}'
+    fix:tags: '{"5.0.SP2":"167","5.0.SP1":"167","5.0":"167","4.4":"167","4.3":"167","4.2":"167","4.1":"167"}'
     fix:name: SecurityType
 - name: cfi_code
   type: string
@@ -891,6 +969,8 @@ fields:
       Instructions","Security Types"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
+    fix:names: '{"5.0.SP2":"CFICode","5.0.SP1":"CFICode","5.0":"CFICode","4.4":"CFICode","4.3":"CFICode"}'
+    fix:tags: '{"5.0.SP2":"461","5.0.SP1":"461","5.0":"461","4.4":"461","4.3":"461"}'
     fix:name: CFICode
 - name: security_exchange
   type: string
@@ -910,6 +990,8 @@ fields:
       Refresh","Quote Cancel"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
     fix:types: '{"5.0.SP2":"Exchange","5.0.SP1":"Exchange","5.0":"Exchange","4.4":"Exchange","4.3":"Exchange","4.2":"Exchange","4.1":"char"}'
+    fix:names: '{"5.0.SP2":"SecurityExchange","5.0.SP1":"SecurityExchange","5.0":"SecurityExchange","4.4":"SecurityExchange","4.3":"SecurityExchange","4.2":"SecurityExchange","4.1":"SecurityExchange"}'
+    fix:tags: '{"5.0.SP2":"207","5.0.SP1":"207","5.0":"207","4.4":"207","4.3":"207","4.2":"207","4.1":"207"}'
     fix:name: SecurityExchange
 - name: currency
   type: string
@@ -939,6 +1021,8 @@ fields:
       Order - Cross","Indication of Interest"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency","4.2":"Currency","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency","4.2":"Currency","4.1":"Currency","4.0":"Currency"}'
+    fix:tags: '{"5.0.SP2":"15","5.0.SP1":"15","5.0":"15","4.4":"15","4.3":"15","4.2":"15","4.1":"15","4.0":"15"}'
     fix:name: Currency
 - name: account
   type: string
@@ -964,6 +1048,8 @@ fields:
       Request","New Order - Single","New Order - List","New Order - Cross"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"Account","5.0.SP1":"Account","5.0":"Account","4.4":"Account","4.3":"Account","4.2":"Account","4.1":"Account","4.0":"Account"}'
+    fix:tags: '{"5.0.SP2":"1","5.0.SP1":"1","5.0":"1","4.4":"1","4.3":"1","4.2":"1","4.1":"1","4.0":"1"}'
     fix:name: Account
 - name: cl_ord_id
   type: string
@@ -992,6 +1078,8 @@ fields:
       Order - Single","New Order - List","Allocation","New Order - Cross"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"ClOrdID","5.0.SP1":"ClOrdID","5.0":"ClOrdID","4.4":"ClOrdID","4.3":"ClOrdID","4.2":"ClOrdID","4.1":"ClOrdID","4.0":"ClOrdID"}'
+    fix:tags: '{"5.0.SP2":"11","5.0.SP1":"11","5.0":"11","4.4":"11","4.3":"11","4.2":"11","4.1":"11","4.0":"11"}'
     fix:name: ClOrdID
 - name: orig_cl_ord_id
   type: string
@@ -1009,6 +1097,8 @@ fields:
       Cancel/Replace Request","Cross Order Cancel Request"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"OrigClOrdID","5.0.SP1":"OrigClOrdID","5.0":"OrigClOrdID","4.4":"OrigClOrdID","4.3":"OrigClOrdID","4.2":"OrigClOrdID","4.1":"OrigClOrdID","4.0":"OrigClOrdID"}'
+    fix:tags: '{"5.0.SP2":"41","5.0.SP1":"41","5.0":"41","4.4":"41","4.3":"41","4.2":"41","4.1":"41","4.0":"41"}'
     fix:name: OrigClOrdID
 - name: order_id
   type: string
@@ -1032,6 +1122,8 @@ fields:
       Refresh","Multileg Order Cancel/Replace Request","Allocation"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"OrderID","5.0.SP1":"OrderID","5.0":"OrderID","4.4":"OrderID","4.3":"OrderID","4.2":"OrderID","4.1":"OrderID","4.0":"OrderID"}'
+    fix:tags: '{"5.0.SP2":"37","5.0.SP1":"37","5.0":"37","4.4":"37","4.3":"37","4.2":"37","4.1":"37","4.0":"37"}'
     fix:name: OrderID
 - name: exec_id
   type: string
@@ -1053,6 +1145,8 @@ fields:
       Instruction","Don''t Know Trade","Allocation"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"int"}'
+    fix:names: '{"5.0.SP2":"ExecID","5.0.SP1":"ExecID","5.0":"ExecID","4.4":"ExecID","4.3":"ExecID","4.2":"ExecID","4.1":"ExecID","4.0":"ExecID"}'
+    fix:tags: '{"5.0.SP2":"17","5.0.SP1":"17","5.0":"17","4.4":"17","4.3":"17","4.2":"17","4.1":"17","4.0":"17"}'
     fix:name: ExecID
 - name: side
   type: string
@@ -1086,6 +1180,8 @@ fields:
     fix:value_names: '{"1":"BUY","2":"SELL","3":"BUY_MINUS","4":"SELL_PLUS","5":"SELL_SHORT","6":"SELL_SHORT_EXEMPT","7":"UNDISCLOSED","8":"CROSS","9":"CROSS_SHORT","B":"AS_DEFINED","C":"OPPOSITE","A":"CROSS_SHORT_EXEMPT","D":"SUBSCRIBE","E":"REDEEM","F":"LEND","G":"BORROW","H":"SELL_UNDISCLOSED"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"Side","5.0.SP1":"Side","5.0":"Side","4.4":"Side","4.3":"Side","4.2":"Side","4.1":"Side","4.0":"Side"}'
+    fix:tags: '{"5.0.SP2":"54","5.0.SP1":"54","5.0":"54","4.4":"54","4.3":"54","4.2":"54","4.1":"54","4.0":"54"}'
     fix:name: Side
 - name: ord_type
   type: string
@@ -1118,6 +1214,8 @@ fields:
     fix:value_names: '{"1":"MARKET","2":"LIMIT","3":"STOP","4":"STOP_LIMIT","5":"MARKET_ON_CLOSE","6":"WITH_OR_WITHOUT","7":"LIMIT_OR_BETTER","8":"LIMIT_WITH_OR_WITHOUT","9":"ON_BASIS","A":"ON_CLOSE","B":"LIMIT_ON_CLOSE","C":"FOREX_MARKET","D":"PREVIOUSLY_QUOTED","E":"PREVIOUSLY_INDICATED","P":"PEGGED","F":"FOREX_LIMIT","G":"FOREX_SWAP","H":"FOREX_PREVIOUSLY_QUOTED","I":"FUNARI","J":"MARKET_IF_TOUCHED","K":"MARKET_WITH_LEFT_OVER_AS_LIMIT","L":"PREVIOUS_FUND_VALUATION_POINT","M":"NEXT_FUND_VALUATION_POINT","Q":"COUNTER_ORDER_SELECTION","R":"STOP_ON_BID_OR_OFFER","S":"STOP_LIMIT_ON_BID_OR_OFFER"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"OrdType","5.0.SP1":"OrdType","5.0":"OrdType","4.4":"OrdType","4.3":"OrdType","4.2":"OrdType","4.1":"OrdType","4.0":"OrdType"}'
+    fix:tags: '{"5.0.SP2":"40","5.0.SP1":"40","5.0":"40","4.4":"40","4.3":"40","4.2":"40","4.1":"40","4.0":"40"}'
     fix:name: OrdType
 - name: time_in_force
   type: string
@@ -1141,6 +1239,8 @@ fields:
     fix:value_names: '{"0":"DAY","1":"GOOD_TILL_CANCEL","2":"AT_THE_OPENING","3":"IMMEDIATE_OR_CANCEL","4":"FILL_OR_KILL","5":"GOOD_TILL_CROSSING","6":"GOOD_TILL_DATE","7":"AT_THE_CLOSE","8":"GOOD_THROUGH_CROSSING","9":"AT_CROSSING","A":"GOOD_FOR_TIME","B":"GOOD_FOR_AUCTION","C":"GOOD_FOR_MONTH"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"TimeInForce","5.0.SP1":"TimeInForce","5.0":"TimeInForce","4.4":"TimeInForce","4.3":"TimeInForce","4.2":"TimeInForce","4.1":"TimeInForce","4.0":"TimeInForce"}'
+    fix:tags: '{"5.0.SP2":"59","5.0.SP1":"59","5.0":"59","4.4":"59","4.3":"59","4.2":"59","4.1":"59","4.0":"59"}'
     fix:name: TimeInForce
 - name: ord_status
   type: string
@@ -1160,6 +1260,8 @@ fields:
     fix:value_names: '{"0":"NEW","1":"PARTIALLY_FILLED","2":"FILLED","3":"DONE_FOR_DAY","4":"CANCELED","5":"REPLACED","6":"PENDING_CANCEL","7":"STOPPED","8":"REJECTED","9":"SUSPENDED","A":"PENDING_NEW","B":"CALCULATED","C":"EXPIRED","D":"ACCEPTED_FOR_BIDDING","E":"PENDING_REPLACE"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"OrdStatus","5.0.SP1":"OrdStatus","5.0":"OrdStatus","4.4":"OrdStatus","4.3":"OrdStatus","4.2":"OrdStatus","4.1":"OrdStatus","4.0":"OrdStatus"}'
+    fix:tags: '{"5.0.SP2":"39","5.0.SP1":"39","5.0":"39","4.4":"39","4.3":"39","4.2":"39","4.1":"39","4.0":"39"}'
     fix:name: OrdStatus
 - name: exec_type
   type: string
@@ -1185,6 +1287,8 @@ fields:
     fix:value_names: '{"0":"NEW","1":"PARTIAL_FILL","2":"FILL","3":"DONE_FOR_DAY","4":"CANCELED","5":"REPLACED","6":"PENDING_CANCEL","7":"STOPPED","8":"REJECTED","9":"SUSPENDED","A":"PENDING_NEW","B":"CALCULATED","C":"EXPIRED","D":"RESTATED","E":"PENDING_REPLACE","F":"TRADE","G":"TRADE_CORRECT","H":"TRADE_CANCEL","I":"ORDER_STATUS","J":"TRADE_IN_A_CLEARING_HOLD","K":"TRADE_HAS_BEEN_RELEASED_TO_CLEARING","L":"TRIGGERED_OR_ACTIVATED_BY_SYSTEM","M":"LOCKED","N":"RELEASED"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
     fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char"}'
+    fix:names: '{"5.0.SP2":"ExecType","5.0.SP1":"ExecType","5.0":"ExecType","4.4":"ExecType","4.3":"ExecType","4.2":"ExecType","4.1":"ExecType"}'
+    fix:tags: '{"5.0.SP2":"150","5.0.SP1":"150","5.0":"150","4.4":"150","4.3":"150","4.2":"150","4.1":"150"}'
     fix:name: ExecType
 - name: order_qty
   type: double
@@ -1198,6 +1302,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+    fix:names: '{"5.0.SP2":"OrderQty","5.0.SP1":"OrderQty","5.0":"OrderQty","4.4":"OrderQty","4.3":"OrderQty","4.2":"OrderQty","4.1":"OrderQty","4.0":"OrderQty"}'
+    fix:tags: '{"5.0.SP2":"38","5.0.SP1":"38","5.0":"38","4.4":"38","4.3":"38","4.2":"38","4.1":"38","4.0":"38"}'
     fix:used_in: '["Confirmation","Allocation Report","Confirmation Request","Allocation
       Instruction","Quote Request Reject","Quote Request","Execution Report","New
       Order - Single","New Order - List","Order Cancel Request","Order Cancel/Replace
@@ -1222,6 +1328,8 @@ fields:
       of Interest"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+    fix:names: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"Price","4.0":"Price"}'
+    fix:tags: '{"5.0.SP2":"44","5.0.SP1":"44","5.0":"44","4.4":"44","4.3":"44","4.2":"44","4.1":"44","4.0":"44"}'
     fix:name: Price
 - name: vwap
   type: double
@@ -1239,6 +1347,8 @@ fields:
       Status","Allocation"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+    fix:names: '{"5.0.SP2":"AvgPx","5.0.SP1":"AvgPx","5.0":"AvgPx","4.4":"AvgPx","4.3":"AvgPx","4.2":"AvgPx","4.1":"AvgPx","4.0":"AvgPx"}'
+    fix:tags: '{"5.0.SP2":"6","5.0.SP1":"6","5.0":"6","4.4":"6","4.3":"6","4.2":"6","4.1":"6","4.0":"6"}'
     fix:name: AvgPx
 - name: cum_qty
   type: double
@@ -1253,6 +1363,8 @@ fields:
       Status"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+    fix:names: '{"5.0.SP2":"CumQty","5.0.SP1":"CumQty","5.0":"CumQty","4.4":"CumQty","4.3":"CumQty","4.2":"CumQty","4.1":"CumQty","4.0":"CumQty"}'
+    fix:tags: '{"5.0.SP2":"14","5.0.SP1":"14","5.0":"14","4.4":"14","4.3":"14","4.2":"14","4.1":"14","4.0":"14"}'
     fix:name: CumQty
 - name: leaves_qty
   type: double
@@ -1268,6 +1380,8 @@ fields:
     fix:used_in: '["ExecutionReport","Execution Report","List Status"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
     fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int"}'
+    fix:names: '{"5.0.SP2":"LeavesQty","5.0.SP1":"LeavesQty","5.0":"LeavesQty","4.4":"LeavesQty","4.3":"LeavesQty","4.2":"LeavesQty","4.1":"LeavesQty"}'
+    fix:tags: '{"5.0.SP2":"151","5.0.SP1":"151","5.0":"151","4.4":"151","4.3":"151","4.2":"151","4.1":"151"}'
     fix:name: LeavesQty
 - name: last_px
   type: double
@@ -1282,6 +1396,8 @@ fields:
       Instruction","Don''t Know Trade","Allocation"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+    fix:names: '{"5.0.SP2":"LastPx","5.0.SP1":"LastPx","5.0":"LastPx","4.4":"LastPx","4.3":"LastPx","4.2":"LastPx","4.1":"LastPx","4.0":"LastPx"}'
+    fix:tags: '{"5.0.SP2":"31","5.0.SP1":"31","5.0":"31","4.4":"31","4.3":"31","4.2":"31","4.1":"31","4.0":"31"}'
     fix:name: LastPx
 - name: last_qty
   type: double
@@ -1299,6 +1415,7 @@ fields:
     fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
     fix:names: '{"5.0.SP2":"LastQty","5.0.SP1":"LastQty","5.0":"LastQty","4.4":"LastQty","4.3":"LastShares
       prior to FIX 4.3)","4.2":"LastShares","4.1":"LastShares","4.0":"LastShares"}'
+    fix:tags: '{"5.0.SP2":"32","5.0.SP1":"32","5.0":"32","4.4":"32","4.3":"32","4.2":"32","4.1":"32","4.0":"32"}'
     fix:name: LastQty
 - name: transact_time
   type: timestamp[us, tz=UTC]
@@ -1326,6 +1443,8 @@ fields:
       Order - Cross","Indication of Interest"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time"}'
+    fix:names: '{"5.0.SP2":"TransactTime","5.0.SP1":"TransactTime","5.0":"TransactTime","4.4":"TransactTime","4.3":"TransactTime","4.2":"TransactTime","4.1":"TransactTime","4.0":"TransactTime"}'
+    fix:tags: '{"5.0.SP2":"60","5.0.SP1":"60","5.0":"60","4.4":"60","4.3":"60","4.2":"60","4.1":"60","4.0":"60"}'
     fix:name: TransactTime
 - name: text
   type: string
@@ -1361,6 +1480,8 @@ fields:
       of Interest","Quote Acknowledgement"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
+    fix:names: '{"5.0.SP2":"Text","5.0.SP1":"Text","5.0":"Text","4.4":"Text","4.3":"Text","4.2":"Text","4.1":"Text","4.0":"Text","FIXT1.1":"Text"}'
+    fix:tags: '{"5.0.SP2":"58","5.0.SP1":"58","5.0":"58","4.4":"58","4.3":"58","4.2":"58","4.1":"58","4.0":"58","FIXT1.1":"58"}'
     fix:name: Text
 - name: quote_id
   type: string
@@ -1378,6 +1499,8 @@ fields:
       Order - Single","New Order - List","New Order - Cross","Quote Acknowledgement"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"QuoteID","5.0.SP1":"QuoteID","5.0":"QuoteID","4.4":"QuoteID","4.3":"QuoteID","4.2":"QuoteID","4.1":"QuoteID","4.0":"QuoteID"}'
+    fix:tags: '{"5.0.SP2":"117","5.0.SP1":"117","5.0":"117","4.4":"117","4.3":"117","4.2":"117","4.1":"117","4.0":"117"}'
     fix:name: QuoteID
 - name: quote_req_id
   type: string
@@ -1392,6 +1515,8 @@ fields:
       Request","Quote Cancel","Quote Acknowledgement"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
+    fix:names: '{"5.0.SP2":"QuoteReqID","5.0.SP1":"QuoteReqID","5.0":"QuoteReqID","4.4":"QuoteReqID","4.3":"QuoteReqID","4.2":"QuoteReqID","4.1":"QuoteReqID","4.0":"QuoteReqID"}'
+    fix:tags: '{"5.0.SP2":"131","5.0.SP1":"131","5.0":"131","4.4":"131","4.3":"131","4.2":"131","4.1":"131","4.0":"131"}'
     fix:name: QuoteReqID
 - name: quote_type
   type: int64
@@ -1417,6 +1542,8 @@ fields:
     fix:value_names: '{"0":"INDICATIVE","1":"TRADEABLE","2":"RESTRICTED_TRADEABLE","3":"COUNTER","4":"INITIALLY_TRADEABLE"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int"}'
+    fix:names: '{"5.0.SP2":"QuoteType","5.0.SP1":"QuoteType","5.0":"QuoteType","4.4":"QuoteType","4.3":"QuoteType"}'
+    fix:tags: '{"5.0.SP2":"537","5.0.SP1":"537","5.0":"537","4.4":"537","4.3":"537"}'
     fix:name: QuoteType
 - name: quote_status
   type: int64
@@ -1441,6 +1568,7 @@ fields:
     fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
     fix:names: '{"5.0.SP2":"QuoteStatus","5.0.SP1":"QuoteStatus","5.0":"QuoteStatus","4.4":"QuoteStatus","4.3":"QuoteAckStatus
       prior to FIX 4.3)","4.2":"QuoteAckStatus"}'
+    fix:tags: '{"5.0.SP2":"297","5.0.SP1":"297","5.0":"297","4.4":"297","4.3":"297","4.2":"297"}'
     fix:name: QuoteStatus
 - name: quote_reject_reason
   type: int64
@@ -1461,6 +1589,8 @@ fields:
     fix:value_names: '{"1":"UNKNOWN_SYMBOL","2":"EXCHANGE","3":"QUOTE_REQUEST_EXCEEDS_LIMIT","4":"TOO_LATE_TO_ENTER","5":"UNKNOWN_QUOTE","6":"DUPLICATE_QUOTE","7":"INVALID_BID","8":"INVALID_PRICE","9":"NOT_AUTHORIZED_TO_QUOTE_SECURITY","99":"OTHER","10":"PRICE_EXCEEDS_CURRENT_PRICE_BAND","11":"QUOTE_LOCKED","12":"INVALID_OR_UNKNOWN_SECURITY_ISSUER","13":"INVALID_OR_UNKNOWN_ISSUER_OF_UNDERLYING_SECURITY","14":"NOTIONAL_VALUE_EXCEEDS_THRESHOLD","15":"PRICE_EXCEEDS_CURRENT_PRICE_BAND_DEPR","16":"REFERENCE_PRICE_NOT_AVAILABLE","17":"INSUFFICIENT_CREDIT_LIMIT","18":"EXCEEDED_CLIP_SIZE_LIMIT","19":"EXCEEDED_MAX_NOTIONAL_ORDER_AMT","20":"EXCEEDED_DV01_PV01_LIMIT","21":"EXCEEDED_CS01_LIMIT"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
+    fix:names: '{"5.0.SP2":"QuoteRejectReason","5.0.SP1":"QuoteRejectReason","5.0":"QuoteRejectReason","4.4":"QuoteRejectReason","4.3":"QuoteRejectReason","4.2":"QuoteRejectReason"}'
+    fix:tags: '{"5.0.SP2":"300","5.0.SP1":"300","5.0":"300","4.4":"300","4.3":"300","4.2":"300"}'
     fix:name: QuoteRejectReason
 - name: quote_resp_type
   type: int64
@@ -1476,6 +1606,8 @@ fields:
     fix:value_names: '{"1":"HIT","2":"COUNTER","3":"EXPIRED","4":"COVER","5":"DONE_AWAY","6":"PASS","7":"END_TRADE","8":"TIMED_OUT","9":"TIED","10":"TIED_COVER","11":"ACCEPT","12":"TERMINATE_CONTRACT"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
     fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int"}'
+    fix:names: '{"5.0.SP2":"QuoteRespType","5.0.SP1":"QuoteRespType","5.0":"QuoteRespType","4.4":"QuoteRespType"}'
+    fix:tags: '{"5.0.SP2":"694","5.0.SP1":"694","5.0":"694","4.4":"694"}'
     fix:name: QuoteRespType
 - name: quote_cancel_type
   type: int64
@@ -1494,6 +1626,8 @@ fields:
     fix:value_names: '{"1":"CANCEL_FOR_ONE_OR_MORE_SECURITIES","2":"CANCEL_FOR_SECURITY_TYPE","3":"CANCEL_FOR_UNDERLYING_SECURITY","4":"CANCEL_ALL_QUOTES","5":"CANCEL_SPECIFIED_SINGLE_QUOTE","6":"CANCEL_BY_TYPE_OF_QUOTE","7":"CANCEL_FOR_SECURITY_ISSUER","8":"CANCEL_FOR_ISSUER_OF_UNDERLYING_SECURITY"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
+    fix:names: '{"5.0.SP2":"QuoteCancelType","5.0.SP1":"QuoteCancelType","5.0":"QuoteCancelType","4.4":"QuoteCancelType","4.3":"QuoteCancelType","4.2":"QuoteCancelType"}'
+    fix:tags: '{"5.0.SP2":"298","5.0.SP1":"298","5.0":"298","4.4":"298","4.3":"298","4.2":"298"}'
     fix:name: QuoteCancelType
 - name: bid_px
   type: double
@@ -1507,6 +1641,8 @@ fields:
       Response","Mass Quote Acknowledgement","Mass Quote"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+    fix:names: '{"5.0.SP2":"BidPx","5.0.SP1":"BidPx","5.0":"BidPx","4.4":"BidPx","4.3":"BidPx","4.2":"BidPx","4.1":"BidPx","4.0":"BidPx"}'
+    fix:tags: '{"5.0.SP2":"132","5.0.SP1":"132","5.0":"132","4.4":"132","4.3":"132","4.2":"132","4.1":"132","4.0":"132"}'
     fix:name: BidPx
 - name: offer_px
   type: double
@@ -1520,6 +1656,8 @@ fields:
       Response","Mass Quote Acknowledgement","Mass Quote"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
+    fix:names: '{"5.0.SP2":"OfferPx","5.0.SP1":"OfferPx","5.0":"OfferPx","4.4":"OfferPx","4.3":"OfferPx","4.2":"OfferPx","4.1":"OfferPx","4.0":"OfferPx"}'
+    fix:tags: '{"5.0.SP2":"133","5.0.SP1":"133","5.0":"133","4.4":"133","4.3":"133","4.2":"133","4.1":"133","4.0":"133"}'
     fix:name: OfferPx
 - name: bid_size
   type: double
@@ -1533,6 +1671,8 @@ fields:
       Response","Mass Quote Acknowledgement","Mass Quote"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+    fix:names: '{"5.0.SP2":"BidSize","5.0.SP1":"BidSize","5.0":"BidSize","4.4":"BidSize","4.3":"BidSize","4.2":"BidSize","4.1":"BidSize","4.0":"BidSize"}'
+    fix:tags: '{"5.0.SP2":"134","5.0.SP1":"134","5.0":"134","4.4":"134","4.3":"134","4.2":"134","4.1":"134","4.0":"134"}'
     fix:name: BidSize
 - name: offer_size
   type: double
@@ -1546,6 +1686,8 @@ fields:
       Response","Mass Quote Acknowledgement","Mass Quote"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
+    fix:names: '{"5.0.SP2":"OfferSize","5.0.SP1":"OfferSize","5.0":"OfferSize","4.4":"OfferSize","4.3":"OfferSize","4.2":"OfferSize","4.1":"OfferSize","4.0":"OfferSize"}'
+    fix:tags: '{"5.0.SP2":"135","5.0.SP1":"135","5.0":"135","4.4":"135","4.3":"135","4.2":"135","4.1":"135","4.0":"135"}'
     fix:name: OfferSize
 - name: def_bid_size
   type: double
@@ -1558,6 +1700,8 @@ fields:
     fix:used_in: '["MassQuote","Mass Quote"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty"}'
+    fix:names: '{"5.0.SP2":"DefBidSize","5.0.SP1":"DefBidSize","5.0":"DefBidSize","4.4":"DefBidSize","4.3":"DefBidSize","4.2":"DefBidSize"}'
+    fix:tags: '{"5.0.SP2":"293","5.0.SP1":"293","5.0":"293","4.4":"293","4.3":"293","4.2":"293"}'
     fix:name: DefBidSize
 - name: def_offer_size
   type: double
@@ -1570,6 +1714,8 @@ fields:
     fix:used_in: '["MassQuote","Mass Quote"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty"}'
+    fix:names: '{"5.0.SP2":"DefOfferSize","5.0.SP1":"DefOfferSize","5.0":"DefOfferSize","4.4":"DefOfferSize","4.3":"DefOfferSize","4.2":"DefOfferSize"}'
+    fix:tags: '{"5.0.SP2":"294","5.0.SP1":"294","5.0":"294","4.4":"294","4.3":"294","4.2":"294"}'
     fix:name: DefOfferSize
 - name: valid_until_time
   type: timestamp[us, tz=UTC]
@@ -1585,6 +1731,8 @@ fields:
       of Interest","Indication of Interest"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time"}'
+    fix:names: '{"5.0.SP2":"ValidUntilTime","5.0.SP1":"ValidUntilTime","5.0":"ValidUntilTime","4.4":"ValidUntilTime","4.3":"ValidUntilTime","4.2":"ValidUntilTime","4.1":"ValidUntilTime","4.0":"ValidUntilTime"}'
+    fix:tags: '{"5.0.SP2":"62","5.0.SP1":"62","5.0":"62","4.4":"62","4.3":"62","4.2":"62","4.1":"62","4.0":"62"}'
     fix:name: ValidUntilTime
 - name: no_quote_sets
   type: int64
@@ -1596,6 +1744,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:types: '{"5.0.SP2":"NumInGroup","5.0.SP1":"NumInGroup","5.0":"NumInGroup","4.4":"NumInGroup","4.3":"NumInGroup","4.2":"int"}'
+    fix:names: '{"5.0.SP2":"NoQuoteSets","5.0.SP1":"NoQuoteSets","5.0":"NoQuoteSets","4.4":"NoQuoteSets","4.3":"NoQuoteSets","4.2":"NoQuoteSets"}'
+    fix:tags: '{"5.0.SP2":"296","5.0.SP1":"296","5.0":"296","4.4":"296","4.3":"296","4.2":"296"}'
     fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Quote Acknowledgement"]'
     fix:name: NoQuoteSets
 - name: no_quote_entries
@@ -1608,6 +1758,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:types: '{"5.0.SP2":"NumInGroup","5.0.SP1":"NumInGroup","5.0":"NumInGroup","4.4":"NumInGroup","4.3":"NumInGroup","4.2":"int"}'
+    fix:names: '{"5.0.SP2":"NoQuoteEntries","5.0.SP1":"NoQuoteEntries","5.0":"NoQuoteEntries","4.4":"NoQuoteEntries","4.3":"NoQuoteEntries","4.2":"NoQuoteEntries"}'
+    fix:tags: '{"5.0.SP2":"295","5.0.SP1":"295","5.0":"295","4.4":"295","4.3":"295","4.2":"295"}'
     fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Quote Cancel","Quote
       Acknowledgement"]'
     fix:name: NoQuoteEntries
@@ -1621,6 +1773,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String"}'
+    fix:names: '{"5.0.SP2":"QuoteSetID","5.0.SP1":"QuoteSetID","5.0":"QuoteSetID","4.4":"QuoteSetID","4.3":"QuoteSetID","4.2":"QuoteSetID"}'
+    fix:tags: '{"5.0.SP2":"302","5.0.SP1":"302","5.0":"302","4.4":"302","4.3":"302","4.2":"302"}'
     fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Quote Acknowledgement"]'
     fix:name: QuoteSetID
 - name: quote_entry_id
@@ -1634,6 +1788,8 @@ fields:
     fix:version: 5.0.SP2
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String"}'
+    fix:names: '{"5.0.SP2":"QuoteEntryID","5.0.SP1":"QuoteEntryID","5.0":"QuoteEntryID","4.4":"QuoteEntryID","4.3":"QuoteEntryID","4.2":"QuoteEntryID"}'
+    fix:tags: '{"5.0.SP2":"299","5.0.SP1":"299","5.0":"299","4.4":"299","4.3":"299","4.2":"299"}'
     fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Market Data - Snapshot/Full
       Refresh","Market Data - Incremental Refresh","Quote Acknowledgement"]'
     fix:name: QuoteEntryID

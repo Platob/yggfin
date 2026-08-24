@@ -379,8 +379,14 @@ class FixRegistry(Convertible):
         nullable: bool | None = None,
         metadata: dict[str, str] | None = None,
     ) -> Field:
-        """A fresh scalar declaration, exact by version or merged across versions."""
-        source = self.field(key, version) if version is not None else self._scalar_of(key)
+        """A fresh scalar declaration, exact by version or merged across versions.
+
+        One shape either way: a declaration that reads `fix:versions` off a
+        merged field reads it off an exact one too, holding the single version
+        it was pinned to. A caller that pins a version narrows *what* the field
+        says, never which keys it says it with.
+        """
+        source = self._scalar_of(key, version)
         # Protocol identity is the registry's. Other declarations can add
         # metadata, but cannot silently retag or retype a standard field.
         declared = {**(metadata or {}), **source.metadata, "fix:name": source.name}
@@ -438,22 +444,31 @@ class FixRegistry(Convertible):
         return {}
 
     @cached_property
-    def _scalars(self) -> dict[tuple[str, int | str], Field]:
+    def _scalars(self) -> dict[tuple[str, int | str, str], Field]:
         return {}
 
-    def _scalar_of(self, key: int | str) -> Field:
-        """The cached cross-version declaration behind `scalar`."""
-        identity = ("tag", int(key)) if _is_tag(key) else ("name", str(key).strip().lower())
+    def _scalar_of(self, key: int | str, version: str | None = None) -> Field:
+        """The cached declaration behind `scalar`: one version's, or every one's.
+
+        Both go through the same builder, so what a version pins is the
+        *history* a declaration carries and never the keys it carries it
+        under -- a field read out of `4.4` says `fix:versions` is `["4.4"]`
+        rather than not saying it at all.
+        """
+        identity = (
+            ("tag", int(key)) if _is_tag(key) else ("name", str(key).strip().lower())
+        ) + (version or "",)
         built = self._scalars.get(identity)
         if built is not None:
             return built
-        found = self.lookup(key)
+        found = self.lookup(key, version)
         if not found:
-            raise KeyError(f"no FIX field {key!r} in any version")
+            where = version or "any version"
+            raise KeyError(f"no FIX field {key!r} in {where}")
         # A version may annotate the canonical name (`Field(Deprecated)`) while
         # retaining its tag. Once the newest name resolves, the tag is the
         # cross-version identity and must bring that version back into history.
-        if not _is_tag(key):
+        if not _is_tag(key) and version is None:
             found = self.lookup(int(found[0].fix["tag"]))
         built = self._scalars[identity] = _merged_scalar(found)
         return built
@@ -1096,7 +1111,14 @@ def _used_in(markup: str) -> list[str]:
 
 
 def _merged_scalar(fields: Sequence[Field]) -> Field:
-    """Newest field identity with every version's non-conflicting knowledge."""
+    """Newest field identity with every version's non-conflicting knowledge.
+
+    One field or nine, the answer has the same keys. The history maps are
+    written even when every version agrees -- a consumer that reads
+    `fix:names` to label a column would otherwise get one for `Rule80A`,
+    which was renamed, and none for `Side`, which was not, and would have to
+    carry the special case that this function is the right place for.
+    """
     latest = fields[0]
     typed = next((member for member in fields if member.fix.get("type")), latest)
     metadata = dict(latest.metadata)
@@ -1104,13 +1126,10 @@ def _merged_scalar(fields: Sequence[Field]) -> Field:
     metadata["fix:types"] = _json(
         {member.fix["version"]: member.fix["type"] for member in fields if member.fix.get("type")}
     )
-
-    names = {member.fix["version"]: member.name for member in fields}
-    if len(set(names.values())) > 1:
-        metadata["fix:names"] = _json(names)
-    tags = {member.fix["version"]: member.fix["tag"] for member in fields}
-    if len(set(tags.values())) > 1:
-        metadata["fix:tags"] = _json(tags)
+    metadata["fix:names"] = _json({member.fix["version"]: member.name for member in fields})
+    metadata["fix:tags"] = _json(
+        {member.fix["version"]: member.fix["tag"] for member in fields}
+    )
 
     for key in ("values", "value_names"):
         combined: dict[str, str] = {}

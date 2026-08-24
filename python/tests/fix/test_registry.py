@@ -660,7 +660,35 @@ def test_a_scalar_is_fresh_and_an_explicit_version_stays_exact() -> None:
 
     exact = registry.scalar("Side", version="4.4")
     assert exact.fix["version"] == "4.4"
-    assert "versions" not in exact.fix and "types" not in exact.fix
+    assert json.loads(exact.fix["versions"]) == ["4.4"], "the one version it was pinned to"
+    assert json.loads(exact.fix["types"]) == {"4.4": "char"}
+    assert json.loads(exact.fix["names"]) == {"4.4": "Side"}
+    assert json.loads(exact.fix["tags"]) == {"4.4": "54"}
+
+
+def test_a_pinned_scalar_says_everything_a_merged_one_says() -> None:
+    """One shape, whichever way a declaration asked for the field.
+
+    A consumer reads `fix:versions` or `fix:types` off whatever `scalar`
+    hands it, and a key that appears only on the merged answer is a
+    `KeyError` that shows up the day someone pins a version. Both are built
+    by one function so that cannot drift; this is what says so.
+    """
+    registry = FixRegistry.from_builtin()
+    merged = registry.scalar("Side")
+    exact = registry.scalar("Side", version="4.4")
+    assert dict(merged.fix).keys() == dict(exact.fix).keys()
+
+    # And the pinned one carries that version's knowledge, not every version's.
+    assert json.loads(merged.fix["versions"])[0] == "5.0.SP2"
+    assert len(json.loads(merged.fix["versions"])) > len(json.loads(exact.fix["versions"]))
+
+
+def test_a_pinned_scalar_that_no_version_of_it_has_is_a_key_error() -> None:
+    """The same refusal as the merged path, naming the version that was asked."""
+    registry = FixRegistry.from_builtin()
+    with pytest.raises(KeyError, match="4.0"):
+        registry.scalar("QuoteRespType", version="4.0")
 
 
 # -- search ------------------------------------------------------------------
