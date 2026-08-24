@@ -251,21 +251,25 @@ class FixCodec(Convertible):
         if not len(keys):
             return pairs
         carried = compute.or_(
-            compute.equal(compute.utf8_lower(compute.utf8_trim_whitespace(keys)), _XML_DATA_NAME),
             compute.equal(keys, _XML_DATA_TAG),
+            compute.equal(compute.utf8_lower(compute.utf8_trim_whitespace(keys)), _XML_DATA_NAME),
         )
-        readable = compute.and_(
-            carried,
-            compute.and_(
-                compute.fill_null(compute.match_substring_regex(items, _PAYLOAD_PAIRS), False),
-                compute.invert(
-                    compute.fill_null(compute.match_substring_regex(items, _LOOKS_XML), False)
-                ),
+        if not compute.any(carried, min_count=0).as_py():
+            # Nearly every batch. Two string compares over the keys settle it,
+            # and the regexes below -- which read *values*, the expensive half
+            # of any pass here -- never run.
+            return pairs
+        payloads = compute.filter(items, carried)
+        reads = compute.and_(
+            compute.fill_null(compute.match_substring_regex(payloads, _PAYLOAD_PAIRS), False),
+            compute.invert(
+                compute.fill_null(compute.match_substring_regex(payloads, _LOOKS_XML), False)
             ),
         )
+        readable = _scattered_mask(carried, reads)
         if not compute.any(readable, min_count=0).as_py():
             return pairs
-        parsed = _payload_pairs(compute.filter(items, readable))
+        parsed = _payload_pairs(compute.filter(payloads, reads))
         counts, inner = _payload_counts(readable, parsed)
         if inner is None:
             return pairs
@@ -1151,6 +1155,12 @@ def _payload_starts(readable: Any, parsed: Any) -> Any:
     found = compute.fill_null(compute.list_value_length(_listed(parsed)), 0).cast(pyarrow.int32())
     running = compute.subtract(compute.cumulative_sum(found), found)
     return compute.fill_null(_scattered_int(readable, running), 0)
+
+
+def _scattered_mask(mask: Any, found: Any) -> Any:
+    """A truth per masked entry, put back where its entry was; false elsewhere."""
+    compute = pyarrow.compute
+    return compute.and_(mask, compute.equal(_scattered_int(mask, found.cast(pyarrow.int32())), 1))
 
 
 def _scattered_int(mask: Any, values: Any) -> Any:
