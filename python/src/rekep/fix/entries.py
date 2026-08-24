@@ -320,6 +320,22 @@ class FieldEntry(Convertible):
         """The FIX value a spelling names, or the spelling itself when none does."""
         return self.translations.get(translation_key(value), str(value))
 
+    def meaning(self, value: str) -> str | None:
+        """What one value means, where this field enumerates its values.
+
+        The other direction from `translate`, and the prose before the symbol:
+        `Side <54>` value `1` is "Buy" for a person and `BUY` for a program,
+        and this is read by people. None where the field enumerates nothing or
+        no version of it defines the value -- which is honest, and better than
+        echoing back a code the dictionary does not know.
+
+        Read off the record and never stored beside the value: it is one
+        string per enumerated field per row, derivable from the dictionary
+        the row is read under.
+        """
+        spelled = str(value)
+        return self.values.get(spelled) or self.value_names.get(spelled)
+
     def into_field(self, version: str) -> Field | None:
         """This field as `version` declares it, or None when that version has none.
 

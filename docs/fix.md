@@ -391,7 +391,11 @@ found.raw    # '125', the text the line carried
 found.value  # 125.0, what the dictionary makes of it
 ```
 
-One call answers both halves, so no call site picks an accessor by which half
+`Reading.meaning` is the third thing one call answers: what the value means
+where its field enumerates its values (`Side=1` is "Buy"). Derived, never
+stored -- it is a fact about the dictionary, not about the row.
+
+One call answers every half, so no call site picks an accessor by which one
 it wants. The typed reading applies the dictionary's own `translate` before
 the cast, so a value spelled by its meaning (`Side=Buy`) resolves without the
 call site knowing there was anything to resolve.
@@ -411,8 +415,8 @@ reads through it with no dictionary, which resolves by spelling alone.
 ## Parsed-log projection
 
 Common fields are promoted once into `FixMessage`. Residual `kwargs` keeps everything
-not promoted -- resolved or not, in wire order, with the tag, the name, the
-container or namespace it sat in, and what its value means. A later market
+not promoted -- resolved or not, in wire order, with the tag, the name, and the
+container or namespace it sat in. A later market
 conversion rebuilds a `FixEvents` view from those typed columns and that one
 residual list instead of tokenizing the raw message again.
 

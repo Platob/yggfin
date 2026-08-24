@@ -159,8 +159,7 @@ TAG: pyarrow.DataType = pyarrow.int32()
 #: and `namespace` when it does not, which is what a vendor prefix is. So
 #: `NoPartyIDs[0].PartyID` is `PartyID` in component `NoPartyIDs[0]` and
 #: `TECH.CLIENTID` is `CLIENTID` in namespace `TECH`, and the two are told
-#: apart rather than filed together. `trans` is what the value means where its
-#: field enumerates its values.
+#: apart rather than filed together.
 #:
 #: The split is lossless: whichever of the two is set, joined to `key` by a
 #: dot, is the key exactly as the line rendered it.
@@ -172,7 +171,6 @@ KWARGS: pyarrow.DataType = pyarrow.list_(
                 pyarrow.field("tag", TAG, nullable=False),
                 pyarrow.field("key", pyarrow.string(), nullable=False),
                 pyarrow.field("value", pyarrow.string()),
-                pyarrow.field("trans", pyarrow.string()),
                 pyarrow.field("namespace", pyarrow.string()),
                 pyarrow.field("comp", pyarrow.string()),
             ]
@@ -180,6 +178,12 @@ KWARGS: pyarrow.DataType = pyarrow.list_(
         nullable=False,
     )
 )
+
+#: The members of one stored field, in the order `KWARGS` declares them. Read
+#: off the type rather than spelled a second time: this list existed twice, in
+#: two modules, and a member added to one and not the other is the shape bug
+#: that costs a whole column.
+KWARG_PARTS: tuple[str, ...] = tuple(member.name for member in KWARGS.value_type)
 
 
 def _physical_type(member: Field) -> pyarrow.DataType:

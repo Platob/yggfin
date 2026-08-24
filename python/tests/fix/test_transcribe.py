@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pathlib
+import re
 import warnings
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -11,6 +13,7 @@ from typing import Any
 import pyarrow
 import pytest
 
+import rekep
 from rekep.fix import (
     NO_PROTOCOL,
     FixCodec,
@@ -20,10 +23,12 @@ from rekep.fix import (
     infer_version_from_pairs,
     parse_arrow_array,
 )
+from rekep.fix.access import FieldAccess
 from rekep.fix.columns import (
     COLUMNS,
     COMMON,
     FLAT,
+    KWARG_PARTS,
     KWARGS,
     NAMED,
     QUOTE,
@@ -210,18 +215,25 @@ def test_an_unknown_numeric_tag_is_still_a_tag(codec: FixCodec) -> None:
     assert _tags(codec.into_kwargs(pairs, "4.4")) == [(55, "TTF"), (999999999, "FAKE-VALUE")]
 
 
-def test_a_value_its_field_enumerates_is_transcribed(codec: FixCodec) -> None:
-    """What the dictionary adds beyond a tag: what the value means."""
+def test_a_value_its_field_enumerates_reads_its_meaning(codec: FixCodec) -> None:
+    """What the dictionary adds beyond a tag: what the value means.
+
+    Derived through the one accessor rather than stored beside every field --
+    it is a fact about the dictionary and the value, not about the row.
+    """
+    access = FieldAccess.of(codec.registry, "4.4")
     pairs = parse_arrow_array(pyarrow.array(["35=D|54=1|55=TTF|"]))
-    found = {
-        entry["tag"]: entry["trans"] for entry in codec.into_kwargs(pairs, "4.4").to_pylist()[0]
-    }
-    assert found[54] == "Buy"
-    assert found[35] == "NewOrderSingle <D>", "the newest version's spelling of the value"
-    assert found[55] is None, "Symbol enumerates nothing, so there is nothing to say"
+    stored = codec.into_kwargs(pairs, "4.4").to_pylist()[0]
+    assert access.reading(stored, 54).meaning == "Buy"
+    assert access.reading(stored, 35).meaning == "NewOrderSingle <D>", (
+        "the newest version's spelling of the value"
+    )
+    assert access.reading(stored, 55).meaning is None, (
+        "Symbol enumerates nothing, so there is nothing to say"
+    )
 
 
-def test_a_value_is_transcribed_from_the_whole_enumeration(codec: FixCodec) -> None:
+def test_a_value_reads_its_meaning_from_the_whole_enumeration(codec: FixCodec) -> None:
     """A field's values are cross-version, so a code reads under any version it has.
 
     Which is the point of one record per identity: a value that only ever
@@ -229,18 +241,15 @@ def test_a_value_is_transcribed_from_the_whole_enumeration(codec: FixCodec) -> N
     parses off a line a bridge stamped 4.0 -- rather than reading as nothing
     because the version in the header happened not to list it.
     """
-    pairs = parse_arrow_array(pyarrow.array(["54=6|"]))
-    assert [entry["trans"] for entry in codec.into_kwargs(pairs, "4.4").to_pylist()[0]] == [
-        "Sell short exempt"
-    ]
-    older = parse_arrow_array(pyarrow.array(["54=A|"]))
-    assert [entry["trans"] for entry in codec.into_kwargs(older, "4.0").to_pylist()[0]] == [
-        "Cross short exempt"
-    ]
-    unknown = parse_arrow_array(pyarrow.array(["54=ZZ|"]))
-    assert [entry["trans"] for entry in codec.into_kwargs(unknown, "4.0").to_pylist()[0]] == [
-        None
-    ], "and a code no version defines still reads as nothing rather than as a guess"
+    access = FieldAccess.of(codec.registry, None)
+    newer = codec.into_kwargs(parse_arrow_array(pyarrow.array(["54=6|"])), "4.4").to_pylist()[0]
+    assert access.reading(newer, 54).meaning == "Sell short exempt"
+    older = codec.into_kwargs(parse_arrow_array(pyarrow.array(["54=A|"])), "4.0").to_pylist()[0]
+    assert access.reading(older, 54).meaning == "Cross short exempt"
+    unknown = codec.into_kwargs(parse_arrow_array(pyarrow.array(["54=ZZ|"])), "4.0").to_pylist()[0]
+    assert access.reading(unknown, 54).meaning is None, (
+        "and a code no version defines still reads as nothing rather than as a guess"
+    )
 
 
 def test_a_key_is_split_into_its_name_and_where_it_stood(codec: FixCodec) -> None:
@@ -339,9 +348,6 @@ def test_no_version_keeps_every_field_raw(codec: FixCodec) -> None:
     kwargs, columns = codec.into_fixmessage_columns(parsed)
 
     assert _kwargs(kwargs) == [(55, "55", "TTF"), (0, "ISINCODE", "XX0000084733")]
-    assert not any(entry["trans"] for entry in kwargs.to_pylist()[0]), (
-        "a number is a tag with or without a dictionary, but nothing reads it"
-    )
     assert columns["isincode"].to_pylist() == [None]
 
 
@@ -744,10 +750,29 @@ def test_a_stored_field_names_itself_and_never_nothing() -> None:
         "tag",
         "key",
         "value",
-        "trans",
         "namespace",
         "comp",
     ]
+    assert KWARG_PARTS == ("tag", "key", "value", "namespace", "comp"), (
+        "one declaration of the members, read off the type itself"
+    )
+
+
+def test_the_stored_members_are_declared_once_and_nowhere_else() -> None:
+    """Two copies of this tuple is the shape bug that costs a whole column.
+
+    The member list lived in two modules and a member removed from one would
+    have left the other writing a struct Arrow refuses. It is read off
+    `KWARGS` now, so the type is the only declaration, and this pins that no
+    module spells it again.
+    """
+    package = pathlib.Path(rekep.__file__).parent
+    spelled = [
+        path.relative_to(package).as_posix()
+        for path in package.rglob("*.py")
+        if re.search(r"""\(\s*["']tag["']\s*,\s*["']key["']\s*,""", path.read_text())
+    ]
+    assert not spelled, f"the stored members are spelled again in {spelled}"
 
 
 def test_the_set_is_configuration_and_travels_in_a_document(

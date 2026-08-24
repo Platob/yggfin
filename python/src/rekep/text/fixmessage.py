@@ -17,7 +17,7 @@ from rekep.convert import Convertible
 from rekep.enums import EventType
 from rekep.fields import Field, scalar
 from rekep.fix.access import Entry, FieldAccess, Reading
-from rekep.fix.columns import DECLARATIONS, ISIN_CODE, KWARGS
+from rekep.fix.columns import DECLARATIONS, ISIN_CODE, KWARG_PARTS, KWARGS
 from rekep.fix.components import PARTIES, TRD_REG_TIMESTAMPS, Party, TrdRegTimestamp
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL
@@ -950,10 +950,6 @@ def _pair_date(value: Any) -> datetime.date | None:
 _GROUP_ENTRY = re.compile(r"\[[0-9]+\]$")
 
 
-#: The parts of one stored field, in the order `KWARGS` declares them.
-_KWARG_PARTS: tuple[str, ...] = ("tag", "key", "value", "trans", "namespace", "comp")
-
-
 def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | None:
     """Stored fields in the spelling Arrow accepts without a shape pass."""
     return None if entries is None else [_stored_entry(entry) for entry in entries]
@@ -968,7 +964,7 @@ def _stored_entry(entry: Any) -> dict[str, Any]:
     `namespace` the same way `FixCodec.transcribe` splits a parsed one.
     """
     if isinstance(entry, Mapping):
-        filled = {name: entry.get(name) for name in _KWARG_PARTS}
+        filled = {name: entry.get(name) for name in KWARG_PARTS}
         return {**filled, "tag": int(filled["tag"] or 0), "key": str(entry["key"])}
     key, value = entry
     tag, spelling = (int(key), str(key)) if isinstance(key, int) else (0, str(key))
@@ -978,7 +974,6 @@ def _stored_entry(entry: Any) -> dict[str, Any]:
         "tag": tag,
         "key": name or spelling,
         "value": None if value is None else str(value),
-        "trans": None,
         "namespace": lead if lead and not inside else None,
         "comp": lead if inside else None,
     }

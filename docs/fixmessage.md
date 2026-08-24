@@ -62,7 +62,6 @@ than being guessed.
   - `tag`: what the dictionary answers for the key, or `0` where nothing does.
   - `key`: the field's own name, and nothing else.
   - `value`: what the line wrote for it.
-  - `trans`: what that value means, where the field enumerates its values.
   - `comp`: the FIX component or repeating-group entry it sat in, where the
     dictionary declares that container -- `NoPartyIDs[0]`.
   - `namespace`: whatever stood in front of the name where it does not, which
@@ -77,6 +76,11 @@ than being guessed.
 These are lists, not maps, because repeated keys and wire order are data. At
 most one of `comp` and `namespace` is set, and either one joined to `key` by a
 dot is the key exactly as the line rendered it, so the split loses nothing.
+
+What a value *means* is not stored beside it. It is a fact about the
+dictionary and the value rather than about the row, so it is derived at read
+time -- `FieldAccess(...).reading(row.kwargs, 54).meaning` is `"Buy"` -- and a
+row read under a newer dictionary says what that dictionary says.
 
 ## Categorization
 

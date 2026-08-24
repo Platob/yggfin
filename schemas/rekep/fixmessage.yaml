@@ -173,9 +173,6 @@ fields:
     - name: value
       type: string
       nullable: true
-    - name: trans
-      type: string
-      nullable: true
     - name: namespace
       type: string
       nullable: true

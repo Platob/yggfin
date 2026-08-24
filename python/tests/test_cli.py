@@ -154,7 +154,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     assert "unix_hour: int64  [partition identity]" in printed
     assert (
         "kwargs: list<item: struct<tag: int32 not null, key: string not null, "
-        "value: string, trans: string, namespace: string, comp: string> not null>"
+        "value: string, namespace: string, comp: string> not null>"
         "  [nullable]"
     ) in printed
     assert "parties: list<item: struct<party_id: string" in printed

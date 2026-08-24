@@ -155,7 +155,7 @@ class Reading:
     row does not carry the field at all.
     """
 
-    __slots__ = ("found", "raw", "tag", "key", "_access", "_value")
+    __slots__ = ("found", "raw", "tag", "key", "_access", "_value", "_meaning")
 
     def __init__(
         self,
@@ -171,6 +171,7 @@ class Reading:
         self.key = key
         self._access = access
         self._value = _MISSING
+        self._meaning = _MISSING
 
     def __bool__(self) -> bool:
         return self.found
@@ -187,6 +188,21 @@ class Reading:
             else:
                 self._value = self._access.typed(self.tag or self.key, self.raw)
         return self._value
+
+    @property
+    def meaning(self) -> str | None:
+        """What the value means, where its field enumerates its values.
+
+        Derived here rather than stored beside every field: it is a fact about
+        the dictionary and the value, not about the row, so a row read under a
+        newer dictionary says what that dictionary says.
+        """
+        if self._meaning is _MISSING:
+            if self._access is None or self.raw is None:
+                self._meaning = None
+            else:
+                self._meaning = self._access.meaning(self.tag or self.key, self.raw)
+        return self._meaning
 
 
 _ABSENT = Reading(found=False)
@@ -364,6 +380,19 @@ class FieldAccess:
             return cast_arrow_fix(pyarrow.array([text], pyarrow.string()), arrow_type)[0].as_py()
         except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, ValueError):
             return text
+
+    def meaning(self, field: int | str, raw: Any) -> str | None:
+        """What one value means, through the record's own `meaning`.
+
+        Translated first, so a value spelled by its meaning still finds it:
+        `Side=Buy` and `Side=1` both mean "Buy".
+        """
+        if raw is None or not isinstance(raw, str):
+            return None
+        record = self._record(field if type(field) is int else _KEY_TAIL(str(field)))
+        if record is None:
+            return None
+        return record.meaning(record.translate(raw))
 
     @cached_property
     def _arrow_types(self) -> dict[int | str, pyarrow.DataType | None]:

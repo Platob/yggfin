@@ -119,7 +119,7 @@ def test_a_stored_field_always_says_what_it_is() -> None:
     assert member.item.nullable is False
     assert member.item.field("tag").nullable is False
     assert member.item.field("key").nullable is False
-    for name in ("value", "trans", "namespace", "comp"):
+    for name in ("value", "namespace", "comp"):
         assert member.item.field(name).nullable is True, name
         assert member.item.field(name).arrow_type == pyarrow.string(), name
 
@@ -230,7 +230,7 @@ def test_the_schema_says_which_class_it_came_from() -> None:
 
 def _stored(tag: int, key: str, value: str) -> dict[str, object]:
     """One stored field in the whole spelling `FixMessage.into_dict` writes."""
-    return {"tag": tag, "key": key, "value": value, "trans": None, "namespace": None, "comp": None}
+    return {"tag": tag, "key": key, "value": value, "namespace": None, "comp": None}
 
 
 def test_a_row_round_trips_as_a_document() -> None:
