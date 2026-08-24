@@ -1,0 +1,18 @@
+{
+ "name": "SideGrossTradeAmt",
+ "tag": 1072,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "The gross trade amount for this side of the trade. See also GrossTradeAmt <381> for additional definition."
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "The gross trade amount for this side of the trade. See also GrossTradeAmt <381> for additional definition."
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "The gross trade amount for this side of the trade. See also GrossTradeAmt <381> for additional definition."
+  }
+ }
+}

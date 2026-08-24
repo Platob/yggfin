@@ -1,0 +1,18 @@
+{
+ "name": "RootPartyIDSource",
+ "tag": 1118,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "PartyIDSource value within a root parties component. Same values as PartyIDSource <447>"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "PartyIDSource value within a root parties component. Same values as PartyIDSource <447>"
+  },
+  "5.0": {
+   "type": "char",
+   "description": "PartyIDSource value within a root parties component. Same values as PartyIDSource <447>"
+  }
+ }
+}

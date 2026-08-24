@@ -1,0 +1,30 @@
+{
+ "name": "DisclosureInstructionGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 355,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDisclosureInstructions",
+     "required": false,
+     "tag": 1812,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DisclosureType",
+       "required": false,
+       "tag": 1813
+      },
+      {
+       "kind": "field",
+       "name": "DisclosureInstruction",
+       "required": false,
+       "tag": 1814
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

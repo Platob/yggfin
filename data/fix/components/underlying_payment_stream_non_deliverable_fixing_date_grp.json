@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingPaymentStreamNonDeliverableFixingDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 423,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingNonDeliverableFixingDates",
+     "required": false,
+     "tag": 40656,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingNonDeliverableFixingDate",
+       "required": false,
+       "tag": 40657
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingNonDeliverableFixingDateType",
+       "required": false,
+       "tag": 40658
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

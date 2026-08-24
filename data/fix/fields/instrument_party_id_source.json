@@ -1,0 +1,18 @@
+{
+ "name": "InstrumentPartyIDSource",
+ "tag": 1050,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "PartyIDSource value within an instrument partyrepeating group. Same values as PartyIDSource <447>"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "PartyIDSource value within an instrument partyrepeating group. Same values as PartyIDSource <447>"
+  },
+  "5.0": {
+   "type": "char",
+   "description": "PartyIDSource value within an instrument partyrepeating group. Same values as PartyIDSource <447>"
+  }
+ }
+}

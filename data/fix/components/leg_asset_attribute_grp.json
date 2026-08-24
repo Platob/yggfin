@@ -1,0 +1,36 @@
+{
+ "name": "LegAssetAttributeGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 520,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegAssetAttributes",
+     "required": false,
+     "tag": 2308,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegAssetAttributeType",
+       "required": false,
+       "tag": 2309
+      },
+      {
+       "kind": "field",
+       "name": "LegAssetAttributeValue",
+       "required": false,
+       "tag": 2310
+      },
+      {
+       "kind": "field",
+       "name": "LegAssetAttributeLimit",
+       "required": false,
+       "tag": 2311
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

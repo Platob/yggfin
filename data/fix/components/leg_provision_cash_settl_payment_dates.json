@@ -1,0 +1,62 @@
+{
+ "name": "LegProvisionCashSettlPaymentDates",
+ "versions": {
+  "5.0.SP2": {
+   "order": 37,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegProvisionCashSettlPaymentDateBusinessDayConvention",
+     "required": false,
+     "tag": 40516
+    },
+    {
+     "kind": "component",
+     "name": "LegProvisionCashSettlPaymentDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionCashSettlPaymentDateRelativeTo",
+     "required": false,
+     "tag": 40518
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionCashSettlPaymentDateOffsetPeriod",
+     "required": false,
+     "tag": 40519
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionCashSettlPaymentDateOffsetUnit",
+     "required": false,
+     "tag": 40520
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionCashSettlPaymentDateOffsetDayType",
+     "required": false,
+     "tag": 40521
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionCashSettlPaymentDateRangeFirst",
+     "required": false,
+     "tag": 40522
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionCashSettlPaymentDateRangeLast",
+     "required": false,
+     "tag": 40523
+    },
+    {
+     "kind": "component",
+     "name": "LegProvisionCashSettlPaymentFixedDateGrp",
+     "required": false
+    }
+   ]
+  }
+ }
+}

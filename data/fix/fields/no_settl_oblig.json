@@ -1,0 +1,14 @@
+{
+ "name": "NoSettlOblig",
+ "tag": 1165,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of settlement obligations"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of settlement obligations"
+  }
+ }
+}

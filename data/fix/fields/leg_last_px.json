@@ -1,0 +1,34 @@
+{
+ "name": "LegLastPx",
+ "tag": 637,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values"
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values"
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Trade Capture Report Ack"
+   ]
+  },
+  "4.3": {
+   "type": "Price",
+   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values",
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

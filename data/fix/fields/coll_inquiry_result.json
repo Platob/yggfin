@@ -1,0 +1,138 @@
+{
+ "name": "CollInquiryResult",
+ "tag": 946,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Result returned in response to Collateral Inquiry <BB>",
+   "values": {
+    "0": "Successful (default)",
+    "1": "Invalid or unknown instrument",
+    "2": "Invalid or unknown collateral type",
+    "3": "Invalid Parties",
+    "4": "Invalid Transport Type requested",
+    "5": "Invalid Destination requested",
+    "6": "No collateral found for the trade specified",
+    "7": "No collateral found for the order specified",
+    "8": "Collateral inquiry type not supported",
+    "9": "Unauthorized for collateral inquiry",
+    "99": "Other (further information in Text <58> field)"
+   },
+   "value_names": {
+    "0": "SUCCESSFUL",
+    "1": "INVALID_OR_UNKNOWN_INSTRUMENT",
+    "2": "INVALID_OR_UNKNOWN_COLLATERAL_TYPE",
+    "3": "INVALID_PARTIES",
+    "4": "INVALID_TRANSPORT_TYPE_REQUESTED",
+    "5": "INVALID_DESTINATION_REQUESTED",
+    "6": "NO_COLLATERAL_FOUND_FOR_THE_TRADE_SPECIFIED",
+    "7": "NO_COLLATERAL_FOUND_FOR_THE_ORDER_SPECIFIED",
+    "8": "COLLATERAL_INQUIRY_TYPE_NOT_SUPPORTED",
+    "9": "UNAUTHORIZED_FOR_COLLATERAL_INQUIRY",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "CollateralInquiryAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Result returned in response to Collateral Inquiry <BB>",
+   "values": {
+    "0": "Successful (default)",
+    "1": "Invalid or unknown instrument",
+    "2": "Invalid or unknown collateral type",
+    "3": "Invalid Parties",
+    "4": "Invalid Transport Type requested",
+    "5": "Invalid Destination requested",
+    "6": "No collateral found for the trade specified",
+    "7": "No collateral found for the order specified",
+    "8": "Collateral inquiry type not supported",
+    "9": "Unauthorized for collateral inquiry",
+    "99": "Other (further information in Text <58> field)"
+   },
+   "value_names": {
+    "0": "SUCCESSFUL",
+    "1": "INVALID_OR_UNKNOWN_INSTRUMENT",
+    "2": "INVALID_OR_UNKNOWN_COLLATERAL_TYPE",
+    "3": "INVALID_PARTIES",
+    "4": "INVALID_TRANSPORT_TYPE_REQUESTED",
+    "5": "INVALID_DESTINATION_REQUESTED",
+    "6": "NO_COLLATERAL_FOUND_FOR_THE_TRADE_SPECIFIED",
+    "7": "NO_COLLATERAL_FOUND_FOR_THE_ORDER_SPECIFIED",
+    "8": "COLLATERAL_INQUIRY_TYPE_NOT_SUPPORTED",
+    "9": "UNAUTHORIZED_FOR_COLLATERAL_INQUIRY",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "CollateralInquiryAck"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Result returned in response to Collateral Inquiry <BB>",
+   "values": {
+    "0": "Successful (default)",
+    "1": "Invalid or unknown instrument",
+    "2": "Invalid or unknown collateral type",
+    "3": "Invalid Parties",
+    "4": "Invalid Transport Type requested",
+    "5": "Invalid Destination requested",
+    "6": "No collateral found for the trade specified",
+    "7": "No collateral found for the order specified",
+    "8": "Collateral inquiry type not supported",
+    "9": "Unauthorized for collateral inquiry",
+    "99": "Other (further information in Text <58> field)"
+   },
+   "value_names": {
+    "0": "SUCCESSFUL",
+    "1": "INVALID_OR_UNKNOWN_INSTRUMENT",
+    "2": "INVALID_OR_UNKNOWN_COLLATERAL_TYPE",
+    "3": "INVALID_PARTIES",
+    "4": "INVALID_TRANSPORT_TYPE_REQUESTED",
+    "5": "INVALID_DESTINATION_REQUESTED",
+    "6": "NO_COLLATERAL_FOUND_FOR_THE_TRADE_SPECIFIED",
+    "7": "NO_COLLATERAL_FOUND_FOR_THE_ORDER_SPECIFIED",
+    "8": "COLLATERAL_INQUIRY_TYPE_NOT_SUPPORTED",
+    "9": "UNAUTHORIZED_FOR_COLLATERAL_INQUIRY",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "CollateralInquiryAck"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Result returned in response to Collateral Inquiry <BB>",
+   "values": {
+    "0": "Successful (Default)",
+    "1": "Invalid or unknown instrument",
+    "2": "Invalid or unknown collateral type",
+    "3": "Invalid parties",
+    "4": "Invalid Transport Type requested",
+    "5": "Invalid Destination requested",
+    "6": "No collateral found for the trade specified",
+    "7": "No collateral found for the order specified",
+    "8": "Collateral Inquiry type not supported",
+    "9": "Unauthorized for collateral inquiry",
+    "99": "Other (further information in Text <58> field)"
+   },
+   "value_names": {
+    "0": "SUCCESSFUL",
+    "1": "INVALID_OR_UNKNOWN_INSTRUMENT",
+    "2": "INVALID_OR_UNKNOWN_COLLATERAL_TYPE",
+    "3": "INVALID_PARTIES",
+    "4": "INVALID_TRANSPORT_TYPE_REQUESTED",
+    "5": "INVALID_DESTINATION_REQUESTED",
+    "6": "NO_COLLATERAL_FOUND_FOR_THE_TRADE_SPECIFIED",
+    "7": "NO_COLLATERAL_FOUND_FOR_THE_ORDER_SPECIFIED",
+    "8": "COLLATERAL_INQUIRY_TYPE_NOT_SUPPORTED",
+    "9": "UNAUTHORIZED_FOR_COLLATERAL_INQUIRY",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "Collateral Inquiry Ack"
+   ]
+  }
+ }
+}

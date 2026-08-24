@@ -1,0 +1,32 @@
+{
+ "name": "InvestorCountryOfResidence",
+ "tag": 475,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Country",
+   "description": "The ISO 3166 Country code (2 character) identifying which country the beneficial investor is resident for tax purposes. (e.g https://en.wikipedia.org/wiki/ISO_3166-1 )"
+  },
+  "5.0.SP1": {
+   "type": "Country",
+   "description": "The ISO 3166 Country code (2 character) identifying which country the beneficial investor is resident for tax purposes. (e.g https://en.wikipedia.org/wiki/ISO_3166-1 )"
+  },
+  "5.0": {
+   "type": "Country",
+   "description": "The ISO 3166 Country code (2 character) identifying which country the beneficial investor is resident for tax purposes. (e.g https://en.wikipedia.org/wiki/ISO_3166-1 )"
+  },
+  "4.4": {
+   "type": "Country",
+   "description": "The ISO 3166 Country code (2 character) identifying which country the beneficial investor is resident for tax purposes. (e.g https://en.wikipedia.org/wiki/ISO_3166-1 )",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "Country",
+   "description": "The ISO 3166 Country <421> code (2 character) identifying which country the beneficial investor is resident for tax purposes.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  }
+ }
+}

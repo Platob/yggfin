@@ -1,0 +1,14 @@
+{
+ "name": "SecondaryPriceLimitType",
+ "tag": 1305,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Describes the how the price limits are expressed Same values as PriceLimitType <1306>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Describes the how the price limits are expressed Same values as PriceLimitType <1306>"
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "name": "StreamTerminationDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 466,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStreamTerminationDateBusinessCenters",
+     "required": false,
+     "tag": 40961,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StreamTerminationDateBusinessCenter",
+       "required": false,
+       "tag": 40067
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

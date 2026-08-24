@@ -1,0 +1,48 @@
+{
+ "name": "TriggerAction",
+ "tag": 1101,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Defines the type of action to take when the trigger hits.",
+   "values": {
+    "1": "Activate",
+    "2": "Modify",
+    "3": "Cancel"
+   },
+   "value_names": {
+    "1": "ACTIVATE",
+    "2": "MODIFY",
+    "3": "CANCEL"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Defines the type of action to take when the trigger hits.",
+   "values": {
+    "1": "Activate",
+    "2": "Modify",
+    "3": "Cancel"
+   },
+   "value_names": {
+    "1": "ACTIVATE",
+    "2": "MODIFY",
+    "3": "CANCEL"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Defines the type of action to take when the trigger hits.",
+   "values": {
+    "1": "Activate",
+    "2": "Modify",
+    "3": "Cancel"
+   },
+   "value_names": {
+    "1": "ACTIVATE",
+    "2": "MODIFY",
+    "3": "CANCEL"
+   }
+  }
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "name": "UnderlyingMaturityDay",
+ "tag": 314,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DayOfMonth",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.2 See Appendix 6-F: 2.Replaced Fields: MaturityDay (tag 205) and UnderlyingMaturityDay (tag 314) [Replaced in FIX 4.3] Underlying security's MaturityDay. See MaturityDay <205> field for description"
+  },
+  "5.0.SP1": {
+   "type": "DayOfMonth",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.2 See Appendix 6-F: 2.Replaced Fields: MaturityDay (tag 205) and UnderlyingMaturityDay (tag 314) [Replaced in FIX 4.3] Underlying security's MaturityDay. See MaturityDay <205> field for description"
+  },
+  "5.0": {
+   "type": "DayOfMonth",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.2 See Appendix 6-F: 2.Replaced Fields: MaturityDay (tag 205) and UnderlyingMaturityDay (tag 314) [Replaced in FIX 4.3] Underlying security's MaturityDay. See MaturityDay <205> field for description"
+  },
+  "4.4": {
+   "type": "DayOfMonth",
+   "note": "replaced",
+   "description": "No longer used as of FIX 4.3. Included here for reference to prior versions. *** REPLACED FIELD - See Appendix 6-F: 2.Replaced Fields: MaturityDay (tag 205) and UnderlyingMaturityDay (tag 314) [Replaced in FIX 4.3] *** Underlying security's MaturityDay. See MaturityDay <205> field for description"
+  },
+  "4.3": {
+   "name": "UnderlyingMaturityDay(replaced)",
+   "type": "DayOfMonth",
+   "note": "replaced",
+   "description": "No longer used as of FIX 4.3. Included here for reference to prior versions. *** REPLACED FIELD - See Appendix 6-F: 2.Replaced Fields: MaturityDay (tag 205) and UnderlyingMaturityDay (tag 314) [replaced in FIX 4.3] *** Underlying security's MaturityDay <205> (replaced)."
+  },
+  "4.2": {
+   "type": "DayOfMonth",
+   "description": "Underlying security's MaturityDay. See MaturityDay <205> field for description",
+   "used_in": [
+    "Quote Acknowledgement",
+    "Security Definition Request",
+    "Security Definition",
+    "Mass Quote"
+   ]
+  }
+ }
+}

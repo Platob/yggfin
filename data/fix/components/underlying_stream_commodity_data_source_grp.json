@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingStreamCommodityDataSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 602,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingStreamCommodityDataSources",
+     "required": false,
+     "tag": 41993,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommodityDataSourceID",
+       "required": false,
+       "tag": 41994
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommodityDataSourceIDType",
+       "required": false,
+       "tag": 41995
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

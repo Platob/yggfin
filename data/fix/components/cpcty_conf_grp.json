@@ -1,0 +1,129 @@
+{
+ "name": "CpctyConfGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 187,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCapacities",
+     "required": false,
+     "tag": 862,
+     "members": [
+      {
+       "kind": "field",
+       "name": "OrderCapacity",
+       "required": true,
+       "tag": 528
+      },
+      {
+       "kind": "field",
+       "name": "OrderRestrictions",
+       "required": false,
+       "tag": 529
+      },
+      {
+       "kind": "field",
+       "name": "OrderCapacityQty",
+       "required": false,
+       "tag": 863
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 36,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCapacities",
+     "required": true,
+     "tag": 862,
+     "members": [
+      {
+       "kind": "field",
+       "name": "OrderCapacity",
+       "required": true,
+       "tag": 528
+      },
+      {
+       "kind": "field",
+       "name": "OrderRestrictions",
+       "required": false,
+       "tag": 529
+      },
+      {
+       "kind": "field",
+       "name": "OrderCapacityQty",
+       "required": true,
+       "tag": 863
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 36,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCapacities",
+     "required": true,
+     "tag": 862,
+     "members": [
+      {
+       "kind": "field",
+       "name": "OrderCapacity",
+       "required": true,
+       "tag": 528
+      },
+      {
+       "kind": "field",
+       "name": "OrderRestrictions",
+       "required": false,
+       "tag": 529
+      },
+      {
+       "kind": "field",
+       "name": "OrderCapacityQty",
+       "required": true,
+       "tag": 863
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 36,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCapacities",
+     "required": true,
+     "tag": 862,
+     "members": [
+      {
+       "kind": "field",
+       "name": "OrderCapacity",
+       "required": true,
+       "tag": 528
+      },
+      {
+       "kind": "field",
+       "name": "OrderRestrictions",
+       "required": false,
+       "tag": 529
+      },
+      {
+       "kind": "field",
+       "name": "OrderCapacityQty",
+       "required": true,
+       "tag": 863
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

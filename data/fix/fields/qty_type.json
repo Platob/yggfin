@@ -1,0 +1,147 @@
+{
+ "name": "QtyType",
+ "tag": 854,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Type of quantity specified in a Quantity <53> field:",
+   "values": {
+    "0": "Units (shares, par , currency)",
+    "1": "Contracts (if used - must specify ContractMultiplier <231> )",
+    "2": "Units of Measure per Time Unit (if used - must specify UnitofMeasure <996> and TimeUnit <997> )"
+   },
+   "value_names": {
+    "0": "UNITS",
+    "1": "CONTRACTS",
+    "2": "UNITS_OF_MEASURE_PER_TIME_UNIT"
+   },
+   "used_in": [
+    "IOI",
+    "Advertisement",
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "TradeCaptureReport",
+    "Confirmation",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralResponse",
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "AllocationInstructionAlert",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Type of quantity specified in a Quantity <53> field:",
+   "values": {
+    "0": "Units (shares, par , currency)",
+    "1": "Contracts (if used - must specify ContractMultiplier <231> )",
+    "2": "Units of Measure per Time Unit (if used - must specify UnitofMeasure <996> and TimeUnit <997> )"
+   },
+   "value_names": {
+    "0": "UNITS",
+    "1": "CONTRACTS",
+    "2": "UNITS_OF_MEASURE_PER_TIME_UNIT"
+   },
+   "used_in": [
+    "IOI",
+    "Advertisement",
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "TradeCaptureReport",
+    "Confirmation",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralResponse",
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "AllocationInstructionAlert",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Type of quantity specified in a Quantity <53> field:",
+   "values": {
+    "0": "Units (shares, par , currency)",
+    "1": "Contracts (if used - must specify ContractMultiplier <231> )",
+    "2": "Units of Measure per Time Unit (if used - must specify UnitofMeasure <996> and TimeUnit <997> )"
+   },
+   "value_names": {
+    "0": "UNITS",
+    "1": "CONTRACTS",
+    "2": "UNITS_OF_MEASURE_PER_TIME_UNIT"
+   },
+   "used_in": [
+    "IOI",
+    "Advertisement",
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "TradeCaptureReport",
+    "Confirmation",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralResponse",
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "AllocationInstructionAlert",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "AllocationInstruction"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Type of quantity specified in a Quantity <53> field:",
+   "values": {
+    "0": "Units (shares, par , currency)",
+    "1": "Contracts (if used - should specify ContractMultiplier <231> )"
+   },
+   "value_names": {
+    "0": "UNITS",
+    "1": "CONTRACTS"
+   },
+   "used_in": [
+    "IOI",
+    "Advertisement",
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Quote Request Reject",
+    "Confirmation",
+    "Allocation Report",
+    "Collateral Request",
+    "Collateral Assignment",
+    "Collateral Response",
+    "Collateral Report",
+    "Collateral Inquiry",
+    "Collateral Inquiry Ack",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "Allocation Instruction",
+    "Quote Request",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

@@ -12,7 +12,7 @@ import pyarrow.compute
 
 from rekep.fields import scalar
 from rekep.fields.arrays import build_list, build_map, sequence
-from rekep.fix.columns import DECLARATIONS
+from rekep.fix.columns import DECLARATIONS, KWARGS
 from rekep.fix.quickfix import (
     SpecComponent,
     SpecComponentRef,
@@ -43,20 +43,6 @@ PARTIES: pyarrow.DataType = pyarrow.list_(
     pyarrow.field("item", Party.into_field().arrow_type, nullable=False)
 )
 
-_VALUE = pyarrow.field("value", pyarrow.string(), nullable=False)
-_FIX_TAGS: pyarrow.DataType = pyarrow.list_(
-    pyarrow.field(
-        "item",
-        pyarrow.struct(
-            [
-                pyarrow.field("key", pyarrow.int32(), nullable=False),
-                _VALUE,
-            ]
-        ),
-        nullable=False,
-    )
-)
-
 _NO_PARTY_IDS = "NoPartyIDs"
 _FALLBACK: dict[int, str] = {
     448: "PartyID",
@@ -85,6 +71,17 @@ class Parties:
     #: Retain the standalone extractor's legacy FIX tags when no registry is supplied.
     fallback: bool = True
 
+    #: Which component to read, and which repeating group inside it. Named
+    #: rather than hard-coded because everything below is declaration-driven:
+    #: the count tags, the member names, the paths each member sits under and
+    #: the tag that opens an entry all come out of the component tree, and
+    #: nothing in the state machine knows the word "party". What *is* specific
+    #: to Parties is the shape it projects into -- `Party`, and the parsed
+    #: log's `parties` column -- so another group extracts here and lands in
+    #: its own column only once one is declared for it.
+    component: str = "Parties"
+    group: str = _NO_PARTY_IDS
+
     def __post_init__(self) -> None:
         """Hold stable declaration and name snapshots for repeated batches."""
         declared = self.components
@@ -99,11 +96,11 @@ class Parties:
             parts = [self.into_arrow_arrays(chunk) for chunk in tags.chunks]
             return (
                 pyarrow.chunked_array([found for found, _ in parts], type=PARTIES),
-                pyarrow.chunked_array([rest for _, rest in parts], type=_FIX_TAGS),
+                pyarrow.chunked_array([rest for _, rest in parts], type=KWARGS),
             )
-        if not isinstance(tags, pyarrow.Array) or tags.type != _FIX_TAGS:
+        if not isinstance(tags, pyarrow.Array) or tags.type != KWARGS:
             actual = getattr(tags, "type", type(tags).__name__)
-            raise TypeError(f"Parties needs {_FIX_TAGS}, got {actual}")
+            raise TypeError(f"Parties needs {KWARGS}, got {actual}")
         return self._extract(tags)
 
     def _extract(self, tags: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
@@ -114,13 +111,13 @@ class Parties:
         if not len(entries):
             return pyarrow.nulls(rows, PARTIES), tags
 
-        keys = compute.struct_field(entries, 0)
+        keys = compute.struct_field(entries, "tag")
         relevant = compute.is_in(keys, value_set=self._relevant_array)
         if not compute.any(relevant, min_count=0).as_py():
             return pyarrow.nulls(rows, PARTIES), tags
 
         parents = compute.list_parent_indices(tags).cast(pyarrow.int64())
-        values = compute.struct_field(entries, 1)
+        values = compute.struct_field(entries, "value")
         positions = sequence(len(entries))
         row_ids = sequence(rows)
 
@@ -136,7 +133,7 @@ class Parties:
         )
 
         allowed = compute.is_in(keys, value_set=self._member_array)
-        is_delimiter = compute.is_in(keys, value_set=self._tags_named("PartyID"))
+        is_delimiter = compute.is_in(keys, value_set=self._delimiter_array)
         counted_inside = _contiguous_after(
             positions, parents, count_positions, count_match, allowed
         )
@@ -269,14 +266,10 @@ class Parties:
         )
         keep = compute.invert(remove)
         residual_sizes = _counts(compute.filter(parents, keep), rows)
-        residual_entries = pyarrow.StructArray.from_arrays(
-            [compute.filter(keys, keep), compute.filter(values, keep)],
-            fields=[_FIX_TAGS.value_type.field(0), _FIX_TAGS.value_type.field(1)],
-        )
         residual = build_list(
-            _FIX_TAGS,
+            KWARGS,
             residual_sizes,
-            residual_entries,
+            _kept(entries, keep),
             mask=compute.is_null(tags) if tags.null_count else None,
         )
         return extracted, residual
@@ -365,8 +358,10 @@ class Parties:
         dict[tuple[str, ...], set[int]],
     ]:
         """Count tags, member names, and their component paths."""
+        wanted = self.component.lower()
+        grouped = self.group.lower()
         by_name = {component.name.lower(): component for component in self.components}
-        explicit = "parties" in by_name
+        explicit = wanted in by_name
         legacy = not explicit and self.fallback
         counts = set() if not legacy else set(_FALLBACK_COUNTS)
         members = {} if not legacy else dict(_FALLBACK)
@@ -380,9 +375,12 @@ class Parties:
                 if mapped is not None:
                     members.setdefault(mapped, name)
                     paths.setdefault(mapped, paths.get(tag, ()))
-            mapped_count = name_tags.get(_NO_PARTY_IDS.lower())
+            mapped_count = name_tags.get(grouped)
             if mapped_count is not None:
                 counts.add(mapped_count)
+            group_delimiters[()] = {
+                tag for tag, name in members.items() if name == "PartyID" and not paths.get(tag)
+            }
             group_delimiters[("NoPartySubIDs",)] = {
                 tag
                 for tag, name in members.items()
@@ -440,8 +438,13 @@ class Parties:
 
         def find(declared: Sequence[SpecMember], seen: frozenset[str]) -> None:
             for member in declared:
-                if isinstance(member, SpecGroup) and member.name.lower() == _NO_PARTY_IDS.lower():
+                if isinstance(member, SpecGroup) and member.name.lower() == grouped:
                     counts.update(member_tags(member))
+                    # The group's own delimiter, which the standard fixes as
+                    # its first member: read off the declaration rather than
+                    # named here, so a group whose entries open with something
+                    # other than `PartyID` splits at the right tag.
+                    group_delimiters.setdefault((), set()).update(first_tags(member.members, seen))
                     visit(member.members, seen)
                 elif isinstance(member, SpecComponentRef):
                     key = member.name.lower()
@@ -451,17 +454,14 @@ class Parties:
 
         for component in self.components:
             key = component.name.lower()
-            if key == "parties":
+            if key == wanted:
                 find(component.members, frozenset({key}))
                 # Hand-written declarations sometimes omit the outer group.
                 visit(
                     tuple(
                         member
                         for member in component.members
-                        if not (
-                            isinstance(member, SpecGroup)
-                            and member.name.lower() == _NO_PARTY_IDS.lower()
-                        )
+                        if not (isinstance(member, SpecGroup) and member.name.lower() == grouped)
                     ),
                     frozenset({key}),
                 )
@@ -486,6 +486,11 @@ class Parties:
         return self._declaration[3]
 
     @cached_property
+    def _delimiter_array(self) -> pyarrow.Array:
+        """The tags that open one entry of the group, off its own declaration."""
+        return pyarrow.array(sorted(self._group_delimiters.get((), ())), pyarrow.int32())
+
+    @cached_property
     def _member_array(self) -> pyarrow.Array:
         return pyarrow.array(sorted(self._member_names), pyarrow.int32())
 
@@ -503,6 +508,16 @@ class Parties:
             sorted(tag for tag, found in self._member_names.items() if found.lower() == wanted),
             pyarrow.int32(),
         )
+
+
+def _kept(entries: Any, keep: Any) -> pyarrow.StructArray:
+    """The entries a mask keeps, rebuilt with every part they carry."""
+    compute = pyarrow.compute
+    fields = [KWARGS.value_type.field(index) for index in range(KWARGS.value_type.num_fields)]
+    return pyarrow.StructArray.from_arrays(
+        [compute.filter(compute.struct_field(entries, field.name), keep) for field in fields],
+        fields=fields,
+    )
 
 
 def _all(*conditions: Any) -> Any:

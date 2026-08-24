@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingQty",
+ "tag": 879,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Unit amount of the underlying security (par, shares, currency, etc.)"
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Unit amount of the underlying security (par, shares, currency, etc.)"
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Unit amount of the underlying security (par, shares, currency, etc.)"
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Unit amount of the underlying security (par, shares, currency, etc.)"
+  }
+ }
+}

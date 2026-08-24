@@ -1,0 +1,30 @@
+{
+ "name": "NewsRefGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 303,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoNewsRefIDs",
+     "required": false,
+     "tag": 1475,
+     "members": [
+      {
+       "kind": "field",
+       "name": "NewsRefID",
+       "required": false,
+       "tag": 1476
+      },
+      {
+       "kind": "field",
+       "name": "NewsRefType",
+       "required": false,
+       "tag": 1477
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

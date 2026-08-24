@@ -1,0 +1,54 @@
+{
+ "name": "DiscretionRoundDirection",
+ "tag": 844,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "If the calculated discretionary price is not a valid tick price, specifies whether to round the price to be more or less aggressive",
+   "values": {
+    "1": "More aggressive - on a buy order round the price up to the nearest tick; on a sell round down to the nearest tick",
+    "2": "More passive - on a buy order round down to the nearest tick; on a sell order round up to the nearest tick"
+   },
+   "value_names": {
+    "1": "MORE_AGGRESSIVE",
+    "2": "MORE_PASSIVE"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "If the calculated discretionary price is not a valid tick price, specifies whether to round the price to be more or less aggressive",
+   "values": {
+    "1": "More aggressive - on a buy order round the price up to the nearest tick; on a sell round down to the nearest tick",
+    "2": "More passive - on a buy order round down to the nearest tick; on a sell order round up to the nearest tick"
+   },
+   "value_names": {
+    "1": "MORE_AGGRESSIVE",
+    "2": "MORE_PASSIVE"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "If the calculated discretionary price is not a valid tick price, specifies whether to round the price to be more or less aggressive",
+   "values": {
+    "1": "More aggressive - on a buy order round the price up to the nearest tick; on a sell round down to the nearest tick",
+    "2": "More passive - on a buy order round down to the nearest tick; on a sell order round up to the nearest tick"
+   },
+   "value_names": {
+    "1": "MORE_AGGRESSIVE",
+    "2": "MORE_PASSIVE"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "If the calculated discretionary price is not a valid tick price, specifies whether to round the price to be more or less aggressive",
+   "values": {
+    "1": "More aggressive - on a buy order round the price up round up to the nearest tick, on a sell round down to the nearest tick",
+    "2": "More passive - on a buy order round down to nearest tick on a sell order round up to nearest tick"
+   },
+   "value_names": {
+    "1": "MORE_AGGRESSIVE",
+    "2": "MORE_PASSIVE"
+   }
+  }
+ }
+}

@@ -1,0 +1,123 @@
+{
+ "name": "TrdCapDtGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 240,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDates",
+     "required": false,
+     "tag": 580,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TradeDate",
+       "required": false,
+       "tag": 75
+      },
+      {
+       "kind": "field",
+       "name": "LastUpdateTime",
+       "required": false,
+       "tag": 779
+      },
+      {
+       "kind": "field",
+       "name": "TransactTime",
+       "required": false,
+       "tag": 60
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 89,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDates",
+     "required": false,
+     "tag": 580,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TradeDate",
+       "required": false,
+       "tag": 75
+      },
+      {
+       "kind": "field",
+       "name": "LastUpdateTime",
+       "required": false,
+       "tag": 779
+      },
+      {
+       "kind": "field",
+       "name": "TransactTime",
+       "required": false,
+       "tag": 60
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 91,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDates",
+     "required": false,
+     "tag": 580,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TradeDate",
+       "required": false,
+       "tag": 75
+      },
+      {
+       "kind": "field",
+       "name": "LastUpdateTime",
+       "required": false,
+       "tag": 779
+      },
+      {
+       "kind": "field",
+       "name": "TransactTime",
+       "required": false,
+       "tag": 60
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 91,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDates",
+     "required": false,
+     "tag": 580,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TradeDate",
+       "required": false,
+       "tag": 75
+      },
+      {
+       "kind": "field",
+       "name": "TransactTime",
+       "required": false,
+       "tag": 60
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

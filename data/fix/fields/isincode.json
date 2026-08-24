@@ -1,0 +1,16 @@
+{
+ "name": "ISINCODE",
+ "kind": "namespace",
+ "column": "isincode",
+ "aliases": [
+  {
+   "name": "AMON.ISINCODE"
+  }
+ ],
+ "versions": {
+  "*": {
+   "type": "String",
+   "description": "ISIN carried by the rendered ISINCODE field."
+  }
+ }
+}

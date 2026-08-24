@@ -1,0 +1,48 @@
+{
+ "name": "DayCumQty",
+ "tag": 425,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Quantity on a GT order that has traded today.",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Quantity on a GT order that has traded today.",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Quantity on a GT order that has traded today.",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Quantity on a GT order that has traded today.",
+   "used_in": [
+    "Execution Report"
+   ]
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "Quantity on a GT order that has traded today.",
+   "used_in": [
+    "Execution Report"
+   ]
+  },
+  "4.2": {
+   "type": "Qty",
+   "description": "The number of shares on a GT order that have traded today.",
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

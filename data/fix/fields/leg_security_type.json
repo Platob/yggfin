@@ -1,0 +1,26 @@
+{
+ "name": "LegSecurityType",
+ "tag": 609,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Refer to definition of SecurityType <167>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Refer to definition of SecurityType <167>"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Multileg instrument's individual security's SecurityType. See SecurityType <167> field for description"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Multileg instrument's individual security's SecurityType. See SecurityType <167> field for description"
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Multileg instrument's individual security's SecurityType. See SecurityType <167> field for description"
+  }
+ }
+}

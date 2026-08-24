@@ -1,0 +1,93 @@
+{
+ "name": "ComplianceID",
+ "tag": 376,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "ID used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "OrderCancelRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "ID used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelRequest",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "ID used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelRequest",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "ID used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request",
+    "Cross Order Cancel Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "ID used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "Trade Capture Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request",
+    "Cross Order Cancel Request"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "ID used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

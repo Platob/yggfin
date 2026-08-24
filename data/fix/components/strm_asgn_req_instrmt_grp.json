@@ -1,0 +1,41 @@
+{
+ "name": "StrmAsgnReqInstrmtGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 309,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRelatedSym",
+     "required": false,
+     "tag": 146,
+     "members": [
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "SettlType",
+       "required": false,
+       "tag": 63
+      },
+      {
+       "kind": "field",
+       "name": "MDEntrySize",
+       "required": false,
+       "tag": 271
+      },
+      {
+       "kind": "field",
+       "name": "MDStreamID",
+       "required": false,
+       "tag": 1500
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

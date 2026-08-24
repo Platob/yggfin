@@ -1,0 +1,24 @@
+{
+ "name": "MarketReqID",
+ "tag": 1393,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique ID of a Market Definition Request message.",
+   "used_in": [
+    "MarketDefinitionRequest",
+    "MarketDefinition",
+    "MarketDefinitionUpdateReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique ID of a Market Definition Request message.",
+   "used_in": [
+    "MarketDefinitionRequest",
+    "MarketDefinition",
+    "MarketDefinitionUpdateReport"
+   ]
+  }
+ }
+}

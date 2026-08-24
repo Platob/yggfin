@@ -1,0 +1,45 @@
+{
+ "name": "TradeReportRefID",
+ "tag": 572,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE transaction types.",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE transaction types.",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE transaction types.",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE transaction types.",
+   "used_in": [
+    "Trade Capture Report",
+    "Trade Capture Report Ack"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE transaction types.",
+   "used_in": [
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

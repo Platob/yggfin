@@ -1,0 +1,35 @@
+{
+ "name": "UnderlyingAdditionalTermGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 608,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingAdditionalTerms",
+     "required": false,
+     "tag": 42036,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingAdditionalTermConditionPrecedentBondIndicator",
+       "required": false,
+       "tag": 42037
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingAdditionalTermDiscrepancyClauseIndicator",
+       "required": false,
+       "tag": 42038
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingAdditionalTermBondRefGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

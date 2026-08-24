@@ -1,0 +1,101 @@
+{
+ "name": "StreamCommoditySettlPeriodGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 516,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStreamCommoditySettlPeriods",
+     "required": false,
+     "tag": 41289,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlCountry",
+       "required": false,
+       "tag": 41290
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlTimeZone",
+       "required": false,
+       "tag": 41291
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlFlowType",
+       "required": false,
+       "tag": 41292
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlPeriodNotional",
+       "required": false,
+       "tag": 41293
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlPeriodNotionalUnitOfMeasure",
+       "required": false,
+       "tag": 41294
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlPeriodFrequencyPeriod",
+       "required": false,
+       "tag": 41295
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlPeriodFrequencyUnit",
+       "required": false,
+       "tag": 41296
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlPeriodPrice",
+       "required": false,
+       "tag": 41297
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlPeriodPriceUnitOfMeasure",
+       "required": false,
+       "tag": 41298
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlPeriodPriceCurrency",
+       "required": false,
+       "tag": 41299
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlHolidaysProcessingInstruction",
+       "required": false,
+       "tag": 41300
+      },
+      {
+       "kind": "component",
+       "name": "StreamCommoditySettlDayGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlPeriodXID",
+       "required": false,
+       "tag": 41301
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlPeriodXIDRef",
+       "required": false,
+       "tag": 41302
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

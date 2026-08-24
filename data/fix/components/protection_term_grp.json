@@ -1,0 +1,81 @@
+{
+ "name": "ProtectionTermGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 403,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoProtectionTerms",
+     "required": false,
+     "tag": 40181,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ProtectionTermNotional",
+       "required": false,
+       "tag": 40182
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermCurrency",
+       "required": false,
+       "tag": 40183
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermSellerNotifies",
+       "required": false,
+       "tag": 40184
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermBuyerNotifies",
+       "required": false,
+       "tag": 40185
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermEventBusinessCenter",
+       "required": false,
+       "tag": 40186
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermStandardSources",
+       "required": false,
+       "tag": 40187
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermEventMinimumSources",
+       "required": false,
+       "tag": 40188
+      },
+      {
+       "kind": "component",
+       "name": "ProtectionTermEventNewsSourceGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "ProtectionTermEventGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "ProtectionTermObligationGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermXID",
+       "required": false,
+       "tag": 40190
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

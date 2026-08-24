@@ -1,0 +1,62 @@
+{
+ "name": "PegLimitType",
+ "tag": 837,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Type of Peg Limit",
+   "values": {
+    "0": "Or better (default) - price improvement allowed",
+    "1": "Strict - limit is a strict limit",
+    "2": "Or worse - for a buy the peg limit is a minimum and for a sell the peg limit is a maximum (for use for orders which have a price range)"
+   },
+   "value_names": {
+    "0": "OR_BETTER",
+    "1": "STRICT",
+    "2": "OR_WORSE"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Type of Peg Limit",
+   "values": {
+    "0": "Or better (default) - price improvement allowed",
+    "1": "Strict - limit is a strict limit",
+    "2": "Or worse - for a buy the peg limit is a minimum and for a sell the peg limit is a maximum (for use for orders which have a price range)"
+   },
+   "value_names": {
+    "0": "OR_BETTER",
+    "1": "STRICT",
+    "2": "OR_WORSE"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Type of Peg Limit",
+   "values": {
+    "0": "Or better (default) - price improvement allowed",
+    "1": "Strict - limit is a strict limit",
+    "2": "Or worse - for a buy the peg limit is a minimum and for a sell the peg limit is a maximum (for use for orders which have a price range)"
+   },
+   "value_names": {
+    "0": "OR_BETTER",
+    "1": "STRICT",
+    "2": "OR_WORSE"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Type of Peg Limit",
+   "values": {
+    "0": "Or better (default) - price improvement allowed",
+    "1": "Strict - limit is a strict limit",
+    "2": "Or worse - for a buy the peg limit is a minimum and for a sell the peg limit is a maximum (for use for orders which have a price range)"
+   },
+   "value_names": {
+    "0": "OR_BETTER",
+    "1": "STRICT",
+    "2": "OR_WORSE"
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "TrdRepPartyRole",
+ "tag": 1388,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies the type of party for trade reporting. Same values as PartyRole <452> ."
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies the type of party for trade reporting. Same values as PartyRole <452> ."
+  }
+ }
+}

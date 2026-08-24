@@ -1,0 +1,45 @@
+{
+ "name": "MassStatusReqID",
+ "tag": 584,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Value assigned by issuer of Mass Status Request <AF> to uniquely identify the request",
+   "used_in": [
+    "ExecutionReport",
+    "OrderMassStatusRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Value assigned by issuer of Mass Status Request <AF> to uniquely identify the request",
+   "used_in": [
+    "ExecutionReport",
+    "OrderMassStatusRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Value assigned by issuer of Mass Status Request <AF> to uniquely identify the request",
+   "used_in": [
+    "ExecutionReport",
+    "OrderMassStatusRequest"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Value assigned by issuer of Mass Status Request <AF> to uniquely identify the request",
+   "used_in": [
+    "Execution Report",
+    "Order Mass Status Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Value assigned by issuer of Mass Status Request to uniquely identify the request",
+   "used_in": [
+    "Order Mass Status Request"
+   ]
+  }
+ }
+}

@@ -1,0 +1,35 @@
+{
+ "name": "AllocSettlCurrency",
+ "tag": 736,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Currency",
+   "description": "Currency code of settlement denomination for a specific AllocAccount <79> . See Appendix 6-A: Valid Currency Codes for information on obtaining"
+  },
+  "5.0.SP1": {
+   "type": "Currency",
+   "description": "Currency code of settlement denomination for a specific AllocAccount <79> . See Appendix 6-A: Valid Currency Codes for information on obtaining"
+  },
+  "5.0": {
+   "type": "Currency",
+   "description": "Currency code of settlement denomination for a specific AllocAccount <79> . See Appendix 6-A: Valid Currency Codes for information on obtaining"
+  },
+  "4.4": {
+   "type": "Currency",
+   "description": "Currency code of settlement denomination for a specific AllocAccount <79> . See Appendix 6-A: Valid Currency Codes for information on obtaining",
+   "used_in": [
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Trade Capture Report Ack",
+    "Allocation Report",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "Allocation Instruction",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

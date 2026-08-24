@@ -1,0 +1,69 @@
+{
+ "name": "ComplexEventRelativeDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 79,
+   "members": [
+    {
+     "kind": "field",
+     "name": "ComplexEventDateUnadjusted",
+     "required": false,
+     "tag": 41020
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventDateRelativeTo",
+     "required": false,
+     "tag": 41021
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventDateOffsetPeriod",
+     "required": false,
+     "tag": 41022
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventDateOffsetUnit",
+     "required": false,
+     "tag": 41023
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventDateOffsetDayType",
+     "required": false,
+     "tag": 41024
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventDateBusinessDayConvention",
+     "required": false,
+     "tag": 41025
+    },
+    {
+     "kind": "component",
+     "name": "ComplexEventDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventDateAdjusted",
+     "required": false,
+     "tag": 41026
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventFixingTime",
+     "required": false,
+     "tag": 41027
+    },
+    {
+     "kind": "field",
+     "name": "ComplexEventFixingTimeBusinessCenter",
+     "required": false,
+     "tag": 41028
+    }
+   ]
+  }
+ }
+}

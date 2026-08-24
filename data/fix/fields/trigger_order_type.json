@@ -1,0 +1,42 @@
+{
+ "name": "TriggerOrderType",
+ "tag": 1111,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "The OrdType the order should have after the trigger has hit. Required to express orders that change from Limit to Market. Other values from OrdType <40> may be used if appropriate and bilaterally agreed upon.",
+   "values": {
+    "1": "Market",
+    "2": "Limit"
+   },
+   "value_names": {
+    "1": "MARKET",
+    "2": "LIMIT"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "The OrdType the order should have after the trigger has hit. Required to express orders that change from Limit to Market. Other values from OrdType <40> may be used if appropriate and bilaterally agreed upon.",
+   "values": {
+    "1": "Market",
+    "2": "Limit"
+   },
+   "value_names": {
+    "1": "MARKET",
+    "2": "LIMIT"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "The OrdType the order should have after the trigger has hit. Required to express orders that change from Limit to Market. Other values from OrdType <40> may be used if appropriate and bilaterally agreed upon.",
+   "values": {
+    "1": "Market",
+    "2": "Limit"
+   },
+   "value_names": {
+    "1": "MARKET",
+    "2": "LIMIT"
+   }
+  }
+ }
+}

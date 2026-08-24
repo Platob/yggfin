@@ -1,0 +1,42 @@
+{
+ "name": "ApplReportType",
+ "tag": 1426,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Type of report",
+   "values": {
+    "0": "Reset ApplSeqNum <1181> to new value specified in ApplNewSeqNum <1399>",
+    "1": "Reports that the last message has been sent for the ApplIDs Refer to RefApplLastSeqNum <1357> for the application sequence number of the last message.",
+    "2": "Heartbeat message indicating that Application identified by RefApplID <1355> is still alive. Refer to RefApplLastSeqNum <1357> for the application sequence number of the previous message.",
+    "3": "Application message re-send completed."
+   },
+   "value_names": {
+    "0": "APPL_SEQ_NUM_RESET",
+    "1": "LAST_MESSAGE_SENT",
+    "2": "APPLICATION_ALIVE",
+    "3": "RESEND_COMPLETE"
+   },
+   "used_in": [
+    "ApplicationMessageReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Type of report",
+   "values": {
+    "0": "Reset ApplSeqNum <1181> to new value specified in ApplNewSeqNum <1399>",
+    "1": "Reports that the last message has been sent for the ApplIDs Refer to RefApplLastSeqNum <1357> for the application sequence number of the last message.",
+    "2": "Heartbeat message indicating that Application identified by RefApplID <1355> is still alive. Refer to RefApplLastSeqNum <1357> for the application sequence number of the previous message."
+   },
+   "value_names": {
+    "0": "APPL_SEQ_NUM_RESET",
+    "1": "LAST_MESSAGE_SENT",
+    "2": "APPLICATION_ALIVE"
+   },
+   "used_in": [
+    "ApplicationMessageReport"
+   ]
+  }
+ }
+}

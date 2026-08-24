@@ -1,0 +1,74 @@
+{
+ "name": "TradeRequestStatus",
+ "tag": 750,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Status of Trade Request.",
+   "values": {
+    "0": "Accepted",
+    "1": "Completed",
+    "2": "Rejected"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "COMPLETED",
+    "2": "REJECTED"
+   },
+   "used_in": [
+    "TradeCaptureReportRequestAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Status of Trade Request.",
+   "values": {
+    "0": "Accepted",
+    "1": "Completed",
+    "2": "Rejected"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "COMPLETED",
+    "2": "REJECTED"
+   },
+   "used_in": [
+    "TradeCaptureReportRequestAck"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Status of Trade Request.",
+   "values": {
+    "0": "Accepted",
+    "1": "Completed",
+    "2": "Rejected"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "COMPLETED",
+    "2": "REJECTED"
+   },
+   "used_in": [
+    "TradeCaptureReportRequestAck"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Status of Trade Request.",
+   "values": {
+    "0": "Accepted",
+    "1": "Completed",
+    "2": "Rejected"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "COMPLETED",
+    "2": "REJECTED"
+   },
+   "used_in": [
+    "Trade Capture Report Request Ack"
+   ]
+  }
+ }
+}

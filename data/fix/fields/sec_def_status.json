@@ -1,0 +1,65 @@
+{
+ "name": "SecDefStatus",
+ "tag": 653,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.2 See Appendix 6-F: 18.Removed unused field: SecDefStatus (tag 653) [Replaced in FIX 4.4] State of a security definition request made to a market. Useful for markets, such as derivatives markets, where market participants are permitted to define instruments for subsequent trading",
+   "values": {
+    "0": "Pending Approval",
+    "1": "Approved (Accepted)",
+    "2": "Rejected",
+    "3": "Unauthorized request",
+    "4": "Invalid definition request"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.2 See Appendix 6-F: 18.Removed unused field: SecDefStatus (tag 653) [Replaced in FIX 4.4] State of a security definition request made to a market. Useful for markets, such as derivatives markets, where market participants are permitted to define instruments for subsequent trading",
+   "values": {
+    "0": "Pending Approval",
+    "1": "Approved (Accepted)",
+    "2": "Rejected",
+    "3": "Unauthorized request",
+    "4": "Invalid definition request"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.2 See Appendix 6-F: 18.Removed unused field: SecDefStatus (tag 653) [Replaced in FIX 4.4] State of a security definition request made to a market. Useful for markets, such as derivatives markets, where market participants are permitted to define instruments for subsequent trading",
+   "values": {
+    "0": "Pending Approval",
+    "1": "Approved (Accepted)",
+    "2": "Rejected",
+    "3": "Unauthorized request",
+    "4": "Invalid definition request"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "note": "replaced",
+   "description": "No longer used as of FIX 4.3. Included here for reference to prior versions. *** REPLACED FIELD - See Appendix 6-F: 18.Removed unused field: SecDefStatus (tag 653) [Replaced in FIX 4.4] *** State of a security definition request made to a market. Useful for markets, such as derivatives markets, where market participants are permitted to define instruments for subsequent trading",
+   "values": {
+    "0": "Pending Approval",
+    "1": "Approved (Accepted)",
+    "2": "Rejected",
+    "3": "Unauthorized request",
+    "4": "Invalid definition request"
+   }
+  },
+  "4.3": {
+   "type": "int",
+   "description": "State of a security definition request made to a market. Useful for markets, such as derivatives markets, where market participants are permitted to define instruments for subsequent trading",
+   "values": {
+    "0": "Pending Approval",
+    "1": "Approved (Accepted)",
+    "2": "Rejected",
+    "3": "Unauthorized request",
+    "4": "Invalid definition request"
+   }
+  }
+ }
+}

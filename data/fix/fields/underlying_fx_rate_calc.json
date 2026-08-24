@@ -1,0 +1,42 @@
+{
+ "name": "UnderlyingFXRateCalc",
+ "tag": 1046,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Specifies whether the UnderlyingFxRate <1045> should be multiplied or divided.",
+   "values": {
+    "M": "Multiply",
+    "D": "Divide"
+   },
+   "value_names": {
+    "D": "DIVIDE",
+    "M": "MULTIPLY"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Specifies whether the UnderlyingFxRate <1045> should be multiplied or divided.",
+   "values": {
+    "M": "Multiply",
+    "D": "Divide"
+   },
+   "value_names": {
+    "D": "DIVIDE",
+    "M": "MULTIPLY"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Specifies whether the UnderlyingFxRate <1045> should be multiplied or divided.",
+   "values": {
+    "M": "Multiply",
+    "D": "Divide"
+   },
+   "value_names": {
+    "D": "DIVIDE",
+    "M": "MULTIPLY"
+   }
+  }
+ }
+}

@@ -1,0 +1,57 @@
+{
+ "name": "ExecAckStatus",
+ "tag": 1036,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "The status of this execution acknowledgement message.",
+   "values": {
+    "0": "Received, not yet processed",
+    "1": "Accepted",
+    "2": "Don't know / Rejected"
+   },
+   "value_names": {
+    "0": "RECEIVED",
+    "1": "ACCEPTED",
+    "2": "DONT_KNOW"
+   },
+   "used_in": [
+    "ExecutionAcknowledgement"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "The status of this execution acknowledgement message.",
+   "values": {
+    "0": "Received, not yet processed",
+    "1": "Accepted",
+    "2": "Don't know / Rejected"
+   },
+   "value_names": {
+    "0": "RECEIVED",
+    "1": "ACCEPTED",
+    "2": "DON"
+   },
+   "used_in": [
+    "ExecutionAcknowledgement"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "The status of this execution acknowledgement message.",
+   "values": {
+    "0": "Received, not yet processed",
+    "1": "Accepted",
+    "2": "Don't know / Rejected"
+   },
+   "value_names": {
+    "0": "RECEIVED",
+    "1": "ACCEPTED",
+    "2": "DON"
+   },
+   "used_in": [
+    "ExecutionAcknowledgement"
+   ]
+  }
+ }
+}

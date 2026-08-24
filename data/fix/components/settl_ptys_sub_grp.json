@@ -1,0 +1,105 @@
+{
+ "name": "SettlPtysSubGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 247,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSettlPartySubIDs",
+     "required": false,
+     "tag": 801,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SettlPartySubID",
+       "required": false,
+       "tag": 785
+      },
+      {
+       "kind": "field",
+       "name": "SettlPartySubIDType",
+       "required": false,
+       "tag": 786
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 96,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSettlPartySubIDs",
+     "required": false,
+     "tag": 801,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SettlPartySubID",
+       "required": false,
+       "tag": 785
+      },
+      {
+       "kind": "field",
+       "name": "SettlPartySubIDType",
+       "required": false,
+       "tag": 786
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 98,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSettlPartySubIDs",
+     "required": false,
+     "tag": 801,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SettlPartySubID",
+       "required": false,
+       "tag": 785
+      },
+      {
+       "kind": "field",
+       "name": "SettlPartySubIDType",
+       "required": false,
+       "tag": 786
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 98,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSettlPartySubIDs",
+     "required": false,
+     "tag": 801,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SettlPartySubID",
+       "required": false,
+       "tag": 785
+      },
+      {
+       "kind": "field",
+       "name": "SettlPartySubIDType",
+       "required": false,
+       "tag": 786
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,26 @@
+{
+ "name": "NoStipulations",
+ "tag": 232,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of stipulation entries (Note tag # was reserved in FIX 4.1, added in FIX 4.3)."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of stipulation entries (Note tag # was reserved in FIX 4.1, added in FIX 4.3)."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of stipulation entries (Note tag # was reserved in FIX 4.1, added in FIX 4.3)."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of stipulation entries (Note tag # was reserved in FIX 4.1, added in FIX 4.3)."
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of stipulation entries (Note tag # was reserved in FIX 4.1, added in FIX 4.3)."
+  }
+ }
+}

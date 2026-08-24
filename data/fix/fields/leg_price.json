@@ -1,0 +1,38 @@
+{
+ "name": "LegPrice",
+ "tag": 566,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Price for leg of a multileg See Price <44> field for description"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Price for leg of a multileg See Price <44> field for description"
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Price for leg of a multileg See Price <44> field for description"
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Price for leg of a multileg See Price <44> field for description",
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Trade Capture Report Ack"
+   ]
+  },
+  "4.3": {
+   "type": "Price",
+   "description": "Price for leg of a multileg See Price <44> field for description",
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

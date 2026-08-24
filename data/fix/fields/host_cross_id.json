@@ -1,0 +1,33 @@
+{
+ "name": "HostCrossID",
+ "tag": 961,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Host assigned entity ID that can be used to reference all components of a cross; sides + strategy + legs. Used as the primary key with which to refer to the Cross Order for cancellation and replace. The HostCrossID will also be used to link together components of the Cross Order. For example, each individual Execution Report associated with the order will carry HostCrossID in order to tie back to the original cross order.",
+   "used_in": [
+    "ExecutionReport",
+    "CrossOrderCancelReplaceRequest",
+    "CrossOrderCancelRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Host assigned entity ID that can be used to reference all components of a cross; sides + strategy + legs. Used as the primary key with which to refer to the Cross Order for cancellation and replace. The HostCrossID will also be used to link together components of the Cross Order. For example, each individual Execution Report associated with the order will carry HostCrossID in order to tie back to the original cross order.",
+   "used_in": [
+    "ExecutionReport",
+    "CrossOrderCancelReplaceRequest",
+    "CrossOrderCancelRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Host assigned entity ID that can be used to reference all components of a cross; sides + strategy + legs. Used as the primary key with which to refer to the Cross Order for cancellation and replace. The HostCrossID will also be used to link together components of the Cross Order. For example, each individual Execution Report associated with the order will carry HostCrossID in order to tie back to the original cross order.",
+   "used_in": [
+    "ExecutionReport",
+    "CrossOrderCancelReplaceRequest",
+    "CrossOrderCancelRequest"
+   ]
+  }
+ }
+}

@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingPaymentStreamCompoundingDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 694,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingPaymentStreamCompoundingDates",
+     "required": false,
+     "tag": 42901,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStreamCompoundingDate",
+       "required": false,
+       "tag": 42902
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStreamCompoundingDateType",
+       "required": false,
+       "tag": 42903
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

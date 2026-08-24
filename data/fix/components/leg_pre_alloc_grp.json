@@ -1,0 +1,227 @@
+{
+ "name": "LegPreAllocGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 199,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegAllocs",
+     "required": false,
+     "tag": 670,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegAllocAccount",
+       "required": false,
+       "tag": 671
+      },
+      {
+       "kind": "field",
+       "name": "LegIndividualAllocID",
+       "required": false,
+       "tag": 672
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocQty",
+       "required": false,
+       "tag": 673
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocAcctIDSource",
+       "required": false,
+       "tag": 674
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocSettlCurrency",
+       "required": false,
+       "tag": 1367
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocSettlCurrencyCodeSource",
+       "required": false,
+       "tag": 2928
+      },
+      {
+       "kind": "field",
+       "name": "LegCustodialLotID",
+       "required": false,
+       "tag": 1756
+      },
+      {
+       "kind": "field",
+       "name": "LegVersusPurchaseDate",
+       "required": false,
+       "tag": 1757
+      },
+      {
+       "kind": "field",
+       "name": "LegVersusPurchasePrice",
+       "required": false,
+       "tag": 1758
+      },
+      {
+       "kind": "field",
+       "name": "LegCurrentCostBasis",
+       "required": false,
+       "tag": 1759
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 48,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegAllocs",
+     "required": false,
+     "tag": 670,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegAllocAccount",
+       "required": false,
+       "tag": 671
+      },
+      {
+       "kind": "field",
+       "name": "LegIndividualAllocID",
+       "required": false,
+       "tag": 672
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocQty",
+       "required": false,
+       "tag": 673
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocAcctIDSource",
+       "required": false,
+       "tag": 674
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocSettlCurrency",
+       "required": false,
+       "tag": 1367
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 49,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegAllocs",
+     "required": false,
+     "tag": 670,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegAllocAccount",
+       "required": false,
+       "tag": 671
+      },
+      {
+       "kind": "field",
+       "name": "LegIndividualAllocID",
+       "required": false,
+       "tag": 672
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocQty",
+       "required": false,
+       "tag": 673
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocAcctIDSource",
+       "required": false,
+       "tag": 674
+      },
+      {
+       "kind": "field",
+       "name": "LegSettlCurrency",
+       "required": false,
+       "tag": 675
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 49,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegAllocs",
+     "required": false,
+     "tag": 670,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegAllocAccount",
+       "required": false,
+       "tag": 671
+      },
+      {
+       "kind": "field",
+       "name": "LegIndividualAllocID",
+       "required": false,
+       "tag": 672
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocQty",
+       "required": false,
+       "tag": 673
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocAcctIDSource",
+       "required": false,
+       "tag": 674
+      },
+      {
+       "kind": "field",
+       "name": "LegSettlCurrency",
+       "required": false,
+       "tag": 675
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

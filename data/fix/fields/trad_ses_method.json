@@ -1,0 +1,118 @@
+{
+ "name": "TradSesMethod",
+ "tag": 338,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Method of trading",
+   "values": {
+    "1": "Electronic",
+    "2": "Open Outcry",
+    "3": "Two Party"
+   },
+   "value_names": {
+    "1": "ELECTRONIC",
+    "2": "OPEN_OUTCRY",
+    "3": "TWO_PARTY",
+    "4": "VOICE"
+   },
+   "used_in": [
+    "TradingSessionListRequest",
+    "TradingSessionStatusRequest",
+    "TradingSessionStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Method of trading",
+   "values": {
+    "1": "Electronic",
+    "2": "Open Outcry",
+    "3": "Two Party"
+   },
+   "value_names": {
+    "1": "ELECTRONIC",
+    "2": "OPEN_OUTCRY",
+    "3": "TWO_PARTY"
+   },
+   "used_in": [
+    "TradingSessionListRequest",
+    "TradingSessionStatusRequest",
+    "TradingSessionStatus"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Method of trading",
+   "values": {
+    "1": "Electronic",
+    "2": "Open Outcry",
+    "3": "Two Party"
+   },
+   "value_names": {
+    "1": "ELECTRONIC",
+    "2": "OPEN_OUTCRY",
+    "3": "TWO_PARTY"
+   },
+   "used_in": [
+    "TradingSessionListRequest",
+    "TradingSessionStatusRequest",
+    "TradingSessionStatus"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Method of trading",
+   "values": {
+    "1": "Electronic",
+    "2": "Open Outcry",
+    "3": "Two Party"
+   },
+   "value_names": {
+    "1": "ELECTRONIC",
+    "2": "OPEN_OUTCRY",
+    "3": "TWO_PARTY"
+   },
+   "used_in": [
+    "Trading Session Status Request",
+    "Trading Session Status"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Method of trading",
+   "values": {
+    "1": "Electronic",
+    "2": "Open Outcry",
+    "3": "Two Party"
+   },
+   "value_names": {
+    "3": "TWO_PARTY",
+    "1": "ELECTRONIC",
+    "2": "OPEN_OUTCRY"
+   },
+   "used_in": [
+    "Trading Session Status Request",
+    "Trading Session Status"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Method of trading",
+   "values": {
+    "1": "Electronic",
+    "2": "Open Outcry",
+    "3": "Two Party"
+   },
+   "value_names": {
+    "1": "ELECTRONIC",
+    "2": "OPEN_OUTCRY",
+    "3": "TWO_PARTY"
+   },
+   "used_in": [
+    "Trading Session Status Request",
+    "Trading Session Status"
+   ]
+  }
+ }
+}

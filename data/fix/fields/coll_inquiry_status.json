@@ -1,0 +1,90 @@
+{
+ "name": "CollInquiryStatus",
+ "tag": 945,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Status of Collateral Inquiry <BB>",
+   "values": {
+    "0": "Accepted",
+    "1": "Accepted With Warnings",
+    "2": "Completed",
+    "3": "Completed With Warnings",
+    "4": "Rejected"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "ACCEPTED_WITH_WARNINGS",
+    "2": "COMPLETED",
+    "3": "COMPLETED_WITH_WARNINGS",
+    "4": "REJECTED"
+   },
+   "used_in": [
+    "CollateralInquiryAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Status of Collateral Inquiry <BB>",
+   "values": {
+    "0": "Accepted",
+    "1": "Accepted With Warnings",
+    "2": "Completed",
+    "3": "Completed With Warnings",
+    "4": "Rejected"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "ACCEPTED_WITH_WARNINGS",
+    "2": "COMPLETED",
+    "3": "COMPLETED_WITH_WARNINGS",
+    "4": "REJECTED"
+   },
+   "used_in": [
+    "CollateralInquiryAck"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Status of Collateral Inquiry <BB>",
+   "values": {
+    "0": "Accepted",
+    "1": "Accepted With Warnings",
+    "2": "Completed",
+    "3": "Completed With Warnings",
+    "4": "Rejected"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "ACCEPTED_WITH_WARNINGS",
+    "2": "COMPLETED",
+    "3": "COMPLETED_WITH_WARNINGS",
+    "4": "REJECTED"
+   },
+   "used_in": [
+    "CollateralInquiryAck"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Status of Collateral Inquiry <BB>",
+   "values": {
+    "0": "Accepted",
+    "1": "Accepted with Warnings",
+    "2": "Completed",
+    "3": "Completed with Warnings",
+    "4": "Rejected"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "ACCEPTED_WITH_WARNINGS",
+    "2": "COMPLETED",
+    "3": "COMPLETED_WITH_WARNINGS",
+    "4": "REJECTED"
+   },
+   "used_in": [
+    "Collateral Inquiry Ack"
+   ]
+  }
+ }
+}

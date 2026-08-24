@@ -1,0 +1,74 @@
+{
+ "name": "LastRptRequested",
+ "tag": 912,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Indicates whether this message is that last report message in response to a request, such as Order Mass Status Request <AF> .",
+   "values": {
+    "N": "Not last message",
+    "Y": "Last message"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "AssignmentReport",
+    "CollateralReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Indicates whether this message is that last report message in response to a request, such as Order Mass Status Request <AF> .",
+   "values": {
+    "N": "Not last message",
+    "Y": "Last message"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "AssignmentReport",
+    "CollateralReport"
+   ]
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Indicates whether this message is that last report message in response to a request, such as Order Mass Status Request <AF> .",
+   "values": {
+    "N": "Not last message",
+    "Y": "Last message"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "AssignmentReport",
+    "CollateralReport"
+   ]
+  },
+  "4.4": {
+   "type": "Boolean",
+   "description": "Indicates whether this message is that last report message in response to a request, such as Order Mass Status Request <AF> .",
+   "values": {
+    "Y": "Last message",
+    "N": "Not last message"
+   },
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Assignment Report",
+    "Collateral Report"
+   ]
+  }
+ }
+}

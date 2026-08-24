@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import dataclasses
 import functools
+import json
 import re
+import warnings
 from collections.abc import Iterable, Mapping
 from functools import cached_property
 from typing import Any
@@ -17,8 +19,8 @@ from rekep.fields import Field
 from rekep.fields.arrays import groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
 from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
+from rekep.fix.columns import KWARGS, QUOTE_GROUP_COUNTS, QUOTE_GROUP_STRUCTURE, TAG, named_columns
 from rekep.fix.columns import NAMED as NAMED_COLUMNS
-from rekep.fix.columns import QUOTE_GROUP_COUNTS, QUOTE_GROUP_STRUCTURE
 from rekep.fix.columns import TYPES as FLAT_TYPES
 from rekep.fix.components import Parties
 from rekep.fix.fields import cast_arrow_fix
@@ -29,36 +31,52 @@ from rekep.fix.message import (
     NAMED_SEPARATOR_VECTOR,
     SEPARATOR_VECTOR,
     SEPARATORS,
+    SOH,
     parse_arrow_array,
 )
+from rekep.fix.quickfix import SpecComponent
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL, Rules
 
-#: What a resolved key is: the tag number, as the `int32` every other code
-#: column here is.
-TAG: pyarrow.DataType = pyarrow.int32()
+#: `XmlData <213>` as a rendered key and as a wire tag, which are the two ways
+#: a line writes the field whose payload is another message.
+_XML_DATA_KEY = "XmlData"
+_XML_DATA_NAME = pyarrow.scalar("xmldata")
+_XML_DATA_TAG = pyarrow.scalar("213")
 
-# Stored pairs are lists because repeated keys are data, not a malformed map.
-# The parser keeps its efficient map-shaped intermediate private.
-_VALUE = pyarrow.field("value", pyarrow.string(), nullable=False)
-_RAW_PAIRS: pyarrow.DataType = pyarrow.map_(pyarrow.string(), _VALUE)
+#: What makes a payload a message rather than a document: two `name=` tokens.
+#: The same "two and not one" `BRIDGE` uses, and for the same reason -- one
+#: `a=b` inside prose is a sentence.
+_PAYLOAD_PAIRS = r"[A-Za-z0-9_.\-]+[ \t]*=.*[^A-Za-z0-9_.\-][A-Za-z0-9_.\-]+[ \t]*="
 
+#: And what makes it a document: the standard says XML, and a payload that
+#: opens a tag is taken at its word however rare it turns out to be.
+_LOOKS_XML = r"^[ \t\r\n]*<"
 
-def _pair_list(key_type: pyarrow.DataType) -> pyarrow.DataType:
-    entry = pyarrow.struct(
-        [
-            pyarrow.field("key", key_type, nullable=False),
-            _VALUE,
-        ]
-    )
-    return pyarrow.list_(pyarrow.field("item", entry, nullable=False))
+#: What a payload writes between its fields. Neither of the two things
+#: `separators_of` reads -- a BeginString or a `#` -- is inside one, so this
+#: reads the character between the first `name=value` and the next `name=`,
+#: which is the same rule `BRIDGE_SEPARATOR_VECTOR` applies to a marked line.
+#: `\^A` before `.`, or a caret-A payload reads its separator as `^` and every
+#: key after the first comes back with an `A` glued to the front.
+_PAYLOAD_SEPARATOR = r"(?s)[A-Za-z0-9_.\-]+[ \t]*=.*?(?P<sep>\^A|.)[A-Za-z0-9_.\-]+[ \t]*="
 
-
-FIX_TAGS: pyarrow.DataType = _pair_list(TAG)
-KEYVAL: pyarrow.DataType = _pair_list(pyarrow.string())
-FIX_MISS_TAGS: pyarrow.DataType = pyarrow.list_(
-    pyarrow.field("item", pyarrow.string(), nullable=False)
+# The parser keeps its efficient map-shaped intermediate private; a stored
+# field is a list entry, because repeated keys are data and not a broken map.
+_RAW_PAIRS: pyarrow.DataType = pyarrow.map_(
+    pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
 )
+
+#: The container a rendered key sits directly inside, with its entry index
+#: dropped: `Instrument.NoLegs[0].LegSymbol` sits in `NoLegs`, `TECH.CLIENTID`
+#: in `TECH`, and `Side` in nothing at all.
+_CONTAINED_KEY = r"(?s)^(?:.*\.)?(?P<inner>[^.]*?)(?:\[[0-9]+\])?\.[^.]*$"
+
+#: A rendered key cut into the name it ends with and whatever stood in front:
+#: `NoPartyIDs[0].PartyID` is `PartyID` under `NoPartyIDs[0]`, `TECH.CLIENTID`
+#: is `CLIENTID` under `TECH`, and `Side` is `Side` under nothing. Greedy, so
+#: the *last* dot is the cut and a deeper path keeps its depth.
+_NAMESPACED_KEY = r"(?s)^(?:(?P<namespace>.*)\.)?(?P<key>[^.]*)$"
 
 #: A key that is already a tag: digits, and few enough of them to be one.
 #: Ten digits can overflow an `int32` and no FIX tag has ten, so the width is
@@ -111,20 +129,37 @@ class TagIndex:
     #: The tag behind each name, in the same order.
     tags: pyarrow.Array
 
+    #: Every name a dotted key may sit *inside*: a component, a group, a field.
+    #: What tells `NoPartyIDs[0].PartyID` -- `PartyID` in a group this version
+    #: declares -- from `TECH.CLIENTID`, which is a vendor's own namespace and
+    #: not `ClientID <109>` wearing a prefix.
+    containers: pyarrow.Array = dataclasses.field(
+        default_factory=lambda: pyarrow.array([], pyarrow.string())
+    )
+
     @classmethod
-    def from_tags(cls, tags: dict[str, int]) -> TagIndex:
+    def from_tags(cls, tags: Mapping[str, int], containers: Iterable[str] = ()) -> TagIndex:
         """An index out of `FixRegistry.tags()`; an empty one resolves nothing."""
+        inside = dict.fromkeys(name.lower() for name in (*tags, *containers))
         return cls(
             names=pyarrow.array(list(tags), pyarrow.string()),
             tags=pyarrow.array(list(tags.values()), TAG),
+            containers=pyarrow.array(list(inside), pyarrow.string()),
         )
 
     def resolve(self, keys: Any) -> pyarrow.Array:
         """A key column as tag numbers, null where no reading finds one."""
         return self.resolve_with_match(keys)[0]
 
-    def resolve_with_match(self, keys: Any) -> tuple[pyarrow.Array, pyarrow.Array, pyarrow.Array]:
-        """Resolved tags, registry hits, and terminal key names in one scan."""
+    def resolve_with_match(self, keys: Any) -> tuple[Any, Any, Any, Any]:
+        """Resolved tags, registry hits, terminal names, and containment.
+
+        Four answers because they are one scan: whether a key sits inside a
+        container this version declares decides both whether its tail may be
+        resolved and whether what stands in front of it is a component or a
+        namespace, and computing it twice would read the same column
+        through the same regex twice.
+        """
         compute = pyarrow.compute
         plain = compute.fill_null(compute.match_substring_regex(keys, _IS_TAG), False)
         if compute.all(plain, min_count=0).as_py():
@@ -137,10 +172,19 @@ class TagIndex:
                 resolved,
                 compute.fill_null(compute.is_in(resolved, value_set=self.tags), False),
                 keys,
+                # A bare tag stands inside nothing, which is the same answer
+                # `_contained` gives a key with no dot in it.
+                pyarrow.repeat(True, len(keys)),
             )
         reduced = compute.fill_null(
             compute.struct_field(compute.extract_regex(keys, _MEMBER_NAME_VECTOR), "name"), ""
         )
+        # A dotted key gives up its tail only when the container it names is
+        # one this version has. `TECH.CLIENTID` is a vendor's own field, not
+        # `ClientID <109>` wearing a prefix, and reading it as one files an
+        # enrichment value under a standard tag it has nothing to do with.
+        contained = self._contained(keys)
+        reduced = compute.if_else(contained, reduced, keys)
         numeric = compute.fill_null(compute.match_substring_regex(reduced, _IS_TAG), False)
         # Cast the whole column rather than a filtered subset: a non-numeric
         # key is replaced by a digit that casts, and the `if_else` after throws
@@ -154,19 +198,27 @@ class TagIndex:
             compute.fill_null(compute.is_in(as_tag, value_set=self.tags), False),
             compute.is_valid(name_index),
         )
-        return resolved, matched, reduced
+        return resolved, matched, reduced, contained
 
-    def matched(self, keys: Any, resolved: Any | None = None) -> pyarrow.Array:
-        """Whether each key has a field in this registry version."""
+    def _contained(self, keys: Any) -> pyarrow.Array:
+        """Whether each key sits inside something this version declares.
+
+        True for a key with nothing in front of it, which is most of them.
+        Otherwise the *immediate* container decides -- the segment nearest the
+        field -- because that is the one that says what the field is a member
+        of; anything further out only says where that container came from.
+        """
         compute = pyarrow.compute
-        if resolved is None:
-            return self.resolve_with_match(keys)[1]
-        reduced = compute.fill_null(
-            compute.struct_field(compute.extract_regex(keys, _MEMBER_NAME_VECTOR), "name"), ""
+        inner = compute.fill_null(
+            compute.struct_field(compute.extract_regex(keys, _CONTAINED_KEY), "inner"), ""
         )
-        numeric = compute.fill_null(compute.match_substring_regex(reduced, _IS_TAG), False)
-        numeric_known = compute.fill_null(compute.is_in(resolved, value_set=self.tags), False)
-        return compute.if_else(numeric, numeric_known, compute.is_valid(resolved))
+        plain = compute.equal(inner, "")
+        if not len(self.containers) or compute.all(plain, min_count=0).as_py():
+            return plain
+        known = compute.fill_null(
+            compute.is_in(compute.utf8_lower(inner), value_set=self.containers), False
+        )
+        return compute.or_(plain, known)
 
 
 @dataclasses.dataclass(eq=False)
@@ -197,7 +249,68 @@ class FixCodec(Convertible):
 
     def into_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
         """One `map<string, string>` per row: the message as the line spells it."""
-        return self.drop_null_values(self.into_raw_pairs(messages, protocol))
+        return self.into_payload_pairs(
+            self.drop_null_values(self.into_raw_pairs(messages, protocol))
+        )
+
+    def into_payload_pairs(self, pairs: Any) -> Any:
+        """`XmlData <213>` read as the message it carries, where it carries one.
+
+        The standard calls tag 213 an XML data stream. Real bridge traffic puts
+        a `key=value` message in it instead -- in every sampled line of a
+        capture, with no counterexample -- and read as one opaque blob its
+        fields are neither resolvable nor queryable. So a payload that reads as
+        pairs becomes pairs, under `XmlData.<key>`, in the place the tag sat;
+        one that reads as XML, or as nothing, stays exactly as it was.
+
+        `XmlData.ClOrdID` then resolves like any other nested key -- a rendered
+        `NoPartyIDs.PartyID` already does -- and a payload contradicting the
+        message around it lifts neither, which is what `_liftable` is for.
+        """
+        if isinstance(pairs, pyarrow.ChunkedArray):
+            parts = [self.into_payload_pairs(chunk) for chunk in pairs.chunks]
+            return pyarrow.chunked_array(parts, type=_RAW_PAIRS)
+        compute = pyarrow.compute
+        if not len(pairs) or pairs.null_count == len(pairs):
+            return pairs
+        lengths, keys, items = _entries_of(pairs)
+        if not len(keys):
+            return pairs
+        carried = compute.or_(
+            compute.equal(keys, _XML_DATA_TAG),
+            compute.equal(compute.utf8_lower(compute.utf8_trim_whitespace(keys)), _XML_DATA_NAME),
+        )
+        if not compute.any(carried, min_count=0).as_py():
+            # Nearly every batch. Two string compares over the keys settle it,
+            # and the regexes below -- which read *values*, the expensive half
+            # of any pass here -- never run.
+            return pairs
+        payloads = compute.filter(items, carried)
+        reads = compute.and_(
+            compute.fill_null(compute.match_substring_regex(payloads, _PAYLOAD_PAIRS), False),
+            compute.invert(
+                compute.fill_null(compute.match_substring_regex(payloads, _LOOKS_XML), False)
+            ),
+        )
+        readable = _scattered_mask(carried, reads)
+        if not compute.any(readable, min_count=0).as_py():
+            return pairs
+        parsed = _payload_pairs(compute.filter(payloads, reads))
+        counts, inner = _payload_counts(readable, parsed)
+        if inner is None:
+            return pairs
+        taken, rank = _repeated(counts)
+        expanded = compute.greater(compute.take(counts, taken), 1)
+        starts = compute.take(_payload_starts(readable, parsed), taken)
+        where = compute.add(starts, rank)
+        return _mapped(
+            pairs,
+            _row_totals(pairs, lengths, counts),
+            pyarrow.repeat(True, len(taken)),
+            compute.if_else(expanded, compute.take(inner[0], where), compute.take(keys, taken)),
+            compute.if_else(expanded, compute.take(inner[1], where), compute.take(items, taken)),
+            _RAW_PAIRS,
+        )
 
     def into_raw_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
         """Parsed pairs before configured null spellings are removed."""
@@ -291,312 +404,176 @@ class FixCodec(Convertible):
             _RAW_PAIRS,
         )
 
-    def into_fix_pairs(self, pairs: Any, version: str | None = None) -> tuple[Any, Any, Any]:
-        """Split pairs into FIX tags, residual pairs, and registry misses."""
-        if len(pairs) and pairs.null_count == len(pairs):
-            # Every row of this slice is "not a message", which is most of a
-            # capture. Both halves are null, and the kernels below would run
-            # over an empty child array to establish it.
-            return (
-                pyarrow.nulls(len(pairs), FIX_TAGS),
-                pyarrow.nulls(len(pairs), KEYVAL),
-                pyarrow.nulls(len(pairs), FIX_MISS_TAGS),
-            )
-        index = self.index_of(version)
+    def into_kwargs(self, pairs: Any, version: str | None = None) -> Any:
+        """Every field a message carried, as the one entry a parsed log stores.
+
+        The transcription, in one place. A field arrives as the log spelled it
+        and leaves carrying what the dictionary makes of it: the tag behind its
+        name (`0` when nothing answers for it), the name itself, the namespace
+        or component path in front of it, and -- where the field enumerates its
+        values -- what the value means.
+
+        One column, whatever the dictionary made of the field: a consumer that
+        wants "the fields of this line" reads one column in wire order, and one
+        that wants only the resolved ones filters on `tag`.
+        """
+        rows = len(pairs)
         if isinstance(pairs, pyarrow.ChunkedArray):
-            parts = [self.into_fix_pairs(chunk, version) for chunk in pairs.chunks]
-            return (
-                pyarrow.chunked_array([tags for tags, _, _ in parts], type=FIX_TAGS),
-                pyarrow.chunked_array([rest for _, rest, _ in parts], type=KEYVAL),
-                pyarrow.chunked_array([misses for _, _, misses in parts], type=FIX_MISS_TAGS),
-            )
+            parts = [self.into_kwargs(chunk, version) for chunk in pairs.chunks]
+            return pyarrow.chunked_array(parts, type=KWARGS)
+        if not rows or pairs.null_count == rows:
+            # Every row of this slice is "not a message", which is most of a
+            # capture, and the kernels below would run over an empty child
+            # array to establish it.
+            return pyarrow.nulls(rows, KWARGS)
+        lengths, keys, values = _entries_of(pairs)
+        return _kwargs(
+            pairs,
+            lengths,
+            pyarrow.repeat(True, len(keys)),
+            *self.transcribe(keys, values, version),
+        )
+
+    def transcribe(
+        self, keys: Any, values: Any, version: str | None = None
+    ) -> tuple[Any, Any, Any, Any, Any, Any]:
+        """`(tag, key, value, trans, namespace, comp)` for a run of parsed fields.
+
+        The whole of what the dictionary adds to a field, in kernels and in one
+        place, so nothing downstream resolves a name or reads an enumeration a
+        second way. `key` is the field's own name; whatever the line wrote in
+        front of it goes to `comp` where this version declares that container
+        and to `namespace` where it does not.
+        """
         compute = pyarrow.compute
-        lengths, keys, items = _entries_of(pairs)
-        tags, matched, _ = index.resolve_with_match(keys)
-        resolved_key = compute.is_valid(tags)
-        unknown = compute.invert(resolved_key)
-        resolved = _mapped(
-            pairs,
-            lengths,
-            resolved_key,
-            compute.filter(tags, resolved_key),
-            compute.filter(items, resolved_key),
-            FIX_TAGS,
+        tags, _, reduced, contained = self.index_of(version).resolve_with_match(keys)
+        parts = compute.extract_regex(keys, _NAMESPACED_KEY)
+        # Kept whole, entry index and all, so `lead.key` is the rendered key
+        # back again and `NoPartyIDs[0]` stays a different place from `[1]`.
+        lead = compute.struct_field(parts, "namespace")
+        led = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)
+        nothing = pyarrow.scalar(None, pyarrow.string())
+        return (
+            compute.fill_null(tags, pyarrow.scalar(0, TAG)),
+            compute.fill_null(compute.struct_field(parts, "key"), keys),
+            values,
+            self.transcribed(tags, reduced, values, version),
+            compute.if_else(compute.and_(led, compute.invert(contained)), lead, nothing),
+            compute.if_else(compute.and_(led, contained), lead, nothing),
         )
-        rest = _mapped(
-            pairs,
-            lengths,
-            unknown,
-            compute.filter(keys, unknown),
-            compute.filter(items, unknown),
-            KEYVAL,
+
+    def transcribed(self, tags: Any, names: Any, values: Any, version: str | None = None) -> Any:
+        """What each value means, where the field that carries it enumerates them.
+
+        One composite lookup rather than one pass per enumerated tag: a version
+        has hundreds of them, and a batch would otherwise pay a kernel for
+        every one it does not carry.
+        """
+        compute = pyarrow.compute
+        spelled, meanings = self.meanings(version)
+        if not len(spelled):
+            return pyarrow.nulls(len(values), pyarrow.string())
+        # Keyed on the tag where there is one and on the name where there is
+        # not, so a field FIX never numbered enumerates like any other.
+        numbered = compute.fill_null(compute.greater(tags, 0), False)
+        owner = compute.if_else(
+            numbered,
+            compute.fill_null(tags, 0).cast(pyarrow.string()),
+            compute.utf8_lower(compute.fill_null(names, "")),
         )
-        missed = compute.invert(matched)
-        misses = _selected_list(
-            pairs,
-            lengths,
-            missed,
-            compute.filter(keys, missed),
-            FIX_MISS_TAGS,
-        )
-        return resolved, rest, misses
+        composite = compute.binary_join_element_wise(owner, values, "\x00")
+        return compute.take(meanings, compute.index_in(composite, value_set=spelled))
+
+    def meanings(self, version: str | None = None) -> tuple[Any, Any]:
+        """`(tag-or-name and value, what it means)` for one version, built once."""
+        if version not in self._meanings:
+            self._meanings[version] = _meanings(self.registry, version)
+        return self._meanings[version]
 
     def into_log_columns(
         self, pairs: Any, version: str | None = None
-    ) -> tuple[Any, Any, Any, dict[str, Any]]:
-        """Project one parsed pair column without rebuilding its children between views."""
-        # A subclass that customises a projection stage owns that contract;
-        # use the public stages so the fused implementation never bypasses it.
-        concrete = type(self)
-        if (
-            concrete.into_flat_columns is not FixCodec.into_flat_columns
-            or concrete.into_component_columns is not FixCodec.into_component_columns
-            or concrete.into_named_columns is not FixCodec.into_named_columns
-        ):
-            tags, keyval, misses = self.into_fix_pairs(pairs, version)
-            components, tags = self.into_component_columns(tags, version)
-            flat, tags = self.into_flat_columns(tags, version)
-            named, keyval = self.into_named_columns(keyval, version)
-            return tags, keyval, misses, {**components, **flat, **named}
-        if isinstance(pairs, pyarrow.ChunkedArray):
-            pairs = pairs.combine_chunks()
-        rows = len(pairs)
-        if not rows or pairs.null_count == rows:
-            tags, keyval, misses = self.into_fix_pairs(pairs, version)
-            components, tags = self.into_component_columns(tags, version)
-            flat, tags = self.into_flat_columns(tags, version)
-            named, keyval = self.into_named_columns(keyval, version)
-            return tags, keyval, misses, {**components, **flat, **named}
+    ) -> tuple[Any, dict[str, Any]]:
+        """One parsed pair column as the fields a log keeps and the columns it lifts."""
+        kwargs = self.into_kwargs(pairs, version)
+        components, kwargs = self.into_component_columns(kwargs, version)
+        lifted, kwargs = self.into_lifted_columns(kwargs, version)
+        return kwargs, {**components, **lifted}
 
-        compute = pyarrow.compute
-        listed = _listed(pairs)
-        lengths = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32())
-        parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
-        entries = compute.list_flatten(listed)
-        keys, items = compute.struct_field(entries, 0), compute.struct_field(entries, 1)
-        tags, matched, reduced = self.index_of(version).resolve_with_match(keys)
-        resolved = compute.is_valid(tags)
-        unknown = compute.invert(resolved)
-
-        fields = self.flat_fields(version)
-        available = pyarrow.array(sorted(fields), TAG)
-        flat_candidate = compute.and_(
-            resolved,
-            compute.fill_null(compute.is_in(tags, value_set=available), False),
-        )
-        flat_lift = (
-            compute.and_(flat_candidate, _once(parents, tags))
-            if compute.any(flat_candidate, min_count=0).as_py()
-            else pyarrow.repeat(False, len(tags))
-        )
-        flat_found = compute.filter(tags, flat_lift)
-        flat_where = compute.filter(parents, flat_lift)
-        flat_values = compute.filter(items, flat_lift)
-        flat = {name: pyarrow.nulls(rows, FLAT_TYPES[tag]) for tag, name in FLAT_COLUMNS.items()}
-        row_ids = sequence(rows)
-        for tag in compute.unique(flat_found).to_pylist():
-            at = compute.equal(flat_found, tag)
-            selected = compute.filter(flat_values, at)
-            selected_rows = compute.filter(flat_where, at)
-            column = (
-                selected
-                if len(selected_rows) == rows
-                else compute.take(selected, compute.index_in(row_ids, value_set=selected_rows))
-            )
-            column = cast_arrow_fix(column, fields[tag].arrow_type)
-            if not column.type.equals(FLAT_TYPES[tag]):
-                column = column.cast(FLAT_TYPES[tag], safe=False)
-            flat[FLAT_COLUMNS[tag]] = column
-
-        named = {
-            field.name: pyarrow.nulls(rows, field.arrow_type) for field in NAMED_COLUMNS.values()
-        }
-        named_lift = pyarrow.repeat(False, len(keys))
-        if version is not None:
-            named_names = compute.utf8_lower(reduced)
-            named_keys = pyarrow.array(list(NAMED_COLUMNS), pyarrow.string())
-            named_index = compute.index_in(named_names, value_set=named_keys)
-            # Unknown keys share an irrelevant sentinel. Known named fields retain
-            # distinct integer codes, avoiding composite string construction.
-            uniqueness_key = compute.fill_null(named_index, pyarrow.scalar(-1, pyarrow.int32()))
-            named_candidate = compute.and_(unknown, compute.is_valid(named_index))
-            named_lift = (
-                compute.and_(named_candidate, _once(parents, uniqueness_key))
-                if compute.any(named_candidate, min_count=0).as_py()
-                else named_lift
-            )
-            named_found = compute.filter(named_names, named_lift)
-            named_where = compute.filter(parents, named_lift)
-            named_values = compute.filter(items, named_lift)
-            for name in compute.unique(named_found).to_pylist():
-                at = compute.equal(named_found, name)
-                selected = compute.filter(named_values, at)
-                selected_rows = compute.filter(named_where, at)
-                column = (
-                    selected
-                    if len(selected_rows) == rows
-                    else compute.take(selected, compute.index_in(row_ids, value_set=selected_rows))
-                )
-                named[name] = cast_arrow_fix(column, NAMED_COLUMNS[name].arrow_type)
-
-        quote_structure = _quote_group_structure(parents, tags)
-        fix_keep = compute.and_(
-            resolved,
-            compute.or_(compute.invert(flat_lift), quote_structure),
-        )
-        fix_tags = _mapped(
-            pairs,
-            lengths,
-            fix_keep,
-            compute.filter(tags, fix_keep),
-            compute.filter(items, fix_keep),
-            FIX_TAGS,
-        )
-        components, fix_tags = self.into_component_columns(fix_tags, version)
-        keyval_keep = compute.and_(unknown, compute.invert(named_lift))
-        keyval = _mapped(
-            pairs,
-            lengths,
-            keyval_keep,
-            compute.filter(keys, keyval_keep),
-            compute.filter(items, keyval_keep),
-            KEYVAL,
-        )
-        missed = compute.invert(matched)
-        misses = _selected_list(
-            pairs,
-            lengths,
-            missed,
-            compute.filter(keys, missed),
-            FIX_MISS_TAGS,
-        )
-        return fix_tags, keyval, misses, {**components, **flat, **named}
-
-    def into_flat_columns(
-        self, tags: Any, version: str | None = None
+    def into_lifted_columns(
+        self, kwargs: Any, version: str | None = None
     ) -> tuple[dict[str, Any], Any]:
-        """Lift fields using the selected registry, or contract types if it is unavailable."""
-        rows = len(tags)
+        """The fields worth a column of their own, and what is left of `kwargs`.
+
+        Both kinds in one pass, because they are one question asked of one
+        column: a numbered tag the log declares a column for, and a rendered
+        name it does. They were two passes over two columns only because the
+        two kinds were stored apart.
+        """
+        rows = len(kwargs)
+        declared = self.named_fields()
         columns: dict[str, Any] = {
             name: pyarrow.nulls(rows, FLAT_TYPES[tag]) for tag, name in FLAT_COLUMNS.items()
         }
-        if isinstance(tags, pyarrow.ChunkedArray):
-            tags = tags.combine_chunks()
-        if not rows or tags.null_count == rows:
-            return columns, tags
+        columns.update(
+            (field.name, pyarrow.nulls(rows, field.arrow_type)) for field in declared.values()
+        )
+        if isinstance(kwargs, pyarrow.ChunkedArray):
+            kwargs = kwargs.combine_chunks()
+        if not rows or kwargs.null_count == rows or version is None:
+            return columns, kwargs
         compute = pyarrow.compute
         fields = self.flat_fields(version)
-        available = pyarrow.array(sorted(fields), TAG)
-        if not len(available):
-            return columns, tags
-        listed = _listed(tags)
-        lengths = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32())
-        parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
-        entries = compute.list_flatten(listed)
-        keys, items = compute.struct_field(entries, 0), compute.struct_field(entries, 1)
-        lift = compute.and_(
-            compute.fill_null(compute.is_in(keys, value_set=available), False),
-            _once(parents, keys),
-        )
-        if not compute.any(lift, min_count=0).as_py():
-            return columns, tags
-        found = compute.filter(keys, lift)
-        where = compute.filter(parents, lift)
-        values = compute.filter(items, lift)
-        row_ids = sequence(rows)
-        for tag in compute.unique(found).to_pylist():
-            at = compute.equal(found, tag)
-            selected = compute.filter(values, at)
-            selected_rows = compute.filter(where, at)
-            # Parent indices are row ordered and `_once` admitted at most one
-            # value per row. Covering every row therefore already is the
-            # target column; no hash index or take is needed.
-            column = (
-                selected
-                if len(selected_rows) == rows
-                else compute.take(selected, compute.index_in(row_ids, value_set=selected_rows))
-            )
-            field = fields[tag]
-            column = cast_arrow_fix(column, field.arrow_type)
-            if not column.type.equals(FLAT_TYPES[tag]):
-                column = column.cast(FLAT_TYPES[tag], safe=False)
-            columns[FLAT_COLUMNS[tag]] = column
-        carried = compute.or_(compute.invert(lift), _quote_group_structure(parents, keys))
-        rest = _mapped(
-            tags,
-            lengths,
-            carried,
-            compute.filter(keys, carried),
-            compute.filter(items, carried),
-            FIX_TAGS,
-        )
-        return columns, rest
+        lengths, parents, entries = _flattened(kwargs)
+        tags = compute.struct_field(entries, "tag")
+        keys = compute.struct_field(entries, "key")
+        values = compute.struct_field(entries, "value")
 
-    def into_named_columns(
-        self, pairs: Any, version: str | None = None
-    ) -> tuple[dict[str, Any], Any]:
-        """Configured rendered names lifted from the residual ordered pairs."""
-        rows = len(pairs)
-        columns = {
-            field.name: pyarrow.nulls(rows, field.arrow_type) for field in NAMED_COLUMNS.values()
-        }
-        if version is None:
-            return columns, pairs
-        if isinstance(pairs, pyarrow.ChunkedArray):
-            pairs = pairs.combine_chunks()
-        if not rows or pairs.null_count == rows:
-            return columns, pairs
-        compute = pyarrow.compute
-        listed = _listed(pairs)
-        lengths = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32())
-        parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
-        entries = compute.list_flatten(listed)
-        keys, items = compute.struct_field(entries, 0), compute.struct_field(entries, 1)
-        names = compute.utf8_lower(
-            compute.fill_null(
-                compute.struct_field(compute.extract_regex(keys, _MEMBER_NAME_VECTOR), "name"),
-                keys,
+        # One integer per liftable field: its tag, or a negative code for a
+        # rendered name. Distinct codes are all `_liftable` needs, and one
+        # integer key spares the composite string a mixed column would take.
+        numbered = compute.fill_null(compute.is_in(tags, value_set=_tags_of(fields)), False)
+        named = pyarrow.array(list(declared), pyarrow.string())
+        matched = _declared_index(keys, _lead_of(entries), named)
+        wanted = numbered
+        code = tags
+        if len(named):
+            rendered = compute.and_(compute.equal(tags, 0), compute.is_valid(matched))
+            wanted = compute.or_(numbered, rendered)
+            code = compute.if_else(
+                rendered,
+                compute.subtract(pyarrow.scalar(-1, TAG), matched.cast(TAG)),
+                tags,
             )
-        )
-        lift = compute.and_(
-            compute.fill_null(
-                compute.is_in(names, value_set=pyarrow.array(list(NAMED_COLUMNS))), False
-            ),
-            _once(parents, names),
-        )
-        if not compute.any(lift, min_count=0).as_py():
-            return columns, pairs
-        found = compute.filter(names, lift)
-        where = compute.filter(parents, lift)
-        values = compute.filter(items, lift)
+        if not compute.any(wanted, min_count=0).as_py():
+            return columns, kwargs
+        agreed, chosen = _liftable(parents, code, values)
+        lift = compute.and_(wanted, agreed)
+        taken = compute.and_(wanted, chosen)
+        found = compute.filter(code, taken)
+        where = compute.filter(parents, taken)
+        selected_values = compute.filter(values, taken)
         row_ids = sequence(rows)
-        for name in compute.unique(found).to_pylist():
-            at = compute.equal(found, name)
-            selected = compute.filter(values, at)
-            selected_rows = compute.filter(where, at)
-            column = (
-                selected
-                if len(selected_rows) == rows
-                else compute.take(selected, compute.index_in(row_ids, value_set=selected_rows))
-            )
-            field = NAMED_COLUMNS[name]
-            columns[field.name] = cast_arrow_fix(column, field.arrow_type)
-        carried = compute.invert(lift)
-        rest = _mapped(
-            pairs,
-            lengths,
-            carried,
-            compute.filter(keys, carried),
-            compute.filter(items, carried),
-            KEYVAL,
-        )
-        return columns, rest
+        for one in compute.unique(found).to_pylist():
+            at = compute.equal(found, one)
+            column = compute.filter(selected_values, at)
+            column_rows = compute.filter(where, at)
+            # Parent indices are row ordered and `_liftable` chose at most one
+            # value per row, so covering every row already is the column.
+            if len(column_rows) != rows:
+                column = compute.take(column, compute.index_in(row_ids, value_set=column_rows))
+            if one >= 0:
+                columns[FLAT_COLUMNS[one]] = _cast(column, fields[one], FLAT_TYPES[one])
+            else:
+                field = declared[named[-1 - one].as_py()]
+                columns[field.name] = cast_arrow_fix(column, field.arrow_type)
+        keep = compute.or_(compute.invert(lift), _quote_group_structure(parents, tags))
+        return columns, _kwargs(kwargs, lengths, keep, *_columns_of(entries, keep))
 
     def into_component_columns(
-        self, tags: Any, version: str | None = None
+        self, kwargs: Any, version: str | None = None
     ) -> tuple[dict[str, Any], Any]:
-        """Structured FIX components and the residual ordered tags."""
-        parties, rest = self.parties_of(version).into_arrow_arrays(tags)
+        """Structured FIX components and what is left of `kwargs`."""
+        parties, rest = self.parties_of(version).into_arrow_arrays(kwargs)
         return {"parties": parties}, rest
 
     # -- versions -----------------------------------------------------------
@@ -692,7 +669,9 @@ class FixCodec(Convertible):
     def index_of(self, version: str | None = None) -> TagIndex:
         """The name index for one version, built once and held."""
         if version not in self._indexes:
-            self._indexes[version] = TagIndex.from_tags(self._tags(version))
+            self._indexes[version] = TagIndex.from_tags(
+                self._tags(version), self._containers(version)
+            )
         return self._indexes[version]
 
     def tag_field(self, tag: int, version: str | None = None) -> Field | None:
@@ -719,23 +698,68 @@ class FixCodec(Convertible):
                 }
         return self._flat_fields[version]
 
+    def named_fields(self) -> Mapping[str, Field]:
+        """`{rendered spelling: column}` for the fields FIX never numbered.
+
+        Read from *this codec's* registry rather than from the packaged one, so
+        declaring a namespaced field is a change to a dictionary and never a change
+        here. The parsed log's own contract still decides which of these
+        columns it keeps; a codec that lifts one the log does not declare hands
+        it to a caller that can, and drops it otherwise.
+        """
+        if self._named is None:
+            try:
+                self._named = named_columns(self.registry)
+            except (OSError, ValueError):
+                self._named = NAMED_COLUMNS
+        return self._named
+
     def parties_of(self, version: str | None = None) -> Parties:
         """Version-aware Parties extractor, cached with the tag index."""
         if version not in self._parties:
-            components = []
-            if version is not None:
-                try:
-                    declared = self.registry.components(version)
-                    if any(component.name.lower() == "parties" for component in declared):
-                        components.extend(declared)
-                except (KeyError, OSError, ValueError):
-                    components = []
+            components, fallback = self._party_declaration(version)
             self._parties[version] = Parties(
                 components=components,
                 names=self._tags(version),
-                fallback=False,
+                fallback=fallback,
             )
         return self._parties[version]
+
+    def _party_declaration(self, version: str | None) -> tuple[list[SpecComponent], bool]:
+        """One version's Parties declaration, and whether to keep the legacy tags.
+
+        Three answers, and the middle one is why this is not two lines. A
+        registry that *declares* the component answers it. A registry that
+        declares components and has no Parties among them answers nothing, and
+        is right to: 4.0 through 4.2 have no such component. A registry that
+        declares no components at all for a version it otherwise knows is
+        neither -- it is a store written before component declarations were
+        kept, or a projection that dropped them -- and answering nothing there
+        extracted no party from any message at all, silently, for every version
+        the wire named. That one says so and keeps the legacy tags.
+        """
+        if version is None:
+            return [], False
+        try:
+            declared = self.registry.components(version)
+        except (KeyError, OSError, ValueError):
+            declared = []
+        if any(component.name.lower() == "parties" for component in declared):
+            return list(declared), False
+        try:
+            available = self.registry.components_available(version)
+        except (KeyError, OSError, ValueError):
+            available = False
+        if available:
+            return [], False
+        warnings.warn(
+            f"the FIX registry holds no component declarations for {version!r}: "
+            "party extraction falls back to the legacy tags. Rebuild the registry "
+            "so its components travel with its fields.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        return [], True
 
     # -- held state ---------------------------------------------------------
 
@@ -746,6 +770,12 @@ class FixCodec(Convertible):
     @cached_property
     def _parties(self) -> dict[str | None, Parties]:
         return {}
+
+    @cached_property
+    def _meanings(self) -> dict[str | None, tuple[Any, Any]]:
+        return {}
+
+    _named: Mapping[str, Field] | None = None
 
     @cached_property
     def _flat_fields(self) -> dict[str | None, dict[int, Field]]:
@@ -764,6 +794,15 @@ class FixCodec(Convertible):
             return self.registry.tags(version)
         except (KeyError, OSError, ValueError):
             return {}
+
+    def _containers(self, version: str | None) -> tuple[str, ...]:
+        """Every component this version declares, which a dotted key may name."""
+        if version is None:
+            return ()
+        try:
+            return tuple(component.name for component in self.registry.components(version))
+        except (KeyError, OSError, ValueError):
+            return ()
 
 
 @functools.cache
@@ -861,13 +900,60 @@ def _version_columns(
     return first(_BEGIN_KEYS), first(_APPLICATION_KEYS), first(_DEFAULT_APPLICATION_KEYS)
 
 
-def _once(parents: Any, keys: Any) -> Any:
-    """Which entries are the only one of their key in their row.
+def _lead_of(entries: Any) -> Any:
+    """Whatever a stored field wrote in front of its name, either place it went."""
+    compute = pyarrow.compute
+    return compute.coalesce(
+        compute.struct_field(entries, "namespace"), compute.struct_field(entries, "comp")
+    )
+
+
+def _declared_index(keys: Any, lead: Any, declared: Any) -> Any:
+    """Where each field sits in `declared`, or null; the whole name first.
+
+    Whole first because a namespace is part of a name -- `TECH.CLIENTID`
+    is not `CLIENTID` -- and the tail second because a dictionary that declares
+    only one of the two spellings still answers for the other.
+    """
+    compute = pyarrow.compute
+    if not len(declared):
+        return pyarrow.nulls(len(keys), pyarrow.int32())
+    tail = compute.utf8_lower(keys)
+    whole = compute.if_else(
+        compute.is_valid(lead),
+        compute.binary_join_element_wise(compute.utf8_lower(lead), tail, "."),
+        tail,
+    )
+    found = compute.index_in(whole, value_set=declared)
+    return compute.if_else(
+        compute.is_valid(found), found, compute.index_in(tail, value_set=declared)
+    )
+
+
+def _liftable(parents: Any, keys: Any, values: Any) -> tuple[Any, Any]:
+    """`(every entry of a liftable key, the one that becomes the column)`.
+
+    Both, because a key is lifted or it is not, and every entry of a lifted key
+    leaves the residual pairs with it -- otherwise a line that wrote the same
+    fact twice keeps a copy of what was already promoted.
+
+    Which entries are the only *reading* of their key in their row.
 
     One composite key per entry -- the row shifted above the tag, so no pair of
     them can collide -- counted in a single `value_counts`. Per entry and not
     per tag, because a batch carries thirty-odd liftable tags and one pass over
     the child array answers for all of them at once.
+
+    The reading and not the entry, because a bridge writes the same fact twice
+    on purpose. A rendered line carries two namespaces -- `#Side` as it arrived
+    and `Side` after enrichment -- and on a third to a half of the lines in a
+    real capture some fields appear in both. Refusing to lift a key that
+    repeats dropped every one of those out of its typed column and into the
+    residual pairs, silently, on lines that agreed with themselves.
+
+    Repeats that *disagree* are still refused: two different values under one
+    key is a group, or an enrichment that rewrote something, and picking
+    between them would be a guess.
     """
     compute = pyarrow.compute
     if pyarrow.types.is_integer(keys.type):
@@ -881,12 +967,23 @@ def _once(parents: Any, keys: Any) -> Any:
         )
     distinct = compute.unique(composite)
     if len(distinct) == len(composite):
-        return pyarrow.repeat(True, len(composite))
-    counted = compute.value_counts(composite)
+        whole = pyarrow.repeat(True, len(composite))
+        return whole, whole
+    reading = compute.binary_join_element_wise(
+        composite.cast(pyarrow.string()),
+        compute.fill_null(values.cast(pyarrow.string(), safe=False), ""),
+        "\x00",
+    )
+    # `index_in` against the column itself gives each entry the position of the
+    # first entry reading the same way, so an entry is a repeat exactly when
+    # that position is not its own. One hash table, no grouping.
+    first = compute.equal(compute.index_in(reading, value_set=reading), sequence(len(reading)))
+    counted = compute.value_counts(compute.filter(composite, first))
     seen = compute.take(
         counted.field("counts"), compute.index_in(composite, value_set=counted.field("values"))
     )
-    return compute.equal(seen, 1)
+    agreed = compute.equal(seen, 1)
+    return agreed, compute.and_(agreed, first)
 
 
 def _quote_group_structure(parents: Any, keys: Any) -> Any:
@@ -926,6 +1023,207 @@ def _listed(pairs: Any) -> Any:
     )
 
 
+def _payload_pairs(payloads: Any) -> Any:
+    """Each payload read as the message it is, under its own separator.
+
+    Its own, because a payload sits *inside* a token of the message around it
+    and so cannot be written with that message's separator. One parse per
+    distinct separator in the batch, which is how every other reading here
+    handles a column that mixes them.
+    """
+    compute = pyarrow.compute
+    if not len(payloads):
+        return parse_arrow_array(payloads, SOH, named=True)
+    separators = compute.fill_null(
+        compute.struct_field(compute.extract_regex(payloads, _PAYLOAD_SEPARATOR), "sep"), ""
+    )
+    parts, positions = [], []
+    for separator, where in groups_of(separators):
+        spelled = separator.as_py() or SOH
+        parts.append(parse_arrow_array(compute.take(payloads, where), spelled, named=True))
+        positions.append(where)
+    return scattered(parts, positions)
+
+
+def _payload_counts(readable: Any, parsed: Any) -> tuple[Any, tuple[Any, Any] | None]:
+    """How many pairs each entry becomes, and the payload pairs behind them.
+
+    One for an entry that is not a payload or whose payload read as nothing --
+    it stays itself -- and the payload's own pair count otherwise.
+    """
+    compute = pyarrow.compute
+    found = compute.fill_null(compute.list_value_length(_listed(parsed)), 0).cast(pyarrow.int32())
+    counts = compute.if_else(
+        readable,
+        compute.if_else(
+            compute.greater(_scattered_int(readable, found), 1),
+            _scattered_int(readable, found),
+            pyarrow.scalar(1, pyarrow.int32()),
+        ),
+        pyarrow.scalar(1, pyarrow.int32()),
+    )
+    if not compute.any(compute.greater(counts, 1), min_count=0).as_py():
+        return counts, None
+    entries = compute.list_flatten(_listed(parsed))
+    prefix = pyarrow.scalar(f"{_XML_DATA_KEY}.")
+    return counts, (
+        compute.binary_join_element_wise(prefix, compute.struct_field(entries, 0), ""),
+        compute.struct_field(entries, 1),
+    )
+
+
+def _payload_starts(readable: Any, parsed: Any) -> Any:
+    """Where each entry's payload pairs begin in the flattened payload child."""
+    compute = pyarrow.compute
+    found = compute.fill_null(compute.list_value_length(_listed(parsed)), 0).cast(pyarrow.int32())
+    running = compute.subtract(compute.cumulative_sum(found), found)
+    return compute.fill_null(_scattered_int(readable, running), 0)
+
+
+def _scattered_mask(mask: Any, found: Any) -> Any:
+    """A truth per masked entry, put back where its entry was; false elsewhere."""
+    compute = pyarrow.compute
+    return compute.and_(mask, compute.equal(_scattered_int(mask, found.cast(pyarrow.int32())), 1))
+
+
+def _scattered_int(mask: Any, values: Any) -> Any:
+    """A value per masked entry, put back where its entry was; zero elsewhere."""
+    compute = pyarrow.compute
+    slots = compute.if_else(
+        mask,
+        compute.subtract(
+            compute.cumulative_sum(mask.cast(pyarrow.int32())),
+            pyarrow.scalar(1, pyarrow.int32()),
+        ),
+        pyarrow.scalar(None, pyarrow.int32()),
+    )
+    return compute.fill_null(compute.take(values, slots), 0).cast(pyarrow.int32())
+
+
+def _repeated(counts: Any) -> tuple[Any, Any]:
+    """`(which entry each slot came from, its rank within that entry)`.
+
+    `repeat` in kernels: a list array whose offsets are the running counts has
+    exactly one slot per output pair, so `list_parent_indices` *is* the repeat.
+    """
+    compute = pyarrow.compute
+    bounds = pyarrow.concat_arrays(
+        [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(counts)]
+    )
+    total = bounds[len(bounds) - 1].as_py()
+    holder = pyarrow.ListArray.from_arrays(bounds, pyarrow.nulls(total, pyarrow.int8()))
+    taken = compute.list_parent_indices(holder)
+    running = compute.subtract(
+        compute.cumulative_sum(pyarrow.repeat(pyarrow.scalar(1, pyarrow.int32()), total)),
+        pyarrow.scalar(1, pyarrow.int32()),
+    )
+    return taken, compute.subtract(running, compute.take(bounds.slice(0, len(bounds) - 1), taken))
+
+
+def _row_totals(pairs: Any, lengths: Any, counts: Any) -> Any:
+    """Each row's length after an entry became several, in the same order."""
+    compute = pyarrow.compute
+    running = pyarrow.concat_arrays(
+        [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(counts)]
+    )
+    bounds = pyarrow.concat_arrays(
+        [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(lengths)]
+    )
+    ends = running.take(bounds)
+    del pairs
+    return compute.subtract(ends.slice(1), ends.slice(0, len(ends) - 1)).cast(pyarrow.int32())
+
+
+#: The parts of one stored field, in the order `KWARGS` declares them.
+_PARTS: tuple[str, ...] = ("tag", "key", "value", "trans", "namespace", "comp")
+
+
+def _kwargs(source: Any, lengths: Any, keep: Any, *parts: Any) -> pyarrow.Array:
+    """A `KWARGS` column out of the entries `keep` admits, in the source's rows.
+
+    `keep` is over the source's own flattened entries and `parts` are already
+    filtered by it: the offsets come from the mask and the children from the
+    filter, which is how every other split here rebuilds a list column.
+    """
+    entries = pyarrow.StructArray.from_arrays(
+        [
+            part.cast(KWARGS.value_type.field(name).type, safe=False)
+            for name, part in zip(_PARTS, parts, strict=True)
+        ],
+        fields=[KWARGS.value_type.field(name) for name in _PARTS],
+    )
+    return pyarrow.ListArray.from_arrays(
+        _selected_offsets(source, lengths, keep), entries, type=KWARGS
+    )
+
+
+def _flattened(kwargs: Any) -> tuple[Any, Any, Any]:
+    """`(row lengths, parent row per entry, the entries)` for a `KWARGS` column."""
+    compute = pyarrow.compute
+    listed = _listed(kwargs)
+    return (
+        compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int32()),
+        compute.list_parent_indices(listed).cast(pyarrow.int64()),
+        compute.list_flatten(listed),
+    )
+
+
+def _columns_of(entries: Any, keep: Any) -> tuple[Any, ...]:
+    """The children of the entries a mask keeps, in declaration order."""
+    compute = pyarrow.compute
+    return tuple(compute.filter(compute.struct_field(entries, name), keep) for name in _PARTS)
+
+
+def _cast(column: Any, field: Field, arrow_type: pyarrow.DataType) -> Any:
+    """One lifted column at the width its log column stores."""
+    read = cast_arrow_fix(column, field.arrow_type)
+    return read if read.type.equals(arrow_type) else read.cast(arrow_type, safe=False)
+
+
+def _tags_of(fields: Mapping[int, Field]) -> pyarrow.Array:
+    """The tags a version can lift, as the value set a probe takes."""
+    return pyarrow.array(sorted(fields), TAG)
+
+
+def _meanings(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
+    """`(owner and value, what it means)` for every enumeration one version has.
+
+    The owner is the tag where a field has one and its folded name where it
+    does not, so a field FIX never numbered enumerates like any other. Prose
+    over symbol: `Side <54>` value `1` is "Buy" for a person and `BUY` for a
+    program, and a log column is read by people.
+    """
+    spelled: list[str] = []
+    meanings: list[str] = []
+    if version is None:
+        return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(meanings, pyarrow.string())
+    try:
+        members = registry.fields(version)
+    except (KeyError, OSError, ValueError):
+        members = []
+    for member in members:
+        tag = member.fix.get("tag")
+        owner = tag if tag else member.name.lower()
+        found = _json_mapping(member.fix.get("values")) or _json_mapping(
+            member.fix.get("value_names")
+        )
+        for value, meaning in found.items():
+            spelled.append(f"{owner}\x00{value}")
+            meanings.append(meaning)
+    return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(meanings, pyarrow.string())
+
+
+def _json_mapping(value: str | None) -> dict[str, str]:
+    """One `fix:` metadata mapping, or nothing for anything that is not one."""
+    try:
+        decoded = json.loads(value or "{}")
+    except (TypeError, ValueError):  # pragma: no cover - the registry writes these
+        return {}
+    return (
+        {str(key): str(item) for key, item in decoded.items()} if isinstance(decoded, dict) else {}
+    )
+
+
 def _entries_of(pairs: Any) -> tuple[Any, Any, Any]:
     """One pair column as `(row lengths, keys, values)`."""
     compute = pyarrow.compute
@@ -959,19 +1257,6 @@ def _mapped(
         [keys, items], fields=[arrow_type.value_type.field(0), arrow_type.value_type.field(1)]
     )
     return pyarrow.ListArray.from_arrays(offsets, entries, type=arrow_type)
-
-
-def _selected_list(
-    source: Any,
-    lengths: Any,
-    mask: Any,
-    values: Any,
-    arrow_type: pyarrow.DataType,
-) -> pyarrow.Array:
-    """Selected child values rebuilt under their source rows and nulls."""
-    return pyarrow.ListArray.from_arrays(
-        _selected_offsets(source, lengths, mask), values, type=arrow_type
-    )
 
 
 def _selected_offsets(source: Any, lengths: Any, mask: Any) -> pyarrow.Array:

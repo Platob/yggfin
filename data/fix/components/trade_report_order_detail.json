@@ -1,0 +1,233 @@
+{
+ "name": "TradeReportOrderDetail",
+ "versions": {
+  "5.0.SP2": {
+   "order": 26,
+   "members": [
+    {
+     "kind": "field",
+     "name": "OrderID",
+     "required": false,
+     "tag": 37
+    },
+    {
+     "kind": "field",
+     "name": "SecondaryOrderID",
+     "required": false,
+     "tag": 198
+    },
+    {
+     "kind": "field",
+     "name": "ClOrdID",
+     "required": false,
+     "tag": 11
+    },
+    {
+     "kind": "field",
+     "name": "SecondaryClOrdID",
+     "required": false,
+     "tag": 526
+    },
+    {
+     "kind": "field",
+     "name": "ListID",
+     "required": false,
+     "tag": 66
+    },
+    {
+     "kind": "field",
+     "name": "RefOrderID",
+     "required": false,
+     "tag": 1080
+    },
+    {
+     "kind": "field",
+     "name": "RefOrderIDSource",
+     "required": false,
+     "tag": 1081
+    },
+    {
+     "kind": "field",
+     "name": "RefOrdIDReason",
+     "required": false,
+     "tag": 1431
+    },
+    {
+     "kind": "component",
+     "name": "RelatedOrderGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PreTradeAnonymity",
+     "required": false,
+     "tag": 1091
+    },
+    {
+     "kind": "field",
+     "name": "OrdType",
+     "required": false,
+     "tag": 40
+    },
+    {
+     "kind": "field",
+     "name": "Price",
+     "required": false,
+     "tag": 44
+    },
+    {
+     "kind": "field",
+     "name": "StopPx",
+     "required": false,
+     "tag": 99
+    },
+    {
+     "kind": "field",
+     "name": "ExecInst",
+     "required": false,
+     "tag": 18
+    },
+    {
+     "kind": "field",
+     "name": "OrdStatus",
+     "required": false,
+     "tag": 39
+    },
+    {
+     "kind": "component",
+     "name": "OrderQtyData",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LeavesQty",
+     "required": false,
+     "tag": 151
+    },
+    {
+     "kind": "field",
+     "name": "CumQty",
+     "required": false,
+     "tag": 14
+    },
+    {
+     "kind": "field",
+     "name": "TimeInForce",
+     "required": false,
+     "tag": 59
+    },
+    {
+     "kind": "field",
+     "name": "ExpireTime",
+     "required": false,
+     "tag": 126
+    },
+    {
+     "kind": "component",
+     "name": "MatchingInstructions",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "SelfMatchPreventionID",
+     "required": false,
+     "tag": 2362
+    },
+    {
+     "kind": "field",
+     "name": "SelfMatchPreventionInstruction",
+     "required": false,
+     "tag": 2964
+    },
+    {
+     "kind": "field",
+     "name": "ExposureDuration",
+     "required": false,
+     "tag": 1629
+    },
+    {
+     "kind": "field",
+     "name": "ExposureDurationUnit",
+     "required": false,
+     "tag": 1916
+    },
+    {
+     "kind": "component",
+     "name": "DisplayInstruction",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "OrderCapacity",
+     "required": false,
+     "tag": 528
+    },
+    {
+     "kind": "field",
+     "name": "OrderRestrictions",
+     "required": false,
+     "tag": 529
+    },
+    {
+     "kind": "field",
+     "name": "BookingType",
+     "required": false,
+     "tag": 775
+    },
+    {
+     "kind": "field",
+     "name": "OrigCustOrderCapacity",
+     "required": false,
+     "tag": 1432
+    },
+    {
+     "kind": "field",
+     "name": "OrderOrigination",
+     "required": false,
+     "tag": 1724
+    },
+    {
+     "kind": "component",
+     "name": "OrderAttributeGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "ExDestinationType",
+     "required": false,
+     "tag": 2704
+    },
+    {
+     "kind": "field",
+     "name": "OrderInputDevice",
+     "required": false,
+     "tag": 821
+    },
+    {
+     "kind": "field",
+     "name": "LotType",
+     "required": false,
+     "tag": 1093
+    },
+    {
+     "kind": "field",
+     "name": "TransBkdTime",
+     "required": false,
+     "tag": 483
+    },
+    {
+     "kind": "field",
+     "name": "OrigOrdModTime",
+     "required": false,
+     "tag": 586
+    },
+    {
+     "kind": "field",
+     "name": "OrderPercentOfTotalVolume",
+     "required": false,
+     "tag": 2766
+    }
+   ]
+  }
+ }
+}

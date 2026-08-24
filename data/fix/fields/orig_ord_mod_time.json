@@ -1,0 +1,60 @@
+{
+ "name": "OrigOrdModTime",
+ "tag": 586,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTimestamp",
+   "description": "The most recent (or current) modification TransactTime <60> reported on an Execution Report <8> for the order. The OrigOrdModTime <586> is provided as an optional field on Order Cancel Request <F> and Order Cancel/Replace Requests <G> to identify that the state of the order has not changed since the request was issued. The use of this approach is not recommended.",
+   "used_in": [
+    "OrderCancelReject",
+    "MultilegOrderCancelReplace",
+    "OrderCancelRequest",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "UTCTimestamp",
+   "description": "The most recent (or current) modification TransactTime <60> reported on an Execution Report <8> for the order. The OrigOrdModTime <586> is provided as an optional field on Order Cancel Request <F> and Order Cancel/Replace Requests <G> to identify that the state of the order has not changed since the request was issued. The use of this approach is not recommended.",
+   "used_in": [
+    "OrderCancelReject",
+    "MultilegOrderCancelReplace",
+    "OrderCancelRequest",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "UTCTimestamp",
+   "description": "The most recent (or current) modification TransactTime <60> reported on an Execution Report <8> for the order. The OrigOrdModTime <586> is provided as an optional field on Order Cancel Request <F> and Order Cancel/Replace Requests <G> to identify that the state of the order has not changed since the request was issued. This is provided to support markets similar to Eurex and A/C/E.",
+   "used_in": [
+    "OrderCancelReject",
+    "MultilegOrderCancelReplace",
+    "OrderCancelRequest",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "UTCTimestamp",
+   "description": "The most recent (or current) modification TransactTime <60> reported on an Execution Report <8> for the order. The OrigOrdModTime <586> is provided as an optional field on Order Cancel Request <F> and Order Cancel/Replace Requests <G> to identify that the state of the order has not changed since the request was issued. This is provided to support markets similar to Eurex and A/C/E.",
+   "used_in": [
+    "Order Cancel Reject",
+    "Multileg Order Cancel/Replace",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Cross Order Cancel/Replace Request",
+    "Cross Order Cancel Request"
+   ]
+  },
+  "4.3": {
+   "type": "UTCTimestamp",
+   "description": "The most recent (or current) modification TransactTime <60> reported on an Execution Report <8> for the order. The OrigOrdModTime <586> is provided as an optional field on Order Cancel Request <F> and Order Cancel/Replace Request <G> s to identify that the state of the order has not changed since the request was issued. This is provided to support markets similar to Eurex and A/C/E.",
+   "used_in": [
+    "Order Cancel Reject",
+    "Multileg Order Cancel/Replace Request",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Cross Order Cancel/Replace Request",
+    "Cross Order Cancel Request"
+   ]
+  }
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeCountryOfIssue",
+ "tag": 1258,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Country"
+  },
+  "5.0.SP1": {
+   "type": "Country"
+  }
+ }
+}

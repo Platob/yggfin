@@ -1,0 +1,47 @@
+{
+ "name": "CashSettlAgentName",
+ "tag": 182,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.3 *** REPLACED FIELD - See Appendix 6-F: 20.Removed various Settlement Instructions-related fields [Replaced in FIX 4.4] *** Name of SettlInstSource <165> 's local agent bank if SettlDeliveryType <172> =\"Free\""
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.3 *** REPLACED FIELD - See Appendix 6-F: 20.Removed various Settlement Instructions-related fields [Replaced in FIX 4.4] *** Name of SettlInstSource <165> 's local agent bank if SettlDeliveryType <172> =\"Free\""
+  },
+  "5.0": {
+   "type": "String",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.3 *** REPLACED FIELD - See Appendix 6-F: 20.Removed various Settlement Instructions-related fields [Replaced in FIX 4.4] *** Name of SettlInstSource <165> 's local agent bank if SettlDeliveryType <172> =\"Free\""
+  },
+  "4.4": {
+   "type": "String",
+   "note": "replaced",
+   "description": "No longer used as of FIX 4.4. Included here for reference to prior versions. *** REPLACED FIELD - See Appendix 6-F: 20.Removed various Settlement Instructions-related fields [Replaced in FIX 4.4] *** Name of SettlInstSource <165> 's local agent bank if SettlDeliveryType <172> =\"Free\""
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Name of SettlInstSource <165> 's local agent bank if SettlDeliveryType <172> =Free",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Name of SettlInstSource <165> 's local agent bank if SettlDeliveryType <172> =Free",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Name of SettlInstSource <165> 's local agent bank if SettlDeliveryType <172> =Free",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

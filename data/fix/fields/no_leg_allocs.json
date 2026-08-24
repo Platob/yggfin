@@ -1,0 +1,26 @@
+{
+ "name": "NoLegAllocs",
+ "tag": 670,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of Allocations for the leg"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of Allocations for the leg"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of Allocations for the leg"
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of Allocations for the leg",
+   "used_in": [
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace"
+   ]
+  }
+ }
+}

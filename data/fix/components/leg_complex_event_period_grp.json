@@ -1,0 +1,45 @@
+{
+ "name": "LegComplexEventPeriodGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 527,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegComplexEventPeriods",
+     "required": false,
+     "tag": 41379,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegComplexEventPeriodType",
+       "required": false,
+       "tag": 41380
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventBusinessCenter",
+       "required": false,
+       "tag": 41381
+      },
+      {
+       "kind": "component",
+       "name": "LegComplexEventScheduleGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "LegComplexEventPeriodDateGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "LegComplexEventAveragingObservationGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

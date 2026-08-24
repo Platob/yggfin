@@ -1,15 +1,19 @@
 """FIX line parsing: one message at a time, and whole columns at once."""
 
+import re
+
 import pyarrow
 import pytest
 
 from rekep.fix import (
+    BRIDGE,
     MARKER,
     SOH,
     FixMessage,
     detect_entry_separator,
     detect_separator,
     parse_arrow_array,
+    rendered_keys,
     tag_arrow_array,
 )
 
@@ -692,3 +696,86 @@ def test_a_key_behind_unicode_whitespace_is_not_a_tag() -> None:
 
     assert _parse_token("\u00a054=1", False) is None, "not whitespace to the pattern"
     assert _parse_token("\x0b54=1", False) == ("54", "1"), "and a vertical tab is"
+
+
+# -- a bracket that names a member rather than an entry ----------------------
+#
+# `NoPartyIDs[0]` selects an entry by position and `Instrument[Exchange]`
+# selects a member by name. Only the first was ever read, so a line whose keys
+# were all of the second kind did not tokenise -- and a line whose keys do not
+# tokenise is not a bridge message, so every field on it went too.
+
+
+@pytest.mark.parametrize(
+    ("token", "expected"),
+    [
+        ("#INSTRUMENT[EXCHANGE]=XTST", [("INSTRUMENT.EXCHANGE", "XTST")]),
+        ("#INSTRUMENT[EXCHANGE].MIC=XTST", [("INSTRUMENT.EXCHANGE.MIC", "XTST")]),
+        ("#NOPARTYIDS[0].PARTYID=PARTY-TEST-A", [("NOPARTYIDS[0].PARTYID", "PARTY-TEST-A")]),
+        ("#INSTRUMENT.EXCHANGE=XTST", [("INSTRUMENT.EXCHANGE", "XTST")]),
+    ],
+)
+def test_a_named_bracket_reads_as_the_dotted_path_it_spells(
+    token: str, expected: list[tuple[str, str]]
+) -> None:
+    """One canonical key, whichever of the two ways a bridge wrote it."""
+    line = f"toBridge {token}|#SIDE=1"
+    assert FixMessage.from_text(line).pairs == [*expected, ("SIDE", "1")]
+
+
+def test_the_two_parsers_agree_about_a_named_bracket() -> None:
+    """Scalar and vectorised are contracted to agree, on this like everything else."""
+    lines = [
+        "toBridge #INSTRUMENT[EXCHANGE]=XTST|#INSTRUMENT[SYMBOL]=SYM-TEST|#SIDE=1",
+        "toBridge #NOPARTYIDS[0].PARTYID=PARTY-TEST-A|#NOPARTYIDS[1].PARTYID=PARTY-TEST-B",
+        "toBridge #INSTRUMENT[EXCHANGE]=XTST|#NOPARTYIDS[0].PARTYID=PARTY-TEST-A|#SIDE=1",
+    ]
+    parsed = parse_arrow_array(pyarrow.array(lines))
+    for line, row in zip(lines, parsed.to_pylist(), strict=True):
+        assert FixMessage.from_text(line).pairs == [tuple(pair) for pair in row], line
+
+
+def test_a_line_of_named_brackets_is_a_bridge_message() -> None:
+    """The classification rule and the token rule are one rule, or a line is lost."""
+    assert re.search(BRIDGE, "toBridge #INSTRUMENT[EXCHANGE]=XTST|#INSTRUMENT[SYMBOL]=SYM")
+    assert re.search(BRIDGE, "toBridge #NOPARTYIDS[0].PARTYID=A|#NOPARTYIDS[0].PARTYROLE=1")
+    assert not re.search(BRIDGE, "a sentence mentioning #hashtag and nothing else")
+
+
+def test_a_wire_message_still_refuses_a_bracketed_key() -> None:
+    """Tag mode is digits only; a bracket is a rendered spelling, not a tag."""
+    assert FixMessage.from_text("8=FIX.4.2\x01INSTRUMENT[EXCHANGE]=XTST\x0154=1\x01").pairs == [
+        ("8", "FIX.4.2"),
+        ("54", "1"),
+    ]
+
+
+# -- what a capture spells, as against what a parse keeps --------------------
+
+
+def test_rendered_keys_keeps_the_marker_a_parse_sheds() -> None:
+    """`#Side` and `Side` are two namespaces, and a parse deliberately loses which."""
+    line = "toBridge #ISINCODE=FAKE-ISIN-0001|#SIDE=1|SIDE=1|#NOPARTYIDS[0].PARTYID=PARTY-TEST-A"
+    marker, keys = rendered_keys(pyarrow.array([line]), "|", named=True)
+    assert list(zip(marker.to_pylist(), keys.to_pylist(), strict=True)) == [
+        ("#", "ISINCODE"),
+        ("#", "SIDE"),
+        ("", "SIDE"),
+        ("#", "NOPARTYIDS.PARTYID"),
+    ], "the index goes, because one name written twice is one name"
+
+
+def test_rendered_keys_starts_where_the_parser_starts() -> None:
+    """A line's own prose is not a key, and the cut is the parser's own."""
+    _, keys = rendered_keys(
+        pyarrow.array(["Sending order to venue#CLORDID=ORD-TEST-01|#SIDE=1"]), "|", named=True
+    )
+    assert keys.to_pylist() == ["CLORDID", "SIDE"]
+
+
+def test_rendered_keys_reads_a_wire_message_as_its_tags() -> None:
+    marker, keys = rendered_keys(
+        pyarrow.array(["8=FIX.4.4\x0135=8\x0154=1\x0110=000\x01"]), SOH, named=False
+    )
+    assert keys.to_pylist() == ["8", "35", "54", "10"]
+    assert set(marker.to_pylist()) == {""}

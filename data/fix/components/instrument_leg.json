@@ -1,0 +1,2093 @@
+{
+ "name": "InstrumentLeg",
+ "versions": {
+  "5.0.SP2": {
+   "order": 5,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegSymbol",
+     "required": false,
+     "tag": 600
+    },
+    {
+     "kind": "field",
+     "name": "LegSymbolSfx",
+     "required": false,
+     "tag": 601
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityID",
+     "required": false,
+     "tag": 602
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityIDSource",
+     "required": false,
+     "tag": 603
+    },
+    {
+     "kind": "component",
+     "name": "LegSecAltIDGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegID",
+     "required": false,
+     "tag": 1788
+    },
+    {
+     "kind": "field",
+     "name": "LegProduct",
+     "required": false,
+     "tag": 607
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityGroup",
+     "required": false,
+     "tag": 1594
+    },
+    {
+     "kind": "field",
+     "name": "LegCFICode",
+     "required": false,
+     "tag": 608
+    },
+    {
+     "kind": "field",
+     "name": "LegUPICode",
+     "required": false,
+     "tag": 2893
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityType",
+     "required": false,
+     "tag": 609
+    },
+    {
+     "kind": "field",
+     "name": "LegSecuritySubType",
+     "required": false,
+     "tag": 764
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityMonthYear",
+     "required": false,
+     "tag": 610
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityDate",
+     "required": false,
+     "tag": 611
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityTime",
+     "required": false,
+     "tag": 1212
+    },
+    {
+     "kind": "field",
+     "name": "LegSettleOnOpenFlag",
+     "required": false,
+     "tag": 2146
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrmtAssignmentMethod",
+     "required": false,
+     "tag": 2147
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityStatus",
+     "required": false,
+     "tag": 2148
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponPaymentDate",
+     "required": false,
+     "tag": 248
+    },
+    {
+     "kind": "field",
+     "name": "LegRestructuringType",
+     "required": false,
+     "tag": 2149
+    },
+    {
+     "kind": "field",
+     "name": "LegSeniority",
+     "required": false,
+     "tag": 2150
+    },
+    {
+     "kind": "field",
+     "name": "LegNotionalPercentageOutstanding",
+     "required": false,
+     "tag": 2151
+    },
+    {
+     "kind": "field",
+     "name": "LegOriginalNotionalPercentageOutstanding",
+     "required": false,
+     "tag": 2152
+    },
+    {
+     "kind": "field",
+     "name": "LegAttachmentPoint",
+     "required": false,
+     "tag": 2153
+    },
+    {
+     "kind": "field",
+     "name": "LegDetachmentPoint",
+     "required": false,
+     "tag": 2154
+    },
+    {
+     "kind": "field",
+     "name": "LegObligationType",
+     "required": false,
+     "tag": 2155
+    },
+    {
+     "kind": "field",
+     "name": "LegAssetGroup",
+     "required": false,
+     "tag": 2348
+    },
+    {
+     "kind": "field",
+     "name": "LegAssetClass",
+     "required": false,
+     "tag": 2067
+    },
+    {
+     "kind": "field",
+     "name": "LegAssetSubClass",
+     "required": false,
+     "tag": 2068
+    },
+    {
+     "kind": "field",
+     "name": "LegAssetType",
+     "required": false,
+     "tag": 2069
+    },
+    {
+     "kind": "field",
+     "name": "LegAssetSubType",
+     "required": false,
+     "tag": 2739
+    },
+    {
+     "kind": "component",
+     "name": "LegSecondaryAssetGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegAssetAttributeGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegSwapClass",
+     "required": false,
+     "tag": 2070
+    },
+    {
+     "kind": "field",
+     "name": "LegSwapSubClass",
+     "required": false,
+     "tag": 2156
+    },
+    {
+     "kind": "field",
+     "name": "LegNthToDefault",
+     "required": false,
+     "tag": 2157
+    },
+    {
+     "kind": "field",
+     "name": "LegMthToDefault",
+     "required": false,
+     "tag": 2158
+    },
+    {
+     "kind": "field",
+     "name": "LegSettledEntityMatrixSource",
+     "required": false,
+     "tag": 2159
+    },
+    {
+     "kind": "field",
+     "name": "LegSettledEntityMatrixPublicationDate",
+     "required": false,
+     "tag": 2160
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponType",
+     "required": false,
+     "tag": 2161
+    },
+    {
+     "kind": "field",
+     "name": "LegTotalIssuedAmount",
+     "required": false,
+     "tag": 2162
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponFrequencyPeriod",
+     "required": false,
+     "tag": 2163
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponFrequencyUnit",
+     "required": false,
+     "tag": 2164
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponDayCount",
+     "required": false,
+     "tag": 2165
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponOtherDayCount",
+     "required": false,
+     "tag": 2880
+    },
+    {
+     "kind": "field",
+     "name": "LegConvertibleBondEquityID",
+     "required": false,
+     "tag": 2166
+    },
+    {
+     "kind": "field",
+     "name": "LegConvertibleBondEquityIDSource",
+     "required": false,
+     "tag": 2167
+    },
+    {
+     "kind": "field",
+     "name": "LegContractPriceRefMonth",
+     "required": false,
+     "tag": 2168
+    },
+    {
+     "kind": "field",
+     "name": "LegLienSeniority",
+     "required": false,
+     "tag": 2169
+    },
+    {
+     "kind": "field",
+     "name": "LegLoanFacility",
+     "required": false,
+     "tag": 2170
+    },
+    {
+     "kind": "field",
+     "name": "LegReferenceEntityType",
+     "required": false,
+     "tag": 2171
+    },
+    {
+     "kind": "field",
+     "name": "LegIndexSeries",
+     "required": false,
+     "tag": 2172
+    },
+    {
+     "kind": "field",
+     "name": "LegIndexAnnexVersion",
+     "required": false,
+     "tag": 2173
+    },
+    {
+     "kind": "field",
+     "name": "LegIndexAnnexDate",
+     "required": false,
+     "tag": 2174
+    },
+    {
+     "kind": "field",
+     "name": "LegIndexAnnexSource",
+     "required": false,
+     "tag": 2175
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlRateIndex",
+     "required": false,
+     "tag": 2176
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlRateIndexLocation",
+     "required": false,
+     "tag": 2177
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExpirationDesc",
+     "required": false,
+     "tag": 2178
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegOptionExpirationDescLen",
+     "required": false,
+     "tag": 2179
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegOptionExpirationDesc",
+     "required": false,
+     "tag": 2180
+    },
+    {
+     "kind": "field",
+     "name": "LegIssueDate",
+     "required": false,
+     "tag": 249
+    },
+    {
+     "kind": "field",
+     "name": "LegRepoCollateralSecurityType",
+     "required": false,
+     "tag": 250
+    },
+    {
+     "kind": "field",
+     "name": "LegRepurchaseTerm",
+     "required": false,
+     "tag": 251
+    },
+    {
+     "kind": "field",
+     "name": "LegRepurchaseRate",
+     "required": false,
+     "tag": 252
+    },
+    {
+     "kind": "field",
+     "name": "LegFactor",
+     "required": false,
+     "tag": 253
+    },
+    {
+     "kind": "field",
+     "name": "LegCreditRating",
+     "required": false,
+     "tag": 257
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrRegistry",
+     "required": false,
+     "tag": 599
+    },
+    {
+     "kind": "field",
+     "name": "LegCountryOfIssue",
+     "required": false,
+     "tag": 596
+    },
+    {
+     "kind": "field",
+     "name": "LegStateOrProvinceOfIssue",
+     "required": false,
+     "tag": 597
+    },
+    {
+     "kind": "field",
+     "name": "LegLocaleOfIssue",
+     "required": false,
+     "tag": 598
+    },
+    {
+     "kind": "field",
+     "name": "LegRedemptionDate",
+     "required": false,
+     "tag": 254
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikePrice",
+     "required": false,
+     "tag": 612
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeCurrency",
+     "required": false,
+     "tag": 942
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeCurrencyCodeSource",
+     "required": false,
+     "tag": 2908
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeMultiplier",
+     "required": false,
+     "tag": 2181
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeValue",
+     "required": false,
+     "tag": 2182
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeUnitOfMeasure",
+     "required": false,
+     "tag": 2183
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeIndex",
+     "required": false,
+     "tag": 2184
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeIndexCurvePoint",
+     "required": false,
+     "tag": 2604
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeIndexSpread",
+     "required": false,
+     "tag": 2185
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeIndexQuote",
+     "required": false,
+     "tag": 2605
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikePriceDeterminationMethod",
+     "required": false,
+     "tag": 2186
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikePriceBoundaryMethod",
+     "required": false,
+     "tag": 2187
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikePriceBoundaryPrecision",
+     "required": false,
+     "tag": 2188
+    },
+    {
+     "kind": "field",
+     "name": "LegUnderlyingPriceDeterminationMethod",
+     "required": false,
+     "tag": 2189
+    },
+    {
+     "kind": "field",
+     "name": "LegOptAttribute",
+     "required": false,
+     "tag": 613
+    },
+    {
+     "kind": "field",
+     "name": "LegContractMultiplier",
+     "required": false,
+     "tag": 614
+    },
+    {
+     "kind": "field",
+     "name": "LegContractMultiplierUnit",
+     "required": false,
+     "tag": 1436
+    },
+    {
+     "kind": "field",
+     "name": "LegTradingUnitPeriodMultiplier",
+     "required": false,
+     "tag": 2354
+    },
+    {
+     "kind": "field",
+     "name": "LegFlowScheduleType",
+     "required": false,
+     "tag": 1440
+    },
+    {
+     "kind": "field",
+     "name": "LegMinPriceIncrement",
+     "required": false,
+     "tag": 2190
+    },
+    {
+     "kind": "field",
+     "name": "LegMinPriceIncrementAmount",
+     "required": false,
+     "tag": 2191
+    },
+    {
+     "kind": "field",
+     "name": "LegUnitOfMeasure",
+     "required": false,
+     "tag": 999
+    },
+    {
+     "kind": "field",
+     "name": "LegUnitOfMeasureQty",
+     "required": false,
+     "tag": 1224
+    },
+    {
+     "kind": "field",
+     "name": "LegUnitOfMeasureCurrency",
+     "required": false,
+     "tag": 1720
+    },
+    {
+     "kind": "field",
+     "name": "LegUnitOfMeasureCurrencyCodeSource",
+     "required": false,
+     "tag": 2909
+    },
+    {
+     "kind": "field",
+     "name": "LegPriceUnitOfMeasure",
+     "required": false,
+     "tag": 1421
+    },
+    {
+     "kind": "field",
+     "name": "LegPriceUnitOfMeasureQty",
+     "required": false,
+     "tag": 1422
+    },
+    {
+     "kind": "field",
+     "name": "LegPriceUnitOfMeasureCurrency",
+     "required": false,
+     "tag": 1721
+    },
+    {
+     "kind": "field",
+     "name": "LegPriceUnitOfMeasureCurrencyCodeSource",
+     "required": false,
+     "tag": 2910
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlMethod",
+     "required": false,
+     "tag": 2192
+    },
+    {
+     "kind": "field",
+     "name": "LegTimeUnit",
+     "required": false,
+     "tag": 1001
+    },
+    {
+     "kind": "field",
+     "name": "LegExerciseStyle",
+     "required": false,
+     "tag": 1420
+    },
+    {
+     "kind": "field",
+     "name": "LegOptPayoutType",
+     "required": false,
+     "tag": 2193
+    },
+    {
+     "kind": "field",
+     "name": "LegOptPayoutAmount",
+     "required": false,
+     "tag": 2194
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnTrigger",
+     "required": false,
+     "tag": 2755
+    },
+    {
+     "kind": "field",
+     "name": "LegPriceQuoteMethod",
+     "required": false,
+     "tag": 2195
+    },
+    {
+     "kind": "field",
+     "name": "LegValuationMethod",
+     "required": false,
+     "tag": 2196
+    },
+    {
+     "kind": "field",
+     "name": "LegValuationSource",
+     "required": false,
+     "tag": 2197
+    },
+    {
+     "kind": "field",
+     "name": "LegValuationReferenceModel",
+     "required": false,
+     "tag": 2198
+    },
+    {
+     "kind": "field",
+     "name": "LegPriceQuoteCurrency",
+     "required": false,
+     "tag": 1528
+    },
+    {
+     "kind": "field",
+     "name": "LegPriceQuoteCurrencyCodeSource",
+     "required": false,
+     "tag": 2911
+    },
+    {
+     "kind": "field",
+     "name": "LegListMethod",
+     "required": false,
+     "tag": 2199
+    },
+    {
+     "kind": "field",
+     "name": "LegCapPrice",
+     "required": false,
+     "tag": 2200
+    },
+    {
+     "kind": "field",
+     "name": "LegFloorPrice",
+     "required": false,
+     "tag": 2201
+    },
+    {
+     "kind": "field",
+     "name": "LegFlexibleIndicator",
+     "required": false,
+     "tag": 2202
+    },
+    {
+     "kind": "field",
+     "name": "LegFlexProductEligibilityIndicator",
+     "required": false,
+     "tag": 2203
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponRate",
+     "required": false,
+     "tag": 615
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityExchange",
+     "required": false,
+     "tag": 616
+    },
+    {
+     "kind": "field",
+     "name": "LegPositionLimit",
+     "required": false,
+     "tag": 2205
+    },
+    {
+     "kind": "field",
+     "name": "LegNTPositionLimit",
+     "required": false,
+     "tag": 2206
+    },
+    {
+     "kind": "field",
+     "name": "LegIssuer",
+     "required": false,
+     "tag": 617
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegIssuerLen",
+     "required": false,
+     "tag": 618
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegIssuer",
+     "required": false,
+     "tag": 619
+    },
+    {
+     "kind": "field",
+     "name": "LegFinancialInstrumentShortName",
+     "required": false,
+     "tag": 2740
+    },
+    {
+     "kind": "field",
+     "name": "LegFinancialInstrumentFullName",
+     "required": false,
+     "tag": 2717
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegFinancialInstrumentFullNameLen",
+     "required": false,
+     "tag": 2718
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegFinancialInstrumentFullName",
+     "required": false,
+     "tag": 2719
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityDesc",
+     "required": false,
+     "tag": 620
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegSecurityDescLen",
+     "required": false,
+     "tag": 621
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegSecurityDesc",
+     "required": false,
+     "tag": 622
+    },
+    {
+     "kind": "component",
+     "name": "LegSecurityXML",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegCPProgram",
+     "required": false,
+     "tag": 2207
+    },
+    {
+     "kind": "field",
+     "name": "LegCPRegType",
+     "required": false,
+     "tag": 2208
+    },
+    {
+     "kind": "field",
+     "name": "LegRatioQty",
+     "required": false,
+     "tag": 623
+    },
+    {
+     "kind": "field",
+     "name": "LegSide",
+     "required": false,
+     "tag": 624
+    },
+    {
+     "kind": "field",
+     "name": "LegCurrency",
+     "required": false,
+     "tag": 556
+    },
+    {
+     "kind": "field",
+     "name": "LegCurrencyCodeSource",
+     "required": false,
+     "tag": 2898
+    },
+    {
+     "kind": "field",
+     "name": "LegPool",
+     "required": false,
+     "tag": 740
+    },
+    {
+     "kind": "field",
+     "name": "LegDatedDate",
+     "required": false,
+     "tag": 739
+    },
+    {
+     "kind": "field",
+     "name": "LegContractSettlMonth",
+     "required": false,
+     "tag": 955
+    },
+    {
+     "kind": "field",
+     "name": "LegInterestAccrualDate",
+     "required": false,
+     "tag": 956
+    },
+    {
+     "kind": "field",
+     "name": "LegPutOrCall",
+     "required": false,
+     "tag": 1358
+    },
+    {
+     "kind": "field",
+     "name": "LegInTheMoneyCondition",
+     "required": false,
+     "tag": 2682
+    },
+    {
+     "kind": "field",
+     "name": "LegContraryInstructionEligibilityIndicator",
+     "required": false,
+     "tag": 2686
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionRatio",
+     "required": false,
+     "tag": 1017
+    },
+    {
+     "kind": "field",
+     "name": "LegPrice",
+     "required": false,
+     "tag": 566
+    },
+    {
+     "kind": "component",
+     "name": "LegEvntGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegInstrumentParties",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegShortSaleRestriction",
+     "required": false,
+     "tag": 2209
+    },
+    {
+     "kind": "component",
+     "name": "LegComplexEvents",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegStrategyType",
+     "required": false,
+     "tag": 2211
+    },
+    {
+     "kind": "field",
+     "name": "LegCommonPricingIndicator",
+     "required": false,
+     "tag": 2212
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlDisruptionProvision",
+     "required": false,
+     "tag": 2213
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryRouteOrCharter",
+     "required": false,
+     "tag": 2754
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrumentRoundingDirection",
+     "required": false,
+     "tag": 2214
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrumentRoundingPrecision",
+     "required": false,
+     "tag": 2215
+    },
+    {
+     "kind": "component",
+     "name": "LegDateAdjustment",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPricingDateTime",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegMarketDisruption",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegOptionExercise",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegStreamGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegProvisionGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegAdditionalTermGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegProtectionTermGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegCashSettlTermGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPhysicalSettlTermGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegExtraordinaryEventGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegExtraordinaryEventAdjustmentMethod",
+     "required": false,
+     "tag": 2606
+    },
+    {
+     "kind": "field",
+     "name": "LegExchangeLookAlike",
+     "required": false,
+     "tag": 2607
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 5,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegSymbol",
+     "required": false,
+     "tag": 600
+    },
+    {
+     "kind": "field",
+     "name": "LegSymbolSfx",
+     "required": false,
+     "tag": 601
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityID",
+     "required": false,
+     "tag": 602
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityIDSource",
+     "required": false,
+     "tag": 603
+    },
+    {
+     "kind": "component",
+     "name": "LegSecAltIDGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegProduct",
+     "required": false,
+     "tag": 607
+    },
+    {
+     "kind": "field",
+     "name": "LegCFICode",
+     "required": false,
+     "tag": 608
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityType",
+     "required": false,
+     "tag": 609
+    },
+    {
+     "kind": "field",
+     "name": "LegSecuritySubType",
+     "required": false,
+     "tag": 764
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityMonthYear",
+     "required": false,
+     "tag": 610
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityDate",
+     "required": false,
+     "tag": 611
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityTime",
+     "required": false,
+     "tag": 1212
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponPaymentDate",
+     "required": false,
+     "tag": 248
+    },
+    {
+     "kind": "field",
+     "name": "LegIssueDate",
+     "required": false,
+     "tag": 249
+    },
+    {
+     "kind": "field",
+     "name": "LegRepoCollateralSecurityType",
+     "required": false,
+     "tag": 250
+    },
+    {
+     "kind": "field",
+     "name": "LegRepurchaseTerm",
+     "required": false,
+     "tag": 251
+    },
+    {
+     "kind": "field",
+     "name": "LegRepurchaseRate",
+     "required": false,
+     "tag": 252
+    },
+    {
+     "kind": "field",
+     "name": "LegFactor",
+     "required": false,
+     "tag": 253
+    },
+    {
+     "kind": "field",
+     "name": "LegCreditRating",
+     "required": false,
+     "tag": 257
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrRegistry",
+     "required": false,
+     "tag": 599
+    },
+    {
+     "kind": "field",
+     "name": "LegCountryOfIssue",
+     "required": false,
+     "tag": 596
+    },
+    {
+     "kind": "field",
+     "name": "LegStateOrProvinceOfIssue",
+     "required": false,
+     "tag": 597
+    },
+    {
+     "kind": "field",
+     "name": "LegLocaleOfIssue",
+     "required": false,
+     "tag": 598
+    },
+    {
+     "kind": "field",
+     "name": "LegRedemptionDate",
+     "required": false,
+     "tag": 254
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikePrice",
+     "required": false,
+     "tag": 612
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeCurrency",
+     "required": false,
+     "tag": 942
+    },
+    {
+     "kind": "field",
+     "name": "LegOptAttribute",
+     "required": false,
+     "tag": 613
+    },
+    {
+     "kind": "field",
+     "name": "LegContractMultiplier",
+     "required": false,
+     "tag": 614
+    },
+    {
+     "kind": "field",
+     "name": "LegUnitOfMeasure",
+     "required": false,
+     "tag": 999
+    },
+    {
+     "kind": "field",
+     "name": "LegUnitOfMeasureQty",
+     "required": false,
+     "tag": 1224
+    },
+    {
+     "kind": "field",
+     "name": "LegPriceUnitOfMeasure",
+     "required": false,
+     "tag": 1421
+    },
+    {
+     "kind": "field",
+     "name": "LegPriceUnitOfMeasureQty",
+     "required": false,
+     "tag": 1422
+    },
+    {
+     "kind": "field",
+     "name": "LegTimeUnit",
+     "required": false,
+     "tag": 1001
+    },
+    {
+     "kind": "field",
+     "name": "LegExerciseStyle",
+     "required": false,
+     "tag": 1420
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponRate",
+     "required": false,
+     "tag": 615
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityExchange",
+     "required": false,
+     "tag": 616
+    },
+    {
+     "kind": "field",
+     "name": "LegIssuer",
+     "required": false,
+     "tag": 617
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegIssuerLen",
+     "required": false,
+     "tag": 618
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegIssuer",
+     "required": false,
+     "tag": 619
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityDesc",
+     "required": false,
+     "tag": 620
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegSecurityDescLen",
+     "required": false,
+     "tag": 621
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegSecurityDesc",
+     "required": false,
+     "tag": 622
+    },
+    {
+     "kind": "field",
+     "name": "LegRatioQty",
+     "required": false,
+     "tag": 623
+    },
+    {
+     "kind": "field",
+     "name": "LegSide",
+     "required": false,
+     "tag": 624
+    },
+    {
+     "kind": "field",
+     "name": "LegCurrency",
+     "required": false,
+     "tag": 556
+    },
+    {
+     "kind": "field",
+     "name": "LegPool",
+     "required": false,
+     "tag": 740
+    },
+    {
+     "kind": "field",
+     "name": "LegDatedDate",
+     "required": false,
+     "tag": 739
+    },
+    {
+     "kind": "field",
+     "name": "LegContractSettlMonth",
+     "required": false,
+     "tag": 955
+    },
+    {
+     "kind": "field",
+     "name": "LegInterestAccrualDate",
+     "required": false,
+     "tag": 956
+    },
+    {
+     "kind": "field",
+     "name": "LegPutOrCall",
+     "required": false,
+     "tag": 1358
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionRatio",
+     "required": false,
+     "tag": 1017
+    },
+    {
+     "kind": "field",
+     "name": "LegPrice",
+     "required": false,
+     "tag": 566
+    }
+   ]
+  },
+  "5.0": {
+   "order": 5,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegSymbol",
+     "required": false,
+     "tag": 600
+    },
+    {
+     "kind": "field",
+     "name": "LegSymbolSfx",
+     "required": false,
+     "tag": 601
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityID",
+     "required": false,
+     "tag": 602
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityIDSource",
+     "required": false,
+     "tag": 603
+    },
+    {
+     "kind": "component",
+     "name": "LegSecAltIDGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegProduct",
+     "required": false,
+     "tag": 607
+    },
+    {
+     "kind": "field",
+     "name": "LegCFICode",
+     "required": false,
+     "tag": 608
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityType",
+     "required": false,
+     "tag": 609
+    },
+    {
+     "kind": "field",
+     "name": "LegSecuritySubType",
+     "required": false,
+     "tag": 764
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityMonthYear",
+     "required": false,
+     "tag": 610
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityDate",
+     "required": false,
+     "tag": 611
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponPaymentDate",
+     "required": false,
+     "tag": 248
+    },
+    {
+     "kind": "field",
+     "name": "LegIssueDate",
+     "required": false,
+     "tag": 249
+    },
+    {
+     "kind": "field",
+     "name": "LegRepoCollateralSecurityType",
+     "required": false,
+     "tag": 250
+    },
+    {
+     "kind": "field",
+     "name": "LegRepurchaseTerm",
+     "required": false,
+     "tag": 251
+    },
+    {
+     "kind": "field",
+     "name": "LegRepurchaseRate",
+     "required": false,
+     "tag": 252
+    },
+    {
+     "kind": "field",
+     "name": "LegFactor",
+     "required": false,
+     "tag": 253
+    },
+    {
+     "kind": "field",
+     "name": "LegCreditRating",
+     "required": false,
+     "tag": 257
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrRegistry",
+     "required": false,
+     "tag": 599
+    },
+    {
+     "kind": "field",
+     "name": "LegCountryOfIssue",
+     "required": false,
+     "tag": 596
+    },
+    {
+     "kind": "field",
+     "name": "LegStateOrProvinceOfIssue",
+     "required": false,
+     "tag": 597
+    },
+    {
+     "kind": "field",
+     "name": "LegLocaleOfIssue",
+     "required": false,
+     "tag": 598
+    },
+    {
+     "kind": "field",
+     "name": "LegRedemptionDate",
+     "required": false,
+     "tag": 254
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikePrice",
+     "required": false,
+     "tag": 612
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeCurrency",
+     "required": false,
+     "tag": 942
+    },
+    {
+     "kind": "field",
+     "name": "LegOptAttribute",
+     "required": false,
+     "tag": 613
+    },
+    {
+     "kind": "field",
+     "name": "LegContractMultiplier",
+     "required": false,
+     "tag": 614
+    },
+    {
+     "kind": "field",
+     "name": "LegUnitofMeasure",
+     "required": false,
+     "tag": 999
+    },
+    {
+     "kind": "field",
+     "name": "LegTimeUnit",
+     "required": false,
+     "tag": 1001
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponRate",
+     "required": false,
+     "tag": 615
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityExchange",
+     "required": false,
+     "tag": 616
+    },
+    {
+     "kind": "field",
+     "name": "LegIssuer",
+     "required": false,
+     "tag": 617
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegIssuerLen",
+     "required": false,
+     "tag": 618
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegIssuer",
+     "required": false,
+     "tag": 619
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityDesc",
+     "required": false,
+     "tag": 620
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegSecurityDescLen",
+     "required": false,
+     "tag": 621
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegSecurityDesc",
+     "required": false,
+     "tag": 622
+    },
+    {
+     "kind": "field",
+     "name": "LegRatioQty",
+     "required": false,
+     "tag": 623
+    },
+    {
+     "kind": "field",
+     "name": "LegSide",
+     "required": false,
+     "tag": 624
+    },
+    {
+     "kind": "field",
+     "name": "LegCurrency",
+     "required": false,
+     "tag": 556
+    },
+    {
+     "kind": "field",
+     "name": "LegPool",
+     "required": false,
+     "tag": 740
+    },
+    {
+     "kind": "field",
+     "name": "LegDatedDate",
+     "required": false,
+     "tag": 739
+    },
+    {
+     "kind": "field",
+     "name": "LegContractSettlMonth",
+     "required": false,
+     "tag": 955
+    },
+    {
+     "kind": "field",
+     "name": "LegInterestAccrualDate",
+     "required": false,
+     "tag": 956
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionRatio",
+     "required": false,
+     "tag": 1017
+    },
+    {
+     "kind": "field",
+     "name": "LegPrice",
+     "required": false,
+     "tag": 566
+    }
+   ]
+  },
+  "4.4": {
+   "order": 5,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegSymbol",
+     "required": false,
+     "tag": 600
+    },
+    {
+     "kind": "field",
+     "name": "LegSymbolSfx",
+     "required": false,
+     "tag": 601
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityID",
+     "required": false,
+     "tag": 602
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityIDSource",
+     "required": false,
+     "tag": 603
+    },
+    {
+     "kind": "component",
+     "name": "LegSecAltIDGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegProduct",
+     "required": false,
+     "tag": 607
+    },
+    {
+     "kind": "field",
+     "name": "LegCFICode",
+     "required": false,
+     "tag": 608
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityType",
+     "required": false,
+     "tag": 609
+    },
+    {
+     "kind": "field",
+     "name": "LegSecuritySubType",
+     "required": false,
+     "tag": 764
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityMonthYear",
+     "required": false,
+     "tag": 610
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityDate",
+     "required": false,
+     "tag": 611
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponPaymentDate",
+     "required": false,
+     "tag": 248
+    },
+    {
+     "kind": "field",
+     "name": "LegIssueDate",
+     "required": false,
+     "tag": 249
+    },
+    {
+     "kind": "field",
+     "name": "LegRepoCollateralSecurityType",
+     "required": false,
+     "tag": 250
+    },
+    {
+     "kind": "field",
+     "name": "LegRepurchaseTerm",
+     "required": false,
+     "tag": 251
+    },
+    {
+     "kind": "field",
+     "name": "LegRepurchaseRate",
+     "required": false,
+     "tag": 252
+    },
+    {
+     "kind": "field",
+     "name": "LegFactor",
+     "required": false,
+     "tag": 253
+    },
+    {
+     "kind": "field",
+     "name": "LegCreditRating",
+     "required": false,
+     "tag": 257
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrRegistry",
+     "required": false,
+     "tag": 599
+    },
+    {
+     "kind": "field",
+     "name": "LegCountryOfIssue",
+     "required": false,
+     "tag": 596
+    },
+    {
+     "kind": "field",
+     "name": "LegStateOrProvinceOfIssue",
+     "required": false,
+     "tag": 597
+    },
+    {
+     "kind": "field",
+     "name": "LegLocaleOfIssue",
+     "required": false,
+     "tag": 598
+    },
+    {
+     "kind": "field",
+     "name": "LegRedemptionDate",
+     "required": false,
+     "tag": 254
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikePrice",
+     "required": false,
+     "tag": 612
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikeCurrency",
+     "required": false,
+     "tag": 942
+    },
+    {
+     "kind": "field",
+     "name": "LegOptAttribute",
+     "required": false,
+     "tag": 613
+    },
+    {
+     "kind": "field",
+     "name": "LegContractMultiplier",
+     "required": false,
+     "tag": 614
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponRate",
+     "required": false,
+     "tag": 615
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityExchange",
+     "required": false,
+     "tag": 616
+    },
+    {
+     "kind": "field",
+     "name": "LegIssuer",
+     "required": false,
+     "tag": 617
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegIssuerLen",
+     "required": false,
+     "tag": 618
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegIssuer",
+     "required": false,
+     "tag": 619
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityDesc",
+     "required": false,
+     "tag": 620
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegSecurityDescLen",
+     "required": false,
+     "tag": 621
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegSecurityDesc",
+     "required": false,
+     "tag": 622
+    },
+    {
+     "kind": "field",
+     "name": "LegRatioQty",
+     "required": false,
+     "tag": 623
+    },
+    {
+     "kind": "field",
+     "name": "LegSide",
+     "required": false,
+     "tag": 624
+    },
+    {
+     "kind": "field",
+     "name": "LegCurrency",
+     "required": false,
+     "tag": 556
+    },
+    {
+     "kind": "field",
+     "name": "LegPool",
+     "required": false,
+     "tag": 740
+    },
+    {
+     "kind": "field",
+     "name": "LegDatedDate",
+     "required": false,
+     "tag": 739
+    },
+    {
+     "kind": "field",
+     "name": "LegContractSettlMonth",
+     "required": false,
+     "tag": 955
+    },
+    {
+     "kind": "field",
+     "name": "LegInterestAccrualDate",
+     "required": false,
+     "tag": 956
+    }
+   ]
+  },
+  "4.3": {
+   "order": 2,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegSymbol",
+     "required": false,
+     "tag": 600
+    },
+    {
+     "kind": "field",
+     "name": "LegSymbolSfx",
+     "required": false,
+     "tag": 601
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityID",
+     "required": false,
+     "tag": 602
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityIDSource",
+     "required": false,
+     "tag": 603
+    },
+    {
+     "kind": "group",
+     "name": "NoLegSecurityAltID",
+     "required": false,
+     "tag": 604,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegSecurityAltID",
+       "required": false,
+       "tag": 605
+      },
+      {
+       "kind": "field",
+       "name": "LegSecurityAltIDSource",
+       "required": false,
+       "tag": 606
+      }
+     ]
+    },
+    {
+     "kind": "field",
+     "name": "LegProduct",
+     "required": false,
+     "tag": 607
+    },
+    {
+     "kind": "field",
+     "name": "LegCFICode",
+     "required": false,
+     "tag": 608
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityType",
+     "required": false,
+     "tag": 609
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityMonthYear",
+     "required": false,
+     "tag": 610
+    },
+    {
+     "kind": "field",
+     "name": "LegMaturityDate",
+     "required": false,
+     "tag": 611
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponPaymentDate",
+     "required": false,
+     "tag": 248
+    },
+    {
+     "kind": "field",
+     "name": "LegIssueDate",
+     "required": false,
+     "tag": 249
+    },
+    {
+     "kind": "field",
+     "name": "LegRepoCollateralSecurityType",
+     "required": false,
+     "tag": 250
+    },
+    {
+     "kind": "field",
+     "name": "LegRepurchaseTerm",
+     "required": false,
+     "tag": 251
+    },
+    {
+     "kind": "field",
+     "name": "LegRepurchaseRate",
+     "required": false,
+     "tag": 252
+    },
+    {
+     "kind": "field",
+     "name": "LegFactor",
+     "required": false,
+     "tag": 253
+    },
+    {
+     "kind": "field",
+     "name": "LegCreditRating",
+     "required": false,
+     "tag": 257
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrRegistry",
+     "required": false,
+     "tag": 599
+    },
+    {
+     "kind": "field",
+     "name": "LegCountryOfIssue",
+     "required": false,
+     "tag": 596
+    },
+    {
+     "kind": "field",
+     "name": "LegStateOrProvinceOfIssue",
+     "required": false,
+     "tag": 597
+    },
+    {
+     "kind": "field",
+     "name": "LegLocaleOfIssue",
+     "required": false,
+     "tag": 598
+    },
+    {
+     "kind": "field",
+     "name": "LegRedemptionDate",
+     "required": false,
+     "tag": 254
+    },
+    {
+     "kind": "field",
+     "name": "LegStrikePrice",
+     "required": false,
+     "tag": 612
+    },
+    {
+     "kind": "field",
+     "name": "LegOptAttribute",
+     "required": false,
+     "tag": 613
+    },
+    {
+     "kind": "field",
+     "name": "LegContractMultiplier",
+     "required": false,
+     "tag": 614
+    },
+    {
+     "kind": "field",
+     "name": "LegCouponRate",
+     "required": false,
+     "tag": 615
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityExchange",
+     "required": false,
+     "tag": 616
+    },
+    {
+     "kind": "field",
+     "name": "LegIssuer",
+     "required": false,
+     "tag": 617
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegIssuerLen",
+     "required": false,
+     "tag": 618
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegIssuer",
+     "required": false,
+     "tag": 619
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityDesc",
+     "required": false,
+     "tag": 620
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegSecurityDescLen",
+     "required": false,
+     "tag": 621
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegSecurityDesc",
+     "required": false,
+     "tag": 622
+    },
+    {
+     "kind": "field",
+     "name": "LegRatioQty",
+     "required": false,
+     "tag": 623
+    },
+    {
+     "kind": "field",
+     "name": "LegSide",
+     "required": false,
+     "tag": 624
+    }
+   ]
+  }
+ }
+}

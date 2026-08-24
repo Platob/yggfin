@@ -1,0 +1,46 @@
+{
+ "name": "NoIOIQualifiers",
+ "tag": 199,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of IOIQualifiers <104> ."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of IOIQualifiers <104> ."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of IOIQualifiers <104> ."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of IOIQualifiers <104> .",
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of IOIQualifiers.",
+   "used_in": [
+    "Indications of Interest"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Number of repeating groups of IOIQualifiers.",
+   "used_in": [
+    "Indication of Interest"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Number of repeating groups of IOIQualifiers.",
+   "used_in": [
+    "Indication of Interest"
+   ]
+  }
+ }
+}

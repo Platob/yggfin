@@ -1,0 +1,30 @@
+{
+ "name": "LegComplexEventTimes",
+ "versions": {
+  "5.0.SP2": {
+   "order": 533,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegComplexEventTimes",
+     "required": false,
+     "tag": 2253,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegComplexEventStartTime",
+       "required": false,
+       "tag": 2204
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventEndTime",
+       "required": false,
+       "tag": 2247
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

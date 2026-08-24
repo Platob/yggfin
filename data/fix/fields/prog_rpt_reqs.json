@@ -1,0 +1,114 @@
+{
+ "name": "ProgRptReqs",
+ "tag": 414,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Code to identify the desired frequency of progress reports.",
+   "values": {
+    "1": "Buy-side explicitly requests status using Statue Request (default), the sell-side firm can, however, send a DONE status List Status <N> Response in an unsolicited fashion",
+    "2": "Sell-side periodically sends status using List Status. Period optionally specified in ProgressPeriod.",
+    "3": "Real-time execution reports (to be discourage)"
+   },
+   "value_names": {
+    "1": "BUY_SIDE_REQUESTS",
+    "2": "SELL_SIDE_SENDS",
+    "3": "REAL_TIME_EXECUTION_REPORTS"
+   },
+   "used_in": [
+    "NewOrderList",
+    "BidRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Code to identify the desired frequency of progress reports.",
+   "values": {
+    "1": "Buy-side explicitly requests status using Statue Request (default), the sell-side firm can, however, send a DONE status List Status <N> Response in an unsolicited fashion",
+    "2": "Sell-side periodically sends status using List Status. Period optionally specified in ProgressPeriod.",
+    "3": "Real-time execution reports (to be discourage)"
+   },
+   "value_names": {
+    "1": "BUY_SIDE_REQUESTS",
+    "2": "SELL_SIDE_SENDS",
+    "3": "REAL_TIME_EXECUTION_REPORTS"
+   },
+   "used_in": [
+    "NewOrderList",
+    "BidRequest"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Code to identify the desired frequency of progress reports.",
+   "values": {
+    "1": "Buy-side explicitly requests status using Status Request (default), the sell-side firm can, however, send a DONE status List Status <N> Response in an unsolicited fashion",
+    "2": "Sell-side periodically sends status using List Status. Period optionally specified in ProgressPeriod.",
+    "3": "Real-time execution reports (to be discourage)"
+   },
+   "value_names": {
+    "1": "BUY_SIDE_REQUESTS",
+    "2": "SELL_SIDE_SENDS",
+    "3": "REAL_TIME_EXECUTION_REPORTS"
+   },
+   "used_in": [
+    "BidRequest",
+    "NewOrderList"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Code to identify the desired frequency of progress reports.",
+   "values": {
+    "1": "BuySide explicitly requests status using StatusRequest (Default) The sell-side firm can however, send a DONE status List Status <N> Response in an unsolicited fashion",
+    "2": "SellSide periodically sends status using ListStatus. Period optionally specified in ProgressPeriod",
+    "3": "Real-time execution reports (to be discouraged)"
+   },
+   "value_names": {
+    "1": "BUY_SIDE_REQUESTS",
+    "2": "SELL_SIDE_SENDS",
+    "3": "REAL_TIME_EXECUTION_REPORTS"
+   },
+   "used_in": [
+    "New Order List",
+    "Bid Request"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Code to identify the desired frequency of progress reports.",
+   "values": {
+    "1": "BuySide explicitly requests status using StatusRequest (Default) The sell-side firm can however, send a DONE status List Status <N> Response in an unsolicited fashion",
+    "2": "SellSide periodically sends status using ListStatus. Period optionally specified in ProgressPeriod",
+    "3": "Real-time execution reports (to be discouraged)"
+   },
+   "value_names": {
+    "3": "REAL_TIME_EXECUTION_REPORTS",
+    "2": "SELL_SIDE_SENDS",
+    "1": "BUY_SIDE_REQUESTS"
+   },
+   "used_in": [
+    "New Order - List",
+    "Bid Request"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Code to identify the desired frequency of progress reports.",
+   "values": {
+    "1": "BuySide explicitly requests status using StatusRequest (Default). The sell-side firm can however, send a DONE status List Status <N> Response in an unsolicited fashion",
+    "2": "SellSide periodically sends status using List Status <N> . Period optionally specified in ProgressPeriod",
+    "3": "Real-time execution reports (to be discouraged)"
+   },
+   "value_names": {
+    "1": "BUY_SIDE_REQUESTS",
+    "2": "SELL_SIDE_SENDS",
+    "3": "REAL_TIME_EXECUTION_REPORTS"
+   },
+   "used_in": [
+    "New Order - List",
+    "Bid Request"
+   ]
+  }
+ }
+}

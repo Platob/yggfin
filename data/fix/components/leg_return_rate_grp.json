@@ -1,0 +1,188 @@
+{
+ "name": "LegReturnRateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 667,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegReturnRates",
+     "required": false,
+     "tag": 42534,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegReturnRatePriceSequence",
+       "required": false,
+       "tag": 42535
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateCommissionBasis",
+       "required": false,
+       "tag": 42536
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateCommissionAmount",
+       "required": false,
+       "tag": 42537
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateCommissionCurrency",
+       "required": false,
+       "tag": 42538
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateTotalCommissionPerTrade",
+       "required": false,
+       "tag": 42539
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateDeterminationMethod",
+       "required": false,
+       "tag": 42540
+      },
+      {
+       "kind": "component",
+       "name": "LegReturnRatePriceGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "LegReturnRateFXConversionGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateAmountRelativeTo",
+       "required": false,
+       "tag": 42541
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteMeasureType",
+       "required": false,
+       "tag": 42542
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteUnits",
+       "required": false,
+       "tag": 42543
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteMethod",
+       "required": false,
+       "tag": 42544
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteCurrency",
+       "required": false,
+       "tag": 42545
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteCurrencyType",
+       "required": false,
+       "tag": 42546
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteTimeType",
+       "required": false,
+       "tag": 42547
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteTime",
+       "required": false,
+       "tag": 42548
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteDate",
+       "required": false,
+       "tag": 42549
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteExpirationTime",
+       "required": false,
+       "tag": 42550
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteBusinessCenter",
+       "required": false,
+       "tag": 42551
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuoteExchange",
+       "required": false,
+       "tag": 42552
+      },
+      {
+       "kind": "component",
+       "name": "LegReturnRateInformationSourceGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateQuotePricingModel",
+       "required": false,
+       "tag": 42553
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateCashFlowType",
+       "required": false,
+       "tag": 42554
+      },
+      {
+       "kind": "component",
+       "name": "LegReturnRateDateGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateValuationTimeType",
+       "required": false,
+       "tag": 42555
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateValuationTime",
+       "required": false,
+       "tag": 42556
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateValuationTimeBusinessCenter",
+       "required": false,
+       "tag": 42557
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateValuationPriceOption",
+       "required": false,
+       "tag": 42558
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateFinalPriceFallback",
+       "required": false,
+       "tag": 42559
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

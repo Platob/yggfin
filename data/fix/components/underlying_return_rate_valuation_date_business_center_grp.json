@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingReturnRateValuationDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 706,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingReturnRateValuationDateBusinessCenters",
+     "required": false,
+     "tag": 43069,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateValuationDateBusinessCenter",
+       "required": false,
+       "tag": 43070
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,64 @@
+{
+ "name": "RefMsgType",
+ "tag": 372,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The MsgType <35> of the FIX message being referenced.",
+   "used_in": [
+    "BusinessMessageReject",
+    "Reject"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The MsgType <35> of the FIX message being referenced.",
+   "used_in": [
+    "BusinessMessageReject",
+    "Reject"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "The MsgType <35> of the FIX message being referenced.",
+   "used_in": [
+    "Reject",
+    "BusinessMessageReject"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "The MsgType <35> of the FIX message being referenced.",
+   "used_in": [
+    "Reject",
+    "Logon",
+    "Business Message Reject"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "The MsgType <35> of the FIX message being referenced.",
+   "used_in": [
+    "Reject",
+    "Logon",
+    "Business Message Reject"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "The MsgType <35> of the FIX message being referenced.",
+   "used_in": [
+    "Reject",
+    "Logon",
+    "Business Message Reject"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "String",
+   "description": "The MsgType (35) of the FIX message being referenced.",
+   "used_in": [
+    "Reject"
+   ]
+  }
+ }
+}

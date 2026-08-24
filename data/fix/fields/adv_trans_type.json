@@ -1,0 +1,142 @@
+{
+ "name": "AdvTransType",
+ "tag": 5,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Identifies advertisement message transaction type",
+   "values": {
+    "C": "Cancel",
+    "N": "New",
+    "R": "Replace"
+   },
+   "value_names": {
+    "N": "NEW",
+    "C": "CANCEL",
+    "R": "REPLACE"
+   },
+   "used_in": [
+    "Advertisement"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Identifies advertisement message transaction type",
+   "values": {
+    "C": "Cancel",
+    "N": "New",
+    "R": "Replace"
+   },
+   "value_names": {
+    "N": "NEW",
+    "C": "CANCEL",
+    "R": "REPLACE"
+   },
+   "used_in": [
+    "Advertisement"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Identifies advertisement message transaction type",
+   "values": {
+    "C": "Cancel",
+    "N": "New",
+    "R": "Replace"
+   },
+   "value_names": {
+    "N": "NEW",
+    "C": "CANCEL",
+    "R": "REPLACE"
+   },
+   "used_in": [
+    "Advertisement"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Identifies Advertisement <7> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace"
+   },
+   "value_names": {
+    "N": "NEW",
+    "C": "CANCEL",
+    "R": "REPLACE"
+   },
+   "used_in": [
+    "Advertisement"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Identifies Advertisement <7> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace"
+   },
+   "value_names": {
+    "N": "NEW",
+    "C": "CANCEL",
+    "R": "REPLACE"
+   },
+   "used_in": [
+    "Advertisement"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Identifies Advertisement <7> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace"
+   },
+   "value_names": {
+    "C": "CANCEL",
+    "N": "NEW",
+    "R": "REPLACE"
+   },
+   "used_in": [
+    "Advertisement"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Identifies Advertisement <7> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace"
+   },
+   "value_names": {
+    "C": "CANCEL",
+    "N": "NEW",
+    "R": "REPLACE"
+   },
+   "used_in": [
+    "Advertisement"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Identifies Advertisement <7> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace"
+   },
+   "value_names": {
+    "C": "CANCEL",
+    "N": "NEW",
+    "R": "REPLACE"
+   },
+   "used_in": [
+    "Advertisement"
+   ]
+  }
+ }
+}

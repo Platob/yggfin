@@ -1,0 +1,29 @@
+{
+ "name": "NoQuoteQualifiers",
+ "tag": 735,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of QuoteQualifiers <695> ."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of QuoteQualifiers <695> ."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of QuoteQualifiers <695> ."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of QuoteQualifiers <695> .",
+   "used_in": [
+    "Quote Request Reject",
+    "Quote Status Report",
+    "Quote Response",
+    "Quote Request",
+    "Quote"
+   ]
+  }
+ }
+}

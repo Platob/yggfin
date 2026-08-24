@@ -169,7 +169,7 @@ class Order(MarketEvent):
         elif self.prev_client_order_id is None and named not in (None, self.client_order_id):
             self.prev_client_order_id = named
         anchor = (
-            previous.xcode or previous.life_code()
+            previous.code or previous.life_code()
             if same_named_life
             else self._parent_order_life_code(previous)
         )
@@ -178,7 +178,7 @@ class Order(MarketEvent):
             # exact field keeps it, while the lifecycle stays on its first
             # readable anchor. Rehash even when its text already agrees:
             # completion may just have supplied the instrument or venue scope.
-            self.xcode = anchor
+            self.code = anchor
             self.xhash = NIL
 
     def derive(self) -> None:
@@ -206,13 +206,13 @@ class Order(MarketEvent):
     def life_parts(self) -> tuple[Any, ...]:
         """An order's lifecycle is the identifier that survives its amendments."""
         named = self._named_life_code()
-        if not named and (not self.xcode or self.xcode == self.code):
+        if not named and (not self.code or self.code == self.symbol):
             return MarketEvent.life_parts(self)
-        return (self.instrument_xhash, self.mic, self.xcode or named, self.side)
+        return (self.instrument_xhash, self.mic, self.code or named, self.side)
 
     def life_code(self) -> str:
         """The order identifier that survives amendments, then the market fallback."""
-        return self.xcode or self._named_life_code() or MarketEvent.life_code(self)
+        return self.code or self._named_life_code() or MarketEvent.life_code(self)
 
     def _named_life_code(self) -> str:
         """The strongest order identifier this version carries itself."""
@@ -344,12 +344,12 @@ class Execution(MarketEvent):
             isinstance(previous, Execution)
             and self.state in (State.REPLACED, State.CANCELLED)
             and self.exec_ref_id is not None
-            and self.exec_ref_id in (previous.exec_id, previous.exec_ref_id, previous.xcode)
+            and self.exec_ref_id in (previous.exec_id, previous.exec_ref_id, previous.code)
         )
         if previous.is_order():
             self.link_to(previous, primary=True)
-        if same_report_life and previous.xcode:
-            self.xcode = previous.xcode
+        if same_report_life and previous.code:
+            self.code = previous.code
             self.xhash = NIL
         done, left, average = _totals_of(previous)
         known_done = done
@@ -399,13 +399,13 @@ class Execution(MarketEvent):
         `ExecRefID <19>` to stay on the report it amends.
         """
         named = self._named_life_code()
-        if not named and (not self.xcode or self.xcode == self.code):
+        if not named and (not self.code or self.code == self.symbol):
             return MarketEvent.life_parts(self)
-        return (self.instrument_xhash, self.mic, self.xcode or named, self.side)
+        return (self.instrument_xhash, self.mic, self.code or named, self.side)
 
     def life_code(self) -> str:
         """The report identifier that survives corrections, then the market fallback."""
-        return self.xcode or self._named_life_code() or MarketEvent.life_code(self)
+        return self.code or self._named_life_code() or MarketEvent.life_code(self)
 
     def _named_life_code(self) -> str:
         """The strongest execution identifier this version carries itself."""

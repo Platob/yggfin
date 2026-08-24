@@ -1,0 +1,78 @@
+{
+ "name": "AccruedInterestRate",
+ "tag": 158,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "The amount the buyer compensates the seller for the portion of the next coupon interest payment the seller has earned but will not receive from the issuer because the issuer will send the next coupon payment to the buyer. Accrued Interest Rate is the annualized Accrued Interest amount divided by the purchase price of the bond.",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Percentage",
+   "description": "The amount the buyer compensates the seller for the portion of the next coupon interest payment the seller has earned but will not receive from the issuer because the issuer will send the next coupon payment to the buyer. Accrued Interest Rate is the annualized Accrued Interest amount divided by the purchase price of the bond.",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0": {
+   "type": "Percentage",
+   "description": "The amount the buyer compensates the seller for the portion of the next coupon interest payment the seller has earned but will not receive from the issuer because the issuer will send the next coupon payment to the buyer. Accrued Interest Rate is the annualized Accrued Interest amount divided by the purchase price of the bond.",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "4.4": {
+   "type": "Percentage",
+   "description": "The amount the buyer compensates the seller for the portion of the next coupon interest payment the seller has earned but will not receive from the issuer because the issuer will send the next coupon payment to the buyer. Accrued Interest Rate is the annualized Accrued Interest amount divided by the purchase price of the bond.",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Confirmation",
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "Percentage",
+   "description": "Accrued Interest Rate for convertible bonds and fixed income",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.2": {
+   "type": "float",
+   "description": "Accrued Interest Rate for convertible bonds and fixed income",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.1": {
+   "type": "float",
+   "description": "Accrued Interest Rate for convertible bonds and fixed income",
+   "used_in": [
+    "Allocation"
+   ]
+  }
+ }
+}

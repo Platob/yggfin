@@ -1,0 +1,508 @@
+{
+ "name": "UnderlyingPaymentStreamFloatingRate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 61,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndex",
+     "required": false,
+     "tag": 40620
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndexSource",
+     "required": false,
+     "tag": 40621
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndexID",
+     "required": false,
+     "tag": 43092
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndexIDSource",
+     "required": false,
+     "tag": 43093
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndexCurveUnit",
+     "required": false,
+     "tag": 40622
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndexCurvePeriod",
+     "required": false,
+     "tag": 40623
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndex2",
+     "required": false,
+     "tag": 43120
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndex2Source",
+     "required": false,
+     "tag": 43121
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndex2ID",
+     "required": false,
+     "tag": 43122
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndex2IDSource",
+     "required": false,
+     "tag": 43123
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndex2CurveUnit",
+     "required": false,
+     "tag": 41911
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndex2CurvePeriod",
+     "required": false,
+     "tag": 41912
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndexLocation",
+     "required": false,
+     "tag": 41913
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndexLevel",
+     "required": false,
+     "tag": 41914
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateIndexUnitOfMeasure",
+     "required": false,
+     "tag": 41915
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamSettlLevel",
+     "required": false,
+     "tag": 41916
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamReferenceLevel",
+     "required": false,
+     "tag": 41917
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamReferenceLevelUnitOfMeasure",
+     "required": false,
+     "tag": 41918
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamReferenceLevelEqualsZeroIndicator",
+     "required": false,
+     "tag": 41919
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateMultiplier",
+     "required": false,
+     "tag": 40624
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateSpread",
+     "required": false,
+     "tag": 40625
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateSpreadCurrency",
+     "required": false,
+     "tag": 41920
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateSpreadUnitOfMeasure",
+     "required": false,
+     "tag": 41921
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateConversionFactor",
+     "required": false,
+     "tag": 41922
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateSpreadType",
+     "required": false,
+     "tag": 41923
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateSpreadPositionType",
+     "required": false,
+     "tag": 40626
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateTreatment",
+     "required": false,
+     "tag": 40627
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCapRate",
+     "required": false,
+     "tag": 40628
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCapRateBuySide",
+     "required": false,
+     "tag": 40629
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCapRateSellSide",
+     "required": false,
+     "tag": 40630
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFloorRate",
+     "required": false,
+     "tag": 40631
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFloorRateBuySide",
+     "required": false,
+     "tag": 40632
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFloorRateSellSide",
+     "required": false,
+     "tag": 40633
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInitialRate",
+     "required": false,
+     "tag": 40634
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamLastResetRate",
+     "required": false,
+     "tag": 41924
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFinalRate",
+     "required": false,
+     "tag": 41925
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFinalRateRoundingDirection",
+     "required": false,
+     "tag": 40635
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFinalRatePrecision",
+     "required": false,
+     "tag": 40636
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamAveragingMethod",
+     "required": false,
+     "tag": 40637
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamNegativeRateTreatment",
+     "required": false,
+     "tag": 40638
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCalculationLagPeriod",
+     "required": false,
+     "tag": 41926
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCalculationLagUnit",
+     "required": false,
+     "tag": 41927
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFirstObservationDateUnadjusted",
+     "required": false,
+     "tag": 42958
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFirstObservationDateRelativeTo",
+     "required": false,
+     "tag": 42959
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFirstObservationDateOffsetDayType",
+     "required": false,
+     "tag": 42960
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFirstObservationDateOffsetPeriod",
+     "required": false,
+     "tag": 41928
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFirstObservationDateOffsetUnit",
+     "required": false,
+     "tag": 41929
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFirstObservationDateAdjusted",
+     "required": false,
+     "tag": 42961
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamPricingDayType",
+     "required": false,
+     "tag": 41930
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamPricingDayDistribution",
+     "required": false,
+     "tag": 41931
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamPricingDayCount",
+     "required": false,
+     "tag": 41932
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamPricingBusinessCalendar",
+     "required": false,
+     "tag": 41933
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamPricingBusinessDayConvention",
+     "required": false,
+     "tag": 41934
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamPricingBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamPricingDayGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamPricingDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInflationLagPeriod",
+     "required": false,
+     "tag": 40639
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInflationLagUnit",
+     "required": false,
+     "tag": 40640
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInflationLagDayType",
+     "required": false,
+     "tag": 40641
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInflationInterpolationMethod",
+     "required": false,
+     "tag": 40642
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInflationIndexSource",
+     "required": false,
+     "tag": 40643
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInflationPublicationSource",
+     "required": false,
+     "tag": 40644
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInflationInitialIndexLevel",
+     "required": false,
+     "tag": 40645
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInflationFallbackBondApplicable",
+     "required": false,
+     "tag": 40646
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFRADiscounting",
+     "required": false,
+     "tag": 40647
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamUnderlierRefID",
+     "required": false,
+     "tag": 42962
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamFormula",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingDividendConditions",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingReturnRateNotionalReset",
+     "required": false,
+     "tag": 42963
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingReturnRateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamLinkInitialLevel",
+     "required": false,
+     "tag": 42964
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamLinkClosingLevelIndicator",
+     "required": false,
+     "tag": 42965
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamLinkExpiringLevelIndicator",
+     "required": false,
+     "tag": 42966
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamLinkEstimatedTradingDays",
+     "required": false,
+     "tag": 42967
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamLinkStrikePrice",
+     "required": false,
+     "tag": 42968
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamLinkStrikePriceType",
+     "required": false,
+     "tag": 42969
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamLinkMaximumBoundary",
+     "required": false,
+     "tag": 42970
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamLinkMinimumBoundary",
+     "required": false,
+     "tag": 42971
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamLinkNumberOfDataSeries",
+     "required": false,
+     "tag": 42972
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamVarianceUnadjustedCap",
+     "required": false,
+     "tag": 42973
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRealizedVarianceMethod",
+     "required": false,
+     "tag": 42974
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamDaysAdjustmentIndicator",
+     "required": false,
+     "tag": 42975
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamNearestExchangeContractRefID",
+     "required": false,
+     "tag": 42976
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamVegaNotionalAmount",
+     "required": false,
+     "tag": 42977
+    }
+   ]
+  }
+ }
+}

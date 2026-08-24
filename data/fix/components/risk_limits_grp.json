@@ -1,0 +1,28 @@
+{
+ "name": "RiskLimitsGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 335,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRiskLimits",
+     "required": false,
+     "tag": 1669,
+     "members": [
+      {
+       "kind": "component",
+       "name": "RiskLimitTypesGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "RiskInstrumentScopeGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

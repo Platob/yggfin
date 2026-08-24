@@ -1,0 +1,101 @@
+{
+ "name": "UnderlyingStreamCommoditySettlPeriodGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 605,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingStreamCommoditySettlPeriods",
+     "required": false,
+     "tag": 42002,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlCountry",
+       "required": false,
+       "tag": 42003
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlTimeZone",
+       "required": false,
+       "tag": 42004
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlFlowType",
+       "required": false,
+       "tag": 42005
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlPeriodNotional",
+       "required": false,
+       "tag": 42006
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlPeriodNotionalUnitOfMeasure",
+       "required": false,
+       "tag": 42007
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlPeriodFrequencyPeriod",
+       "required": false,
+       "tag": 42008
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlPeriodFrequencyUnit",
+       "required": false,
+       "tag": 42009
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlPeriodPrice",
+       "required": false,
+       "tag": 42010
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlPeriodPriceUnitOfMeasure",
+       "required": false,
+       "tag": 42011
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlPeriodPriceCurrency",
+       "required": false,
+       "tag": 42012
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlHolidaysProcessingInstruction",
+       "required": false,
+       "tag": 42013
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingStreamCommoditySettlDayGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlPeriodXID",
+       "required": false,
+       "tag": 42014
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlPeriodXIDRef",
+       "required": false,
+       "tag": 42015
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

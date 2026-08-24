@@ -1,0 +1,95 @@
+{
+ "name": "MsgDirection",
+ "tag": 385,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Specifies the direction of the messsage.",
+   "values": {
+    "R": "Receive",
+    "S": "Send"
+   },
+   "value_names": {
+    "R": "RECEIVE",
+    "S": "SEND"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Specifies the direction of the messsage.",
+   "values": {
+    "R": "Receive",
+    "S": "Send"
+   },
+   "value_names": {
+    "R": "RECEIVE",
+    "S": "SEND"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Specifies the direction of the messsage.",
+   "values": {
+    "R": "Receive",
+    "S": "Send"
+   },
+   "value_names": {
+    "R": "RECEIVE",
+    "S": "SEND"
+   }
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Specifies the direction of the messsage.",
+   "values": {
+    "S": "Send",
+    "R": "Receive"
+   },
+   "value_names": {
+    "S": "SEND",
+    "R": "RECEIVE"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Specifies the direction of the message.",
+   "values": {
+    "S": "Send",
+    "R": "Receive"
+   },
+   "value_names": {
+    "S": "SEND",
+    "R": "RECEIVE"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Specifies the direction of the message.",
+   "values": {
+    "S": "Send",
+    "R": "Receive"
+   },
+   "value_names": {
+    "R": "RECEIVE",
+    "S": "SEND"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "char",
+   "description": "Specifies the direction of the messsage.",
+   "values": {
+    "R": "Receive",
+    "S": "Send"
+   }
+  }
+ }
+}

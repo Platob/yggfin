@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeExerciseStyle",
+ "tag": 1299,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Type of exercise of a derivatives security Same values as ExerciseStyle <1194>"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Type of exercise of a derivatives security Same values as ExerciseStyle <1194>"
+  }
+ }
+}

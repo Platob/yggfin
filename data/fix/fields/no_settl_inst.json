@@ -1,0 +1,25 @@
+{
+ "name": "NoSettlInst",
+ "tag": 778,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of settlement instructions within repeating group."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of settlement instructions within repeating group."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of settlement instructions within repeating group."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of settlement instructions within repeating group.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

@@ -1,0 +1,50 @@
+{
+ "name": "DerivativeSecurityDefinition",
+ "versions": {
+  "5.0.SP2": {
+   "order": 22,
+   "members": [
+    {
+     "kind": "component",
+     "name": "DerivativeInstrument",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "DerivativeInstrumentAttribute",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "MarketSegmentGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "SecurityClassificationGrp",
+     "required": false
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 147,
+   "members": [
+    {
+     "kind": "component",
+     "name": "DerivativeInstrument",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "DerivativeInstrumentAttribute",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "MarketSegmentGrp",
+     "required": false
+    }
+   ]
+  }
+ }
+}

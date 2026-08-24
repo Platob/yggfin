@@ -1,0 +1,48 @@
+{
+ "name": "NumTickets",
+ "tag": 395,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Total number of tickets.",
+   "used_in": [
+    "BidRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Total number of tickets.",
+   "used_in": [
+    "BidRequest"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Total number of tickets.",
+   "used_in": [
+    "BidRequest"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Total number of tickets.",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Total number of tickets.",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Total number of tickets.",
+   "used_in": [
+    "Bid Request"
+   ]
+  }
+ }
+}

@@ -1,0 +1,70 @@
+{
+ "name": "OrigTime",
+ "tag": 42,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTimestamp",
+   "description": "Time of message origination (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\"))",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "UTCTimestamp",
+   "description": "Time of message origination (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\"))",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  },
+  "5.0": {
+   "type": "UTCTimestamp",
+   "description": "Time of message origination (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\"))",
+   "used_in": [
+    "Email",
+    "News"
+   ]
+  },
+  "4.4": {
+   "type": "UTCTimestamp",
+   "description": "Time of message origination (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\"))",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  },
+  "4.3": {
+   "type": "UTCTimestamp",
+   "description": "Time of message origination (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\"))",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  },
+  "4.2": {
+   "type": "UTCTimestamp",
+   "description": "Time of message origination (always expressed in UTC (Universal Time Coordinated, also known as 'GMT'))",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  },
+  "4.1": {
+   "type": "time",
+   "description": "Time of message origination (always expressed in GMT)",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  },
+  "4.0": {
+   "type": "time",
+   "description": "Time of message origination (always expressed in GMT)",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  }
+ }
+}

@@ -1,0 +1,80 @@
+{
+ "name": "LegOptionExerciseExpiration",
+ "versions": {
+  "5.0.SP2": {
+   "order": 92,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseExpirationDateBusinessDayConvention",
+     "required": false,
+     "tag": 41517
+    },
+    {
+     "kind": "component",
+     "name": "LegOptionExerciseExpirationDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegOptionExerciseExpirationDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseExpirationDateRelativeTo",
+     "required": false,
+     "tag": 41518
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseExpirationDateOffsetPeriod",
+     "required": false,
+     "tag": 41519
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseExpirationDateOffsetUnit",
+     "required": false,
+     "tag": 41520
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseExpirationFrequencyPeriod",
+     "required": false,
+     "tag": 41521
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseExpirationFrequencyUnit",
+     "required": false,
+     "tag": 41522
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseExpirationRollConvention",
+     "required": false,
+     "tag": 41523
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseExpirationDateOffsetDayType",
+     "required": false,
+     "tag": 41524
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseExpirationTime",
+     "required": false,
+     "tag": 41525
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseExpirationTimeBusinessCenter",
+     "required": false,
+     "tag": 41526
+    }
+   ]
+  }
+ }
+}

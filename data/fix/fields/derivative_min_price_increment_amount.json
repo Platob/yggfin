@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeMinPriceIncrementAmount",
+ "tag": 1268,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt"
+  },
+  "5.0.SP1": {
+   "type": "Amt"
+  }
+ }
+}

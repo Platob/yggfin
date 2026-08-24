@@ -1,0 +1,103 @@
+{
+ "name": "MaturityRules",
+ "versions": {
+  "5.0.SP2": {
+   "order": 274,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMaturityRules",
+     "required": false,
+     "tag": 1236,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MaturityRuleID",
+       "required": false,
+       "tag": 1222
+      },
+      {
+       "kind": "field",
+       "name": "MaturityMonthYearFormat",
+       "required": false,
+       "tag": 1303
+      },
+      {
+       "kind": "field",
+       "name": "MaturityMonthYearIncrementUnits",
+       "required": false,
+       "tag": 1302
+      },
+      {
+       "kind": "field",
+       "name": "StartMaturityMonthYear",
+       "required": false,
+       "tag": 1241
+      },
+      {
+       "kind": "field",
+       "name": "EndMaturityMonthYear",
+       "required": false,
+       "tag": 1226
+      },
+      {
+       "kind": "field",
+       "name": "MaturityMonthYearIncrement",
+       "required": false,
+       "tag": 1229
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 127,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMaturityRules",
+     "required": false,
+     "tag": 1236,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MaturityRuleID",
+       "required": false,
+       "tag": 1222
+      },
+      {
+       "kind": "field",
+       "name": "MaturityMonthYearFormat",
+       "required": false,
+       "tag": 1303
+      },
+      {
+       "kind": "field",
+       "name": "MaturityMonthYearIncrementUnits",
+       "required": false,
+       "tag": 1302
+      },
+      {
+       "kind": "field",
+       "name": "StartMaturityMonthYear",
+       "required": false,
+       "tag": 1241
+      },
+      {
+       "kind": "field",
+       "name": "EndMaturityMonthYear",
+       "required": false,
+       "tag": 1226
+      },
+      {
+       "kind": "field",
+       "name": "MaturityMonthYearIncrement",
+       "required": false,
+       "tag": 1229
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

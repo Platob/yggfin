@@ -1,0 +1,14 @@
+{
+ "name": "LegAllocID",
+ "tag": 1366,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The AllocID <70> of an individual leg of a multileg order."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The AllocID <70> of an individual leg of a multileg order."
+  }
+ }
+}

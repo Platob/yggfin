@@ -1,0 +1,14 @@
+{
+ "name": "SecurityListDesc",
+ "tag": 1467,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Specifies a description or name of a Security List.",
+   "used_in": [
+    "SecurityListUpdateReport",
+    "SecurityList"
+   ]
+  }
+ }
+}

@@ -1,0 +1,134 @@
+{
+ "name": "LegOptionExerciseDates",
+ "versions": {
+  "5.0.SP2": {
+   "order": 91,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseBusinessDayConvention",
+     "required": false,
+     "tag": 41493
+    },
+    {
+     "kind": "component",
+     "name": "LegOptionExerciseBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegOptionExerciseDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseEarliestDateOffsetDayType",
+     "required": false,
+     "tag": 41494
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseEarliestDateOffsetPeriod",
+     "required": false,
+     "tag": 41495
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseEarliestDateOffsetUnit",
+     "required": false,
+     "tag": 41496
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseFrequencyPeriod",
+     "required": false,
+     "tag": 41497
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseFrequencyUnit",
+     "required": false,
+     "tag": 41498
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseStartDateUnadjusted",
+     "required": false,
+     "tag": 41499
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseStartDateRelativeTo",
+     "required": false,
+     "tag": 41500
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseStartDateOffsetPeriod",
+     "required": false,
+     "tag": 41501
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseStartDateOffsetUnit",
+     "required": false,
+     "tag": 41502
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseStartDateOffsetDayType",
+     "required": false,
+     "tag": 41503
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseStartDateAdjusted",
+     "required": false,
+     "tag": 41504
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseSkip",
+     "required": false,
+     "tag": 41505
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseNominationDeadline",
+     "required": false,
+     "tag": 41506
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseFirstDateUnadjusted",
+     "required": false,
+     "tag": 41507
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseLastDateUnadjusted",
+     "required": false,
+     "tag": 41508
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseEarliestTime",
+     "required": false,
+     "tag": 41509
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseLatestTime",
+     "required": false,
+     "tag": 41510
+    },
+    {
+     "kind": "field",
+     "name": "LegOptionExerciseTimeBusinessCenter",
+     "required": false,
+     "tag": 41511
+    }
+   ]
+  }
+ }
+}

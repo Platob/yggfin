@@ -1,0 +1,41 @@
+{
+ "name": "SettlRateDisruptionFallbackGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 414,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSettlRateFallbacks",
+     "required": false,
+     "tag": 40085,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SettlRatePostponementMaximumDays",
+       "required": false,
+       "tag": 40086
+      },
+      {
+       "kind": "component",
+       "name": "SettlRateFallbackRateSource",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "SettlRatePostponementSurvey",
+       "required": false,
+       "tag": 40088
+      },
+      {
+       "kind": "field",
+       "name": "SettlRatePostponementCalculationAgent",
+       "required": false,
+       "tag": 40089
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

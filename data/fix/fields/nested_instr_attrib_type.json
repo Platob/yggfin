@@ -1,0 +1,14 @@
+{
+ "name": "NestedInstrAttribType",
+ "tag": 1210,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Code to represent the type of instrument attribute Same values as InstrAttribType <871>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Code to represent the type of instrument attribute Same values as InstrAttribType <871>"
+  }
+ }
+}

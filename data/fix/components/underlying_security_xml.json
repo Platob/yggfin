@@ -1,0 +1,28 @@
+{
+ "name": "UnderlyingSecurityXML",
+ "versions": {
+  "5.0.SP2": {
+   "order": 30,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingSecurityXMLLen",
+     "required": false,
+     "tag": 1874
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingSecurityXML",
+     "required": false,
+     "tag": 1875
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingSecurityXMLSchema",
+     "required": false,
+     "tag": 1876
+    }
+   ]
+  }
+ }
+}

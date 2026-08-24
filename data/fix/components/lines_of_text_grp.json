@@ -1,0 +1,129 @@
+{
+ "name": "LinesOfTextGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 202,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLinesOfText",
+     "required": false,
+     "tag": 33,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": true,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 51,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLinesOfText",
+     "required": true,
+     "tag": 33,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": true,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 52,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLinesOfText",
+     "required": true,
+     "tag": 33,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": true,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 52,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLinesOfText",
+     "required": true,
+     "tag": 33,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": true,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

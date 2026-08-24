@@ -1,0 +1,101 @@
+{
+ "name": "UnderlyingDeliveryScheduleGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 580,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingDeliverySchedules",
+     "required": false,
+     "tag": 41756,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleType",
+       "required": false,
+       "tag": 41757
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleXID",
+       "required": false,
+       "tag": 41758
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleNotional",
+       "required": false,
+       "tag": 41759
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleNotionalUnitOfMeasure",
+       "required": false,
+       "tag": 41760
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleNotionalCommodityFrequency",
+       "required": false,
+       "tag": 41761
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleNegativeTolerance",
+       "required": false,
+       "tag": 41762
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliverySchedulePositiveTolerance",
+       "required": false,
+       "tag": 41763
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleToleranceUnitOfMeasure",
+       "required": false,
+       "tag": 41764
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleToleranceType",
+       "required": false,
+       "tag": 41765
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleSettlCountry",
+       "required": false,
+       "tag": 41766
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleSettlTimeZone",
+       "required": false,
+       "tag": 41767
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleSettlFlowType",
+       "required": false,
+       "tag": 41768
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleSettlHolidaysProcessingInstruction",
+       "required": false,
+       "tag": 41769
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingDeliveryScheduleSettlDayGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

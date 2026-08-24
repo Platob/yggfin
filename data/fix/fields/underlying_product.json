@@ -1,0 +1,26 @@
+{
+ "name": "UnderlyingProduct",
+ "tag": 462,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Underlying security\u2019s Product."
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Underlying security\u2019s Product."
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Underlying security\u2019s Product."
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Underlying security's Product."
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Underlying security's Product."
+  }
+ }
+}

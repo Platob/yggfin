@@ -1,0 +1,38 @@
+{
+ "name": "ConfirmID",
+ "tag": 664,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Message reference for Confirmation",
+   "used_in": [
+    "Confirmation",
+    "Confirmation_Ack"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Message reference for Confirmation",
+   "used_in": [
+    "Confirmation",
+    "Confirmation_Ack"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Message reference for Confirmation",
+   "used_in": [
+    "Confirmation",
+    "Confirmation_Ack"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Message reference for Confirmation <AK>",
+   "used_in": [
+    "Confirmation",
+    "Confirmation Ack"
+   ]
+  }
+ }
+}

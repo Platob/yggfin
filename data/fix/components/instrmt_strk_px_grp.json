@@ -1,0 +1,201 @@
+{
+ "name": "InstrmtStrkPxGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 196,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStrikes",
+     "required": false,
+     "tag": 428,
+     "members": [
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": true
+      },
+      {
+       "kind": "component",
+       "name": "UndInstrmtGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "PrevClosePx",
+       "required": false,
+       "tag": 140
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": false,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryClOrdID",
+       "required": false,
+       "tag": 526
+      },
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": false,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "Price",
+       "required": false,
+       "tag": 44
+      },
+      {
+       "kind": "field",
+       "name": "Currency",
+       "required": false,
+       "tag": 15
+      },
+      {
+       "kind": "field",
+       "name": "CurrencyCodeSource",
+       "required": false,
+       "tag": 2897
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 45,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStrikes",
+     "required": true,
+     "tag": 428,
+     "members": [
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": true
+      },
+      {
+       "kind": "component",
+       "name": "UndInstrmtGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "PrevClosePx",
+       "required": false,
+       "tag": 140
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": false,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryClOrdID",
+       "required": false,
+       "tag": 526
+      },
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": false,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "Price",
+       "required": false,
+       "tag": 44
+      },
+      {
+       "kind": "field",
+       "name": "Currency",
+       "required": false,
+       "tag": 15
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 46,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStrikes",
+     "required": true,
+     "tag": 428,
+     "members": [
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": true
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 46,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStrikes",
+     "required": true,
+     "tag": 428,
+     "members": [
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": true
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "name": "OnBehalfOfSubID",
+ "tag": 116,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party"
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party"
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party"
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party"
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Assigned value used to identify specific message originator (desk, trader, etc.) if the message was delivered by a third party"
+  },
+  "FIXT1.1": {
+   "type": "String",
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party"
+  }
+ }
+}

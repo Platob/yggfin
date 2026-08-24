@@ -1,0 +1,118 @@
+{
+ "name": "AllocHandlInst",
+ "tag": 209,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates how the receiver (i.e. third party) of Allocation message should handle/process the account details.",
+   "values": {
+    "1": "Match",
+    "2": "Forward",
+    "3": "Forward and Match"
+   },
+   "value_names": {
+    "1": "MATCH",
+    "2": "FORWARD",
+    "3": "FORWARD_AND_MATCH",
+    "4": "AUTO_CLAIM_GIVE_UP"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Indicates how the receiver (i.e. third party) of Allocation message should handle/process the account details.",
+   "values": {
+    "1": "Match",
+    "2": "Forward",
+    "3": "Forward and Match"
+   },
+   "value_names": {
+    "1": "MATCH",
+    "2": "FORWARD",
+    "3": "FORWARD_AND_MATCH"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Indicates how the receiver (i.e. third party) of Allocation message should handle/process the account details.",
+   "values": {
+    "1": "Match",
+    "2": "Forward",
+    "3": "Forward and Match"
+   },
+   "value_names": {
+    "1": "MATCH",
+    "2": "FORWARD",
+    "3": "FORWARD_AND_MATCH"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Indicates how the receiver (i.e. third party) of Allocation message should handle/process the account details.",
+   "values": {
+    "1": "Match",
+    "2": "Forward",
+    "3": "Forward and Match"
+   },
+   "value_names": {
+    "1": "MATCH",
+    "2": "FORWARD",
+    "3": "FORWARD_AND_MATCH"
+   },
+   "used_in": [
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Indicates how the receiver (i.e. third party) of Allocation <J> message should handle/process the account details.",
+   "values": {
+    "1": "Match",
+    "2": "Forward",
+    "3": "Forward and Match"
+   },
+   "value_names": {
+    "3": "FORWARD_AND_MATCH",
+    "2": "FORWARD",
+    "1": "MATCH"
+   },
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Indicates how the receiver (i.e. third party) of Allocation <J> message should handle/process the account details.",
+   "values": {
+    "1": "Match",
+    "2": "Forward",
+    "3": "Forward and Match"
+   },
+   "value_names": {
+    "1": "MATCH",
+    "2": "FORWARD",
+    "3": "FORWARD_AND_MATCH"
+   },
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Indicates how the receiver (i.e. third party) of Allocation <J> message should handle/process the account details.",
+   "values": {
+    "1": "Match",
+    "2": "Forward",
+    "3": "Forward and Match"
+   },
+   "value_names": {
+    "1": "MATCH",
+    "2": "FORWARD",
+    "3": "FORWARD_AND_MATCH"
+   },
+   "used_in": [
+    "Allocation"
+   ]
+  }
+ }
+}

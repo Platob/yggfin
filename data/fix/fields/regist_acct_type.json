@@ -1,0 +1,41 @@
+{
+ "name": "RegistAcctType",
+ "tag": 493,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "For CIV \u2013 a fund manager-defined code identifying which of the fund manager\u2019s account types is required.",
+   "used_in": [
+    "RegistrationInstructions"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "For CIV \u2013 a fund manager-defined code identifying which of the fund manager\u2019s account types is required.",
+   "used_in": [
+    "RegistrationInstructions"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "For CIV \u2013 a fund manager-defined code identifying which of the fund manager\u2019s account types is required.",
+   "used_in": [
+    "RegistrationInstructions"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "For CIV - a fund manager-defined code identifying which of the fund manager's account types is required.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "For CIV - a fund manager-defined code identifying which of the fund manager's account types is required.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  }
+ }
+}

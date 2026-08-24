@@ -1,0 +1,112 @@
+{
+ "name": "BookingUnit",
+ "tag": 590,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Indicates what constitutes a bookable unit.",
+   "values": {
+    "0": "Each partial execution is a bookable unit",
+    "1": "Aggregate partial executions on this order, and book one trade per order",
+    "2": "Aggregate executions for this symbol, side, and settlement date"
+   },
+   "value_names": {
+    "0": "EACH_PARTIAL_EXECUTION_IS_A_BOOKABLE_UNIT",
+    "1": "AGGREGATE_PARTIAL_EXECUTIONS_ON_THIS_ORDER",
+    "2": "AGGREGATE_EXECUTIONS_FOR_THIS_SYMBOL"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Indicates what constitutes a bookable unit.",
+   "values": {
+    "0": "Each partial execution is a bookable unit",
+    "1": "Aggregate partial executions on this order, and book one trade per order",
+    "2": "Aggregate executions for this symbol, side, and settlement date"
+   },
+   "value_names": {
+    "0": "EACH_PARTIAL_EXECUTION_IS_A_BOOKABLE_UNIT",
+    "1": "AGGREGATE_PARTIAL_EXECUTIONS_ON_THIS_ORDER",
+    "2": "AGGREGATE_EXECUTIONS_FOR_THIS_SYMBOL"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Indicates what constitutes a bookable unit.",
+   "values": {
+    "0": "Each partial execution is a bookable unit",
+    "1": "Aggregate partial executions on this order, and book one trade per order",
+    "2": "Aggregate executions for this symbol, side, and settlement date"
+   },
+   "value_names": {
+    "0": "EACH_PARTIAL_EXECUTION_IS_A_BOOKABLE_UNIT",
+    "1": "AGGREGATE_PARTIAL_EXECUTIONS_ON_THIS_ORDER",
+    "2": "AGGREGATE_EXECUTIONS_FOR_THIS_SYMBOL"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Indicates what constitutes a bookable unit.",
+   "values": {
+    "0": "Each partial execution is a bookable unit",
+    "1": "Aggregate partial executions on this order, and book one trade per order",
+    "2": "Aggregate executions for this symbol, side, and settlement date"
+   },
+   "value_names": {
+    "0": "EACH_PARTIAL_EXECUTION_IS_A_BOOKABLE_UNIT",
+    "1": "AGGREGATE_PARTIAL_EXECUTIONS_ON_THIS_ORDER",
+    "2": "AGGREGATE_EXECUTIONS_FOR_THIS_SYMBOL"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Indicates what constitutes a bookable unit. 0 = Each partial execution is a bookable unit 1 = Aggregate partial executions on this order, and book one trade per order 2 = Aggregate executions for this symbol, side, and settlement date",
+   "value_names": {
+    "1": "AGGREGATE_PARTIAL_EXECUTIONS_ON_THIS_ORDER",
+    "2": "AGGREGATE_EXECUTIONS_FOR_THIS_SYMBOL",
+    "0": "EACH_PARTIAL_EXECUTION_IS_A_BOOKABLE_UNIT"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

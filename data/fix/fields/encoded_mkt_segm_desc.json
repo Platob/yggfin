@@ -1,0 +1,22 @@
+{
+ "name": "EncodedMktSegmDesc",
+ "tag": 1398,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the MarketSegmDesc <1396> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the MarketSegmDesc field.",
+   "used_in": [
+    "MarketDefinition",
+    "MarketDefinitionUpdateReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the MarketSegmDesc <1396> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the MarketSegmDesc field.",
+   "used_in": [
+    "MarketDefinition",
+    "MarketDefinitionUpdateReport"
+   ]
+  }
+ }
+}

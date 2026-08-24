@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeSecurityXML",
+ "tag": 1283,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data",
+   "description": "Refer to definition of SecurityXML <1185>"
+  },
+  "5.0.SP1": {
+   "type": "data",
+   "description": "Refer to definition of SecurityXML <1185>"
+  }
+ }
+}

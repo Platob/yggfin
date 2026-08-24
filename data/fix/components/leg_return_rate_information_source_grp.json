@@ -1,0 +1,36 @@
+{
+ "name": "LegReturnRateInformationSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 668,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegReturnRateInformationSources",
+     "required": false,
+     "tag": 42560,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegReturnRateInformationSource",
+       "required": false,
+       "tag": 42561
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateReferencePage",
+       "required": false,
+       "tag": 42562
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateReferencePageHeading",
+       "required": false,
+       "tag": 42563
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

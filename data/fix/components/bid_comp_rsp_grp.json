@@ -1,0 +1,413 @@
+{
+ "name": "BidCompRspGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 179,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoBidComponents",
+     "required": false,
+     "tag": 420,
+     "members": [
+      {
+       "kind": "component",
+       "name": "CommissionData",
+       "required": true
+      },
+      {
+       "kind": "field",
+       "name": "ListID",
+       "required": false,
+       "tag": 66
+      },
+      {
+       "kind": "field",
+       "name": "Country",
+       "required": false,
+       "tag": 421
+      },
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": false,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "Price",
+       "required": false,
+       "tag": 44
+      },
+      {
+       "kind": "field",
+       "name": "PriceType",
+       "required": false,
+       "tag": 423
+      },
+      {
+       "kind": "field",
+       "name": "FairValue",
+       "required": false,
+       "tag": 406
+      },
+      {
+       "kind": "field",
+       "name": "NetGrossInd",
+       "required": false,
+       "tag": 430
+      },
+      {
+       "kind": "field",
+       "name": "SettlType",
+       "required": false,
+       "tag": 63
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate",
+       "required": false,
+       "tag": 64
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 28,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoBidComponents",
+     "required": true,
+     "tag": 420,
+     "members": [
+      {
+       "kind": "component",
+       "name": "CommissionData",
+       "required": true
+      },
+      {
+       "kind": "field",
+       "name": "ListID",
+       "required": false,
+       "tag": 66
+      },
+      {
+       "kind": "field",
+       "name": "Country",
+       "required": false,
+       "tag": 421
+      },
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": false,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "Price",
+       "required": false,
+       "tag": 44
+      },
+      {
+       "kind": "field",
+       "name": "PriceType",
+       "required": false,
+       "tag": 423
+      },
+      {
+       "kind": "field",
+       "name": "FairValue",
+       "required": false,
+       "tag": 406
+      },
+      {
+       "kind": "field",
+       "name": "NetGrossInd",
+       "required": false,
+       "tag": 430
+      },
+      {
+       "kind": "field",
+       "name": "SettlType",
+       "required": false,
+       "tag": 63
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate",
+       "required": false,
+       "tag": 64
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 28,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoBidComponents",
+     "required": true,
+     "tag": 420,
+     "members": [
+      {
+       "kind": "component",
+       "name": "CommissionData",
+       "required": true
+      },
+      {
+       "kind": "field",
+       "name": "ListID",
+       "required": false,
+       "tag": 66
+      },
+      {
+       "kind": "field",
+       "name": "Country",
+       "required": false,
+       "tag": 421
+      },
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": false,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "Price",
+       "required": false,
+       "tag": 44
+      },
+      {
+       "kind": "field",
+       "name": "PriceType",
+       "required": false,
+       "tag": 423
+      },
+      {
+       "kind": "field",
+       "name": "FairValue",
+       "required": false,
+       "tag": 406
+      },
+      {
+       "kind": "field",
+       "name": "NetGrossInd",
+       "required": false,
+       "tag": 430
+      },
+      {
+       "kind": "field",
+       "name": "SettlType",
+       "required": false,
+       "tag": 63
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate",
+       "required": false,
+       "tag": 64
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 28,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoBidComponents",
+     "required": true,
+     "tag": 420,
+     "members": [
+      {
+       "kind": "component",
+       "name": "CommissionData",
+       "required": true
+      },
+      {
+       "kind": "field",
+       "name": "ListID",
+       "required": false,
+       "tag": 66
+      },
+      {
+       "kind": "field",
+       "name": "Country",
+       "required": false,
+       "tag": 421
+      },
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": false,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "Price",
+       "required": false,
+       "tag": 44
+      },
+      {
+       "kind": "field",
+       "name": "PriceType",
+       "required": false,
+       "tag": 423
+      },
+      {
+       "kind": "field",
+       "name": "FairValue",
+       "required": false,
+       "tag": 406
+      },
+      {
+       "kind": "field",
+       "name": "NetGrossInd",
+       "required": false,
+       "tag": 430
+      },
+      {
+       "kind": "field",
+       "name": "SettlType",
+       "required": false,
+       "tag": 63
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate",
+       "required": false,
+       "tag": 64
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

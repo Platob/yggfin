@@ -1,0 +1,221 @@
+{
+ "name": "ExecRestatementReason",
+ "tag": 378,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Code to identify reason for an ExecutionRpt <8> message sent with ExecType <150> ='Restated' or used when communicating an unsolicited cancel.",
+   "values": {
+    "0": "GT corporate action",
+    "1": "GT renewal / restatement (no corporate action)",
+    "2": "Verbal change",
+    "3": "Repricing of order",
+    "4": "Broker option",
+    "5": "Partial decline of OrderQty <38> (e.g. exchange initiated partial cancel)",
+    "6": "Cancel on Trading Halt",
+    "7": "Cancel on System Failure",
+    "8": "Market (Exchange) option",
+    "9": "Canceled, not best",
+    "10": "Warehouse Recap",
+    "11": "Peg Refresh",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "GT_CORPORATE_ACTION",
+    "1": "GT_RENEWAL",
+    "2": "VERBAL_CHANGE",
+    "3": "REPRICING_OF_ORDER",
+    "4": "BROKER_OPTION",
+    "5": "PARTIAL_DECLINE_OF_ORDER_QTY",
+    "6": "CANCEL_ON_TRADING_HALT",
+    "7": "CANCEL_ON_SYSTEM_FAILURE",
+    "8": "MARKET",
+    "9": "CANCELED",
+    "10": "WAREHOUSE_RECAP",
+    "11": "PEG_REFRESH",
+    "12": "CANCEL_ON_CONNECTION_LOSS",
+    "13": "CANCEL_ON_LOGOUT",
+    "14": "ASSIGN_TIME_PRIORITY",
+    "15": "CANCELLED_FOR_TRADE_PRICE_VIOLATION",
+    "16": "CANCELLED_FOR_CROSS_IMBALANCE",
+    "17": "CXLD_SMP",
+    "18": "CXLD_SMP_AGGRESSIVE",
+    "19": "CXLD_SMP_PASSIVE",
+    "20": "CXLD_SMP_AGGRESSIVE_PASSIVE",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Code to identify reason for an ExecutionRpt <8> message sent with ExecType <150> ='Restated' or used when communicating an unsolicited cancel.",
+   "values": {
+    "0": "GT corporate action",
+    "1": "GT renewal / restatement (no corporate action)",
+    "2": "Verbal change",
+    "3": "Repricing of order",
+    "4": "Broker option",
+    "5": "Partial decline of OrderQty <38> (e.g. exchange initiated partial cancel)",
+    "6": "Cancel on Trading Halt",
+    "7": "Cancel on System Failure",
+    "8": "Market (Exchange) option",
+    "9": "Canceled, not best",
+    "10": "Warehouse Recap",
+    "11": "Peg Refresh",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "GT_CORPORATE_ACTION",
+    "1": "GT_RENEWAL",
+    "2": "VERBAL_CHANGE",
+    "3": "REPRICING_OF_ORDER",
+    "4": "BROKER_OPTION",
+    "5": "PARTIAL_DECLINE_OF_ORDER_QTY",
+    "6": "CANCEL_ON_TRADING_HALT",
+    "7": "CANCEL_ON_SYSTEM_FAILURE",
+    "8": "MARKET",
+    "9": "CANCELED",
+    "10": "WAREHOUSE_RECAP",
+    "11": "PEG_REFRESH",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Code to identify reason for an ExecutionRpt <8> message sent with ExecType <150> ='Restated' or used when communicating an unsolicited cancel.",
+   "values": {
+    "0": "GT corporate action",
+    "1": "GT renewal / restatement (no corporate action)",
+    "2": "Verbal change",
+    "3": "Repricing of order",
+    "4": "Broker option",
+    "5": "Partial decline of OrderQty <38> (e.g. exchange initiated partial cancel)",
+    "6": "Cancel on Trading Halt",
+    "7": "Cancel on System Failure",
+    "8": "Market (Exchange) option",
+    "9": "Canceled, not best",
+    "10": "Warehouse Recap",
+    "11": "Peg Refresh",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "GT_CORPORATE_ACTION",
+    "1": "GT_RENEWAL",
+    "2": "VERBAL_CHANGE",
+    "3": "REPRICING_OF_ORDER",
+    "4": "BROKER_OPTION",
+    "5": "PARTIAL_DECLINE_OF_ORDER_QTY",
+    "6": "CANCEL_ON_TRADING_HALT",
+    "7": "CANCEL_ON_SYSTEM_FAILURE",
+    "8": "MARKET",
+    "9": "CANCELED",
+    "10": "WAREHOUSE_RECAP",
+    "11": "PEG_REFRESH",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Code to identify reason for an ExecutionRpt <8> message sent with ExecType <150> ='Restated' or used when communicating an unsolicited cancel.",
+   "values": {
+    "0": "GT Corporate action",
+    "1": "GT renewal / restatement (no corporate action)",
+    "2": "Verbal change",
+    "3": "Repricing of order",
+    "4": "Broker option",
+    "5": "Partial decline of OrderQty <38> (e.g. exchange-initiated partial cancel)",
+    "6": "Cancel on Trading Halt",
+    "7": "Cancel on System Failure",
+    "8": "Market (Exchange) Option",
+    "9": "Canceled, Not Best",
+    "10": "Warehouse recap",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "GT_CORPORATE_ACTION",
+    "1": "GT_RENEWAL",
+    "2": "VERBAL_CHANGE",
+    "3": "REPRICING_OF_ORDER",
+    "4": "BROKER_OPTION",
+    "5": "PARTIAL_DECLINE_OF_ORDER_QTY",
+    "6": "CANCEL_ON_TRADING_HALT",
+    "7": "CANCEL_ON_SYSTEM_FAILURE",
+    "8": "MARKET",
+    "9": "CANCELED",
+    "10": "WAREHOUSE_RECAP",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Code to identify reason for an ExecutionRpt <8> message sent with ExecType <150> =Restated or used when communicating an unsolicited cancel.",
+   "values": {
+    "0": "GT Corporate action",
+    "1": "GT renewal / restatement (no corporate action)",
+    "2": "Verbal change",
+    "3": "Repricing of order",
+    "4": "Broker option",
+    "5": "Partial decline of OrderQty <38> (e.g. exchange-initiated partial cancel)",
+    "6": "Cancel on Trading Halt",
+    "7": "Cancel on System Failure",
+    "8": "Market (Exchange) Option"
+   },
+   "value_names": {
+    "7": "CANCEL_ON_SYSTEM_FAILURE",
+    "0": "GT_CORPORATE_ACTION",
+    "8": "MARKET",
+    "6": "CANCEL_ON_TRADING_HALT",
+    "5": "PARTIAL_DECLINE_OF_ORDER_QTY",
+    "4": "BROKER_OPTION",
+    "3": "REPRICING_OF_ORDER",
+    "1": "GT_RENEWAL",
+    "2": "VERBAL_CHANGE"
+   },
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Code to identify reason for an ExecutionRpt message sent with ExecType <150> =Restated or used when communicating an unsolicited cancel.",
+   "values": {
+    "0": "GT Corporate action",
+    "1": "GT renewal / restatement (no corporate action)",
+    "2": "Verbal change",
+    "3": "Repricing of order",
+    "4": "Broker option",
+    "5": "Partial decline of OrderQty <38> (e.g. exchange-initiated partial cancel)"
+   },
+   "value_names": {
+    "0": "GT_CORPORATE_ACTION",
+    "1": "GT_RENEWAL",
+    "2": "VERBAL_CHANGE",
+    "3": "REPRICING_OF_ORDER",
+    "4": "BROKER_OPTION",
+    "5": "PARTIAL_DECLINE_OF_ORDER_QTY"
+   },
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

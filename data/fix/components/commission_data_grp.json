@@ -1,0 +1,114 @@
+{
+ "name": "CommissionDataGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 645,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCommissions",
+     "required": false,
+     "tag": 2639,
+     "members": [
+      {
+       "kind": "field",
+       "name": "CommissionAmount",
+       "required": false,
+       "tag": 2640
+      },
+      {
+       "kind": "field",
+       "name": "CommissionAmountType",
+       "required": false,
+       "tag": 2641
+      },
+      {
+       "kind": "field",
+       "name": "CommissionAmountSubType",
+       "required": false,
+       "tag": 2725
+      },
+      {
+       "kind": "field",
+       "name": "CommissionBasis",
+       "required": false,
+       "tag": 2642
+      },
+      {
+       "kind": "field",
+       "name": "CommissionCurrency",
+       "required": false,
+       "tag": 2643
+      },
+      {
+       "kind": "field",
+       "name": "CommissionCurrencyCodeSource",
+       "required": false,
+       "tag": 2923
+      },
+      {
+       "kind": "field",
+       "name": "CommissionUnitOfMeasure",
+       "required": false,
+       "tag": 2644
+      },
+      {
+       "kind": "field",
+       "name": "CommissionUnitOfMeasureCurrency",
+       "required": false,
+       "tag": 2645
+      },
+      {
+       "kind": "field",
+       "name": "CommissionUnitOfMeasureCurrencyCodeSource",
+       "required": false,
+       "tag": 2924
+      },
+      {
+       "kind": "field",
+       "name": "CommissionRate",
+       "required": false,
+       "tag": 2646
+      },
+      {
+       "kind": "field",
+       "name": "CommissionSharedIndicator",
+       "required": false,
+       "tag": 2647
+      },
+      {
+       "kind": "field",
+       "name": "CommissionAmountShared",
+       "required": false,
+       "tag": 2648
+      },
+      {
+       "kind": "field",
+       "name": "CommissionLegRefID",
+       "required": false,
+       "tag": 2649
+      },
+      {
+       "kind": "field",
+       "name": "CommissionDesc",
+       "required": false,
+       "tag": 2650
+      },
+      {
+       "kind": "field",
+       "name": "EncodedCommissionDescLen",
+       "required": false,
+       "tag": 2651
+      },
+      {
+       "kind": "field",
+       "name": "EncodedCommissionDesc",
+       "required": false,
+       "tag": 2652
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

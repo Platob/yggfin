@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingPaymentStreamPricingBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 594,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingPaymentStreamPricingBusinessCenters",
+     "required": false,
+     "tag": 41909,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStreamPricingBusinessCenter",
+       "required": false,
+       "tag": 41910
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,119 @@
+{
+ "name": "UndlyInstrumentParties",
+ "versions": {
+  "5.0.SP2": {
+   "order": 262,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUndlyInstrumentParties",
+     "required": false,
+     "tag": 1058,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingInstrumentPartyID",
+       "required": false,
+       "tag": 1059
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingInstrumentPartyIDSource",
+       "required": false,
+       "tag": 1060
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingInstrumentPartyRole",
+       "required": false,
+       "tag": 1061
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingInstrumentPartyRoleQualifier",
+       "required": false,
+       "tag": 2391
+      },
+      {
+       "kind": "component",
+       "name": "UndlyInstrumentPtysSubGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 111,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUndlyInstrumentParties",
+     "required": false,
+     "tag": 1058,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UndlyInstrumentPartyID",
+       "required": false,
+       "tag": 1059
+      },
+      {
+       "kind": "field",
+       "name": "UndlyInstrumentPartyIDSource",
+       "required": false,
+       "tag": 1060
+      },
+      {
+       "kind": "field",
+       "name": "UndlyInstrumentPartyRole",
+       "required": false,
+       "tag": 1061
+      },
+      {
+       "kind": "component",
+       "name": "UndlyInstrumentPtysSubGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 113,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUndlyInstrumentParties",
+     "required": false,
+     "tag": 1058,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UndlyInstrumentPartyID",
+       "required": false,
+       "tag": 1059
+      },
+      {
+       "kind": "field",
+       "name": "UndlyInstrumentPartyIDSource",
+       "required": false,
+       "tag": 1060
+      },
+      {
+       "kind": "field",
+       "name": "UndlyInstrumentPartyRole",
+       "required": false,
+       "tag": 1061
+      },
+      {
+       "kind": "component",
+       "name": "UndlyInstrumentPtysSubGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

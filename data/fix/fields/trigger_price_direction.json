@@ -1,0 +1,42 @@
+{
+ "name": "TriggerPriceDirection",
+ "tag": 1109,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "The side from which the trigger price is reached.",
+   "values": {
+    "U": "Trigger if the price of the specified type goes UP to or through the specified Trigger Price.",
+    "D": "Trigger if the price of the specified type goes DOWN to or through the specified Trigger Price."
+   },
+   "value_names": {
+    "U": "UP",
+    "D": "DOWN"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "The side from which the trigger price is reached.",
+   "values": {
+    "U": "Trigger if the price of the specified type goes UP to or through the specified Trigger Price.",
+    "D": "Trigger if the price of the specified type goes DOWN to or through the specified Trigger Price."
+   },
+   "value_names": {
+    "U": "UP",
+    "D": "DOWN"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "The side from which the trigger price is reached.",
+   "values": {
+    "U": "Trigger if the price of the specified type goes UP to or through the specified Trigger Price.",
+    "D": "Trigger if the price of the specified type goes DOWN to or through the specified Trigger Price."
+   },
+   "value_names": {
+    "U": "UP",
+    "D": "DOWN"
+   }
+  }
+ }
+}

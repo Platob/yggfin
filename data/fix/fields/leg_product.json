@@ -1,0 +1,26 @@
+{
+ "name": "LegProduct",
+ "tag": 607,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Multileg instrument's individual security's Product. See Product <460> field for description"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Multileg instrument's individual security's Product. See Product <460> field for description"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Multileg instrument's individual security's Product. See Product <460> field for description"
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Multileg instrument's individual security's Product. See Product <460> field for description"
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Multileg instrument's individual security's Product. See Product <460> field for description"
+  }
+ }
+}

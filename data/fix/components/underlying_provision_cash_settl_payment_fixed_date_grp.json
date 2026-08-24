@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingProvisionCashSettlPaymentFixedDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 618,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingProvisionCashSettlPaymentDates",
+     "required": false,
+     "tag": 42099,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionCashSettlPaymentDate",
+       "required": false,
+       "tag": 42100
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionCashSettlPaymentDateType",
+       "required": false,
+       "tag": 42101
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

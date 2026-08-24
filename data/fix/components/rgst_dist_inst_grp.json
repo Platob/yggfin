@@ -1,0 +1,249 @@
+{
+ "name": "RgstDistInstGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 225,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDistribInsts",
+     "required": false,
+     "tag": 510,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DistribPaymentMethod",
+       "required": false,
+       "tag": 477
+      },
+      {
+       "kind": "field",
+       "name": "DistribPercentage",
+       "required": false,
+       "tag": 512
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribCurr",
+       "required": false,
+       "tag": 478
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentName",
+       "required": false,
+       "tag": 498
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentCode",
+       "required": false,
+       "tag": 499
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentAcctNumber",
+       "required": false,
+       "tag": 500
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribPayRef",
+       "required": false,
+       "tag": 501
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentAcctName",
+       "required": false,
+       "tag": 502
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 74,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDistribInsts",
+     "required": false,
+     "tag": 510,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DistribPaymentMethod",
+       "required": false,
+       "tag": 477
+      },
+      {
+       "kind": "field",
+       "name": "DistribPercentage",
+       "required": false,
+       "tag": 512
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribCurr",
+       "required": false,
+       "tag": 478
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentName",
+       "required": false,
+       "tag": 498
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentCode",
+       "required": false,
+       "tag": 499
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentAcctNumber",
+       "required": false,
+       "tag": 500
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribPayRef",
+       "required": false,
+       "tag": 501
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentAcctName",
+       "required": false,
+       "tag": 502
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 75,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDistribInsts",
+     "required": false,
+     "tag": 510,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DistribPaymentMethod",
+       "required": false,
+       "tag": 477
+      },
+      {
+       "kind": "field",
+       "name": "DistribPercentage",
+       "required": false,
+       "tag": 512
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribCurr",
+       "required": false,
+       "tag": 478
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentName",
+       "required": false,
+       "tag": 498
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentCode",
+       "required": false,
+       "tag": 499
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentAcctNumber",
+       "required": false,
+       "tag": 500
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribPayRef",
+       "required": false,
+       "tag": 501
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentAcctName",
+       "required": false,
+       "tag": 502
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 75,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDistribInsts",
+     "required": false,
+     "tag": 510,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DistribPaymentMethod",
+       "required": false,
+       "tag": 477
+      },
+      {
+       "kind": "field",
+       "name": "DistribPercentage",
+       "required": false,
+       "tag": 512
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribCurr",
+       "required": false,
+       "tag": 478
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentName",
+       "required": false,
+       "tag": 498
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentCode",
+       "required": false,
+       "tag": 499
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentAcctNumber",
+       "required": false,
+       "tag": 500
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribPayRef",
+       "required": false,
+       "tag": 501
+      },
+      {
+       "kind": "field",
+       "name": "CashDistribAgentAcctName",
+       "required": false,
+       "tag": 502
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

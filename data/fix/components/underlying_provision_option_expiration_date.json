@@ -1,0 +1,69 @@
+{
+ "name": "UnderlyingProvisionOptionExpirationDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 107,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExpirationDateUnadjusted",
+     "required": false,
+     "tag": 42133
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExpirationDateBusinessDayConvention",
+     "required": false,
+     "tag": 42134
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingProvisionOptionExpirationDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExpirationDateRelativeTo",
+     "required": false,
+     "tag": 42135
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExpirationDateOffsetPeriod",
+     "required": false,
+     "tag": 42136
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExpirationDateOffsetUnit",
+     "required": false,
+     "tag": 42137
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExpirationDateOffsetDayType",
+     "required": false,
+     "tag": 42138
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExpirationDateAdjusted",
+     "required": false,
+     "tag": 42139
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExpirationTime",
+     "required": false,
+     "tag": 42140
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExpirationTimeBusinessCenter",
+     "required": false,
+     "tag": 42141
+    }
+   ]
+  }
+ }
+}

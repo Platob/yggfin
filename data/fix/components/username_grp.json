@@ -1,0 +1,43 @@
+{
+ "name": "UsernameGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 292,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUsernames",
+     "required": false,
+     "tag": 809,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Username",
+       "required": false,
+       "tag": 553
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 153,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUsernames",
+     "required": false,
+     "tag": 809,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Username",
+       "required": false,
+       "tag": 553
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "SecondaryHighLimitPrice",
+ "tag": 1230,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Refer to definition of HighLimitPrice <1149>"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Refer to definition of HighLimitPrice <1149>"
+  }
+ }
+}

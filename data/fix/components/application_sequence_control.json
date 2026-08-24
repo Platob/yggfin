@@ -1,0 +1,63 @@
+{
+ "name": "ApplicationSequenceControl",
+ "versions": {
+  "5.0.SP2": {
+   "order": 25,
+   "members": [
+    {
+     "kind": "field",
+     "name": "ApplID",
+     "required": false,
+     "tag": 1180
+    },
+    {
+     "kind": "field",
+     "name": "ApplSeqNum",
+     "required": false,
+     "tag": 1181
+    },
+    {
+     "kind": "field",
+     "name": "ApplLastSeqNum",
+     "required": false,
+     "tag": 1350
+    },
+    {
+     "kind": "field",
+     "name": "ApplResendFlag",
+     "required": false,
+     "tag": 1352
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 157,
+   "members": [
+    {
+     "kind": "field",
+     "name": "ApplID",
+     "required": false,
+     "tag": 1180
+    },
+    {
+     "kind": "field",
+     "name": "ApplSeqNum",
+     "required": false,
+     "tag": 1181
+    },
+    {
+     "kind": "field",
+     "name": "ApplLastSeqNum",
+     "required": false,
+     "tag": 1350
+    },
+    {
+     "kind": "field",
+     "name": "ApplResendFlag",
+     "required": false,
+     "tag": 1352
+    }
+   ]
+  }
+ }
+}

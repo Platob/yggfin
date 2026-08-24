@@ -1,0 +1,26 @@
+{
+ "name": "LegCouponRate",
+ "tag": 615,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description"
+  },
+  "5.0.SP1": {
+   "type": "Percentage",
+   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description"
+  },
+  "5.0": {
+   "type": "Percentage",
+   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description"
+  },
+  "4.4": {
+   "type": "Percentage",
+   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description"
+  },
+  "4.3": {
+   "type": "Percentage",
+   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description"
+  }
+ }
+}

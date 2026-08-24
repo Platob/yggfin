@@ -1,0 +1,38 @@
+{
+ "name": "UserRequestID",
+ "tag": 923,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier for a User Request.",
+   "used_in": [
+    "UserRequest",
+    "UserResponse"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier for a User Request.",
+   "used_in": [
+    "UserRequest",
+    "UserResponse"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique identifier for a User Request.",
+   "used_in": [
+    "UserRequest",
+    "UserResponse"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique identifier for a User Request.",
+   "used_in": [
+    "User Request",
+    "User Response"
+   ]
+  }
+ }
+}

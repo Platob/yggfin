@@ -1,0 +1,110 @@
+{
+ "name": "BidTradeType",
+ "tag": 418,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Code to represent the type of trade. (Prior to FIX 4.4 this field was named \"TradeType\")",
+   "values": {
+    "A": "Agency",
+    "G": "VWAP Guarantee",
+    "J": "Guaranteed Close",
+    "R": "Risk Trade"
+   },
+   "value_names": {
+    "A": "AGENCY",
+    "G": "VWAP_GUARANTEE",
+    "J": "GUARANTEED_CLOSE",
+    "R": "RISK_TRADE"
+   },
+   "used_in": [
+    "BidRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Code to represent the type of trade. (Prior to FIX 4.4 this field was named \"TradeType\")",
+   "values": {
+    "A": "Agency",
+    "G": "VWAP Guarantee",
+    "J": "Guaranteed Close",
+    "R": "Risk Trade"
+   },
+   "value_names": {
+    "A": "AGENCY",
+    "G": "VWAP_GUARANTEE",
+    "J": "GUARANTEED_CLOSE",
+    "R": "RISK_TRADE"
+   },
+   "used_in": [
+    "BidRequest"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Code to represent the type of trade. (Prior to FIX 4.4 this field was named \"TradeType\")",
+   "values": {
+    "A": "Agency",
+    "G": "VWAP Guarantee",
+    "J": "Guaranteed Close",
+    "R": "Risk Trade"
+   },
+   "value_names": {
+    "A": "AGENCY",
+    "G": "VWAP_GUARANTEE",
+    "J": "GUARANTEED_CLOSE",
+    "R": "RISK_TRADE"
+   },
+   "used_in": [
+    "BidRequest"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Code to represent the type of trade.",
+   "values": {
+    "R": "Risk Trade",
+    "G": "VWAP Guarantee",
+    "A": "Agency",
+    "J": "Guaranteed Close"
+   },
+   "value_names": {
+    "R": "RISK_TRADE",
+    "G": "VWAP_GUARANTEE",
+    "A": "AGENCY",
+    "J": "GUARANTEED_CLOSE"
+   },
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.3": {
+   "name": "TradeType",
+   "type": "char",
+   "description": "Code to represent the type of trade.",
+   "value_names": {
+    "G": "VWAP_GUARANTEE",
+    "A": "AGENCY",
+    "J": "GUARANTEED_CLOSE",
+    "R": "RISK_TRADE"
+   },
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.2": {
+   "name": "TradeType",
+   "type": "char",
+   "description": "Code to represent the type of trade.",
+   "value_names": {
+    "A": "AGENCY",
+    "G": "VWAP_GUARANTEE",
+    "J": "GUARANTEED_CLOSE",
+    "R": "RISK_TRADE"
+   },
+   "used_in": [
+    "Bid Request"
+   ]
+  }
+ }
+}

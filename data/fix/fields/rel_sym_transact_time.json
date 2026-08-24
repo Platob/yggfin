@@ -1,0 +1,10 @@
+{
+ "name": "RelSymTransactTime",
+ "tag": 1504,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTimestamp",
+   "description": "See TransactTime <60>"
+  }
+ }
+}

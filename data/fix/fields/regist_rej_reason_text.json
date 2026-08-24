@@ -1,0 +1,41 @@
+{
+ "name": "RegistRejReasonText",
+ "tag": 496,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Text indicating reason(s) why a RegistrationInstructions <o> has been rejected.",
+   "used_in": [
+    "RegistrationInstructionsResponse"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Text indicating reason(s) why a RegistrationInstructions <o> has been rejected.",
+   "used_in": [
+    "RegistrationInstructionsResponse"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Text indicating reason(s) why a RegistrationInstructions <o> has been rejected.",
+   "used_in": [
+    "RegistrationInstructionsResponse"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Text indicating reason(s) why a Registration Instructions <o> has been rejected.",
+   "used_in": [
+    "Registration Instructions Response"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Text indicating reason(s) why a Registration Instruction has been rejected.",
+   "used_in": [
+    "Registration Instructions Response"
+   ]
+  }
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "name": "YieldCalcDate",
+ "tag": 701,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "Include as needed to clarify yield irregularities associated with date, e.g. when it falls on a non-business day."
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "Include as needed to clarify yield irregularities associated with date, e.g. when it falls on a non-business day."
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "Include as needed to clarify yield irregularities associated with date, e.g. when it falls on a non-business day."
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "Include as needed to clarify yield irregularities associated with date, e.g. when it falls on a non-business day."
+  }
+ }
+}

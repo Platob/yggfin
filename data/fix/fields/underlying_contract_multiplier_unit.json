@@ -1,0 +1,10 @@
+{
+ "name": "UnderlyingContractMultiplierUnit",
+ "tag": 1437,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates the type of multiplier being applied to the contract. Can be optionally used to further define what unit UndlyContractMultiplier <436> is expressed in. Same values as ContractMultiplierUnit <1435>"
+  }
+ }
+}

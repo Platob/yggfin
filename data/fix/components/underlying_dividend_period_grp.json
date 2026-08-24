@@ -1,0 +1,137 @@
+{
+ "name": "UnderlyingDividendPeriodGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 691,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingDividendPeriods",
+     "required": false,
+     "tag": 42862,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodSequence",
+       "required": false,
+       "tag": 42863
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodStartDateUnadjusted",
+       "required": false,
+       "tag": 42864
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodEndDateUnadjusted",
+       "required": false,
+       "tag": 42865
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodUnderlierRefID",
+       "required": false,
+       "tag": 42866
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodStrikePrice",
+       "required": false,
+       "tag": 42867
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodBusinessDayConvention",
+       "required": false,
+       "tag": 42868
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingDividendPeriodBusinessCenterGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodValuationDateUnadjusted",
+       "required": false,
+       "tag": 42869
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodValuationDateRelativeTo",
+       "required": false,
+       "tag": 42870
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodValuationDateOffsetPeriod",
+       "required": false,
+       "tag": 42871
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodValuationDateOffsetUnit",
+       "required": false,
+       "tag": 42872
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodValuationDateOffsetDayType",
+       "required": false,
+       "tag": 42873
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodValuationDateAdjusted",
+       "required": false,
+       "tag": 42874
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodPaymentDateUnadjusted",
+       "required": false,
+       "tag": 42875
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodPaymentDateRelativeTo",
+       "required": false,
+       "tag": 42876
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodPaymentDateOffsetPeriod",
+       "required": false,
+       "tag": 42877
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodPaymentDateOffsetUnit",
+       "required": false,
+       "tag": 42878
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodPaymentDateOffsetDayType",
+       "required": false,
+       "tag": 42879
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodPaymentDateAdjusted",
+       "required": false,
+       "tag": 42880
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodXID",
+       "required": false,
+       "tag": 42881
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

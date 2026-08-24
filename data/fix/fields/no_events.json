@@ -1,0 +1,22 @@
+{
+ "name": "NoEvents",
+ "tag": 864,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of repeating EventType <865> entries."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of repeating EventType <865> entries."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of repeating EventType <865> entries."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of repeating EventType <865> entries."
+  }
+ }
+}

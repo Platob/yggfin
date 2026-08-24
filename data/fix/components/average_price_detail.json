@@ -1,0 +1,28 @@
+{
+ "name": "AveragePriceDetail",
+ "versions": {
+  "5.0.SP2": {
+   "order": 162,
+   "members": [
+    {
+     "kind": "field",
+     "name": "AveragePriceType",
+     "required": false,
+     "tag": 2763
+    },
+    {
+     "kind": "field",
+     "name": "AveragePriceStartTime",
+     "required": false,
+     "tag": 2764
+    },
+    {
+     "kind": "field",
+     "name": "AveragePriceEndTime",
+     "required": false,
+     "tag": 2765
+    }
+   ]
+  }
+ }
+}

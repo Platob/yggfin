@@ -1,0 +1,48 @@
+{
+ "name": "EncodedListStatusTextLen",
+ "tag": 445,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedListStatusText <446> field.",
+   "used_in": [
+    "ListStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedListStatusText <446> field.",
+   "used_in": [
+    "ListStatus"
+   ]
+  },
+  "5.0": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedListStatusText <446> field.",
+   "used_in": [
+    "ListStatus"
+   ]
+  },
+  "4.4": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedListStatusText <446> field.",
+   "used_in": [
+    "List Status"
+   ]
+  },
+  "4.3": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedListStatusText <446> field.",
+   "used_in": [
+    "List Status"
+   ]
+  },
+  "4.2": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedListStatusText <446> field.",
+   "used_in": [
+    "List Status"
+   ]
+  }
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "name": "LegSecuritySubType",
+ "tag": 764,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description"
+  }
+ }
+}

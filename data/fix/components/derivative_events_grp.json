@@ -1,0 +1,91 @@
+{
+ "name": "DerivativeEventsGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 288,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDerivativeEvents",
+     "required": false,
+     "tag": 1286,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DerivativeEventType",
+       "required": false,
+       "tag": 1287
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeEventDate",
+       "required": false,
+       "tag": 1288
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeEventTime",
+       "required": false,
+       "tag": 1289
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeEventPx",
+       "required": false,
+       "tag": 1290
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeEventText",
+       "required": false,
+       "tag": 1291
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 146,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDerivativeEvents",
+     "required": false,
+     "tag": 1286,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DerivativeEventType",
+       "required": false,
+       "tag": 1287
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeEventDate",
+       "required": false,
+       "tag": 1288
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeEventTime",
+       "required": false,
+       "tag": 1289
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeEventPx",
+       "required": false,
+       "tag": 1290
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeEventText",
+       "required": false,
+       "tag": 1291
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

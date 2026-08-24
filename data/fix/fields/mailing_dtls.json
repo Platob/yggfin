@@ -1,0 +1,32 @@
+{
+ "name": "MailingDtls",
+ "tag": 474,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Set of Correspondence address details, possibly including phone, fax, etc."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Set of Correspondence address details, possibly including phone, fax, etc."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Set of Correspondence address details, possibly including phone, fax, etc."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Set of Correspondence address details, possibly including phone, fax, etc.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Set of Correspondence address details, possibly including phone, fax, etc.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  }
+ }
+}

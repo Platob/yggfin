@@ -1,0 +1,46 @@
+{
+ "name": "LegPaymentStreamCompoundingStartDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 125,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingStartDateUnadjusted",
+     "required": false,
+     "tag": 42445
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingStartDateRelativeTo",
+     "required": false,
+     "tag": 42446
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingStartDateOffsetPeriod",
+     "required": false,
+     "tag": 42447
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingStartDateOffsetUnit",
+     "required": false,
+     "tag": 42448
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingStartDateOffsetDayType",
+     "required": false,
+     "tag": 42449
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingStartDateAdjusted",
+     "required": false,
+     "tag": 42450
+    }
+   ]
+  }
+ }
+}

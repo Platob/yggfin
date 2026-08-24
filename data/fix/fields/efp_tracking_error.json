@@ -1,0 +1,39 @@
+{
+ "name": "EFPTrackingError",
+ "tag": 405,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "Eg Used in EFP trades 2% (EFP \u2013 Exchange for Physical). Represented as a percentage."
+  },
+  "5.0.SP1": {
+   "type": "Percentage",
+   "description": "Eg Used in EFP trades 2% (EFP \u2013 Exchange for Physical ). Represented as a percentage."
+  },
+  "5.0": {
+   "type": "Percentage",
+   "description": "Eg Used in EFP trades 2% (EFP \u2013 Exchange for Physical ). Represented as a percentage."
+  },
+  "4.4": {
+   "type": "Percentage",
+   "description": "Eg Used in EFP trades 12% (EFP - Exchange for Physical ). Represented as a percentage.",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.3": {
+   "type": "Percentage",
+   "description": "Eg Used in EFP trades 12% (EFP - Exchange for Physical ). Represented as a percentage.",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.2": {
+   "type": "float",
+   "description": "Eg Used in EFP trades 12% (EFP - Exchange for Physical ). Represented as a percentage.",
+   "used_in": [
+    "Bid Request"
+   ]
+  }
+ }
+}

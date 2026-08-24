@@ -1,0 +1,160 @@
+{
+ "name": "SettlInstMode",
+ "tag": 160,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Indicates mode used for SettlementInstructions <T> message.",
+   "values": {
+    "0": "Default (Replaced)",
+    "1": "Standing Instructions Provided",
+    "2": "Specific Allocation Account Overriding (Replaced)",
+    "3": "Specific Allocation Account Standing (Replaced)",
+    "4": "Specific Order for a single account (for CIV)",
+    "5": "Request reject"
+   },
+   "value_names": {
+    "0": "DEFAULT",
+    "1": "STANDING_INSTRUCTIONS_PROVIDED",
+    "2": "SPECIFIC_ALLOCATION_ACCOUNT_OVERRIDING",
+    "3": "SPECIFIC_ALLOCATION_ACCOUNT_STANDING",
+    "4": "SPECIFIC_ORDER_FOR_A_SINGLE_ACCOUNT",
+    "5": "REQUEST_REJECT"
+   },
+   "used_in": [
+    "SettlementInstructions"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Indicates mode used for SettlementInstructions <T> message.",
+   "values": {
+    "0": "Default (Replaced)",
+    "1": "Standing Instructions Provided",
+    "2": "Specific Allocation Account Overriding (Replaced)",
+    "3": "Specific Allocation Account Standing (Replaced)",
+    "4": "Specific Order for a single account (for CIV)",
+    "5": "Request reject"
+   },
+   "value_names": {
+    "0": "DEFAULT",
+    "1": "STANDING_INSTRUCTIONS_PROVIDED",
+    "2": "SPECIFIC_ALLOCATION_ACCOUNT_OVERRIDING",
+    "3": "SPECIFIC_ALLOCATION_ACCOUNT_STANDING",
+    "4": "SPECIFIC_ORDER_FOR_A_SINGLE_ACCOUNT",
+    "5": "REQUEST_REJECT"
+   },
+   "used_in": [
+    "SettlementInstructions"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Indicates mode used for SettlementInstructions <T> message.",
+   "values": {
+    "0": "Default (Replaced)",
+    "1": "Standing Instructions Provided",
+    "2": "Specific Allocation Account Overriding (Replaced)",
+    "3": "Specific Allocation Account Standing (Replaced)",
+    "4": "Specific Order for a single account (for CIV)",
+    "5": "Request reject"
+   },
+   "value_names": {
+    "0": "DEFAULT",
+    "1": "STANDING_INSTRUCTIONS_PROVIDED",
+    "2": "SPECIFIC_ALLOCATION_ACCOUNT_OVERRIDING",
+    "3": "SPECIFIC_ALLOCATION_ACCOUNT_STANDING",
+    "4": "SPECIFIC_ORDER_FOR_A_SINGLE_ACCOUNT",
+    "5": "REQUEST_REJECT"
+   },
+   "used_in": [
+    "SettlementInstructions"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Indicates mode used for Settlement Instructions <T> message.",
+   "values": {
+    "0": "Default (Replaced)",
+    "1": "Standing Instructions Provided",
+    "2": "Specific Allocation Account Overriding (Replaced)",
+    "3": "Specific Allocation Account Standing (Replaced)",
+    "4": "Specific Order for a single account (for CIV)",
+    "5": "Request reject"
+   },
+   "value_names": {
+    "1": "STANDING_INSTRUCTIONS_PROVIDED",
+    "4": "SPECIFIC_ORDER_FOR_A_SINGLE_ACCOUNT",
+    "5": "REQUEST_REJECT"
+   },
+   "used_in": [
+    "New Order List",
+    "Settlement Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Indicates mode used for Settlement Instructions <T>",
+   "values": {
+    "0": "Default",
+    "1": "Standing Instructions Provided",
+    "2": "Specific Allocation Account Overriding",
+    "3": "Specific Allocation Account Standing",
+    "4": "Specific Order for a single account (for CIV)"
+   },
+   "value_names": {
+    "0": "DEFAULT",
+    "4": "SPECIFIC_ORDER_FOR_A_SINGLE_ACCOUNT",
+    "3": "SPECIFIC_ALLOCATION_ACCOUNT_STANDING",
+    "1": "STANDING_INSTRUCTIONS_PROVIDED",
+    "2": "SPECIFIC_ALLOCATION_ACCOUNT_OVERRIDING"
+   },
+   "used_in": [
+    "New Order - List",
+    "Allocation",
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Indicates mode used for Settlement Instructions <T>",
+   "values": {
+    "0": "Default",
+    "1": "Standing Instructions Provided",
+    "2": "Specific Allocation Account Overriding",
+    "3": "Specific Allocation Account Standing"
+   },
+   "value_names": {
+    "0": "DEFAULT",
+    "1": "STANDING_INSTRUCTIONS_PROVIDED",
+    "2": "SPECIFIC_ALLOCATION_ACCOUNT_OVERRIDING",
+    "3": "SPECIFIC_ALLOCATION_ACCOUNT_STANDING"
+   },
+   "used_in": [
+    "New Order - List",
+    "Allocation",
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Indicates mode used for Settlement Instructions <T>",
+   "values": {
+    "0": "Default",
+    "1": "Standing Instructions Provided",
+    "2": "Specific Allocation Account Overriding",
+    "3": "Specific Allocation Account Standing"
+   },
+   "value_names": {
+    "0": "DEFAULT",
+    "1": "STANDING_INSTRUCTIONS_PROVIDED",
+    "2": "SPECIFIC_ALLOCATION_ACCOUNT_OVERRIDING",
+    "3": "SPECIFIC_ALLOCATION_ACCOUNT_STANDING"
+   },
+   "used_in": [
+    "Allocation",
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

@@ -1,0 +1,26 @@
+{
+ "name": "LegBidPx",
+ "tag": 681,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Bid price of this leg. See BidPx <132> for description and"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Bid price of this leg. See BidPx <132> for description and"
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Bid price of this leg. See BidPx <132> for description and"
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Bid price of this leg. See BidPx <132> for description and",
+   "used_in": [
+    "Quote Response",
+    "Quote"
+   ]
+  }
+ }
+}

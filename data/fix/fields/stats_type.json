@@ -1,0 +1,38 @@
+{
+ "name": "StatsType",
+ "tag": 1176,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Type of statistics",
+   "values": {
+    "1": "Exchange Last",
+    "2": "High / Low Price",
+    "3": "Average Price (VWAP, TWAP ...)",
+    "4": "Turnover (Price * Qty)"
+   },
+   "value_names": {
+    "1": "EXCHANGE_LAST",
+    "2": "HIGH",
+    "3": "AVERAGE_PRICE",
+    "4": "TURNOVER"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Type of statistics",
+   "values": {
+    "1": "Exchange Last",
+    "2": "High / Low Price",
+    "3": "Average Price (VWAP, TWAP ... )",
+    "4": "Turnover (Price * Qty)"
+   },
+   "value_names": {
+    "1": "EXCHANGE_LAST",
+    "2": "HIGH",
+    "3": "AVERAGE_PRICE",
+    "4": "TURNOVER"
+   }
+  }
+ }
+}

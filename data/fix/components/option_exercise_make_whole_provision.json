@@ -1,0 +1,52 @@
+{
+ "name": "OptionExerciseMakeWholeProvision",
+ "versions": {
+  "5.0.SP2": {
+   "order": 132,
+   "members": [
+    {
+     "kind": "field",
+     "name": "MakeWholeDate",
+     "required": false,
+     "tag": 42591
+    },
+    {
+     "kind": "field",
+     "name": "MakeWholeAmount",
+     "required": false,
+     "tag": 42592
+    },
+    {
+     "kind": "field",
+     "name": "MakeWholeBenchmarkCurveName",
+     "required": false,
+     "tag": 42593
+    },
+    {
+     "kind": "field",
+     "name": "MakeWholeBenchmarkCurvePoint",
+     "required": false,
+     "tag": 42594
+    },
+    {
+     "kind": "field",
+     "name": "MakeWholeRecallSpread",
+     "required": false,
+     "tag": 42595
+    },
+    {
+     "kind": "field",
+     "name": "MakeWholeBenchmarkQuote",
+     "required": false,
+     "tag": 42596
+    },
+    {
+     "kind": "field",
+     "name": "MakeWholeInterpolationMethod",
+     "required": false,
+     "tag": 42597
+    }
+   ]
+  }
+ }
+}

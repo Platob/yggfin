@@ -1,0 +1,14 @@
+{
+ "name": "NoNested4PartySubIDs",
+ "tag": 1413,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Refer to definition of NoPartySubIDs <802>"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Refer to definition of NoPartySubIDs <802>"
+  }
+ }
+}

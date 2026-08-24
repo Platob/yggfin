@@ -1,0 +1,14 @@
+{
+ "name": "DerivFlexProductEligibilityIndicator",
+ "tag": 1243,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Refer to FlexProductEligibilityIndicator <1242>"
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Refer to FlexProductEligibilityIndicator <1242>"
+  }
+ }
+}

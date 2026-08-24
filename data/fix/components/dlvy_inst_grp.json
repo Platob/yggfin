@@ -1,0 +1,125 @@
+{
+ "name": "DlvyInstGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 246,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDlvyInst",
+     "required": false,
+     "tag": 85,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SettlInstSource",
+       "required": false,
+       "tag": 165
+      },
+      {
+       "kind": "field",
+       "name": "DlvyInstType",
+       "required": false,
+       "tag": 787
+      },
+      {
+       "kind": "component",
+       "name": "SettlParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 95,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDlvyInst",
+     "required": false,
+     "tag": 85,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SettlInstSource",
+       "required": false,
+       "tag": 165
+      },
+      {
+       "kind": "field",
+       "name": "DlvyInstType",
+       "required": false,
+       "tag": 787
+      },
+      {
+       "kind": "component",
+       "name": "SettlParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 97,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDlvyInst",
+     "required": false,
+     "tag": 85,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SettlInstSource",
+       "required": false,
+       "tag": 165
+      },
+      {
+       "kind": "field",
+       "name": "DlvyInstType",
+       "required": false,
+       "tag": 787
+      },
+      {
+       "kind": "component",
+       "name": "SettlParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 97,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDlvyInst",
+     "required": false,
+     "tag": 85,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SettlInstSource",
+       "required": false,
+       "tag": 165
+      },
+      {
+       "kind": "field",
+       "name": "DlvyInstType",
+       "required": false,
+       "tag": 787
+      },
+      {
+       "kind": "component",
+       "name": "SettlParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

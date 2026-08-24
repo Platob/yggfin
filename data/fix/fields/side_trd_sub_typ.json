@@ -1,0 +1,44 @@
+{
+ "name": "SideTrdSubTyp",
+ "tag": 1008,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Used on a multi-sided trade to specify the type of trade for a given side. Same values as TrdSubType <829> ."
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Used on a multi-sided trade to specify the type of trade for a given side",
+   "values": {
+    "0": "CMTA",
+    "1": "Internal Transfer",
+    "2": "External Transfer",
+    "3": "Reject for Submitting Trade",
+    "4": "Advisory for Contra Side",
+    "5": "Offset due to an allocation",
+    "6": "Onset due to an allocation",
+    "7": "Differential Spread",
+    "8": "Implied Spread leg executed against an outright",
+    "9": "Transaction from Exercise",
+    "10": "Transaction from Assignment"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Used on a multi-sided trade to specify the type of trade for a given side",
+   "values": {
+    "0": "CMTA",
+    "1": "Internal Transfer",
+    "2": "External Transfer",
+    "3": "Reject for Submitting Trade",
+    "4": "Advisory for Contra Side",
+    "5": "Offset due to an allocation",
+    "6": "Onset due to an allocation",
+    "7": "Differential Spread",
+    "8": "Implied Spread leg executed against an outright",
+    "9": "Transaction from Exercise",
+    "10": "Transaction from Assignment"
+   }
+  }
+ }
+}

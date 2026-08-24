@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingComplexEventCreditEventSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 578,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingComplexEventCreditEventSources",
+     "required": false,
+     "tag": 41748,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingComplexEventCreditEventSource",
+       "required": false,
+       "tag": 41749
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

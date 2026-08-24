@@ -1,0 +1,45 @@
+{
+ "name": "PricingDateTime",
+ "versions": {
+  "5.0.SP2": {
+   "order": 85,
+   "members": [
+    {
+     "kind": "field",
+     "name": "PricingDateUnadjusted",
+     "required": false,
+     "tag": 41232
+    },
+    {
+     "kind": "field",
+     "name": "PricingDateBusinessDayConvention",
+     "required": false,
+     "tag": 41233
+    },
+    {
+     "kind": "component",
+     "name": "PricingDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PricingDateAdjusted",
+     "required": false,
+     "tag": 41234
+    },
+    {
+     "kind": "field",
+     "name": "PricingTime",
+     "required": false,
+     "tag": 41235
+    },
+    {
+     "kind": "field",
+     "name": "PricingTimeBusinessCenter",
+     "required": false,
+     "tag": 41236
+    }
+   ]
+  }
+ }
+}

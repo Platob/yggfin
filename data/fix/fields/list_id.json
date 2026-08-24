@@ -1,0 +1,147 @@
+{
+ "name": "ListID",
+ "tag": 66,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier for list as assigned by institution, used to associate multiple individual orders. Uniqueness must be guaranteed within a single trading day. Firms which generate multi-day orders should consider embedding a date within the ListID field to assure uniqueness across days.",
+   "used_in": [
+    "ExecutionReport",
+    "OrderCancelReject",
+    "NewOrderList",
+    "OrderCancelRequest",
+    "OrderCancelReplaceRequest",
+    "ListCancelRequest",
+    "ListExecute",
+    "ListStrikePrice",
+    "ListStatusRequest",
+    "ListStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier for list as assigned by institution, used to associate multiple individual orders. Uniqueness must be guaranteed within a single trading day. Firms which generate multi-day orders should consider embedding a date within the ListID field to assure uniqueness across days.",
+   "used_in": [
+    "ExecutionReport",
+    "OrderCancelReject",
+    "NewOrderList",
+    "OrderCancelReplaceRequest",
+    "OrderCancelRequest",
+    "ListCancelRequest",
+    "ListExecute",
+    "ListStrikePrice",
+    "ListStatusRequest",
+    "ListStatus"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique identifier for list as assigned by institution, used to associate multiple individual orders. Uniqueness must be guaranteed within a single trading day. Firms which generate multi-day orders should consider embedding a date within the ListID field to assure uniqueness across days.",
+   "used_in": [
+    "ExecutionReport",
+    "OrderCancelReject",
+    "NewOrderList",
+    "OrderCancelRequest",
+    "OrderCancelReplaceRequest",
+    "ListCancelRequest",
+    "ListExecute",
+    "ListStrikePrice",
+    "ListStatusRequest",
+    "ListStatus"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique identifier for list as assigned by institution, used to associate multiple individual orders. Uniqueness must be guaranteed within a single trading day. Firms which generate multi-day orders should consider embedding a date within the ListID <66> field to assure uniqueness across days.",
+   "used_in": [
+    "Execution Report",
+    "Order Cancel Reject",
+    "Trade Capture Report",
+    "Confirmation",
+    "Allocation Report",
+    "Confirmation Request",
+    "New Order List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Allocation Instruction",
+    "Bid Request",
+    "List Cancel Request",
+    "Bid Response",
+    "List Execute",
+    "List Strike Price",
+    "List Status Request",
+    "List Status"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique identifier for list as assigned by institution, used to associate multiple individual orders. Uniqueness must be guaranteed within a single trading day. Firms which generate multi-day orders should consider embedding a date within the ListID <66> field to assure uniqueness across days.",
+   "used_in": [
+    "Execution Report",
+    "Order Cancel Reject",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "Bid Request",
+    "List Cancel Request",
+    "Bid Response",
+    "List Execute",
+    "List Strike Price",
+    "List Status Request",
+    "List Status"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique identifier for list as assigned by institution, used to associate multiple individual orders. Uniqueness must be guaranteed within a single trading day. Firms which generate multi-day orders should consider embedding a date within the ListID <66> field to assure uniqueness across days.",
+   "used_in": [
+    "Execution Report",
+    "Order Cancel Reject",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "Bid Request",
+    "List Cancel Request",
+    "Bid Response",
+    "List Execute",
+    "List Strike Price",
+    "List Status Request",
+    "List Status"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Unique identifier for list as assigned by institution, used to associate multiple individual orders. Uniqueness must be guaranteed within a single trading day. Firms which generate multi-day orders should consider embedding a date within the ListID <66> field to assure uniqueness across days.",
+   "used_in": [
+    "Execution Report",
+    "Order Cancel Reject",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "List Cancel Request",
+    "List Execute",
+    "List Status Request",
+    "List Status"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Customer assigned listUnique identifier for list as assigned by institution, used to associate multiple individual orders. Uniqueness must be guaranteed within a single trading day. Firms which generate multi-day orders should consider embedding a date within the ListID <66> field to assure uniqueness across days.",
+   "used_in": [
+    "Execution Report",
+    "Order Cancel Reject",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "List Cancel Request",
+    "List Execute",
+    "List Status Request",
+    "List Status"
+   ]
+  }
+ }
+}

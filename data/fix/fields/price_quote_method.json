@@ -1,0 +1,36 @@
+{
+ "name": "PriceQuoteMethod",
+ "tag": 1196,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Method for price quotation",
+   "values": {
+    "STD": "Standard, money per unit of a physical",
+    "INX": "Index",
+    "INT": "Interest rate Index",
+    "PCTPAR": "Percent of Par"
+   },
+   "value_names": {
+    "STD": "STANDARD",
+    "INX": "INDEX",
+    "INT": "INTEREST_RATE_INDEX",
+    "PCTPAR": "PERCENT_OF_PAR"
+   }
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Method for price quotation",
+   "values": {
+    "STD": "Standard, money per unit of a physical",
+    "INX": "Index",
+    "INT": "Interest rate Index"
+   },
+   "value_names": {
+    "STD": "STANDARD",
+    "INX": "INDEX",
+    "INT": "INTEREST_RATE_INDEX"
+   }
+  }
+ }
+}

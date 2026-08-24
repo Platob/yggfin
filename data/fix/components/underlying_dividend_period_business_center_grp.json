@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingDividendPeriodBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 692,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingDividendPeriodBusinessCenters",
+     "required": false,
+     "tag": 42882,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingDividendPeriodBusinessCenter",
+       "required": false,
+       "tag": 42883
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

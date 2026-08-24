@@ -1,0 +1,59 @@
+{
+ "name": "LeavesQty",
+ "tag": 151,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Quantity open for further execution. If the OrdStatus <39> is 'Canceled', 'DoneForTheDay', 'Expired', 'Calculated', or 'Rejected' (in which case the order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151> = OrderQty <38> \u2013 CumQty <14> . (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Quantity open for further execution. If the OrdStatus <39> is 'Canceled', 'DoneForTheDay', 'Expired', 'Calculated', or 'Rejected' (in which case the order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151> = OrderQty <38> \u2013 CumQty <14> . (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Quantity open for further execution. If the OrdStatus <39> is 'Canceled', 'DoneForTheDay', 'Expired', 'Calculated', or 'Rejected' (in which case the order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151> = OrderQty <38> \u2013 CumQty <14> . (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Quantity open for further execution. If the OrdStatus <39> is 'Canceled', 'DoneForTheDay', 'Expired', 'Calculated', or' Rejected' (in which case the order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151> = OrderQty <38> - CumQty <14> . (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "List Status"
+   ]
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "Quantity open for further execution. If the OrdStatus <39> is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151> = OrderQty <38> - CumQty <14> . (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "List Status"
+   ]
+  },
+  "4.2": {
+   "type": "Qty",
+   "description": "Amount of shares open for further execution. If the OrdStatus <39> is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151> = OrderQty <38> - CumQty <14> . (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "List Status"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Amount of shares open for further execution. If the OrdStatus <39> is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151> = OrderQty <38> - CumQty <14> .",
+   "used_in": [
+    "Execution Report",
+    "List Status"
+   ]
+  }
+ }
+}

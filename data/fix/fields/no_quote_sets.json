@@ -1,0 +1,42 @@
+{
+ "name": "NoQuoteSets",
+ "tag": 296,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "The number of sets of quotes in the message."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "The number of sets of quotes in the message."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "The number of sets of quotes in the message."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "The number of sets of quotes in the message.",
+   "used_in": [
+    "Mass Quote Acknowledgement",
+    "Mass Quote"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "The number of sets of quotes in the message.",
+   "used_in": [
+    "Mass Quote Acknowledgement",
+    "Mass Quote"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "The number of sets of quotes in the message.",
+   "used_in": [
+    "Quote Acknowledgement",
+    "Mass Quote"
+   ]
+  }
+ }
+}

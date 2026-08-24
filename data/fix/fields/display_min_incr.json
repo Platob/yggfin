@@ -1,0 +1,18 @@
+{
+ "name": "DisplayMinIncr",
+ "tag": 1087,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Defines the minimum increment to be used when calculating a random refresh of DisplayQty <1138> . A user specifies this when he wants a larger increment than the standard provided by the market (e.g. the round lot size)."
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Defines the minimum increment to be used when calculating a random refresh of DisplayQty <1138> . A user specifies this when he wants a larger increment than the standard provided by the market (e.g. the round lot size)."
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Defines the minimum increment to be used when calculating a random refresh of DisplayQty <1138> . A user specifies this when he wants a larger increment than the standard provided by the market (e.g. the round lot size)."
+  }
+ }
+}

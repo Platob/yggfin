@@ -1,0 +1,55 @@
+{
+ "name": "DerivativeInstrumentAttribute",
+ "versions": {
+  "5.0.SP2": {
+   "order": 285,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDerivativeInstrAttrib",
+     "required": false,
+     "tag": 1311,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DerivativeInstrAttribType",
+       "required": false,
+       "tag": 1313
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeInstrAttribValue",
+       "required": false,
+       "tag": 1314
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 142,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDerivativeInstrAttrib",
+     "required": false,
+     "tag": 1311,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DerivativeInstrAttribType",
+       "required": false,
+       "tag": 1313
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeInstrAttribValue",
+       "required": false,
+       "tag": 1314
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

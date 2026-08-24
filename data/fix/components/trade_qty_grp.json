@@ -1,0 +1,30 @@
+{
+ "name": "TradeQtyGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 359,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTradeQtys",
+     "required": false,
+     "tag": 1841,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TradeQtyType",
+       "required": false,
+       "tag": 1842
+      },
+      {
+       "kind": "field",
+       "name": "TradeQty",
+       "required": false,
+       "tag": 1843
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

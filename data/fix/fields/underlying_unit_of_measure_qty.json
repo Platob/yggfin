@@ -1,0 +1,14 @@
+{
+ "name": "UnderlyingUnitOfMeasureQty",
+ "tag": 1423,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Refer to definition of UnitOfMeasureQty <1147>"
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Refer to definition of UnitOfMeasureQty <1147>"
+  }
+ }
+}

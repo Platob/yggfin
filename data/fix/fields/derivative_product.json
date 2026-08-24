@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeProduct",
+ "tag": 1246,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Same values as Product <460>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Same values as Product <460>"
+  }
+ }
+}

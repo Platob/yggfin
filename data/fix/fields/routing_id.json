@@ -1,0 +1,45 @@
+{
+ "name": "RoutingID",
+ "tag": 217,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Assigned value used to identify a specific routing destination."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Assigned value used to identify a specific routing destination."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Assigned value used to identify a specific routing destination."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Assigned value used to identify a specific routing destination.",
+   "used_in": [
+    "IOI",
+    "News",
+    "Email"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Assigned value used to identify a specific routing destination.",
+   "used_in": [
+    "Indications of Interest",
+    "News",
+    "Email"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Assigned value used to identify a specific routing destination.",
+   "used_in": [
+    "Indication of Interest",
+    "News",
+    "Email"
+   ]
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeInstrAttribType",
+ "tag": 1313,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Refer to definition of InstrAttribType <871>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Refer to definition of InstrAttribType <871>"
+  }
+ }
+}

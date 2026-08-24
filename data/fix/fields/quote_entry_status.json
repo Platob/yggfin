@@ -1,0 +1,58 @@
+{
+ "name": "QuoteEntryStatus",
+ "tag": 1167,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies the status of an individual quote. See also QuoteStatus <297> which is used for single Quotes.",
+   "values": {
+    "0": "Accepted",
+    "5": "Rejected",
+    "6": "Removed from Market",
+    "7": "Expired",
+    "12": "Locked Market Warning",
+    "13": "Cross Market Warning",
+    "14": "Canceled due to Lock Market",
+    "15": "Canceled due to Cross Market",
+    "16": "Active"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "5": "REJECTED",
+    "6": "REMOVED_FROM_MARKET",
+    "7": "EXPIRED",
+    "12": "LOCKED_MARKET_WARNING",
+    "13": "CROSS_MARKET_WARNING",
+    "14": "CANCELED_DUE_TO_LOCK_MARKET",
+    "15": "CANCELED_DUE_TO_CROSS_MARKET",
+    "16": "ACTIVE"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies the status of an individual quote. See also QuoteStatus <297> which used for single Quotes.",
+   "values": {
+    "0": "Accepted",
+    "5": "Rejected",
+    "6": "Removed from Market",
+    "7": "Expired",
+    "12": "Locked Market Warning",
+    "13": "Cross Market Warning",
+    "14": "Canceled due to Lock Market",
+    "15": "Canceled due to Cross Market",
+    "16": "Active"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "5": "REJECTED",
+    "6": "REMOVED_FROM_MARKET",
+    "7": "EXPIRED",
+    "12": "LOCKED_MARKET_WARNING",
+    "13": "CROSS_MARKET_WARNING",
+    "14": "CANCELED_DUE_TO_LOCK_MARKET",
+    "15": "CANCELED_DUE_TO_CROSS_MARKET",
+    "16": "ACTIVE"
+   }
+  }
+ }
+}

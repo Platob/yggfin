@@ -1,0 +1,80 @@
+{
+ "name": "UnderlyingOptionExerciseExpiration",
+ "versions": {
+  "5.0.SP2": {
+   "order": 99,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationDateBusinessDayConvention",
+     "required": false,
+     "tag": 41846
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingOptionExerciseExpirationDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingOptionExerciseExpirationDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationDateRelativeTo",
+     "required": false,
+     "tag": 41847
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationDateOffsetPeriod",
+     "required": false,
+     "tag": 41848
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationDateOffsetUnit",
+     "required": false,
+     "tag": 41849
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationFrequencyPeriod",
+     "required": false,
+     "tag": 41850
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationFrequencyUnit",
+     "required": false,
+     "tag": 41851
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationRollConvention",
+     "required": false,
+     "tag": 41852
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationDateOffsetDayType",
+     "required": false,
+     "tag": 41853
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationTime",
+     "required": false,
+     "tag": 41854
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationTimeBusinessCenter",
+     "required": false,
+     "tag": 41855
+    }
+   ]
+  }
+ }
+}

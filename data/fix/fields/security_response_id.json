@@ -1,0 +1,71 @@
+{
+ "name": "SecurityResponseID",
+ "tag": 322,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique ID of a Security Definition <d> message.",
+   "used_in": [
+    "DerivativeSecurityList",
+    "SecurityListUpdateReport",
+    "SecurityDefinitionUpdateReport",
+    "DerivativeSecurityListUpdateReport",
+    "SecurityDefinition",
+    "SecurityTypes",
+    "SecurityList"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique ID of a Security Definition <d> message.",
+   "used_in": [
+    "DerivativeSecurityList",
+    "SecurityListUpdateReport",
+    "SecurityDefinitionUpdateReport",
+    "DerivativeSecurityListUpdateReport",
+    "SecurityDefinition",
+    "SecurityTypes",
+    "SecurityList"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique ID of a Security Definition <d> message.",
+   "used_in": [
+    "DerivativeSecurityList",
+    "SecurityListUpdateReport",
+    "SecurityDefinitionUpdateReport",
+    "SecurityDefinition",
+    "SecurityTypes",
+    "SecurityList"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique ID of a Security Definition <d> message.",
+   "used_in": [
+    "Derivative Security List",
+    "Security Definition",
+    "Security Types",
+    "Security List"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique ID of a Security Definition <d> message.",
+   "used_in": [
+    "Derivative Security List",
+    "Security Definition",
+    "Security Types",
+    "Security List"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique ID of a Security Definition <d> message.",
+   "used_in": [
+    "Security Definition"
+   ]
+  }
+ }
+}

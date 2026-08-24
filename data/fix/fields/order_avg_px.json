@@ -1,0 +1,28 @@
+{
+ "name": "OrderAvgPx",
+ "tag": 799,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Average price for a specific order"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Average price for a specific order"
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Average price for a specific order"
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Average price for a specific order",
+   "used_in": [
+    "Confirmation",
+    "Allocation Report",
+    "Confirmation Request",
+    "Allocation Instruction"
+   ]
+  }
+ }
+}

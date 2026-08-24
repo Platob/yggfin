@@ -180,8 +180,7 @@ class Instrument(Event):
         if self.isin_code is None:
             self.isin_code = self.into_isin()
         self.xhash = self.into_xhash()
-        self.xcode = self.symbol
-        self.code = self.code or self.symbol
+        self.code = self.symbol
         Event.__post_init__(self)
         self._materialize_life_code()
 

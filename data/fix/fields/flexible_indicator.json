@@ -1,0 +1,14 @@
+{
+ "name": "FlexibleIndicator",
+ "tag": 1244,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Used to indicate a derivatives security that can be defined using flexible terms. The terms commonly permitted to be defined by market participants are expiration date and strike price. FlexibleIndicator is an alternative CFICode <461> Standard/Non-standard attribute."
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Used to indicate a derivatives security that can be defined using flexible terms. The terms commonly permitted to be defined by market participants are expiration date and strike price. FlexibleIndicator is an alternative CFICode <461> Standard/Non-standard attribute."
+  }
+ }
+}

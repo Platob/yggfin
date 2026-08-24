@@ -1,0 +1,78 @@
+{
+ "name": "UnderlyingEvntGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 420,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingEvents",
+     "required": false,
+     "tag": 1981,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingEventType",
+       "required": false,
+       "tag": 1982
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingEventDate",
+       "required": false,
+       "tag": 1983
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingEventTime",
+       "required": false,
+       "tag": 1984
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingEventTimeUnit",
+       "required": false,
+       "tag": 1985
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingEventTimePeriod",
+       "required": false,
+       "tag": 1986
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingEventMonthYear",
+       "required": false,
+       "tag": 2342
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingEventPx",
+       "required": false,
+       "tag": 1987
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingEventText",
+       "required": false,
+       "tag": 2071
+      },
+      {
+       "kind": "field",
+       "name": "EncodedUnderlyingEventTextLen",
+       "required": false,
+       "tag": 2072
+      },
+      {
+       "kind": "field",
+       "name": "EncodedUnderlyingEventText",
+       "required": false,
+       "tag": 2073
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "name": "LegMarketDisruption",
+ "versions": {
+  "5.0.SP2": {
+   "order": 89,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegMarketDisruptionProvision",
+     "required": false,
+     "tag": 41462
+    },
+    {
+     "kind": "component",
+     "name": "LegMarketDisruptionEventGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegMarketDisruptionFallbackProvision",
+     "required": false,
+     "tag": 41463
+    },
+    {
+     "kind": "component",
+     "name": "LegMarketDisruptionFallbackGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegMarketDisruptionFallbackReferencePriceGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegMarketDisruptionMaximumDays",
+     "required": false,
+     "tag": 41464
+    },
+    {
+     "kind": "field",
+     "name": "LegMarketDisruptionMaterialityPercentage",
+     "required": false,
+     "tag": 41465
+    },
+    {
+     "kind": "field",
+     "name": "LegMarketDisruptionMinimumFuturesContracts",
+     "required": false,
+     "tag": 41466
+    }
+   ]
+  }
+ }
+}

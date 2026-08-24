@@ -1,0 +1,30 @@
+{
+ "name": "ComplexEventPeriodDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 485,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoComplexEventPeriodDateTimes",
+     "required": false,
+     "tag": 41007,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ComplexEventPeriodDate",
+       "required": false,
+       "tag": 41008
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventPeriodTime",
+       "required": false,
+       "tag": 41009
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

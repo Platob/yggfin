@@ -1,0 +1,171 @@
+{
+ "name": "QuoteRequestRejectReason",
+ "tag": 658,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Reason QuoteRequest <R> was rejected.",
+   "values": {
+    "1": "Unknown Symbol (Security)",
+    "2": "Exchange (Security) Closed",
+    "3": "Quote Request <R> Exceeds Limit",
+    "4": "Too Late to enter",
+    "5": "Invalid Price",
+    "6": "Not Authorized To Request Quote",
+    "7": "No Match For Inquiry",
+    "8": "No Market For Instrument",
+    "9": "No Inventory",
+    "10": "Pass",
+    "11": "Insufficient credit",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "UNKNOWN_SYMBOL",
+    "2": "EXCHANGE",
+    "3": "QUOTE_REQUEST_EXCEEDS_LIMIT",
+    "4": "TOO_LATE_TO_ENTER",
+    "5": "INVALID_PRICE",
+    "6": "NOT_AUTHORIZED_TO_REQUEST_QUOTE",
+    "7": "NO_MATCH_FOR_INQUIRY",
+    "8": "NO_MARKET_FOR_INSTRUMENT",
+    "9": "NO_INVENTORY",
+    "10": "PASS",
+    "11": "INSUFFICIENT_CREDIT",
+    "12": "EXCEEDED_CLIP_SIZE_LIMIT",
+    "13": "EXCEEDED_MAX_NOTIONAL_ORDER_AMT",
+    "14": "EXCEEDED_DV01_PV01_LIMIT",
+    "15": "EXCEEDED_CS01_LIMIT",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "QuoteRequestReject"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Reason QuoteRequest <R> was rejected.",
+   "values": {
+    "1": "Unknown Symbol (Security)",
+    "2": "Exchange (Security) Closed",
+    "3": "Quote Request <R> Exceeds Limit",
+    "4": "Too Late to enter",
+    "5": "Invalid Price",
+    "6": "Not Authorized To Request Quote",
+    "7": "No Match For Inquiry",
+    "8": "No Market For Instrument",
+    "9": "No Inventory",
+    "10": "Pass",
+    "11": "Insufficient credit",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "UNKNOWN_SYMBOL",
+    "2": "EXCHANGE",
+    "3": "QUOTE_REQUEST_EXCEEDS_LIMIT",
+    "4": "TOO_LATE_TO_ENTER",
+    "5": "INVALID_PRICE",
+    "6": "NOT_AUTHORIZED_TO_REQUEST_QUOTE",
+    "7": "NO_MATCH_FOR_INQUIRY",
+    "8": "NO_MARKET_FOR_INSTRUMENT",
+    "9": "NO_INVENTORY",
+    "10": "PASS",
+    "11": "INSUFFICIENT_CREDIT",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "QuoteRequestReject"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Reason QuoteRequest <R> was rejected.",
+   "values": {
+    "1": "Unknown Symbol (Security)",
+    "2": "Exchange (Security) Closed",
+    "3": "Quote Request <R> Exceeds Limit",
+    "4": "Too Late to enter",
+    "5": "Invalid Price",
+    "6": "Not Authorized To Request Quote",
+    "7": "No Match For Inquiry",
+    "8": "No Market For Instrument",
+    "9": "No Inventory",
+    "10": "Pass",
+    "11": "Insufficient credit",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "UNKNOWN_SYMBOL",
+    "2": "EXCHANGE",
+    "3": "QUOTE_REQUEST_EXCEEDS_LIMIT",
+    "4": "TOO_LATE_TO_ENTER",
+    "5": "INVALID_PRICE",
+    "6": "NOT_AUTHORIZED_TO_REQUEST_QUOTE",
+    "7": "NO_MATCH_FOR_INQUIRY",
+    "8": "NO_MARKET_FOR_INSTRUMENT",
+    "9": "NO_INVENTORY",
+    "10": "PASS",
+    "11": "INSUFFICIENT_CREDIT",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "QuoteRequestReject"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Reason QuoteRequest <R> was rejected.",
+   "values": {
+    "1": "Unknown symbol (Security)",
+    "2": "Exchange(Security) closed",
+    "3": "Quote Request <R> exceeds limit",
+    "4": "Too late to enter",
+    "5": "Invalid price",
+    "6": "Not authorized to request quote",
+    "7": "No match for inquiry",
+    "8": "No market for instrument",
+    "9": "No inventory",
+    "10": "Pass",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "UNKNOWN_SYMBOL",
+    "2": "EXCHANGE",
+    "3": "QUOTE_REQUEST_EXCEEDS_LIMIT",
+    "4": "TOO_LATE_TO_ENTER",
+    "5": "INVALID_PRICE",
+    "6": "NOT_AUTHORIZED_TO_REQUEST_QUOTE",
+    "7": "NO_MATCH_FOR_INQUIRY",
+    "8": "NO_MARKET_FOR_INSTRUMENT",
+    "9": "NO_INVENTORY",
+    "10": "PASS",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "Quote Request Reject"
+   ]
+  },
+  "4.3": {
+   "type": "Int",
+   "description": "Reason Quote Request <R> was rejected:",
+   "values": {
+    "1": "Unknown symbol (Security)",
+    "2": "Exchange(Security) closed",
+    "3": "Quote Request <R> exceeds limit",
+    "4": "Too late to enter",
+    "5": "Invalid price",
+    "6": "Not authorized to request quote"
+   },
+   "value_names": {
+    "1": "UNKNOWN_SYMBOL",
+    "2": "EXCHANGE",
+    "3": "QUOTE_REQUEST_EXCEEDS_LIMIT",
+    "4": "TOO_LATE_TO_ENTER",
+    "5": "INVALID_PRICE",
+    "6": "NOT_AUTHORIZED_TO_REQUEST_QUOTE"
+   },
+   "used_in": [
+    "Quote Request Reject"
+   ]
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "name": "PositionCurrency",
+ "tag": 1055,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The Currency in which the position Amount is denominated"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The Currency in which the position Amount is denominated"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "The Currency in which the position Amount is denominated"
+  }
+ }
+}

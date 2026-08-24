@@ -1,0 +1,42 @@
+{
+ "name": "NoBidComponents",
+ "tag": 420,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Indicates the number of list entries."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Indicates the number of list entries."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Indicates the number of list entries."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Indicates the number of list entries.",
+   "used_in": [
+    "Bid Request",
+    "Bid Response"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Indicates the number of list entries.",
+   "used_in": [
+    "Bid Request",
+    "Bid Response"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Indicates the number of list entries.",
+   "used_in": [
+    "Bid Request",
+    "Bid Response"
+   ]
+  }
+ }
+}

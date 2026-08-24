@@ -1,0 +1,14 @@
+{
+ "name": "UnderlyingLegMaturityTime",
+ "tag": 1405,
+ "versions": {
+  "5.0.SP2": {
+   "type": "TZTimeOnly",
+   "description": "Time of security's maturity expressed in local time with offset to UTC specified"
+  },
+  "5.0.SP1": {
+   "type": "TZTimeOnly",
+   "description": "Time of security's maturity expressed in local time with offset to UTC specified"
+  }
+ }
+}

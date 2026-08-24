@@ -1,0 +1,22 @@
+{
+ "name": "BenchmarkSecurityID",
+ "tag": 699,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The identifier of the benchmark security, e.g. Treasury against Corporate bond. See SecurityID <48> for description and"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The identifier of the benchmark security, e.g. Treasury against Corporate bond. See SecurityID <48> for description and"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "The identifier of the benchmark security, e.g. Treasury against Corporate bond. See SecurityID <48> for description and"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "The identifier of the benchmark security, e.g. Treasury against Corporate bond. See SecurityID <48> for description and"
+  }
+ }
+}

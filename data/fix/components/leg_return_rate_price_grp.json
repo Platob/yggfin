@@ -1,0 +1,42 @@
+{
+ "name": "LegReturnRatePriceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 669,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegReturnRatePrices",
+     "required": false,
+     "tag": 42564,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegReturnRatePriceBasis",
+       "required": false,
+       "tag": 42565
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRatePrice",
+       "required": false,
+       "tag": 42566
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRatePriceCurrency",
+       "required": false,
+       "tag": 42567
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRatePriceType",
+       "required": false,
+       "tag": 42568
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

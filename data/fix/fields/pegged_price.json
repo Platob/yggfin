@@ -1,0 +1,34 @@
+{
+ "name": "PeggedPrice",
+ "tag": 839,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "The price the order is currently pegged at",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "The price the order is currently pegged at",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "The price the order is currently pegged at",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "The price the order is currently pegged at",
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

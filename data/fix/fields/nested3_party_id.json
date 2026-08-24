@@ -1,0 +1,22 @@
+{
+ "name": "Nested3PartyID",
+ "tag": 949,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "PartyID value within a \"third instance\" Nested repeating group. Same values as PartyID <448>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "PartyID value within a \"third instance\" Nested repeating group. Same values as PartyID <448>"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "PartyID value within a \"third instance\" Nested repeating group. Same values as PartyID <448>"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "PartyID value within a \"third instance\" Nested repeating group. Same values as PartyID <448>"
+  }
+ }
+}

@@ -875,6 +875,17 @@ class MapField(Field):
     def _from_struct(self, array: Any, *, safe: bool) -> Any:
         """A struct as a map: its member names are the keys."""
         columns = arrays.struct_columns(array)
+        if not columns:
+            # A struct with no members is a map with no entries -- which is
+            # what Arrow infers from a column of empty dictionaries, and what
+            # the general path below cannot build, having nothing to lay out.
+            return arrays.build_map(
+                self.arrow_type,
+                arrays.repeat_sizes(0, len(array)),
+                pyarrow.array([], self.arrow_type.key_type),
+                pyarrow.array([], self.arrow_type.item_type),
+                arrays.null_mask(array),
+            )
         values, member = arrays.interleave(
             [self.value.cast_arrow_array(column, safe=safe) for column in columns.values()],
             len(array),

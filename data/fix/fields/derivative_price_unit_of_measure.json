@@ -1,0 +1,14 @@
+{
+ "name": "DerivativePriceUnitOfMeasure",
+ "tag": 1315,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Refer to definition for PriceUnitOfMeasure <1191>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Refer to definition for PriceUnitOfMeasure <1191>"
+  }
+ }
+}

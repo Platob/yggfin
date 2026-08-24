@@ -1,0 +1,94 @@
+{
+ "name": "OrderCategory",
+ "tag": 1115,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Defines the type of interest behind a trade (fill or partial fill).",
+   "values": {
+    "1": "Order",
+    "2": "Quote",
+    "3": "Privately Negotiated Trade",
+    "4": "Multileg order",
+    "5": "Linked order",
+    "6": "Quote Request",
+    "7": "Implied Order",
+    "8": "Cross Order",
+    "9": "Streaming price (quote)"
+   },
+   "value_names": {
+    "1": "ORDER",
+    "2": "QUOTE",
+    "3": "PRIVATELY_NEGOTIATED_TRADE",
+    "4": "MULTILEG_ORDER",
+    "5": "LINKED_ORDER",
+    "6": "QUOTE_REQUEST",
+    "7": "IMPLIED_ORDER",
+    "8": "CROSS_ORDER",
+    "9": "STREAMING_PRICE",
+    "A": "INTERNAL_CROSS_ORDER"
+   },
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Defines the type of interest behind a trade (fill or partial fill).",
+   "values": {
+    "1": "Order",
+    "2": "Quote",
+    "3": "Privately Negotiated Trade",
+    "4": "Multileg order",
+    "5": "Linked order",
+    "6": "Quote Request",
+    "7": "Implied Order",
+    "8": "Cross Order",
+    "9": "Streaming price (quote)"
+   },
+   "value_names": {
+    "1": "ORDER",
+    "2": "QUOTE",
+    "3": "PRIVATELY_NEGOTIATED_TRADE",
+    "4": "MULTILEG_ORDER",
+    "5": "LINKED_ORDER",
+    "6": "QUOTE_REQUEST",
+    "7": "IMPLIED_ORDER",
+    "8": "CROSS_ORDER",
+    "9": "STREAMING_PRICE"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Defines the type of interest behind a trade (fill or partial fill).",
+   "values": {
+    "1": "Order",
+    "2": "Quote",
+    "3": "Privately Negotiated Trade",
+    "4": "Multileg order",
+    "5": "Linked order",
+    "6": "Quote Request",
+    "7": "Implied Order",
+    "8": "Cross Order"
+   },
+   "value_names": {
+    "1": "ORDER",
+    "2": "QUOTE",
+    "3": "PRIVATELY_NEGOTIATED_TRADE",
+    "4": "MULTILEG_ORDER",
+    "5": "LINKED_ORDER",
+    "6": "QUOTE_REQUEST",
+    "7": "IMPLIED_ORDER",
+    "8": "CROSS_ORDER"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport"
+   ]
+  }
+ }
+}

@@ -7,6 +7,7 @@ import builtins
 import contextlib
 import copy
 import dataclasses
+import datetime
 import heapq
 import pathlib
 import random
@@ -335,7 +336,7 @@ def envelope(rows: int) -> dict[str, object]:
         "version": [1] * rows,
         "state": [210] * rows,
         "code": [f"S{index % 5000}" for index in range(rows)],
-        "xcode": [f"S{index % 5000}" for index in range(rows)],
+        "codes": [{"symbol": f"S{index % 5000}"} for index in range(rows)],
         "instrument_xhash": [index % 5000 + 1 for index in range(rows)],
         "kind": [0] * rows,
         "side": [0] * rows,
@@ -504,7 +505,6 @@ def stream(events: int) -> list[object]:
                 ready(
                     Execution(
                         unix=unix,
-                        code="BTC-USD",
                         px=100.0 + generate.randrange(-20, 20) * 0.01,
                         qty=1.0,
                         state=State.FILLED,
@@ -518,7 +518,6 @@ def stream(events: int) -> list[object]:
             ready(
                 Order(
                     unix=unix,
-                    code="BTC-USD",
                     side=side,
                     px=float("nan") if index % 20 == 0 else quoted,
                     qty=float(generate.randrange(1, 50)),
@@ -547,7 +546,6 @@ def shaped_stream(events: int, live_levels: int, orders_per_level: int) -> Itera
         event = Order(
             unix=unix,
             cunix=unix,
-            code="MATRIX",
             side=Side.BID,
             px=100.0 - level * 0.01,
             qty=1.0 + cycle % 2,
@@ -776,8 +774,8 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 cunix=UNIX + clock,
                 xhash=index + 1,
                 hash=index + 1,
-                code="BTC-USD",
-                xcode=f"O{index}",
+                code=f"O{index}",
+                codes={"symbol": "BTC-USD"},
                 order_id=f"O{index}",
                 side=Side.BID,
                 px=100.0,
@@ -827,8 +825,8 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 cunix=UNIX + index,
                 xhash=index + 1,
                 hash=index + 1,
-                code="BTC-USD",
-                xcode=f"O{index}",
+                code=f"O{index}",
+                codes={"symbol": "BTC-USD"},
                 order_id=f"O{index}",
                 side=Side.BID,
                 px=float(live - index),
@@ -895,6 +893,73 @@ def bench_ceiling(rows: int, repeat: int) -> None:
                 setattr(identity, name, real)
         print(f"  {label:<44} {seconds * 1000:>8.1f} ms   {base / seconds:>6.2f}x")
     print(f"  {'what no extension removes':<44} {seconds / base * 100:>8.0f}% of the run")
+
+
+def log_stream(rows: int) -> list[object]:
+    """One instrument's feed as the parsed log rows `Book.from_logs` reads.
+
+    Built as `Log` rows carrying wire tags rather than through a text file, so
+    what is measured is the two halves of the generator -- translating a parsed
+    row back into market events, and folding those into books -- and not the
+    tokenizer in front of them, which `bench_fix_parser` prices on its own.
+    """
+    from rekep import Log
+
+    base = 1_786_665_901_000_000_000
+    # The order and the fill, and not the market-data shape beside them: its
+    # entries carry their own `MDEntryTime <273>`, which is what orders them
+    # and not the message clock this walks forward.
+    shapes = [
+        FixMessage.from_text(line).pairs
+        for label, line in FEED.items()
+        if not label.startswith("MarketData")
+    ]
+    built: list[object] = []
+    for index in range(rows):
+        stamp = _fix_stamp(base + index * 1_000_000)
+        renamed = {"52": stamp, "60": stamp, "11": f"CL-{index}", "17": f"EX-{index}"}
+        built.append(
+            Log(
+                unix=base + index * 1_000_000,
+                protocol="FIX",
+                kwargs=[
+                    (tag, renamed.get(tag, value)) for tag, value in shapes[index % len(shapes)]
+                ],
+            )
+        )
+    return built
+
+
+def _fix_stamp(unix: int) -> str:
+    """One nanosecond instant as the `UTCTimestamp` a message spells."""
+    moment = datetime.datetime.fromtimestamp(unix / 1e9, tz=datetime.UTC)
+    return moment.strftime("%Y%m%d-%H:%M:%S.") + f"{moment.microsecond // 1000:03d}"
+
+
+def bench_from_logs(rows: int, repeat: int) -> None:
+    """The whole generator: parsed log rows in, books out."""
+    from rekep.market import BookIterator
+
+    print(f"\nBook.from_logs -- {rows:,} parsed rows, one instrument")
+    logs = log_stream(rows)
+
+    def translate() -> int:
+        return sum(1 for log in logs for _ in log.into_market_events())
+
+    def fold() -> int:
+        return sum(1 for _ in BookIterator(logs=logs, snapshot_every=0).books)
+
+    events = translate()
+    assert events, "the log stream translated to nothing at all"
+    read, _ = timed(translate, repeat)
+    report("parsed row -> market events", read, rows)
+    whole, produced = timed(fold, repeat)
+    assert produced, "the fold produced no books at all"
+    report("parsed row -> books", whole, rows)
+    print(f"  {'logs/s':<44} {rows / whole:>12,.0f}   ({produced:,} books, {events:,} events)")
+    print(f"  {'of it spent translating':<44} {read / whole * 100:>11.0f}%")
+    rate = rows / whole
+    assert rate >= 1_000, f"parsed rows folded into books at only {rate:,.0f} logs/s"
 
 
 def bench_fold(events: int, repeat: int) -> None:
@@ -987,6 +1052,7 @@ def main() -> None:
     bench_fix(rows // 20, repeat)
     bench_ceiling(rows // 20, repeat)
     bench_fold(rows // 10, repeat)
+    bench_from_logs(rows // 20, repeat)
     bench_operation_counts(rows)
     bench_snapshot(rows, repeat)
     bench_replay_matrix(rows, repeat, quick=parsed.quick, full=parsed.matrix)

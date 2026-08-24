@@ -1,0 +1,14 @@
+{
+ "name": "ApplEndSeqNum",
+ "tag": 1183,
+ "versions": {
+  "5.0.SP2": {
+   "type": "SeqNum",
+   "description": "Ending range of application sequence numbers"
+  },
+  "5.0.SP1": {
+   "type": "SeqNum",
+   "description": "Ending range of application sequence numbers"
+  }
+ }
+}

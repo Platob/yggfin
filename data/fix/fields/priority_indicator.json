@@ -1,0 +1,81 @@
+{
+ "name": "PriorityIndicator",
+ "tag": 638,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates if a Cancel/Replace has caused an order to lose book priority.",
+   "values": {
+    "0": "Priority unchanged",
+    "1": "Lost Priority as result of order change"
+   },
+   "value_names": {
+    "0": "PRIORITY_UNCHANGED",
+    "1": "LOST_PRIORITY_AS_RESULT_OF_ORDER_CHANGE"
+   },
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Indicates if a Cancel/Replace has caused an order to lose book priority.",
+   "values": {
+    "0": "Priority unchanged",
+    "1": "Lost Priority as result of order change"
+   },
+   "value_names": {
+    "0": "PRIORITY_UNCHANGED",
+    "1": "LOST_PRIORITY_AS_RESULT_OF_ORDER_CHANGE"
+   },
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Indicates if a Cancel/Replace has caused an order to lose book priority.",
+   "values": {
+    "0": "Priority unchanged",
+    "1": "Lost Priority as result of order change"
+   },
+   "value_names": {
+    "0": "PRIORITY_UNCHANGED",
+    "1": "LOST_PRIORITY_AS_RESULT_OF_ORDER_CHANGE"
+   },
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Indicates if a Cancel/Replace has caused an order to lose book priority.",
+   "values": {
+    "0": "Priority Unchanged",
+    "1": "Lost Priority as result of order change"
+   },
+   "value_names": {
+    "0": "PRIORITY_UNCHANGED",
+    "1": "LOST_PRIORITY_AS_RESULT_OF_ORDER_CHANGE"
+   },
+   "used_in": [
+    "Execution Report"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Indicates if a Cancel/Replace has caused an order to lose book priority.",
+   "values": {
+    "0": "Priority Unchanged",
+    "1": "Lost Priority as result of order change"
+   },
+   "value_names": {
+    "0": "PRIORITY_UNCHANGED",
+    "1": "LOST_PRIORITY_AS_RESULT_OF_ORDER_CHANGE"
+   },
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

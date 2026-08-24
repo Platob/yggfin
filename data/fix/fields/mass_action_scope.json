@@ -1,0 +1,74 @@
+{
+ "name": "MassActionScope",
+ "tag": 1374,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Specifies scope of Order Mass Action Request <CA> .",
+   "values": {
+    "1": "All orders for a security",
+    "2": "All orders for an underlying security",
+    "3": "All orders for a Product",
+    "4": "All orders for a CFICode",
+    "5": "All orders for a SecurityType",
+    "6": "All orders for a trading session",
+    "7": "All orders",
+    "8": "All orders for a Market",
+    "9": "All orders for a Market Segment",
+    "10": "All orders for a Security Group",
+    "11": "Cancel for Security Issuer",
+    "12": "Cancel for Issuer of Underlying Security"
+   },
+   "value_names": {
+    "1": "ALL_ORDERS_FOR_A_SECURITY",
+    "2": "ALL_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "ALL_ORDERS_FOR_A_PRODUCT",
+    "4": "ALL_ORDERS_FOR_ACFI_CODE",
+    "5": "ALL_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "ALL_ORDERS_FOR_A_TRADING_SESSION",
+    "7": "ALL_ORDERS",
+    "8": "ALL_ORDERS_FOR_A_MARKET",
+    "9": "ALL_ORDERS_FOR_A_MARKET_SEGMENT",
+    "10": "ALL_ORDERS_FOR_A_SECURITY_GROUP",
+    "11": "CANCEL_FOR_SECURITY_ISSUER",
+    "12": "CANCEL_FOR_ISSUER_OF_UNDERLYING_SECURITY"
+   },
+   "used_in": [
+    "OrderMassActionReport",
+    "OrderMassActionRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Specifies scope of Order Mass Action Request <CA> .",
+   "values": {
+    "1": "All orders for a security",
+    "2": "All orders for an underlying security",
+    "3": "All orders for a Product",
+    "4": "All orders for a CFICode",
+    "5": "All orders for a SecurityType",
+    "6": "All orders for a trading session",
+    "7": "All orders",
+    "8": "All orders for a Market",
+    "9": "All orders for a Market Segment",
+    "10": "All orders for a Security Group"
+   },
+   "value_names": {
+    "1": "ALL_ORDERS_FOR_A_SECURITY",
+    "2": "ALL_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "ALL_ORDERS_FOR_A_PRODUCT",
+    "4": "ALL_ORDERS_FOR_ACFI_CODE",
+    "5": "ALL_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "ALL_ORDERS_FOR_A_TRADING_SESSION",
+    "7": "ALL_ORDERS",
+    "8": "ALL_ORDERS_FOR_A_MARKET",
+    "9": "ALL_ORDERS_FOR_A_MARKET_SEGMENT",
+    "10": "ALL_ORDERS_FOR_A_SECURITY_GROUP"
+   },
+   "used_in": [
+    "OrderMassActionReport",
+    "OrderMassActionRequest"
+   ]
+  }
+ }
+}

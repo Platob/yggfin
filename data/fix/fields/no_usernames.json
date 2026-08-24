@@ -1,0 +1,14 @@
+{
+ "name": "NoUsernames",
+ "tag": 809,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of Usernames to which this this response is directed"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of Usernames to which this this response is directed"
+  }
+ }
+}

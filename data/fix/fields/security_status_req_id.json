@@ -1,0 +1,54 @@
+{
+ "name": "SecurityStatusReqID",
+ "tag": 324,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique ID of a Security Status Request <e> message.",
+   "used_in": [
+    "SecurityStatusRequest",
+    "SecurityStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique ID of a Security Status Request <e> message.",
+   "used_in": [
+    "SecurityStatusRequest",
+    "SecurityStatus"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique ID of a Security Status Request <e> message.",
+   "used_in": [
+    "SecurityStatusRequest",
+    "SecurityStatus"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique ID of a Security Status Request <e> message.",
+   "used_in": [
+    "Security Status Request",
+    "Security Status"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique ID of a Security Status Request <e> message.",
+   "used_in": [
+    "Security Status Request",
+    "Security Status"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique ID of a Security Status Request <e> message.",
+   "used_in": [
+    "Security Status Request",
+    "Security Status"
+   ]
+  }
+ }
+}

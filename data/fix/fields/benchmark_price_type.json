@@ -1,0 +1,22 @@
+{
+ "name": "BenchmarkPriceType",
+ "tag": 663,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies type of BenchmarkPrice <662> . See PriceType <423> for"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies type of BenchmarkPrice <662> . See PriceType <423> for"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identifies type of BenchmarkPrice <662> . See PriceType <423> for"
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Identifies type of BenchmarkPrice <662> . See PriceType <423> for"
+  }
+ }
+}

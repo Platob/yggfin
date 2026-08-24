@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeSecuritySubType",
+ "tag": 1250,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String"
+  },
+  "5.0.SP1": {
+   "type": "String"
+  }
+ }
+}

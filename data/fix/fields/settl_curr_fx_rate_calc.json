@@ -1,0 +1,112 @@
+{
+ "name": "SettlCurrFxRateCalc",
+ "tag": 156,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Specifies whether or not SettlCurrFxRate <155> should be multiplied or divided.",
+   "values": {
+    "M": "Multiply",
+    "D": "Divide"
+   },
+   "value_names": {
+    "M": "MULTIPLY",
+    "D": "DIVIDE"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Confirmation",
+    "Quote"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Specifies whether or not SettlCurrFxRate <155> should be multiplied or divided.",
+   "values": {
+    "M": "Multiply",
+    "D": "Divide"
+   },
+   "value_names": {
+    "M": "MULTIPLY",
+    "D": "DIVIDE"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Confirmation",
+    "Quote"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Specifies whether or not SettlCurrFxRate (55) should be multiplied or divided.",
+   "values": {
+    "M": "Multiply",
+    "D": "Divide"
+   },
+   "value_names": {
+    "M": "MULTIPLY",
+    "D": "DIVIDE"
+   },
+   "used_in": [
+    "Confirmation",
+    "ExecutionReport",
+    "Quote",
+    "QuoteResponse",
+    "QuoteStatusReport"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Specifies whether or not SettlCurrFxRate <155> should be multiplied or divided. M = Multiply D = Divide",
+   "value_names": {
+    "M": "MULTIPLY",
+    "D": "DIVIDE"
+   },
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Quote Status Report",
+    "Quote Response",
+    "Confirmation",
+    "Allocation Report",
+    "Allocation Instruction",
+    "Quote"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Specifies whether or not SettlCurrFxRate <155> should be multiplied or divided. M = Multiply D = Divide",
+   "value_names": {
+    "D": "DIVIDE",
+    "M": "MULTIPLY"
+   },
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Quote Status Report",
+    "Allocation",
+    "Quote"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Specifies whether or not SettlCurrFxRate <155> should be multiplied or divided. M=Multiply D=Divide",
+   "used_in": [
+    "Execution Report",
+    "Allocation"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Specifies whether or not SettlCurrFxRate <155> should be multiplied or divided. M=Multiply D=Divide",
+   "used_in": [
+    "Execution Report",
+    "Allocation"
+   ]
+  }
+ }
+}

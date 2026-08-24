@@ -1,0 +1,47 @@
+{
+ "name": "AllocNetMoney",
+ "tag": 154,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "NetMoney <118> for a specific AllocAccount <79>"
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "NetMoney <118> for a specific AllocAccount <79>"
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "NetMoney <118> for a specific AllocAccount <79>"
+  },
+  "4.4": {
+   "type": "Amt",
+   "description": "NetMoney <118> for a specific AllocAccount <79>",
+   "used_in": [
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "Amt",
+   "description": "NetMoney <118> for a specific AllocAccount <79>",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.2": {
+   "type": "Amt",
+   "description": "NetMoney <118> for a specific AllocAccount <79>",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.1": {
+   "type": "float",
+   "description": "NetMoney <118> for a specific AllocAccount <79>",
+   "used_in": [
+    "Allocation"
+   ]
+  }
+ }
+}

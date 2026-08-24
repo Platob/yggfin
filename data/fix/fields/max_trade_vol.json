@@ -1,0 +1,14 @@
+{
+ "name": "MaxTradeVol",
+ "tag": 1140,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "The maximum order quantity that can be submitted for a security."
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "The maximum order quantity that can be submitted for a security."
+  }
+ }
+}

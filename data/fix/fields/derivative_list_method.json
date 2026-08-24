@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeListMethod",
+ "tag": 1320,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates whether instruments are pre-listed only or can also be defined via user request Same values as ListMethod <1198>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Indicates whether instruments are pre-listed only or can also be defined via user request Same values as ListMethod <1198>"
+  }
+ }
+}

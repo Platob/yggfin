@@ -1,0 +1,114 @@
+{
+ "name": "AllocID",
+ "tag": 70,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier for allocation message. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "Confirmation",
+    "AllocationReport",
+    "AllocationReportAck",
+    "ConfirmationRequest",
+    "AllocationInstructionAlert",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "AllocationInstruction",
+    "AllocationInstructionAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier for allocation message. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "Confirmation",
+    "AllocationReport",
+    "AllocationReportAck",
+    "ConfirmationRequest",
+    "AllocationInstructionAlert",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "AllocationInstruction",
+    "AllocationInstructionAck"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique identifier for allocation message. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "Confirmation",
+    "AllocationReport",
+    "AllocationReportAck",
+    "ConfirmationRequest",
+    "AllocationInstructionAlert",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "AllocationInstruction",
+    "AllocationInstructionAck"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique identifier for allocation message. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Confirmation",
+    "Allocation Report",
+    "Allocation Report Ack",
+    "Confirmation Request",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "Allocation Instruction",
+    "Allocation Instruction Ack",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique identifier for Allocation <J> message. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Allocation",
+    "Allocation ACK",
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique identifier for Allocation <J> message. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Allocation",
+    "Allocation ACK",
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Unique identifier for allocation record. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Allocation",
+    "Allocation ACK",
+    "Settlement Instructions"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Unique identifier for allocation record.",
+   "used_in": [
+    "Allocation",
+    "Allocation ACK"
+   ]
+  }
+ }
+}

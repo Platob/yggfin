@@ -1,0 +1,32 @@
+{
+ "name": "InstrRegistry",
+ "tag": 543,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Values may include BIC for the depository or custodian who maintain ownership records, the ISO country code for the location of the record, or the value \"ZZ\" to specify physical ownership of the security (e.g. stock certificate)."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Values may include BIC for the depository or custodian who maintain ownership records, the ISO country code for the location of the record, or the value \"ZZ\" to specify physical ownership of the security (e.g. stock certificate)."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Values may include BIC for the depository or custodian who maintain ownership records, the ISO country code for the location of the record, or the value \"ZZ\" to specify physical ownership of the security (e.g. stock certificate)."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "The location at which records of ownership are maintained for this instrument, and at which ownership changes must be recorded.",
+   "values": {
+    "\"ZZ\"": "physical or bearer"
+   }
+  },
+  "4.3": {
+   "type": "String",
+   "description": "The location at which records of ownership are maintained for this instrument, and at which ownership changes must be recorded.",
+   "values": {
+    "\"ZZ\"": "physical or bearer"
+   }
+  }
+ }
+}

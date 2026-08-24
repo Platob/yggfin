@@ -1,0 +1,99 @@
+{
+ "name": "ExecID",
+ "tag": 17,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType <150> ='I' (Order Status)). Uniqueness must be guaranteed within a single trading day or the life of a multi-day order. Firms which accept multi-day orders should consider embedding a date within the ExecID <17> field to assure uniqueness across days. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "ExecutionAcknowledgement",
+    "DontKnowTradeDK"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType <150> ='I' (Order Status)). Uniqueness must be guaranteed within a single trading day or the life of a multi-day order. Firms which accept multi-day orders should consider embedding a date within the ExecID <17> field to assure uniqueness across days. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "ExecutionAcknowledgement",
+    "DontKnowTradeDK"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType <150> ='I' (Order Status)). Uniqueness must be guaranteed within a single trading day or the life of a multi-day order. Firms which accept multi-day orders should consider embedding a date within the ExecID <17> field to assure uniqueness across days. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "ExecutionAcknowledgement",
+    "DontKnowTradeDK"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType <150> ='I' (Order Status)). Uniqueness must be guaranteed within a single trading day or the life of a multi-day order. Firms which accept multi-day orders should consider embedding a date within the ExecID <17> field to assure uniqueness across days. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report Request",
+    "Trade Capture Report",
+    "Trade Capture Report Ack",
+    "Allocation Report",
+    "Collateral Request",
+    "Collateral Assignment",
+    "Collateral Response",
+    "Collateral Report",
+    "Collateral Inquiry",
+    "Collateral Inquiry Ack",
+    "Allocation Instruction",
+    "Don't Know Trade"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType <150> ='I' (Order Status)). Uniqueness must be guaranteed within a single trading day or the life of a multi-day order. Firms which accept multi-day orders should consider embedding a date within the ExecID <17> field to assure uniqueness across days. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report Request",
+    "Trade Capture Report",
+    "Allocation",
+    "Don't Know Trade"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique identifier of execution message as assigned by broker (will be 0 (zero) for ExecTransType <20> ='3' (Status)). Uniqueness must be guaranteed within a single trading day or the life of a multi-day order. Firms which accept multi-day orders should consider embedding a date within the ExecID <17> field to assure uniqueness across days. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "Allocation",
+    "Don't Know Trade"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Unique identifier of execution message as assigned by broker (will be 0 (zero) for ExecTransType <20> ='3' (Status)). Uniqueness must be guaranteed within a single trading day or the life of a multi-day order. Firms which accept multi-day orders should consider embedding a date within the ExecID <17> field to assure uniqueness across days. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "Allocation",
+    "Don't Know Trade"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Unique identifier of execution message as assigned by broker (will be 0 (zero) for ExecTransType <20> ='3' (Status)). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the ExecID <17> field to assure uniqueness across days.",
+   "used_in": [
+    "Execution Report",
+    "Allocation",
+    "Don't Know Trade"
+   ]
+  }
+ }
+}

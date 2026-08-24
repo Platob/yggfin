@@ -1,0 +1,26 @@
+{
+ "name": "UnderlyingInstrRegistry",
+ "tag": 595,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Underlying security's InstrRegistry. See InstrRegistry <543> field for description"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Underlying security's InstrRegistry. See InstrRegistry <543> field for description"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Underlying security's InstrRegistry. See InstrRegistry <543> field for description"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Underlying security's InstrRegistry. See InstrRegistry <543> field for description"
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Underlying security's InstrRegistry. See InstrRegistry <543> field for description"
+  }
+ }
+}

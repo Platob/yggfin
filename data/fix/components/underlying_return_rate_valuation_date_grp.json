@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingReturnRateValuationDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 707,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingReturnRateValuationDates",
+     "required": false,
+     "tag": 43071,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateValuationDate",
+       "required": false,
+       "tag": 43072
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateValuationDateType",
+       "required": false,
+       "tag": 43073
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

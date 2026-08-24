@@ -1,0 +1,36 @@
+{
+ "name": "DerivativeSecurityListRequestType",
+ "tag": 1307,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies the type of Security List Request",
+   "values": {
+    "0": "Symbol",
+    "1": "SecurityType and/or CFICode",
+    "2": "Product",
+    "3": "TradingSessionID",
+    "4": "All Securities",
+    "5": "UndelyingSymbol",
+    "6": "Underlying SecurityType and/or CFICode",
+    "7": "Underlying Product",
+    "8": "MarketID or MarketID + MarketSegmentID"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies the type of Security List Request <x>",
+   "values": {
+    "0": "Symbol <55>",
+    "1": "SecurityType <167> and/or CFICode <461>",
+    "2": "Product <460>",
+    "3": "TradingSessionID <336>",
+    "4": "All Securities",
+    "5": "UndelyingSymbol",
+    "6": "Underlying SecurityType and/or CFICode",
+    "7": "Underlying Product",
+    "8": "MarketID <1301> or MarketID + MarketSegmentID <1300>"
+   }
+  }
+ }
+}

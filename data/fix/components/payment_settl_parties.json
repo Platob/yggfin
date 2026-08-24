@@ -1,0 +1,47 @@
+{
+ "name": "PaymentSettlParties",
+ "versions": {
+  "5.0.SP2": {
+   "order": 397,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPaymentSettlPartyIDs",
+     "required": false,
+     "tag": 40233,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PaymentSettlPartyID",
+       "required": false,
+       "tag": 40234
+      },
+      {
+       "kind": "field",
+       "name": "PaymentSettlPartyIDSource",
+       "required": false,
+       "tag": 40235
+      },
+      {
+       "kind": "field",
+       "name": "PaymentSettlPartyRole",
+       "required": false,
+       "tag": 40236
+      },
+      {
+       "kind": "field",
+       "name": "PaymentSettlPartyRoleQualifier",
+       "required": false,
+       "tag": 40237
+      },
+      {
+       "kind": "component",
+       "name": "PaymentSettlPtysSubGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

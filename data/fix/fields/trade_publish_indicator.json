@@ -1,0 +1,43 @@
+{
+ "name": "TradePublishIndicator",
+ "tag": 1390,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates if a trade should be reported via a market reporting service. The indicator governs all reporting services of the recipient. Replaces PublishTrdIndicator <852> .",
+   "values": {
+    "0": "Do Not Publish Trade",
+    "1": "Publish Trade",
+    "2": "Deferred Publication"
+   },
+   "value_names": {
+    "0": "DO_NOT_PUBLISH_TRADE",
+    "1": "PUBLISH_TRADE",
+    "2": "DEFERRED_PUBLICATION",
+    "3": "PUBLISHED"
+   },
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Indicates if a trade should be reported via a market reporting service. The indicator governs all reporting services of the recipient. Replaces PublishTrdIndicator <852> .",
+   "values": {
+    "0": "Do Not Publish Trade",
+    "1": "Publish Trade",
+    "2": "Deferred Publication"
+   },
+   "value_names": {
+    "0": "DO_NOT_PUBLISH_TRADE",
+    "1": "PUBLISH_TRADE",
+    "2": "DEFERRED_PUBLICATION"
+   },
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  }
+ }
+}

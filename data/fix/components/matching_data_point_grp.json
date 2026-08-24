@@ -1,0 +1,42 @@
+{
+ "name": "MatchingDataPointGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 717,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMatchingDataPoints",
+     "required": false,
+     "tag": 2781,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MatchingDataPointIndicator",
+       "required": false,
+       "tag": 2782
+      },
+      {
+       "kind": "field",
+       "name": "MatchingDataPointValue",
+       "required": false,
+       "tag": 2783
+      },
+      {
+       "kind": "field",
+       "name": "MatchingDataPointType",
+       "required": false,
+       "tag": 2784
+      },
+      {
+       "kind": "field",
+       "name": "MatchingDataPointName",
+       "required": false,
+       "tag": 2785
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

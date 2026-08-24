@@ -1,0 +1,75 @@
+{
+ "name": "EntitlementGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 348,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoEntitlements",
+     "required": false,
+     "tag": 1773,
+     "members": [
+      {
+       "kind": "field",
+       "name": "EntitlementIndicator",
+       "required": false,
+       "tag": 1774
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementType",
+       "required": false,
+       "tag": 1775
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementSubType",
+       "required": false,
+       "tag": 2402
+      },
+      {
+       "kind": "component",
+       "name": "EntitlementAttribGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementID",
+       "required": false,
+       "tag": 1776
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementPlatform",
+       "required": false,
+       "tag": 1784
+      },
+      {
+       "kind": "component",
+       "name": "InstrumentScopeGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "MarketSegmentScopeGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementStartDate",
+       "required": false,
+       "tag": 1782
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementEndDate",
+       "required": false,
+       "tag": 1783
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

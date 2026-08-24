@@ -1,0 +1,30 @@
+{
+ "name": "RepoCollateralSecurityType",
+ "tag": 239,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Identifies the collateral used in the transaction."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Identifies the collateral used in the transaction."
+  },
+  "5.0": {
+   "type": "String",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Identifies the collateral used in the transaction."
+  },
+  "4.4": {
+   "type": "String",
+   "note": "Deprecated",
+   "description": "*** DEPRECATED FIELD - See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] *** Identifies the collateral used in the transaction."
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Identifies the collateral used in the transaction."
+  }
+ }
+}

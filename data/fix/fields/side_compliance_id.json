@@ -1,0 +1,34 @@
+{
+ "name": "SideComplianceID",
+ "tag": 659,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting)."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting)."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting)."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "used_in": [
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "used_in": [
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

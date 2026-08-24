@@ -89,27 +89,15 @@ fields:
     enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
 - name: code
   type: string
-  description: Ticker symbol. Common, "human understood" representation of the security.
-    SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange
-    traded Collective Investment Vehicles) Use "[N/A]" for products which do not have
-    a symbol.
-  metadata:
-    fix:tag: '55'
-    fix:type: String
-    fix:version: 5.0.SP2
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
-    fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
-      Status Request","Quote Acknowledgement","Security Definition Request","Security
-      Definition","New Order - Single","Security Status Request","New Order - List","Security
-      Status","Order Cancel Request","Order Cancel/Replace Request","Order Status
-      Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
-      Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
-      Data - Incremental Refresh","Quote Cancel"]'
-    fix:name: Symbol
-- name: xcode
-  type: string
-  description: Readable identifier shared by every version of this lifecycle.
+  description: Readable identifier of this lifecycle, shared by every version of it.
+- name: codes
+  type: map
+  description: Every other identifier the source spelled, by the name that carried
+    it.
+  key:
+    type: string
+  value:
+    type: string
 - name: prev_unix
   type: int64
   nullable: true
@@ -167,6 +155,7 @@ fields:
       (for use with multileg instruments)","D":"Subscribe (e.g. CIV)","E":"Redeem
       (e.g. CIV)","F":"Lend (FINANCING - identifies direction of collateral)","G":"Borrow
       (FINANCING - identifies direction of collateral)"}'
+    fix:value_names: '{"1":"BUY","2":"SELL","3":"BUY_MINUS","4":"SELL_PLUS","5":"SELL_SHORT","6":"SELL_SHORT_EXEMPT","7":"UNDISCLOSED","8":"CROSS","9":"CROSS_SHORT","B":"AS_DEFINED","C":"OPPOSITE","A":"CROSS_SHORT_EXEMPT","D":"SUBSCRIBE","E":"REDEEM","F":"LEND","G":"BORROW","H":"SELL_UNDISCLOSED"}'
     fix:used_in: '["IOI","ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","TradeCaptureReportRequest","OrderMassStatusRequest","QuoteStatusReport","QuoteResponse","Confirmation","AllocationReport","SettlementInstructionRequest","CollateralRequest","CollateralAssignment","CollateralResponse","CollateralReport","CollateralInquiry","AllocationInstructionAlert","ExecutionAcknowledgement","OrderMassActionReport","OrderMassActionRequest","NewOrderSingle","OrderCancelRequest","OrderCancelReplaceRequest","OrderStatusRequest","AllocationInstruction","OrderMassCancelRequest","DontKnowTradeDK","OrderMassCancelReport","Quote","Execution
       Report","New Order Multileg","Multileg Order Cancel/Replace","Trade Capture
       Report Request","Trade Capture Report","Order Mass Status Request","Quote Request
@@ -181,7 +170,6 @@ fields:
       Order Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
       Order - Cross","Indication of Interest","Quote Status Request","Security Definition
       Request","Security Definition"]'
-    fix:value_names: '{"1":"BUY","2":"SELL","3":"BUY_MINUS","4":"SELL_PLUS","5":"SELL_SHORT","6":"SELL_SHORT_EXEMPT","7":"UNDISCLOSED","8":"CROSS","9":"CROSS_SHORT","B":"AS_DEFINED","C":"OPPOSITE","A":"CROSS_SHORT_EXEMPT","D":"SUBSCRIBE","E":"REDEEM","F":"LEND","G":"BORROW","H":"SELL_UNDISCLOSED"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
     fix:name: Side
@@ -302,13 +290,13 @@ fields:
       Opening (OPG)","3":"Immediate Or Cancel (IOC)","4":"Fill Or Kill (FOK)","5":"Good
       Till Crossing (GTX)","6":"Good Till Date (GTD)","7":"At the Close","8":"Good
       Through Crossing","9":"At Crossing"}'
+    fix:value_names: '{"0":"DAY","1":"GOOD_TILL_CANCEL","2":"AT_THE_OPENING","3":"IMMEDIATE_OR_CANCEL","4":"FILL_OR_KILL","5":"GOOD_TILL_CROSSING","6":"GOOD_TILL_DATE","7":"AT_THE_CLOSE","8":"GOOD_THROUGH_CROSSING","9":"AT_CROSSING","A":"GOOD_FOR_TIME","B":"GOOD_FOR_AUCTION","C":"GOOD_FOR_MONTH"}'
     fix:used_in: '["ExecutionReport","NewOrderMultileg","MultilegOrderCancelReplace","NewOrderSingle","OrderCancelReplaceRequest","NewOrderCross","CrossOrderCancelReplaceRequest","Execution
       Report","New Order Multileg","Multileg Order Cancel/Replace","New Order Single","New
       Order List","Order Cancel/Replace Request","New Order Cross","Cross Order Cancel/Replace
       Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental Refresh","New
       Order - Multileg","Multileg Order Cancel/Replace Request","New Order - Single","New
       Order - List","New Order - Cross"]'
-    fix:value_names: '{"0":"DAY","1":"GOOD_TILL_CANCEL","2":"AT_THE_OPENING","3":"IMMEDIATE_OR_CANCEL","4":"FILL_OR_KILL","5":"GOOD_TILL_CROSSING","6":"GOOD_TILL_DATE","7":"AT_THE_CLOSE","8":"GOOD_THROUGH_CROSSING","9":"AT_CROSSING","A":"GOOD_FOR_TIME","B":"GOOD_FOR_AUCTION","C":"GOOD_FOR_MONTH"}'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
     fix:name: TimeInForce

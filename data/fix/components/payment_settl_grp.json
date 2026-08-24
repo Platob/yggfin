@@ -1,0 +1,35 @@
+{
+ "name": "PaymentSettlGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 396,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPaymentSettls",
+     "required": false,
+     "tag": 40230,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PaymentSettlAmount",
+       "required": false,
+       "tag": 40231
+      },
+      {
+       "kind": "field",
+       "name": "PaymentSettlCurrency",
+       "required": false,
+       "tag": 40232
+      },
+      {
+       "kind": "component",
+       "name": "PaymentSettlParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

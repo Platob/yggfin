@@ -1,0 +1,22 @@
+{
+ "name": "MarginRatio",
+ "tag": 898,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "The fraction of the cash consideration that must be collateralized, expressed as a percent. A MarginRatio <898> of 102% indicates that the value of the collateral (after deducting for \"haircut\") must exceed the cash consideration by 2%."
+  },
+  "5.0.SP1": {
+   "type": "Percentage",
+   "description": "The fraction of the cash consideration that must be collateralized, expressed as a percent. A MarginRatio <898> of 102% indicates that the value of the collateral (after deducting for \"haircut\") must exceed the cash consideration by 2%."
+  },
+  "5.0": {
+   "type": "Percentage",
+   "description": "The fraction of the cash consideration that must be collateralized, expressed as a percent. A MarginRatio <898> of 102% indicates that the value of the collateral (after deducting for \"haircut\") must exceed the cash consideration by 2%."
+  },
+  "4.4": {
+   "type": "Percentage",
+   "description": "The fraction of the cash consideration that must be collateralized, expressed as a percent. A MarginRatio <898> of 102% indicates that the value of the collateral (after deducting for \"haircut\") must exceed the cash consideration by 2%."
+  }
+ }
+}

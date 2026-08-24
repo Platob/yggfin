@@ -1,0 +1,36 @@
+{
+ "name": "QuoteSizeRuleGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 641,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoQuoteSizeRules",
+     "required": false,
+     "tag": 2558,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MinBidSize",
+       "required": false,
+       "tag": 647
+      },
+      {
+       "kind": "field",
+       "name": "MinOfferSize",
+       "required": false,
+       "tag": 648
+      },
+      {
+       "kind": "field",
+       "name": "FastMarketIndicator",
+       "required": false,
+       "tag": 2447
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

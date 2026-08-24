@@ -1,0 +1,51 @@
+{
+ "name": "RFQReqID",
+ "tag": 644,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "RFQ Request ID - used to identify an RFQ Request <AH> .",
+   "used_in": [
+    "QuoteRequestReject",
+    "RFQRequest",
+    "QuoteRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "RFQ Request ID - used to identify an RFQ Request <AH> .",
+   "used_in": [
+    "QuoteRequestReject",
+    "RFQRequest",
+    "QuoteRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "RFQ Request ID - used to identify an RFQ Request <AH> .",
+   "used_in": [
+    "QuoteRequestReject",
+    "RFQRequest",
+    "QuoteRequest"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "RFQ Request ID - used to identify an RFQ Request <AH> .",
+   "used_in": [
+    "Quote Request Reject",
+    "RFQ Request",
+    "Quote Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "RFQ Request ID - used to identify an RFQ Request <AH> .",
+   "used_in": [
+    "Quote Request Reject",
+    "RFQ Request",
+    "Quote Request"
+   ]
+  }
+ }
+}

@@ -1,0 +1,90 @@
+{
+ "name": "ResponseTransportType",
+ "tag": 725,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies how the response to the request should be transmitted. Details specified via ResponseDestination <726> .",
+   "values": {
+    "0": "Inband - transport the request was sent over (default)",
+    "1": "Out of Band - pre-arranged out-of-band delivery mechanizm (i.e. FTP, HTTP, NDM, etc.) between counterparties."
+   },
+   "value_names": {
+    "0": "INBAND",
+    "1": "OUT_OF_BAND"
+   },
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "CollateralInquiry",
+    "CollateralInquiryAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies how the response to the request should be transmitted. Details specified via ResponseDestination <726> .",
+   "values": {
+    "0": "Inband - transport the request was sent over (default)",
+    "1": "Out of Band - pre-arranged out-of-band delivery mechanizm (i.e. FTP, HTTP, NDM, etc.) between counterparties."
+   },
+   "value_names": {
+    "0": "INBAND",
+    "1": "OUT_OF_BAND"
+   },
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "CollateralInquiry",
+    "CollateralInquiryAck"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identifies how the response to the request should be transmitted. Details specified via ResponseDestination <726> .",
+   "values": {
+    "0": "Inband - transport the request was sent over (default)",
+    "1": "Out of Band - pre-arranged out-of-band delivery mechanizm (i.e. FTP, HTTP, NDM, etc.) between counterparties."
+   },
+   "value_names": {
+    "0": "INBAND",
+    "1": "OUT_OF_BAND"
+   },
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "CollateralInquiryAck",
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "CollateralInquiry"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Identifies how the response to the request should be transmitted.",
+   "values": {
+    "0": "Inband: transport the request was sent over (Default)",
+    "1": "Out-of-Band: pre-arranged out of band delivery mechanism (i.e. FTP, HTTP, NDM, etc) between counterparties. Details specified via ResponseDestination <726> ."
+   },
+   "value_names": {
+    "0": "INBAND",
+    "1": "OUT_OF_BAND"
+   },
+   "used_in": [
+    "Trade Capture Report Request",
+    "Request For Positions",
+    "Request for Positions Ack",
+    "Trade Capture Report Request Ack",
+    "Trade Capture Report Ack",
+    "Collateral Inquiry",
+    "Collateral Inquiry Ack"
+   ]
+  }
+ }
+}

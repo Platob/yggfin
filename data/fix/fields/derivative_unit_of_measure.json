@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeUnitOfMeasure",
+ "tag": 1269,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Same values as UnitOfMeasure <996>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Same values as UnitOfMeasure <996>"
+  }
+ }
+}

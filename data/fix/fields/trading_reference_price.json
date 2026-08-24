@@ -1,0 +1,14 @@
+{
+ "name": "TradingReferencePrice",
+ "tag": 1150,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Reference price for the current trading price range usually representing the mid price between the HighLimitPrice <1149> and LowLimitPrice <1148> . The value may be the settlement price or closing price of the prior trading day."
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Reference price for the current trading price range usually representing the mid price between the HighLimitPrice <1149> and LowLimitPrice <1148> . The value may be the settlement price or closing price of the prior trading day."
+  }
+ }
+}

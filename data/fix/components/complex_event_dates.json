@@ -1,0 +1,35 @@
+{
+ "name": "ComplexEventDates",
+ "versions": {
+  "5.0.SP2": {
+   "order": 305,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoComplexEventDates",
+     "required": false,
+     "tag": 1491,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ComplexEventStartDate",
+       "required": false,
+       "tag": 1492
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventEndDate",
+       "required": false,
+       "tag": 1493
+      },
+      {
+       "kind": "component",
+       "name": "ComplexEventTimes",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

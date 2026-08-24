@@ -1,0 +1,30 @@
+{
+ "name": "LegPaymentStreamFixingDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 661,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegPaymentStreamFixingDates",
+     "required": false,
+     "tag": 42459,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegPaymentStreamFixingDate",
+       "required": false,
+       "tag": 42460
+      },
+      {
+       "kind": "field",
+       "name": "LegPaymentStreamFixingDateType",
+       "required": false,
+       "tag": 42461
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

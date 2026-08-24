@@ -1,0 +1,48 @@
+{
+ "name": "MiscFeesSubGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 644,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMiscFeeSubTypes",
+     "required": false,
+     "tag": 2633,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MiscFeeSubType",
+       "required": false,
+       "tag": 2634
+      },
+      {
+       "kind": "field",
+       "name": "MiscFeeSubTypeAmt",
+       "required": false,
+       "tag": 2635
+      },
+      {
+       "kind": "field",
+       "name": "MiscFeeSubTypeDesc",
+       "required": false,
+       "tag": 2636
+      },
+      {
+       "kind": "field",
+       "name": "EncodedMiscFeeSubTypeDescLen",
+       "required": false,
+       "tag": 2637
+      },
+      {
+       "kind": "field",
+       "name": "EncodedMiscFeeSubTypeDesc",
+       "required": false,
+       "tag": 2638
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

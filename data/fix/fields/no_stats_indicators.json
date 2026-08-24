@@ -1,0 +1,14 @@
+{
+ "name": "NoStatsIndicators",
+ "tag": 1175,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of statistics indicator repeating group entries"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of statistics indicator repeating group entries"
+  }
+ }
+}

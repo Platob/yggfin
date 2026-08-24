@@ -1,0 +1,26 @@
+{
+ "name": "NoCollInquiryQualifier",
+ "tag": 938,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of CollInquiryQualifier <896> entries in a repeating group."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of CollInquiryQualifier <896> entries in a repeating group."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of CollInquiryQualifier <896> entries in a repeating group."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of CollInquiryQualifier <896> entries in a repeating group.",
+   "used_in": [
+    "Collateral Inquiry",
+    "Collateral Inquiry Ack"
+   ]
+  }
+ }
+}

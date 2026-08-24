@@ -125,7 +125,7 @@ def test_a_mass_quote_emits_every_quote_entry_side() -> None:
         "299=ENTRY-2|55=MSFT|132=200|133=201|134=20|135=21|"
         "60=20260821-10:00:00"
     )
-    assert [(row.code, row.side, row.order_id) for row in rows] == [
+    assert [(row.symbol, row.side, row.order_id) for row in rows] == [
         ("AAPL", Side.BID, "ENTRY-1"),
         ("AAPL", Side.ASK, "ENTRY-1"),
         ("MSFT", Side.BID, "ENTRY-2"),
@@ -138,7 +138,7 @@ def test_nested_mass_quote_sets_emit_every_entry_in_wire_order() -> None:
     registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
     rows = list(FixEvents.from_text(mass_quote(registry), registry=registry, fix_version="4.4"))
 
-    assert [(row.code, row.side, row.order_id, row.px, row.qty) for row in rows] == [
+    assert [(row.symbol, row.side, row.order_id, row.px, row.qty) for row in rows] == [
         ("AAPL", Side.BID, "ENTRY-1", 100.0, 10.0),
         ("AAPL", Side.ASK, "ENTRY-1", 101.0, 11.0),
         ("MSFT", Side.BID, "ENTRY-2", 200.0, 20.0),

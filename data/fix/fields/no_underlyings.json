@@ -1,0 +1,76 @@
+{
+ "name": "NoUnderlyings",
+ "tag": 711,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of underlying legs that make up the security."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of underlying legs that make up the security."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of underlying legs that make up the security."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of underlying legs that make up the security.",
+   "used_in": [
+    "IOI",
+    "Advertisement",
+    "Execution Report",
+    "Quote Status Request",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report Request",
+    "Trade Capture Report",
+    "Quote Request Reject",
+    "RFQ Request",
+    "Quote Status Report",
+    "Quote Response",
+    "Confirmation",
+    "Position Maintenance Request",
+    "Position Maintenance Report",
+    "Request For Positions",
+    "Request for Positions Ack",
+    "Position Report",
+    "Trade Capture Report Request Ack",
+    "Allocation Report",
+    "Assignment Report",
+    "Collateral Request",
+    "Collateral Assignment",
+    "Collateral Response",
+    "News",
+    "Collateral Report",
+    "Collateral Inquiry",
+    "Collateral Inquiry Ack",
+    "Security Definition Request",
+    "Email",
+    "Security Definition",
+    "New Order Single",
+    "Security Status Request",
+    "New Order List",
+    "Security Status",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Allocation Instruction",
+    "List Strike Price",
+    "Don't Know Trade",
+    "Quote Request",
+    "New Order Cross",
+    "Quote",
+    "Cross Order Cancel/Replace Request",
+    "Cross Order Cancel Request",
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Security List Request",
+    "Market Data - Incremental Refresh",
+    "Security List",
+    "Quote Cancel"
+   ]
+  }
+ }
+}

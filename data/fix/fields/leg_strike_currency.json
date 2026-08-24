@@ -1,0 +1,22 @@
+{
+ "name": "LegStrikeCurrency",
+ "tag": 942,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Currency",
+   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated"
+  },
+  "5.0.SP1": {
+   "type": "Currency",
+   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated"
+  },
+  "5.0": {
+   "type": "Currency",
+   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated"
+  },
+  "4.4": {
+   "type": "Currency",
+   "description": "Currency in which the strike price of an instrument leg of a multileg instrument ( LegStrikePrice <612> ) is denominated"
+  }
+ }
+}

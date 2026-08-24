@@ -1,0 +1,33 @@
+{
+ "name": "RegistDtls",
+ "tag": 509,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Set of Registration name and address details, possibly including phone, fax etc."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Set of Registration name and address details, possibly including phone, fax etc."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Set of Registration name and address details, possibly including phone, fax etc."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Set of Registration name and address details, possibly including phone, fax etc.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  },
+  "4.3": {
+   "name": "RegistDetls",
+   "type": "String",
+   "description": "Set of Registration name and address details, possibly including phone, fax etc.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  }
+ }
+}

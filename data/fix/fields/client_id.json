@@ -1,0 +1,79 @@
+{
+ "name": "ClientID",
+ "tag": 109,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.2 *** REPLACED FIELD - See Appendix 6-F: 3.Replaced Fields: ExecBroker (tag 76), BrokerOfCredit (tag 92), ClientID (tag 109), ClearingFirm (tag 439), ClearingAccount (tag 440), and SettlLocation (tag 166) [Replaced in FIX 4.3] *** Firm identifier used in third party-transactions (should not be a substitute for OnBehalfOfCompID <115> / DeliverToCompID <128> )."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.2 *** REPLACED FIELD - See Appendix 6-F: 3.Replaced Fields: ExecBroker (tag 76), BrokerOfCredit (tag 92), ClientID (tag 109), ClearingFirm (tag 439), ClearingAccount (tag 440), and SettlLocation (tag 166) [Replaced in FIX 4.3] *** Firm identifier used in third party-transactions (should not be a substitute for OnBehalfOfCompID <115> / DeliverToCompID <128> )."
+  },
+  "5.0": {
+   "type": "String",
+   "note": "replaced",
+   "description": "Deprecated in FIX 4.2 *** REPLACED FIELD - See Appendix 6-F: 3.Replaced Fields: ExecBroker (tag 76), BrokerOfCredit (tag 92), ClientID (tag 109), ClearingFirm (tag 439), ClearingAccount (tag 440), and SettlLocation (tag 166) [Replaced in FIX 4.3] *** Firm identifier used in third party-transactions (should not be a substitute for OnBehalfOfCompID <115> / DeliverToCompID <128> )."
+  },
+  "4.4": {
+   "type": "String",
+   "note": "replaced",
+   "description": "No longer used as of FIX 4.3. Included here for reference to prior versions. *** REPLACED FIELD - See Appendix 6-F: 3.Replaced Fields: ExecBroker (tag 76), BrokerOfCredit (tag 92), ClientID (tag 109), ClearingFirm (tag 439), ClearingAccount (tag 440), and SettlLocation (tag 166) [Replaced in FIX 4.3] *** Firm identifier used in third party-transactions (should not be a substitute for OnBehalfOfCompID <115> / DeliverToCompID <128> )."
+  },
+  "4.3": {
+   "name": "ClientID(replaced)",
+   "type": "String",
+   "note": "replaced",
+   "description": "No longer used as of FIX 4.3. Included here for reference to prior versions. *** REPLACED FIELD - See: Appendix 6-F: 3. Replaced Fields: ExecBroker, BrokerOfCredit, ClientID(tag 109), ClearingFirm, ClearingAccount, and SettlLocation [replaced in FIX 4.3] *** Firm identifier used in third party-transactions (should not be a substitute for OnBehalfOfCompID <115> / DeliverToCompID <128> )."
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Firm identifier used in third party-transactions (should not be a substitute for OnBehalfOfCompID <115> / DeliverToCompID <128> ).",
+   "used_in": [
+    "Execution Report",
+    "Order Cancel Reject",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Allocation",
+    "Allocation ACK",
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Firm identifier used in third party-transactions.",
+   "used_in": [
+    "Execution Report",
+    "Order Cancel Reject",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Allocation",
+    "Allocation ACK",
+    "Settlement Instructions"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Firm identifier used in third party-transactions.",
+   "used_in": [
+    "Execution Report",
+    "Order Cancel Reject",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Allocation",
+    "Allocation ACK"
+   ]
+  }
+ }
+}

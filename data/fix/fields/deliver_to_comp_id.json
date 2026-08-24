@@ -1,0 +1,42 @@
+{
+ "name": "DeliverToCompID",
+ "tag": 128,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field."
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field."
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field."
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field."
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID <56> field and the ultimate receiver firm ID in this field."
+  },
+  "FIXT1.1": {
+   "type": "String",
+   "description": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID (56) field and the ultimate receiver firm ID in this field."
+  }
+ }
+}

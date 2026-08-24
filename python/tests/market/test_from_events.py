@@ -33,7 +33,6 @@ def initial[EventT: MarketEvent](event: EventT, instrument: Instrument = BTC) ->
 def order(unix: int, side: Side, px: float, qty: float, named: str, **given: object) -> Order:
     declared = {
         "unix": unix,
-        "code": "BTC-USD",
         "side": side,
         "px": px,
         "qty": qty,
@@ -47,7 +46,6 @@ def order(unix: int, side: Side, px: float, qty: float, named: str, **given: obj
 def trade(unix: int, px: float, qty: float, **given: object) -> Execution:
     declared = {
         "unix": unix,
-        "code": "BTC-USD",
         "px": px,
         "qty": qty,
         "state": State.FILLED,

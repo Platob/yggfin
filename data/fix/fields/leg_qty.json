@@ -1,0 +1,34 @@
+{
+ "name": "LegQty",
+ "tag": 687,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Deprecated in FIX 5.0 SP1 See Appendix 6-E: 7.Deprecated LegQty (tag 687) from certain message types [deprecated in FIX 5.0] and Appendix 6-E: 17.Deprecated LegQty (tag 687) from the specification [deprecated in FIX 5.0 SP1] Quantity of this leg, e.g. in Quote dialog. See Quantity <53> for description and"
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Deprecated in FIX 5.0 SP1 See Appendix 6-E: 7.Deprecated LegQty (tag 687) from certain message types [deprecated in FIX 5.0] and Appendix 6-E: 17.Deprecated LegQty (tag 687) from the specification [deprecated in FIX 5.0 SP1] Quantity of this leg, e.g. in Quote dialog. See Quantity <53> for description and"
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Quantity of this leg, e.g. in Quote dialog. See Quantity <53> for description and"
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Quantity of this leg, e.g. in Quote dialog. See Quantity <53> for description and",
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Quote Request Reject",
+    "Quote Status Report",
+    "Quote Response",
+    "Trade Capture Report Ack",
+    "Quote Request",
+    "Quote"
+   ]
+  }
+ }
+}

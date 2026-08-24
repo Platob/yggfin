@@ -1,0 +1,65 @@
+{
+ "name": "ProtectionTermEventGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 404,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoProtectionTermEvents",
+     "required": false,
+     "tag": 40191,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ProtectionTermEventType",
+       "required": false,
+       "tag": 40192
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermEventValue",
+       "required": false,
+       "tag": 40193
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermEventCurrency",
+       "required": false,
+       "tag": 40194
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermEventPeriod",
+       "required": false,
+       "tag": 40195
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermEventUnit",
+       "required": false,
+       "tag": 40196
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermEventDayType",
+       "required": false,
+       "tag": 40197
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermEventRateSource",
+       "required": false,
+       "tag": 40198
+      },
+      {
+       "kind": "component",
+       "name": "ProtectionTermEventQualifierGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

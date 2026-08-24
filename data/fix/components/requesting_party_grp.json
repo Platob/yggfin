@@ -1,0 +1,47 @@
+{
+ "name": "RequestingPartyGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 330,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRequestingPartyIDs",
+     "required": false,
+     "tag": 1657,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RequestingPartyID",
+       "required": false,
+       "tag": 1658
+      },
+      {
+       "kind": "field",
+       "name": "RequestingPartyIDSource",
+       "required": false,
+       "tag": 1659
+      },
+      {
+       "kind": "field",
+       "name": "RequestingPartyRole",
+       "required": false,
+       "tag": 1660
+      },
+      {
+       "kind": "field",
+       "name": "RequestingPartyRoleQualifier",
+       "required": false,
+       "tag": 2338
+      },
+      {
+       "kind": "component",
+       "name": "RequestingPartySubGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

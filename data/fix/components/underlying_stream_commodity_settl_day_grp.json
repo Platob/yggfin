@@ -1,0 +1,35 @@
+{
+ "name": "UnderlyingStreamCommoditySettlDayGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 603,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingStreamCommoditySettlDays",
+     "required": false,
+     "tag": 41996,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlDay",
+       "required": false,
+       "tag": 41997
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlTotalHours",
+       "required": false,
+       "tag": 41998
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingStreamCommoditySettlTimeGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -79,6 +79,17 @@ _BEGIN = re.compile(rf"(?:^|(?<=[^\d]))8=FIXT?{_NOT_SEPARATOR}*", re.ASCII)
 #: into the name and the entry index.
 _NAME = r"[A-Za-z][A-Za-z0-9_.\-]*"
 
+#: What a bridge writes between brackets, beside a group's entry index: the
+#: name of a member of the struct in front of it. `INSTRUMENT[EXCHANGE]=XPAR`
+#: and `INSTRUMENT.EXCHANGE=XPAR` are the same field written two ways, and a
+#: parser that read only the digits saw the second and not the first -- which
+#: cost the whole *line*, because a line whose keys do not tokenise is not a
+#: bridge message and every other field on it went with them.
+_SELECTOR = r"[A-Za-z][A-Za-z0-9_.\-]*"
+
+#: One bracketed part of a rendered key: an entry index, or a member name.
+_BRACKET = rf"\[(?:\d+|{_SELECTOR})\]"
+
 #: Whitespace, spelled out. Python's ASCII `\s` holds `\x0b` and RE2's does
 #: not, so a `\s` in a pattern that exists in both engines is a divergence
 #: waiting for a vertical tab; one explicit class reads the same everywhere.
@@ -91,7 +102,12 @@ _STRIPPED = " \t\r\n\f\x0b"
 
 #: One `#NAME=` token, which is how a UL bridge marks a field: the `#` says
 #: "a key starts here", which is the only thing in a rendered line that does.
-_BRIDGE_TOKEN = rf"#{_NAME}(?:\[\d+\])?{_WS}*="
+#:
+#: The bracket and the dotted member are both admitted, because both are how a
+#: real line spells a group member -- `#NoPartyIDs[0].PartyID=` is what this
+#: parser's own canonical key looks like, and a rule that would not recognise
+#: it called such a line no message at all and lost every field on it.
+_BRIDGE_TOKEN = rf"#{_NAME}(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 
 #: What makes a line a **bridge message**: two or more of those tokens.
 #: Public for the same reason `BEGIN_STRING` is -- it is the UL classification
@@ -143,7 +159,7 @@ NAMED_SEPARATOR_VECTOR = (
     rf"(?:8|[Bb][Ee][Gg][Ii][Nn][Ss][Tt][Rr][Ii][Nn][Gg]){_WS}*="
     rf"[Ff][Ii][Xx][Tt]?{_NOT_SEPARATOR}*(?P<sep>\^A|.)"
 )
-_BRIDGE_PAIR_TOKEN = rf"#(?:\d+|{_NAME})(?:\[\d+\])?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
+_BRIDGE_PAIR_TOKEN = rf"#(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_PAIR_TOKEN}.*?(?P<sep>\^A|.){_BRIDGE_PAIR_TOKEN}"
 
 #: One token of a message, in every spelling the logs use. Five shapes come
@@ -168,7 +184,7 @@ BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_PAIR_TOKEN}.*?(?P<sep>\^A|.){_BRIDGE_P
 #: that happens to be spelled with digits, and tag mode has to be able to tell.
 _TOKEN = re.compile(
     rf"^{_WS}*(?P<marker>#)?(?P<key>\d+|{_NAME})"
-    rf"(?:\[(?P<index>\d+)\])?"
+    rf"(?:\[(?:(?P<index>\d+)|(?P<select>{_SELECTOR}))\])?"
     rf"(?:\.(?P<member>[A-Za-z0-9_.\-]+))?"
     rf"{_WS}*=(?P<rest>.*)$",
     re.DOTALL | re.ASCII,
@@ -183,12 +199,12 @@ _MEMBER = re.compile(rf"^{_WS}*(?P<member>\d+|{_NAME}){_WS}*=(?P<value>.*)$", re
 #: `key=value` noise around a wire message. Named mode admits the rendered
 #: spellings above, because there the line *is* the pairs.
 _PAIR_TOKEN = rf"^{_WS}*\d+{_WS}*="
-_PAIR_TOKEN_NAMED = rf"^{_WS}*#?(?:\d+|{_NAME})(?:\[\d+\])?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
+_PAIR_TOKEN_NAMED = rf"^{_WS}*#?(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 
 #: `_TOKEN` and `_MEMBER` for RE2, which has no DOTALL flag argument.
 _TOKEN_VECTOR = (
     rf"(?s)^{_WS}*#?(?P<key>\d+|{_NAME})"
-    rf"(?:\[(?P<index>\d+)\])?"
+    rf"(?:\[(?:(?P<index>\d+)|(?P<select>{_SELECTOR}))\])?"
     rf"(?:\.(?P<member>[A-Za-z0-9_.\-]+))?"
     rf"{_WS}*=(?P<rest>.*)$"
 )
@@ -219,7 +235,7 @@ _MEMBER_NAME = re.compile(_MEMBER_NAME_VECTOR, re.ASCII)
 #: fold below rather than in a flag: `IGNORECASE` on an ASCII class buys
 #: nothing and costs a pass.
 _RENDERED_KEY = re.compile(
-    rf"^{_WS}*(?P<lead>(?:[A-Za-z0-9_\- ]+(?:\[\d+\])?\.)*)"
+    rf"^{_WS}*(?P<lead>(?:[A-Za-z0-9_\- ]+(?:{_BRACKET})?\.)*)"
     rf"(?P<name>[A-Za-z0-9_\- ]+)(?P<index>\[\d+\])?{_WS}*$",
     re.ASCII,
 )
@@ -487,6 +503,92 @@ class FixMessage(Convertible):
 # -- whole columns -----------------------------------------------------------
 
 
+def message_bodies(column: Any, named: bool) -> tuple[Any, Any]:
+    """A column of log lines cut down to the messages inside them.
+
+    `(bodies, wire)`: what each line carries, and whether it was found by its
+    BeginString. The scalar rule in one kernel -- a line with a message inside
+    it starts at its `8=FIX`, so the log's own prefix never glues onto the
+    first tag. RE2 has no lookbehind, so the non-digit guard rides outside the
+    capture, and `(?s)`, or a message holding a newline would end at it here
+    where the scalar slice keeps it.
+
+    Shared, rather than repeated, because anything reading a line's tokens has
+    to start where the parser starts: a reading that began one character
+    earlier would count `toBridge #ISINCODE` as a key.
+    """
+    compute = pyarrow.compute
+    values = column.cast(pyarrow.string(), safe=False)
+    starts = compute.starts_with(values, "8=FIX")
+    if compute.all(starts, min_count=0).as_py():
+        wire = compute.fill_null(starts, False)
+    else:
+        begun = compute.struct_field(compute.extract_regex(values, _BEGIN_VECTOR), "msg")
+        wire = compute.is_valid(begun)
+        values = compute.if_else(wire, begun, values)
+    if named:
+        # The other kind of message start, and **only** where there was no
+        # first one: a line carrying a wire header and a bridge body starts at
+        # the header, or the tags that say what it is are cut off with the
+        # log's prefix. The scalar parser applies the same guard, so the two
+        # agree by construction.
+        bridged = compute.struct_field(compute.extract_regex(values, _BRIDGE_VECTOR), "msg")
+        values = compute.if_else(
+            compute.and_(compute.invert(wire), compute.is_valid(bridged)), bridged, values
+        )
+    return values, wire
+
+
+#: One token's marker and key, for counting what a capture spells rather than
+#: parsing it. The same token rule `_TOKEN_VECTOR` reads, with the `#` kept:
+#: only a parse may shed it, and what a bridge writes `#Foo` and what it
+#: writes `Foo` are two different things to count.
+_MARKED_KEY_VECTOR = (
+    rf"(?s)^{_WS}*(?P<marker>#?)(?P<key>\d+|{_NAME})"
+    rf"(?:\[(?:\d+|(?P<select>{_SELECTOR}))\])?"
+    rf"(?:\.(?P<member>[A-Za-z0-9_.\-]+))?"
+    rf"{_WS}*="
+)
+
+
+def rendered_keys(
+    column: Any, separator: str | None = None, *, named: bool | None = None
+) -> tuple[Any, Any]:
+    """`(marker, key)` for every token of every line, flattened, in kernels.
+
+    What a capture *spells*, which a parse deliberately does not keep: named
+    mode sheds the `#`, and the two namespaces a bridge writes -- `#Side`
+    before enrichment and `Side` after -- are then indistinguishable. A tool
+    counting key names needs both, and needs them to be the parser's own
+    notion of a token rather than a second one.
+
+    A group index is dropped from the key, because `NOPARTYIDS[0]` and
+    `NOPARTYIDS[1]` are one name written twice.
+    """
+    compute = pyarrow.compute
+    if isinstance(column, pyarrow.ChunkedArray):
+        column = column.combine_chunks()
+    if separator is None or named is None:
+        sampled = _column_style(column, named)
+        separator = sampled[0] if separator is None else separator
+        named = sampled[1] if named is None else named
+    values, _ = message_bodies(column, named)
+    flat = compute.split_pattern(values, separator).values
+    parsed = compute.extract_regex(flat, _MARKED_KEY_VECTOR)
+    keys = compute.struct_field(parsed, "key")
+    member = compute.struct_field(parsed, "member")
+    keys = compute.if_else(
+        compute.fill_null(compute.greater(compute.binary_length(member), 0), False),
+        compute.binary_join_element_wise(keys, compute.fill_null(member, ""), "."),
+        keys,
+    )
+    valid = compute.is_valid(keys)
+    return (
+        compute.filter(compute.struct_field(parsed, "marker"), valid),
+        compute.filter(keys, valid),
+    )
+
+
 def parse_arrow_array(
     column: Any,
     separator: str | None = None,
@@ -517,29 +619,7 @@ def parse_arrow_array(
         # has nothing to infer from.
         return pyarrow.chunked_array(parsed, type=pyarrow.map_(pyarrow.string(), pyarrow.string()))
     compute = pyarrow.compute
-    values = column.cast(pyarrow.string(), safe=False)
-    # The scalar rule, in one kernel: a line with a message inside it starts
-    # at its `8=FIX`, so the log's own prefix never glues onto the first tag.
-    # RE2 has no lookbehind, so the non-digit guard rides outside the capture
-    # -- and `(?s)`, or a message holding a newline would end at it here
-    # where the scalar slice keeps it.
-    starts = compute.starts_with(values, "8=FIX")
-    if compute.all(starts, min_count=0).as_py():
-        wire = compute.fill_null(starts, False)
-    else:
-        begun = compute.struct_field(compute.extract_regex(values, _BEGIN_VECTOR), "msg")
-        wire = compute.is_valid(begun)
-        values = compute.if_else(wire, begun, values)
-    if named:
-        # The other kind of message start, and **only** where there was no
-        # first one: a line carrying a wire header and a bridge body starts at
-        # the header, or the tags that say what it is are cut off with the
-        # log's prefix. The scalar parser applies the same guard, so the two
-        # agree by construction.
-        bridged = compute.struct_field(compute.extract_regex(values, _BRIDGE_VECTOR), "msg")
-        values = compute.if_else(
-            compute.and_(compute.invert(wire), compute.is_valid(bridged)), bridged, values
-        )
+    values, wire = message_bodies(column, named)
     canonical = False
     wire_pattern = _canonical_wire_pattern(separator) if not named else None
     if wire_pattern is not None:
@@ -622,8 +702,17 @@ def _named_pairs(token: Any, entry_separator: str | None = None) -> tuple[Any, A
     # real index or member can be empty, so emptiness is the test throughout.
     key = compute.struct_field(token, "key")
     index = compute.fill_null(compute.struct_field(token, "index"), "")
+    select = compute.fill_null(compute.struct_field(token, "select"), "")
     member = compute.fill_null(compute.struct_field(token, "member"), "")
     value = compute.fill_null(compute.struct_field(token, "rest"), "")
+    # `INSTRUMENT[EXCHANGE]` selects a member by name where `[0]` selects an
+    # entry by position, so it joins the key as the dotted path it is another
+    # spelling of -- before anything below reads the key.
+    key = compute.if_else(
+        compute.not_equal(select, empty),
+        compute.binary_join_element_wise(key, select, "."),
+        key,
+    )
     indexed = compute.not_equal(index, empty)
     # Only an indexed token with no canonical `.member` can hide an inner
     # `member=`, so the second regex runs over that subset alone and its
@@ -1052,11 +1141,22 @@ def _parse_token(token: str, named: bool) -> tuple[str, str] | None:
     match = _TOKEN.match(token)
     if match is None:
         return None
-    marker, key, index, member, rest = match.group("marker", "key", "index", "member", "rest")
+    marker, key, index, select, member, rest = match.group(
+        "marker", "key", "index", "select", "member", "rest"
+    )
     if not named and (
-        marker is not None or index is not None or member is not None or not key.isdigit()
+        marker is not None
+        or index is not None
+        or select is not None
+        or member is not None
+        or not key.isdigit()
     ):
         return None
+    if select is not None:
+        # `INSTRUMENT[EXCHANGE]` selects a member by name where `[0]` selects
+        # an entry by position, so it reads as the dotted path it is another
+        # spelling of. One canonical key, whichever way the bridge wrote it.
+        key = f"{key}.{select}"
     if index is None:
         # Only a digit key can capture a member without an index (`54.5=x`;
         # a name eats its dots greedily): the dot was part of the key, so it

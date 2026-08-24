@@ -1,0 +1,36 @@
+{
+ "name": "LegPaymentScheduleRateSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 382,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegPaymentScheduleRateSources",
+     "required": false,
+     "tag": 40414,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegPaymentScheduleRateSource",
+       "required": false,
+       "tag": 40415
+      },
+      {
+       "kind": "field",
+       "name": "LegPaymentScheduleRateSourceType",
+       "required": false,
+       "tag": 40416
+      },
+      {
+       "kind": "field",
+       "name": "LegPaymentScheduleReferencePage",
+       "required": false,
+       "tag": 40417
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

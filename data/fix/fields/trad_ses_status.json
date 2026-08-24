@@ -1,0 +1,152 @@
+{
+ "name": "TradSesStatus",
+ "tag": 340,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "State of the trading session.",
+   "values": {
+    "0": "Unknown",
+    "1": "Halted",
+    "2": "Open",
+    "3": "Closed",
+    "4": "Pre-Open",
+    "5": "Pre-Close",
+    "6": "Request Rejected"
+   },
+   "value_names": {
+    "0": "UNKNOWN",
+    "1": "HALTED",
+    "2": "OPEN",
+    "3": "CLOSED",
+    "4": "PRE_OPEN",
+    "5": "PRE_CLOSE",
+    "6": "REQUEST_REJECTED"
+   },
+   "used_in": [
+    "TradingSessionStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "State of the trading session.",
+   "values": {
+    "0": "Unknown",
+    "1": "Halted",
+    "2": "Open",
+    "3": "Closed",
+    "4": "Pre-Open",
+    "5": "Pre-Close",
+    "6": "Request Rejected"
+   },
+   "value_names": {
+    "0": "UNKNOWN",
+    "1": "HALTED",
+    "2": "OPEN",
+    "3": "CLOSED",
+    "4": "PRE_OPEN",
+    "5": "PRE_CLOSE",
+    "6": "REQUEST_REJECTED"
+   },
+   "used_in": [
+    "TradingSessionStatus"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "State of the trading session.",
+   "values": {
+    "0": "Unknown",
+    "1": "Halted",
+    "2": "Open",
+    "3": "Closed",
+    "4": "Pre-Open",
+    "5": "Pre-Close",
+    "6": "Request Rejected"
+   },
+   "value_names": {
+    "0": "UNKNOWN",
+    "1": "HALTED",
+    "2": "OPEN",
+    "3": "CLOSED",
+    "4": "PRE_OPEN",
+    "5": "PRE_CLOSE",
+    "6": "REQUEST_REJECTED"
+   },
+   "used_in": [
+    "TradingSessionStatus"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "State of the trading session.",
+   "values": {
+    "0": "Unknown",
+    "1": "Halted",
+    "2": "Open",
+    "3": "Closed",
+    "4": "Pre-Open",
+    "5": "Pre-Close",
+    "6": "Request Rejected"
+   },
+   "value_names": {
+    "0": "UNKNOWN",
+    "1": "HALTED",
+    "2": "OPEN",
+    "3": "CLOSED",
+    "4": "PRE_OPEN",
+    "5": "PRE_CLOSE",
+    "6": "REQUEST_REJECTED"
+   },
+   "used_in": [
+    "Trading Session Status"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "State of the trading session.",
+   "values": {
+    "0": "Unknown",
+    "1": "Halted",
+    "2": "Open",
+    "3": "Closed",
+    "4": "Pre-Open",
+    "5": "Pre-Close",
+    "6": "Request Rejected"
+   },
+   "value_names": {
+    "5": "PRE_CLOSE",
+    "6": "REQUEST_REJECTED",
+    "4": "PRE_OPEN",
+    "3": "CLOSED",
+    "2": "OPEN",
+    "1": "HALTED",
+    "0": "UNKNOWN"
+   },
+   "used_in": [
+    "Trading Session Status"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "State of the trading session.",
+   "values": {
+    "1": "Halted",
+    "2": "Open",
+    "3": "Closed",
+    "4": "Pre-Open",
+    "5": "Pre-Close"
+   },
+   "value_names": {
+    "1": "HALTED",
+    "2": "OPEN",
+    "3": "CLOSED",
+    "4": "PRE_OPEN",
+    "5": "PRE_CLOSE"
+   },
+   "used_in": [
+    "Trading Session Status"
+   ]
+  }
+ }
+}

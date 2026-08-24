@@ -1,0 +1,103 @@
+{
+ "name": "OptAttribute",
+ "tag": 206,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Provided to support versioning of option contracts as a result of corporate actions or events. Use of this field is defined by counterparty agreement or market conventions."
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Provided to support versioning of option contracts as a result of corporate actions or events. Use of this field is defined by counterparty agreement or market conventions."
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Can be used for SecurityType <167> =\"OPT\" to identify a particular security.",
+   "values": {
+    "L": "Long (a.k.a. \"American\")",
+    "S": "Short (a.k.a. \"European\")",
+    "0-9": "single digit \"version\" number assigned by exchange following capital adjustments (0=current, 1=prior, 2=prior to 1, etc)."
+   }
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Can be used for SecurityType <167> =OPT to identify a particular security.",
+   "values": {
+    "L": "Long (a.k.a. \"American\")",
+    "S": "Short (a.k.a. \"European\")",
+    "0-9": "single digit \"version\" number assigned by exchange following capital adjustments (0=current, 1=prior, 2=prior to 1, etc)."
+   }
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Can be used for SecurityType <167> =OPT to identify a particular security.",
+   "values": {
+    "L": "Long (a.k.a. \"American\")",
+    "S": "Short (a.k.a. \"European\")",
+    "0-9": "single digit \"version\" number assigned by exchange following capital adjustments (0=current, 1=prior, 2=prior to 1, etc)."
+   }
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Can be used for SecurityType <167> =OPT to identify a particular security.",
+   "values": {
+    "L": "Long (a.k.a. 'American')",
+    "S": "Short (a.k.a. 'European')",
+    "0-9": "single digit 'version' number assigned by exchange following capital adjustments (0=current, 1=prior, 2=prior to 1, etc)."
+   },
+   "used_in": [
+    "Indication of Interest",
+    "Advertisement",
+    "Execution Report",
+    "Quote Status Request",
+    "Quote Acknowledgement",
+    "News",
+    "Security Definition Request",
+    "Email",
+    "Security Definition",
+    "New Order - Single",
+    "Security Status Request",
+    "New Order - List",
+    "Security Status",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Mass Quote",
+    "Allocation",
+    "List Strike Price",
+    "Don't Know Trade",
+    "Quote Request",
+    "Quote",
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh",
+    "Quote Cancel"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Can be used for SecurityType <167> =OPT to identify a particular security.",
+   "values": {
+    "L": "Long (a.k.a. 'American')",
+    "S": "Short (a.k.a. 'European')",
+    "0-9": "single digit 'version' number assigned by exchange following capital adjustments (0=current, 1=prior, 2=prior to 1, etc)."
+   },
+   "used_in": [
+    "Indication of Interest",
+    "Advertisement",
+    "Execution Report",
+    "News",
+    "Email",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Allocation",
+    "Don't Know Trade",
+    "Quote Request",
+    "Quote"
+   ]
+  }
+ }
+}

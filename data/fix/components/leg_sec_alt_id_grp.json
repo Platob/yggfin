@@ -1,0 +1,111 @@
+{
+ "name": "LegSecAltIDGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 243,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegSecurityAltID",
+     "required": false,
+     "tag": 604,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegSecurityAltID",
+       "required": false,
+       "tag": 605
+      },
+      {
+       "kind": "field",
+       "name": "LegSecurityAltIDSource",
+       "required": false,
+       "tag": 606
+      },
+      {
+       "kind": "field",
+       "name": "LegSymbolPositionNumber",
+       "required": false,
+       "tag": 2958
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 92,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegSecurityAltID",
+     "required": false,
+     "tag": 604,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegSecurityAltID",
+       "required": false,
+       "tag": 605
+      },
+      {
+       "kind": "field",
+       "name": "LegSecurityAltIDSource",
+       "required": false,
+       "tag": 606
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 94,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegSecurityAltID",
+     "required": false,
+     "tag": 604,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegSecurityAltID",
+       "required": false,
+       "tag": 605
+      },
+      {
+       "kind": "field",
+       "name": "LegSecurityAltIDSource",
+       "required": false,
+       "tag": 606
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 94,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegSecurityAltID",
+     "required": false,
+     "tag": 604,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegSecurityAltID",
+       "required": false,
+       "tag": 605
+      },
+      {
+       "kind": "field",
+       "name": "LegSecurityAltIDSource",
+       "required": false,
+       "tag": 606
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

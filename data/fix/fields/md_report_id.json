@@ -1,0 +1,27 @@
+{
+ "name": "MDReportID",
+ "tag": 963,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Unique identifier for the Market Data Report.",
+   "used_in": [
+    "MarketDataSnapshotFullRefresh"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Unique identifier for the Market Data Report.",
+   "used_in": [
+    "MarketDataSnapshotFullRefresh"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Unique identifier for the Market Data Report.",
+   "used_in": [
+    "MarketDataSnapshotFullRefresh"
+   ]
+  }
+ }
+}

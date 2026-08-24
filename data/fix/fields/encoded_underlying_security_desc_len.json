@@ -1,0 +1,36 @@
+{
+ "name": "EncodedUnderlyingSecurityDescLen",
+ "tag": 364,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedUnderlyingSecurityDesc <365> field."
+  },
+  "5.0.SP1": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedUnderlyingSecurityDesc <365> field."
+  },
+  "5.0": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedUnderlyingSecurityDesc <365> field."
+  },
+  "4.4": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedUnderlyingSecurityDesc <365> field."
+  },
+  "4.3": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedUnderlyingSecurityDesc <365> field."
+  },
+  "4.2": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedUnderlyingSecurityDesc <365> field.",
+   "used_in": [
+    "Quote Acknowledgement",
+    "Security Definition Request",
+    "Security Definition",
+    "Mass Quote"
+   ]
+  }
+ }
+}

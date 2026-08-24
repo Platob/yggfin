@@ -1,0 +1,145 @@
+{
+ "name": "MassStatusReqType",
+ "tag": 585,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Mass Status Request <AF> Type",
+   "values": {
+    "1": "Status for orders for a security",
+    "2": "Status for orders for an Underlying security",
+    "3": "Status for orders for a Product <460>",
+    "4": "Status for orders for a CFICode <461>",
+    "5": "Status for orders for a SecurityType <167>",
+    "6": "Status for orders for a trading session",
+    "7": "Status for all orders",
+    "8": "Status for orders for a PartyID <448>",
+    "9": "Status for Security Issuer",
+    "10": "Status for Issuer of Underlying Security"
+   },
+   "value_names": {
+    "1": "STATUS_FOR_ORDERS_FOR_A_SECURITY",
+    "2": "STATUS_FOR_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "STATUS_FOR_ORDERS_FOR_A_PRODUCT",
+    "4": "STATUS_FOR_ORDERS_FOR_ACFI_CODE",
+    "5": "STATUS_FOR_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "STATUS_FOR_ORDERS_FOR_A_TRADING_SESSION",
+    "7": "STATUS_FOR_ALL_ORDERS",
+    "8": "STATUS_FOR_ORDERS_FOR_A_PARTY_ID",
+    "9": "STATUS_FOR_SECURITY_ISSUER",
+    "10": "STATUS_FOR_ISSUER_OF_UNDERLYING_SECURITY"
+   },
+   "used_in": [
+    "OrderMassStatusRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Mass Status Request <AF> Type",
+   "values": {
+    "1": "Status for orders for a security",
+    "2": "Status for orders for an Underlying security",
+    "3": "Status for orders for a Product <460>",
+    "4": "Status for orders for a CFICode <461>",
+    "5": "Status for orders for a SecurityType <167>",
+    "6": "Status for orders for a trading session",
+    "7": "Status for all orders",
+    "8": "Status for orders for a PartyID <448>"
+   },
+   "value_names": {
+    "1": "STATUS_FOR_ORDERS_FOR_A_SECURITY",
+    "2": "STATUS_FOR_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "STATUS_FOR_ORDERS_FOR_A_PRODUCT",
+    "4": "STATUS_FOR_ORDERS_FOR_ACFI_CODE",
+    "5": "STATUS_FOR_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "STATUS_FOR_ORDERS_FOR_A_TRADING_SESSION",
+    "7": "STATUS_FOR_ALL_ORDERS",
+    "8": "STATUS_FOR_ORDERS_FOR_A_PARTY_ID"
+   },
+   "used_in": [
+    "OrderMassStatusRequest"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Mass Status Request <AF> Type",
+   "values": {
+    "1": "Status for orders for a security",
+    "2": "Status for orders for an Underlying security",
+    "3": "Status for orders for a Product <460>",
+    "4": "Status for orders for a CFICode <461>",
+    "5": "Status for orders for a SecurityType <167>",
+    "6": "Status for orders for a trading session",
+    "7": "Status for all orders",
+    "8": "Status for orders for a PartyID <448>"
+   },
+   "value_names": {
+    "1": "STATUS_FOR_ORDERS_FOR_A_SECURITY",
+    "2": "STATUS_FOR_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "STATUS_FOR_ORDERS_FOR_A_PRODUCT",
+    "4": "STATUS_FOR_ORDERS_FOR_ACFI_CODE",
+    "5": "STATUS_FOR_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "STATUS_FOR_ORDERS_FOR_A_TRADING_SESSION",
+    "7": "STATUS_FOR_ALL_ORDERS",
+    "8": "STATUS_FOR_ORDERS_FOR_A_PARTY_ID"
+   },
+   "used_in": [
+    "OrderMassStatusRequest"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Mass Status Request <AF> Type",
+   "values": {
+    "1": "Status for orders for a security",
+    "2": "Status for orders for an Underlying security",
+    "3": "Status for orders for a Product <460>",
+    "4": "Status for orders for a CFICode <461>",
+    "5": "Status for orders for a SecurityType <167>",
+    "6": "Status for orders for a trading session",
+    "7": "Status for all orders",
+    "8": "Status for orders for a PartyID <448>"
+   },
+   "value_names": {
+    "1": "STATUS_FOR_ORDERS_FOR_A_SECURITY",
+    "2": "STATUS_FOR_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "STATUS_FOR_ORDERS_FOR_A_PRODUCT",
+    "4": "STATUS_FOR_ORDERS_FOR_ACFI_CODE",
+    "5": "STATUS_FOR_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "STATUS_FOR_ORDERS_FOR_A_TRADING_SESSION",
+    "7": "STATUS_FOR_ALL_ORDERS",
+    "8": "STATUS_FOR_ORDERS_FOR_A_PARTY_ID"
+   },
+   "used_in": [
+    "Order Mass Status Request"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Mass Status Request Type",
+   "values": {
+    "1": "Status for orders for a security",
+    "2": "Status for orders for an Underlying security",
+    "3": "Status for orders for a Product <460>",
+    "4": "Status for orders for a CFICode <461>",
+    "5": "Status for orders for a SecurityType <167>",
+    "6": "Status for orders for a trading session",
+    "7": "Status for all orders",
+    "8": "Status for orders for a PartyID <448>"
+   },
+   "value_names": {
+    "1": "STATUS_FOR_ORDERS_FOR_A_SECURITY",
+    "2": "STATUS_FOR_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "STATUS_FOR_ORDERS_FOR_A_PRODUCT",
+    "4": "STATUS_FOR_ORDERS_FOR_ACFI_CODE",
+    "5": "STATUS_FOR_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "STATUS_FOR_ORDERS_FOR_A_TRADING_SESSION",
+    "8": "STATUS_FOR_ORDERS_FOR_A_PARTY_ID",
+    "7": "STATUS_FOR_ALL_ORDERS"
+   },
+   "used_in": [
+    "Order Mass Status Request"
+   ]
+  }
+ }
+}

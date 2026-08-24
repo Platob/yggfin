@@ -1,0 +1,40 @@
+{
+ "name": "PosMaintRptRefID",
+ "tag": 714,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Reference to a PosMaintRptID <721> from a previous Position Maintenance Report <AM> that is being replaced or canceled.",
+   "used_in": [
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport",
+    "AdjustedPositionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Reference to a PosMaintRptID <721> from a previous Position Maintenance Report <AM> that is being replaced or canceled.",
+   "used_in": [
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport",
+    "AdjustedPositionReport"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Reference to a PosMaintRptID <721> from a previous Position Maintenance Report <AM> that is being replaced or canceled.",
+   "used_in": [
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport",
+    "AdjustedPositionReport"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Reference to a PosMaintRptID <721> from a previous Position Maintenance Report <AM> that is being replaced or canceled.",
+   "used_in": [
+    "Position Maintenance Request"
+   ]
+  }
+ }
+}

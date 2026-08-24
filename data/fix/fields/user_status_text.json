@@ -1,0 +1,34 @@
+{
+ "name": "UserStatusText",
+ "tag": 927,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "A text description associated with a user status.",
+   "used_in": [
+    "UserResponse"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "A text description associated with a user status.",
+   "used_in": [
+    "UserResponse"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "A text description associated with a user status.",
+   "used_in": [
+    "UserResponse"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "A text description associated with a user status.",
+   "used_in": [
+    "User Response"
+   ]
+  }
+ }
+}

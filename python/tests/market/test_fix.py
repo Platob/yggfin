@@ -39,19 +39,32 @@ def dictionary() -> dict[str, dict[str, Any]]:
     Newest matters and was got wrong once: FIX 4.0 typed `OrderQty` as `int`
     and `ExecID` as `int`, and both became `Qty` and `String` in 4.2. A lookup
     that took the oldest definition called every quantity column in this
-    package mistyped. Versions descend, and the transport dictionary
-    (`FIXT1.1`) is read last because it only carries session fields.
+    package mistyped. An entry stores its versions newest first, and the
+    transport (`FIXT1.1`) is read last because it only carries session fields.
 
-    Read straight out of the archive: a test that went through `FixRegistry`
-    would pass whenever the registry and the declaration were wrong together.
+    Read straight out of the archive's own documents: a test that went through
+    `FixRegistry` would pass whenever the registry and the declaration were
+    wrong together.
     """
     by_name: dict[str, dict[str, Any]] = {}
     with zipfile.ZipFile(DATA) as archive:
-        versions = [name for name in archive.namelist() if name != "versions.json"]
-        application = sorted((v for v in versions if not v.startswith("FIXT")), reverse=True)
-        for name in [*application, *sorted(v for v in versions if v.startswith("FIXT"))]:
-            for member in json.loads(archive.read(name).decode("utf-8"))["fields"]:
-                by_name.setdefault(member["name"], member)
+        entries = [
+            json.loads(archive.read(name).decode("utf-8"))
+            for name in sorted(archive.namelist())
+            if name.startswith("fields/")
+        ]
+    for transport in (False, True):
+        for entry in entries:
+            if "tag" not in entry:
+                continue  # A field FIX never numbered; nothing here declares one.
+            for version, variant in entry["versions"].items():
+                if version.startswith("FIXT") is not transport:
+                    continue
+                spelled = variant.get("name") or entry["name"]
+                metadata = {"fix:tag": str(variant.get("tag") or entry["tag"])}
+                if variant.get("type"):
+                    metadata["fix:type"] = variant["type"]
+                by_name.setdefault(spelled, {"name": spelled, "metadata": metadata})
     return by_name
 
 
@@ -169,7 +182,9 @@ def test_one_fix_field_is_spelled_the_same_wherever_it_appears() -> None:
         by_name.setdefault(member.fix["name"], set()).add((member.name, member.arrow_type))
     for name, spellings in by_name.items():
         if name == "Symbol":
-            assert spellings == {("code", pyarrow.string()), ("symbol", pyarrow.string())}
+            assert spellings == {("symbol", pyarrow.string())}, (
+                "one spelling now: a market event's symbol is a `codes` entry"
+            )
             continue
         if name == "Currency":
             assert spellings == {

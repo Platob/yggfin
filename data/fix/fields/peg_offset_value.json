@@ -1,0 +1,59 @@
+{
+ "name": "PegOffsetValue",
+ "tag": 211,
+ "versions": {
+  "5.0.SP2": {
+   "type": "float",
+   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )"
+  },
+  "5.0.SP1": {
+   "type": "float",
+   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )"
+  },
+  "5.0": {
+   "type": "float",
+   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )"
+  },
+  "4.4": {
+   "type": "float",
+   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )"
+  },
+  "4.3": {
+   "name": "PegDifference",
+   "type": "PriceOffset",
+   "description": "Amount (signed) added to the price of the peg for a pegged order.",
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.2": {
+   "name": "PegDifference",
+   "type": "PriceOffset",
+   "description": "Amount (signed) added to the price of the peg for a pegged order.",
+   "used_in": [
+    "Execution Report",
+    "New Order - List",
+    "New Order - Single",
+    "Order Cancel/Replace Request"
+   ]
+  },
+  "4.1": {
+   "name": "PegDifference",
+   "type": "float",
+   "description": "Price difference for a pegged order.",
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

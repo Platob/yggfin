@@ -1,0 +1,208 @@
+{
+ "name": "ProvisionGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 409,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoProvisions",
+     "required": false,
+     "tag": 40090,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ProvisionType",
+       "required": false,
+       "tag": 40091
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionDateUnadjusted",
+       "required": false,
+       "tag": 40092
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionDateBusinessDayConvention",
+       "required": false,
+       "tag": 40093
+      },
+      {
+       "kind": "component",
+       "name": "ProvisionDateBusinessCenterGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionDateAdjusted",
+       "required": false,
+       "tag": 40095
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionDateTenorPeriod",
+       "required": false,
+       "tag": 40096
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionDateTenorUnit",
+       "required": false,
+       "tag": 40097
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionBreakFeeElection",
+       "required": false,
+       "tag": 42707
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionBreakFeeRate",
+       "required": false,
+       "tag": 42708
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionCalculationAgent",
+       "required": false,
+       "tag": 40098
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionOptionSinglePartyBuyerSide",
+       "required": false,
+       "tag": 40099
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionOptionSinglePartySellerSide",
+       "required": false,
+       "tag": 40100
+      },
+      {
+       "kind": "component",
+       "name": "ProvisionCashSettlValueDates",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "ProvisionOptionExerciseDates",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "ProvisionOptionExpirationDate",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "ProvisionOptionRelevantUnderlyingDate",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionOptionExerciseStyle",
+       "required": false,
+       "tag": 40101
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionOptionExerciseMultipleNotional",
+       "required": false,
+       "tag": 40102
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionOptionExerciseMinimumNotional",
+       "required": false,
+       "tag": 40103
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionOptionExerciseMaximumNotional",
+       "required": false,
+       "tag": 40104
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionOptionMinimumNumber",
+       "required": false,
+       "tag": 40105
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionOptionMaximumNumber",
+       "required": false,
+       "tag": 40106
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionOptionExerciseConfirmation",
+       "required": false,
+       "tag": 40107
+      },
+      {
+       "kind": "component",
+       "name": "ProvisionCashSettlPaymentDates",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionCashSettlMethod",
+       "required": false,
+       "tag": 40108
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionCashSettlCurrency",
+       "required": false,
+       "tag": 40109
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionCashSettlCurrency2",
+       "required": false,
+       "tag": 40110
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionCashSettlQuoteType",
+       "required": false,
+       "tag": 40111
+      },
+      {
+       "kind": "component",
+       "name": "ProvisionCashSettlQuoteSource",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionText",
+       "required": false,
+       "tag": 40113
+      },
+      {
+       "kind": "field",
+       "name": "EncodedProvisionTextLen",
+       "required": false,
+       "tag": 40986
+      },
+      {
+       "kind": "field",
+       "name": "EncodedProvisionText",
+       "required": false,
+       "tag": 40987
+      },
+      {
+       "kind": "component",
+       "name": "ProvisionParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

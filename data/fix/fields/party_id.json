@@ -1,0 +1,26 @@
+{
+ "name": "PartyID",
+ "tag": 448,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block"
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block"
+  }
+ }
+}

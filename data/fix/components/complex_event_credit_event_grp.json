@@ -1,0 +1,65 @@
+{
+ "name": "ComplexEventCreditEventGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 483,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoComplexEventCreditEvents",
+     "required": false,
+     "tag": 40997,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ComplexEventCreditEventType",
+       "required": false,
+       "tag": 40998
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventCreditEventValue",
+       "required": false,
+       "tag": 40999
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventCreditEventCurrency",
+       "required": false,
+       "tag": 41000
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventCreditEventPeriod",
+       "required": false,
+       "tag": 41001
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventCreditEventUnit",
+       "required": false,
+       "tag": 41002
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventCreditEventDayType",
+       "required": false,
+       "tag": 41003
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventCreditEventRateSource",
+       "required": false,
+       "tag": 41004
+      },
+      {
+       "kind": "component",
+       "name": "ComplexEventCreditEventQualifierGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

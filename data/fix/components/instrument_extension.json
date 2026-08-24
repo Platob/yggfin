@@ -1,0 +1,120 @@
+{
+ "name": "InstrumentExtension",
+ "versions": {
+  "5.0.SP2": {
+   "order": 4,
+   "members": [
+    {
+     "kind": "field",
+     "name": "DeliveryForm",
+     "required": false,
+     "tag": 668
+    },
+    {
+     "kind": "field",
+     "name": "PctAtRisk",
+     "required": false,
+     "tag": 869
+    },
+    {
+     "kind": "component",
+     "name": "AttrbGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "CommodityFinalPriceType",
+     "required": false,
+     "tag": 2736
+    },
+    {
+     "kind": "component",
+     "name": "IndexRollMonthGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "NextIndexRollDate",
+     "required": false,
+     "tag": 2738
+    },
+    {
+     "kind": "component",
+     "name": "FloatingRateIndex",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "ReferenceDataDateGrp",
+     "required": false
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 4,
+   "members": [
+    {
+     "kind": "field",
+     "name": "DeliveryForm",
+     "required": false,
+     "tag": 668
+    },
+    {
+     "kind": "field",
+     "name": "PctAtRisk",
+     "required": false,
+     "tag": 869
+    },
+    {
+     "kind": "component",
+     "name": "AttrbGrp",
+     "required": false
+    }
+   ]
+  },
+  "5.0": {
+   "order": 4,
+   "members": [
+    {
+     "kind": "field",
+     "name": "DeliveryForm",
+     "required": false,
+     "tag": 668
+    },
+    {
+     "kind": "field",
+     "name": "PctAtRisk",
+     "required": false,
+     "tag": 869
+    },
+    {
+     "kind": "component",
+     "name": "AttrbGrp",
+     "required": false
+    }
+   ]
+  },
+  "4.4": {
+   "order": 4,
+   "members": [
+    {
+     "kind": "field",
+     "name": "DeliveryForm",
+     "required": false,
+     "tag": 668
+    },
+    {
+     "kind": "field",
+     "name": "PctAtRisk",
+     "required": false,
+     "tag": 869
+    },
+    {
+     "kind": "component",
+     "name": "AttrbGrp",
+     "required": false
+    }
+   ]
+  }
+ }
+}

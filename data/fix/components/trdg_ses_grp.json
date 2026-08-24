@@ -1,0 +1,105 @@
+{
+ "name": "TrdgSesGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 237,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTradingSessions",
+     "required": false,
+     "tag": 386,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 86,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTradingSessions",
+     "required": false,
+     "tag": 386,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 87,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTradingSessions",
+     "required": false,
+     "tag": 386,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 87,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTradingSessions",
+     "required": false,
+     "tag": 386,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

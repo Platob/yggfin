@@ -1,0 +1,36 @@
+{
+ "name": "OnBehalfOfSendingTime",
+ "tag": 370,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTimestamp",
+   "note": "no longer used",
+   "description": "Deprecated in FIX.4.3 See Appendix 6-F: 13.Removed Deprecated Field: OnBehalfOfSendingTime (tag 370) [Deprecated and Replaced in FIX 4.3, Removed in FIX 4.4] Used when a message is sent via a 'hub' or 'service bureau'. If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as 'GMT')"
+  },
+  "5.0.SP1": {
+   "type": "UTCTimestamp",
+   "note": "no longer used",
+   "description": "Deprecated in FIX.4.3 See Appendix 6-F: 13.Removed Deprecated Field: OnBehalfOfSendingTime (tag 370) [Deprecated and Replaced in FIX 4.3, Removed in FIX 4.4] Used when a message is sent via a 'hub' or 'service bureau'. If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as 'GMT')"
+  },
+  "5.0": {
+   "type": "UTCTimestamp",
+   "note": "no longer used",
+   "description": "Deprecated in FIX.4.3 See Appendix 6-F: 13.Removed Deprecated Field: OnBehalfOfSendingTime (tag 370) [Deprecated and Replaced in FIX 4.3, Removed in FIX 4.4] Used when a message is sent via a 'hub' or 'service bureau'. If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as 'GMT')"
+  },
+  "4.4": {
+   "type": "UTCTimestamp",
+   "note": "no longer used",
+   "description": "No longer used as of FIX.4.4. Included here for reference to prior versions. See Appendix 6-F: 13.Removed Deprecated Field: OnBehalfOfSendingTime (tag 370) [Deprecated and Replaced in FIX 4.3, Removed in FIX 4.4] Used when a message is sent via a \"hub\" or \"service bureau\". If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime <52> on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+  },
+  "4.3": {
+   "name": "OnBehalfOfSendingTime(Deprecated)",
+   "type": "UTCTimestamp",
+   "note": "Deprecated",
+   "description": "*** DEPRECATED FIELD - See Appendix 6-E: 4.Deprecated Field: OnBehalfOfSendingTime (tag 370) [deprecated in FIX 4.3] *** Used when a message is sent via a \"hub\" or \"service bureau\". If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime <52> on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+  },
+  "4.2": {
+   "type": "UTCTimestamp",
+   "description": "Used when a message is sent via a 'hub' or 'service bureau'. If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime <52> on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as 'GMT')"
+  }
+ }
+}

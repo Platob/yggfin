@@ -1,0 +1,14 @@
+{
+ "name": "MaturityMonthYearIncrement",
+ "tag": 1229,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Increment between successive maturities for an option class"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Increment between successive maturities for an option class"
+  }
+ }
+}

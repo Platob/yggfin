@@ -1,0 +1,25 @@
+{
+ "name": "ExchangeRule",
+ "tag": 825,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Used to report any exchange rules that apply to this trade. Primarily intended for US futures markets. Certain trading practices are permitted by the CFTC, such as large lot trading, block trading, all or none trades. If the rules are used, the exchanges are required to indicate these rules on the trade."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Used to report any exchange rules that apply to this trade. Primarily intended for US futures markets. Certain trading practices are permitted by the CFTC, such as large lot trading, block trading, all or none trades. If the rules are used, the exchanges are required to indicate these rules on the trade."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Used to report any exchange rules that apply to this trade. Primarily intended for US futures markets. Certain trading practices are permitted by the CFTC, such as large lot trading, block trading, all or none trades. If the rules are used, the exchanges are required to indicate these rules on the trade."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Used to report any exchange rules that apply to this trade. Primarily intended for US futures markets. Certain trading practices are permitted by the CFTC, such as large lot trading, block trading, all or none trades. If the rules are used, the exchanges are required to indicate these rules on the trade.",
+   "used_in": [
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

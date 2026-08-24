@@ -1,0 +1,70 @@
+{
+ "name": "PartyEntitlementAckGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 366,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPartyEntitlements",
+     "required": false,
+     "tag": 1772,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ListUpdateAction",
+       "required": false,
+       "tag": 1324
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementStatus",
+       "required": false,
+       "tag": 1883
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementResult",
+       "required": false,
+       "tag": 1884
+      },
+      {
+       "kind": "field",
+       "name": "RejectText",
+       "required": false,
+       "tag": 1328
+      },
+      {
+       "kind": "field",
+       "name": "EncodedRejectTextLen",
+       "required": false,
+       "tag": 1664
+      },
+      {
+       "kind": "field",
+       "name": "EncodedRejectText",
+       "required": false,
+       "tag": 1665
+      },
+      {
+       "kind": "component",
+       "name": "PartyDetailGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "EntitlementGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementRefID",
+       "required": false,
+       "tag": 1885
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

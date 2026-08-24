@@ -1,0 +1,26 @@
+{
+ "name": "IssueDate",
+ "tag": 225,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "The date on which a bond or stock offering is issued. It may or may not be the same as the effective date ( DatedDate <873> ) or the date on which interest begins to accrue ( InterestAccrualDate <874> ) (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "The date on which a bond or stock offering is issued. It may or may not be the same as the effective date ( DatedDate <873> ) or the date on which interest begins to accrue ( InterestAccrualDate <874> ) (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "The date on which a bond or stock offering is issued. It may or may not be the same as the effective date ( DatedDate <873> ) or the date on which interest begins to accrue ( InterestAccrualDate <874> ) (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "The date on which a bond or stock offering is issued. It may or may not be the same as the effective date ( DatedDate <873> ) or the date on which interest begins to accrue ( InterestAccrualDate <874> ) (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)"
+  },
+  "4.3": {
+   "type": "UTCDate",
+   "description": "Date instrument was issued. For Fixed Income IOIs for new issues, specifies the issue date. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  }
+ }
+}

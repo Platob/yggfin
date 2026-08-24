@@ -1,0 +1,72 @@
+{
+ "name": "LegMarketDisruptionFallbackReferencePriceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 545,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegMarketDisruptionFallbackReferencePrices",
+     "required": false,
+     "tag": 41471,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionFallbackUnderlierType",
+       "required": false,
+       "tag": 41472
+      },
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionFallbackUnderlierSecurityID",
+       "required": false,
+       "tag": 41473
+      },
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionFallbackUnderlierSecurityIDSource",
+       "required": false,
+       "tag": 41474
+      },
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionFallbackUnderlierSecurityDesc",
+       "required": false,
+       "tag": 41475
+      },
+      {
+       "kind": "field",
+       "name": "EncodedLegMarketDisruptionFallbackUnderlierSecurityDescLen",
+       "required": false,
+       "tag": 41476
+      },
+      {
+       "kind": "field",
+       "name": "EncodedLegMarketDisruptionFallbackUnderlierSecurityDesc",
+       "required": false,
+       "tag": 41477
+      },
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionFallbackOpenUnits",
+       "required": false,
+       "tag": 41478
+      },
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionFallbackBasketCurrency",
+       "required": false,
+       "tag": 41479
+      },
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionFallbackBasketDivisor",
+       "required": false,
+       "tag": 41480
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

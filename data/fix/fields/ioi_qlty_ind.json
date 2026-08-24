@@ -1,0 +1,142 @@
+{
+ "name": "IOIQltyInd",
+ "tag": 25,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Relative quality of indication",
+   "values": {
+    "H": "High",
+    "L": "Low",
+    "M": "Medium"
+   },
+   "value_names": {
+    "H": "HIGH",
+    "L": "LOW",
+    "M": "MEDIUM"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Relative quality of indication",
+   "values": {
+    "H": "High",
+    "L": "Low",
+    "M": "Medium"
+   },
+   "value_names": {
+    "H": "HIGH",
+    "L": "LOW",
+    "M": "MEDIUM"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Relative quality of indication",
+   "values": {
+    "H": "High",
+    "L": "Low",
+    "M": "Medium"
+   },
+   "value_names": {
+    "H": "HIGH",
+    "L": "LOW",
+    "M": "MEDIUM"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Relative quality of indication",
+   "values": {
+    "L": "Low",
+    "M": "Medium",
+    "H": "High"
+   },
+   "value_names": {
+    "L": "LOW",
+    "M": "MEDIUM",
+    "H": "HIGH"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Relative quality of indication",
+   "values": {
+    "L": "Low",
+    "M": "Medium",
+    "H": "High"
+   },
+   "value_names": {
+    "M": "MEDIUM",
+    "H": "HIGH",
+    "L": "LOW"
+   },
+   "used_in": [
+    "Indications of Interest"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Relative quality of indication",
+   "values": {
+    "L": "Low",
+    "M": "Medium",
+    "H": "High"
+   },
+   "value_names": {
+    "H": "HIGH",
+    "L": "LOW",
+    "M": "MEDIUM"
+   },
+   "used_in": [
+    "Indication of Interest"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Relative quality of indication",
+   "values": {
+    "L": "Low",
+    "M": "Medium",
+    "H": "High"
+   },
+   "value_names": {
+    "H": "HIGH",
+    "L": "LOW",
+    "M": "MEDIUM"
+   },
+   "used_in": [
+    "Indication of Interest"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Relative quality of indication",
+   "values": {
+    "L": "Low",
+    "M": "Medium",
+    "H": "High"
+   },
+   "value_names": {
+    "H": "HIGH",
+    "L": "LOW",
+    "M": "MEDIUM"
+   },
+   "used_in": [
+    "Indication of Interest"
+   ]
+  }
+ }
+}

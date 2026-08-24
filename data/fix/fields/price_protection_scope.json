@@ -1,0 +1,81 @@
+{
+ "name": "PriceProtectionScope",
+ "tag": 1092,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Defines the type of price protection the customer requires on their order.",
+   "values": {
+    "0": "None",
+    "1": "Local (Exchange, ECN, ATS)",
+    "2": "National (Across all national markets)",
+    "3": "Global (Across all markets)"
+   },
+   "value_names": {
+    "0": "NONE",
+    "1": "LOCAL",
+    "2": "NATIONAL",
+    "3": "GLOBAL"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Defines the type of price protection the customer requires on their order.",
+   "values": {
+    "0": "None",
+    "1": "Local (Exchange, ECN, ATS)",
+    "2": "National (Across all national markets)",
+    "3": "Global (Across all markets)"
+   },
+   "value_names": {
+    "0": "NONE",
+    "1": "LOCAL",
+    "2": "NATIONAL",
+    "3": "GLOBAL"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Defines the type of price protection the customer requires on their order.",
+   "values": {
+    "0": "None",
+    "1": "Local (Exchange, ECN, ATS)",
+    "2": "National (Across all national markets)",
+    "3": "Global (Across all markets)"
+   },
+   "value_names": {
+    "0": "NONE",
+    "1": "LOCAL",
+    "2": "NATIONAL",
+    "3": "GLOBAL"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  }
+ }
+}

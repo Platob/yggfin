@@ -1,0 +1,14 @@
+{
+ "name": "UnderlyingLegStrikePrice",
+ "tag": 1340,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Refer to definition for StrikePrice <202>"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Refer to definition for StrikePrice <202>"
+  }
+ }
+}

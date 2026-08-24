@@ -20,7 +20,7 @@ from rekep.market import (
     Side,
     State,
 )
-from rekep.market.book import _Side
+from rekep.market.book import _resting, _Side
 from rekep.market.event import DAY, HOUR
 from rekep.market.identity import NIL
 from rekep.text import Log
@@ -46,7 +46,6 @@ def initial[EventT: MarketEvent](event: EventT, instrument: Instrument = BTC) ->
 def order(unix: int, about: Instrument, side: Side, px: float, qty: float, named: str, **given):
     declared = {
         "unix": unix,
-        "code": about.symbol,
         "side": side,
         "px": px,
         "qty": qty,
@@ -634,7 +633,6 @@ def test_a_trade_counts_as_the_side_moving() -> None:
         initial(
             Execution(
                 unix=BASE + 20,
-                code="BTC-USD",
                 side=Side.BID,
                 px=100.0,
                 qty=2.0,
@@ -655,7 +653,6 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
         initial(
             Execution(
                 unix=BASE + 10,
-                code="BTC-USD",
                 side=Side.BID,
                 px=100.0,
                 qty=2.0,
@@ -666,7 +663,6 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
         initial(
             Execution(
                 unix=BASE + 20,
-                code="BTC-USD",
                 side=Side.BID,
                 px=100.0,
                 qty=2.0,
@@ -785,11 +781,43 @@ def test_recovery_rebuilds_the_same_order_framed_hash_as_an_uninterrupted_fold()
     assert uninterrupted.hash == recovered.hash == Book.hash_of(*expected)
 
 
+def test_the_live_state_a_book_is_identified_by_follows_every_revision() -> None:
+    """A side caches what each level settled into; a revision has to clear it.
+
+    The cache is what keeps a book with a hundred live levels from re-sorting
+    and re-hashing all of them on every event -- so the case worth pinning is
+    the one that changes an order without changing its level: same price, same
+    resting quantity, a new version and therefore a new content hash.
+    """
+
+    def live(where: _Side) -> tuple[int, ...]:
+        """What the side says it is identified by, read the long way round."""
+        return tuple(one.hash for one in where.sorted_orders)
+
+    side = _Side(side=Side.BID)
+    placed = order(BASE, BTC, Side.BID, 100.0, 5.0, "B1")
+    assert side.apply(placed)
+    before = side.order_hashes()
+    assert before == live(side) == (placed.hash,)
+
+    revised = order(BASE + 10, BTC, Side.BID, 100.0, 5.0, "B1", state=State.PARTIALLY_FILLED)
+    assert revised.px == placed.px and _resting(revised) == _resting(placed)
+    side.apply(revised)
+    after = side.order_hashes()
+    assert after == live(side) and after != before, (
+        "the level forgot what it had settled into -- even though nothing about "
+        "the level itself moved, which is exactly the case a stale cache would miss"
+    )
+
+    beside = order(BASE + 20, BTC, Side.BID, 100.0, 9.0, "B2")
+    assert side.apply(beside)
+    assert side.order_hashes() == live(side) == (beside.hash, *after), "biggest first"
+
+
 def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> None:
     placed = initial(
         Order(
             unix=BASE,
-            code=BTC.symbol,
             side=Side.BID,
             px=100.0,
             qty=5.0,
@@ -1232,7 +1260,6 @@ def test_negative_prices_are_valid_but_nonpositive_quantities_are_not() -> None:
     bad_fill = initial(
         Execution(
             unix=BASE + 10,
-            code="BTC-USD",
             side=Side.BID,
             px=-37.0,
             qty=-1.0,
@@ -1262,7 +1289,6 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
     fill = initial(
         Execution(
             unix=BASE + 10,
-            code="BTC-USD",
             side=Side.BID,
             px=100.0,
             qty=400.0,

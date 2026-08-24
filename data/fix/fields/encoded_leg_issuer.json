@@ -1,0 +1,26 @@
+{
+ "name": "EncodedLegIssuer",
+ "tag": 619,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data",
+   "description": "Multileg instrument's individual security's EncodedIssuer. See EncodedIssuer <349> field for description"
+  },
+  "5.0.SP1": {
+   "type": "data",
+   "description": "Multileg instrument's individual security's EncodedIssuer. See EncodedIssuer <349> field for description"
+  },
+  "5.0": {
+   "type": "data",
+   "description": "Multileg instrument's individual security's EncodedIssuer. See EncodedIssuer <349> field for description"
+  },
+  "4.4": {
+   "type": "data",
+   "description": "Multileg instrument's individual security's EncodedIssuer. See EncodedIssuer <349> field for description"
+  },
+  "4.3": {
+   "type": "data",
+   "description": "Multileg instrument's individual security's EncodedIssuer. See EncodedIssuer <349> field for description"
+  }
+ }
+}

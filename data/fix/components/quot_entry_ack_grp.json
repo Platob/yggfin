@@ -1,0 +1,733 @@
+{
+ "name": "QuotEntryAckGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 215,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoQuoteEntries",
+     "required": false,
+     "tag": 295,
+     "members": [
+      {
+       "kind": "field",
+       "name": "QuoteEntryID",
+       "required": false,
+       "tag": 299
+      },
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "InstrmtLegGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "BidPx",
+       "required": false,
+       "tag": 132
+      },
+      {
+       "kind": "field",
+       "name": "OfferPx",
+       "required": false,
+       "tag": 133
+      },
+      {
+       "kind": "field",
+       "name": "BidSize",
+       "required": false,
+       "tag": 134
+      },
+      {
+       "kind": "field",
+       "name": "OfferSize",
+       "required": false,
+       "tag": 135
+      },
+      {
+       "kind": "field",
+       "name": "ValidUntilTime",
+       "required": false,
+       "tag": 62
+      },
+      {
+       "kind": "field",
+       "name": "BidSpotRate",
+       "required": false,
+       "tag": 188
+      },
+      {
+       "kind": "field",
+       "name": "OfferSpotRate",
+       "required": false,
+       "tag": 190
+      },
+      {
+       "kind": "field",
+       "name": "BidForwardPoints",
+       "required": false,
+       "tag": 189
+      },
+      {
+       "kind": "field",
+       "name": "OfferForwardPoints",
+       "required": false,
+       "tag": 191
+      },
+      {
+       "kind": "field",
+       "name": "MidPx",
+       "required": false,
+       "tag": 631
+      },
+      {
+       "kind": "field",
+       "name": "BidYield",
+       "required": false,
+       "tag": 632
+      },
+      {
+       "kind": "field",
+       "name": "MidYield",
+       "required": false,
+       "tag": 633
+      },
+      {
+       "kind": "field",
+       "name": "OfferYield",
+       "required": false,
+       "tag": 634
+      },
+      {
+       "kind": "field",
+       "name": "TransactTime",
+       "required": false,
+       "tag": 60
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate",
+       "required": false,
+       "tag": 64
+      },
+      {
+       "kind": "field",
+       "name": "OrdType",
+       "required": false,
+       "tag": 40
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate2",
+       "required": false,
+       "tag": 193
+      },
+      {
+       "kind": "field",
+       "name": "OrderQty2",
+       "required": false,
+       "tag": 192
+      },
+      {
+       "kind": "field",
+       "name": "BidForwardPoints2",
+       "required": false,
+       "tag": 642
+      },
+      {
+       "kind": "field",
+       "name": "OfferForwardPoints2",
+       "required": false,
+       "tag": 643
+      },
+      {
+       "kind": "field",
+       "name": "Currency",
+       "required": false,
+       "tag": 15
+      },
+      {
+       "kind": "field",
+       "name": "CurrencyCodeSource",
+       "required": false,
+       "tag": 2897
+      },
+      {
+       "kind": "field",
+       "name": "BookingType",
+       "required": false,
+       "tag": 775
+      },
+      {
+       "kind": "field",
+       "name": "OrderCapacity",
+       "required": false,
+       "tag": 528
+      },
+      {
+       "kind": "field",
+       "name": "OrderRestrictions",
+       "required": false,
+       "tag": 529
+      },
+      {
+       "kind": "field",
+       "name": "QuoteEntryStatus",
+       "required": false,
+       "tag": 1167
+      },
+      {
+       "kind": "field",
+       "name": "QuoteEntryRejectReason",
+       "required": false,
+       "tag": 368
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 64,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoQuoteEntries",
+     "required": false,
+     "tag": 295,
+     "members": [
+      {
+       "kind": "field",
+       "name": "QuoteEntryID",
+       "required": false,
+       "tag": 299
+      },
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "InstrmtLegGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "BidPx",
+       "required": false,
+       "tag": 132
+      },
+      {
+       "kind": "field",
+       "name": "OfferPx",
+       "required": false,
+       "tag": 133
+      },
+      {
+       "kind": "field",
+       "name": "BidSize",
+       "required": false,
+       "tag": 134
+      },
+      {
+       "kind": "field",
+       "name": "OfferSize",
+       "required": false,
+       "tag": 135
+      },
+      {
+       "kind": "field",
+       "name": "ValidUntilTime",
+       "required": false,
+       "tag": 62
+      },
+      {
+       "kind": "field",
+       "name": "BidSpotRate",
+       "required": false,
+       "tag": 188
+      },
+      {
+       "kind": "field",
+       "name": "OfferSpotRate",
+       "required": false,
+       "tag": 190
+      },
+      {
+       "kind": "field",
+       "name": "BidForwardPoints",
+       "required": false,
+       "tag": 189
+      },
+      {
+       "kind": "field",
+       "name": "OfferForwardPoints",
+       "required": false,
+       "tag": 191
+      },
+      {
+       "kind": "field",
+       "name": "MidPx",
+       "required": false,
+       "tag": 631
+      },
+      {
+       "kind": "field",
+       "name": "BidYield",
+       "required": false,
+       "tag": 632
+      },
+      {
+       "kind": "field",
+       "name": "MidYield",
+       "required": false,
+       "tag": 633
+      },
+      {
+       "kind": "field",
+       "name": "OfferYield",
+       "required": false,
+       "tag": 634
+      },
+      {
+       "kind": "field",
+       "name": "TransactTime",
+       "required": false,
+       "tag": 60
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate",
+       "required": false,
+       "tag": 64
+      },
+      {
+       "kind": "field",
+       "name": "OrdType",
+       "required": false,
+       "tag": 40
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate2",
+       "required": false,
+       "tag": 193
+      },
+      {
+       "kind": "field",
+       "name": "OrderQty2",
+       "required": false,
+       "tag": 192
+      },
+      {
+       "kind": "field",
+       "name": "BidForwardPoints2",
+       "required": false,
+       "tag": 642
+      },
+      {
+       "kind": "field",
+       "name": "OfferForwardPoints2",
+       "required": false,
+       "tag": 643
+      },
+      {
+       "kind": "field",
+       "name": "Currency",
+       "required": false,
+       "tag": 15
+      },
+      {
+       "kind": "field",
+       "name": "QuoteEntryStatus",
+       "required": false,
+       "tag": 1167
+      },
+      {
+       "kind": "field",
+       "name": "QuoteEntryRejectReason",
+       "required": false,
+       "tag": 368
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 65,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoQuoteEntries",
+     "required": false,
+     "tag": 295,
+     "members": [
+      {
+       "kind": "field",
+       "name": "QuoteEntryID",
+       "required": false,
+       "tag": 299
+      },
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "InstrmtLegGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "BidPx",
+       "required": false,
+       "tag": 132
+      },
+      {
+       "kind": "field",
+       "name": "OfferPx",
+       "required": false,
+       "tag": 133
+      },
+      {
+       "kind": "field",
+       "name": "BidSize",
+       "required": false,
+       "tag": 134
+      },
+      {
+       "kind": "field",
+       "name": "OfferSize",
+       "required": false,
+       "tag": 135
+      },
+      {
+       "kind": "field",
+       "name": "ValidUntilTime",
+       "required": false,
+       "tag": 62
+      },
+      {
+       "kind": "field",
+       "name": "BidSpotRate",
+       "required": false,
+       "tag": 188
+      },
+      {
+       "kind": "field",
+       "name": "OfferSpotRate",
+       "required": false,
+       "tag": 190
+      },
+      {
+       "kind": "field",
+       "name": "BidForwardPoints",
+       "required": false,
+       "tag": 189
+      },
+      {
+       "kind": "field",
+       "name": "OfferForwardPoints",
+       "required": false,
+       "tag": 191
+      },
+      {
+       "kind": "field",
+       "name": "MidPx",
+       "required": false,
+       "tag": 631
+      },
+      {
+       "kind": "field",
+       "name": "BidYield",
+       "required": false,
+       "tag": 632
+      },
+      {
+       "kind": "field",
+       "name": "MidYield",
+       "required": false,
+       "tag": 633
+      },
+      {
+       "kind": "field",
+       "name": "OfferYield",
+       "required": false,
+       "tag": 634
+      },
+      {
+       "kind": "field",
+       "name": "TransactTime",
+       "required": false,
+       "tag": 60
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate",
+       "required": false,
+       "tag": 64
+      },
+      {
+       "kind": "field",
+       "name": "OrdType",
+       "required": false,
+       "tag": 40
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate2",
+       "required": false,
+       "tag": 193
+      },
+      {
+       "kind": "field",
+       "name": "OrderQty2",
+       "required": false,
+       "tag": 192
+      },
+      {
+       "kind": "field",
+       "name": "BidForwardPoints2",
+       "required": false,
+       "tag": 642
+      },
+      {
+       "kind": "field",
+       "name": "OfferForwardPoints2",
+       "required": false,
+       "tag": 643
+      },
+      {
+       "kind": "field",
+       "name": "Currency",
+       "required": false,
+       "tag": 15
+      },
+      {
+       "kind": "field",
+       "name": "QuoteEntryRejectReason",
+       "required": false,
+       "tag": 368
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 65,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoQuoteEntries",
+     "required": false,
+     "tag": 295,
+     "members": [
+      {
+       "kind": "field",
+       "name": "QuoteEntryID",
+       "required": false,
+       "tag": 299
+      },
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "InstrmtLegGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "BidPx",
+       "required": false,
+       "tag": 132
+      },
+      {
+       "kind": "field",
+       "name": "OfferPx",
+       "required": false,
+       "tag": 133
+      },
+      {
+       "kind": "field",
+       "name": "BidSize",
+       "required": false,
+       "tag": 134
+      },
+      {
+       "kind": "field",
+       "name": "OfferSize",
+       "required": false,
+       "tag": 135
+      },
+      {
+       "kind": "field",
+       "name": "ValidUntilTime",
+       "required": false,
+       "tag": 62
+      },
+      {
+       "kind": "field",
+       "name": "BidSpotRate",
+       "required": false,
+       "tag": 188
+      },
+      {
+       "kind": "field",
+       "name": "OfferSpotRate",
+       "required": false,
+       "tag": 190
+      },
+      {
+       "kind": "field",
+       "name": "BidForwardPoints",
+       "required": false,
+       "tag": 189
+      },
+      {
+       "kind": "field",
+       "name": "OfferForwardPoints",
+       "required": false,
+       "tag": 191
+      },
+      {
+       "kind": "field",
+       "name": "MidPx",
+       "required": false,
+       "tag": 631
+      },
+      {
+       "kind": "field",
+       "name": "BidYield",
+       "required": false,
+       "tag": 632
+      },
+      {
+       "kind": "field",
+       "name": "MidYield",
+       "required": false,
+       "tag": 633
+      },
+      {
+       "kind": "field",
+       "name": "OfferYield",
+       "required": false,
+       "tag": 634
+      },
+      {
+       "kind": "field",
+       "name": "TransactTime",
+       "required": false,
+       "tag": 60
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionID",
+       "required": false,
+       "tag": 336
+      },
+      {
+       "kind": "field",
+       "name": "TradingSessionSubID",
+       "required": false,
+       "tag": 625
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate",
+       "required": false,
+       "tag": 64
+      },
+      {
+       "kind": "field",
+       "name": "OrdType",
+       "required": false,
+       "tag": 40
+      },
+      {
+       "kind": "field",
+       "name": "SettlDate2",
+       "required": false,
+       "tag": 193
+      },
+      {
+       "kind": "field",
+       "name": "OrderQty2",
+       "required": false,
+       "tag": 192
+      },
+      {
+       "kind": "field",
+       "name": "BidForwardPoints2",
+       "required": false,
+       "tag": 642
+      },
+      {
+       "kind": "field",
+       "name": "OfferForwardPoints2",
+       "required": false,
+       "tag": 643
+      },
+      {
+       "kind": "field",
+       "name": "Currency",
+       "required": false,
+       "tag": 15
+      },
+      {
+       "kind": "field",
+       "name": "QuoteEntryRejectReason",
+       "required": false,
+       "tag": 368
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "name": "AgreementDate",
+ "tag": 915,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed."
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed."
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed."
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed."
+  }
+ }
+}

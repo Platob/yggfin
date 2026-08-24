@@ -1,0 +1,26 @@
+{
+ "name": "StateOrProvinceOfIssue",
+ "tag": 471,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "A two-character state or province abbreviation."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "A two-character state or province abbreviation."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "A two-character state or province abbreviation."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "A two-character state or province abbreviation."
+  },
+  "4.3": {
+   "type": "String",
+   "description": "A two-character state or province abbreviation."
+  }
+ }
+}

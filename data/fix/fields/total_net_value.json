@@ -1,0 +1,50 @@
+{
+ "name": "TotalNetValue",
+ "tag": 900,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "TotalNetValue is determined as follows: At the initial collateral assignment TotalNetValue <900> is the sum of ( UnderlyingStartValue <884> * (1-haircut)). In a collateral substitution TotalNetValue <900> is the sum of ( UnderlyingCurrentValue <885> * (1-haircut)). For listed derivatives clearing margin management, this is the collateral value which equals (Market value * haircut)",
+   "used_in": [
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralResponse",
+    "CollateralReport",
+    "CollateralInquiry"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "TotalNetValue is determined as follows: At the initial collateral assignment TotalNetValue <900> is the sum of ( UnderlyingStartValue <884> * (1-haircut)). In a collateral substitution TotalNetValue <900> is the sum of ( UnderlyingCurrentValue <885> * (1-haircut)). For listed derivatives clearing margin management, this is the collateral value which equals (Market value * haircut)",
+   "used_in": [
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralResponse",
+    "CollateralReport",
+    "CollateralInquiry"
+   ]
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "TotalNetValue is determined as follows: At the initial collateral assignment TotalNetValue <900> is the sum of ( UnderlyingStartValue <884> * (1-haircut)). In a collateral substitution TotalNetValue <900> is the sum of ( UnderlyingCurrentValue <885> * (1-haircut)). For listed derivatives clearing margin management, this is the collateral value which equals (Market value * haircut)",
+   "used_in": [
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralResponse",
+    "CollateralReport",
+    "CollateralInquiry"
+   ]
+  },
+  "4.4": {
+   "type": "Amt",
+   "description": "TotalNetValue is determined as follows: At the initial collateral assignment TotalNetValue <900> is the sum of ( UnderlyingStartValue <884> * (1-haircut)). In a collateral substitution TotalNetValue <900> is the sum of ( UnderlyingCurrentValue <885> * (1-haircut)).",
+   "used_in": [
+    "Collateral Request",
+    "Collateral Assignment",
+    "Collateral Response",
+    "Collateral Report",
+    "Collateral Inquiry"
+   ]
+  }
+ }
+}

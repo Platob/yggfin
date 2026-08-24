@@ -1,0 +1,136 @@
+{
+ "name": "QuoteCancelType",
+ "tag": 298,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies the type of quote cancel.",
+   "values": {
+    "1": "Cancel for one or more securities",
+    "2": "Cancel for SecurityType <167> (s)",
+    "3": "Cancel for underlying security",
+    "4": "Cancel All Quotes",
+    "5": "Cancel quote specified in QuoteID <117>",
+    "6": "Cancel by QuoteType <537>",
+    "7": "Cancel for Security Issuer",
+    "8": "Cancel for Issuer of Underlying Security"
+   },
+   "value_names": {
+    "1": "CANCEL_FOR_ONE_OR_MORE_SECURITIES",
+    "2": "CANCEL_FOR_SECURITY_TYPE",
+    "3": "CANCEL_FOR_UNDERLYING_SECURITY",
+    "4": "CANCEL_ALL_QUOTES",
+    "5": "CANCEL_SPECIFIED_SINGLE_QUOTE",
+    "6": "CANCEL_BY_TYPE_OF_QUOTE",
+    "7": "CANCEL_FOR_SECURITY_ISSUER",
+    "8": "CANCEL_FOR_ISSUER_OF_UNDERLYING_SECURITY"
+   },
+   "used_in": [
+    "QuoteStatusReport",
+    "MassQuoteAcknowledgement",
+    "QuoteCancel"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies the type of quote cancel.",
+   "values": {
+    "1": "Cancel for Symbol <55> (s)",
+    "2": "Cancel for SecurityType <167> (s)",
+    "3": "Cancel for UnderlyingSymbol <311>",
+    "4": "Cancel All Quotes",
+    "5": "Cancel quote specified in QuoteID <117>"
+   },
+   "value_names": {
+    "1": "CANCEL_FOR_ONE_OR_MORE_SECURITIES",
+    "2": "CANCEL_FOR_SECURITY_TYPE",
+    "3": "CANCEL_FOR_UNDERLYING_SECURITY",
+    "4": "CANCEL_ALL_QUOTES",
+    "5": "CANCEL_QUOTE_SPECIFIED_IN_QUOTE_ID"
+   },
+   "used_in": [
+    "QuoteStatusReport",
+    "MassQuoteAcknowledgement",
+    "QuoteCancel"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identifies the type of quote cancel.",
+   "values": {
+    "1": "Cancel for Symbol <55> (s)",
+    "2": "Cancel for SecurityType <167> (s)",
+    "3": "Cancel for UnderlyingSymbol <311>",
+    "4": "Cancel All Quotes",
+    "5": "Cancel quote specified in QuoteID <117>"
+   },
+   "value_names": {
+    "1": "CANCEL_FOR_ONE_OR_MORE_SECURITIES",
+    "2": "CANCEL_FOR_SECURITY_TYPE",
+    "3": "CANCEL_FOR_UNDERLYING_SECURITY",
+    "4": "CANCEL_ALL_QUOTES",
+    "5": "CANCEL_QUOTE_SPECIFIED_IN_QUOTE_ID"
+   },
+   "used_in": [
+    "QuoteCancel"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Identifies the type of quote cancel.",
+   "values": {
+    "1": "Cancel for Symbol <55> (s)",
+    "2": "Cancel for SecurityType <167> (s)",
+    "3": "Cancel for UnderlyingSymbol <311>",
+    "4": "Cancel All Quotes"
+   },
+   "value_names": {
+    "1": "CANCEL_FOR_ONE_OR_MORE_SECURITIES",
+    "2": "CANCEL_FOR_SECURITY_TYPE",
+    "3": "CANCEL_FOR_UNDERLYING_SECURITY",
+    "4": "CANCEL_ALL_QUOTES"
+   },
+   "used_in": [
+    "Quote Cancel"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Identifies the type of quote cancel.",
+   "values": {
+    "1": "Cancel for Symbol <55> (s)",
+    "2": "Cancel for SecurityType <167> (s)",
+    "3": "Cancel for UnderlyingSymbol <311>",
+    "4": "Cancel All Quotes"
+   },
+   "value_names": {
+    "4": "CANCEL_ALL_QUOTES",
+    "2": "CANCEL_FOR_SECURITY_TYPE",
+    "1": "CANCEL_FOR_ONE_OR_MORE_SECURITIES",
+    "3": "CANCEL_FOR_UNDERLYING_SECURITY"
+   },
+   "used_in": [
+    "Quote Cancel"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Identifies the type of quote cancel.",
+   "values": {
+    "1": "Cancel for Symbol <55> (s)",
+    "2": "Cancel for SecurityType <167> (s)",
+    "3": "Cancel for UnderlyingSymbol <311>",
+    "4": "Cancel All Quotes"
+   },
+   "value_names": {
+    "1": "CANCEL_FOR_ONE_OR_MORE_SECURITIES",
+    "2": "CANCEL_FOR_SECURITY_TYPE",
+    "3": "CANCEL_FOR_UNDERLYING_SECURITY",
+    "4": "CANCEL_ALL_QUOTES"
+   },
+   "used_in": [
+    "Quote Cancel"
+   ]
+  }
+ }
+}

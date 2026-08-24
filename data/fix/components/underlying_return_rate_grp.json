@@ -1,0 +1,188 @@
+{
+ "name": "UnderlyingReturnRateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 703,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingReturnRates",
+     "required": false,
+     "tag": 43034,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRatePriceSequence",
+       "required": false,
+       "tag": 43035
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateCommissionBasis",
+       "required": false,
+       "tag": 43036
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateCommissionAmount",
+       "required": false,
+       "tag": 43037
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateCommissionCurrency",
+       "required": false,
+       "tag": 43038
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateTotalCommissionPerTrade",
+       "required": false,
+       "tag": 43039
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateDeterminationMethod",
+       "required": false,
+       "tag": 43040
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingReturnRatePriceGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingReturnRateFXConversionGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateAmountRelativeTo",
+       "required": false,
+       "tag": 43041
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteMeasureType",
+       "required": false,
+       "tag": 43042
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteUnits",
+       "required": false,
+       "tag": 43043
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteMethod",
+       "required": false,
+       "tag": 43044
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteCurrency",
+       "required": false,
+       "tag": 43045
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteCurrencyType",
+       "required": false,
+       "tag": 43046
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteTimeType",
+       "required": false,
+       "tag": 43047
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteTime",
+       "required": false,
+       "tag": 43048
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteDate",
+       "required": false,
+       "tag": 43049
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteExpirationTime",
+       "required": false,
+       "tag": 43050
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteBusinessCenter",
+       "required": false,
+       "tag": 43051
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuoteExchange",
+       "required": false,
+       "tag": 43052
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingReturnRateInformationSourceGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateQuotePricingModel",
+       "required": false,
+       "tag": 43053
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateCashFlowType",
+       "required": false,
+       "tag": 43054
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingReturnRateDateGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateValuationTimeType",
+       "required": false,
+       "tag": 43055
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateValuationTime",
+       "required": false,
+       "tag": 43056
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateValuationTimeBusinessCenter",
+       "required": false,
+       "tag": 43057
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateValuationPriceOption",
+       "required": false,
+       "tag": 43058
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRateFinalPriceFallback",
+       "required": false,
+       "tag": 43059
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

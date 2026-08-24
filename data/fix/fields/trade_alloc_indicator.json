@@ -1,0 +1,84 @@
+{
+ "name": "TradeAllocIndicator",
+ "tag": 826,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies how the trade is to be allocated",
+   "values": {
+    "0": "Allocation not required",
+    "1": "Allocation required (give-up trade) allocation information not provided (incomplete)",
+    "2": "Use allocation provided with the trade",
+    "3": "Allocation give-up executor",
+    "4": "Allocation from executor",
+    "5": "Allocation to claim account"
+   },
+   "value_names": {
+    "0": "ALLOCATION_NOT_REQUIRED",
+    "1": "ALLOCATION_REQUIRED",
+    "2": "USE_ALLOCATION_PROVIDED_WITH_THE_TRADE",
+    "3": "ALLOCATION_GIVE_UP_EXECUTOR",
+    "4": "ALLOCATION_FROM_EXECUTOR",
+    "5": "ALLOCATION_TO_CLAIM_ACCOUNT",
+    "6": "TRADE_SPLIT"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies how the trade is to be allocated",
+   "values": {
+    "0": "Allocation not required",
+    "1": "Allocation required (give-up trade) allocation information not provided (incomplete)",
+    "2": "Use allocation provided with the trade",
+    "3": "Allocation give-up executor",
+    "4": "Allocation from executor",
+    "5": "Allocation to claim account"
+   },
+   "value_names": {
+    "0": "ALLOCATION_NOT_REQUIRED",
+    "1": "ALLOCATION_REQUIRED",
+    "2": "USE_ALLOCATION_PROVIDED_WITH_THE_TRADE",
+    "3": "ALLOCATION_GIVE_UP_EXECUTOR",
+    "4": "ALLOCATION_FROM_EXECUTOR",
+    "5": "ALLOCATION_TO_CLAIM_ACCOUNT"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identifies how the trade is to be allocated",
+   "values": {
+    "0": "Allocation not required",
+    "1": "Allocation required (give-up trade) allocation information not provided (incomplete)",
+    "2": "Use allocation provided with the trade",
+    "3": "Allocation give-up executor",
+    "4": "Allocation from executor",
+    "5": "Allocation to claim account"
+   },
+   "value_names": {
+    "0": "ALLOCATION_NOT_REQUIRED",
+    "1": "ALLOCATION_REQUIRED",
+    "2": "USE_ALLOCATION_PROVIDED_WITH_THE_TRADE",
+    "3": "ALLOCATION_GIVE_UP_EXECUTOR",
+    "4": "ALLOCATION_FROM_EXECUTOR",
+    "5": "ALLOCATION_TO_CLAIM_ACCOUNT"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Identifies how the trade is to be allocated",
+   "values": {
+    "0": "Allocation not required",
+    "1": "Allocation required (give up trade) allocation information not provided (incomplete)",
+    "2": "Use allocation provided with the trade"
+   },
+   "value_names": {
+    "0": "ALLOCATION_NOT_REQUIRED",
+    "1": "ALLOCATION_REQUIRED",
+    "2": "USE_ALLOCATION_PROVIDED_WITH_THE_TRADE"
+   },
+   "used_in": [
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

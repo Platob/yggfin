@@ -1,0 +1,82 @@
+{
+ "name": "AllocSettlInstType",
+ "tag": 780,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Used to indicate whether settlement instructions are provided on an AllocationInstruction <J> , and if not, how they are to be derived.",
+   "values": {
+    "0": "Use default instructions",
+    "1": "Derive from parameters provided",
+    "2": "Full details provided",
+    "3": "SSI DB IDs provided",
+    "4": "Phone for instructions"
+   },
+   "value_names": {
+    "0": "USE_DEFAULT_INSTRUCTIONS",
+    "1": "DERIVE_FROM_PARAMETERS_PROVIDED",
+    "2": "FULL_DETAILS_PROVIDED",
+    "3": "SSIDBI_DS_PROVIDED",
+    "4": "PHONE_FOR_INSTRUCTIONS"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Used to indicate whether settlement instructions are provided on an AllocationInstruction <J> message, and if not, how they are to be derived.",
+   "values": {
+    "0": "Use default instructions",
+    "1": "Derive from parameters provided",
+    "2": "Full details provided",
+    "3": "SSI DB IDs provided",
+    "4": "Phone for instructions"
+   },
+   "value_names": {
+    "0": "USE_DEFAULT_INSTRUCTIONS",
+    "1": "DERIVE_FROM_PARAMETERS_PROVIDED",
+    "2": "FULL_DETAILS_PROVIDED",
+    "3": "SSIDBI_DS_PROVIDED",
+    "4": "PHONE_FOR_INSTRUCTIONS"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Used to indicate whether settlement instructions are provided on an AllocationInstruction <J> message, and if not, how they are to be derived.",
+   "values": {
+    "0": "Use default instructions",
+    "1": "Derive from parameters provided",
+    "2": "Full details provided",
+    "3": "SSI DB IDs provided",
+    "4": "Phone for instructions"
+   },
+   "value_names": {
+    "0": "USE_DEFAULT_INSTRUCTIONS",
+    "1": "DERIVE_FROM_PARAMETERS_PROVIDED",
+    "2": "FULL_DETAILS_PROVIDED",
+    "3": "SSIDBI_DS_PROVIDED",
+    "4": "PHONE_FOR_INSTRUCTIONS"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Used to indicate whether settlement instructions are provided on an Allocation Instruction <J> message, and if not, how they are to be derived.",
+   "values": {
+    "0": "use default instructions",
+    "1": "derive from parameters provided",
+    "2": "full details provided",
+    "3": "SSI db ids provided",
+    "4": "phone for instructions"
+   },
+   "value_names": {
+    "0": "USE_DEFAULT_INSTRUCTIONS",
+    "1": "DERIVE_FROM_PARAMETERS_PROVIDED",
+    "2": "FULL_DETAILS_PROVIDED",
+    "3": "SSIDBI_DS_PROVIDED",
+    "4": "PHONE_FOR_INSTRUCTIONS"
+   },
+   "used_in": [
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  }
+ }
+}

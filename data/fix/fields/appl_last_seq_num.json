@@ -1,0 +1,14 @@
+{
+ "name": "ApplLastSeqNum",
+ "tag": 1350,
+ "versions": {
+  "5.0.SP2": {
+   "type": "SeqNum",
+   "description": "Application sequence number of last message in transmission"
+  },
+  "5.0.SP1": {
+   "type": "SeqNum",
+   "description": "Application sequence number of last message in transmission"
+  }
+ }
+}

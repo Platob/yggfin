@@ -1,0 +1,26 @@
+{
+ "name": "Factor",
+ "tag": 228,
+ "versions": {
+  "5.0.SP2": {
+   "type": "float",
+   "description": "For Fixed Income: Amorization Factor for deriving Current face from Original face for ABS or MBS securities, note the fraction may be greater than, equal to or less than 1. In TIPS securities this is the Inflation index. Qty * Factor * Price = Gross Trade Amount For Derivatives: Contract Value Factor by which price must be adjusted to determine the true nominal value of one futures/options contract. (Qty * Price) * Factor = Nominal Value (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  },
+  "5.0.SP1": {
+   "type": "float",
+   "description": "For Fixed Income: Amorization Factor for deriving Current face from Original face for ABS or MBS securities, note the fraction may be greater than, equal to or less than 1. In TIPS securities this is the Inflation index. Qty * Factor * Price = Gross Trade Amount For Derivatives: Contract Value Factor by which price must be adjusted to determine the true nominal value of one futures/options contract. (Qty * Price) * Factor = Nominal Value (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  },
+  "5.0": {
+   "type": "float",
+   "description": "For Fixed Income: Amorization Factor for deriving Current face from Original face for ABS or MBS securities, note the fraction may be greater than, equal to or less than 1. In TIPS securities this is the Inflation index. Qty * Factor * Price = Gross Trade Amount For Derivatives: Contract Value Factor by which price must be adjusted to determine the true nominal value of one futures/options contract. (Qty * Price) * Factor = Nominal Value (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  },
+  "4.4": {
+   "type": "float",
+   "description": "For Fixed Income: Amorization Factor for deriving Current face from Original face for ABS or MBS securities, note the fraction may be greater than, equal to or less than 1. In TIPS securities this is the Inflation index. Qty * Factor <228> * Price <44> = Gross Trade Amount For Derivatives: Contract Value Factor by which price must be adjusted to determine the true nominal value of one futures/options contract. (Qty * Price <44> ) * Factor <228> = Nominal Value (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  },
+  "4.3": {
+   "type": "float",
+   "description": "Fraction for deriving Current face from Original face for TIPS, ABS or MBS Fixed Income securities. Note the fraction may be greater than, equal to or less than 1. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  }
+ }
+}

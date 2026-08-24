@@ -1,0 +1,48 @@
+{
+ "name": "DayAvgPx",
+ "tag": 426,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "The average price for quantity on a GT order that has traded today.",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "The average price for quantity on a GT order that has traded today.",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "The average price for quantity on a GT order that has traded today.",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "The average price for quantity on a GT order that has traded today.",
+   "used_in": [
+    "Execution Report"
+   ]
+  },
+  "4.3": {
+   "type": "Price",
+   "description": "The average price for quantity on a GT order that has traded today.",
+   "used_in": [
+    "Execution Report"
+   ]
+  },
+  "4.2": {
+   "type": "Price",
+   "description": "The average price of shares on a GT order that have traded today.",
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

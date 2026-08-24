@@ -1,0 +1,20 @@
+{
+ "name": "SettlementCycleNo",
+ "tag": 1153,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Settlement cycle in which the settlement obligation was generated",
+   "used_in": [
+    "SettlementObligationReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Settlement cycle in which the settlement obligation was generated",
+   "used_in": [
+    "SettlementObligationReport"
+   ]
+  }
+ }
+}

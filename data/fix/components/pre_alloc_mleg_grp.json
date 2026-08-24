@@ -1,0 +1,233 @@
+{
+ "name": "PreAllocMlegGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 213,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAllocs",
+     "required": false,
+     "tag": 78,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AllocAccount",
+       "required": false,
+       "tag": 79
+      },
+      {
+       "kind": "field",
+       "name": "AllocAcctIDSource",
+       "required": false,
+       "tag": 661
+      },
+      {
+       "kind": "field",
+       "name": "AllocSettlCurrency",
+       "required": false,
+       "tag": 736
+      },
+      {
+       "kind": "field",
+       "name": "AllocSettlCurrencyCodeSource",
+       "required": false,
+       "tag": 2927
+      },
+      {
+       "kind": "field",
+       "name": "IndividualAllocID",
+       "required": false,
+       "tag": 467
+      },
+      {
+       "kind": "field",
+       "name": "AllocLegRefID",
+       "required": false,
+       "tag": 2727
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties3",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "AllocQty",
+       "required": false,
+       "tag": 80
+      },
+      {
+       "kind": "field",
+       "name": "CustodialLotID",
+       "required": false,
+       "tag": 1752
+      },
+      {
+       "kind": "field",
+       "name": "VersusPurchaseDate",
+       "required": false,
+       "tag": 1753
+      },
+      {
+       "kind": "field",
+       "name": "VersusPurchasePrice",
+       "required": false,
+       "tag": 1754
+      },
+      {
+       "kind": "field",
+       "name": "CurrentCostBasis",
+       "required": false,
+       "tag": 1755
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 62,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAllocs",
+     "required": false,
+     "tag": 78,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AllocAccount",
+       "required": false,
+       "tag": 79
+      },
+      {
+       "kind": "field",
+       "name": "AllocAcctIDSource",
+       "required": false,
+       "tag": 661
+      },
+      {
+       "kind": "field",
+       "name": "AllocSettlCurrency",
+       "required": false,
+       "tag": 736
+      },
+      {
+       "kind": "field",
+       "name": "IndividualAllocID",
+       "required": false,
+       "tag": 467
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties3",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "AllocQty",
+       "required": false,
+       "tag": 80
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 63,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAllocs",
+     "required": false,
+     "tag": 78,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AllocAccount",
+       "required": false,
+       "tag": 79
+      },
+      {
+       "kind": "field",
+       "name": "AllocAcctIDSource",
+       "required": false,
+       "tag": 661
+      },
+      {
+       "kind": "field",
+       "name": "AllocSettlCurrency",
+       "required": false,
+       "tag": 736
+      },
+      {
+       "kind": "field",
+       "name": "IndividualAllocID",
+       "required": false,
+       "tag": 467
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties3",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "AllocQty",
+       "required": false,
+       "tag": 80
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 63,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAllocs",
+     "required": false,
+     "tag": 78,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AllocAccount",
+       "required": false,
+       "tag": 79
+      },
+      {
+       "kind": "field",
+       "name": "AllocAcctIDSource",
+       "required": false,
+       "tag": 661
+      },
+      {
+       "kind": "field",
+       "name": "AllocSettlCurrency",
+       "required": false,
+       "tag": 736
+      },
+      {
+       "kind": "field",
+       "name": "IndividualAllocID",
+       "required": false,
+       "tag": 467
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties3",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "AllocQty",
+       "required": false,
+       "tag": 80
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

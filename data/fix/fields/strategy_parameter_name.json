@@ -1,0 +1,18 @@
+{
+ "name": "StrategyParameterName",
+ "tag": 958,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Name of parameter"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Name of parameter"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Name of parameter"
+  }
+ }
+}

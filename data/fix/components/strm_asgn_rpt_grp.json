@@ -1,0 +1,28 @@
+{
+ "name": "StrmAsgnRptGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 308,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAsgnReqs",
+     "required": false,
+     "tag": 1499,
+     "members": [
+      {
+       "kind": "component",
+       "name": "Parties",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "StrmAsgnRptInstrmtGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

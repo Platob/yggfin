@@ -1,0 +1,62 @@
+{
+ "name": "ListExecInst",
+ "tag": 69,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Free format text message containing list handling and execution instructions.",
+   "used_in": [
+    "NewOrderList"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Free format text message containing list handling and execution instructions.",
+   "used_in": [
+    "NewOrderList"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Free format text message containing list handling and execution instructions.",
+   "used_in": [
+    "NewOrderList"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Free format text message containing list handling and execution instructions.",
+   "used_in": [
+    "New Order List"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Free format text message containing list handling and execution instructions.",
+   "used_in": [
+    "New Order - List"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Free format text message containing list handling and execution instructions.",
+   "used_in": [
+    "New Order - List"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Free format text message containing list handling and execution instructions.",
+   "used_in": [
+    "New Order - List"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Free format text message containing list handling and execution instructions.",
+   "used_in": [
+    "New Order - List"
+   ]
+  }
+ }
+}

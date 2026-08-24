@@ -1,0 +1,96 @@
+{
+ "name": "LegPaymentStreamCompoundingDates",
+ "versions": {
+  "5.0.SP2": {
+   "order": 122,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingDatesBusinessDayConvention",
+     "required": false,
+     "tag": 42408
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamCompoundingDatesBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamCompoundingDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingDatesRelativeTo",
+     "required": false,
+     "tag": 42409
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingDatesOffsetPeriod",
+     "required": false,
+     "tag": 42410
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingDatesOffsetUnit",
+     "required": false,
+     "tag": 42411
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingDatesOffsetDayType",
+     "required": false,
+     "tag": 42412
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingPeriodSkip",
+     "required": false,
+     "tag": 42413
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamCompoundingStartDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamCompoundingEndDate",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingFrequencyPeriod",
+     "required": false,
+     "tag": 42414
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingFrequencyUnit",
+     "required": false,
+     "tag": 42415
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingRollConvention",
+     "required": false,
+     "tag": 42416
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamBoundsFirstDateUnadjusted",
+     "required": false,
+     "tag": 42417
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamBoundsLastDateUnadjusted",
+     "required": false,
+     "tag": 42418
+    }
+   ]
+  }
+ }
+}

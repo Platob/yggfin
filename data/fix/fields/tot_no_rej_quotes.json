@@ -1,0 +1,14 @@
+{
+ "name": "TotNoRejQuotes",
+ "tag": 1170,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Specifies the number of rejected quotes"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Specifies the number of rejected quotes"
+  }
+ }
+}

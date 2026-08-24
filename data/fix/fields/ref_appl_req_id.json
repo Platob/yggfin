@@ -1,0 +1,10 @@
+{
+ "name": "RefApplReqID",
+ "tag": 1433,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Used to reference a previously submitted ApplReqID <1346> from within a subsequent ApplicationMessageRequest <BW>"
+  }
+ }
+}

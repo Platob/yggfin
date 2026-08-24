@@ -1,0 +1,67 @@
+{
+ "name": "MatchRules",
+ "versions": {
+  "5.0.SP2": {
+   "order": 277,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMatchRules",
+     "required": false,
+     "tag": 1235,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MatchAlgorithm",
+       "required": false,
+       "tag": 1142
+      },
+      {
+       "kind": "field",
+       "name": "MatchType",
+       "required": false,
+       "tag": 574
+      },
+      {
+       "kind": "field",
+       "name": "MatchRuleProductComplex",
+       "required": false,
+       "tag": 2569
+      },
+      {
+       "kind": "field",
+       "name": "CustomerPriority",
+       "required": false,
+       "tag": 2570
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 132,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMatchRules",
+     "required": false,
+     "tag": 1235,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MatchAlgorithm",
+       "required": false,
+       "tag": 1142
+      },
+      {
+       "kind": "field",
+       "name": "MatchType",
+       "required": false,
+       "tag": 574
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

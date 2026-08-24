@@ -1,0 +1,12 @@
+{
+ "name": "DerivativePositionLimit",
+ "tag": 1273,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int"
+  },
+  "5.0.SP1": {
+   "type": "int"
+  }
+ }
+}

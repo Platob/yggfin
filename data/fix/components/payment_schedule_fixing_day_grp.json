@@ -1,0 +1,30 @@
+{
+ "name": "PaymentScheduleFixingDayGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 503,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPaymentScheduleFixingDays",
+     "required": false,
+     "tag": 41161,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PaymentScheduleFixingDayOfWeek",
+       "required": false,
+       "tag": 41162
+      },
+      {
+       "kind": "field",
+       "name": "PaymentScheduleFixingDayNumber",
+       "required": false,
+       "tag": 41163
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

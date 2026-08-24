@@ -1,0 +1,48 @@
+{
+ "name": "TradSesCloseTime",
+ "tag": 344,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTimestamp",
+   "description": "Closing time of the trading session",
+   "used_in": [
+    "TradingSessionStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "UTCTimestamp",
+   "description": "Closing time of the trading session",
+   "used_in": [
+    "TradingSessionStatus"
+   ]
+  },
+  "5.0": {
+   "type": "UTCTimestamp",
+   "description": "Closing time of the trading session",
+   "used_in": [
+    "TradingSessionStatus"
+   ]
+  },
+  "4.4": {
+   "type": "UTCTimestamp",
+   "description": "Closing time of the trading session",
+   "used_in": [
+    "Trading Session Status"
+   ]
+  },
+  "4.3": {
+   "type": "UTCTimestamp",
+   "description": "Closing time of the trading session",
+   "used_in": [
+    "Trading Session Status"
+   ]
+  },
+  "4.2": {
+   "type": "UTCTimestamp",
+   "description": "Closing time of the trading session",
+   "used_in": [
+    "Trading Session Status"
+   ]
+  }
+ }
+}

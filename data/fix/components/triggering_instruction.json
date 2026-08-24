@@ -1,0 +1,296 @@
+{
+ "name": "TriggeringInstruction",
+ "versions": {
+  "5.0.SP2": {
+   "order": 14,
+   "members": [
+    {
+     "kind": "field",
+     "name": "TriggerType",
+     "required": false,
+     "tag": 1100
+    },
+    {
+     "kind": "field",
+     "name": "TriggerAction",
+     "required": false,
+     "tag": 1101
+    },
+    {
+     "kind": "field",
+     "name": "TriggerScope",
+     "required": false,
+     "tag": 1628
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPrice",
+     "required": false,
+     "tag": 1102
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSymbol",
+     "required": false,
+     "tag": 1103
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSecurityID",
+     "required": false,
+     "tag": 1104
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSecurityIDSource",
+     "required": false,
+     "tag": 1105
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSecurityDesc",
+     "required": false,
+     "tag": 1106
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPriceType",
+     "required": false,
+     "tag": 1107
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPriceTypeScope",
+     "required": false,
+     "tag": 1108
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPriceDirection",
+     "required": false,
+     "tag": 1109
+    },
+    {
+     "kind": "field",
+     "name": "TriggerNewPrice",
+     "required": false,
+     "tag": 1110
+    },
+    {
+     "kind": "field",
+     "name": "TriggerOrderType",
+     "required": false,
+     "tag": 1111
+    },
+    {
+     "kind": "field",
+     "name": "TriggerNewQty",
+     "required": false,
+     "tag": 1112
+    },
+    {
+     "kind": "field",
+     "name": "TriggerTradingSessionID",
+     "required": false,
+     "tag": 1113
+    },
+    {
+     "kind": "field",
+     "name": "TriggerTradingSessionSubID",
+     "required": false,
+     "tag": 1114
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 114,
+   "members": [
+    {
+     "kind": "field",
+     "name": "TriggerType",
+     "required": false,
+     "tag": 1100
+    },
+    {
+     "kind": "field",
+     "name": "TriggerAction",
+     "required": false,
+     "tag": 1101
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPrice",
+     "required": false,
+     "tag": 1102
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSymbol",
+     "required": false,
+     "tag": 1103
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSecurityID",
+     "required": false,
+     "tag": 1104
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSecurityIDSource",
+     "required": false,
+     "tag": 1105
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSecurityDesc",
+     "required": false,
+     "tag": 1106
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPriceType",
+     "required": false,
+     "tag": 1107
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPriceTypeScope",
+     "required": false,
+     "tag": 1108
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPriceDirection",
+     "required": false,
+     "tag": 1109
+    },
+    {
+     "kind": "field",
+     "name": "TriggerNewPrice",
+     "required": false,
+     "tag": 1110
+    },
+    {
+     "kind": "field",
+     "name": "TriggerOrderType",
+     "required": false,
+     "tag": 1111
+    },
+    {
+     "kind": "field",
+     "name": "TriggerNewQty",
+     "required": false,
+     "tag": 1112
+    },
+    {
+     "kind": "field",
+     "name": "TriggerTradingSessionID",
+     "required": false,
+     "tag": 1113
+    },
+    {
+     "kind": "field",
+     "name": "TriggerTradingSessionSubID",
+     "required": false,
+     "tag": 1114
+    }
+   ]
+  },
+  "5.0": {
+   "order": 116,
+   "members": [
+    {
+     "kind": "field",
+     "name": "TriggerType",
+     "required": false,
+     "tag": 1100
+    },
+    {
+     "kind": "field",
+     "name": "TriggerAction",
+     "required": false,
+     "tag": 1101
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPrice",
+     "required": false,
+     "tag": 1102
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSymbol",
+     "required": false,
+     "tag": 1103
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSecurityID",
+     "required": false,
+     "tag": 1104
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSecurityIDSource",
+     "required": false,
+     "tag": 1105
+    },
+    {
+     "kind": "field",
+     "name": "TriggerSecurityDesc",
+     "required": false,
+     "tag": 1106
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPriceType",
+     "required": false,
+     "tag": 1107
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPriceTypeScope",
+     "required": false,
+     "tag": 1108
+    },
+    {
+     "kind": "field",
+     "name": "TriggerPriceDirection",
+     "required": false,
+     "tag": 1109
+    },
+    {
+     "kind": "field",
+     "name": "TriggerNewPrice",
+     "required": false,
+     "tag": 1110
+    },
+    {
+     "kind": "field",
+     "name": "TriggerOrderType",
+     "required": false,
+     "tag": 1111
+    },
+    {
+     "kind": "field",
+     "name": "TriggerNewQty",
+     "required": false,
+     "tag": 1112
+    },
+    {
+     "kind": "field",
+     "name": "TriggerTradingSessionID",
+     "required": false,
+     "tag": 1113
+    },
+    {
+     "kind": "field",
+     "name": "TriggerTradingSessionSubID",
+     "required": false,
+     "tag": 1114
+    }
+   ]
+  }
+ }
+}

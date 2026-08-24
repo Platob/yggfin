@@ -1,0 +1,25 @@
+{
+ "name": "UnderlyingSettlPriceType",
+ "tag": 733,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Underlying security's SettlPriceType. See SettlPriceType <731> field for description"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Underlying security's SettlPriceType. See SettlPriceType <731> field for description"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Underlying security's SettlPriceType. See SettlPriceType <731> field for description"
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Underlying security's SettlPriceType. See SettlPriceType <731> field for description",
+   "used_in": [
+    "Position Report"
+   ]
+  }
+ }
+}

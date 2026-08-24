@@ -1,0 +1,26 @@
+{
+ "name": "EncodedLegIssuerLen",
+ "tag": 618,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Multileg instrument's individual security's EncodedIssuerLen. See EncodedIssuerLen <348> field for description"
+  },
+  "5.0.SP1": {
+   "type": "Length",
+   "description": "Multileg instrument's individual security's EncodedIssuerLen. See EncodedIssuerLen <348> field for description"
+  },
+  "5.0": {
+   "type": "Length",
+   "description": "Multileg instrument's individual security's EncodedIssuerLen. See EncodedIssuerLen <348> field for description"
+  },
+  "4.4": {
+   "type": "Length",
+   "description": "Multileg instrument's individual security's EncodedIssuerLen. See EncodedIssuerLen <348> field for description"
+  },
+  "4.3": {
+   "type": "Length",
+   "description": "Multileg instrument's individual security's EncodedIssuerLen. See EncodedIssuerLen <348> field for description"
+  }
+ }
+}

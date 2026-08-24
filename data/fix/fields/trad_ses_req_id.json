@@ -1,0 +1,62 @@
+{
+ "name": "TradSesReqID",
+ "tag": 335,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique ID of a Trading Session Status <h> message.",
+   "used_in": [
+    "TradingSessionListRequest",
+    "TradingSessionList",
+    "TradingSessionListUpdateReport",
+    "TradingSessionStatusRequest",
+    "TradingSessionStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique ID of a Trading Session Status <h> message.",
+   "used_in": [
+    "TradingSessionListRequest",
+    "TradingSessionList",
+    "TradingSessionListUpdateReport",
+    "TradingSessionStatusRequest",
+    "TradingSessionStatus"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique ID of a Trading Session Status <h> message.",
+   "used_in": [
+    "TradingSessionListRequest",
+    "TradingSessionList",
+    "TradingSessionStatusRequest",
+    "TradingSessionStatus"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique ID of a Trading Session Status <h> message.",
+   "used_in": [
+    "Trading Session Status Request",
+    "Trading Session Status"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique ID of a Trading Session Status <h> message.",
+   "used_in": [
+    "Trading Session Status Request",
+    "Trading Session Status"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique ID of a Trading Session Status <h> message.",
+   "used_in": [
+    "Trading Session Status Request",
+    "Trading Session Status"
+   ]
+  }
+ }
+}

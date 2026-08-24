@@ -1,0 +1,55 @@
+{
+ "name": "DerivativeSecurityAltIDGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 287,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDerivativeSecurityAltID",
+     "required": false,
+     "tag": 1218,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DerivativeSecurityAltID",
+       "required": false,
+       "tag": 1219
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeSecurityAltIDSource",
+       "required": false,
+       "tag": 1220
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 145,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDerivativeSecurityAltID",
+     "required": false,
+     "tag": 1218,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DerivativeSecurityAltID",
+       "required": false,
+       "tag": 1219
+      },
+      {
+       "kind": "field",
+       "name": "DerivativeSecurityAltIDSource",
+       "required": false,
+       "tag": 1220
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

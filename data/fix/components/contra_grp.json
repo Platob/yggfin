@@ -1,0 +1,177 @@
+{
+ "name": "ContraGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 186,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoContraBrokers",
+     "required": false,
+     "tag": 382,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ContraBroker",
+       "required": false,
+       "tag": 375
+      },
+      {
+       "kind": "field",
+       "name": "ContraTrader",
+       "required": false,
+       "tag": 337
+      },
+      {
+       "kind": "field",
+       "name": "ContraTradeQty",
+       "required": false,
+       "tag": 437
+      },
+      {
+       "kind": "field",
+       "name": "ContraTradeTime",
+       "required": false,
+       "tag": 438
+      },
+      {
+       "kind": "field",
+       "name": "ContraLegRefID",
+       "required": false,
+       "tag": 655
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 35,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoContraBrokers",
+     "required": false,
+     "tag": 382,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ContraBroker",
+       "required": false,
+       "tag": 375
+      },
+      {
+       "kind": "field",
+       "name": "ContraTrader",
+       "required": false,
+       "tag": 337
+      },
+      {
+       "kind": "field",
+       "name": "ContraTradeQty",
+       "required": false,
+       "tag": 437
+      },
+      {
+       "kind": "field",
+       "name": "ContraTradeTime",
+       "required": false,
+       "tag": 438
+      },
+      {
+       "kind": "field",
+       "name": "ContraLegRefID",
+       "required": false,
+       "tag": 655
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 35,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoContraBrokers",
+     "required": false,
+     "tag": 382,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ContraBroker",
+       "required": false,
+       "tag": 375
+      },
+      {
+       "kind": "field",
+       "name": "ContraTrader",
+       "required": false,
+       "tag": 337
+      },
+      {
+       "kind": "field",
+       "name": "ContraTradeQty",
+       "required": false,
+       "tag": 437
+      },
+      {
+       "kind": "field",
+       "name": "ContraTradeTime",
+       "required": false,
+       "tag": 438
+      },
+      {
+       "kind": "field",
+       "name": "ContraLegRefID",
+       "required": false,
+       "tag": 655
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 35,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoContraBrokers",
+     "required": false,
+     "tag": 382,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ContraBroker",
+       "required": false,
+       "tag": 375
+      },
+      {
+       "kind": "field",
+       "name": "ContraTrader",
+       "required": false,
+       "tag": 337
+      },
+      {
+       "kind": "field",
+       "name": "ContraTradeQty",
+       "required": false,
+       "tag": 437
+      },
+      {
+       "kind": "field",
+       "name": "ContraTradeTime",
+       "required": false,
+       "tag": 438
+      },
+      {
+       "kind": "field",
+       "name": "ContraLegRefID",
+       "required": false,
+       "tag": 655
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

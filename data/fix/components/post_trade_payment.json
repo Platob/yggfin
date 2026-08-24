@@ -1,0 +1,100 @@
+{
+ "name": "PostTradePayment",
+ "versions": {
+  "5.0.SP2": {
+   "order": 163,
+   "members": [
+    {
+     "kind": "field",
+     "name": "PostTradePaymentType",
+     "required": true,
+     "tag": 2824
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentAmount",
+     "required": true,
+     "tag": 2817
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentCurrency",
+     "required": false,
+     "tag": 2818
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentCurrencyCodeSource",
+     "required": false,
+     "tag": 2956
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentCalculationDate",
+     "required": true,
+     "tag": 2825
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentValueDate",
+     "required": true,
+     "tag": 2826
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentFinalValueDate",
+     "required": false,
+     "tag": 2827
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentDebitOrCredit",
+     "required": true,
+     "tag": 2819
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentAccount",
+     "required": true,
+     "tag": 2816
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentID",
+     "required": false,
+     "tag": 2821
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentDesc",
+     "required": false,
+     "tag": 2820
+    },
+    {
+     "kind": "field",
+     "name": "EncodedPostTradePaymentDescLen",
+     "required": false,
+     "tag": 2815
+    },
+    {
+     "kind": "field",
+     "name": "EncodedPostTradePaymentDesc",
+     "required": false,
+     "tag": 2814
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentLinkID",
+     "required": false,
+     "tag": 2822
+    },
+    {
+     "kind": "field",
+     "name": "PostTradePaymentStatus",
+     "required": false,
+     "tag": 2823
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,32 @@
+{
+ "name": "CashDistribPayRef",
+ "tag": 501,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Free format Payment reference to assist with reconciliation of distributions."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Free format Payment reference to assist with reconciliation of distributions."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Free format Payment reference to assist with reconciliation of distributions."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Free format Payment reference to assist with reconciliation of distributions.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Free format Payment reference to assist with reconciliation of distributions.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  }
+ }
+}

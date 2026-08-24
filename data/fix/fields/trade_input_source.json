@@ -1,0 +1,52 @@
+{
+ "name": "TradeInputSource",
+ "tag": 578,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Type of input device or system from which the trade was entered.",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Type of input device or system from which the trade was entered.",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Type of input device or system from which the trade was entered.",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Type of input device or system from which the trade was entered.",
+   "used_in": [
+    "Trade Capture Report Request",
+    "Trade Capture Report"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Type of input device or system from which the trade was entered.",
+   "used_in": [
+    "Trade Capture Report Request",
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

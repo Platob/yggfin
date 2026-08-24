@@ -1,0 +1,81 @@
+{
+ "name": "IOIQualGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 197,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoIOIQualifiers",
+     "required": false,
+     "tag": 199,
+     "members": [
+      {
+       "kind": "field",
+       "name": "IOIQualifier",
+       "required": false,
+       "tag": 104
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 46,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoIOIQualifiers",
+     "required": false,
+     "tag": 199,
+     "members": [
+      {
+       "kind": "field",
+       "name": "IOIQualifier",
+       "required": false,
+       "tag": 104
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 47,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoIOIQualifiers",
+     "required": false,
+     "tag": 199,
+     "members": [
+      {
+       "kind": "field",
+       "name": "IOIQualifier",
+       "required": false,
+       "tag": 104
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 47,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoIOIQualifiers",
+     "required": false,
+     "tag": 199,
+     "members": [
+      {
+       "kind": "field",
+       "name": "IOIQualifier",
+       "required": false,
+       "tag": 104
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

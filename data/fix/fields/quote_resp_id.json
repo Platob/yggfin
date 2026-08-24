@@ -1,0 +1,46 @@
+{
+ "name": "QuoteRespID",
+ "tag": 693,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Message reference for QuoteResponse <AJ>",
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Message reference for QuoteResponse <AJ>",
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Message reference for QuoteResponse <AJ>",
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Message reference for Quote Response <AJ>",
+   "used_in": [
+    "Execution Report",
+    "Quote Status Report",
+    "Quote Response",
+    "Quote"
+   ]
+  }
+ }
+}

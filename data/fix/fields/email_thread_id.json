@@ -1,0 +1,55 @@
+{
+ "name": "EmailThreadID",
+ "tag": 164,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier for an email thread (new and chain of replies)",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier for an email thread (new and chain of replies)",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique identifier for an email thread (new and chain of replies)",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique identifier for an email thread (new and chain of replies)",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique identifier for an email thread (new and chain of replies)",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique identifier for an email thread (new and chain of replies)",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Unique identifier for an email thread (new and chain of replies)",
+   "used_in": [
+    "Email"
+   ]
+  }
+ }
+}

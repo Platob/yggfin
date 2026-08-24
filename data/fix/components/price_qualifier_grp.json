@@ -1,0 +1,24 @@
+{
+ "name": "PriceQualifierGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 713,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPriceQualifiers",
+     "required": false,
+     "tag": 2709,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PriceQualifier",
+       "required": false,
+       "tag": 2710
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "name": "BusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 429,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoBusinessCenters",
+     "required": false,
+     "tag": 40278,
+     "members": [
+      {
+       "kind": "field",
+       "name": "BusinessCenter",
+       "required": false,
+       "tag": 40471
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,43 @@
+{
+ "name": "NoMsgTypes",
+ "tag": 384,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of MsgTypes <35> in repeating group."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of MsgTypes <35> in repeating group."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of MsgTypes <35> in repeating group."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of MsgTypes <35> in repeating group.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of MsgTypes in repeating group.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Number of MsgTypes <35> in repeating group.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "NumInGroup",
+   "description": "Number of MsgTypes (35) in repeating group."
+  }
+ }
+}

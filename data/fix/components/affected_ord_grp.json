@@ -1,0 +1,129 @@
+{
+ "name": "AffectedOrdGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 175,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAffectedOrders",
+     "required": false,
+     "tag": 534,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AffectedOrigClOrdID",
+       "required": false,
+       "tag": 1824
+      },
+      {
+       "kind": "field",
+       "name": "AffectedOrderID",
+       "required": false,
+       "tag": 535
+      },
+      {
+       "kind": "field",
+       "name": "AffectedSecondaryOrderID",
+       "required": false,
+       "tag": 536
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 24,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAffectedOrders",
+     "required": false,
+     "tag": 534,
+     "members": [
+      {
+       "kind": "field",
+       "name": "OrigClOrdID",
+       "required": false,
+       "tag": 41
+      },
+      {
+       "kind": "field",
+       "name": "AffectedOrderID",
+       "required": false,
+       "tag": 535
+      },
+      {
+       "kind": "field",
+       "name": "AffectedSecondaryOrderID",
+       "required": false,
+       "tag": 536
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 24,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAffectedOrders",
+     "required": false,
+     "tag": 534,
+     "members": [
+      {
+       "kind": "field",
+       "name": "OrigClOrdID",
+       "required": false,
+       "tag": 41
+      },
+      {
+       "kind": "field",
+       "name": "AffectedOrderID",
+       "required": false,
+       "tag": 535
+      },
+      {
+       "kind": "field",
+       "name": "AffectedSecondaryOrderID",
+       "required": false,
+       "tag": 536
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 24,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAffectedOrders",
+     "required": false,
+     "tag": 534,
+     "members": [
+      {
+       "kind": "field",
+       "name": "OrigClOrdID",
+       "required": false,
+       "tag": 41
+      },
+      {
+       "kind": "field",
+       "name": "AffectedOrderID",
+       "required": false,
+       "tag": 535
+      },
+      {
+       "kind": "field",
+       "name": "AffectedSecondaryOrderID",
+       "required": false,
+       "tag": 536
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

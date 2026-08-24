@@ -1,0 +1,42 @@
+{
+ "name": "NotAffectedOrdGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 293,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoNotAffectedOrders",
+     "required": false,
+     "tag": 1370,
+     "members": [
+      {
+       "kind": "field",
+       "name": "NotAffOrigClOrdID",
+       "required": false,
+       "tag": 1372
+      },
+      {
+       "kind": "field",
+       "name": "NotAffectedOrderID",
+       "required": false,
+       "tag": 1371
+      },
+      {
+       "kind": "field",
+       "name": "NotAffSecondaryOrderID",
+       "required": false,
+       "tag": 1825
+      },
+      {
+       "kind": "field",
+       "name": "NotAffectedReason",
+       "required": false,
+       "tag": 2677
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

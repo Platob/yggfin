@@ -1,0 +1,30 @@
+{
+ "name": "PaymentStreamFixingDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 675,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPaymentStreamFixingDates",
+     "required": false,
+     "tag": 42660,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PaymentStreamFixingDate",
+       "required": false,
+       "tag": 42661
+      },
+      {
+       "kind": "field",
+       "name": "PaymentStreamFixingDateType",
+       "required": false,
+       "tag": 42662
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

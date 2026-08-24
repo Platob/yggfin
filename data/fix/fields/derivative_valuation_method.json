@@ -1,0 +1,15 @@
+{
+ "name": "DerivativeValuationMethod",
+ "tag": 1319,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Refer to definition of ValuationMethod <1197>"
+  },
+  "5.0.SP1": {
+   "name": "DerivativeFuturesValuationMethod",
+   "type": "String",
+   "description": "Refer to definition of FuturesValuationMethod <1197>"
+  }
+ }
+}

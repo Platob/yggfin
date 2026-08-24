@@ -1,0 +1,275 @@
+{
+ "name": "OrdAllocGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 209,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoOrders",
+     "required": false,
+     "tag": 73,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": false,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "OrderID",
+       "required": false,
+       "tag": 37
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryOrderID",
+       "required": false,
+       "tag": 198
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryClOrdID",
+       "required": false,
+       "tag": 526
+      },
+      {
+       "kind": "field",
+       "name": "ListID",
+       "required": false,
+       "tag": 66
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "OrderQty",
+       "required": false,
+       "tag": 38
+      },
+      {
+       "kind": "field",
+       "name": "OrderAvgPx",
+       "required": false,
+       "tag": 799
+      },
+      {
+       "kind": "field",
+       "name": "OrderBookingQty",
+       "required": false,
+       "tag": 800
+      },
+      {
+       "kind": "field",
+       "name": "OrdType",
+       "required": false,
+       "tag": 40
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 58,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoOrders",
+     "required": false,
+     "tag": 73,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": false,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "OrderID",
+       "required": false,
+       "tag": 37
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryOrderID",
+       "required": false,
+       "tag": 198
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryClOrdID",
+       "required": false,
+       "tag": 526
+      },
+      {
+       "kind": "field",
+       "name": "ListID",
+       "required": false,
+       "tag": 66
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "OrderQty",
+       "required": false,
+       "tag": 38
+      },
+      {
+       "kind": "field",
+       "name": "OrderAvgPx",
+       "required": false,
+       "tag": 799
+      },
+      {
+       "kind": "field",
+       "name": "OrderBookingQty",
+       "required": false,
+       "tag": 800
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 59,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoOrders",
+     "required": false,
+     "tag": 73,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": false,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "OrderID",
+       "required": false,
+       "tag": 37
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryOrderID",
+       "required": false,
+       "tag": 198
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryClOrdID",
+       "required": false,
+       "tag": 526
+      },
+      {
+       "kind": "field",
+       "name": "ListID",
+       "required": false,
+       "tag": 66
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "OrderQty",
+       "required": false,
+       "tag": 38
+      },
+      {
+       "kind": "field",
+       "name": "OrderAvgPx",
+       "required": false,
+       "tag": 799
+      },
+      {
+       "kind": "field",
+       "name": "OrderBookingQty",
+       "required": false,
+       "tag": 800
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 59,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoOrders",
+     "required": false,
+     "tag": 73,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": false,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "OrderID",
+       "required": false,
+       "tag": 37
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryOrderID",
+       "required": false,
+       "tag": 198
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryClOrdID",
+       "required": false,
+       "tag": 526
+      },
+      {
+       "kind": "field",
+       "name": "ListID",
+       "required": false,
+       "tag": 66
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "OrderQty",
+       "required": false,
+       "tag": 38
+      },
+      {
+       "kind": "field",
+       "name": "OrderAvgPx",
+       "required": false,
+       "tag": 799
+      },
+      {
+       "kind": "field",
+       "name": "OrderBookingQty",
+       "required": false,
+       "tag": 800
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

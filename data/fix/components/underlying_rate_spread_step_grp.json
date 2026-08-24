@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingRateSpreadStepGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 700,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingRateSpreadSteps",
+     "required": false,
+     "tag": 43005,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingRateSpreadStepDate",
+       "required": false,
+       "tag": 43006
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingRateSpreadStepValue",
+       "required": false,
+       "tag": 43007
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeMaturityDate",
+ "tag": 1252,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate"
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate"
+  }
+ }
+}

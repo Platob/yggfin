@@ -1,0 +1,30 @@
+{
+ "name": "LegInstrumentPtysSubGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 542,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegInstrumentPartySubIDs",
+     "required": false,
+     "tag": 2258,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegInstrumentPartySubID",
+       "required": false,
+       "tag": 2259
+      },
+      {
+       "kind": "field",
+       "name": "LegInstrumentPartySubIDType",
+       "required": false,
+       "tag": 2260
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

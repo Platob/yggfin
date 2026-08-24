@@ -1,0 +1,57 @@
+{
+ "name": "LegSettlMethodElectionDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 131,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegSettlMethodElectionDateUnadjusted",
+     "required": false,
+     "tag": 42574
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlMethodElectionDateBusinessDayConvention",
+     "required": false,
+     "tag": 42575
+    },
+    {
+     "kind": "component",
+     "name": "LegSettlMethodElectionDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlMethodElectionDateRelativeTo",
+     "required": false,
+     "tag": 42576
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlMethodElectionDateOffsetPeriod",
+     "required": false,
+     "tag": 42577
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlMethodElectionDateOffsetUnit",
+     "required": false,
+     "tag": 42578
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlMethodElectionDateOffsetDayType",
+     "required": false,
+     "tag": 42579
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlMethodElectionDateAdjusted",
+     "required": false,
+     "tag": 42580
+    }
+   ]
+  }
+ }
+}

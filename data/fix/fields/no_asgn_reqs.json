@@ -1,0 +1,10 @@
+{
+ "name": "NoAsgnReqs",
+ "tag": 1499,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of assignment requests."
+  }
+ }
+}

@@ -1,0 +1,207 @@
+{
+ "name": "LegPaymentStream",
+ "versions": {
+  "5.0.SP2": {
+   "order": 31,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamType",
+     "required": false,
+     "tag": 40279
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamMarketRate",
+     "required": false,
+     "tag": 40280
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamDelayIndicator",
+     "required": false,
+     "tag": 40281
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCashSettlIndicator",
+     "required": false,
+     "tag": 42399
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamSettlCurrency",
+     "required": false,
+     "tag": 40282
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamDayCount",
+     "required": false,
+     "tag": 40283
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamOtherDayCount",
+     "required": false,
+     "tag": 43108
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamAccrualDays",
+     "required": false,
+     "tag": 40284
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamDiscountType",
+     "required": false,
+     "tag": 40285
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamDiscountRate",
+     "required": false,
+     "tag": 40286
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamDiscountRateDayCount",
+     "required": false,
+     "tag": 40287
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingMethod",
+     "required": false,
+     "tag": 40288
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingXIDRef",
+     "required": false,
+     "tag": 42400
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingSpread",
+     "required": false,
+     "tag": 42401
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInterpolationMethod",
+     "required": false,
+     "tag": 42402
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInterpolationPeriod",
+     "required": false,
+     "tag": 42403
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInitialPrincipalExchangeIndicator",
+     "required": false,
+     "tag": 40289
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInterimPrincipalExchangeIndicator",
+     "required": false,
+     "tag": 40290
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFinalPrincipalExchangeIndicator",
+     "required": false,
+     "tag": 40291
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFlatRateIndicator",
+     "required": false,
+     "tag": 41549
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFlatRateAmount",
+     "required": false,
+     "tag": 41550
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFlatRateCurrency",
+     "required": false,
+     "tag": 41551
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamMaximumPaymentAmount",
+     "required": false,
+     "tag": 41552
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamMaximumPaymentCurrency",
+     "required": false,
+     "tag": 41553
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamMaximumTransactionAmount",
+     "required": false,
+     "tag": 41554
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamMaximumTransactionCurrency",
+     "required": false,
+     "tag": 41555
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamPaymentDates",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamResetDates",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamFixedRate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamFloatingRate",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCompoundingFixedRate",
+     "required": false,
+     "tag": 42404
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamCompoundingFloatingRate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamCompoundingDates",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamNonDeliverableSettlTerms",
+     "required": false
+    }
+   ]
+  }
+ }
+}

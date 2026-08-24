@@ -1,0 +1,24 @@
+{
+ "name": "MarginReqmtInqQualGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 313,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMarginReqmtInqQualifier",
+     "required": false,
+     "tag": 1636,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MarginReqmtInqQualifier",
+       "required": false,
+       "tag": 1637
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

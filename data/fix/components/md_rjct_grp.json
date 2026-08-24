@@ -1,0 +1,81 @@
+{
+ "name": "MDRjctGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 207,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAltMDSource",
+     "required": false,
+     "tag": 816,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AltMDSourceID",
+       "required": false,
+       "tag": 817
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 56,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAltMDSource",
+     "required": false,
+     "tag": 816,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AltMDSourceID",
+       "required": false,
+       "tag": 817
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 57,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAltMDSource",
+     "required": false,
+     "tag": 816,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AltMDSourceID",
+       "required": false,
+       "tag": 817
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 57,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAltMDSource",
+     "required": false,
+     "tag": 816,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AltMDSourceID",
+       "required": false,
+       "tag": 817
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

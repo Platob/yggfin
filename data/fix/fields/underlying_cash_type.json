@@ -1,0 +1,42 @@
+{
+ "name": "UnderlyingCashType",
+ "tag": 974,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Used for derivatives that deliver into cash underlying.",
+   "values": {
+    "FIXED": "FIXED",
+    "DIFF": "DIFF"
+   },
+   "value_names": {
+    "FIXED": "FIXED",
+    "DIFF": "DIFF"
+   }
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Specific to the <UnderlyingInstrument> Used for derivatives that deliver into cash underlying.",
+   "values": {
+    "FIXED": "FIXED",
+    "DIFF": "DIFF"
+   },
+   "value_names": {
+    "FIXED": "FIXED",
+    "DIFF": "DIFF"
+   }
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Specific to the <UnderlyingInstrument> Used for derivatives that deliver into cash underlying.",
+   "values": {
+    "FIXED": "FIXED",
+    "DIFF": "DIFF"
+   },
+   "value_names": {
+    "FIXED": "FIXED",
+    "DIFF": "DIFF"
+   }
+  }
+ }
+}

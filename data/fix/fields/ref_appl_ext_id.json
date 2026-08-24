@@ -1,0 +1,29 @@
+{
+ "name": "RefApplExtID",
+ "tag": 1406,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "The extension pack number associated with an application message.",
+   "used_in": [
+    "Reject",
+    "BusinessMessageReject"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "The extension pack number associated with an application message.",
+   "used_in": [
+    "Reject",
+    "BusinessMessageReject"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "int",
+   "description": "The extension pack number associated with an application message.",
+   "used_in": [
+    "Reject"
+   ]
+  }
+ }
+}

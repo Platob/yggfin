@@ -1,0 +1,34 @@
+{
+ "name": "ContAmtCurr",
+ "tag": 521,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Currency",
+   "description": "Specifies currency for the Contract amount if different from the Deal Currency. See Appendix 6-A: Valid Currency Codes ."
+  },
+  "5.0.SP1": {
+   "type": "Currency",
+   "description": "Specifies currency for the Contract amount if different from the Deal Currency. See Appendix 6-A: Valid Currency Codes ."
+  },
+  "5.0": {
+   "type": "Currency",
+   "description": "Specifies currency for the Contract amount if different from the Deal Currency. See Appendix 6-A: Valid Currency Codes ."
+  },
+  "4.4": {
+   "type": "Currency",
+   "description": "Specifies currency for the Contract amount if different from the Deal Currency. See Appendix 6-A: Valid Currency Codes .",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report"
+   ]
+  },
+  "4.3": {
+   "type": "Currency",
+   "description": "Specifies currency for the Contract amount if different from the Deal Currency - see Appendix 6-A: Valid Currency Codes .",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

@@ -1,0 +1,35 @@
+{
+ "name": "UnderlyingComplexEventDates",
+ "versions": {
+  "5.0.SP2": {
+   "order": 418,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingComplexEventDates",
+     "required": false,
+     "tag": 2053,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingComplexEventStartDate",
+       "required": false,
+       "tag": 2054
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingComplexEventEndDate",
+       "required": false,
+       "tag": 2055
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingComplexEventTimes",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

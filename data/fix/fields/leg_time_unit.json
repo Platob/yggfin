@@ -1,0 +1,18 @@
+{
+ "name": "LegTimeUnit",
+ "tag": 1001,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Same as TimeUnit <997> ."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Same as TimeUnit <997> ."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Same as TimeUnit <997> ."
+  }
+ }
+}

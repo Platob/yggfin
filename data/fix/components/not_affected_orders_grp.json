@@ -1,0 +1,30 @@
+{
+ "name": "NotAffectedOrdersGrp",
+ "versions": {
+  "5.0.SP1": {
+   "order": 154,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoNotAffectedOrders",
+     "required": false,
+     "tag": 1370,
+     "members": [
+      {
+       "kind": "field",
+       "name": "NotAffOrigClOrdID",
+       "required": false,
+       "tag": 1372
+      },
+      {
+       "kind": "field",
+       "name": "NotAffectedOrderID",
+       "required": false,
+       "tag": 1371
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

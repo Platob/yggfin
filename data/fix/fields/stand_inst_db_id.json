@@ -1,0 +1,55 @@
+{
+ "name": "StandInstDbID",
+ "tag": 171,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
+   "used_in": [
+    "SettlementInstructionRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
+   "used_in": [
+    "SettlementInstructionRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
+   "used_in": [
+    "SettlementInstructionRequest"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
+   "used_in": [
+    "Settlement Instruction Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

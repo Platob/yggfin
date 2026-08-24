@@ -1,0 +1,96 @@
+{
+ "name": "LegOptionExercise",
+ "versions": {
+  "5.0.SP2": {
+   "order": 90,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegExerciseDesc",
+     "required": false,
+     "tag": 41481
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegExerciseDescLen",
+     "required": false,
+     "tag": 41482
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegExerciseDesc",
+     "required": false,
+     "tag": 41483
+    },
+    {
+     "kind": "field",
+     "name": "LegAutomaticExerciseIndicator",
+     "required": false,
+     "tag": 41484
+    },
+    {
+     "kind": "field",
+     "name": "LegAutomaticExerciseThresholdRate",
+     "required": false,
+     "tag": 41485
+    },
+    {
+     "kind": "field",
+     "name": "LegExerciseConfirmationMethod",
+     "required": false,
+     "tag": 41486
+    },
+    {
+     "kind": "field",
+     "name": "LegManualNoticeBusinessCenter",
+     "required": false,
+     "tag": 41487
+    },
+    {
+     "kind": "field",
+     "name": "LegFallbackExerciseIndicator",
+     "required": false,
+     "tag": 41488
+    },
+    {
+     "kind": "field",
+     "name": "LegLimitRightToConfirmIndicator",
+     "required": false,
+     "tag": 41489
+    },
+    {
+     "kind": "field",
+     "name": "LegExerciseSplitTicketIndicator",
+     "required": false,
+     "tag": 41490
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlMethodElectingPartySide",
+     "required": false,
+     "tag": 42391
+    },
+    {
+     "kind": "component",
+     "name": "LegSettlMethodElectionDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegOptionExerciseDates",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegOptionExerciseExpiration",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegOptionExerciseMakeWholeProvision",
+     "required": false
+    }
+   ]
+  }
+ }
+}

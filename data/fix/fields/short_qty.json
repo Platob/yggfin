@@ -1,0 +1,22 @@
+{
+ "name": "ShortQty",
+ "tag": 705,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Short Quantity"
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Short Quantity"
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Short Quantity"
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Short Quantity"
+  }
+ }
+}

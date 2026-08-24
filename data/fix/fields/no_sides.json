@@ -1,0 +1,78 @@
+{
+ "name": "NoSides",
+ "tag": 552,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of Side <54> repeating group instances.",
+   "values": {
+    "1": "One Side",
+    "2": "Both Sides"
+   },
+   "value_names": {
+    "1": "ONE_SIDE",
+    "2": "BOTH_SIDES"
+   }
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of Side <54> repeating group instances.",
+   "values": {
+    "1": "One Side",
+    "2": "Both Sides"
+   },
+   "value_names": {
+    "1": "ONE_SIDE",
+    "2": "BOTH_SIDES"
+   }
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of Side <54> repeating group instances.",
+   "values": {
+    "1": "One Side",
+    "2": "Both Sides"
+   },
+   "value_names": {
+    "1": "ONE_SIDE",
+    "2": "BOTH_SIDES"
+   }
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of Side <54> repeating group instances.",
+   "values": {
+    "1": "one side",
+    "2": "both sides"
+   },
+   "value_names": {
+    "1": "ONE_SIDE",
+    "2": "BOTH_SIDES"
+   },
+   "used_in": [
+    "Trade Capture Report",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request",
+    "Cross Order Cancel Request"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of Side <54> repeating group instances.",
+   "values": {
+    "1": "one side",
+    "2": "both sides"
+   },
+   "value_names": {
+    "1": "ONE_SIDE",
+    "2": "BOTH_SIDES"
+   },
+   "used_in": [
+    "Trade Capture Report",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request",
+    "Cross Order Cancel Request"
+   ]
+  }
+ }
+}

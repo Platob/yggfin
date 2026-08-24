@@ -1,0 +1,34 @@
+{
+ "name": "DiscretionPrice",
+ "tag": 845,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "The current discretionary price of the order",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "The current discretionary price of the order",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "The current discretionary price of the order",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "The current discretionary price of the order",
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

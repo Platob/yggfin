@@ -1,0 +1,30 @@
+{
+ "name": "OrigTradeID",
+ "tag": 1126,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Used to preserve original trade id when original trade is being referenced in a subsequent trade transaction such as a transfer",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Used to preserve original trade id when original trade is being referenced in a subsequent trade transaction such as a transfer",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Used to preserve original trade id when original trade is being referenced in a subsequent trade transaction such as a transfer",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  }
+ }
+}

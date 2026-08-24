@@ -1,0 +1,36 @@
+{
+ "name": "Hop",
+ "versions": {
+  "4.4": {
+   "order": 101,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoHops",
+     "required": false,
+     "tag": 627,
+     "members": [
+      {
+       "kind": "field",
+       "name": "HopCompID",
+       "required": false,
+       "tag": 628
+      },
+      {
+       "kind": "field",
+       "name": "HopSendingTime",
+       "required": false,
+       "tag": 629
+      },
+      {
+       "kind": "field",
+       "name": "HopRefID",
+       "required": false,
+       "tag": 630
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

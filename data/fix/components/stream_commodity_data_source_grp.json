@@ -1,0 +1,30 @@
+{
+ "name": "StreamCommodityDataSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 513,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStreamCommodityDataSources",
+     "required": false,
+     "tag": 41280,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StreamCommodityDataSourceID",
+       "required": false,
+       "tag": 41281
+      },
+      {
+       "kind": "field",
+       "name": "StreamCommodityDataSourceIDType",
+       "required": false,
+       "tag": 41282
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

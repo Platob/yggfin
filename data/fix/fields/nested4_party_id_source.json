@@ -1,0 +1,14 @@
+{
+ "name": "Nested4PartyIDSource",
+ "tag": 1416,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Refer to definition of PartyIDSource <447>"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Refer to definition of PartyIDSource <447>"
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "name": "TriggerPrice",
+ "tag": 1102,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "The price at which the trigger should hit."
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "The price at which the trigger should hit."
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "The price at which the trigger should hit."
+  }
+ }
+}

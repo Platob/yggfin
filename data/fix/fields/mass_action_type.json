@@ -1,0 +1,42 @@
+{
+ "name": "MassActionType",
+ "tag": 1373,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Specifies the type of action requested",
+   "values": {
+    "1": "Suspend orders",
+    "2": "Release orders from suspension",
+    "3": "Cancel orders"
+   },
+   "value_names": {
+    "1": "SUSPEND_ORDERS",
+    "2": "RELEASE_ORDERS_FROM_SUSPENSION",
+    "3": "CANCEL_ORDERS"
+   },
+   "used_in": [
+    "OrderMassActionReport",
+    "OrderMassActionRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Specifies the type of action requested",
+   "values": {
+    "1": "Suspend orders",
+    "2": "Release orders from suspension",
+    "3": "Cancel orders"
+   },
+   "value_names": {
+    "1": "SUSPEND_ORDERS",
+    "2": "RELEASE_ORDERS_FROM_SUSPENSION",
+    "3": "CANCEL_ORDERS"
+   },
+   "used_in": [
+    "OrderMassActionReport",
+    "OrderMassActionRequest"
+   ]
+  }
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "name": "QuoteSetID",
+ "tag": 302,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique id for the Quote Set."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique id for the Quote Set."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique id for the Quote Set."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique id for the Quote Set.",
+   "used_in": [
+    "Mass Quote Acknowledgement",
+    "Mass Quote"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique id for the Quote Set.",
+   "used_in": [
+    "Mass Quote Acknowledgement",
+    "Mass Quote"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique id for the Quote Set.",
+   "used_in": [
+    "Quote Acknowledgement",
+    "Mass Quote"
+   ]
+  }
+ }
+}

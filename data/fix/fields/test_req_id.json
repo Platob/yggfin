@@ -1,0 +1,78 @@
+{
+ "name": "TestReqID",
+ "tag": 112,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Identifier included in Test Request message to be returned in resulting Heartbeat",
+   "used_in": [
+    "Heartbeat",
+    "TestRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Identifier included in Test Request message to be returned in resulting Heartbeat",
+   "used_in": [
+    "Heartbeat",
+    "TestRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Identifier included in Test Request message to be returned in resulting Heartbeat",
+   "used_in": [
+    "Heartbeat",
+    "TestRequest"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Identifier included in Test Request <1> message to be returned in resulting Heartbeat <0>",
+   "used_in": [
+    "Heartbeat",
+    "Test Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Identifier included in Test Request <1> message to be returned in resulting Heartbeat <0>",
+   "used_in": [
+    "Heartbeat",
+    "Test Request"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Identifier included in Test Request <1> message to be returned in resulting Heartbeat <0>",
+   "used_in": [
+    "Heartbeat",
+    "Test Request"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Identifier included in Test Request <1> message to be returned in resulting Heartbeat <0>",
+   "used_in": [
+    "Heartbeat",
+    "Test Request"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Identifier included in Test Request <1> message to be returned in resulting Heartbeat <0>",
+   "used_in": [
+    "Heartbeat",
+    "Test Request"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "String",
+   "description": "Identifier included in Test Request message to be returned in resulting Heartbeat",
+   "used_in": [
+    "Heartbeat",
+    "TestRequest"
+   ]
+  }
+ }
+}

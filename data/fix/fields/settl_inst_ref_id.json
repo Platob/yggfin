@@ -1,0 +1,39 @@
+{
+ "name": "SettlInstRefID",
+ "tag": 214,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Reference identifier for the SettlInstID <162> with 'Cancel' and 'Replace' SettlInstTransType <163> transaction types."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Reference identifier for the SettlInstID <162> with 'Cancel' and 'Replace' SettlInstTransType <163> transaction types."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Reference identifier for the SettlInstID <162> with 'Cancel' and 'Replace' SettlInstTransType <163> transaction types."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Reference identifier for the SettlInstID <162> with 'Cancel' and 'Replace' SettlInstTransType <163> transaction types.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Reference identifier for the SettlInstID <162> with Cancel and Replace SettlInstTransType <163> transaction types.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Reference identifier for the SettlInstID <162> with Cancel and Replace SettlInstTransType <163> transaction types.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

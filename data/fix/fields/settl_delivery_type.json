@@ -1,0 +1,89 @@
+{
+ "name": "SettlDeliveryType",
+ "tag": 172,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies type of settlement",
+   "values": {
+    "0": "\"Versus. Payment\": Deliver (if Sell) or Receive (if Buy) vs. (Against) Payment",
+    "1": "\"Free\": Deliver (if Sell) or Receive (if Buy) Free",
+    "2": "Tri-Party",
+    "3": "Hold In Custody"
+   },
+   "value_names": {
+    "0": "VERSUS",
+    "1": "FREE",
+    "2": "TRI_PARTY",
+    "3": "HOLD_IN_CUSTODY"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies type of settlement",
+   "values": {
+    "0": "\"Versus. Payment\": Deliver (if Sell) or Receive (if Buy) vs. (Against) Payment",
+    "1": "\"Free\": Deliver (if Sell) or Receive (if Buy) Free",
+    "2": "Tri-Party",
+    "3": "Hold In Custody"
+   },
+   "value_names": {
+    "0": "VERSUS",
+    "1": "FREE",
+    "2": "TRI_PARTY",
+    "3": "HOLD_IN_CUSTODY"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identifies type of settlement",
+   "values": {
+    "0": "\"Versus. Payment\": Deliver (if Sell) or Receive (if Buy) vs. (Against) Payment",
+    "1": "\"Free\": Deliver (if Sell) or Receive (if Buy) Free",
+    "2": "Tri-Party",
+    "3": "Hold In Custody"
+   },
+   "value_names": {
+    "0": "VERSUS",
+    "1": "FREE",
+    "2": "TRI_PARTY",
+    "3": "HOLD_IN_CUSTODY"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Identifies type of settlement 0 = \"Versus. Payment\": Deliver (if Sell) or Receive (if Buy) vs. (Against) Payment 1 = \"Free\": Deliver (if Sell) or Receive (if Buy) Free 2 = Tri-Party 3 = Hold In Custody",
+   "value_names": {
+    "0": "VERSUS",
+    "1": "FREE",
+    "2": "TRI_PARTY",
+    "3": "HOLD_IN_CUSTODY"
+   }
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Identifies type of settlement 0 = \"Versus. Payment\": Deliver (if Sell) or Receive (if Buy) vs. (Against) Payment 1 = \"Free\": Deliver (if Sell) or Receive (if Buy) Free",
+   "value_names": {
+    "1": "FREE",
+    "0": "VERSUS"
+   },
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Identifies type of settlement 0 = 'Versus. Payment': Deliver (if Sell) or Receive (if Buy) vs. (Against) Payment 1 = 'Free': Deliver (if Sell) or Receive (if Buy) Free",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Identifies type of settlement 0 = 'Versus. Payment': Deliver (if Sell) or Receive (if Buy) vs. (Against) Payment 1 = 'Free': Deliver (if Sell) or Receive (if Buy) Free",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

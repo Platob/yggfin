@@ -1,0 +1,82 @@
+{
+ "name": "InstrmtLegGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 192,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "LegFinancingDetails",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 41,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 42,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 42,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

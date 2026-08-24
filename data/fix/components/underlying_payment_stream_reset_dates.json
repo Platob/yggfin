@@ -1,0 +1,150 @@
+{
+ "name": "UnderlyingPaymentStreamResetDates",
+ "versions": {
+  "5.0.SP2": {
+   "order": 64,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamResetDateRelativeTo",
+     "required": false,
+     "tag": 40592
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamResetDateBusinessDayConvention",
+     "required": false,
+     "tag": 40593
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamResetDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamResetFrequencyPeriod",
+     "required": false,
+     "tag": 40595
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamResetFrequencyUnit",
+     "required": false,
+     "tag": 40596
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamResetWeeklyRollConvention",
+     "required": false,
+     "tag": 40597
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInitialFixingDateRelativeTo",
+     "required": false,
+     "tag": 40598
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInitialFixingDateBusinessDayConvention",
+     "required": false,
+     "tag": 40599
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamInitialFixingDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInitialFixingDateOffsetPeriod",
+     "required": false,
+     "tag": 40601
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInitialFixingDateOffsetUnit",
+     "required": false,
+     "tag": 40602
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInitialFixingDateOffsetDayType",
+     "required": false,
+     "tag": 40603
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInitialFixingDateAdjusted",
+     "required": false,
+     "tag": 40604
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFixingDateRelativeTo",
+     "required": false,
+     "tag": 40605
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFixingDateBusinessDayConvention",
+     "required": false,
+     "tag": 40606
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamFixingDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFixingDateOffsetPeriod",
+     "required": false,
+     "tag": 40608
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFixingDateOffsetUnit",
+     "required": false,
+     "tag": 40609
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFixingDateOffsetDayType",
+     "required": false,
+     "tag": 40610
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFixingDateAdjusted",
+     "required": false,
+     "tag": 40611
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateCutoffDateOffsetPeriod",
+     "required": false,
+     "tag": 40612
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateCutoffDateOffsetUnit",
+     "required": false,
+     "tag": 40613
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateCutoffDateOffsetDayType",
+     "required": false,
+     "tag": 40614
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamFixingDateGrp",
+     "required": false
+    }
+   ]
+  }
+ }
+}

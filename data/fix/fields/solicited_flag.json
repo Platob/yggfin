@@ -1,0 +1,128 @@
+{
+ "name": "SolicitedFlag",
+ "tag": 377,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Indicates whether or not the order was solicited.",
+   "values": {
+    "N": "Was not solicited",
+    "Y": "Was solicited"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Indicates whether or not the order was solicited.",
+   "values": {
+    "N": "Was not solicited",
+    "Y": "Was solicited"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Indicates whether or not the order was solicited.",
+   "values": {
+    "N": "Was not solicited",
+    "Y": "Was solicited"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "Boolean",
+   "description": "Indicates whether or not the order was solicited.",
+   "values": {
+    "Y": "Was solcitied",
+    "N": "Was not solicited"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "Boolean",
+   "description": "Indicates whether or not the order was solicited.",
+   "values": {
+    "Y": "Was solcitied",
+    "N": "Was not solicited"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "Trade Capture Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.2": {
+   "type": "Boolean",
+   "description": "Indicates whether or not the order was solicited.",
+   "values": {
+    "Y": "Was solcitied",
+    "N": "Was not solicited"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

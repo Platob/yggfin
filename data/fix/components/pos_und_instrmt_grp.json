@@ -1,0 +1,158 @@
+{
+ "name": "PosUndInstrmtGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 211,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyings",
+     "required": false,
+     "tag": 711,
+     "members": [
+      {
+       "kind": "component",
+       "name": "UnderlyingInstrument",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingSettlPrice",
+       "required": false,
+       "tag": 732
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingSettlPriceType",
+       "required": false,
+       "tag": 733
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryAmount",
+       "required": false,
+       "tag": 1037
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingAmount",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 60,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyings",
+     "required": false,
+     "tag": 711,
+     "members": [
+      {
+       "kind": "component",
+       "name": "UnderlyingInstrument",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingSettlPrice",
+       "required": false,
+       "tag": 732
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingSettlPriceType",
+       "required": false,
+       "tag": 733
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryAmount",
+       "required": false,
+       "tag": 1037
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingAmount",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 61,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyings",
+     "required": false,
+     "tag": 711,
+     "members": [
+      {
+       "kind": "component",
+       "name": "UnderlyingInstrument",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingSettlPrice",
+       "required": false,
+       "tag": 732
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingSettlPriceType",
+       "required": false,
+       "tag": 733
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryAmount",
+       "required": false,
+       "tag": 1037
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingAmount",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 61,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyings",
+     "required": false,
+     "tag": 711,
+     "members": [
+      {
+       "kind": "component",
+       "name": "UnderlyingInstrument",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingSettlPrice",
+       "required": true,
+       "tag": 732
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingSettlPriceType",
+       "required": true,
+       "tag": 733
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

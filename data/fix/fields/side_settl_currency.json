@@ -1,0 +1,14 @@
+{
+ "name": "SideSettlCurrency",
+ "tag": 1155,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Currency",
+   "description": "Used to identify the settlement currency on the Trade Capture Report Side"
+  },
+  "5.0.SP1": {
+   "type": "Currency",
+   "description": "Used to identify the settlement currency on the Trade Capture Report Side"
+  }
+ }
+}

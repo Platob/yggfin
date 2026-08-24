@@ -1,0 +1,18 @@
+{
+ "name": "QuantityDate",
+ "tag": 976,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "Date associated to the quantity that is being reported for the position."
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "Date associated to the quantity that is being reported for the position."
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "Date associated to the quantity that is being reported for the position."
+  }
+ }
+}

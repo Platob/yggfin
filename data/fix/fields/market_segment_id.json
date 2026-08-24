@@ -1,0 +1,59 @@
+{
+ "name": "MarketSegmentID",
+ "tag": 1300,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Identifies the market segment",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "News",
+    "TradingSessionListRequest",
+    "SecurityListUpdateReport",
+    "MarketDefinitionRequest",
+    "MarketDefinition",
+    "MarketDefinitionUpdateReport",
+    "OrderMassActionReport",
+    "SecurityDefinitionRequest",
+    "OrderMassActionRequest",
+    "SecurityStatusRequest",
+    "SecurityStatus",
+    "TradingSessionStatusRequest",
+    "TradingSessionStatus",
+    "OrderMassCancelRequest",
+    "OrderMassCancelReport",
+    "SecurityTypeRequest",
+    "SecurityTypes",
+    "SecurityListRequest",
+    "SecurityList",
+    "DerivativeSecurityListRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Identifies the market segment",
+   "used_in": [
+    "TradingSessionListRequest",
+    "SecurityListUpdateReport",
+    "MarketDefinitionRequest",
+    "MarketDefinition",
+    "MarketDefinitionUpdateReport",
+    "OrderMassActionReport",
+    "SecurityDefinitionRequest",
+    "OrderMassActionRequest",
+    "SecurityStatusRequest",
+    "SecurityStatus",
+    "TradingSessionStatusRequest",
+    "TradingSessionStatus",
+    "OrderMassCancelRequest",
+    "OrderMassCancelReport",
+    "SecurityTypeRequest",
+    "SecurityTypes",
+    "SecurityListRequest",
+    "SecurityList",
+    "DerivativeSecurityListRequest"
+   ]
+  }
+ }
+}

@@ -1,0 +1,56 @@
+{
+ "name": "ListRejectReason",
+ "tag": 1386,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies the reason for rejection of a NewOrderList <E> message. Note that OrdRejReason <103> is used if the rejection is based on properties of an individual order part of the List.",
+   "values": {
+    "0": "Broker / Exchange option",
+    "2": "Exchange closed",
+    "4": "Too late to enter",
+    "5": "Unknown order",
+    "6": "Duplicate Order (e.g. dupe ClOrdID <11> )",
+    "11": "Unsupported order characteristic",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "BROKER_CREDIT",
+    "2": "EXCHANGE_CLOSED",
+    "4": "TOO_LATE_TO_ENTER",
+    "5": "UNKNOWN_ORDER",
+    "6": "DUPLICATE_ORDER",
+    "11": "UNSUPPORTED_ORDER_CHARACTERISTIC",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "ListStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies the reason for rejection of a NewOrderList <E> message. Note that OrdRejReason <103> is used if the rejection is based on properties of an individual order part of the List.",
+   "values": {
+    "0": "Broker / Exchange option",
+    "2": "Exchange closed",
+    "4": "Too late to enter",
+    "5": "Unknown order",
+    "6": "Duplicate Order (e.g. dupe ClOrdID <11> )",
+    "11": "Unsupported order characteristic",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "BROKER_CREDIT",
+    "2": "EXCHANGE_CLOSED",
+    "4": "TOO_LATE_TO_ENTER",
+    "5": "UNKNOWN_ORDER",
+    "6": "DUPLICATE_ORDER",
+    "11": "UNSUPPORTED_ORDER_CHARACTERISTIC",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "ListStatus"
+   ]
+  }
+ }
+}

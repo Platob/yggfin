@@ -1,0 +1,34 @@
+{
+ "name": "CollRptID",
+ "tag": 908,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Collateral Report Identifier",
+   "used_in": [
+    "CollateralReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Collateral Report Identifier",
+   "used_in": [
+    "CollateralReport"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Collateral Report Identifier",
+   "used_in": [
+    "CollateralReport"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Collateral Report Identifier",
+   "used_in": [
+    "Collateral Report"
+   ]
+  }
+ }
+}

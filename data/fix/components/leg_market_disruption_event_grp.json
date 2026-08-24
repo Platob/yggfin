@@ -1,0 +1,30 @@
+{
+ "name": "LegMarketDisruptionEventGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 543,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegMarketDisruptionEvents",
+     "required": false,
+     "tag": 41467,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionEvent",
+       "required": false,
+       "tag": 41468
+      },
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionValue",
+       "required": false,
+       "tag": 40223
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

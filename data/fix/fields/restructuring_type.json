@@ -1,0 +1,22 @@
+{
+ "name": "RestructuringType",
+ "tag": 1449,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "A category of CDS credit even in which the underlying bond experiences a restructuring. Used to define a CDS instrument.",
+   "values": {
+    "FR": "Full Restructuring",
+    "MR": "Modified Restructuring",
+    "MM": "Modified Mod Restructuring",
+    "XR": "No Restructuring specified"
+   },
+   "value_names": {
+    "FR": "FULL_RESTRUCTURING",
+    "MR": "MODIFIED_RESTRUCTURING",
+    "MM": "MODIFIED_MOD_RESTRUCTURING",
+    "XR": "NO_RESTRUCTURING_SPECIFIED"
+   }
+  }
+ }
+}

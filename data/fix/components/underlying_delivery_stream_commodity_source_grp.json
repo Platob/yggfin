@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingDeliveryStreamCommoditySourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 585,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingDeliveryStreamCommoditySources",
+     "required": false,
+     "tag": 41808,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryStreamCommoditySource",
+       "required": false,
+       "tag": 41809
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

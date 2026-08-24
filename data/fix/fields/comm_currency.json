@@ -1,0 +1,26 @@
+{
+ "name": "CommCurrency",
+ "tag": 479,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Currency",
+   "description": "Specifies currency to be use for Commission <12> if the Commission currency is different from the Deal Currency. See Appendix 6-A: Valid Currency Codes ."
+  },
+  "5.0.SP1": {
+   "type": "Currency",
+   "description": "Specifies currency to be use for Commission <12> if the Commission currency is different from the Deal Currency. See Appendix 6-A: Valid Currency Codes ."
+  },
+  "5.0": {
+   "type": "Currency",
+   "description": "Specifies currency to be use for Commission <12> if the Commission currency is different from the Deal Currency. See Appendix 6-A: Valid Currency Codes ."
+  },
+  "4.4": {
+   "type": "Currency",
+   "description": "Specifies currency to be use for Commission <12> if the Commission currency is different from the Deal Currency. See Appendix 6-A: Valid Currency Codes ."
+  },
+  "4.3": {
+   "type": "Currency",
+   "description": "Specifies currency to be use for Commission <12> if the Commission currency is different from the Deal Currency \u2014 see Appendix 6-A: Valid Currency Codes ."
+  }
+ }
+}

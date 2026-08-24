@@ -1,0 +1,37 @@
+{
+ "name": "ContraryInstructionIndicator",
+ "tag": 719,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Used to indicate when a contrary instruction for exercise or abandonment is being submitted",
+   "used_in": [
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Used to indicate when a contrary instruction for exercise or abandonment is being submitted",
+   "used_in": [
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport"
+   ]
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Used to indicate when a contrary instruction for exercise or abandonment is being submitted",
+   "used_in": [
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport"
+   ]
+  },
+  "4.4": {
+   "type": "Boolean",
+   "description": "Required to be set to true (Y) when a position maintenance request is being performed contrary to current money position. Required when an exercise of an out of the money position is requested or an abandonement (do not exercise ) for an in the money position.",
+   "used_in": [
+    "Position Maintenance Request"
+   ]
+  }
+ }
+}

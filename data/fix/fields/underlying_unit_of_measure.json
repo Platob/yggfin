@@ -1,0 +1,19 @@
+{
+ "name": "UnderlyingUnitOfMeasure",
+ "tag": 998,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Refer to defintion of UnitofMeasure <996>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Refer to defintion of UnitofMeasure <996>"
+  },
+  "5.0": {
+   "name": "UnderlyingUnitofMeasure",
+   "type": "String",
+   "description": "Same as UnitofMeasure <996> ."
+  }
+ }
+}

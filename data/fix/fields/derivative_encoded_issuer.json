@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeEncodedIssuer",
+ "tag": 1278,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data"
+  },
+  "5.0.SP1": {
+   "type": "data"
+  }
+ }
+}

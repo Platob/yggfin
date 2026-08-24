@@ -1,0 +1,30 @@
+{
+ "name": "RequestingPartySubGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 331,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRequestingPartySubIDs",
+     "required": false,
+     "tag": 1661,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RequestingPartySubID",
+       "required": false,
+       "tag": 1662
+      },
+      {
+       "kind": "field",
+       "name": "RequestingPartySubIDType",
+       "required": false,
+       "tag": 1663
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

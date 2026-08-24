@@ -1,0 +1,96 @@
+{
+ "name": "SecMassStatGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 337,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRelatedSym",
+     "required": false,
+     "tag": 146,
+     "members": [
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "InstrumentExtension",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "FinancingDetails",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "UndInstrmtGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "InstrmtLegGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "RelatedInstrumentGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "SecurityTradingStatus",
+       "required": false,
+       "tag": 326
+      },
+      {
+       "kind": "field",
+       "name": "SecurityTradingEvent",
+       "required": false,
+       "tag": 1174
+      },
+      {
+       "kind": "field",
+       "name": "HaltReasonInt",
+       "required": false,
+       "tag": 327
+      },
+      {
+       "kind": "field",
+       "name": "FinancialStatus",
+       "required": false,
+       "tag": 291
+      },
+      {
+       "kind": "field",
+       "name": "CorporateAction",
+       "required": false,
+       "tag": 292
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

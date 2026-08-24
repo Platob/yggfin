@@ -1,0 +1,30 @@
+{
+ "name": "LegExtraordinaryEventGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 658,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegExtraordinaryEvents",
+     "required": false,
+     "tag": 42388,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegExtraordinaryEventType",
+       "required": false,
+       "tag": 42389
+      },
+      {
+       "kind": "field",
+       "name": "LegExtraordinaryEventValue",
+       "required": false,
+       "tag": 42390
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

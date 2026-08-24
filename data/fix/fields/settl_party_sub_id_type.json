@@ -1,0 +1,22 @@
+{
+ "name": "SettlPartySubIDType",
+ "tag": 786,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Type of SettlPartySubID <785> value. Same values as PartySubIDType <803>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Type of SettlPartySubID <785> value. Same values as PartySubIDType <803>"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Type of SettlPartySubID <785> value. Same values as PartySubIDType <803>"
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Type of SettlPartySubID <785> value. Same values as PartySubIDType <803>"
+  }
+ }
+}

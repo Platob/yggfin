@@ -1,0 +1,189 @@
+{
+ "name": "ClearingInstruction",
+ "tag": 577,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Eligibility of this trade for clearing and central counterparty processing",
+   "values": {
+    "0": "Process normally",
+    "1": "Exclude from all netting",
+    "2": "Bilateral netting only",
+    "3": "Ex clearing",
+    "4": "Special trade",
+    "5": "Multilateral netting",
+    "6": "Clear against central counterparty",
+    "7": "Exclude from central counterparty",
+    "8": "Manual mode (pre-posting and/or pre-giveup)",
+    "9": "Automatic posting mode (trade posting to the position account number specified)",
+    "10": "Automatic give-up mode (trade give-up to the give-up destination number specified)",
+    "11": "Qualified Service Representative QSR",
+    "12": "Customer trade",
+    "13": "Self clearing"
+   },
+   "value_names": {
+    "0": "PROCESS_NORMALLY",
+    "1": "EXCLUDE_FROM_ALL_NETTING",
+    "2": "BILATERAL_NETTING_ONLY",
+    "3": "EX_CLEARING",
+    "4": "SPECIAL_TRADE",
+    "5": "MULTILATERAL_NETTING",
+    "6": "CLEAR_AGAINST_CENTRAL_COUNTERPARTY",
+    "7": "EXCLUDE_FROM_CENTRAL_COUNTERPARTY",
+    "8": "MANUAL_MODE",
+    "9": "AUTOMATIC_POSTING_MODE",
+    "10": "AUTOMATIC_GIVE_UP_MODE",
+    "11": "QUALIFIED_SERVICE_REPRESENTATIVE_QSR",
+    "12": "CUSTOMER_TRADE",
+    "13": "SELF_CLEARING",
+    "14": "BUY_IN"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Eligibility of this trade for clearing and central counterparty processing",
+   "values": {
+    "0": "Process normally",
+    "1": "Exclude from all netting",
+    "2": "Bilateral netting only",
+    "3": "Ex clearing",
+    "4": "Special trade",
+    "5": "Multilateral netting",
+    "6": "Clear against central counterparty",
+    "7": "Exclude from central counterparty",
+    "8": "Manual mode (pre-posting and/or pre-giveup)",
+    "9": "Automatic posting mode (trade posting to the position account number specified)",
+    "10": "Automatic give-up mode (trade give-up to the give-up destination number specified)",
+    "11": "Qualified Service Representative QSR",
+    "12": "Customer trade",
+    "13": "Self clearing"
+   },
+   "value_names": {
+    "0": "PROCESS_NORMALLY",
+    "1": "EXCLUDE_FROM_ALL_NETTING",
+    "2": "BILATERAL_NETTING_ONLY",
+    "3": "EX_CLEARING",
+    "4": "SPECIAL_TRADE",
+    "5": "MULTILATERAL_NETTING",
+    "6": "CLEAR_AGAINST_CENTRAL_COUNTERPARTY",
+    "7": "EXCLUDE_FROM_CENTRAL_COUNTERPARTY",
+    "8": "MANUAL_MODE",
+    "9": "AUTOMATIC_POSTING_MODE",
+    "10": "AUTOMATIC_GIVE_UP_MODE",
+    "11": "QUALIFIED_SERVICE_REPRESENTATIVE_QSR",
+    "12": "CUSTOMER_TRADE",
+    "13": "SELF_CLEARING"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Eligibility of this trade for clearing and central counterparty processing",
+   "values": {
+    "0": "Process normally",
+    "1": "Exclude from all netting",
+    "2": "Bilateral netting only",
+    "3": "Ex clearing",
+    "4": "Special trade",
+    "5": "Multilateral netting",
+    "6": "Clear against central counterparty",
+    "7": "Exclude from central counterparty",
+    "8": "Manual mode (pre-posting and/or pre-giveup)",
+    "9": "Automatic posting mode (trade posting to the position account number specified)",
+    "10": "Automatic give-up mode (trade give-up to the give-up destination number specified)",
+    "11": "Qualified Service Representative QSR",
+    "12": "Customer trade",
+    "13": "Self clearing"
+   },
+   "value_names": {
+    "0": "PROCESS_NORMALLY",
+    "1": "EXCLUDE_FROM_ALL_NETTING",
+    "2": "BILATERAL_NETTING_ONLY",
+    "3": "EX_CLEARING",
+    "4": "SPECIAL_TRADE",
+    "5": "MULTILATERAL_NETTING",
+    "6": "CLEAR_AGAINST_CENTRAL_COUNTERPARTY",
+    "7": "EXCLUDE_FROM_CENTRAL_COUNTERPARTY",
+    "8": "MANUAL_MODE",
+    "9": "AUTOMATIC_POSTING_MODE",
+    "10": "AUTOMATIC_GIVE_UP_MODE",
+    "11": "QUALIFIED_SERVICE_REPRESENTATIVE_QSR",
+    "12": "CUSTOMER_TRADE",
+    "13": "SELF_CLEARING"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Eligibility of this trade for clearing and central counterparty processing",
+   "values": {
+    "0": "process normally",
+    "1": "exclude from all netting",
+    "2": "bilateral netting only",
+    "3": "ex clearing",
+    "4": "special trade",
+    "5": "multilateral netting",
+    "6": "clear against central counterparty",
+    "7": "exclude from central counterparty",
+    "8": "Manual mode (pre-posting and/or pre-giveup)",
+    "9": "Automatic posting mode (trade posting to the position account number specified)",
+    "10": "Automatic give-up mode (trade give-up to the give-up destination number specified)",
+    "11": "Qualified Service Representative (QSR)",
+    "12": "Customer Trade",
+    "13": "Self clearing"
+   },
+   "value_names": {
+    "0": "PROCESS_NORMALLY",
+    "1": "EXCLUDE_FROM_ALL_NETTING",
+    "2": "BILATERAL_NETTING_ONLY",
+    "3": "EX_CLEARING",
+    "4": "SPECIAL_TRADE",
+    "5": "MULTILATERAL_NETTING",
+    "6": "CLEAR_AGAINST_CENTRAL_COUNTERPARTY",
+    "7": "EXCLUDE_FROM_CENTRAL_COUNTERPARTY",
+    "8": "MANUAL_MODE",
+    "9": "AUTOMATIC_POSTING_MODE",
+    "10": "AUTOMATIC_GIVE_UP_MODE",
+    "11": "QUALIFIED_SERVICE_REPRESENTATIVE_QSR",
+    "12": "CUSTOMER_TRADE",
+    "13": "SELF_CLEARING"
+   },
+   "used_in": [
+    "Trade Capture Report",
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Eligibility of this trade for clearing and central counterparty processing",
+   "values": {
+    "0": "process normally",
+    "1": "exclude from all netting",
+    "2": "bilateral netting only",
+    "3": "ex clearing",
+    "4": "special trade",
+    "5": "multilateral netting",
+    "6": "clear against central counterparty",
+    "7": "exclude from central counterparty",
+    "8": "Manual mode (pre-posting and/or pre-giveup)",
+    "9": "Automatic posting mode (trade posting to the position account number specified)",
+    "10": "Automatic give-up mode (trade give-up to the give-up destination number specified)"
+   },
+   "value_names": {
+    "8": "MANUAL_MODE",
+    "5": "MULTILATERAL_NETTING",
+    "9": "AUTOMATIC_POSTING_MODE",
+    "2": "BILATERAL_NETTING_ONLY",
+    "6": "CLEAR_AGAINST_CENTRAL_COUNTERPARTY",
+    "10": "AUTOMATIC_GIVE_UP_MODE",
+    "4": "SPECIAL_TRADE",
+    "3": "EX_CLEARING",
+    "0": "PROCESS_NORMALLY",
+    "7": "EXCLUDE_FROM_CENTRAL_COUNTERPARTY",
+    "1": "EXCLUDE_FROM_ALL_NETTING"
+   },
+   "used_in": [
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

@@ -1,0 +1,67 @@
+{
+ "name": "CollAction",
+ "tag": 944,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Action proposed for an <UnderlyingInstrument> instance.",
+   "values": {
+    "0": "Retain",
+    "1": "Add",
+    "2": "Remove"
+   },
+   "value_names": {
+    "0": "RETAIN",
+    "1": "ADD",
+    "2": "REMOVE"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Action proposed for an <UnderlyingInstrument> instance.",
+   "values": {
+    "0": "Retain",
+    "1": "Add",
+    "2": "Remove"
+   },
+   "value_names": {
+    "0": "RETAIN",
+    "1": "ADD",
+    "2": "REMOVE"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Action proposed for an <UnderlyingInstrument> instance.",
+   "values": {
+    "0": "Retain",
+    "1": "Add",
+    "2": "Remove"
+   },
+   "value_names": {
+    "0": "RETAIN",
+    "1": "ADD",
+    "2": "REMOVE"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Action proposed for an <UnderlyingInstrument> instance.",
+   "values": {
+    "0": "Retain",
+    "1": "Add",
+    "2": "Remove"
+   },
+   "value_names": {
+    "0": "RETAIN",
+    "1": "ADD",
+    "2": "REMOVE"
+   },
+   "used_in": [
+    "Collateral Request",
+    "Collateral Assignment",
+    "Collateral Response"
+   ]
+  }
+ }
+}

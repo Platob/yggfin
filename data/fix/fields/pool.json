@@ -1,0 +1,22 @@
+{
+ "name": "Pool",
+ "tag": 691,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "For Fixed Income, identifies MBS / ABS pool."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "For Fixed Income, identifies MBS / ABS pool."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "For Fixed Income, identifies MBS / ABS pool."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "For Fixed Income, identifies MBS / ABS pool."
+  }
+ }
+}

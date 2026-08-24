@@ -1,0 +1,57 @@
+{
+ "name": "UnderlyingPaymentStubEndDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 157,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubEndDateUnadjusted",
+     "required": false,
+     "tag": 42984
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubEndDateBusinessDayConvention",
+     "required": false,
+     "tag": 42985
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStubEndDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubEndDateRelativeTo",
+     "required": false,
+     "tag": 42986
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubEndDateOffsetPeriod",
+     "required": false,
+     "tag": 42987
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubEndDateOffsetUnit",
+     "required": false,
+     "tag": 42988
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubEndDateOffsetDayType",
+     "required": false,
+     "tag": 42989
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStubEndDateAdjusted",
+     "required": false,
+     "tag": 42990
+    }
+   ]
+  }
+ }
+}

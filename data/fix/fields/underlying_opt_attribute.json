@@ -1,0 +1,36 @@
+{
+ "name": "UnderlyingOptAttribute",
+ "tag": 317,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Underlying security's OptAttribute. See OptAttribute <206> field for description"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Underlying security's OptAttribute. See OptAttribute <206> field for description"
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Underlying security's OptAttribute. See OptAttribute <206> field for description"
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Underlying security's OptAttribute. See OptAttribute <206> field for description"
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Underlying security's OptAttribute. See OptAttribute <206> field for description"
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Underlying security's OptAttribute. See OptAttribute <206> field for description",
+   "used_in": [
+    "Quote Acknowledgement",
+    "Security Definition Request",
+    "Security Definition",
+    "Mass Quote"
+   ]
+  }
+ }
+}

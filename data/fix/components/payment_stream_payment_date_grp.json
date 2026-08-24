@@ -1,0 +1,30 @@
+{
+ "name": "PaymentStreamPaymentDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 505,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPaymentStreamPaymentDates",
+     "required": false,
+     "tag": 41220,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PaymentStreamPaymentDate",
+       "required": false,
+       "tag": 41221
+      },
+      {
+       "kind": "field",
+       "name": "PaymentStreamPaymentDateType",
+       "required": false,
+       "tag": 41222
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

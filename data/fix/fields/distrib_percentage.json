@@ -1,0 +1,32 @@
+{
+ "name": "DistribPercentage",
+ "tag": 512,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "The amount of each distribution to go to this beneficiary, expressed as a percentage"
+  },
+  "5.0.SP1": {
+   "type": "Percentage",
+   "description": "The amount of each distribution to go to this beneficiary, expressed as a percentage"
+  },
+  "5.0": {
+   "type": "Percentage",
+   "description": "The amount of each distribution to go to this beneficiary, expressed as a percentage"
+  },
+  "4.4": {
+   "type": "Percentage",
+   "description": "The amount of each distribution to go to this beneficiary, expressed as a percentage",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "Percentage",
+   "description": "The amount of each distribution to go to this beneficiary, expressed as a percentage",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  }
+ }
+}

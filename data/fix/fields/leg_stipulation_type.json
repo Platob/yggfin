@@ -1,0 +1,22 @@
+{
+ "name": "LegStipulationType",
+ "tag": 688,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and"
+  }
+ }
+}

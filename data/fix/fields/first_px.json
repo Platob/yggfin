@@ -1,0 +1,27 @@
+{
+ "name": "FirstPx",
+ "tag": 1025,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Indicates the first trade price of the day/session",
+   "used_in": [
+    "SecurityStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Indicates the first trade price of the day/session",
+   "used_in": [
+    "SecurityStatus"
+   ]
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Indicates the first trade price of the day/session",
+   "used_in": [
+    "SecurityStatus"
+   ]
+  }
+ }
+}

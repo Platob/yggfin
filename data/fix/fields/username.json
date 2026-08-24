@@ -1,0 +1,56 @@
+{
+ "name": "Username",
+ "tag": 553,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Userid or username.",
+   "used_in": [
+    "Logon",
+    "UserRequest",
+    "UserResponse"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Userid or username.",
+   "used_in": [
+    "Logon",
+    "UserRequest",
+    "UserResponse"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Userid or username.",
+   "used_in": [
+    "Logon",
+    "UserRequest",
+    "UserResponse"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Userid or username.",
+   "used_in": [
+    "Logon",
+    "User Request",
+    "User Response"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Userid or username.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "String",
+   "description": "Userid or username.",
+   "used_in": [
+    "Logon"
+   ]
+  }
+ }
+}

@@ -1,0 +1,43 @@
+{
+ "name": "TimeInForceRules",
+ "versions": {
+  "5.0.SP2": {
+   "order": 279,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTimeInForceRules",
+     "required": false,
+     "tag": 1239,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TimeInForce",
+       "required": false,
+       "tag": 59
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 134,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTimeInForceRules",
+     "required": false,
+     "tag": 1239,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TimeInForce",
+       "required": false,
+       "tag": 59
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

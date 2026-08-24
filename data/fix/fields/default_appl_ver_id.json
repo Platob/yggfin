@@ -1,0 +1,34 @@
+{
+ "name": "DefaultApplVerID",
+ "tag": 1137,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied, by default, to message at the session level. Enumerated field with values assigned at time of service pack release. Uses same values as ApplVerID <1128>",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied, by default, to message at the session level. Enumerated field with values assigned at time of service pack release. Uses same values as ApplVerID <1128>",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied, by default, to message at the session level. Enumerated field with values assigned at time of service pack release. Uses same values as ApplVerID <1128>",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied, by default, to message at the session level. Enumerated field with values assigned at time of service pack release. Uses same values as ApplVerID.",
+   "used_in": [
+    "Logon"
+   ]
+  }
+ }
+}

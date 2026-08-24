@@ -1,0 +1,13 @@
+{
+ "name": "LanguageCode",
+ "tag": 1474,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Language",
+   "description": "The national language in which the news item is provided.",
+   "used_in": [
+    "News"
+   ]
+  }
+ }
+}

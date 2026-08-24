@@ -1,0 +1,44 @@
+{
+ "name": "TrdMatchID",
+ "tag": 880,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Identifier assigned to a trade by a matching system.",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Identifier assigned to a trade by a matching system.",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Identifier assigned to a trade by a matching system.",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Identifier assigned to a trade by a matching system.",
+   "used_in": [
+    "Trade Capture Report Request",
+    "Trade Capture Report",
+    "Trade Capture Report Ack"
+   ]
+  }
+ }
+}

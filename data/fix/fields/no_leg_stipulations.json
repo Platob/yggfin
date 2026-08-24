@@ -1,0 +1,22 @@
+{
+ "name": "NoLegStipulations",
+ "tag": 683,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of leg stipulation entries"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of leg stipulation entries"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of leg stipulation entries"
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of leg stipulation entries"
+  }
+ }
+}

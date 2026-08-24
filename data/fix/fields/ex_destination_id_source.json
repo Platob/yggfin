@@ -1,0 +1,93 @@
+{
+ "name": "ExDestinationIDSource",
+ "tag": 1133,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "The ID source of ExDestination <100>",
+   "values": {
+    "B": "BIC (Bank Identification Code) (ISO 9362)",
+    "C": "Generally accepted market participant identifier (e.g. NASD mnemonic)",
+    "D": "Proprietary / Custom code",
+    "E": "ISO Country Code",
+    "G": "MIC (ISO 10383 - Market Identifier Code)"
+   },
+   "value_names": {
+    "B": "BIC",
+    "C": "GENERAL_IDENTIFIER",
+    "D": "PROPRIETARY",
+    "E": "ISO_COUNTRY_CODE",
+    "G": "MIC"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "Quote",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "The ID source of ExDestination <100>",
+   "values": {
+    "B": "BIC (Bank Identification Code) (ISO 9362)",
+    "C": "Generally accepted market participant identifier (e.g. NASD mnemonic)",
+    "D": "Proprietary / Custom code",
+    "E": "ISO Country Code",
+    "G": "MIC (ISO 10383 - Market Identifier Code)"
+   },
+   "value_names": {
+    "B": "BIC",
+    "C": "GENERAL_IDENTIFIER",
+    "D": "PROPRIETARY",
+    "E": "ISO_COUNTRY_CODE",
+    "G": "MIC"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "Quote",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "The ID source of ExDestination <100>",
+   "values": {
+    "B": "BIC (Bank Identification Code) (ISO 9362)",
+    "C": "Generally accepted market participant identifier (e.g. NASD mnemonic)",
+    "D": "Proprietary / Custom code",
+    "E": "ISO Country Code",
+    "G": "MIC (ISO 10383 - Market Identifier Code)"
+   },
+   "value_names": {
+    "B": "BIC",
+    "C": "GENERAL_IDENTIFIER",
+    "D": "PROPRIETARY",
+    "E": "ISO_COUNTRY_CODE",
+    "G": "MIC"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "Quote",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  }
+ }
+}

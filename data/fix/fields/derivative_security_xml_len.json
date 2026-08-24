@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeSecurityXMLLen",
+ "tag": 1282,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Refer to definition of SecurityXMLLen <1184>"
+  },
+  "5.0.SP1": {
+   "type": "Length",
+   "description": "Refer to definition of SecurityXMLLen <1184>"
+  }
+ }
+}

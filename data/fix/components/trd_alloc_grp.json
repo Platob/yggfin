@@ -1,0 +1,404 @@
+{
+ "name": "TrdAllocGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 233,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAllocs",
+     "required": false,
+     "tag": 78,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AllocAccount",
+       "required": false,
+       "tag": 79
+      },
+      {
+       "kind": "field",
+       "name": "AllocAcctIDSource",
+       "required": false,
+       "tag": 661
+      },
+      {
+       "kind": "field",
+       "name": "AllocSettlCurrency",
+       "required": false,
+       "tag": 736
+      },
+      {
+       "kind": "field",
+       "name": "AllocSettlCurrencyCodeSource",
+       "required": false,
+       "tag": 2927
+      },
+      {
+       "kind": "field",
+       "name": "IndividualAllocID",
+       "required": false,
+       "tag": 467
+      },
+      {
+       "kind": "field",
+       "name": "ParentAllocID",
+       "required": false,
+       "tag": 1593
+      },
+      {
+       "kind": "field",
+       "name": "AllocLegRefID",
+       "required": false,
+       "tag": 2727
+      },
+      {
+       "kind": "component",
+       "name": "AllocRegulatoryTradeIDGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "FirmMnemonic",
+       "required": false,
+       "tag": 1729
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "AllocHandlInst",
+       "required": false,
+       "tag": 209
+      },
+      {
+       "kind": "field",
+       "name": "AllocQty",
+       "required": false,
+       "tag": 80
+      },
+      {
+       "kind": "field",
+       "name": "AllocCalculatedCcyQty",
+       "required": false,
+       "tag": 2515
+      },
+      {
+       "kind": "field",
+       "name": "CustodialLotID",
+       "required": false,
+       "tag": 1752
+      },
+      {
+       "kind": "field",
+       "name": "VersusPurchaseDate",
+       "required": false,
+       "tag": 1753
+      },
+      {
+       "kind": "field",
+       "name": "VersusPurchasePrice",
+       "required": false,
+       "tag": 1754
+      },
+      {
+       "kind": "field",
+       "name": "CurrentCostBasis",
+       "required": false,
+       "tag": 1755
+      },
+      {
+       "kind": "field",
+       "name": "AllocCustomerCapacity",
+       "required": false,
+       "tag": 993
+      },
+      {
+       "kind": "field",
+       "name": "AllocMethod",
+       "required": false,
+       "tag": 1002
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryIndividualAllocID",
+       "required": false,
+       "tag": 989
+      },
+      {
+       "kind": "field",
+       "name": "AllocClearingFeeIndicator",
+       "required": false,
+       "tag": 1136
+      },
+      {
+       "kind": "component",
+       "name": "TradeAllocAmtGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "TradeAllocStatus",
+       "required": false,
+       "tag": 1840
+      },
+      {
+       "kind": "field",
+       "name": "AllocationRollupInstruction",
+       "required": false,
+       "tag": 1735
+      },
+      {
+       "kind": "field",
+       "name": "AllocText",
+       "required": false,
+       "tag": 161
+      },
+      {
+       "kind": "field",
+       "name": "EncodedAllocTextLen",
+       "required": false,
+       "tag": 360
+      },
+      {
+       "kind": "field",
+       "name": "EncodedAllocText",
+       "required": false,
+       "tag": 361
+      },
+      {
+       "kind": "field",
+       "name": "FirmAllocText",
+       "required": false,
+       "tag": 1732
+      },
+      {
+       "kind": "field",
+       "name": "EncodedFirmAllocTextLen",
+       "required": false,
+       "tag": 1733
+      },
+      {
+       "kind": "field",
+       "name": "EncodedFirmAllocText",
+       "required": false,
+       "tag": 1734
+      },
+      {
+       "kind": "field",
+       "name": "AllocRefRiskLimitCheckID",
+       "required": false,
+       "tag": 2392
+      },
+      {
+       "kind": "field",
+       "name": "AllocRefRiskLimitCheckIDType",
+       "required": false,
+       "tag": 2393
+      },
+      {
+       "kind": "component",
+       "name": "AllocCommissionDataGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 82,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAllocs",
+     "required": false,
+     "tag": 78,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AllocAccount",
+       "required": false,
+       "tag": 79
+      },
+      {
+       "kind": "field",
+       "name": "AllocAcctIDSource",
+       "required": false,
+       "tag": 661
+      },
+      {
+       "kind": "field",
+       "name": "AllocSettlCurrency",
+       "required": false,
+       "tag": 736
+      },
+      {
+       "kind": "field",
+       "name": "IndividualAllocID",
+       "required": false,
+       "tag": 467
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "AllocQty",
+       "required": false,
+       "tag": 80
+      },
+      {
+       "kind": "field",
+       "name": "AllocCustomerCapacity",
+       "required": false,
+       "tag": 993
+      },
+      {
+       "kind": "field",
+       "name": "AllocMethod",
+       "required": false,
+       "tag": 1002
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryIndividualAllocID",
+       "required": false,
+       "tag": 989
+      },
+      {
+       "kind": "field",
+       "name": "AllocClearingFeeIndicator",
+       "required": false,
+       "tag": 1136
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 83,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAllocs",
+     "required": false,
+     "tag": 78,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AllocAccount",
+       "required": false,
+       "tag": 79
+      },
+      {
+       "kind": "field",
+       "name": "AllocAcctIDSource",
+       "required": false,
+       "tag": 661
+      },
+      {
+       "kind": "field",
+       "name": "AllocSettlCurrency",
+       "required": false,
+       "tag": 736
+      },
+      {
+       "kind": "field",
+       "name": "IndividualAllocID",
+       "required": false,
+       "tag": 467
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "AllocQty",
+       "required": false,
+       "tag": 80
+      },
+      {
+       "kind": "field",
+       "name": "AllocCustomerCapacity",
+       "required": false,
+       "tag": 993
+      },
+      {
+       "kind": "field",
+       "name": "AllocMethod",
+       "required": false,
+       "tag": 1002
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryIndividualAllocID",
+       "required": false,
+       "tag": 989
+      },
+      {
+       "kind": "field",
+       "name": "AllocClearingFeeIndicator",
+       "required": false,
+       "tag": 1136
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 83,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAllocs",
+     "required": false,
+     "tag": 78,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AllocAccount",
+       "required": false,
+       "tag": 79
+      },
+      {
+       "kind": "field",
+       "name": "AllocAcctIDSource",
+       "required": false,
+       "tag": 661
+      },
+      {
+       "kind": "field",
+       "name": "AllocSettlCurrency",
+       "required": false,
+       "tag": 736
+      },
+      {
+       "kind": "field",
+       "name": "IndividualAllocID",
+       "required": false,
+       "tag": 467
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties2",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "AllocQty",
+       "required": false,
+       "tag": 80
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

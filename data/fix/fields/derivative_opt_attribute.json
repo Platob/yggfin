@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeOptAttribute",
+ "tag": 1265,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char"
+  },
+  "5.0.SP1": {
+   "type": "char"
+  }
+ }
+}

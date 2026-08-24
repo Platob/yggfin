@@ -1,0 +1,14 @@
+{
+ "name": "NoDerivativeInstrumentParties",
+ "tag": 1292,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Refer to definition of NoParties <453>"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Refer to definition of NoParties <453>"
+  }
+ }
+}

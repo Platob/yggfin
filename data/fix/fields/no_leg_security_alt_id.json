@@ -1,0 +1,26 @@
+{
+ "name": "NoLegSecurityAltID",
+ "tag": 604,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Multileg instrument's individual security's NoSecurityAltID. See NoSecurityAltID <454> field for description"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Multileg instrument's individual security's NoSecurityAltID. See NoSecurityAltID <454> field for description"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Multileg instrument's individual security's NoSecurityAltID. See NoSecurityAltID <454> field for description"
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Multileg instrument's individual security's NoSecurityAltID. See NoSecurityAltID <454> field for description"
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Multileg instrument's individual security's NoSecurityAltID. See NoSecurityAltID <454> field for description"
+  }
+ }
+}

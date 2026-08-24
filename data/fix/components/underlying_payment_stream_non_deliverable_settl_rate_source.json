@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingPaymentStreamNonDeliverableSettlRateSource",
+ "versions": {
+  "5.0.SP2": {
+   "order": 75,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamNonDeliverableSettlRateSource",
+     "required": false,
+     "tag": 40661
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamNonDeliverableSettlReferencePage",
+     "required": false,
+     "tag": 40824
+    }
+   ]
+  }
+ }
+}

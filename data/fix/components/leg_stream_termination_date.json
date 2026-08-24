@@ -1,0 +1,57 @@
+{
+ "name": "LegStreamTerminationDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 44,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegStreamTerminationDateUnadjusted",
+     "required": false,
+     "tag": 40257
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamTerminationDateBusinessDayConvention",
+     "required": false,
+     "tag": 40258
+    },
+    {
+     "kind": "component",
+     "name": "LegStreamTerminationDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamTerminationDateRelativeTo",
+     "required": false,
+     "tag": 40260
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamTerminationDateOffsetPeriod",
+     "required": false,
+     "tag": 40261
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamTerminationDateOffsetUnit",
+     "required": false,
+     "tag": 40262
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamTerminationDateOffsetDayType",
+     "required": false,
+     "tag": 40263
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamTerminationDateAdjusted",
+     "required": false,
+     "tag": 40264
+    }
+   ]
+  }
+ }
+}

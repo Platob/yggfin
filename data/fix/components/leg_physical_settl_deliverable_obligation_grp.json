@@ -1,0 +1,30 @@
+{
+ "name": "LegPhysicalSettlDeliverableObligationGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 556,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegPhysicalSettlDeliverableObligations",
+     "required": false,
+     "tag": 41604,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegPhysicalSettlDeliverableObligationType",
+       "required": false,
+       "tag": 41605
+      },
+      {
+       "kind": "field",
+       "name": "LegPhysicalSettlDeliverableObligationValue",
+       "required": false,
+       "tag": 41606
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

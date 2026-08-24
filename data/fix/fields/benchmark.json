@@ -1,0 +1,130 @@
+{
+ "name": "Benchmark",
+ "tag": 219,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "note": "no longer used",
+   "description": "Deprecated in FIX.4.2 See Appendix 6-F: 10.Removed Deprecated Field: Benchmark (tag 219) [Deprecated in FIX 4.3, Removed in FIX 4.4] For Fixed Income. Identifies the benchmark (e.g. used in conjunction with the Spread <218> field).",
+   "values": {
+    "1": "CURVE",
+    "2": "5YR",
+    "3": "OLD5",
+    "4": "10YR",
+    "5": "OLD10",
+    "6": "30YR",
+    "7": "OLD30",
+    "8": "3MOLIBOR",
+    "9": "6MOLIBOR"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "note": "no longer used",
+   "description": "Deprecated in FIX.4.2 See Appendix 6-F: 10.Removed Deprecated Field: Benchmark (tag 219) [Deprecated in FIX 4.3, Removed in FIX 4.4] For Fixed Income. Identifies the benchmark (e.g. used in conjunction with the Spread <218> field).",
+   "values": {
+    "1": "CURVE",
+    "2": "5YR",
+    "3": "OLD5",
+    "4": "10YR",
+    "5": "OLD10",
+    "6": "30YR",
+    "7": "OLD30",
+    "8": "3MOLIBOR",
+    "9": "6MOLIBOR"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "note": "no longer used",
+   "description": "Deprecated in FIX.4.2 See Appendix 6-F: 10.Removed Deprecated Field: Benchmark (tag 219) [Deprecated in FIX 4.3, Removed in FIX 4.4] For Fixed Income. Identifies the benchmark (e.g. used in conjunction with the Spread <218> field).",
+   "values": {
+    "1": "CURVE",
+    "2": "5YR",
+    "3": "OLD5",
+    "4": "10YR",
+    "5": "OLD10",
+    "6": "30YR",
+    "7": "OLD30",
+    "8": "3MOLIBOR",
+    "9": "6MOLIBOR"
+   }
+  },
+  "4.4": {
+   "type": "char",
+   "note": "no longer used",
+   "description": "No longer used. Included here for reference to prior versions. See Appendix 6-F: 10.Removed Deprecated Field: Benchmark (tag 219) [Deprecated in FIX 4.3, Removed in FIX 4.4] For Fixed Income. Identifies the benchmark (e.g. used in conjunction with the Spread <218> field).",
+   "values": {
+    "1": "CURVE",
+    "2": "5-YR",
+    "3": "OLD-5",
+    "4": "10-YR",
+    "5": "OLD-10",
+    "6": "30-YR",
+    "7": "OLD-30",
+    "8": "3-MO-LIBOR",
+    "9": "6-MO-LIBOR"
+   }
+  },
+  "4.3": {
+   "name": "Benchmark(Deprecated)",
+   "type": "char",
+   "note": "Deprecated",
+   "description": "*** DEPRECATED FIELD - See Appendix 6-E: 1.Deprecated Field: Benchmark (tag 219) [deprecated in FIX 4.3] *** For Fixed Income. Identifies the benchmark (e.g. used in conjunction with the Spread field).",
+   "values": {
+    "1": "CURVE",
+    "2": "5-YR",
+    "3": "OLD-5",
+    "4": "10-YR",
+    "5": "OLD-10",
+    "6": "30-YR",
+    "7": "OLD-30",
+    "8": "3-MO-LIBOR",
+    "9": "6-MO-LIBOR"
+   },
+   "value_names": {
+    "5": "OLD10",
+    "1": "CURVE",
+    "2": "FIVE_YR",
+    "4": "TEN_YR",
+    "6": "THIRTY_YR",
+    "7": "OLD30",
+    "8": "THREE_MOLIBOR",
+    "9": "SIX_MOLIBOR",
+    "3": "OLD5"
+   },
+   "used_in": [
+    "Indications of Interest"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "For Fixed Income. Identifies the benchmark (e.g. used in conjunction with the SpreadToBenchmark <218> field).",
+   "values": {
+    "1": "CURVE",
+    "2": "5-YR",
+    "3": "OLD-5",
+    "4": "10-YR",
+    "5": "OLD-10",
+    "6": "30-YR",
+    "7": "OLD-30",
+    "8": "3-MO-LIBOR",
+    "9": "6-MO-LIBOR"
+   },
+   "value_names": {
+    "1": "CURVE",
+    "2": "FIVE_YR",
+    "3": "OLD5",
+    "4": "TEN_YR",
+    "5": "OLD10",
+    "6": "THIRTY_YR",
+    "7": "OLD30",
+    "8": "THREE_MOLIBOR",
+    "9": "SIX_MOLIBOR"
+   },
+   "used_in": [
+    "Indication of Interest"
+   ]
+  }
+ }
+}

@@ -1,0 +1,45 @@
+{
+ "name": "UnderlyingPricingDateTime",
+ "versions": {
+  "5.0.SP2": {
+   "order": 101,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingPricingDateUnadjusted",
+     "required": false,
+     "tag": 41949
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPricingDateBusinessDayConvention",
+     "required": false,
+     "tag": 41950
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPricingDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPricingDateAdjusted",
+     "required": false,
+     "tag": 41951
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPricingTime",
+     "required": false,
+     "tag": 41952
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPricingTimeBusinessCenter",
+     "required": false,
+     "tag": 41953
+    }
+   ]
+  }
+ }
+}

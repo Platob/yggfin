@@ -1,0 +1,18 @@
+{
+ "name": "NoUndlyInstrumentPartySubIDs",
+ "tag": 1062,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of Underlying InstrumentPartySubID <1053> and InstrumentPartySubIDType <1054> entries"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of Underlying InstrumentPartySubID <1053> and InstrumentPartySubIDType <1054> entries"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of Underlying InstrumentPartySubID <1053> and InstrumentPartySubIDType <1054> entries"
+  }
+ }
+}

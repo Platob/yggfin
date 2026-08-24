@@ -1,0 +1,65 @@
+{
+ "name": "SideMultiLegReportingType",
+ "tag": 752,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Used to indicate if the side being reported on Trade Capture Report <AE> represents a leg of a multileg instrument or a single security.",
+   "values": {
+    "1": "Single Security (default if not specified)",
+    "2": "Individual leg of a multileg security",
+    "3": "Multileg Security"
+   },
+   "value_names": {
+    "1": "SINGLE_SECURITY",
+    "2": "INDIVIDUAL_LEG_OF_A_MULTILEG_SECURITY",
+    "3": "MULTILEG_SECURITY"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Used to indicate if the side being reported on Trade Capture Report <AE> represents a leg of a multileg instrument or a single security.",
+   "values": {
+    "1": "Single Security (default if not specified)",
+    "2": "Individual leg of a multileg security",
+    "3": "Multileg Security"
+   },
+   "value_names": {
+    "1": "SINGLE_SECURITY",
+    "2": "INDIVIDUAL_LEG_OF_A_MULTILEG_SECURITY",
+    "3": "MULTILEG_SECURITY"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Used to indicate if the side being reported on Trade Capture Report <AE> represents a leg of a multileg instrument or a single security.",
+   "values": {
+    "1": "Single Security (default if not specified)",
+    "2": "Individual leg of a multileg security",
+    "3": "Multileg Security"
+   },
+   "value_names": {
+    "1": "SINGLE_SECURITY",
+    "2": "INDIVIDUAL_LEG_OF_A_MULTILEG_SECURITY",
+    "3": "MULTILEG_SECURITY"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Used to indicate if the side being reported on Trade Capture Report <AE> represents a leg of a multileg instrument or a single security.",
+   "values": {
+    "1": "Single Security (default if not specified)",
+    "2": "Individual leg of a multileg security",
+    "3": "Multileg security"
+   },
+   "value_names": {
+    "1": "SINGLE_SECURITY",
+    "2": "INDIVIDUAL_LEG_OF_A_MULTILEG_SECURITY",
+    "3": "MULTILEG_SECURITY"
+   },
+   "used_in": [
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

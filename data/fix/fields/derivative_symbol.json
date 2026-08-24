@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeSymbol",
+ "tag": 1214,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Refer to definition for Symbol <55>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Refer to definition for Symbol <55>"
+  }
+ }
+}

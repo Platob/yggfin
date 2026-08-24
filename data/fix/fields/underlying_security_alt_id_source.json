@@ -1,0 +1,26 @@
+{
+ "name": "UnderlyingSecurityAltIDSource",
+ "tag": 459,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Identifies class or source of the UnderlyingSecurityAltID <458> value. Required if UnderlyingSecurityAltID is specified."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Identifies class or source of the UnderlyingSecurityAltID <458> value. Required if UnderlyingSecurityAltID is specified."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Identifies class or source of the UnderlyingSecurityAltID <458> value. Required if UnderlyingSecurityAltID is specified."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Identifies class or source of the UnderlyingSecurityAltID <458> value. Required if UnderlyingSecurityAltID <458> is specified."
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Identifies class or source of the UnderlyingSecurityAltID <458> value. Required if UnderlyingSecurityAltID <458> is specified."
+  }
+ }
+}

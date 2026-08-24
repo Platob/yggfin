@@ -1,0 +1,48 @@
+{
+ "name": "EncodedListExecInst",
+ "tag": 353,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the ListExecInst <69> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the ListExecInst <69> field.",
+   "used_in": [
+    "NewOrderList"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the ListExecInst <69> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the ListExecInst <69> field.",
+   "used_in": [
+    "NewOrderList"
+   ]
+  },
+  "5.0": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the ListExecInst <69> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the ListExecInst <69> field.",
+   "used_in": [
+    "NewOrderList"
+   ]
+  },
+  "4.4": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the ListExecInst <69> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the ListExecInst <69> field.",
+   "used_in": [
+    "New Order List"
+   ]
+  },
+  "4.3": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the ListExecInst <69> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the ListExecInst <69> field.",
+   "used_in": [
+    "New Order - List"
+   ]
+  },
+  "4.2": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the ListExecInst <69> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the ListExecInst <69> field.",
+   "used_in": [
+    "New Order - List"
+   ]
+  }
+ }
+}

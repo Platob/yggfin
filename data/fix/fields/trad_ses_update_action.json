@@ -1,0 +1,17 @@
+{
+ "name": "TradSesUpdateAction",
+ "tag": 1327,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Specifies the action taken for the specified trading sessions. Same values as SecurityUpdateAction <980>"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Specifies the action taken for the specified trading sessions. Same values as SecurityUpdateAction <980>",
+   "used_in": [
+    "TradingSessionListUpdateReport"
+   ]
+  }
+ }
+}

@@ -1,0 +1,57 @@
+{
+ "name": "UnderlyingDividendAccrualPaymentDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 145,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingDividendAccrualPaymentDateRelativeTo",
+     "required": false,
+     "tag": 42819
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDividendAccrualPaymentDateOffsetPeriod",
+     "required": false,
+     "tag": 42820
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDividendAccrualPaymentDateOffsetUnit",
+     "required": false,
+     "tag": 42821
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDividendAccrualPaymentDateOffsetDayType",
+     "required": false,
+     "tag": 42822
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDividendAccrualPaymentDateUnadjusted",
+     "required": false,
+     "tag": 42823
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDividendAccrualPaymentDateBusinessDayConvention",
+     "required": false,
+     "tag": 42824
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingDividendAccrualPaymentDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDividendAccrualPaymentDateAdjusted",
+     "required": false,
+     "tag": 42825
+    }
+   ]
+  }
+ }
+}

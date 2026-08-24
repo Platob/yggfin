@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingStartValue",
+ "tag": 884,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "Currency value attributed to this collateral at the start of the agreement"
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "Currency value attributed to this collateral at the start of the agreement"
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "Currency value attributed to this collateral at the start of the agreement"
+  },
+  "4.4": {
+   "type": "Amt",
+   "description": "Currency value attributed to this collateral at the start of the agreement"
+  }
+ }
+}

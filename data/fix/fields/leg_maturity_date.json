@@ -1,0 +1,26 @@
+{
+ "name": "LegMaturityDate",
+ "tag": 611,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "Multileg instrument's individual security's MaturityDate. See MaturityDate <541> field for description"
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "Multileg instrument's individual security's MaturityDate. See MaturityDate <541> field for description"
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "Multileg instrument's individual security's MaturityDate. See MaturityDate <541> field for description"
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "Multileg instrument's individual security's MaturityDate. See MaturityDate <541> field for description"
+  },
+  "4.3": {
+   "type": "LocalMktDate",
+   "description": "Multileg instrument's individual security's MaturityDate. See MaturityDate <541> field for description"
+  }
+ }
+}

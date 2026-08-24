@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeMaturityMonthYear",
+ "tag": 1251,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MonthYear"
+  },
+  "5.0.SP1": {
+   "type": "MonthYear"
+  }
+ }
+}

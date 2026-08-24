@@ -1,0 +1,39 @@
+{
+ "name": "TimeBracket",
+ "tag": 943,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "A code that represents a time interval in which a fill or trade occurred. Required for US futures markets.",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "A code that represents a time interval in which a fill or trade occurred. Required for US futures markets.",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "A code that represents a time interval in which a fill or trade occurred. Required for US futures markets.",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "A code that represents a time interval in which a fill or trade occurred. Required for US futures markets.",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report Request",
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

@@ -1,0 +1,81 @@
+{
+ "name": "CollInqQualGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 182,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCollInquiryQualifier",
+     "required": false,
+     "tag": 938,
+     "members": [
+      {
+       "kind": "field",
+       "name": "CollInquiryQualifier",
+       "required": false,
+       "tag": 896
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 31,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCollInquiryQualifier",
+     "required": false,
+     "tag": 938,
+     "members": [
+      {
+       "kind": "field",
+       "name": "CollInquiryQualifier",
+       "required": false,
+       "tag": 896
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 31,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCollInquiryQualifier",
+     "required": false,
+     "tag": 938,
+     "members": [
+      {
+       "kind": "field",
+       "name": "CollInquiryQualifier",
+       "required": false,
+       "tag": 896
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 31,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCollInquiryQualifier",
+     "required": false,
+     "tag": 938,
+     "members": [
+      {
+       "kind": "field",
+       "name": "CollInquiryQualifier",
+       "required": false,
+       "tag": 896
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

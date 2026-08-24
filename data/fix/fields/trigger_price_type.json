@@ -1,0 +1,66 @@
+{
+ "name": "TriggerPriceType",
+ "tag": 1107,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "The type of price that the trigger is compared to.",
+   "values": {
+    "1": "Best Offer",
+    "2": "Last Trade",
+    "3": "Best Bid",
+    "4": "Best Bid or Last Trade",
+    "5": "Best Offer or Last Trade",
+    "6": "Best Mid"
+   },
+   "value_names": {
+    "1": "BEST_OFFER",
+    "2": "LAST_TRADE",
+    "3": "BEST_BID",
+    "4": "BEST_BID_OR_LAST_TRADE",
+    "5": "BEST_OFFER_OR_LAST_TRADE",
+    "6": "BEST_MID"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "The type of price that the trigger is compared to.",
+   "values": {
+    "1": "Best Offer",
+    "2": "Last Trade",
+    "3": "Best Bid",
+    "4": "Best Bid or Last Trade",
+    "5": "Best Offer or Last Trade",
+    "6": "Best Mid"
+   },
+   "value_names": {
+    "1": "BEST_OFFER",
+    "2": "LAST_TRADE",
+    "3": "BEST_BID",
+    "4": "BEST_BID_OR_LAST_TRADE",
+    "5": "BEST_OFFER_OR_LAST_TRADE",
+    "6": "BEST_MID"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "The type of price that the trigger is compared to.",
+   "values": {
+    "1": "Best Offer",
+    "2": "Last Trade",
+    "3": "Best Bid",
+    "4": "Best Bid or Last Trade",
+    "5": "Best Offer or Last Trade",
+    "6": "Best Mid"
+   },
+   "value_names": {
+    "1": "BEST_OFFER",
+    "2": "LAST_TRADE",
+    "3": "BEST_BID",
+    "4": "BEST_BID_OR_LAST_TRADE",
+    "5": "BEST_OFFER_OR_LAST_TRADE",
+    "6": "BEST_MID"
+   }
+  }
+ }
+}

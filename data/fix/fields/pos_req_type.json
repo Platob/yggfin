@@ -1,0 +1,110 @@
+{
+ "name": "PosReqType",
+ "tag": 724,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Used to specify the type of position request being made.",
+   "values": {
+    "0": "Positions",
+    "1": "Trades",
+    "2": "Exercises",
+    "3": "Assignments",
+    "4": "Settlement Activity",
+    "5": "Backout Message",
+    "6": "Delta Positions"
+   },
+   "value_names": {
+    "0": "POSITIONS",
+    "1": "TRADES",
+    "2": "EXERCISES",
+    "3": "ASSIGNMENTS",
+    "4": "SETTLEMENT_ACTIVITY",
+    "5": "BACKOUT_MESSAGE",
+    "6": "DELTA_POSITIONS",
+    "7": "NET_POSITION",
+    "8": "LARGE_POSITIONS_REPORTING",
+    "9": "EXERCISE_POSITION_REPORTING_SUBMISSION",
+    "10": "POSITION_LIMIT_REPORTING_SUBMISSING"
+   },
+   "used_in": [
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "PositionReport",
+    "AdjustedPositionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Used to specify the type of position request being made.",
+   "values": {
+    "0": "Positions",
+    "1": "Trades",
+    "2": "Exercises",
+    "3": "Assignments",
+    "4": "Settlement Activity",
+    "5": "Backout Message"
+   },
+   "value_names": {
+    "0": "POSITIONS",
+    "1": "TRADES",
+    "2": "EXERCISES",
+    "3": "ASSIGNMENTS",
+    "4": "SETTLEMENT_ACTIVITY",
+    "5": "BACKOUT_MESSAGE"
+   },
+   "used_in": [
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "PositionReport",
+    "AdjustedPositionReport"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Used to specify the type of position request being made.",
+   "values": {
+    "0": "Positions",
+    "1": "Trades",
+    "2": "Exercises",
+    "3": "Assignments",
+    "4": "Settlement Activity",
+    "5": "Backout Message"
+   },
+   "value_names": {
+    "0": "POSITIONS",
+    "1": "TRADES",
+    "2": "EXERCISES",
+    "3": "ASSIGNMENTS",
+    "4": "SETTLEMENT_ACTIVITY",
+    "5": "BACKOUT_MESSAGE"
+   },
+   "used_in": [
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "PositionReport",
+    "AdjustedPositionReport"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Unique identifier for the position maintenance request as assigned by the submitter",
+   "values": {
+    "0": "Positions",
+    "1": "Trades",
+    "2": "Exercises",
+    "3": "Assignments"
+   },
+   "value_names": {
+    "0": "POSITIONS",
+    "1": "TRADES",
+    "2": "EXERCISES",
+    "3": "ASSIGNMENTS"
+   },
+   "used_in": [
+    "Request For Positions",
+    "Position Report"
+   ]
+  }
+ }
+}

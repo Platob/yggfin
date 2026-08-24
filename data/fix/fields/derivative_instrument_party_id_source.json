@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeInstrumentPartyIDSource",
+ "tag": 1294,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Refer to definition of PartyIDSource <447>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Refer to definition of PartyIDSource <447>"
+  }
+ }
+}

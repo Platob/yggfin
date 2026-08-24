@@ -1,0 +1,22 @@
+{
+ "name": "YieldRedemptionPrice",
+ "tag": 697,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Price to which the yield has been calculated."
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Price to which the yield has been calculated."
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Price to which the yield has been calculated."
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Price to which the yield has been calculated."
+  }
+ }
+}

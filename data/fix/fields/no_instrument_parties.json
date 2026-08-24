@@ -1,0 +1,18 @@
+{
+ "name": "NoInstrumentParties",
+ "tag": 1018,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Identifies the number of parties identified with an instrument"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Identifies the number of parties identified with an instrument"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Identifies the number of parties identified with an instrument"
+  }
+ }
+}

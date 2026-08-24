@@ -1,0 +1,62 @@
+{
+ "name": "NoRpts",
+ "tag": 82,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Total number of reports within series.",
+   "used_in": [
+    "ListStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Total number of reports within series.",
+   "used_in": [
+    "ListStatus"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Total number of reports within series.",
+   "used_in": [
+    "ListStatus"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Total number of reports within series.",
+   "used_in": [
+    "List Status"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Total number of reports within series.",
+   "used_in": [
+    "List Status"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Total number of reports within series.",
+   "used_in": [
+    "List Status"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Total number of reports within series.",
+   "used_in": [
+    "List Status"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Total number of reports within series.",
+   "used_in": [
+    "List Status"
+   ]
+  }
+ }
+}

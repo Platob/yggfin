@@ -1,0 +1,42 @@
+{
+ "name": "Signature",
+ "tag": 89,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data",
+   "description": "Deprecated in FIXT 1.1 Electronic signature"
+  },
+  "5.0.SP1": {
+   "type": "data",
+   "description": "Deprecated in FIXT 1.1 Electronic signature"
+  },
+  "5.0": {
+   "type": "data",
+   "description": "Electronic signature"
+  },
+  "4.4": {
+   "type": "data",
+   "description": "Electronic signature"
+  },
+  "4.3": {
+   "type": "data",
+   "description": "Electronic signature"
+  },
+  "4.2": {
+   "type": "data",
+   "description": "Electronic signature"
+  },
+  "4.1": {
+   "type": "data",
+   "description": "Electronic signature"
+  },
+  "4.0": {
+   "type": "data",
+   "description": "Electronic signature"
+  },
+  "FIXT1.1": {
+   "type": "data",
+   "description": "Electronic signature"
+  }
+ }
+}

@@ -9,7 +9,7 @@ import pytest
 
 from rekep import Dataset, Field, Log
 from rekep.fix import FixCodec, FixRegistry
-from rekep.fix.columns import COLUMNS, COMMON, FLAT, QUOTE, SESSION, STAMPS
+from rekep.fix.columns import COLUMNS, COMMON, FLAT, KWARGS, QUOTE, SESSION, STAMPS
 from rekep.market import MIC, Event
 from rekep.market.event import HOUR
 from rekep.text import HEADER_PATTERN, TextFile
@@ -309,9 +309,7 @@ LINE_COLUMNS = [
     "message",
     "protocol",
     "msg_seq_num",
-    "fix_tags",
-    "fix_miss_tags",
-    "keyval",
+    "kwargs",
     "parties",
     "isincode",
     "begin_string",
@@ -393,8 +391,8 @@ LINE_COLUMNS = [
 ]
 
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LINE_COLUMNS = 87
-EXPECTED_LOG_COLUMNS = 105
+EXPECTED_LINE_COLUMNS = 85
+EXPECTED_LOG_COLUMNS = 103
 
 
 def test_schema(plain: Path) -> None:
@@ -415,7 +413,7 @@ def test_schema(plain: Path) -> None:
 def test_the_flat_columns_are_the_ones_the_column_layer_names() -> None:
     """`rekep.fix.columns` names the tags and the column each lands in, `Log`
     declares the type, and the list pinned above is derived from neither -- so a
-    field added on one side only is either a tag lifted out of `fix_tags` into a
+    field added on one side only is either a tag lifted out of `kwargs` into a
     column nothing declares, or a column no message can ever fill.
 
     Every promoted field retains its canonical FIX name in metadata.
@@ -448,7 +446,7 @@ def test_a_flat_field_is_a_column_of_its_own_type_and_not_text(plain: Path) -> N
     }
     assert {name: schema.field(name).type for name in declared} == declared
     assert all(schema.field(column).nullable for _, column in FLAT)
-    assert not schema.field("code").nullable and not schema.field("xcode").nullable
+    assert not schema.field("code").nullable and not schema.field("code").nullable
 
 
 def test_an_instant_a_message_carries_is_a_microsecond_utc_timestamp(plain: Path) -> None:
@@ -465,39 +463,16 @@ def test_an_instant_a_message_carries_is_a_microsecond_utc_timestamp(plain: Path
         assert schema.field(column).type == pyarrow.timestamp("us", tz="UTC"), column
 
 
-def test_the_pair_lists_are_nullable_and_their_members_are_not(plain: Path) -> None:
-    """Lists preserve duplicate keys; null and empty keep distinct meanings."""
+def _tagged(scalar: pyarrow.Scalar) -> list[tuple[int, str]]:
+    """One row of `kwargs` as the `(tag, value)` pairs the dictionary resolved."""
+    return [(entry["tag"], entry["value"]) for entry in scalar.as_py() or () if entry["tag"]]
+
+
+def test_the_stored_fields_are_nullable_and_their_members_are_not(plain: Path) -> None:
+    """A list preserves duplicate keys; null and empty keep distinct meanings."""
     schema = TextFile(url=plain.as_uri()).schema
-    assert schema.field("fix_tags").type == pyarrow.list_(
-        pyarrow.field(
-            "item",
-            pyarrow.struct(
-                [
-                    pyarrow.field("key", pyarrow.int32(), nullable=False),
-                    pyarrow.field("value", pyarrow.string(), nullable=False),
-                ]
-            ),
-            nullable=False,
-        )
-    )
-    assert schema.field("keyval").type == pyarrow.list_(
-        pyarrow.field(
-            "item",
-            pyarrow.struct(
-                [
-                    pyarrow.field("key", pyarrow.string(), nullable=False),
-                    pyarrow.field("value", pyarrow.string(), nullable=False),
-                ]
-            ),
-            nullable=False,
-        )
-    )
-    assert schema.field("fix_miss_tags").type == pyarrow.list_(
-        pyarrow.field("item", pyarrow.string(), nullable=False)
-    )
-    assert schema.field("fix_tags").nullable
-    assert schema.field("fix_miss_tags").nullable
-    assert schema.field("keyval").nullable
+    assert schema.field("kwargs").type == KWARGS
+    assert schema.field("kwargs").nullable
 
 
 # -- what a message fills ---------------------------------------------------
@@ -509,7 +484,7 @@ def test_exact_fix_columns_also_fill_the_generic_envelope(wire: Path, codec: Fix
     assert table.column("symbol").to_pylist() == ["TTF", None, None]
     assert table.column("msg_seq_num").to_pylist() == [7, 8, None]
     assert table.column("code").to_pylist() == ["ORD-1", "", ""]
-    assert table.column("xcode").to_pylist() == ["ORD-1", "", ""]
+    assert table.column("code").to_pylist() == ["ORD-1", "", ""]
     assert table.column("msg_type").to_pylist() == ["D", "AB", None]
     assert table.column("check_sum").to_pylist() == ["203", "011", None]
     assert table.column("mic").to_pylist() == [int(MIC.from_str("XPAR"))] * 2 + [None]
@@ -543,12 +518,12 @@ def test_explicit_market_ids_keep_precedence_and_wire_order(
         int(MIC.from_str("XAMS")),
         int(MIC.from_str("XPAR")),
     ]
-    assert rows.column("fix_tags")[0].as_py() == [
-        {"key": 30, "value": "XAMS"},
-        {"key": 100, "value": "XPAR"},
-        {"key": 275, "value": "XEUR"},
-        {"key": 1301, "value": "XNAS"},
-        {"key": 30, "value": "XLON"},
+    assert _tagged(rows.column("kwargs")[0]) == [
+        (30, "XAMS"),
+        (100, "XPAR"),
+        (275, "XEUR"),
+        (1301, "XNAS"),
+        (30, "XLON"),
     ]
 
 
@@ -576,20 +551,12 @@ def test_generic_codes_follow_the_parsed_identifier_fallbacks(
 
     assert table.column("code").to_pylist() == [
         "VENUE",
-        "CURRENT",
-        "EXEC",
-        "TTF",
-        "SEC-1",
-        "",
-    ]
-    assert table.column("xcode").to_pylist() == [
-        "VENUE",
         "ORIGINAL",
         "EXEC",
         "TTF",
         "SEC-1",
         "",
-    ]
+    ], "`OrigClOrdID <41>` before `ClOrdID <11>`: a lifecycle survives its amendments"
     assert table.column("security_id").to_pylist()[4] == "SEC-1"
     assert table.column("xhash").to_pylist()[:5] == [
         Log.hash_of(value) for value in ("VENUE", "ORIGINAL", "EXEC", "TTF", "SEC-1")
@@ -616,17 +583,12 @@ def test_a_tag_that_repeats_in_a_line_stays_in_the_pair_list(wire: Path, codec: 
     empty.
     """
     table = TextFile.from_path(wire, codec=codec).read_arrow_table()
-    assert table.column("fix_tags").to_pylist() == [
+    assert [_tagged(one) for one in table.column("kwargs")] == [
         [],
-        [
-            {"key": 555, "value": "2"},
-            {"key": 600, "value": "TTF"},
-            {"key": 55, "value": "SPREAD"},
-            {"key": 555, "value": "2"},
-            {"key": 55, "value": "OTHER"},
-        ],
-        None,
+        [(555, "2"), (600, "TTF"), (55, "SPREAD"), (555, "2"), (55, "OTHER")],
+        [],
     ]
+    assert table.column("kwargs")[2].as_py() is None, "and that last row is null, not empty"
     assert table.column("symbol").to_pylist()[1] is None
     assert table.column("sender_comp_id").to_pylist() == ["BUY", "BUY", None], "49 lifted on both"
 

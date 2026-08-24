@@ -1,0 +1,39 @@
+{
+ "name": "LiquidityValue",
+ "tag": 404,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>"
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>"
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>"
+  },
+  "4.4": {
+   "type": "Amt",
+   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.3": {
+   "type": "Amt",
+   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.2": {
+   "type": "Amt",
+   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>",
+   "used_in": [
+    "Bid Request"
+   ]
+  }
+ }
+}

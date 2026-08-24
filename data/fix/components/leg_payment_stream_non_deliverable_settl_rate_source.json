@@ -1,0 +1,22 @@
+{
+ "name": "LegPaymentStreamNonDeliverableSettlRateSource",
+ "versions": {
+  "5.0.SP2": {
+   "order": 71,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamNonDeliverableSettlRateSource",
+     "required": false,
+     "tag": 40087
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamNonDeliverableSettlReferencePage",
+     "required": false,
+     "tag": 40228
+    }
+   ]
+  }
+ }
+}

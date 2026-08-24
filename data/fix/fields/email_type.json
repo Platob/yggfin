@@ -1,0 +1,142 @@
+{
+ "name": "EmailType",
+ "tag": 94,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Email message type.",
+   "values": {
+    "0": "New",
+    "1": "Reply",
+    "2": "Admin Reply"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "REPLY",
+    "2": "ADMIN_REPLY"
+   },
+   "used_in": [
+    "Email"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Email message type.",
+   "values": {
+    "0": "New",
+    "1": "Reply",
+    "2": "Admin Reply"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "REPLY",
+    "2": "ADMIN_REPLY"
+   },
+   "used_in": [
+    "Email"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Email message type.",
+   "values": {
+    "0": "New",
+    "1": "Reply",
+    "2": "Admin Reply"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "REPLY",
+    "2": "ADMIN_REPLY"
+   },
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Email <C> message type.",
+   "values": {
+    "0": "New",
+    "1": "Reply",
+    "2": "Admin Reply"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "REPLY",
+    "2": "ADMIN_REPLY"
+   },
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Email <C> message type.",
+   "values": {
+    "0": "New",
+    "1": "Reply",
+    "2": "Admin Reply"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "REPLY",
+    "2": "ADMIN_REPLY"
+   },
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Email <C> message type.",
+   "values": {
+    "0": "New",
+    "1": "Reply",
+    "2": "Admin Reply"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "REPLY",
+    "2": "ADMIN_REPLY"
+   },
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Email <C> message type.",
+   "values": {
+    "0": "New",
+    "1": "Reply",
+    "2": "Admin Reply"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "REPLY",
+    "2": "ADMIN_REPLY"
+   },
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Email <C> message type.",
+   "values": {
+    "0": "New",
+    "1": "Reply",
+    "2": "Admin Reply"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "REPLY",
+    "2": "ADMIN_REPLY"
+   },
+   "used_in": [
+    "Email"
+   ]
+  }
+ }
+}

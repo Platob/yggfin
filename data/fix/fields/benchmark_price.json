@@ -1,0 +1,22 @@
+{
+ "name": "BenchmarkPrice",
+ "tag": 662,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Specifies the price of the benchmark."
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Specifies the price of the benchmark."
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Specifies the price of the benchmark."
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Specifies the price of the benchmark."
+  }
+ }
+}

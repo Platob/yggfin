@@ -1,0 +1,30 @@
+{
+ "name": "LegStreamCommodityAltIDGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 565,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegStreamCommodityAltIDs",
+     "required": false,
+     "tag": 41674,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegStreamCommodityAltID",
+       "required": false,
+       "tag": 41675
+      },
+      {
+       "kind": "field",
+       "name": "LegStreamCommodityAltIDSource",
+       "required": false,
+       "tag": 41676
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

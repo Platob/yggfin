@@ -1,0 +1,130 @@
+{
+ "name": "QuoteResponseLevel",
+ "tag": 301,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Level of Response requested from receiver of quote messages. A default value should be bilaterally agreed.",
+   "values": {
+    "0": "No Acknowledgement",
+    "1": "Acknowledge only negative or erroneous quotes",
+    "2": "Acknowledge each quote message",
+    "3": "Summary Acknowledgement"
+   },
+   "value_names": {
+    "0": "NO_ACKNOWLEDGEMENT",
+    "1": "ACKNOWLEDGE_ONLY_NEGATIVE_OR_ERRONEOUS_QUOTES",
+    "2": "ACKNOWLEDGE_EACH_QUOTE_MESSAGE",
+    "3": "SUMMARY_ACKNOWLEDGEMENT"
+   },
+   "used_in": [
+    "MassQuoteAcknowledgement",
+    "MassQuote",
+    "Quote",
+    "QuoteCancel"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Level of Response requested from receiver of quote messages. A default value should be bilaterally agreed.",
+   "values": {
+    "0": "No Acknowledgement",
+    "1": "Acknowledge only negative or erroneous quotes",
+    "2": "Acknowledge each quote messages",
+    "3": "Summary Acknowledgement"
+   },
+   "value_names": {
+    "0": "NO_ACKNOWLEDGEMENT",
+    "1": "ACKNOWLEDGE_ONLY_NEGATIVE_OR_ERRONEOUS_QUOTES",
+    "2": "ACKNOWLEDGE_EACH_QUOTE_MESSAGE",
+    "3": "SUMMARY_ACKNOWLEDGEMENT"
+   },
+   "used_in": [
+    "MassQuoteAcknowledgement",
+    "MassQuote",
+    "Quote",
+    "QuoteCancel"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Level of Response requested from receiver of quote messages.",
+   "values": {
+    "0": "No Acknowledgement (default)",
+    "1": "Acknowledge only negative or erroneous quotes",
+    "2": "Acknowledge each quote messages"
+   },
+   "value_names": {
+    "0": "NO_ACKNOWLEDGEMENT",
+    "1": "ACKNOWLEDGE_ONLY_NEGATIVE_OR_ERRONEOUS_QUOTES",
+    "2": "ACKNOWLEDGE_EACH_QUOTE_MESSAGE"
+   },
+   "used_in": [
+    "MassQuoteAcknowledgement",
+    "MassQuote",
+    "Quote",
+    "QuoteCancel"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Level of Response requested from receiver of Quote messages.",
+   "values": {
+    "0": "No Acknowledgement (Default)",
+    "1": "Acknowledge only negative or erroneous quotes",
+    "2": "Acknowledge each Quote messages"
+   },
+   "value_names": {
+    "0": "NO_ACKNOWLEDGEMENT",
+    "1": "ACKNOWLEDGE_ONLY_NEGATIVE_OR_ERRONEOUS_QUOTES",
+    "2": "ACKNOWLEDGE_EACH_QUOTE_MESSAGE"
+   },
+   "used_in": [
+    "Mass Quote Acknowledgement",
+    "Mass Quote",
+    "Quote",
+    "Quote Cancel"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Level of Response requested from receiver of Quote messages.",
+   "values": {
+    "0": "No Acknowledgement (Default)",
+    "1": "Acknowledge only negative or erroneous quotes",
+    "2": "Acknowledge each Quote messages"
+   },
+   "value_names": {
+    "1": "ACKNOWLEDGE_ONLY_NEGATIVE_OR_ERRONEOUS_QUOTES",
+    "0": "NO_ACKNOWLEDGEMENT",
+    "2": "ACKNOWLEDGE_EACH_QUOTE_MESSAGE"
+   },
+   "used_in": [
+    "Mass Quote Acknowledgement",
+    "Mass Quote",
+    "Quote",
+    "Quote Cancel"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Level of Response requested from receiver of quote messages.",
+   "values": {
+    "0": "No Acknowledgement (Default)",
+    "1": "Acknowledge only negative or erroneous quotes",
+    "2": "Acknowledge each quote messages"
+   },
+   "value_names": {
+    "0": "NO_ACKNOWLEDGEMENT",
+    "1": "ACKNOWLEDGE_ONLY_NEGATIVE_OR_ERRONEOUS_QUOTES",
+    "2": "ACKNOWLEDGE_EACH_QUOTE_MESSAGE"
+   },
+   "used_in": [
+    "Quote Acknowledgement",
+    "Mass Quote",
+    "Quote",
+    "Quote Cancel"
+   ]
+  }
+ }
+}

@@ -1,0 +1,66 @@
+{
+ "name": "MDReqID",
+ "tag": 262,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier for Market Data Request <V>",
+   "used_in": [
+    "MarketDataRequest",
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh",
+    "MarketDataRequestReject"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier for Market Data Request <V>",
+   "used_in": [
+    "MarketDataRequest",
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh",
+    "MarketDataRequestReject"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique identifier for Market Data Request <V>",
+   "used_in": [
+    "MarketDataRequest",
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh",
+    "MarketDataRequestReject"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique identifier for Market Data Request <V>",
+   "used_in": [
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh",
+    "Market Data Request Reject"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique identifier for Market Data Request <V>",
+   "used_in": [
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh",
+    "Market Data Request Reject"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique identifier for Market Data Request <V>",
+   "used_in": [
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh",
+    "Market Data Request Reject"
+   ]
+  }
+ }
+}

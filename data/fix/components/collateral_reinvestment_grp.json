@@ -1,0 +1,42 @@
+{
+ "name": "CollateralReinvestmentGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 720,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCollateralReinvestments",
+     "required": false,
+     "tag": 2845,
+     "members": [
+      {
+       "kind": "field",
+       "name": "CollateralReinvestmentType",
+       "required": false,
+       "tag": 2844
+      },
+      {
+       "kind": "field",
+       "name": "CollateralReinvestmentAmount",
+       "required": false,
+       "tag": 2842
+      },
+      {
+       "kind": "field",
+       "name": "CollateralReinvestmentCurrency",
+       "required": false,
+       "tag": 2843
+      },
+      {
+       "kind": "field",
+       "name": "CollateralReinvestmentCurrencyCodeSource",
+       "required": false,
+       "tag": 2931
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

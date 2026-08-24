@@ -1,0 +1,45 @@
+{
+ "name": "LegPricingDateTime",
+ "versions": {
+  "5.0.SP2": {
+   "order": 93,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegPricingDateUnadjusted",
+     "required": false,
+     "tag": 41609
+    },
+    {
+     "kind": "field",
+     "name": "LegPricingDateBusinessDayConvention",
+     "required": false,
+     "tag": 41610
+    },
+    {
+     "kind": "component",
+     "name": "LegPricingDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegPricingDateAdjusted",
+     "required": false,
+     "tag": 41611
+    },
+    {
+     "kind": "field",
+     "name": "LegPricingTime",
+     "required": false,
+     "tag": 41612
+    },
+    {
+     "kind": "field",
+     "name": "LegPricingTimeBusinessCenter",
+     "required": false,
+     "tag": 41613
+    }
+   ]
+  }
+ }
+}

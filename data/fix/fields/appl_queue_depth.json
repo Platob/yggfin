@@ -1,0 +1,38 @@
+{
+ "name": "ApplQueueDepth",
+ "tag": 813,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Current number of application messages that were queued at the time that the message was created by the counterparty.",
+   "used_in": [
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Current number of application messages that were queued at the time that the message was created by the counterparty.",
+   "used_in": [
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Current number of application messages that were queued at the time that the message was created by the counterparty.",
+   "used_in": [
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Current number of application messages that were queued at the time that the message was created by the counterparty.",
+   "used_in": [
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh"
+   ]
+  }
+ }
+}

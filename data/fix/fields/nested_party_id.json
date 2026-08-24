@@ -1,0 +1,26 @@
+{
+ "name": "NestedPartyID",
+ "tag": 524,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "PartyID value within a nested repeating group. Same values as PartyID <448>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "PartyID value within a nested repeating group. Same values as PartyID <448>"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "PartyID value within a nested repeating group. Same values as PartyID <448>"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "PartyID value within a nested repeating group. Same values as PartyID <448>"
+  },
+  "4.3": {
+   "type": "String",
+   "description": "PartyID value within a nested repeating group. Same values as PartyID <448>"
+  }
+ }
+}

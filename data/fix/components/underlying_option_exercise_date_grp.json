@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingOptionExerciseDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 587,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingOptionExerciseDates",
+     "required": false,
+     "tag": 41841,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingOptionExerciseDate",
+       "required": false,
+       "tag": 41842
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingOptionExerciseDateType",
+       "required": false,
+       "tag": 41843
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

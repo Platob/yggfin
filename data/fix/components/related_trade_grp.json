@@ -1,0 +1,54 @@
+{
+ "name": "RelatedTradeGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 361,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRelatedTrades",
+     "required": false,
+     "tag": 1855,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RelatedTradeID",
+       "required": false,
+       "tag": 1856
+      },
+      {
+       "kind": "field",
+       "name": "RelatedTradeIDSource",
+       "required": false,
+       "tag": 1857
+      },
+      {
+       "kind": "field",
+       "name": "RelatedRegulatoryTradeIDSource",
+       "required": false,
+       "tag": 2103
+      },
+      {
+       "kind": "field",
+       "name": "RelatedTradeDate",
+       "required": false,
+       "tag": 1858
+      },
+      {
+       "kind": "field",
+       "name": "RelatedTradeMarketID",
+       "required": false,
+       "tag": 1859
+      },
+      {
+       "kind": "field",
+       "name": "RelatedTradeQuantity",
+       "required": false,
+       "tag": 1860
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

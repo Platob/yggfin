@@ -1,0 +1,102 @@
+{
+ "name": "OrderQty2",
+ "tag": 192,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX.5.0 See Appendix 6-E: 13.Deprecated OrderQty2 (192), SettlDate2 (193), Price2 (640), LastForwardPoints2 (641), BidForwardPoints2 (642), and OfferForwardPoints2 (643) [deprecated in FIX 5.0] OrderQty <38> of the future part of a F/X swap order.",
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "Quote"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX.5.0 See Appendix 6-E: 13.Deprecated OrderQty2 (192), SettlDate2 (193), Price2 (640), LastForwardPoints2 (641), BidForwardPoints2 (642), and OfferForwardPoints2 (643) [deprecated in FIX 5.0] OrderQty <38> of the future part of a F/X swap order.",
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "Quote"
+   ]
+  },
+  "5.0": {
+   "type": "Qty",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX.5.0 See Appendix 6-E: 13.Deprecated OrderQty2 (192), SettlDate2 (193), Price2 (640), LastForwardPoints2 (641), BidForwardPoints2 (642), and OfferForwardPoints2 (643) [deprecated in FIX 5.0] OrderQty <38> of the future part of a F/X swap order.",
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "Quote"
+   ]
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "OrderQty <38> of the future part of a F/X swap order.",
+   "used_in": [
+    "Execution Report",
+    "Quote Request Reject",
+    "Quote Status Report",
+    "Quote Response",
+    "Mass Quote Acknowledgement",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "Mass Quote",
+    "Quote Request",
+    "Quote"
+   ]
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "OrderQty <38> of the future part of a F/X swap order.",
+   "used_in": [
+    "Execution Report",
+    "Quote Request Reject",
+    "Quote Status Report",
+    "Mass Quote Acknowledgement",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Mass Quote",
+    "Quote Request",
+    "Quote"
+   ]
+  },
+  "4.2": {
+   "type": "Qty",
+   "description": "OrderQty <38> of the future part of a F/X swap order.",
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Mass Quote",
+    "Quote Request",
+    "Quote"
+   ]
+  },
+  "4.1": {
+   "type": "float",
+   "description": "OrderQty <38> of the future part of a F/X swap order.",
+   "used_in": [
+    "Order - Single",
+    "Order - List",
+    "Order Cancel/Replace Request",
+    "Quote Request",
+    "Quote"
+   ]
+  }
+ }
+}

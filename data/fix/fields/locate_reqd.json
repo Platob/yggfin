@@ -1,0 +1,158 @@
+{
+ "name": "LocateReqd",
+ "tag": 114,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Indicates whether the broker is to locate the stock in conjunction with a short sell order.",
+   "values": {
+    "N": "Indicates the broker is not required to locate",
+    "Y": "Indicates the broker is responsible for locating the stock"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Indicates whether the broker is to locate the stock in conjunction with a short sell order.",
+   "values": {
+    "N": "Indicates the broker is not required to locate",
+    "Y": "Indicates the broker is responsible for locating the stock"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Indicates whether the broker is to locate the stock in conjunction with a short sell order.",
+   "values": {
+    "N": "Indicates the broker is not required to locate",
+    "Y": "Indicates the broker is responsible for locating the stock"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "Boolean",
+   "description": "Indicates whether the broker is to locate the stock in conjunction with a short sell order.",
+   "values": {
+    "Y": "Indicates the broker is responsible for locating the stock",
+    "N": "Indicates the broker is not required to locate"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "Boolean",
+   "description": "Indicates whether the broker is to locate the stock in conjunction with a short sell order.",
+   "values": {
+    "Y": "Indicates the broker is responsible for locating the stock",
+    "N": "Indicates the broker is not required to locate"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.2": {
+   "type": "Boolean",
+   "description": "Indicates whether the broker is to locate the stock in conjunction with a short sell order.",
+   "values": {
+    "Y": "Indicates the broker is responsible for locating the stock",
+    "N": "Indicates the broker is not required to locate"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Indicates whether the broker is to locate the stock in conjunction with a short sell order.",
+   "values": {
+    "Y": "Indicates the broker is responsible for locating the stock",
+    "N": "Indicates the broker is not required to locate"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Indicates whether the broker is to locate the stock in conjuction with a short sell order.",
+   "values": {
+    "Y": "Indicates the broker is responsible for locating the stock",
+    "N": "Indicates the broker is not required to locate"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "New Order - Single",
+    "New Order - List"
+   ]
+  }
+ }
+}

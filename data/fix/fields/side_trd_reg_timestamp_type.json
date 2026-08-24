@@ -1,0 +1,18 @@
+{
+ "name": "SideTrdRegTimestampType",
+ "tag": 1013,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Same as TrdRegTimeStampType <770>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Same as TrdRegTimeStampType <770>"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Same as TrdRegTimeStampType <770>"
+  }
+ }
+}

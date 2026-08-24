@@ -1,0 +1,52 @@
+{
+ "name": "CashOrderQty",
+ "tag": 152,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Specifies the approximate order quantity desired in total monetary units vs. as tradeable units (e.g. number of shares). The broker or fund manager (for CIV orders) would be responsible for converting and calculating a tradeable unit (e.g. share) quantity ( OrderQty <38> ) based upon this amount to be used for the actual order and subsequent messages."
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Specifies the approximate order quantity desired in total monetary units vs. as tradeable units (e.g. number of shares). The broker or fund manager (for CIV orders) would be responsible for converting and calculating a tradeable unit (e.g. share) quantity ( OrderQty <38> ) based upon this amount to be used for the actual order and subsequent messages."
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Specifies the approximate order quantity desired in total monetary units vs. as tradeable units (e.g. number of shares). The broker or fund manager (for CIV orders) would be responsible for converting and calculating a tradeable unit (e.g. share) quantity ( OrderQty <38> ) based upon this amount to be used for the actual order and subsequent messages."
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Specifies the approximate order quantity desired in total monetary units vs. as tradeable units (e.g. number of shares). The broker or fund manager (for CIV orders) would be responsible for converting and calculating a tradeable unit (e.g. share) quantity ( OrderQty <38> ) based upon this amount to be used for the actual order and subsequent messages."
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "Specifies the approximate order quantity desired in total monetary units vs. as tradeable units (e.g. number of shares). The broker or fund manager (for CIV orders) would be responsible for converting and calculating a tradeable unit (e.g. share) quantity ( OrderQty <38> ) based upon this amount to be used for the actual order and subsequent messages.",
+   "used_in": [
+    "Quote Request Reject",
+    "Quote Request"
+   ]
+  },
+  "4.2": {
+   "type": "Qty",
+   "description": "Specifies the approximate order quantity desired in total monetary units vs. as a number of shares. The broker would be responsible for converting and calculating a share quantity ( OrderQty <38> ) based upon this amount to be used for the actual order and subsequent messages.",
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Don't Know Trade"
+   ]
+  },
+  "4.1": {
+   "type": "float",
+   "description": "Specifies the approximate order quantity desired in total monetary units vs. as a number of shares. The broker would be responsible for converting and calculating a share quantity ( OrderQty <38> ) based upon this amount to be used for the actual order and subsequent messages.",
+   "used_in": [
+    "New Order - Single",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Don't Know Trade"
+   ]
+  }
+ }
+}

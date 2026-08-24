@@ -1,0 +1,50 @@
+{
+ "name": "TradeRequestID",
+ "tag": 568,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "TradeCaptureReportRequest <AD> ID",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportRequestAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "TradeCaptureReportRequest <AD> ID",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportRequestAck"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "TradeCaptureReportRequest <AD> ID",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportRequestAck"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Trade Capture Report Request <AD> ID",
+   "used_in": [
+    "Trade Capture Report Request",
+    "Trade Capture Report",
+    "Trade Capture Report Request Ack"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Trade Capture Report Request <AD> ID",
+   "used_in": [
+    "Trade Capture Report Request",
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

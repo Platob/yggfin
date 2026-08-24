@@ -1,0 +1,215 @@
+{
+ "name": "PositionQty",
+ "versions": {
+  "5.0.SP2": {
+   "order": 168,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPositions",
+     "required": false,
+     "tag": 702,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PosType",
+       "required": false,
+       "tag": 703
+      },
+      {
+       "kind": "field",
+       "name": "LongQty",
+       "required": false,
+       "tag": 704
+      },
+      {
+       "kind": "field",
+       "name": "ShortQty",
+       "required": false,
+       "tag": 705
+      },
+      {
+       "kind": "field",
+       "name": "CoveredQty",
+       "required": false,
+       "tag": 1654
+      },
+      {
+       "kind": "field",
+       "name": "PosQtyStatus",
+       "required": false,
+       "tag": 706
+      },
+      {
+       "kind": "field",
+       "name": "QuantityDate",
+       "required": false,
+       "tag": 976
+      },
+      {
+       "kind": "field",
+       "name": "PosQtyUnitOfMeasure",
+       "required": false,
+       "tag": 1836
+      },
+      {
+       "kind": "field",
+       "name": "PosQtyUnitOfMeasureCurrency",
+       "required": false,
+       "tag": 1835
+      },
+      {
+       "kind": "field",
+       "name": "PosQtyUnitOfMeasureCurrencyCodeSource",
+       "required": false,
+       "tag": 2936
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 13,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPositions",
+     "required": false,
+     "tag": 702,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PosType",
+       "required": false,
+       "tag": 703
+      },
+      {
+       "kind": "field",
+       "name": "LongQty",
+       "required": false,
+       "tag": 704
+      },
+      {
+       "kind": "field",
+       "name": "ShortQty",
+       "required": false,
+       "tag": 705
+      },
+      {
+       "kind": "field",
+       "name": "PosQtyStatus",
+       "required": false,
+       "tag": 706
+      },
+      {
+       "kind": "field",
+       "name": "QuantityDate",
+       "required": false,
+       "tag": 976
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 13,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPositions",
+     "required": false,
+     "tag": 702,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PosType",
+       "required": false,
+       "tag": 703
+      },
+      {
+       "kind": "field",
+       "name": "LongQty",
+       "required": false,
+       "tag": 704
+      },
+      {
+       "kind": "field",
+       "name": "ShortQty",
+       "required": false,
+       "tag": 705
+      },
+      {
+       "kind": "field",
+       "name": "PosQtyStatus",
+       "required": false,
+       "tag": 706
+      },
+      {
+       "kind": "field",
+       "name": "QuantityDate",
+       "required": false,
+       "tag": 976
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 13,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPositions",
+     "required": false,
+     "tag": 702,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PosType",
+       "required": false,
+       "tag": 703
+      },
+      {
+       "kind": "field",
+       "name": "LongQty",
+       "required": false,
+       "tag": 704
+      },
+      {
+       "kind": "field",
+       "name": "ShortQty",
+       "required": false,
+       "tag": 705
+      },
+      {
+       "kind": "field",
+       "name": "PosQtyStatus",
+       "required": false,
+       "tag": 706
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

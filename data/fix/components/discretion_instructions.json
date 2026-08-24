@@ -1,0 +1,193 @@
+{
+ "name": "DiscretionInstructions",
+ "versions": {
+  "5.0.SP2": {
+   "order": 1,
+   "members": [
+    {
+     "kind": "field",
+     "name": "DiscretionInst",
+     "required": false,
+     "tag": 388
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionOffsetValue",
+     "required": false,
+     "tag": 389
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionMoveType",
+     "required": false,
+     "tag": 841
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionOffsetType",
+     "required": false,
+     "tag": 842
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionLimitType",
+     "required": false,
+     "tag": 843
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionRoundDirection",
+     "required": false,
+     "tag": 844
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionScope",
+     "required": false,
+     "tag": 846
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 1,
+   "members": [
+    {
+     "kind": "field",
+     "name": "DiscretionInst",
+     "required": false,
+     "tag": 388
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionOffsetValue",
+     "required": false,
+     "tag": 389
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionMoveType",
+     "required": false,
+     "tag": 841
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionOffsetType",
+     "required": false,
+     "tag": 842
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionLimitType",
+     "required": false,
+     "tag": 843
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionRoundDirection",
+     "required": false,
+     "tag": 844
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionScope",
+     "required": false,
+     "tag": 846
+    }
+   ]
+  },
+  "5.0": {
+   "order": 1,
+   "members": [
+    {
+     "kind": "field",
+     "name": "DiscretionInst",
+     "required": false,
+     "tag": 388
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionOffsetValue",
+     "required": false,
+     "tag": 389
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionMoveType",
+     "required": false,
+     "tag": 841
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionOffsetType",
+     "required": false,
+     "tag": 842
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionLimitType",
+     "required": false,
+     "tag": 843
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionRoundDirection",
+     "required": false,
+     "tag": 844
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionScope",
+     "required": false,
+     "tag": 846
+    }
+   ]
+  },
+  "4.4": {
+   "order": 1,
+   "members": [
+    {
+     "kind": "field",
+     "name": "DiscretionInst",
+     "required": false,
+     "tag": 388
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionOffsetValue",
+     "required": false,
+     "tag": 389
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionMoveType",
+     "required": false,
+     "tag": 841
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionOffsetType",
+     "required": false,
+     "tag": 842
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionLimitType",
+     "required": false,
+     "tag": 843
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionRoundDirection",
+     "required": false,
+     "tag": 844
+    },
+    {
+     "kind": "field",
+     "name": "DiscretionScope",
+     "required": false,
+     "tag": 846
+    }
+   ]
+  }
+ }
+}

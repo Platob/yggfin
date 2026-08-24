@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeStrikeCurrency",
+ "tag": 1262,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Currency"
+  },
+  "5.0.SP1": {
+   "type": "Currency"
+  }
+ }
+}

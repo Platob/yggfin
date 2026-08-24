@@ -1,0 +1,24 @@
+{
+ "name": "LegPaymentStubStartDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 664,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegPaymentStubStartDateBusinessCenters",
+     "required": false,
+     "tag": 42504,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegPaymentStubStartDateBusinessCenter",
+       "required": false,
+       "tag": 42505
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

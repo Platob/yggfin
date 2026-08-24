@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
+import re
 from collections.abc import Iterator, Mapping, Sequence
 from types import MappingProxyType
 from typing import Annotated, Any, Protocol, runtime_checkable
@@ -15,10 +16,9 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.enums import EventType
 from rekep.fields import Field, scalar
-from rekep.fix.columns import DECLARATIONS, ISIN_CODE
+from rekep.fix.columns import DECLARATIONS, ISIN_CODE, KWARGS
 from rekep.fix.components import PARTIES, Party
 from rekep.fix.rules import NO_PROTOCOL
-from rekep.fix.transcribe import FIX_MISS_TAGS, FIX_TAGS, KEYVAL
 from rekep.market.event import Event
 from rekep.market.identity import NIL
 
@@ -53,38 +53,21 @@ class Log(Event):
         return _INSTRUMENT_PROTOCOL
 
     xhash: int = NIL
-    """Digest of `xcode`, or the raw-line digest when no correlation code exists."""
+    """Digest of `code`, or the raw-line digest when no correlation code exists."""
 
     code: str = ""
-    """Best readable record identifier present on this line."""
+    """Best lifecycle identifier present on this line."""
 
-    xcode: str = ""
-    """Best direct lifecycle correlation identifier present on this line."""
-
-    # `code` names this record; `xcode` prefers the identifier that survives an
-    # order amendment. Later fallbacks still give reference and market-data
-    # lines a readable lifecycle without inventing a source-specific field.
+    # One order, and it prefers the identifier that survives an amendment:
+    # `OrigClOrdID <41>` names the order a replacement replaces, and a
+    # lifecycle that moved to the new `ClOrdID <11>` on every amendment would
+    # be one lifecycle per amendment. Later fallbacks give reference and
+    # market-data lines a readable lifecycle without inventing a
+    # source-specific field.
     @classmethod
     @functools.cache
     def into_code_columns(cls) -> tuple[str, ...]:
-        """Parsed columns tried for a readable record identifier."""
-        return (
-            "order_id",
-            "cl_ord_id",
-            "orig_cl_ord_id",
-            "exec_id",
-            "quote_entry_id",
-            "quote_id",
-            "quote_req_id",
-            "security_id",
-            "isincode",
-            "symbol",
-        )
-
-    @classmethod
-    @functools.cache
-    def into_xcode_columns(cls) -> tuple[str, ...]:
-        """Parsed columns tried for a lifecycle identifier."""
+        """Parsed columns tried for a lifecycle identifier, best first."""
         return (
             "order_id",
             "orig_cl_ord_id",
@@ -122,16 +105,10 @@ class Log(Event):
     msg_seq_num: Annotated[int | None, DECLARATIONS[34]] = None
     """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
 
-    # Lists preserve repeated keys and wire order. Null means no parsed
+    # A list preserves repeated keys and wire order. Null means no parsed
     # message; an empty list means a message with nothing left after lifting.
-    fix_tags: Annotated[list[tuple[int, str]] | None, Field(arrow_type=FIX_TAGS)] = None
-    """The message's fields under the tags FIX gives them, in wire order."""
-
-    fix_miss_tags: Annotated[list[str] | None, Field(arrow_type=FIX_MISS_TAGS)] = None
-    """Ordered raw keys absent from the selected FIX registry version."""
-
-    keyval: Annotated[list[tuple[str, str]] | None, Field(arrow_type=KEYVAL)] = None
-    """The fields no FIX tag answers for, spelled as the log spelled them."""
+    kwargs: Annotated[list[Any] | None, Field(arrow_type=KWARGS)] = None
+    """Every field the message carried and no column took, as the dictionary read it."""
 
     parties: Annotated[
         list[Party] | None,
@@ -148,7 +125,7 @@ class Log(Event):
     # -- what a message says, flattened ---------------------------------------
     #
     # Flat fields keep the registry's exact name, type, description and
-    # metadata. A lifted fact is removed from `fix_tags`; repeated facts stay.
+    # metadata. A lifted fact is removed from `kwargs`; repeated facts stay.
 
     # The envelope itself.
 
@@ -353,7 +330,7 @@ class Log(Event):
     """`Text <58>`: whatever the counterparty wrote, often the reject reason."""
 
     # Quote identity, terms and lifecycle. Repeating mass-quote entries remain
-    # in `fix_tags`; a value is lifted only when it occurs once on the line.
+    # in `kwargs`; a value is lifted only when it occurs once on the line.
 
     quote_id: Annotated[str | None, DECLARATIONS[117]] = None
     """`QuoteID <117>`: quote lifecycle identifier."""
@@ -435,19 +412,16 @@ class Log(Event):
                 "cfi_code": known.cfi,
                 "security_exchange": known.exchange,
                 "currency": None if known.currency is None else known.currency.into_fix(),
-                "keyval": _instrument_pairs(known),
+                "kwargs": _stored_entries(_instrument_pairs(known)),
             }
         )
         values.update(declared)
         return cls(**values)
 
     def into_dict(self) -> dict[str, Any]:
-        """Plain values with ordered pairs in Arrow's list-struct spelling."""
+        """Plain values with the stored fields in Arrow's list-struct spelling."""
         encoded = Convertible.into_dict(self)
-        for name in ("fix_tags", "keyval"):
-            entries = getattr(self, name)
-            if entries is not None:
-                encoded[name] = _pair_entries(tuple(_stored_pairs(entries)))
+        encoded["kwargs"] = _stored_entries(self.kwargs)
         return encoded
 
     @property
@@ -460,7 +434,7 @@ class Log(Event):
 
     @classmethod
     def code_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
-        """Best readable record identifier available in parsed FIX columns."""
+        """Best readable lifecycle identifier available in parsed FIX columns."""
         return _first_text(columns, cls.into_code_columns(), rows)
 
     @classmethod
@@ -472,23 +446,32 @@ class Log(Event):
         )
 
     @classmethod
-    def xcode_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
-        """Best readable lifecycle identifier available in parsed FIX columns."""
-        return _first_text(columns, cls.into_xcode_columns(), rows)
+    @functools.cache
+    def into_tagged_columns(cls) -> tuple[tuple[str, str], ...]:
+        """`(attribute, wire tag)` for every declared column FIX numbers.
+
+        Read off the declaration once per class rather than per row: which
+        columns carry a tag is a fact about the shape, and asking each of a
+        hundred fields for its metadata again on every line was the largest
+        single cost of turning a parsed log back into FIX.
+        """
+        return tuple(
+            (member.name, tag)
+            for member in cls.into_field().fields
+            if (tag := member.fix.get("tag")) is not None
+        )
 
     def into_fix_events(self, **declared: Any) -> Any:
         """Rebuild the FIX market reader from promoted columns and residual pairs."""
         from rekep.market.fix import FixEvents
 
         carried = {"runix": self.unix, "mic": self.mic, **declared}
-        pairs: list[tuple[Any, Any]] = []
-        for member in type(self).into_field().fields:
-            tag = member.fix.get("tag")
-            value = getattr(self, member.name, None)
-            if tag is not None and value is not None:
-                pairs.append((tag, value))
-        pairs.extend(_stored_pairs(self.fix_tags))
-        pairs.extend(_stored_pairs(self.keyval))
+        pairs: list[tuple[Any, Any]] = [
+            (tag, value)
+            for name, tag in type(self).into_tagged_columns()
+            if (value := getattr(self, name, None)) is not None
+        ]
+        pairs.extend(_stored_pairs(self.kwargs))
         if pairs:
             return FixEvents.from_pairs(pairs, **carried)
         return (
@@ -506,7 +489,7 @@ class Log(Event):
 
     def into_instruments(self, **declared: Any) -> Iterator[Any]:
         """Yield distinct instrument facts, synthesizing a symbol-only row when needed."""
-        normalized = dict(_stored_pairs(self.keyval)) if self.is_instrument_version else None
+        normalized = dict(_stored_pairs(self.kwargs)) if self.is_instrument_version else None
         if normalized is not None and _INSTRUMENT_KIND in normalized:
             yield self._instrument_version(self._normalized_instrument(normalized))
             return
@@ -633,7 +616,7 @@ class Log(Event):
             version=self.version,
             state=self.state,
             code=self.code,
-            xcode=self.xcode,
+            codes=dict(self.codes),
             prev_unix=self.prev_unix,
             parent_hash=None if self.parent_hash is None else list(self.parent_hash),
             mic=self.mic,
@@ -658,35 +641,30 @@ class MessageCodec(Protocol):
         """
         ...
 
-    def into_fix_pairs(self, pairs: Any, version: str | None = None) -> tuple[Any, Any, Any]:
-        """Resolved tags, residual pairs, and registry-missed raw keys."""
-        ...
-
     def version_of(
         self, message: str | None, protocol: str = NO_PROTOCOL
     ) -> tuple[str | None, str]:
         """Which protocol version a message is read under, and where that came from.
 
         The one a protocol without versions answers `(None, "none")` to. Here
-        rather than inside `into_fix_pairs` so one resolved version is handed
+        rather than inside the projection so one resolved version is handed
         down to each homogeneous slice.
         """
         ...
 
-    def into_flat_columns(
-        self, tags: Any, version: str | None = None
-    ) -> tuple[dict[str, Any], Any]:
-        """The fields worth a column of their own, lifted out of `tags`.
-
-        `{column: array}` and the residual pairs. A protocol with nothing
-        to lift returns `({}, tags)` and nothing above it changes.
-        """
+    def versions_of_pairs(self, pairs: Any, protocol: str = NO_PROTOCOL) -> Any:
+        """One resolved version per parsed row, so a mixed batch can be split."""
         ...
 
-    def into_component_columns(
-        self, tags: Any, version: str | None = None
-    ) -> tuple[dict[str, Any], Any]:
-        """Structured components and the residual ordered tags."""
+    def into_log_columns(
+        self, pairs: Any, version: str | None = None
+    ) -> tuple[Any, dict[str, Any]]:
+        """`(kwargs, {column: array})`: what a log keeps, and what it lifts.
+
+        Every field the message carried is in `kwargs`; the ones the log gives
+        a column of their own are in the mapping and gone from `kwargs`. A
+        protocol with nothing to lift answers `(kwargs, {})`.
+        """
         ...
 
 
@@ -901,11 +879,45 @@ def _pair_date(value: Any) -> datetime.date | None:
         return None
 
 
-def _pair_entries(
-    pairs: Sequence[tuple[Any, Any]] | None,
-) -> list[dict[str, Any]] | None:
-    """Pairs in the struct spelling Arrow accepts without a shape pass."""
-    return None if pairs is None else [{"key": key, "value": value} for key, value in pairs]
+#: The one segment of a rendered key that is a component and not a namespace
+#: without a dictionary to ask: an entry of a repeating group, which is what
+#: `_instrument_pairs` and every FIX renderer write with a subscript. Everything
+#: else in front of a name here is a namespace, which is what `rekep.kind` is.
+_GROUP_ENTRY = re.compile(r"\[[0-9]+\]$")
+
+
+#: The parts of one stored field, in the order `KWARGS` declares them.
+_KWARG_PARTS: tuple[str, ...] = ("tag", "key", "value", "trans", "namespace", "comp")
+
+
+def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | None:
+    """Stored fields in the spelling Arrow accepts without a shape pass."""
+    return None if entries is None else [_stored_entry(entry) for entry in entries]
+
+
+def _stored_entry(entry: Any) -> dict[str, Any]:
+    """One stored field, filled out from however the caller spelled it.
+
+    A `(key, value)` pair is accepted as itself, so a caller writing a `Log` by
+    hand need not spell the whole struct out: a numeric key is the tag it
+    already is, and a name gives up whatever stood in front of it to `comp` or
+    `namespace` the same way `FixCodec.transcribe` splits a parsed one.
+    """
+    if isinstance(entry, Mapping):
+        filled = {name: entry.get(name) for name in _KWARG_PARTS}
+        return {**filled, "tag": int(filled["tag"] or 0), "key": str(entry["key"])}
+    key, value = entry
+    tag, spelling = (int(key), str(key)) if isinstance(key, int) else (0, str(key))
+    lead, _, name = spelling.rpartition(".")
+    inside = bool(lead) and _GROUP_ENTRY.search(lead.rsplit(".", 1)[-1]) is not None
+    return {
+        "tag": tag,
+        "key": name or spelling,
+        "value": None if value is None else str(value),
+        "trans": None,
+        "namespace": lead if lead and not inside else None,
+        "comp": lead if inside else None,
+    }
 
 
 def _fix_text(value: Any) -> str:
@@ -930,10 +942,24 @@ def _id_source(value: Any) -> str:
 
 
 def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
-    """Stored list entries as ordered pairs, before or after an Arrow round trip."""
+    """Stored fields as the pairs a FIX reader addresses them by.
+
+    The tag where the dictionary found one and the rendered key -- name, and
+    whatever stood in front of it, joined back -- where it did not. That is the
+    same two-shaped answer the tag-keyed and name-keyed columns gave from two
+    columns, read off `tag` instead of off which column an entry sat in.
+
+    A plain `(key, value)` tuple is accepted as itself, so a caller writing a
+    `Log` by hand need not spell the whole struct out.
+    """
     for entry in entries or ():
-        if isinstance(entry, Mapping):
-            yield entry["key"], entry["value"]
-        else:
+        if not isinstance(entry, Mapping):
             key, value = entry
             yield key, value
+            continue
+        if entry.get("tag"):
+            yield entry["tag"], entry.get("value")
+            continue
+        lead = entry.get("namespace") or entry.get("comp")
+        name = entry["key"]
+        yield (f"{lead}.{name}" if lead else name), entry.get("value")

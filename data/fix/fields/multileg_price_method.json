@@ -1,0 +1,54 @@
+{
+ "name": "MultilegPriceMethod",
+ "tag": 1378,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Code to represent how the multileg price is to be interpreted when applied to the legs.",
+   "values": {
+    "0": "Net Price",
+    "1": "Reversed Net Price",
+    "2": "Yield Difference",
+    "3": "Individual",
+    "4": "Contract Weighted Average Price",
+    "5": "Multiplied Price"
+   },
+   "value_names": {
+    "0": "NET_PRICE",
+    "1": "REVERSED_NET_PRICE",
+    "2": "YIELD_DIFFERENCE",
+    "3": "INDIVIDUAL",
+    "4": "CONTRACT_WEIGHTED_AVERAGE_PRICE",
+    "5": "MULTIPLIED_PRICE"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Code to represent how the multileg price is to be interpreted when applied to the legs.",
+   "values": {
+    "0": "Net Price",
+    "1": "Reversed Net Price",
+    "2": "Yield Difference",
+    "3": "Individual",
+    "4": "Contract Weighted Average Price",
+    "5": "Multiplied Price"
+   },
+   "value_names": {
+    "0": "NET_PRICE",
+    "1": "REVERSED_NET_PRICE",
+    "2": "YIELD_DIFFERENCE",
+    "3": "INDIVIDUAL",
+    "4": "CONTRACT_WEIGHTED_AVERAGE_PRICE",
+    "5": "MULTIPLIED_PRICE"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace"
+   ]
+  }
+ }
+}

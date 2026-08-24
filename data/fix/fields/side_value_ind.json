@@ -1,0 +1,86 @@
+{
+ "name": "SideValueInd",
+ "tag": 401,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Code to identify which \"SideValue\" the value refers to. SideValue1 <396> and SideValue2 <397> are used as opposed to Buy or Sell so that the basket can be quoted either way as Buy or Sell.",
+   "values": {
+    "1": "SideValue1 <396>",
+    "2": "SideValue2 <397>"
+   },
+   "value_names": {
+    "1": "SIDE_VALUE1",
+    "2": "SIDE_VALUE2"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Code to identify which \"SideValue\" the value refers to. SideValue1 <396> and SideValue2 <397> are used as opposed to Buy or Sell so that the basket can be quoted either way as Buy or Sell.",
+   "values": {
+    "1": "SideValue1 <396>",
+    "2": "SideValue2 <397>"
+   },
+   "value_names": {
+    "1": "SIDE_VALUE1",
+    "2": "SIDE_VALUE2"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Code to identify which \"SideValue\" the value refers to. SideValue1 <396> and SideValue2 <397> are used as opposed to Buy or Sell so that the basket can be quoted either way as Buy or Sell.",
+   "values": {
+    "1": "SideValue1 <396>",
+    "2": "SideValue2 <397>"
+   },
+   "value_names": {
+    "1": "SIDE_VALUE1",
+    "2": "SIDE_VALUE2"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Code to identify which \"SideValue\" the value refers to. SideValue1 <396> and SideValue2 <397> are used as opposed to Buy or Sell so that the basket can be quoted either way as Buy or Sell.",
+   "values": {
+    "1": "SideValue1 <396>",
+    "2": "SideValue2 <397>"
+   },
+   "value_names": {
+    "1": "SIDE_VALUE1",
+    "2": "SIDE_VALUE2"
+   },
+   "used_in": [
+    "New Order List",
+    "Bid Request"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Code to identify which \"SideValue\" the value refers to. SideValue1 <396> and SideValue2 <397> are used as opposed to Buy or Sell so that the basket can be quoted either way as Buy or Sell.",
+   "values": {
+    "1": "SideValue1 <396>",
+    "2": "SideValue2 <397>"
+   },
+   "value_names": {
+    "1": "SIDE_VALUE1",
+    "2": "SIDE_VALUE2"
+   },
+   "used_in": [
+    "New Order - List",
+    "Bid Request"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Code to identify which \"SideValue\" the value refers to. SideValue1 <396> and SideValue2 <397> are used as opposed to Buy or Sell so that the basket can be quoted either way as Buy or Sell.",
+   "values": {
+    "1": "SideValue1 <396>",
+    "2": "SideValue2 <397>"
+   },
+   "used_in": [
+    "New Order - List",
+    "Bid Request"
+   ]
+  }
+ }
+}

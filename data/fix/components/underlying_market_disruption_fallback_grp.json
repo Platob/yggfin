@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingMarketDisruptionFallbackGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 591,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingMarketDisruptionFallbacks",
+     "required": false,
+     "tag": 41866,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingMarketDisruptionFallbackType",
+       "required": false,
+       "tag": 41867
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingMarketDisruptionFallbackValue",
+       "required": false,
+       "tag": 41339
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

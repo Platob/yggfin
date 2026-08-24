@@ -1,0 +1,24 @@
+{
+ "name": "CashSettlDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 647,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCashSettlDateBusinessCenters",
+     "required": false,
+     "tag": 42214,
+     "members": [
+      {
+       "kind": "field",
+       "name": "CashSettlDateBusinessCenter",
+       "required": false,
+       "tag": 42215
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

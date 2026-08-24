@@ -1,0 +1,34 @@
+{
+ "name": "NoClearingInstructions",
+ "tag": 576,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of clearing instructions"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of clearing instructions"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of clearing instructions"
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of clearing instructions",
+   "used_in": [
+    "Trade Capture Report",
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Number of clearing instructions",
+   "used_in": [
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

@@ -98,14 +98,12 @@ FIX_LINE = Log(
     hash=3,
     xhash=3,
     code="ORD-1",
-    xcode="ORD-1",
     etype=EventType.ORDER,
     thread_name="t",
     driver_name="d",
     message="sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|11=ORD-1|55=TTF|10=203|",
     protocol="FIX",
-    fix_tags=[],
-    keyval=[],
+    kwargs=[],
     parties=[
         Party(party_id="BUYSIDE", party_id_source="D", party_role=1),
         Party(party_id="XPAR", party_id_source="G", party_role=17),
@@ -737,7 +735,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     assert stored.num_rows == 1, "the same line upserts onto itself"
     row = stored.to_pylist()[0]
     assert row["protocol"] == "FIX"
-    assert row["fix_tags"] == []
+    assert row["kwargs"] == []
     assert [party["party_id"] for party in row["parties"]] == ["BUYSIDE", "XPAR"]
     assert row["msg_seq_num"] == 7 and row["sender_comp_id"] == "BUYSIDE"
     assert row["symbol"] == "TTF" and row["cl_ord_id"] == "ORD-1"
@@ -754,9 +752,7 @@ def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
 ) -> None:
     """Pin PyIceberg's loss of the outer `list<struct>` validity bitmap."""
     quiet = Log(unix=1, hash=1, xhash=1, message="heartbeat emitted")
-    bridged = Log(
-        unix=2, hash=2, xhash=2, message="toBridge #", protocol="UL", fix_tags=[], keyval=[]
-    )
+    bridged = Log(unix=2, hash=2, xhash=2, message="toBridge #", protocol="UL", kwargs=[])
     logs.write_arrow_table(log_table(quiet, bridged, FIX_LINE))
 
     stored = logs.read_arrow_table(Log.into_field()).sort_by("unix")
@@ -764,20 +760,20 @@ def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
     # PyIceberg's projection currently rebuilds list<struct> without its outer
     # validity bitmap, so an absent pair/component list reads as empty. The
     # parser-level contract still pins null versus empty before this boundary.
-    assert stored.column("fix_tags").to_pylist() == [[], [], []]
-    assert stored.column("keyval").to_pylist() == [[], [], []]
+    assert stored.column("kwargs").to_pylist() == [[], [], []]
     assert stored.column("parties").to_pylist()[0:2] == [[], []]
 
 
-def test_the_pair_lists_keep_required_members(logs: IcebergDataset, tmp_path: Path) -> None:
-    """List items and both pair members remain required through Iceberg."""
+def test_the_stored_fields_keep_their_required_members(
+    logs: IcebergDataset, tmp_path: Path
+) -> None:
+    """A stored field always says which field it is, through Iceberg too."""
     logs.write_arrow_table(log_table(FIX_LINE))
     found = IcebergDataset(name=logs.name, catalog="test", properties=catalog_properties(tmp_path))
-    shape = found.into_struct_field()
-    for column in ("fix_tags", "keyval"):
-        assert shape.field(column).nullable, column
-        assert not shape.field(column).item.nullable, column
-        assert all(not member.nullable for member in shape.field(column).item.fields)
+    shape = found.into_struct_field().field("kwargs")
+    assert shape.nullable and not shape.item.nullable
+    required = {member.name for member in shape.item.fields if not member.nullable}
+    assert required == {"tag", "key"}
 
 
 def test_the_flattened_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> None:

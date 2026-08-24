@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingCPProgram",
+ "tag": 877,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The program under which the underlying commercial paper is issued"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The program under which the underlying commercial paper is issued"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "The program under which the underlying commercial paper is issued"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "The program under which the underlying commercial paper is issued"
+  }
+ }
+}

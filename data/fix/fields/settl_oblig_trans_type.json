@@ -1,0 +1,38 @@
+{
+ "name": "SettlObligTransType",
+ "tag": 1162,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Transaction Type - required except where SettlInstMode <160> = '5' (Reject SSI request)",
+   "values": {
+    "C": "Cancel",
+    "N": "New",
+    "R": "Replace",
+    "T": "Restate"
+   },
+   "value_names": {
+    "C": "CANCEL",
+    "N": "NEW",
+    "R": "REPLACE",
+    "T": "RESTATE"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Transaction Type - required except where SettlInstMode <160> = '5' (Reject SSI request)",
+   "values": {
+    "C": "Cancel",
+    "N": "New",
+    "R": "Replace",
+    "T": "Restate"
+   },
+   "value_names": {
+    "C": "CANCEL",
+    "N": "NEW",
+    "R": "REPLACE",
+    "T": "RESTATE"
+   }
+  }
+ }
+}

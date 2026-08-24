@@ -23,7 +23,7 @@ from rekep.enums import (
     State,
 )
 from rekep.fields import Field, scalar
-from rekep.market.event import DAY, HOUR, MarketEvent
+from rekep.market.event import DAY, HOUR, SYMBOL_CODE, MarketEvent
 from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import NIL
 from rekep.market.instrument import Instrument
@@ -161,7 +161,7 @@ class Book(MarketEvent):
         self.bid_depth = 0 if self.bid_depth is None else self.bid_depth
         self.ask_depth = 0 if self.ask_depth is None else self.ask_depth
         if self.bid_alive or self.ask_alive:
-            self._remember_alive_hashes(self.bid_alive, self.ask_alive)
+            self._remember_alive_hashes(*_alive_hashes(self.bid_alive, self.ask_alive))
         MarketEvent.__post_init__(self)
 
     def version_parts(self) -> tuple[Any, ...]:
@@ -170,10 +170,10 @@ class Book(MarketEvent):
         ask = self.__ask_order_hashes
         return self.unix, self.instrument_xhash, len(bid), *bid, len(ask), *ask
 
-    def _remember_alive_hashes(self, bid: Iterable[Order], ask: Iterable[Order]) -> None:
+    def _remember_alive_hashes(self, bid: Iterable[int], ask: Iterable[int]) -> None:
         """Retain ordered live Order hashes as private Book identity inputs."""
-        self.__bid_order_hashes = tuple(order.hash for order in bid)
-        self.__ask_order_hashes = tuple(order.hash for order in ask)
+        self.__bid_order_hashes = tuple(bid)
+        self.__ask_order_hashes = tuple(ask)
 
     def complete_from(self, previous: MarketEvent) -> None:
         """Complete the book without carrying an earlier delta's relations."""
@@ -204,8 +204,6 @@ class Book(MarketEvent):
                 self.runix = previous.runix
             if self.eunix is None:
                 self.eunix = previous.eunix
-            if not self.code:
-                self.code = previous.code
             if self.mic is None:
                 self.mic = previous.mic
             if self.into_instrument() is None:
@@ -220,13 +218,12 @@ class Book(MarketEvent):
                 self.qty_unit = previous.qty_unit
             if self.exec_px is None:
                 self.exec_px = previous.exec_px
-            self.xcode = previous.xcode or self.xcode
+            self.code = previous.code or self.code
             self.version = previous.version + 1
             self.prev_unix = previous.unix
             self._remember_previous(previous)
         self.derive()
-        if not self.xcode:
-            self._materialize_life_code()
+        self._materialize_life_code()
         if self.linked_events:
             self._drop_self_link()
         self.hash = self.hash_of(*self.version_parts())
@@ -378,6 +375,18 @@ class Book(MarketEvent):
 # -- helpers ----------------------------------------------------------------
 
 
+def _alive_hashes(
+    bid: Iterable[Order], ask: Iterable[Order]
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """The two sides' live orders as the hashes a book is identified by.
+
+    For a book that already carries its live rows -- one read back, or one
+    just snapshotted. A fold reads the hashes off its own state instead, and
+    never builds the rows to get them.
+    """
+    return tuple(order.hash for order in bid), tuple(order.hash for order in ask)
+
+
 def _resting(order: Order) -> float:
     """Displayed live quantity after subtracting explicitly hidden interest."""
     qty = order.qty
@@ -442,6 +451,19 @@ class _LevelState:
     px: float
     qty: float = 0.0
     members: dict[int, None] = dataclasses.field(default_factory=dict)
+
+    #: This level's members in resting order, or None when something about
+    #: them moved since it was last read. A book is emitted far more often
+    #: than any one level changes -- an active instrument emits one per event
+    #: and an event touches one price -- so the sort is paid per change and
+    #: not per book, which is what turned reading the live state into a walk
+    #: of every live order with a sort inside it.
+    resting: tuple[int, ...] | None = dataclasses.field(default=None, repr=False)
+
+    #: Those members' content hashes, in the same order. Cached beside the
+    #: order for the same reason and cleared with it: a book is identified by
+    #: this and by nothing else about the orders standing behind it.
+    hashes: tuple[int, ...] | None = dataclasses.field(default=None, repr=False)
 
 
 @dataclasses.dataclass
@@ -588,18 +610,55 @@ class _Side:
     def sorted_orders(self) -> list[Order]:
         """Every live order, best first: by price, then by descending quantity.
 
-        A walk of `alive` and, inside each level, of its members -- so the only
-        sorting left is per level, over the handful of orders standing at one
-        price. Kept because it is the honest reading of "the orders, in order".
+        A walk of `alive` and, inside each level, of its members in the order
+        that level last settled into -- so the only sorting left is per level
+        and per change to it. Kept because it is the honest reading of "the
+        orders, in order".
         """
-        found: list[Order] = []
+        orders = self.orders
+        return [orders[x] for level in self.alive for x in self._resting_members(level)]
+
+    def order_hashes(self) -> tuple[int, ...]:
+        """Every live order's content hash, best first.
+
+        What a book is identified by, without building the list of orders it
+        would otherwise be read off: a book row keeps the hashes and nothing
+        else about the orders standing behind it. Per level and cached, so an
+        instrument with a hundred live levels pays for the one an event moved.
+        """
+        found: list[int] = []
+        orders = self.orders
         for level in self.alive:
-            members = level.members
-            if len(members) == 1:
-                found.append(self.orders[next(iter(members))])
-                continue
-            found.extend(sorted((self.orders[x] for x in members), key=_resting, reverse=True))
-        return found
+            hashes = level.hashes
+            if hashes is None:
+                hashes = level.hashes = tuple(orders[x].hash for x in self._resting_members(level))
+            found.extend(hashes)
+        return tuple(found)
+
+    def _resting_members(self, level: _LevelState) -> tuple[int, ...]:
+        """One level's members by descending resting quantity, computed once."""
+        settled = level.resting
+        if settled is not None:
+            return settled
+        members = level.members
+        if len(members) < 2:
+            settled = tuple(members)
+        else:
+            orders = self.orders
+            settled = tuple(sorted(members, key=lambda x: _resting(orders[x]), reverse=True))
+        level.resting = settled
+        return settled
+
+    def _touch(self, px: float, level: _LevelState | None = None) -> None:
+        """Record a price as changed, and forget what its members settled into."""
+        self.changed[px] = None
+        self._moved(px if level is None else level)
+
+    def _moved(self, where: float | _LevelState | None) -> None:
+        """Forget one level's cached order and hashes, by price or by level."""
+        level = self.levels.get(where) if isinstance(where, float) else where
+        if level is not None:
+            level.resting = level.hashes = None
 
     def into_levels(self) -> list[Level]:
         """The live orders aggregated to price levels, best first."""
@@ -779,6 +838,7 @@ class _Side:
             # deleting and bisecting the level itself.
             level.members.pop(settled.xhash, None)
             level.members[settled.xhash] = None
+            self._moved(level)
             self._remember(settled)
             for spelling in _names_of(settled):
                 if spelling:
@@ -924,7 +984,7 @@ class _Side:
             self.alive.insert(at, level)
         level.qty += quantity
         level.members[order.xhash] = None
-        self.changed[px] = None
+        self._touch(px, level)
 
     def _leave(self, order: Order) -> None:
         """Take `order` off its level, dropping the level when it empties.
@@ -939,7 +999,7 @@ class _Side:
         quantity = _resting(order)
         level.qty -= quantity
         level.members.pop(order.xhash, None)
-        self.changed[order.px] = None
+        self._touch(order.px, level)
         if not level.members or level.qty <= 0:
             del self.levels[order.px]
             at = bisect.bisect_left(self.keys, order.px * self.facing)
@@ -957,8 +1017,14 @@ class _Side:
                 del self.named[spelling]
 
     def _remember(self, order: Order) -> None:
-        """Store one live order and push its current lazy deadline entry."""
+        """Store one live order and push its current lazy deadline entry.
+
+        A new version of a resting order is a new content hash even where it
+        stands at the same price for the same quantity, so its level forgets
+        what it settled into whether or not the level itself moved.
+        """
         self.orders[order.xhash] = order
+        self._moved(order.px)
         self._index_deadline(order)
 
     def _index_deadline(self, order: Order) -> None:
@@ -1027,14 +1093,13 @@ class _Side:
         standing = _resting(order)
         taken = min(standing, traded)
         left = standing - taken
-        self.changed[order.px] = None
+        self._touch(order.px)
         if left <= 0:
             self.remove(order.xhash)
         else:
             level = self.levels.get(order.px)
             if level is not None:
                 level.qty -= taken
-                self.changed[order.px] = None
             if order.qty is not None:
                 revised = copy.copy(order)
                 revised.qty = max(revised.qty - taken, 0.0)
@@ -1067,8 +1132,8 @@ class _Folding:
     xhash: int = NIL
     """The book's lifecycle. One instrument is one book, so this never moves."""
 
-    xcode: str = ""
-    """Readable instrument code the book lifecycle was first identified by."""
+    code: str = ""
+    """Readable code the book lifecycle was first identified by."""
 
     unix: int | None = None
     """The instant the events being folded belong to; None before the first."""
@@ -1486,7 +1551,7 @@ class BookIterator:
         lifecycle = Book(
             unix=event.unix,
             instrument_xhash=event.instrument_xhash,
-            code=event.code,
+            codes=dict(event.codes),
             ccy=event.ccy,
         )
         parsed = event.into_instrument()
@@ -1494,7 +1559,7 @@ class BookIterator:
             stored
             if stored is not None
             else parsed
-            or Instrument(xhash=event.instrument_xhash, symbol=event.code, currency=event.ccy)
+            or Instrument(xhash=event.instrument_xhash, symbol=event.symbol, currency=event.ccy)
         )
         lifecycle.attach_instrument(instrument)
         xhash = lifecycle.life_hash()
@@ -1503,7 +1568,7 @@ class BookIterator:
             bid=_Side(side=Side.BID, max_order_age_ns=self.max_order_age_ns),
             ask=_Side(side=Side.ASK, max_order_age_ns=self.max_order_age_ns),
             xhash=xhash,
-            xcode=lifecycle.life_code(),
+            code=lifecycle.life_code(),
             instrument=instrument,
         )
         return state
@@ -1523,7 +1588,7 @@ class BookIterator:
         instrument = (
             known
             if known is not None
-            else snapshot.into_instrument() or Instrument(xhash=canonical, symbol=snapshot.code)
+            else snapshot.into_instrument() or Instrument(xhash=canonical, symbol=snapshot.symbol)
         )
         snapshot.attach_instrument(instrument)
         state = _Folding(
@@ -1541,7 +1606,7 @@ class BookIterator:
                 self.max_order_age_ns,
             ),
             xhash=snapshot.xhash,
-            xcode=snapshot.xcode,
+            code=snapshot.code,
             unix=snapshot.unix,
             previous=snapshot,
             about=snapshot,
@@ -1708,7 +1773,7 @@ class BookIterator:
         taken.executions = []
         taken.bid_alive = state.bid.into_orders()
         taken.ask_alive = state.ask.into_orders()
-        taken._remember_alive_hashes(taken.bid_alive, taken.ask_alive)
+        taken._remember_alive_hashes(*_alive_hashes(taken.bid_alive, taken.ask_alive))
         alive = [*taken.bid_alive, *taken.ask_alive]
         taken.linked_events = list(
             dict.fromkeys((order.unix, order.xhash) for order in alive if order.xhash)
@@ -1811,8 +1876,8 @@ def _settled(state: _Folding, unix: int) -> Book | None:
     book = Book(
         unix=unix,
         instrument_xhash=state.instrument_xhash,
-        code=state.instrument.symbol or about.code,
-        xcode=state.xcode,
+        code=state.code,
+        codes={**about.codes, SYMBOL_CODE: state.instrument.symbol or about.symbol},
         px_unit=about.px_unit,
         ccy=about.ccy,
         qty_unit=about.qty_unit,
@@ -1832,7 +1897,7 @@ def _settled(state: _Folding, unix: int) -> Book | None:
         deltas=list(state.deltas),
         executions=list(state.executions),
     )
-    book._remember_alive_hashes(state.bid.sorted_orders, state.ask.sorted_orders)
+    book._remember_alive_hashes(state.bid.order_hashes(), state.ask.order_hashes())
     book.attach_instrument(state.instrument)
     state.bid.cleared()
     state.ask.cleared()

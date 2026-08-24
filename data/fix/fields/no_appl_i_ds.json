@@ -1,0 +1,14 @@
+{
+ "name": "NoApplIDs",
+ "tag": 1351,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Specifies number of application id occurrences"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Specifies number of application id occurrences"
+  }
+ }
+}

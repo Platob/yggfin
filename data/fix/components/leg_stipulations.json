@@ -1,0 +1,105 @@
+{
+ "name": "LegStipulations",
+ "versions": {
+  "5.0.SP2": {
+   "order": 164,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegStipulations",
+     "required": false,
+     "tag": 683,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegStipulationType",
+       "required": false,
+       "tag": 688
+      },
+      {
+       "kind": "field",
+       "name": "LegStipulationValue",
+       "required": false,
+       "tag": 689
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 7,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegStipulations",
+     "required": false,
+     "tag": 683,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegStipulationType",
+       "required": false,
+       "tag": 688
+      },
+      {
+       "kind": "field",
+       "name": "LegStipulationValue",
+       "required": false,
+       "tag": 689
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 7,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegStipulations",
+     "required": false,
+     "tag": 683,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegStipulationType",
+       "required": false,
+       "tag": 688
+      },
+      {
+       "kind": "field",
+       "name": "LegStipulationValue",
+       "required": false,
+       "tag": 689
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 7,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegStipulations",
+     "required": false,
+     "tag": 683,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegStipulationType",
+       "required": false,
+       "tag": 688
+      },
+      {
+       "kind": "field",
+       "name": "LegStipulationValue",
+       "required": false,
+       "tag": 689
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

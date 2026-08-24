@@ -1,0 +1,24 @@
+{
+ "name": "StreamCommoditySettlBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 511,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStreamCommoditySettlBusinessCenters",
+     "required": false,
+     "tag": 41249,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StreamCommoditySettlBusinessCenter",
+       "required": false,
+       "tag": 41250
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,67 @@
+{
+ "name": "ApplIDReportGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 298,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoApplIDs",
+     "required": false,
+     "tag": 1351,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RefApplID",
+       "required": false,
+       "tag": 1355
+      },
+      {
+       "kind": "field",
+       "name": "ApplNewSeqNum",
+       "required": false,
+       "tag": 1399
+      },
+      {
+       "kind": "field",
+       "name": "RefApplLastSeqNum",
+       "required": false,
+       "tag": 1357
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 160,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoApplIDs",
+     "required": false,
+     "tag": 1351,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RefApplID",
+       "required": false,
+       "tag": 1355
+      },
+      {
+       "kind": "field",
+       "name": "ApplNewSeqNum",
+       "required": false,
+       "tag": 1399
+      },
+      {
+       "kind": "field",
+       "name": "RefApplLastSeqNum",
+       "required": false,
+       "tag": 1357
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

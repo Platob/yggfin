@@ -1,0 +1,36 @@
+{
+ "name": "DeskTypeSource",
+ "tag": 1034,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies the class or source of DeskType <1033> values. Conditionally required when DeskType <1033> is specified.",
+   "values": {
+    "1": "FINRA OATS / NASD OATS"
+   },
+   "value_names": {
+    "1": "FINRAOATS"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies the class or source of DeskType <1033> values. Conditionally required when DeskType <1033> is specified.",
+   "values": {
+    "1": "FINRA OATS / NASD OATS"
+   },
+   "value_names": {
+    "1": "NASDOATS"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identifies the class or source of DeskType <1033> values. Conditionally required when DeskType <1033> is specified.",
+   "values": {
+    "1": "FINRA OATS / NASD OATS"
+   },
+   "value_names": {
+    "1": "NASDOATS"
+   }
+  }
+ }
+}

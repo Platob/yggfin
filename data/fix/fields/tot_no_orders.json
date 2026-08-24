@@ -1,0 +1,74 @@
+{
+ "name": "TotNoOrders",
+ "tag": 68,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Total number of list order entries across all messages. Should be the sum of all NoOrders <73> in each message that has repeating list order entries related to the same ListID <66> . Used to support fragmentation. (Prior to FIX 4.2 this field was named \"ListNoOrds\")",
+   "used_in": [
+    "NewOrderList",
+    "ListStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Total number of list order entries across all messages. Should be the sum of all NoOrders <73> in each message that has repeating list order entries related to the same ListID <66> . Used to support fragmentation. (Prior to FIX 4.2 this field was named \"ListNoOrds\")",
+   "used_in": [
+    "NewOrderList",
+    "ListStatus"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Total number of list order entries across all messages. Should be the sum of all NoOrders <73> in each message that has repeating list order entries related to the same ListID <66> . Used to support fragmentation. (Prior to FIX 4.2 this field was named \"ListNoOrds\")",
+   "used_in": [
+    "NewOrderList",
+    "ListStatus"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Total number of list order entries across all messages. Should be the sum of all NoOrders <73> in each message that has repeating list order entries related to the same ListID <66> . Used to support fragmentation. (Prior to FIX 4.2 this field was named \"ListNoOrds\")",
+   "used_in": [
+    "New Order List",
+    "List Status"
+   ]
+  },
+  "4.3": {
+   "name": "ListNoOrds)",
+   "type": "int",
+   "note": "formerly named: ListNoOrds",
+   "description": "Total number of list order entries across all messages. Should be the sum of all NoOrders <73> in each message that has repeating list order entries related to the same ListID <66> . Used to support fragmentation. (Prior to FIX 4.2 this field was named \"ListNoOrds\")",
+   "used_in": [
+    "New Order - List",
+    "List Status"
+   ]
+  },
+  "4.2": {
+   "name": "ListNoOrds)",
+   "type": "int",
+   "note": "formerly named: ListNoOrds",
+   "description": "Total number of list order entries across all messages. Should be the sum of all NoOrders <73> in each message that has repeating list order entries related to the same ListID <66> . Used to support fragmentation. (Prior to FIX 4.2 this field was named \"ListNoOrds\")",
+   "used_in": [
+    "New Order - List",
+    "List Status"
+   ]
+  },
+  "4.1": {
+   "name": "ListNoOrds",
+   "type": "int",
+   "description": "Total number of orders within list (i.e. ListSeqNo <67> of ListNoOrds <68> , e.g. 2 of 25, 3 of 25, . . . )",
+   "used_in": [
+    "New Order - List"
+   ]
+  },
+  "4.0": {
+   "name": "ListNoOrds",
+   "type": "int",
+   "description": "Total number of orders within list (i.e. ListSeqNo <67> of ListNoOrds <68> , e.g. 2 of 25, 3 of 25, . . . )",
+   "used_in": [
+    "New Order - List"
+   ]
+  }
+ }
+}

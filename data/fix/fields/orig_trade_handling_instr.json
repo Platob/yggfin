@@ -1,0 +1,30 @@
+{
+ "name": "OrigTradeHandlingInstr",
+ "tag": 1124,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Optionally used with TradeHandlingInstr = '0' to relay the trade handling instruction used when reporting the trade to the marketplace. Same values as TradeHandlingInstr <1123>",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Optionally used with TradeHandlingInstr = '0' to relay the trade handling instruction used when reporting the trade to the marketplace. Same values as TradeHandlingInstr <1123>",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Optionally used with TradeHandlingInstr = '0' to relay the trade handling instruction used when reporting the trade to the marketplace. Same values as TradeHandlingInstr <1123>",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  }
+ }
+}

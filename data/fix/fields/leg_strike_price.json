@@ -1,0 +1,26 @@
+{
+ "name": "LegStrikePrice",
+ "tag": 612,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description"
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description"
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description"
+  },
+  "4.3": {
+   "type": "Price",
+   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description"
+  }
+ }
+}

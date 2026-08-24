@@ -1,0 +1,66 @@
+{
+ "name": "NoRelatedSym",
+ "tag": 146,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Specifies the number of repeating symbols specified."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Specifies the number of repeating symbols specified."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Specifies the number of repeating symbols specified."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Specifies the number of repeating symbols specified.",
+   "used_in": [
+    "Derivative Security List",
+    "Quote Request Reject",
+    "RFQ Request",
+    "News",
+    "Email",
+    "Quote Request",
+    "Market Data Request",
+    "Security List"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Specifies the number of repeating symbols specified.",
+   "used_in": [
+    "Derivative Security List",
+    "Quote Request Reject",
+    "RFQ Request",
+    "News",
+    "Email",
+    "Quote Request",
+    "Market Data Request",
+    "Security List"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Specifies the number of repeating symbols specified.",
+   "used_in": [
+    "News",
+    "Security Definition Request",
+    "Email",
+    "Security Definition",
+    "Quote Request",
+    "Market Data Request"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Specifies the number of repeating symbols specified.",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  }
+ }
+}

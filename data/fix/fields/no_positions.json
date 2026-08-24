@@ -1,0 +1,22 @@
+{
+ "name": "NoPositions",
+ "tag": 702,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of position entries."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of position entries."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of position entries."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of position entries."
+  }
+ }
+}

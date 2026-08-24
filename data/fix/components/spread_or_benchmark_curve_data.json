@@ -1,0 +1,252 @@
+{
+ "name": "SpreadOrBenchmarkCurveData",
+ "versions": {
+  "5.0.SP2": {
+   "order": 10,
+   "members": [
+    {
+     "kind": "field",
+     "name": "Spread",
+     "required": false,
+     "tag": 218
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveCurrency",
+     "required": false,
+     "tag": 220
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveCurrencyCodeSource",
+     "required": false,
+     "tag": 2950
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveName",
+     "required": false,
+     "tag": 221
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurvePoint",
+     "required": false,
+     "tag": 222
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkPrice",
+     "required": false,
+     "tag": 662
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkPriceType",
+     "required": false,
+     "tag": 663
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkSecurityID",
+     "required": false,
+     "tag": 699
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkSecurityIDSource",
+     "required": false,
+     "tag": 761
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 16,
+   "members": [
+    {
+     "kind": "field",
+     "name": "Spread",
+     "required": false,
+     "tag": 218
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveCurrency",
+     "required": false,
+     "tag": 220
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveName",
+     "required": false,
+     "tag": 221
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurvePoint",
+     "required": false,
+     "tag": 222
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkPrice",
+     "required": false,
+     "tag": 662
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkPriceType",
+     "required": false,
+     "tag": 663
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkSecurityID",
+     "required": false,
+     "tag": 699
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkSecurityIDSource",
+     "required": false,
+     "tag": 761
+    }
+   ]
+  },
+  "5.0": {
+   "order": 16,
+   "members": [
+    {
+     "kind": "field",
+     "name": "Spread",
+     "required": false,
+     "tag": 218
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveCurrency",
+     "required": false,
+     "tag": 220
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveName",
+     "required": false,
+     "tag": 221
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurvePoint",
+     "required": false,
+     "tag": 222
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkPrice",
+     "required": false,
+     "tag": 662
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkPriceType",
+     "required": false,
+     "tag": 663
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkSecurityID",
+     "required": false,
+     "tag": 699
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkSecurityIDSource",
+     "required": false,
+     "tag": 761
+    }
+   ]
+  },
+  "4.4": {
+   "order": 16,
+   "members": [
+    {
+     "kind": "field",
+     "name": "Spread",
+     "required": false,
+     "tag": 218
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveCurrency",
+     "required": false,
+     "tag": 220
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveName",
+     "required": false,
+     "tag": 221
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurvePoint",
+     "required": false,
+     "tag": 222
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkPrice",
+     "required": false,
+     "tag": 662
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkPriceType",
+     "required": false,
+     "tag": 663
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkSecurityID",
+     "required": false,
+     "tag": 699
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkSecurityIDSource",
+     "required": false,
+     "tag": 761
+    }
+   ]
+  },
+  "4.3": {
+   "order": 6,
+   "members": [
+    {
+     "kind": "field",
+     "name": "Spread",
+     "required": false,
+     "tag": 218
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveCurrency",
+     "required": false,
+     "tag": 220
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurveName",
+     "required": false,
+     "tag": 221
+    },
+    {
+     "kind": "field",
+     "name": "BenchmarkCurvePoint",
+     "required": false,
+     "tag": 222
+    }
+   ]
+  }
+ }
+}

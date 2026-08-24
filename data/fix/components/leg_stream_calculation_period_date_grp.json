@@ -1,0 +1,30 @@
+{
+ "name": "LegStreamCalculationPeriodDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 563,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegStreamCalculationPeriodDates",
+     "required": false,
+     "tag": 41638,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegStreamCalculationPeriodDate",
+       "required": false,
+       "tag": 41639
+      },
+      {
+       "kind": "field",
+       "name": "LegStreamCalculationPeriodDateType",
+       "required": false,
+       "tag": 41640
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

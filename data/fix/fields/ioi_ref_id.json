@@ -1,0 +1,62 @@
+{
+ "name": "IOIRefID",
+ "tag": 26,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE, transaction types. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE, transaction types. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE, transaction types. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE, transaction types. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE, transaction types. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Indications of Interest"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Reference identifier used with CANCEL and REPLACE, transaction types. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Indication of Interest"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Reference identifier used with CANCEL and REPLACE, transaction types. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Indication of Interest"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Reference identifier used with CANCEL and REPLACE, transaction types.",
+   "used_in": [
+    "Indication of Interest"
+   ]
+  }
+ }
+}

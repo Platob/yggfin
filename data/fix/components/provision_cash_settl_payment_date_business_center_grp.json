@@ -1,0 +1,24 @@
+{
+ "name": "ProvisionCashSettlPaymentDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 457,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoProvisionCashSettlPaymentDateBusinessCenters",
+     "required": false,
+     "tag": 40952,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ProvisionCashSettlPaymentDateBusinessCenter",
+       "required": false,
+       "tag": 40164
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

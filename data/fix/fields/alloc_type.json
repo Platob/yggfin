@@ -1,0 +1,189 @@
+{
+ "name": "AllocType",
+ "tag": 626,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Describes the specific type or purpose of an Allocation message (i.e. \"Buyside Calculated\")",
+   "values": {
+    "1": "Calculated (includes MiscFees and NetMoney <118> )",
+    "2": "Preliminary (without MiscFees and NetMoney <118> )",
+    "3": "Sellside Calculated Using Preliminary (includes MiscFees and NetMoney <118> ) (Replaced) (Deprecated in FIX 4.2)",
+    "4": "Sellside Calculated Without Preliminary (sent unsolicited by sellside, includes MiscFees and NetMoney <118> ) (Replaced) (Deprecated in FIX 4.2)",
+    "5": "Ready-To-Book - Single Order",
+    "6": "Buyside Ready-To-Book - Combined Set of Orders (Replaced) (Deprecated in FIX 4.2)",
+    "7": "Warehouse Instruction",
+    "8": "Request to Intermediary",
+    "9": "Accept",
+    "10": "Reject",
+    "11": "Accept Pending",
+    "12": "Incomplete Group",
+    "13": "Complete Group",
+    "14": "Reversal Pending"
+   },
+   "value_names": {
+    "1": "CALCULATED",
+    "2": "PRELIMINARY",
+    "3": "SELLSIDE_CALCULATED_USING_PRELIMINARY",
+    "4": "SELLSIDE_CALCULATED_WITHOUT_PRELIMINARY",
+    "5": "READY_TO_BOOK",
+    "6": "BUYSIDE_READY_TO_BOOK",
+    "7": "WAREHOUSE_INSTRUCTION",
+    "8": "REQUEST_TO_INTERMEDIARY",
+    "9": "ACCEPT",
+    "10": "REJECT",
+    "11": "ACCEPT_PENDING",
+    "12": "INCOMPLETE_GROUP",
+    "13": "COMPLETE_GROUP",
+    "14": "REVERSAL_PENDING",
+    "15": "REOPEN_GROUP",
+    "16": "CANCEL_GROUP",
+    "17": "GIVEUP",
+    "18": "TAKEUP",
+    "19": "REFUSE_TAKEUP",
+    "20": "INITIATE_REVERSAL",
+    "21": "REVERSE",
+    "22": "REFUSE_REVERSAL",
+    "23": "SUB_ALLOCATION_GIVEUP",
+    "24": "APPROVE_GIVEUP",
+    "25": "APPROVE_TAKEUP",
+    "26": "NOTIONAL_VALUE_AVERAGE_PX_GROUP_ALLOC"
+   },
+   "used_in": [
+    "AllocationInstructionAlert",
+    "AllocationInstruction",
+    "AllocationInstructionAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Describes the specific type or purpose of an Allocation message (i.e. \"Buyside Calculated\")",
+   "values": {
+    "1": "Calculated (includes MiscFees and NetMoney <118> )",
+    "2": "Preliminary (without MiscFees and NetMoney <118> )",
+    "3": "Sellside Calculated Using Preliminary (includes MiscFees and NetMoney <118> ) (Replaced) ( Deprecated in FIX 4.2 )",
+    "4": "Sellside Calculated Without Preliminary (sent unsolicited by sellside, includes MiscFees and NetMoney <118> ) (Replaced) ( Deprecated in FIX 4.2 )",
+    "5": "Ready-To-Book - Single Order",
+    "6": "Buyside Ready-To-Book - Combined Set of Orders (Replaced) ( Deprecated in FIX 4.2 )",
+    "7": "Warehouse Instruction",
+    "8": "Request to Intermediary",
+    "9": "Accept",
+    "10": "Reject",
+    "11": "Accept Pending",
+    "12": "Incomplete Group",
+    "13": "Complete Group",
+    "14": "Reversal Pending"
+   },
+   "value_names": {
+    "1": "CALCULATED",
+    "2": "PRELIMINARY",
+    "3": "SELLSIDE_CALCULATED_USING_PRELIMINARY",
+    "4": "SELLSIDE_CALCULATED_WITHOUT_PRELIMINARY",
+    "5": "READY_TO_BOOK",
+    "6": "BUYSIDE_READY_TO_BOOK",
+    "7": "WAREHOUSE_INSTRUCTION",
+    "8": "REQUEST_TO_INTERMEDIARY",
+    "9": "ACCEPT",
+    "10": "REJECT",
+    "11": "ACCEPT_PENDING",
+    "12": "INCOMPLETE_GROUP",
+    "13": "COMPLETE_GROUP",
+    "14": "REVERSAL_PENDING"
+   },
+   "used_in": [
+    "AllocationInstructionAlert",
+    "AllocationInstruction",
+    "AllocationInstructionAck"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Describes the specific type or purpose of an Allocation message (i.e. \"Buyside Calculated\")",
+   "values": {
+    "1": "Calculated (includes MiscFees and NetMoney <118> )",
+    "2": "Preliminary (without MiscFees and NetMoney <118> )",
+    "3": "Sellside Calculated Using Preliminary (includes MiscFees and NetMoney <118> ) (Replaced)",
+    "4": "Sellside Calculated Without Preliminary (sent unsolicited by sellside, includes MiscFees and NetMoney <118> ) (Replaced)",
+    "5": "Ready-To-Book - Single Order",
+    "6": "Buyside Ready-To-Book - Combined Set of Orders (Replaced)",
+    "7": "Warehouse Instruction",
+    "8": "Request to Intermediary",
+    "9": "Accept",
+    "10": "Reject",
+    "11": "Accept Pending",
+    "12": "Incomplete Group",
+    "13": "Complete Group",
+    "14": "Reversal Pending"
+   },
+   "value_names": {
+    "1": "CALCULATED",
+    "2": "PRELIMINARY",
+    "3": "SELLSIDE_CALCULATED_USING_PRELIMINARY",
+    "4": "SELLSIDE_CALCULATED_WITHOUT_PRELIMINARY",
+    "5": "READY_TO_BOOK",
+    "6": "BUYSIDE_READY_TO_BOOK",
+    "7": "WAREHOUSE_INSTRUCTION",
+    "8": "REQUEST_TO_INTERMEDIARY",
+    "9": "ACCEPT",
+    "10": "REJECT",
+    "11": "ACCEPT_PENDING",
+    "12": "INCOMPLETE_GROUP",
+    "13": "COMPLETE_GROUP",
+    "14": "REVERSAL_PENDING"
+   },
+   "used_in": [
+    "AllocationInstructionAlert",
+    "AllocationInstruction",
+    "AllocationInstructionAck"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Describes the specific type or purpose of an Allocation message (i.e. \"Buyside Calculated\")",
+   "values": {
+    "1": "Calculated (includes MiscFees and NetMoney <118> )",
+    "2": "Preliminary (without MiscFees and NetMoney <118> )",
+    "3": "Sellside Calculated Using Preliminary (includes MiscFees and NetMoney) (Replaced)",
+    "4": "Sellside Calculated Without Preliminary (sent unsolicited by sellside, includes MiscFees and NetMoney) (Replaced)",
+    "5": "Ready-To-Book - Single Order",
+    "6": "Buyside Ready-To-Book - Combined Set of Orders (Replaced)",
+    "7": "Warehouse instruction",
+    "8": "Request to Intermediary"
+   },
+   "value_names": {
+    "1": "CALCULATED",
+    "2": "PRELIMINARY",
+    "5": "READY_TO_BOOK",
+    "7": "WAREHOUSE_INSTRUCTION",
+    "8": "REQUEST_TO_INTERMEDIARY"
+   },
+   "used_in": [
+    "Allocation Instruction",
+    "Allocation Instruction Ack"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Describes the specific type or purpose of an Allocation <J> message (i.e. \"Buyside Calculated\")",
+   "values": {
+    "1": "Buyside Calculated (includes MiscFees and NetMoney <118> )",
+    "2": "Buyside Preliminary (without MiscFees and NetMoney <118> )",
+    "3": "Sellside Calculated Using Preliminary (includes MiscFees and NetMoney <118> )",
+    "4": "Sellside Calculated Without Preliminary (sent unsolicited by sellside, includes MiscFees and NetMoney <118> )",
+    "5": "Buyside Ready-To-Book - Single Order",
+    "6": "Buyside Ready-To-Book - Combined Set of Orders"
+   },
+   "value_names": {
+    "6": "BUYSIDE_READY_TO_BOOK",
+    "2": "PRELIMINARY",
+    "3": "SELLSIDE_CALCULATED_USING_PRELIMINARY",
+    "5": "READY_TO_BOOK",
+    "1": "CALCULATED",
+    "4": "SELLSIDE_CALCULATED_WITHOUT_PRELIMINARY"
+   },
+   "used_in": [
+    "Allocation"
+   ]
+  }
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "name": "SignatureLength",
+ "tag": 93,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Deprecated in FIXT 1.1 Number of bytes in signature field"
+  },
+  "5.0.SP1": {
+   "type": "Length",
+   "description": "Deprecated in FIXT 1.1 Number of bytes in signature field"
+  },
+  "5.0": {
+   "type": "Length",
+   "description": "Number of bytes in signature field."
+  },
+  "4.4": {
+   "type": "Length",
+   "description": "Number of bytes in Signature <89> field."
+  },
+  "4.3": {
+   "type": "Length",
+   "description": "Number of bytes in Signature <89> field."
+  },
+  "4.2": {
+   "type": "Length",
+   "description": "Number of bytes in Signature <89> field."
+  },
+  "4.1": {
+   "type": "Length",
+   "description": "Number of bytes in Signature <89> field."
+  },
+  "4.0": {
+   "type": "Length",
+   "description": "Number of bytes in Signature <89> field."
+  },
+  "FIXT1.1": {
+   "type": "Length",
+   "description": "Number of bytes in signature field"
+  }
+ }
+}

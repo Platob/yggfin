@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingPaymentStreamPricingDayGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 597,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingPaymentStreamPricingDays",
+     "required": false,
+     "tag": 41944,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStreamPricingDayOfWeek",
+       "required": false,
+       "tag": 41945
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStreamPricingDayNumber",
+       "required": false,
+       "tag": 41946
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

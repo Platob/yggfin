@@ -1,0 +1,48 @@
+{
+ "name": "LowPx",
+ "tag": 333,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Represents an indication of the low end of the price range for a security prior to the open or reopen",
+   "used_in": [
+    "SecurityStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Represents an indication of the low end of the price range for a security prior to the open or reopen",
+   "used_in": [
+    "SecurityStatus"
+   ]
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Represents an indication of the low end of the price range for a security prior to the open or reopen",
+   "used_in": [
+    "SecurityStatus"
+   ]
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Represents an indication of the low end of the price range for a security prior to the open or reopen",
+   "used_in": [
+    "Security Status"
+   ]
+  },
+  "4.3": {
+   "type": "Price",
+   "description": "Represents an indication of the low end of the price range for a security prior to the open or reopen",
+   "used_in": [
+    "Security Status"
+   ]
+  },
+  "4.2": {
+   "type": "Price",
+   "description": "Represents an indication of the low end of the price range for a security prior to the open or reopen",
+   "used_in": [
+    "Security Status"
+   ]
+  }
+ }
+}

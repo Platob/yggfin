@@ -1,0 +1,133 @@
+{
+ "name": "MultiLegReportingType",
+ "tag": 442,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Used to indicate what an ExecutionReport <8> represents (e.g. used with multi-leg securities, such as option strategies, spreads, etc.).",
+   "values": {
+    "1": "Single security (default if not specified)",
+    "2": "Individual leg of a multi-leg security",
+    "3": "Multi-leg security"
+   },
+   "value_names": {
+    "1": "SINGLE_SECURITY",
+    "2": "INDIVIDUAL_LEG_OF_A_MULTI_LEG_SECURITY",
+    "3": "MULTI_LEG_SECURITY"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Used to indicate what an ExecutionReport <8> represents (e.g. used with multi-leg securities, such as option strategies, spreads, etc.).",
+   "values": {
+    "1": "Single security (defualt if not specified)",
+    "2": "Individual leg of a multi=leg security",
+    "3": "Multi-leg security"
+   },
+   "value_names": {
+    "1": "SINGLE_SECURITY",
+    "2": "INDIVIDUAL_LEG_OF_A_MULTI_LEG_SECURITY",
+    "3": "MULTI_LEG_SECURITY"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Used to indicate what an ExecutionReport <8> represents (e.g. used with multi-leg securities, such as option strategies, spreads, etc.).",
+   "values": {
+    "1": "Single security (defualt if not specified)",
+    "2": "Individual leg of a multi=leg security",
+    "3": "Multi-leg security"
+   },
+   "value_names": {
+    "1": "SINGLE_SECURITY",
+    "2": "INDIVIDUAL_LEG_OF_A_MULTI_LEG_SECURITY",
+    "3": "MULTI_LEG_SECURITY"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Used to indicate what an Execution Report <8> represents (e.g. used with multi-leg securities, such as option strategies, spreads, etc.).",
+   "values": {
+    "1": "Single Security (default if not specified)",
+    "2": "Individual leg of a multi-leg security",
+    "3": "Multi-leg security"
+   },
+   "value_names": {
+    "1": "SINGLE_SECURITY",
+    "2": "INDIVIDUAL_LEG_OF_A_MULTI_LEG_SECURITY",
+    "3": "MULTI_LEG_SECURITY"
+   },
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report Request",
+    "Trade Capture Report",
+    "Trade Capture Report Request Ack"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Used to indicate what an Execution Report <8> represents (e.g. used with multi-leg securiteis, such as option strategies, spreads, etc.).",
+   "values": {
+    "1": "Single Security (default if not specified)",
+    "2": "Individual leg of a multi-leg security",
+    "3": "Multi-leg security"
+   },
+   "value_names": {
+    "1": "SINGLE_SECURITY",
+    "2": "INDIVIDUAL_LEG_OF_A_MULTI_LEG_SECURITY",
+    "3": "MULTI_LEG_SECURITY"
+   },
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Used to indicate what an Execution Report <8> represents (e.g. used with multi-leg securiteis, such as option strategies, spreads, etc.).",
+   "values": {
+    "1": "Single Security (default if not specified)",
+    "2": "Individual leg of a multi-leg security",
+    "3": "Multi-leg security"
+   },
+   "value_names": {
+    "1": "SINGLE_SECURITY",
+    "2": "INDIVIDUAL_LEG_OF_A_MULTI_LEG_SECURITY",
+    "3": "MULTI_LEG_SECURITY"
+   },
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

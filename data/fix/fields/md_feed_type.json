@@ -1,0 +1,30 @@
+{
+ "name": "MDFeedType",
+ "tag": 1022,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Describes a class of service for a given data feed, i.e Regular and Market Maker, Bandwidth Intensive or Bandwidth Conservative",
+   "used_in": [
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Describes a class of service for a given data feed, i.e Regular and Market Maker, Bandwidth Intensive or Bandwidth Conservative",
+   "used_in": [
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Describes a class of service for a given data feed, i.e Regular and Market Maker, Bandwidth Intensive or Bandwidth Conservative",
+   "used_in": [
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh"
+   ]
+  }
+ }
+}

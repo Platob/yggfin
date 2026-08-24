@@ -1,0 +1,30 @@
+{
+ "name": "LegMarketDisruptionFallbackGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 544,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegMarketDisruptionFallbacks",
+     "required": false,
+     "tag": 41469,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionFallbackType",
+       "required": false,
+       "tag": 41470
+      },
+      {
+       "kind": "field",
+       "name": "LegMarketDisruptionFallbackValue",
+       "required": false,
+       "tag": 40990
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

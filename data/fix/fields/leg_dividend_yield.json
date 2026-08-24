@@ -1,0 +1,14 @@
+{
+ "name": "LegDividendYield",
+ "tag": 1381,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "Refer to definition for DividendYield <1380> ."
+  },
+  "5.0.SP1": {
+   "type": "Percentage",
+   "description": "Refer to definition for DividendYield <1380> ."
+  }
+ }
+}

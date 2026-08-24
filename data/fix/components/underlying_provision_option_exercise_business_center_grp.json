@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingProvisionOptionExerciseBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 625,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingProvisionOptionExerciseBusinessCenters",
+     "required": false,
+     "tag": 42184,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionExerciseBusinessCenter",
+       "required": false,
+       "tag": 42185
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

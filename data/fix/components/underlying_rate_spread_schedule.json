@@ -1,0 +1,21 @@
+{
+ "name": "UnderlyingRateSpreadSchedule",
+ "versions": {
+  "5.0.SP2": {
+   "order": 159,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingRateSpreadInitialValue",
+     "required": false,
+     "tag": 43004
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingRateSpreadStepGrp",
+     "required": false
+    }
+   ]
+  }
+ }
+}

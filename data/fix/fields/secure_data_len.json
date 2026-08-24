@@ -1,0 +1,42 @@
+{
+ "name": "SecureDataLen",
+ "tag": 90,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Deprecated in FIXT 1.1 Length of encrypted message"
+  },
+  "5.0.SP1": {
+   "type": "Length",
+   "description": "Deprecated in FIXT 1.1 Length of encrypted message"
+  },
+  "5.0": {
+   "type": "Length",
+   "description": "Length of encrypted message"
+  },
+  "4.4": {
+   "type": "Length",
+   "description": "Length of encrypted message"
+  },
+  "4.3": {
+   "type": "Length",
+   "description": "Length of encrypted message"
+  },
+  "4.2": {
+   "type": "Length",
+   "description": "Length of encrypted message"
+  },
+  "4.1": {
+   "type": "Length",
+   "description": "Length of encrypted message"
+  },
+  "4.0": {
+   "type": "Length",
+   "description": "Length of encrypted message"
+  },
+  "FIXT1.1": {
+   "type": "Length",
+   "description": "Length of encrypted message"
+  }
+ }
+}
