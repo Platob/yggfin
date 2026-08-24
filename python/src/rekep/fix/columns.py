@@ -336,7 +336,7 @@ def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
 
 
 NAMESPACE_FIELDS: Mapping[str, Field] = namespace_columns(_REGISTRY)
-NAMED: Mapping[str, Field] = named_columns(_REGISTRY)
+NAMESPACE_COLUMNS: Mapping[str, Field] = named_columns(_REGISTRY)
 
 #: The one the parsed log declares by name, kept as a name so `FixMessage.isincode`
 #: can annotate itself with it.

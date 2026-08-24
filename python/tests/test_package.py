@@ -125,7 +125,7 @@ def test_every_codec_a_rule_may_name_is_one_the_parser_reads() -> None:
     added to the parser would leave the published list short -- and a rule
     document naming the new one would validate against a list that never grew.
     """
-    assert set(CODECS) == set(rekep.fix.rules.NAMED)
+    assert set(CODECS) == set(rekep.fix.rules.CODEC_KEYS)
     assert {rule.codec for rule in Rules().rules} <= set(CODECS)
 
 

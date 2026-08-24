@@ -16,7 +16,15 @@ import re
 from typing import Any
 
 UTC = datetime.UTC
+
+#: The epoch, in the three shapes a caller needs it in -- and only here. It
+#: had been declared in four modules in four types, which is four places for
+#: one of them to be wrong: an aware instant to subtract from, the day a
+#: `*unix` of zero falls on, and the proleptic Gregorian ordinal of that day,
+#: which is what a date arithmetic that avoids `datetime` counts from.
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)
+EPOCH_DATE = EPOCH.date()
+EPOCH_ORDINAL = EPOCH_DATE.toordinal()
 
 #: Instants a configuration may name instead of spelling. Read when the value
 #: is read, not when the document is: a schedule that says `utcnow` means the

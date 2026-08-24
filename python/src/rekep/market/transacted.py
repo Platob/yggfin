@@ -120,8 +120,10 @@ TRANSACTED: tuple[Stamped, ...] = (
 #: log's own header time is all there is.
 RECORDED = "recorded"
 
-#: What it records when there was no time anywhere.
-NO_SOURCE = ""
+#: What it records when no clock answered at all -- a row with no time.
+#: Spelled apart from `transcribe.NO_SOURCE`, which is "no version evidence":
+#: two facts about a row, and one name for both would read as one fact.
+NO_CLOCK = ""
 
 #: Which regulatory stamp *is* the transaction, per kind of event, best first.
 #: A regulatory group carries several instants and they are not interchangeable:
@@ -184,7 +186,7 @@ class Transacted:
     """When a row happened, and which rung of the chain said so."""
 
     unix: int = 0
-    source: str = NO_SOURCE
+    source: str = NO_CLOCK
 
     def __bool__(self) -> bool:
         return bool(self.source)
@@ -336,7 +338,7 @@ def resolve_arrow(columns: Mapping[str, Any], recorded: Any, rows: int) -> tuple
     source = compute.if_else(on_record, pyarrow.scalar(RECORDED), source)
     return (
         compute.fill_null(found, pyarrow.scalar(0, pyarrow.int64())),
-        compute.fill_null(source, pyarrow.scalar(NO_SOURCE)),
+        compute.fill_null(source, pyarrow.scalar(NO_CLOCK)),
     )
 
 

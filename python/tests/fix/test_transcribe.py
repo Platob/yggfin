@@ -30,7 +30,7 @@ from rekep.fix.columns import (
     FLAT,
     KWARG_PARTS,
     KWARGS,
-    NAMED,
+    NAMESPACE_COLUMNS,
     QUOTE,
     SESSION,
     STAMPS,
@@ -940,7 +940,8 @@ def test_every_declared_flat_field_comes_back_as_its_own_column(
         "the session layer, shared components, then quote fields"
     )
     assert len(FLAT) == 77
-    assert set(columns) == set(COLUMNS.values()) | {field.name for field in NAMED.values()}, (
+    namespaced = {field.name for field in NAMESPACE_COLUMNS.values()}
+    assert set(columns) == set(COLUMNS.values()) | namespaced, (
         "one pass lifts both kinds, so it answers with both"
     )
     assert sorted(STAMPS) == [52, 60, 62, 122, 370], (
@@ -948,7 +949,7 @@ def test_every_declared_flat_field_comes_back_as_its_own_column(
     )
     assert {name: column.type for name, column in columns.items()} == {
         name: TYPES[tag] for tag, name in COLUMNS.items()
-    } | {field.name: field.arrow_type for field in NAMED.values()}
+    } | {field.name: field.arrow_type for field in NAMESPACE_COLUMNS.values()}
     assert columns[COLUMNS[57]].to_pylist() == [None], "never sent, so never guessed"
 
 

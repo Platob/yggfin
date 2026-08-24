@@ -18,8 +18,11 @@ from rekep.fix.message import BEGIN_STRING, BRIDGE, BRIDGE_WIRE
 #: Read wire tags, rendered names, or no message.
 CODECS: tuple[str, ...] = ("fix", "ul", "none")
 
-#: `codec` -> `parse_arrow_array`'s named mode; None skips parsing.
-NAMED: dict[str, bool | None] = {"fix": False, "ul": True, "none": None}
+#: `codec` -> `parse_arrow_array`'s named mode; None skips parsing. Named for
+#: what it maps rather than for the word it maps to: three unrelated `NAMED`
+#: constants meant three things, and an import of one read as an import of
+#: another.
+CODEC_KEYS: dict[str, bool | None] = {"fix": False, "ul": True, "none": None}
 
 #: Fall-through protocol for a line no configured rule recognizes.
 NO_PROTOCOL = "OTHER"
@@ -64,7 +67,7 @@ class Rule(Convertible):
     @property
     def named(self) -> bool | None:
         """What `parse_arrow_array`'s `named` is for this rule; None is "no message"."""
-        return NAMED.get(self.codec)
+        return CODEC_KEYS.get(self.codec)
 
     def matches(self, message: str | None, plugin: str | None = None) -> bool:
         """Whether one line matches; unavailable message or plugin data does not."""

@@ -997,43 +997,6 @@ def _mic_arrow(columns: Mapping[str, Any], messages: Any, rows: int) -> Any:
     return compute.coalesce(venue, directed, target, sender)
 
 
-def _grouped(keys: pyarrow.Array, values: Any) -> Iterator[tuple[Any, Any, pyarrow.Array]]:
-    """`(key, the rows carrying it, where in the column they were)`.
-
-    One group takes nothing: its positions are the identity permutation, and a
-    batch of one protocol at one dictionary version -- which is nearly every
-    batch of a real capture -- then pays no `take` at all.
-    """
-    for key, where in groups_of(keys):
-        yield (
-            key,
-            (values if len(where) == len(keys) else pyarrow.compute.take(values, where)),
-            where,
-        )
-
-
-def _scattered_columns(
-    parts: Sequence[tuple[tuple[Any, Mapping[str, Any]], Any]],
-) -> dict[str, Any]:
-    """Every slice's columns back in the batch's own row order.
-
-    Every slice answers with the same columns -- a projection fills the ones
-    its protocol and version had nothing for with nulls of the right type --
-    so the parts concatenate and one sort puts every row back where it was. A
-    column no slice produced at all is `_batch`'s to fill, like any other the
-    schema declares and a line does not carry.
-    """
-    positions = [where for _, where in parts]
-    lifted = [columns for (_, columns), _ in parts]
-    return {
-        "kwargs": scattered([kwargs for (kwargs, _), _ in parts], positions),
-        **{
-            name: scattered([part[name] for part in lifted], positions)
-            for name in (lifted[0] if lifted else ())
-        },
-    }
-
-
 def _zeros(count: int, arrow_type: pyarrow.DataType) -> pyarrow.Array:
     """A column of `count` zeros -- the envelope members a parsed line leaves unset.
 

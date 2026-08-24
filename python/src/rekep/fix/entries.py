@@ -152,10 +152,6 @@ def newest_rank(version: str) -> tuple[int, ...]:
     return (1 - transport, *numbers)
 
 
-def _transport(version: str) -> bool:
-    return version.upper().startswith("FIXT")
-
-
 def translation_key(text: str) -> str:
     """A value or its name as `translations` keys it: casefolded, letters and digits.
 

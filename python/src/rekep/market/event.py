@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import dataclasses
-import datetime
 import functools
 import operator
 from collections.abc import Mapping
@@ -28,10 +27,6 @@ if TYPE_CHECKING:
 #: picky about is a conversion per row, and an integer survives every one of
 #: them unchanged.
 UNIX: dict[str, str] = {"unit": "nanosecond", "epoch": "1970-01-01"}
-
-#: The day a `unix` of zero falls on, kept because a caller reading a `*unix`
-#: back into a calendar still wants somewhere to start.
-EPOCH = datetime.date(1970, 1, 1)
 
 #: Nanoseconds in a day.
 DAY = 86_400_000_000_000

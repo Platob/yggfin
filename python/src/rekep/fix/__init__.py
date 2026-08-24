@@ -10,7 +10,16 @@ from rekep.fix.classify import (
     count_files,
     count_reader,
 )
-from rekep.fix.columns import COMMON, FLAT, KWARGS, NAMED, QUOTE, SESSION, TAG, named_columns
+from rekep.fix.columns import (
+    COMMON,
+    FLAT,
+    KWARGS,
+    NAMESPACE_COLUMNS,
+    QUOTE,
+    SESSION,
+    TAG,
+    named_columns,
+)
 from rekep.fix.components import (
     PARTIES,
     TRD_REG_TIMESTAMPS,
@@ -68,6 +77,7 @@ from rekep.fix.quickfix import (
 )
 from rekep.fix.registry import BASE_URL, CACHE_DIRECTORY, FixRegistry
 from rekep.fix.rules import (
+    CODEC_KEYS,
     CODECS,
     MARKET_CATEGORY,
     MISC_CATEGORY,
@@ -99,6 +109,7 @@ __all__ = [
     "BRIDGE_WIRE",
     "CACHE_DIRECTORY",
     "CODECS",
+    "CODEC_KEYS",
     "COMMON",
     "COMPONENTS",
     "ComponentEntry",
@@ -119,7 +130,7 @@ __all__ = [
     "MARKER",
     "MARKET_CATEGORY",
     "MISC_CATEGORY",
-    "NAMED",
+    "NAMESPACE_COLUMNS",
     "NAMESPACE",
     "NO_PROTOCOL",
     "NULL_VALUES",

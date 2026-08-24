@@ -21,12 +21,12 @@ from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
 from rekep.fix.columns import (
     KWARG_PARTS,
     KWARGS,
+    NAMESPACE_COLUMNS,
     QUOTE_GROUP_COUNTS,
     QUOTE_GROUP_STRUCTURE,
     TAG,
     named_columns,
 )
-from rekep.fix.columns import NAMED as NAMED_COLUMNS
 from rekep.fix.columns import TYPES as FLAT_TYPES
 from rekep.fix.components import (
     ComponentGroup,
@@ -982,7 +982,7 @@ class FixCodec(Convertible):
             try:
                 self._named = named_columns(self.registry)
             except (OSError, ValueError):
-                self._named = NAMED_COLUMNS
+                self._named = NAMESPACE_COLUMNS
         return self._named
 
     def parties_of(self, version: str | None = None) -> Parties:
