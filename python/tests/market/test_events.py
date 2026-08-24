@@ -18,7 +18,7 @@ from rekep.market import (
     Side,
     State,
 )
-from rekep.market.event import DAY, HOUR
+from rekep.market.event import CODES_TYPE, DAY, HOUR
 from rekep.market.identity import NIL
 
 SHAPES = {
@@ -211,13 +211,20 @@ def test_a_silent_update_keeps_the_lifecycle_mic_but_not_an_old_reason() -> None
     assert current.reason is None
 
 
-def test_the_base_code_is_protocol_neutral_and_market_code_is_fix_symbol() -> None:
-    assert "fix:tag" not in Event.into_field().field("code").metadata
-    assert MarketEvent.into_field().field("code").metadata["fix:tag"] == "55"
-    assert {"seq", "prev_hash", "prev_state", "error"}.isdisjoint(Event.into_field().names)
-    assert Event.into_field().names.count("reason") == 1
+def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> None:
+    """One string names the lifecycle; the rest are a map and not a column each."""
+    declared = Event.into_field()
+    assert "fix:tag" not in declared.field("code").metadata, "a lifecycle is not a FIX field"
+    assert declared.field("code").arrow_type == pyarrow.string()
+    assert declared.field("codes").arrow_type == CODES_TYPE
+    assert declared.names.index("codes") == declared.names.index("code") + 1
+    assert MarketEvent.into_field().names == declared.names + [
+        name for name in MarketEvent.into_field().names if name not in declared.names
+    ], "a market event adds to the envelope and never respells it"
+    assert {"seq", "prev_hash", "prev_state", "error"}.isdisjoint(declared.names)
+    assert declared.names.count("reason") == 1
     assert "venue" not in MarketEvent.into_field().names
-    assert Event.into_field().field("xcode").arrow_type == pyarrow.string()
+    assert "symbol" not in MarketEvent.into_field().names, "it is a `codes` entry"
 
 
 @pytest.mark.parametrize("shape", (Order, Execution, Book), ids=lambda cls: cls.__name__)
@@ -226,8 +233,9 @@ def test_reference_data_is_transient_and_only_its_identity_is_stored(shape: type
     assert instrument.xhash != NIL
     built = shape().attach_instrument(instrument)
     scoped = shape(instrument_xhash=7, code="given").attach_instrument(instrument)
-    assert built.instrument_xhash == instrument.xhash and built.code == instrument.symbol
+    assert built.instrument_xhash == instrument.xhash and built.symbol == instrument.symbol
     assert scoped.instrument_xhash == 7 and scoped.code == "given"
+    assert scoped.symbol == instrument.symbol, "a lifecycle code never displaces the symbol"
     assert built.ccy is instrument.currency
     assert "instrument" not in shape.into_field().names
     assert built.into_instrument() is instrument
@@ -256,8 +264,8 @@ def test_the_market_fallback_stores_the_readable_part_its_scoped_hash_uses() -> 
     instrument = Instrument(symbol="BTC-USD")
     built = Book(side=Side.UNKNOWN).attach_instrument(instrument).with_previous(None)
     assert built is not None
-    assert built.xcode == built.code == instrument.symbol
-    assert built.xhash == Book.hash_of(instrument.xhash, built.xcode, Side.UNKNOWN)
+    assert built.code == built.code == instrument.symbol
+    assert built.xhash == Book.hash_of(instrument.xhash, built.code, Side.UNKNOWN)
 
 
 def test_the_instrument_xhash_is_not_nullable_because_a_bucket_of_null_is_every_bucket() -> None:

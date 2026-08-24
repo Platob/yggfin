@@ -46,7 +46,6 @@ def initial[EventT: MarketEvent](event: EventT, instrument: Instrument = BTC) ->
 def order(unix: int, about: Instrument, side: Side, px: float, qty: float, named: str, **given):
     declared = {
         "unix": unix,
-        "code": about.symbol,
         "side": side,
         "px": px,
         "qty": qty,
@@ -634,7 +633,6 @@ def test_a_trade_counts_as_the_side_moving() -> None:
         initial(
             Execution(
                 unix=BASE + 20,
-                code="BTC-USD",
                 side=Side.BID,
                 px=100.0,
                 qty=2.0,
@@ -655,7 +653,6 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
         initial(
             Execution(
                 unix=BASE + 10,
-                code="BTC-USD",
                 side=Side.BID,
                 px=100.0,
                 qty=2.0,
@@ -666,7 +663,6 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
         initial(
             Execution(
                 unix=BASE + 20,
-                code="BTC-USD",
                 side=Side.BID,
                 px=100.0,
                 qty=2.0,
@@ -789,7 +785,6 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
     placed = initial(
         Order(
             unix=BASE,
-            code=BTC.symbol,
             side=Side.BID,
             px=100.0,
             qty=5.0,
@@ -1232,7 +1227,6 @@ def test_negative_prices_are_valid_but_nonpositive_quantities_are_not() -> None:
     bad_fill = initial(
         Execution(
             unix=BASE + 10,
-            code="BTC-USD",
             side=Side.BID,
             px=-37.0,
             qty=-1.0,
@@ -1262,7 +1256,6 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
     fill = initial(
         Execution(
             unix=BASE + 10,
-            code="BTC-USD",
             side=Side.BID,
             px=100.0,
             qty=400.0,

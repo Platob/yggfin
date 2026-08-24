@@ -23,7 +23,7 @@ from rekep.enums import (
     State,
 )
 from rekep.fields import Field, scalar
-from rekep.market.event import DAY, HOUR, MarketEvent
+from rekep.market.event import DAY, HOUR, SYMBOL_CODE, MarketEvent
 from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import NIL
 from rekep.market.instrument import Instrument
@@ -204,8 +204,6 @@ class Book(MarketEvent):
                 self.runix = previous.runix
             if self.eunix is None:
                 self.eunix = previous.eunix
-            if not self.code:
-                self.code = previous.code
             if self.mic is None:
                 self.mic = previous.mic
             if self.into_instrument() is None:
@@ -220,13 +218,12 @@ class Book(MarketEvent):
                 self.qty_unit = previous.qty_unit
             if self.exec_px is None:
                 self.exec_px = previous.exec_px
-            self.xcode = previous.xcode or self.xcode
+            self.code = previous.code or self.code
             self.version = previous.version + 1
             self.prev_unix = previous.unix
             self._remember_previous(previous)
         self.derive()
-        if not self.xcode:
-            self._materialize_life_code()
+        self._materialize_life_code()
         if self.linked_events:
             self._drop_self_link()
         self.hash = self.hash_of(*self.version_parts())
@@ -1067,8 +1064,8 @@ class _Folding:
     xhash: int = NIL
     """The book's lifecycle. One instrument is one book, so this never moves."""
 
-    xcode: str = ""
-    """Readable instrument code the book lifecycle was first identified by."""
+    code: str = ""
+    """Readable code the book lifecycle was first identified by."""
 
     unix: int | None = None
     """The instant the events being folded belong to; None before the first."""
@@ -1486,7 +1483,7 @@ class BookIterator:
         lifecycle = Book(
             unix=event.unix,
             instrument_xhash=event.instrument_xhash,
-            code=event.code,
+            codes=dict(event.codes),
             ccy=event.ccy,
         )
         parsed = event.into_instrument()
@@ -1494,7 +1491,7 @@ class BookIterator:
             stored
             if stored is not None
             else parsed
-            or Instrument(xhash=event.instrument_xhash, symbol=event.code, currency=event.ccy)
+            or Instrument(xhash=event.instrument_xhash, symbol=event.symbol, currency=event.ccy)
         )
         lifecycle.attach_instrument(instrument)
         xhash = lifecycle.life_hash()
@@ -1503,7 +1500,7 @@ class BookIterator:
             bid=_Side(side=Side.BID, max_order_age_ns=self.max_order_age_ns),
             ask=_Side(side=Side.ASK, max_order_age_ns=self.max_order_age_ns),
             xhash=xhash,
-            xcode=lifecycle.life_code(),
+            code=lifecycle.life_code(),
             instrument=instrument,
         )
         return state
@@ -1523,7 +1520,7 @@ class BookIterator:
         instrument = (
             known
             if known is not None
-            else snapshot.into_instrument() or Instrument(xhash=canonical, symbol=snapshot.code)
+            else snapshot.into_instrument() or Instrument(xhash=canonical, symbol=snapshot.symbol)
         )
         snapshot.attach_instrument(instrument)
         state = _Folding(
@@ -1541,7 +1538,7 @@ class BookIterator:
                 self.max_order_age_ns,
             ),
             xhash=snapshot.xhash,
-            xcode=snapshot.xcode,
+            code=snapshot.code,
             unix=snapshot.unix,
             previous=snapshot,
             about=snapshot,
@@ -1811,8 +1808,8 @@ def _settled(state: _Folding, unix: int) -> Book | None:
     book = Book(
         unix=unix,
         instrument_xhash=state.instrument_xhash,
-        code=state.instrument.symbol or about.code,
-        xcode=state.xcode,
+        code=state.code,
+        codes={**about.codes, SYMBOL_CODE: state.instrument.symbol or about.symbol},
         px_unit=about.px_unit,
         ccy=about.ccy,
         qty_unit=about.qty_unit,

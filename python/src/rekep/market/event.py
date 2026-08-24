@@ -40,6 +40,19 @@ HOUR = 3_600_000_000_000
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 
+#: What `codes` holds: every readable identifier a row carried beside the one
+#: that names its lifecycle, keyed by whatever carried it -- `symbol`,
+#: `cl_ord_id`, `exec_id`, `isincode`. A map and not a set of columns, because
+#: which identifiers a source spells is the source's business and a column per
+#: candidate is a schema change per venue.
+CODES_TYPE = pyarrow.map_(
+    pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
+)
+
+#: The one `codes` key this package writes itself. A market row's instrument
+#: symbol used to be `code`, before `code` became the lifecycle identifier.
+SYMBOL_CODE = "symbol"
+
 _LINKED_EVENTS_TYPE = pyarrow.list_(
     pyarrow.field(
         "item",
@@ -142,10 +155,12 @@ class Event(MarketConvertible):
     """Where the lifecycle stands, as a banded code: `>= State.TERMINAL` is over."""
 
     code: str = ""
-    """Readable identifier of this event, as its source spells it."""
+    """Readable identifier of this lifecycle, shared by every version of it."""
 
-    xcode: str = ""
-    """Readable identifier shared by every version of this lifecycle."""
+    codes: Annotated[dict[str, str], Field(arrow_type=CODES_TYPE)] = dataclasses.field(
+        default_factory=dict
+    )
+    """Every other identifier the source spelled, by the name that carried it."""
 
     prev_unix: Annotated[int | None, Field(metadata=UNIX)] = None
     """When the previous version happened, so dwell time is a subtraction."""
@@ -171,6 +186,11 @@ class Event(MarketConvertible):
                 self.linked_events = normalized
         elif not isinstance(links, list):
             self.linked_events = []
+        # Arrow reads a map back as a list of pairs, and a row that made the
+        # round trip is the same row: normalize once here rather than at every
+        # reader of `codes`.
+        if not isinstance(self.codes, dict):
+            self.codes = dict(self.codes or ())
         self.normalize_float_members()
         if self.etype is EventType.UNKNOWN:
             self.etype = type(self).into_event_type()
@@ -347,7 +367,7 @@ class Event(MarketConvertible):
             # lifecycle is the only honest place its readable key can come
             # from. Never copy it before this comparison: completion crosses
             # shapes, and an execution is not named by its order's code.
-            self.xcode = previous.xcode or self.xcode
+            self.code = previous.code or self.code
             self.version = previous.version + 1
             self.prev_unix = previous.unix
             self._remember_previous(previous)
@@ -373,7 +393,7 @@ class Event(MarketConvertible):
         self._materialize_life_code()
         self.xhash = previous.xhash
         self._drop_self_link()
-        self.xcode = previous.xcode or self.xcode
+        self.code = previous.code or self.code
         self.version = previous.version + 1
         self.prev_unix = previous.unix
         self._remember_previous(previous)
@@ -395,8 +415,11 @@ class Event(MarketConvertible):
             self.runix = previous.runix
         if self.eunix is None:
             self.eunix = previous.eunix
-        if not self.code:
-            self.code = previous.code
+        # Not `code`: that names a lifecycle, and completion crosses lifecycles
+        # -- an execution completed from its order is not named by the order.
+        # The identifiers *beside* it are facts about the same thing under any
+        # reading, so a version silent about one keeps what the last one said.
+        self.name_codes(previous.codes)
         if self.mic is None:
             self.mic = previous.mic
         if self.state is State.UNKNOWN:
@@ -501,11 +524,21 @@ class Event(MarketConvertible):
 
     def life_code(self) -> str:
         """The readable part that names this lifecycle, without changing it."""
-        return self.xcode or self.code
+        return self.code
 
     def _materialize_life_code(self) -> None:
         """Store the readable lifecycle part once, before mutable codes move."""
-        self.xcode = self.xcode or self.life_code()
+        self.code = self.code or self.life_code()
+
+    def name_code(self, name: str, value: str | None) -> None:
+        """Record one identifier this row carried, without displacing one it has."""
+        if value and not self.codes.get(name):
+            self.codes[name] = value
+
+    def name_codes(self, codes: Mapping[str, str]) -> None:
+        """Record several, in one pass and under the same rule."""
+        for name, value in codes.items():
+            self.name_code(name, value)
 
     def life_parts(self) -> tuple[Any, ...]:
         """What makes this event's lifecycle the one it is, across every version.
@@ -543,11 +576,6 @@ class MarketEvent(Event):
     # Parsed instrument facts are useful while folding but are deliberately
     # not a member: market events persist only the flat identity.
     __instrument: Instrument | None = None
-
-    # The base envelope's code is protocol-neutral. A market event specialises
-    # it as FIX Symbol while keeping the inherited column position.
-    code: Annotated[str, fix_tag("Symbol")] = ""
-    """Instrument symbol as the source spells it."""
 
     # Flat, first, and partitioned on. An event stream is read one instrument
     # at a time far more often than it is read whole, and `instrument.xhash`
@@ -617,7 +645,7 @@ class MarketEvent(Event):
         """Use reference data while building without adding it to the event schema."""
         self.__instrument = instrument
         self.instrument_xhash = self.instrument_xhash or instrument.xhash
-        self.code = self.code or instrument.symbol
+        self.name_code(SYMBOL_CODE, instrument.symbol)
         if self.ccy is None:
             self.ccy = instrument.currency
         return self
@@ -625,6 +653,17 @@ class MarketEvent(Event):
     def into_instrument(self) -> Instrument | None:
         """Return transient parsed reference data, absent after persisted reads."""
         return getattr(self, "_MarketEvent__instrument", None)
+
+    @property
+    def symbol(self) -> str:
+        """The instrument symbol the source spelled, where it spelled one.
+
+        In `codes` and not a column of its own: `instrument_xhash` is what a
+        reader joins and partitions on, and the symbol is the readable spelling
+        beside it -- one of several identifiers a venue may send, and no more
+        entitled to a column than the ISIN next to it.
+        """
+        return self.codes.get(SYMBOL_CODE, "")
 
     def complete_from(self, previous: Event) -> None:
         """The four market slots, carried forward where this version was silent.
@@ -726,6 +765,16 @@ class MarketEvent(Event):
         if not self.instrument_xhash and not code:
             return ()
         return (self.instrument_xhash, code, self.side)
+
+    def life_code(self) -> str:
+        """The lifecycle identifier, and the instrument symbol when there is none.
+
+        A market event that names no order and no report is still an event
+        about one instrument on one side, and the symbol is the readable half
+        of that. It is a fallback and never a preference: a row carrying an
+        order identifier is named by the order.
+        """
+        return self.code or self.symbol
 
     def version_parts(self) -> tuple[Any, ...]:
         """A market version moves when its price or its quantity moves."""

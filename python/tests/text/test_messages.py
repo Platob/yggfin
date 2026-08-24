@@ -588,7 +588,7 @@ def test_quote_fields_are_typed_once_and_drive_log_correlation(
 
     assert parsed.column("msg_seq_num").to_pylist() == [7]
     assert parsed.column("code").to_pylist() == ["Q-1"]
-    assert parsed.column("xcode").to_pylist() == ["Q-1"]
+    assert parsed.column("code").to_pylist() == ["Q-1"]
     assert parsed.column("quote_id").to_pylist() == ["Q-1"]
     assert parsed.column("quote_req_id").to_pylist() == ["R-1"]
     assert parsed.column("quote_type").to_pylist() == [1]

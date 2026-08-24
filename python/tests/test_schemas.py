@@ -53,7 +53,8 @@ def test_market_contract_keeps_protocol_metadata() -> None:
     order = Field.from_yaml(str(SCHEMAS / "rekep" / "order.yaml"))
     assert order.field("tif").fix["tag"] == "59"
     assert order.field("px").fix["name"] == "Price"
-    assert order.field("code").fix["tag"] == "55"
+    assert order.field("side").fix["tag"] == "54"
+    assert "fix:tag" not in order.field("code").metadata, "a lifecycle is not a FIX field"
     assert "instrument" not in order.names
 
 

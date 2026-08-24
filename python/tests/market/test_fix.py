@@ -182,7 +182,9 @@ def test_one_fix_field_is_spelled_the_same_wherever_it_appears() -> None:
         by_name.setdefault(member.fix["name"], set()).add((member.name, member.arrow_type))
     for name, spellings in by_name.items():
         if name == "Symbol":
-            assert spellings == {("code", pyarrow.string()), ("symbol", pyarrow.string())}
+            assert spellings == {("symbol", pyarrow.string())}, (
+                "one spelling now: a market event's symbol is a `codes` entry"
+            )
             continue
         if name == "Currency":
             assert spellings == {

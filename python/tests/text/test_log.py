@@ -32,7 +32,7 @@ ENVELOPE = [
     "version",
     "state",
     "code",
-    "xcode",
+    "codes",
     "prev_unix",
     "parent_hash",
     "mic",

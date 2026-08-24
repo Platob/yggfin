@@ -41,6 +41,8 @@ def value_of(member: Field, row: int) -> Any:
         return {inner.name: value_of(inner, row) for inner in member.fields if not inner.nullable}
     if kinds.is_list(arrow_type) or kinds.is_large_list(arrow_type):
         return []
+    if kinds.is_map(arrow_type):
+        return {}
     if arrow_type == pyarrow.binary(16):
         return identifier(row).bytes
     if kinds.is_date(arrow_type):

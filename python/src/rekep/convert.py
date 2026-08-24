@@ -346,7 +346,10 @@ def _decode(value: Any, annotation: Any) -> Any:
         return container(_decode(v, item_annotation(annotation)) for v in value)
     if origin in MAPPING_ORIGINS:
         key_type, value_type = (get_args(annotation) or (Any, Any))[:2]
-        return {_decode(k, key_type): _decode(v, value_type) for k, v in value.items()}
+        # A text format gives a mapping back; Arrow gives a list of pairs, which
+        # is what a `map` column reads as. Both are the same mapping.
+        pairs = value.items() if isinstance(value, Mapping) else value
+        return {_decode(k, key_type): _decode(v, value_type) for k, v in pairs}
 
     if annotation is Any:
         return value  # untyped: trust the plain container a text format gave back

@@ -64,8 +64,7 @@ fields:
     iceberg:primary_key: 'true'
 - name: xhash
   type: int64
-  description: Digest of `xcode`, or the raw-line digest when no correlation code
-    exists.
+  description: Digest of `code`, or the raw-line digest when no correlation code exists.
 - name: linked_events
   type: list
   description: Related event times and lifecycle identities, primary match first.
@@ -90,10 +89,15 @@ fields:
     enum:values: '{"0":"UNKNOWN","100":"PENDING","110":"PENDING_NEW","200":"OPEN","210":"NEW","220":"ACCEPTED","230":"PENDING_REPLACE","240":"PENDING_CANCEL","250":"SUSPENDED","260":"STOPPED","300":"PARTIAL","310":"PARTIALLY_FILLED","400":"DONE","410":"FILLED","420":"DONE_FOR_DAY","430":"CALCULATED","500":"CLOSED","510":"CANCELLED","520":"REPLACED","530":"EXPIRED","540":"INTERNAL_EXPIRED","600":"FAILED","610":"REJECTED","620":"INTERNAL_REJECTED"}'
 - name: code
   type: string
-  description: Best readable record identifier present on this line.
-- name: xcode
-  type: string
-  description: Best direct lifecycle correlation identifier present on this line.
+  description: Best lifecycle identifier present on this line.
+- name: codes
+  type: map
+  description: Every other identifier the source spelled, by the name that carried
+    it.
+  key:
+    type: string
+  value:
+    type: string
 - name: prev_unix
   type: int64
   nullable: true

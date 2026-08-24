@@ -53,38 +53,21 @@ class Log(Event):
         return _INSTRUMENT_PROTOCOL
 
     xhash: int = NIL
-    """Digest of `xcode`, or the raw-line digest when no correlation code exists."""
+    """Digest of `code`, or the raw-line digest when no correlation code exists."""
 
     code: str = ""
-    """Best readable record identifier present on this line."""
+    """Best lifecycle identifier present on this line."""
 
-    xcode: str = ""
-    """Best direct lifecycle correlation identifier present on this line."""
-
-    # `code` names this record; `xcode` prefers the identifier that survives an
-    # order amendment. Later fallbacks still give reference and market-data
-    # lines a readable lifecycle without inventing a source-specific field.
+    # One order, and it prefers the identifier that survives an amendment:
+    # `OrigClOrdID <41>` names the order a replacement replaces, and a
+    # lifecycle that moved to the new `ClOrdID <11>` on every amendment would
+    # be one lifecycle per amendment. Later fallbacks give reference and
+    # market-data lines a readable lifecycle without inventing a
+    # source-specific field.
     @classmethod
     @functools.cache
     def into_code_columns(cls) -> tuple[str, ...]:
-        """Parsed columns tried for a readable record identifier."""
-        return (
-            "order_id",
-            "cl_ord_id",
-            "orig_cl_ord_id",
-            "exec_id",
-            "quote_entry_id",
-            "quote_id",
-            "quote_req_id",
-            "security_id",
-            "isincode",
-            "symbol",
-        )
-
-    @classmethod
-    @functools.cache
-    def into_xcode_columns(cls) -> tuple[str, ...]:
-        """Parsed columns tried for a lifecycle identifier."""
+        """Parsed columns tried for a lifecycle identifier, best first."""
         return (
             "order_id",
             "orig_cl_ord_id",
@@ -451,7 +434,7 @@ class Log(Event):
 
     @classmethod
     def code_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
-        """Best readable record identifier available in parsed FIX columns."""
+        """Best readable lifecycle identifier available in parsed FIX columns."""
         return _first_text(columns, cls.into_code_columns(), rows)
 
     @classmethod
@@ -461,11 +444,6 @@ class Log(Event):
         return pyarrow.compute.if_else(
             pyarrow.compute.equal(found, ""), pyarrow.nulls(rows, pyarrow.string()), found
         )
-
-    @classmethod
-    def xcode_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
-        """Best readable lifecycle identifier available in parsed FIX columns."""
-        return _first_text(columns, cls.into_xcode_columns(), rows)
 
     def into_fix_events(self, **declared: Any) -> Any:
         """Rebuild the FIX market reader from promoted columns and residual pairs."""
@@ -623,7 +601,7 @@ class Log(Event):
             version=self.version,
             state=self.state,
             code=self.code,
-            xcode=self.xcode,
+            codes=dict(self.codes),
             prev_unix=self.prev_unix,
             parent_hash=None if self.parent_hash is None else list(self.parent_hash),
             mic=self.mic,

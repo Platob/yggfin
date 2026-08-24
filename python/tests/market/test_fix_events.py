@@ -235,7 +235,7 @@ def test_a_trade_correction_keeps_its_execid_and_anchors_on_execrefid() -> None:
     _, corrected = events(report)
 
     assert corrected.exec_id == "EX-4" and corrected.exec_ref_id == "EX-3"
-    assert corrected.xcode == "EX-3"
+    assert corrected.code == "EX-3"
 
 
 def test_a_lifecycle_exectype_reads_through_the_code_it_shares_with_ordstatus() -> None:
@@ -438,7 +438,7 @@ def test_the_instrument_is_read_and_flattened_onto_the_partition_column() -> Non
     order, fill = events(FILLED)
     instrument = order.into_instrument()
     assert instrument is not None
-    assert instrument.symbol == "BTC-USD" and order.code == "BTC-USD"
+    assert instrument.symbol == "BTC-USD" and order.symbol == "BTC-USD"
     assert instrument.exchange == "XCME" and instrument.currency is Currency.USD
     assert order.instrument_xhash == instrument.xhash != 0
     assert fill.instrument_xhash == order.instrument_xhash
@@ -639,7 +639,7 @@ def test_an_offline_registry_selects_version_specific_wire_tags(tmp_path) -> Non
     reader = FixEvents.from_text(line, registry=registry)
     (order,) = list(reader)
     assert reader.version == "VENUE1"
-    assert (order.code, order.client_order_id, order.side) == ("AAPL", "CUSTOM-1", Side.BUY)
+    assert (order.symbol, order.client_order_id, order.side) == ("AAPL", "CUSTOM-1", Side.BUY)
     assert (order.qty, order.px, order.unix) == (7.0, 10.5, unix_of("20260821-10:00:00"))
     assert "9004" not in order.metadata, "the configured Side tag is a claimed column"
     assert order.metadata["9008"] == "ALPHA", "a registry-only field remains auditable"

@@ -446,7 +446,7 @@ def test_a_flat_field_is_a_column_of_its_own_type_and_not_text(plain: Path) -> N
     }
     assert {name: schema.field(name).type for name in declared} == declared
     assert all(schema.field(column).nullable for _, column in FLAT)
-    assert not schema.field("code").nullable and not schema.field("xcode").nullable
+    assert not schema.field("code").nullable and not schema.field("code").nullable
 
 
 def test_an_instant_a_message_carries_is_a_microsecond_utc_timestamp(plain: Path) -> None:
@@ -484,7 +484,7 @@ def test_exact_fix_columns_also_fill_the_generic_envelope(wire: Path, codec: Fix
     assert table.column("symbol").to_pylist() == ["TTF", None, None]
     assert table.column("msg_seq_num").to_pylist() == [7, 8, None]
     assert table.column("code").to_pylist() == ["ORD-1", "", ""]
-    assert table.column("xcode").to_pylist() == ["ORD-1", "", ""]
+    assert table.column("code").to_pylist() == ["ORD-1", "", ""]
     assert table.column("msg_type").to_pylist() == ["D", "AB", None]
     assert table.column("check_sum").to_pylist() == ["203", "011", None]
     assert table.column("mic").to_pylist() == [int(MIC.from_str("XPAR"))] * 2 + [None]
@@ -551,20 +551,12 @@ def test_generic_codes_follow_the_parsed_identifier_fallbacks(
 
     assert table.column("code").to_pylist() == [
         "VENUE",
-        "CURRENT",
-        "EXEC",
-        "TTF",
-        "SEC-1",
-        "",
-    ]
-    assert table.column("xcode").to_pylist() == [
-        "VENUE",
         "ORIGINAL",
         "EXEC",
         "TTF",
         "SEC-1",
         "",
-    ]
+    ], "`OrigClOrdID <41>` before `ClOrdID <11>`: a lifecycle survives its amendments"
     assert table.column("security_id").to_pylist()[4] == "SEC-1"
     assert table.column("xhash").to_pylist()[:5] == [
         Log.hash_of(value) for value in ("VENUE", "ORIGINAL", "EXEC", "TTF", "SEC-1")

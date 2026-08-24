@@ -43,7 +43,7 @@
 
   <rect class="contract" x="45" y="245" width="355" height="240" rx="15"/>
   <text class="label" x="223" y="278">Log contract</text>
-  <text class="small" x="223" y="304">symbol | code | xcode | parsed FIX fields</text>
+  <text class="small" x="223" y="304">symbol | code | codes | parsed FIX fields</text>
   <text class="small" x="223" y="326">raw lines + normalized Instrument versions</text>
   <rect class="chip-live" x="78" y="350" width="290" height="36" rx="9"/>
   <text class="tiny" x="223" y="373">logs.market → continues through Arrow</text>

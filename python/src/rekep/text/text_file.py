@@ -24,7 +24,7 @@ from rekep.fields.arrays import groups_of, scattered
 from rekep.filesystems import resolve
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.transcribe import FixCodec
-from rekep.market.event import HOUR
+from rekep.market.event import CODES_TYPE, HOUR
 from rekep.market.identity import HASH, hash_bytes
 from rekep.text.log import Log, LogRules, MessageCodec
 from rekep.urls import Url
@@ -401,7 +401,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             "version": _zeros(count, pyarrow.int64()),
             "state": _zeros(count, pyarrow.int32()),
             "code": pyarrow.repeat("", count),
-            "xcode": pyarrow.repeat("", count),
+            "codes": pyarrow.repeat(pyarrow.scalar({}, CODES_TYPE), count),
             "prev_unix": pyarrow.nulls(count, pyarrow.int64()),
             "parent_hash": pyarrow.nulls(count, PARENTS),
             "mic": pyarrow.nulls(count, pyarrow.int32()),
@@ -438,14 +438,13 @@ class TextFile(Dataset, io.BufferedIOBase):
         row = self.into_row()
         columns["symbol"] = row.symbol_arrow(columns, count)
         columns["code"] = row.code_arrow(columns, count)
-        columns["xcode"] = row.xcode_arrow(columns, count)
-        linked = pyarrow.compute.not_equal(columns["xcode"], "")
+        linked = pyarrow.compute.not_equal(columns["code"], "")
         linked_count = int(pyarrow.compute.sum(linked).as_py() or 0)
         if linked_count:
             selected = (
-                columns["xcode"]
+                columns["code"]
                 if linked_count == count
-                else pyarrow.compute.filter(columns["xcode"], linked)
+                else pyarrow.compute.filter(columns["code"], linked)
             )
             hashes = row.hash_arrow(selected)
             columns["xhash"] = (

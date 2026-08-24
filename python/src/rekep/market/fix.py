@@ -34,7 +34,7 @@ from rekep.fix.quickfix import (
     SpecMember,
 )
 from rekep.fix.registry import FixRegistry
-from rekep.market.event import MarketEvent
+from rekep.market.event import SYMBOL_CODE, MarketEvent
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
 
@@ -1039,7 +1039,7 @@ class FixEvents(Convertible):
         instrument = self.instrument
         mic = self._mic()
         return {
-            "code": instrument.symbol,
+            "codes": {SYMBOL_CODE: instrument.symbol} if instrument.symbol else {},
             "mic": mic,
             "reason": self._reason(),
             "instrument_xhash": instrument.xhash,

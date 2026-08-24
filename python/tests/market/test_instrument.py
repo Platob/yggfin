@@ -24,9 +24,9 @@ def test_the_exact_symbol_forces_the_instrument_identity_and_readable_key() -> N
         Instrument(symbol="AAPL"),
         Instrument(symbol="AAPL", exchange="XNAS"),
         Instrument(symbol="AAPL", security_id="US0378331005", security_id_source="4"),
-        Instrument(symbol="AAPL", xhash=7, xcode="US0378331005"),
+        Instrument(symbol="AAPL", xhash=7, code="US0378331005"),
     )
-    assert {(built.xhash, built.xcode) for built in variants} == {(expected, "AAPL")}
+    assert {(built.xhash, built.code) for built in variants} == {(expected, "AAPL")}
 
 
 def test_two_venues_using_the_same_symbol_agree() -> None:
@@ -68,13 +68,13 @@ def test_an_instrument_with_no_key_at_all_is_visibly_unidentified() -> None:
     assert Instrument().xhash == NIL
     unidentified = Instrument(
         xhash=7,
-        xcode="US0378331005",
+        code="US0378331005",
         exchange="XCME",
         currency="USD",
         security_id="US0378331005",
         security_id_source="4",
     )
-    assert (unidentified.xhash, unidentified.xcode) == (NIL, "")
+    assert (unidentified.xhash, unidentified.code) == (NIL, "")
 
 
 def test_currency_input_is_normalised_to_the_persisted_int32_enum() -> None:

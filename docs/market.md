@@ -24,7 +24,7 @@ otherwise `unix`.
 ## Instrument
 
 `Instrument` is both the persisted instrument record and the source of its
-identity. `xhash` and `xcode` derive only from the exact symbol; security ids,
+identity. `xhash` and `code` derive only from the exact symbol; security ids,
 ISINs, and venues remain reference facts. The same spelling therefore shares
 one lifecycle across venues, while different spellings never alias through an
 identifier. An exact `AAA/BBB` symbol is classified as currency when no kind is

@@ -27,13 +27,16 @@ from the filename by Arrow.
 ## Parsed record
 
 `Log` reuses the generic `Event` envelope. The raw-line digest is its stable
-version identity. When a protocol key exists, `code`, `xcode`, and `xhash`
-provide readable and hashed correlation without changing the raw digest.
+version identity. When a protocol key exists, `code` and `xhash` provide
+readable and hashed correlation without changing the raw digest.
 
 For market rows, `symbol` is the best available instrument spelling: the FIX
 symbol first, then a security/ISIN identifier when the source omitted one.
-`code` remains the best record identifier, preferring order, client-order,
-original-order, execution, and quote lifecycle keys before instrument keys.
+`code` is the readable **lifecycle** identifier, and prefers the key that
+survives an amendment: `OrderID <37>`, then `OrigClOrdID <41>`, then
+`ClOrdID <11>`, then execution and quote keys, then instrument keys.
+`codes` is the map beside it, for an identifier the source spelled that has no
+column of its own -- empty on a parsed FIX line, where each has one.
 
 Important FIX fields are promoted to snake-case columns. Their metadata keeps
 the canonical registry name, tag, datatype, description, version, and values.

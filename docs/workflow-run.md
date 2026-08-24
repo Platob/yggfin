@@ -151,11 +151,11 @@ and orders.
 
 | Contract | Fields | Primary key | Partitions | Nested payloads |
 | --- | ---: | --- | --- | --- |
-| `Log` | 103 | `unix, hash` | `unix_hour` | `kwargs`, `parties` |
-| `Instrument` | 36 | `unix, hash` | `unix_hour`, `xhash` | `alt_ids`, `legs` |
-| `Book` | 52 | `unix, hash` | `unix_hour`, `instrument_xhash` | levels, deltas, executions, live snapshot orders |
-| `Order` | 39 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage and metadata |
-| `Execution` | 41 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage and metadata |
+| `Log` | 103 | `unix, hash` | `unix_hour` | `kwargs`, `parties`, `codes` |
+| `Instrument` | 36 | `unix, hash` | `unix_hour`, `xhash` | `alt_ids`, `legs`, `codes` |
+| `Book` | 52 | `unix, hash` | `unix_hour`, `instrument_xhash` | levels, deltas, executions, live snapshot orders, `codes` |
+| `Order` | 39 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage, `codes` and metadata |
+| `Execution` | 41 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage, `codes` and metadata |
 
 The YAML contracts under `schemas/rekep/` are the portable source. Arrow owns
 types and metadata between stages, Iceberg owns table ids and snapshots, and

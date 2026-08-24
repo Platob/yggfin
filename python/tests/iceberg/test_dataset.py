@@ -98,7 +98,6 @@ FIX_LINE = Log(
     hash=3,
     xhash=3,
     code="ORD-1",
-    xcode="ORD-1",
     etype=EventType.ORDER,
     thread_name="t",
     driver_name="d",
