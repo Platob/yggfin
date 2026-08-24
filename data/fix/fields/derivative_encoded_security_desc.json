@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeEncodedSecurityDesc",
+ "tag": 1281,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data"
+  },
+  "5.0.SP1": {
+   "type": "data"
+  }
+ }
+}

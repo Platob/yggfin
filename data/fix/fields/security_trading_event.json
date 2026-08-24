@@ -1,0 +1,61 @@
+{
+ "name": "SecurityTradingEvent",
+ "tag": 1174,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies an event related to a SecurityTradingStatus <326> . An event occurs and is gone, it is not a state that applies for a period of time.",
+   "values": {
+    "1": "Order imbalance, auction is extended",
+    "2": "Trading resumes (after Halt)",
+    "3": "Price Volatility Interruption",
+    "4": "Change of Trading Session",
+    "5": "Change of Trading Subsession",
+    "6": "Change of Security Trading Status",
+    "7": "Change of Book Type",
+    "8": "Change of Market Depth"
+   },
+   "value_names": {
+    "1": "ORDER_IMBALANCE",
+    "2": "TRADING_RESUMES",
+    "3": "PRICE_VOLATILITY_INTERRUPTION",
+    "4": "CHANGE_OF_TRADING_SESSION",
+    "5": "CHANGE_OF_TRADING_SUBSESSION",
+    "6": "CHANGE_OF_SECURITY_TRADING_STATUS",
+    "7": "CHANGE_OF_BOOK_TYPE",
+    "8": "CHANGE_OF_MARKET_DEPTH",
+    "9": "CORPORATE_ACTION"
+   },
+   "used_in": [
+    "SecurityStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies an event related to a SecurityTradingStatus <326> . An event occurs and is gone, it is not a state that applies for a period of time.",
+   "values": {
+    "1": "Order imbalance, auction is extended",
+    "2": "Trading resumes (after Halt)",
+    "3": "Price Volatility Interruption",
+    "4": "Change of Trading Session",
+    "5": "Change of Trading Subsession",
+    "6": "Change of Security Status",
+    "7": "Change of Book Type",
+    "8": "Change of Market Depth"
+   },
+   "value_names": {
+    "1": "ORDER_IMBALANCE",
+    "2": "TRADING_RESUMES",
+    "3": "PRICE_VOLATILITY_INTERRUPTION",
+    "4": "CHANGE_OF_TRADING_SESSION",
+    "5": "CHANGE_OF_TRADING_SUBSESSION",
+    "6": "CHANGE_OF_SECURITY_TRADING_STATUS",
+    "7": "CHANGE_OF_BOOK_TYPE",
+    "8": "CHANGE_OF_MARKET_DEPTH"
+   },
+   "used_in": [
+    "SecurityStatus"
+   ]
+  }
+ }
+}

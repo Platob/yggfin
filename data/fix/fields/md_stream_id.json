@@ -1,0 +1,13 @@
+{
+ "name": "MDStreamID",
+ "tag": 1500,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The identifier or name of the price stream.",
+   "used_in": [
+    "MarketDataSnapshotFullRefresh"
+   ]
+  }
+ }
+}

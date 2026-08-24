@@ -1,0 +1,106 @@
+{
+ "name": "CollInquiryQualifier",
+ "tag": 896,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Collateral inquiry qualifiers",
+   "values": {
+    "0": "Trade Date",
+    "1": "GC Instrument",
+    "2": "Collateral Instrument",
+    "3": "Substitution Eligible",
+    "4": "Not Assigned",
+    "5": "Partially Assigned",
+    "6": "Fully Assigned",
+    "7": "Outstanding Trades (Today < end date)"
+   },
+   "value_names": {
+    "0": "TRADE_DATE",
+    "1": "GC_INSTRUMENT",
+    "2": "COLLATERAL_INSTRUMENT",
+    "3": "SUBSTITUTION_ELIGIBLE",
+    "4": "NOT_ASSIGNED",
+    "5": "PARTIALLY_ASSIGNED",
+    "6": "FULLY_ASSIGNED",
+    "7": "OUTSTANDING_TRADES"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Collateral inquiry qualifiers",
+   "values": {
+    "0": "Trade Date",
+    "1": "GC Instrument",
+    "2": "Collateral Instrument",
+    "3": "Substitution Eligible",
+    "4": "Not Assigned",
+    "5": "Partially Assigned",
+    "6": "Fully Assigned",
+    "7": "Outstanding Trades (Today < end date)"
+   },
+   "value_names": {
+    "0": "TRADE_DATE",
+    "1": "GC_INSTRUMENT",
+    "2": "COLLATERAL_INSTRUMENT",
+    "3": "SUBSTITUTION_ELIGIBLE",
+    "4": "NOT_ASSIGNED",
+    "5": "PARTIALLY_ASSIGNED",
+    "6": "FULLY_ASSIGNED",
+    "7": "OUTSTANDING_TRADES"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Collateral inquiry qualifiers",
+   "values": {
+    "0": "Trade Date",
+    "1": "GC Instrument",
+    "2": "Collateral Instrument",
+    "3": "Substitution Eligible",
+    "4": "Not Assigned",
+    "5": "Partially Assigned",
+    "6": "Fully Assigned",
+    "7": "Outstanding Trades (Today < end date)"
+   },
+   "value_names": {
+    "0": "TRADE_DATE",
+    "1": "GC_INSTRUMENT",
+    "2": "COLLATERAL_INSTRUMENT",
+    "3": "SUBSTITUTION_ELIGIBLE",
+    "4": "NOT_ASSIGNED",
+    "5": "PARTIALLY_ASSIGNED",
+    "6": "FULLY_ASSIGNED",
+    "7": "OUTSTANDING_TRADES"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Collateral inquiry qualifiers",
+   "values": {
+    "0": "Trade Date",
+    "1": "GC Instrument",
+    "2": "CollateralInstrument",
+    "3": "Substitution Eligible",
+    "4": "Not Assigned",
+    "5": "Partially Assigned",
+    "6": "Fully Assigned",
+    "7": "Outstanding Trades (Today < end date)"
+   },
+   "value_names": {
+    "0": "TRADE_DATE",
+    "1": "GC_INSTRUMENT",
+    "2": "COLLATERAL_INSTRUMENT",
+    "3": "SUBSTITUTION_ELIGIBLE",
+    "4": "NOT_ASSIGNED",
+    "5": "PARTIALLY_ASSIGNED",
+    "6": "FULLY_ASSIGNED",
+    "7": "OUTSTANDING_TRADES"
+   },
+   "used_in": [
+    "Collateral Inquiry",
+    "Collateral Inquiry Ack"
+   ]
+  }
+ }
+}

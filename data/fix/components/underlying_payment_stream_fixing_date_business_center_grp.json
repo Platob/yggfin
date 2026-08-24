@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingPaymentStreamFixingDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 474,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingPaymentStreamFixingDateBusinessCenters",
+     "required": false,
+     "tag": 40972,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStreamFixingDateBusinessCenter",
+       "required": false,
+       "tag": 40607
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

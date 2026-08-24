@@ -1,0 +1,28 @@
+{
+ "name": "LegSecurityXML",
+ "versions": {
+  "5.0.SP2": {
+   "order": 29,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegSecurityXMLLen",
+     "required": false,
+     "tag": 1871
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityXML",
+     "required": false,
+     "tag": 1872
+    },
+    {
+     "kind": "field",
+     "name": "LegSecurityXMLSchema",
+     "required": false,
+     "tag": 1873
+    }
+   ]
+  }
+ }
+}

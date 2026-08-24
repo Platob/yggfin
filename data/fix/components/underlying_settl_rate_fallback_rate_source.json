@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingSettlRateFallbackRateSource",
+ "versions": {
+  "5.0.SP2": {
+   "order": 76,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingSettlRateFallbackRateSource",
+     "required": false,
+     "tag": 40904
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingSettlRateFallbackReferencePage",
+     "required": false,
+     "tag": 40915
+    }
+   ]
+  }
+ }
+}

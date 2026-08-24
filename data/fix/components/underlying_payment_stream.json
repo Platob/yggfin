@@ -1,0 +1,207 @@
+{
+ "name": "UnderlyingPaymentStream",
+ "versions": {
+  "5.0.SP2": {
+   "order": 59,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamType",
+     "required": false,
+     "tag": 40568
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamMarketRate",
+     "required": false,
+     "tag": 40569
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamDelayIndicator",
+     "required": false,
+     "tag": 40570
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCashSettlIndicator",
+     "required": false,
+     "tag": 42895
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamSettlCurrency",
+     "required": false,
+     "tag": 40571
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamDayCount",
+     "required": false,
+     "tag": 40572
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamOtherDayCount",
+     "required": false,
+     "tag": 43107
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamAccrualDays",
+     "required": false,
+     "tag": 40573
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamDiscountType",
+     "required": false,
+     "tag": 40574
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamDiscountRate",
+     "required": false,
+     "tag": 40575
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamDiscountRateDayCount",
+     "required": false,
+     "tag": 40576
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCompoundingMethod",
+     "required": false,
+     "tag": 40577
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCompoundingXIDRef",
+     "required": false,
+     "tag": 42896
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCompoundingSpread",
+     "required": false,
+     "tag": 42897
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInterpolationMethod",
+     "required": false,
+     "tag": 42898
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInterpolationPeriod",
+     "required": false,
+     "tag": 42899
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInitialPrincipalExchangeIndicator",
+     "required": false,
+     "tag": 40578
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamInterimPrincipalExchangeIndicator",
+     "required": false,
+     "tag": 40579
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFinalPrincipalExchangeIndicator",
+     "required": false,
+     "tag": 40580
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFlatRateIndicator",
+     "required": false,
+     "tag": 41897
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFlatRateAmount",
+     "required": false,
+     "tag": 41898
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFlatRateCurrency",
+     "required": false,
+     "tag": 41899
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamMaximumPaymentAmount",
+     "required": false,
+     "tag": 41900
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamMaximumPaymentCurrency",
+     "required": false,
+     "tag": 41901
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamMaximumTransactionAmount",
+     "required": false,
+     "tag": 41902
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamMaximumTransactionCurrency",
+     "required": false,
+     "tag": 41903
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamPaymentDates",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamResetDates",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamFixedRate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamFloatingRate",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCompoundingFixedRate",
+     "required": false,
+     "tag": 42900
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamCompoundingFloatingRate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamCompoundingDates",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamNonDeliverableSettlTerms",
+     "required": false
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,59 @@
+{
+ "name": "LotType",
+ "tag": 1093,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Defines the lot type assigned to the order.",
+   "values": {
+    "1": "Odd Lot",
+    "2": "Round Lot",
+    "3": "Block Lot",
+    "4": "Round lot based upon UnitOfMeasure <996>"
+   },
+   "value_names": {
+    "1": "ODD_LOT",
+    "2": "ROUND_LOT",
+    "3": "BLOCK_LOT",
+    "4": "ROUND_LOT_BASED_UPON"
+   },
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Defines the lot type assigned to the order.",
+   "values": {
+    "1": "Odd Lot",
+    "2": "Round Lot",
+    "3": "Block Lot"
+   },
+   "value_names": {
+    "1": "ODD_LOT",
+    "2": "ROUND_LOT",
+    "3": "BLOCK_LOT"
+   },
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Defines the lot type assigned to the order.",
+   "values": {
+    "1": "Odd Lot",
+    "2": "Round Lot",
+    "3": "Block Lot"
+   },
+   "value_names": {
+    "1": "ODD_LOT",
+    "2": "ROUND_LOT",
+    "3": "BLOCK_LOT"
+   },
+   "used_in": [
+    "ExecutionReport"
+   ]
+  }
+ }
+}

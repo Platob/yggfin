@@ -1,0 +1,119 @@
+{
+ "name": "RootParties",
+ "versions": {
+  "5.0.SP2": {
+   "order": 264,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRootPartyIDs",
+     "required": false,
+     "tag": 1116,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RootPartyID",
+       "required": false,
+       "tag": 1117
+      },
+      {
+       "kind": "field",
+       "name": "RootPartyIDSource",
+       "required": false,
+       "tag": 1118
+      },
+      {
+       "kind": "field",
+       "name": "RootPartyRole",
+       "required": false,
+       "tag": 1119
+      },
+      {
+       "kind": "field",
+       "name": "RootPartyRoleQualifier",
+       "required": false,
+       "tag": 2388
+      },
+      {
+       "kind": "component",
+       "name": "RootSubParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 115,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRootPartyIDs",
+     "required": false,
+     "tag": 1116,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RootPartyID",
+       "required": false,
+       "tag": 1117
+      },
+      {
+       "kind": "field",
+       "name": "RootPartyIDSource",
+       "required": false,
+       "tag": 1118
+      },
+      {
+       "kind": "field",
+       "name": "RootPartyRole",
+       "required": false,
+       "tag": 1119
+      },
+      {
+       "kind": "component",
+       "name": "RootSubParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 117,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRootPartyIDs",
+     "required": false,
+     "tag": 1116,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RootPartyID",
+       "required": false,
+       "tag": 1117
+      },
+      {
+       "kind": "field",
+       "name": "RootPartyIDSource",
+       "required": false,
+       "tag": 1118
+      },
+      {
+       "kind": "field",
+       "name": "RootPartyRole",
+       "required": false,
+       "tag": 1119
+      },
+      {
+       "kind": "component",
+       "name": "RootSubParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

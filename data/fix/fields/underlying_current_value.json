@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingCurrentValue",
+ "tag": 885,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "Currency value currently attributed to this collateral"
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "Currency value currently attributed to this collateral"
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "Currency value currently attributed to this collateral"
+  },
+  "4.4": {
+   "type": "Amt",
+   "description": "Currency value currently attributed to this collateral"
+  }
+ }
+}

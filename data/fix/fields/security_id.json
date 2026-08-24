@@ -1,0 +1,94 @@
+{
+ "name": "SecurityID",
+ "tag": 48,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource <22> ."
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
+  },
+  "4.2": {
+   "type": "String",
+   "description": "CUSIP or other alternate security identifier",
+   "used_in": [
+    "Indication of Interest",
+    "Advertisement",
+    "Execution Report",
+    "Quote Status Request",
+    "Quote Acknowledgement",
+    "News",
+    "Security Definition Request",
+    "Email",
+    "Security Definition",
+    "New Order - Single",
+    "Security Status Request",
+    "New Order - List",
+    "Security Status",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Mass Quote",
+    "Allocation",
+    "List Strike Price",
+    "Don't Know Trade",
+    "Quote Request",
+    "Quote",
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh",
+    "Quote Cancel"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "CUSIP or other alternate security identifier",
+   "used_in": [
+    "Indication of Interest",
+    "Advertisement",
+    "Execution Report",
+    "News",
+    "Email",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Allocation",
+    "Don't Know Trade",
+    "Quote Request",
+    "Quote"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "CUSIP or other alternate security identifier",
+   "used_in": [
+    "Indication of Interest",
+    "Advertisement",
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "Quote Request",
+    "Quote"
+   ]
+  }
+ }
+}

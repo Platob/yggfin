@@ -1,0 +1,14 @@
+{
+ "name": "NestedInstrAttribValue",
+ "tag": 1211,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Attribute value appropriate to the NestedInstrAttribType <1210> field"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Attribute value appropriate to the NestedInstrAttribType <1210> field"
+  }
+ }
+}

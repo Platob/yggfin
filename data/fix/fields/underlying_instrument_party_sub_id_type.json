@@ -1,0 +1,20 @@
+{
+ "name": "UnderlyingInstrumentPartySubIDType",
+ "tag": 1064,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Type of underlying InstrumentPartySubID <1053> value. Same values as PartySubIDType <803>"
+  },
+  "5.0.SP1": {
+   "name": "UndlyInstrumentPartySubIDType",
+   "type": "int",
+   "description": "Type of underlying InstrumentPartySubID <1053> value. Same values as PartySubIDType <803>"
+  },
+  "5.0": {
+   "name": "UndlyInstrumentPartySubIDType",
+   "type": "int",
+   "description": "Type of underlying InstrumentPartySubID <1053> value. Same values as PartySubIDType <803>"
+  }
+ }
+}

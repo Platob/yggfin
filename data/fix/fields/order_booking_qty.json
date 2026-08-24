@@ -1,0 +1,28 @@
+{
+ "name": "OrderBookingQty",
+ "tag": 800,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Quantity of the order that is being booked out as part of an Allocation Instruction <J> or Allocation Report <AS> message"
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Quantity of the order that is being booked out as part of an Allocation Instruction <J> or Allocation Report <AS> message"
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Quantity of the order that is being booked out as part of an Allocation Instruction <J> or Allocation Report <AS> message"
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Quantity of the order that is being booked out as part of an Allocation Instruction <J> or Allocation Report <AS> message",
+   "used_in": [
+    "Confirmation",
+    "Allocation Report",
+    "Confirmation Request",
+    "Allocation Instruction"
+   ]
+  }
+ }
+}

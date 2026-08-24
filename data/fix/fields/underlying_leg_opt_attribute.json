@@ -1,0 +1,14 @@
+{
+ "name": "UnderlyingLegOptAttribute",
+ "tag": 1391,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Refer to definition of OptAttribute <206>"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Refer to definition of OptAttribute <206>"
+  }
+ }
+}

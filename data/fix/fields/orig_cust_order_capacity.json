@@ -1,0 +1,22 @@
+{
+ "name": "OrigCustOrderCapacity",
+ "tag": 1432,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "The customer capacity for this trade at the time of the order/execution. Primarily used by futures exchanges to indicate the CTICode (customer type indicator) as required by the US CFTC (Commodity Futures Trading Commission).",
+   "values": {
+    "1": "Member trading for their own account",
+    "2": "Clearing Firm trading for its proprietary account",
+    "3": "Member trading for another member",
+    "4": "All other"
+   },
+   "value_names": {
+    "1": "MEMBER_TRADING_FOR_THEIR_OWN_ACCOUNT",
+    "2": "CLEARING_FIRM_TRADING_FOR_ITS_PROPRIETARY_ACCOUNT",
+    "3": "MEMBER_TRADING_FOR_ANOTHER_MEMBER",
+    "4": "ALL_OTHER"
+   }
+  }
+ }
+}

@@ -1,0 +1,43 @@
+{
+ "name": "StatsIndGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 271,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStatsIndicators",
+     "required": false,
+     "tag": 1175,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StatsType",
+       "required": false,
+       "tag": 1176
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 123,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStatsIndicators",
+     "required": false,
+     "tag": 1175,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StatsType",
+       "required": false,
+       "tag": 1176
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

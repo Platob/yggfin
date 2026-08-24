@@ -1,0 +1,97 @@
+{
+ "name": "TickRules",
+ "versions": {
+  "5.0.SP2": {
+   "order": 272,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTickRules",
+     "required": false,
+     "tag": 1205,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StartTickPriceRange",
+       "required": false,
+       "tag": 1206
+      },
+      {
+       "kind": "field",
+       "name": "EndTickPriceRange",
+       "required": false,
+       "tag": 1207
+      },
+      {
+       "kind": "field",
+       "name": "TickIncrement",
+       "required": false,
+       "tag": 1208
+      },
+      {
+       "kind": "field",
+       "name": "TickRuleType",
+       "required": false,
+       "tag": 1209
+      },
+      {
+       "kind": "field",
+       "name": "TickRuleProductComplex",
+       "required": false,
+       "tag": 2571
+      },
+      {
+       "kind": "field",
+       "name": "SettlPriceIncrement",
+       "required": false,
+       "tag": 1830
+      },
+      {
+       "kind": "field",
+       "name": "SettlPriceSecondaryIncrement",
+       "required": false,
+       "tag": 1831
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 125,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTickRules",
+     "required": false,
+     "tag": 1205,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StartTickPriceRange",
+       "required": false,
+       "tag": 1206
+      },
+      {
+       "kind": "field",
+       "name": "EndTickPriceRange",
+       "required": false,
+       "tag": 1207
+      },
+      {
+       "kind": "field",
+       "name": "TickIncrement",
+       "required": false,
+       "tag": 1208
+      },
+      {
+       "kind": "field",
+       "name": "TickRuleType",
+       "required": false,
+       "tag": 1209
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

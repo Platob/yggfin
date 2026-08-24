@@ -1,0 +1,129 @@
+{
+ "name": "ContAmtGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 185,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoContAmts",
+     "required": false,
+     "tag": 518,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ContAmtType",
+       "required": false,
+       "tag": 519
+      },
+      {
+       "kind": "field",
+       "name": "ContAmtValue",
+       "required": false,
+       "tag": 520
+      },
+      {
+       "kind": "field",
+       "name": "ContAmtCurr",
+       "required": false,
+       "tag": 521
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 34,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoContAmts",
+     "required": false,
+     "tag": 518,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ContAmtType",
+       "required": false,
+       "tag": 519
+      },
+      {
+       "kind": "field",
+       "name": "ContAmtValue",
+       "required": false,
+       "tag": 520
+      },
+      {
+       "kind": "field",
+       "name": "ContAmtCurr",
+       "required": false,
+       "tag": 521
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 34,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoContAmts",
+     "required": false,
+     "tag": 518,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ContAmtType",
+       "required": false,
+       "tag": 519
+      },
+      {
+       "kind": "field",
+       "name": "ContAmtValue",
+       "required": false,
+       "tag": 520
+      },
+      {
+       "kind": "field",
+       "name": "ContAmtCurr",
+       "required": false,
+       "tag": 521
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 34,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoContAmts",
+     "required": false,
+     "tag": 518,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ContAmtType",
+       "required": false,
+       "tag": 519
+      },
+      {
+       "kind": "field",
+       "name": "ContAmtValue",
+       "required": false,
+       "tag": 520
+      },
+      {
+       "kind": "field",
+       "name": "ContAmtCurr",
+       "required": false,
+       "tag": 521
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

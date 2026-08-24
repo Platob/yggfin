@@ -1,0 +1,14 @@
+{
+ "name": "EndMaturityMonthYear",
+ "tag": 1226,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MonthYear",
+   "description": "Ending maturity month year for an option class"
+  },
+  "5.0.SP1": {
+   "type": "MonthYear",
+   "description": "Ending maturity month year for an option class"
+  }
+ }
+}

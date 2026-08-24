@@ -1,0 +1,115 @@
+{
+ "name": "MarketDataFeedTypes",
+ "versions": {
+  "5.0.SP2": {
+   "order": 275,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMDFeedTypes",
+     "required": false,
+     "tag": 1141,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MDFeedType",
+       "required": false,
+       "tag": 1022
+      },
+      {
+       "kind": "field",
+       "name": "MDSubFeedType",
+       "required": false,
+       "tag": 1683
+      },
+      {
+       "kind": "field",
+       "name": "MarketDepth",
+       "required": false,
+       "tag": 264
+      },
+      {
+       "kind": "field",
+       "name": "MarketDepthTimeInterval",
+       "required": false,
+       "tag": 2563
+      },
+      {
+       "kind": "field",
+       "name": "MarketDepthTimeIntervalUnit",
+       "required": false,
+       "tag": 2564
+      },
+      {
+       "kind": "field",
+       "name": "MDRecoveryTimeInterval",
+       "required": false,
+       "tag": 2565
+      },
+      {
+       "kind": "field",
+       "name": "MDRecoveryTimeIntervalUnit",
+       "required": false,
+       "tag": 2566
+      },
+      {
+       "kind": "field",
+       "name": "MDBookType",
+       "required": false,
+       "tag": 1021
+      },
+      {
+       "kind": "field",
+       "name": "MDSubBookType",
+       "required": false,
+       "tag": 1173
+      },
+      {
+       "kind": "field",
+       "name": "PrimaryServiceLocationID",
+       "required": false,
+       "tag": 2567
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryServiceLocationID",
+       "required": false,
+       "tag": 2568
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 130,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMDFeedTypes",
+     "required": false,
+     "tag": 1141,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MDFeedType",
+       "required": false,
+       "tag": 1022
+      },
+      {
+       "kind": "field",
+       "name": "MarketDepth",
+       "required": false,
+       "tag": 264
+      },
+      {
+       "kind": "field",
+       "name": "MDBookType",
+       "required": false,
+       "tag": 1021
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

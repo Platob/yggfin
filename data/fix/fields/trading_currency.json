@@ -1,0 +1,14 @@
+{
+ "name": "TradingCurrency",
+ "tag": 1245,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Currency",
+   "description": "Used when the trading currency can differ from the price currency"
+  },
+  "5.0.SP1": {
+   "type": "Currency",
+   "description": "Used when the trading currency can differ from the price currency"
+  }
+ }
+}

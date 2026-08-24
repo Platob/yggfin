@@ -1,0 +1,26 @@
+{
+ "name": "RiskFreeRate",
+ "tag": 1190,
+ "versions": {
+  "5.0.SP2": {
+   "type": "float",
+   "description": "Interest rate. Usually some form of short term rate.",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "TradeCaptureReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "float",
+   "description": "Interest rate. Usually some form of short term rate.",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "TradeCaptureReport"
+   ]
+  }
+ }
+}

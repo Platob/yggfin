@@ -1,0 +1,20 @@
+{
+ "name": "RejectText",
+ "tag": 1328,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Those will be used by Firms to send a reason for rejecting a trade in an allocate claim model.",
+   "used_in": [
+    "TradeCaptureReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Those will be used by Firms to send a reason for rejecting a trade in an allocate claim model.",
+   "used_in": [
+    "TradeCaptureReport"
+   ]
+  }
+ }
+}

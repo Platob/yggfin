@@ -1,0 +1,25 @@
+{
+ "name": "AltMDSourceID",
+ "tag": 817,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Session layer source for market data (For the standard FIX session layer, this would be the TargetCompID <56> where market data can be obtained)."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Session layer source for market data (For the standard FIX session layer, this would be the TargetCompID <56> where market data can be obtained)."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Session layer source for market data (For the standard FIX session layer, this would be the TargetCompID <56> where market data can be obtained)."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Session layer source for market data (For the standard FIX session layer, this would be the TargetCompID <56> where market data can be obtained).",
+   "used_in": [
+    "Market Data Request Reject"
+   ]
+  }
+ }
+}

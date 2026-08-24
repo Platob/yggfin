@@ -1,0 +1,38 @@
+{
+ "name": "OrigPosReqRefID",
+ "tag": 713,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Reference to the PosReqID <710> of a previous maintenance request that is being replaced or canceled.",
+   "used_in": [
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Reference to the PosReqID <710> of a previous maintenance request that is being replaced or canceled.",
+   "used_in": [
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Reference to the PosReqID <710> of a previous maintenance request that is being replaced or canceled.",
+   "used_in": [
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Reference to the PosReqID <710> of a previous maintenance request that is being replaced or canceled.",
+   "used_in": [
+    "Position Maintenance Request",
+    "Position Maintenance Report"
+   ]
+  }
+ }
+}

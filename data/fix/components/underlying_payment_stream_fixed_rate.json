@@ -1,0 +1,70 @@
+{
+ "name": "UnderlyingPaymentStreamFixedRate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 60,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRate",
+     "required": false,
+     "tag": 40615
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFixedAmount",
+     "required": false,
+     "tag": 40616
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamRateOrAmountCurrency",
+     "required": false,
+     "tag": 40617
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFixedAmountUnitOfMeasure",
+     "required": false,
+     "tag": 41904
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamTotalFixedAmount",
+     "required": false,
+     "tag": 41905
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFutureValueNotional",
+     "required": false,
+     "tag": 40618
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFutureValueDateAdjusted",
+     "required": false,
+     "tag": 40619
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamWorldScaleRate",
+     "required": false,
+     "tag": 41906
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamContractPrice",
+     "required": false,
+     "tag": 41907
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamContractPriceCurrency",
+     "required": false,
+     "tag": 41908
+    }
+   ]
+  }
+ }
+}

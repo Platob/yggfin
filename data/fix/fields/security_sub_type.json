@@ -1,0 +1,39 @@
+{
+ "name": "SecuritySubType",
+ "tag": 762,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Sub-type qualification/identification of the SecurityType. As an example for SecurityType <167> =\"REPO\", the SecuritySubType=\"General Collateral\" can be used to further specify the type of REPO. If SecuritySubType is used then SecurityType is required. For SecurityType=\"MLEG\" a name of the option or futures strategy name can be specified, such as \"Calendar\", \"Vertical\", \"Butterfly\".",
+   "used_in": [
+    "SecurityTypeRequest",
+    "DerivativeSecurityListRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Sub-type qualification/identification of the SecurityType <167> (e.g. for SecurityType=\"REPO\"), or the CFICode <461> if SecurityType is not specified. If specified, SecuirtyType or CFICode is required. Example values: General = General Collateral (for SecurityType=\"REPO\") For SecurityType=\"MLEG\" markets can provide the name of the option or futures strategy, such as Calendar, Vertical, Butterfly, etc. NOTE: Additional values may be used by mutual agreement of the counterparties",
+   "used_in": [
+    "SecurityTypeRequest",
+    "DerivativeSecurityListRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Sub-type qualification/identification of the SecurityType <167> (e.g. for SecurityType=\"REPO\"), or the CFICode <461> if SecurityType is not specified. If specified, SecuirtyType or CFICode is required. Example values: General = General Collateral (for SecurityType=\"REPO\") For SecurityType=\"MLEG\" markets can provide the name of the option or futures strategy, such as Calendar, Vertical, Butterfly, etc. NOTE: Additional values may be used by mutual agreement of the counterparties",
+   "used_in": [
+    "SecurityTypeRequest",
+    "DerivativeSecurityListRequest"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Sub-type qualification/identification of the SecurityType <167> (e.g. for SecurityType=\"REPO\"). Example values: General = General Collateral (for SecurityType <167> =\"REPO\") For SecurityType <167> =\"MLEG\" markets can provide the name of the option or futures strategy, such as Calendar, Vertical, Butterfly, etc. NOTE: Additional values may be used by mutual agreement of the counterparties",
+   "used_in": [
+    "Security Type Request",
+    "Security Types",
+    "Derivative Security List Request"
+   ]
+  }
+ }
+}

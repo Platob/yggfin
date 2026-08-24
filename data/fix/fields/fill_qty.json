@@ -1,0 +1,14 @@
+{
+ "name": "FillQty",
+ "tag": 1365,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Quantity of Fill. Refer to LastQty <32> ."
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Quantity of Fill. Refer to LastQty <32> ."
+  }
+ }
+}

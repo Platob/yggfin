@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingProvisionOptionExpirationDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 626,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingProvisionOptionExpirationDateBusinessCenters",
+     "required": false,
+     "tag": 42186,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionExpirationDateBusinessCenter",
+       "required": false,
+       "tag": 42187
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

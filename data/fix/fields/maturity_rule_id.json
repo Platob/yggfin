@@ -1,0 +1,14 @@
+{
+ "name": "MaturityRuleID",
+ "tag": 1222,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Allows maturity rule to be referenced via an identifier so that rules do not need to be explicitly enumerated"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Allows maturity rule to be referenced via an identifier so that rules do not need to be explicitly enumerated"
+  }
+ }
+}

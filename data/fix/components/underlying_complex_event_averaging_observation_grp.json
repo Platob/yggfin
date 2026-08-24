@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingComplexEventAveragingObservationGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 571,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingComplexEventAveragingObservations",
+     "required": false,
+     "tag": 41713,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingComplexEventAveragingObservationNumber",
+       "required": false,
+       "tag": 41714
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingComplexEventAveragingWeight",
+       "required": false,
+       "tag": 41715
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

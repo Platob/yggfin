@@ -18,9 +18,9 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep import Field
 from rekep.fix import FIX_SCALARS, FixRegistry
 from rekep.fix.columns import _ORDER
+from rekep.fix.entries import VARIANT_KEYS
 from rekep.fix.publish import (
     LOG_FIELDS,
     MARKET_FIELDS,
@@ -47,7 +47,25 @@ def member(name: str) -> dict[str, object]:
         return json.loads(archive.read(name).decode("utf-8"))
 
 
-VERSIONS: list[str] = member("versions.json")["versions"]
+def members(folder: str) -> dict[str, dict[str, object]]:
+    """Every document under one folder of the archive, by its file name."""
+    with zipfile.ZipFile(DATA) as archive:
+        return {
+            name[len(folder) + 1 : -len(".json")]: json.loads(archive.read(name).decode("utf-8"))
+            for name in sorted(archive.namelist())
+            if name.startswith(f"{folder}/")
+        }
+
+
+INDEX: dict[str, object] = member("versions.json")
+VERSIONS: list[str] = INDEX["versions"]
+
+#: Derived from the archive, then pinned: one file per field identity and one
+#: per component identity, which is what the layout is for. Counts rather than
+#: a bare "more than zero", so a migration that lost half the dictionary and
+#: still produced a readable store fails here.
+EXPECTED_FIELD_FILES = 1495
+EXPECTED_COMPONENT_FILES = 729
 
 #: Pinned so a moved or half-written directory fails here rather than passing
 #: every test below by iterating over nothing.
@@ -70,27 +88,66 @@ def registry() -> OfflineRegistry:
     return OfflineRegistry(cache_dir=DATA)
 
 
-def test_the_archive_holds_the_versions_it_lists() -> None:
+def test_the_archive_holds_one_file_per_identity() -> None:
+    """The layout itself: a folder of fields, a folder of components, an index."""
     assert len(VERSIONS) == EXPECTED_VERSIONS
     with zipfile.ZipFile(DATA) as archive:
         names = archive.namelist()
     assert len(names) == len(set(names)), "one member per name, never a shadowed one"
-    assert {name[: -len(".json")] for name in names} - {"versions"} == set(VERSIONS)
+    folders = {name.split("/")[0] if "/" in name else name for name in names}
+    assert folders == {"fields", "components", "versions.json"}
+    assert len(members("fields")) == EXPECTED_FIELD_FILES
+    assert len(members("components")) == EXPECTED_COMPONENT_FILES
     assert VERSIONS[0] == "5.0.SP2", "newest first"
     assert VERSIONS[-1] == "FIXT1.1", "and the transport last"
+    assert set(INDEX["sessions"]) <= set(VERSIONS)
+    assert set(INDEX["declared"]) == set(VERSIONS), "every version's spec was read"
 
 
-@pytest.mark.parametrize("version", VERSIONS)
-def test_a_version_file_holds_the_fields_it_says(version: str) -> None:
-    dumped = member(f"{version}.json")
-    assert dumped["version"] == version
-    assert dumped["url"].endswith(f"/{version}/")
-    fields = [Field.from_dict(member) for member in dumped["fields"]]
-    tags = [int(member.fix["tag"]) for member in fields]
-    assert len(fields) > 50, "the transport is the small one, at 74"
-    assert tags == sorted(set(tags)), "one entry per tag, in tag order"
-    assert {member.fix["version"] for member in fields} == {version}
-    assert all(member.arrow_type for member in fields)
+def test_a_field_file_holds_one_identity_and_every_version_of_it() -> None:
+    """One file per field, and what a variant may and may not restate.
+
+    The whole point of the layout: `SettlDate` is tag 64 in one file, saying in
+    passing that four older versions called it `FutSettDate` -- rather than
+    being two half-histories in nine documents nobody diffs.
+    """
+    entries = members("fields")
+    assert entries["settl_date"]["tag"] == 64
+    named = {
+        version: variant.get("name")
+        for version, variant in entries["settl_date"]["versions"].items()
+    }
+    assert named == {
+        "5.0.SP2": None,
+        "5.0.SP1": None,
+        "5.0": None,
+        "4.4": None,
+        "4.3": "FutSettDate",
+        "4.2": "FutSettDate",
+        "4.1": "FutSettDate",
+        "4.0": "FutSettDate",
+    }, "a variant states what it does not share with the identity, and nothing else"
+
+    tags = set()
+    for slug, entry in entries.items():
+        assert entry["name"], slug
+        assert entry["tag"] not in tags, f"{slug} repeats a tag"
+        tags.add(entry["tag"])
+        assert set(entry["versions"]) <= set(VERSIONS), slug
+        assert entry["versions"], slug
+        for variant in entry["versions"].values():
+            assert set(variant) <= set(VARIANT_KEYS), slug
+
+
+def test_a_component_file_holds_one_identity_and_every_version_of_it() -> None:
+    """The same for a component, plus where its version's spec declares it."""
+    parties = members("components")["parties"]
+    assert parties["name"] == "Parties"
+    assert set(parties["versions"]) == {"5.0.SP2", "5.0.SP1", "5.0", "4.4", "4.3"}
+    declared = parties["versions"]["4.4"]
+    assert declared["members"][0]["name"] == "NoPartyIDs"
+    assert declared["members"][0]["tag"] == 453
+    assert isinstance(declared["order"], int), "spec order is a fact about the version"
 
 
 @pytest.mark.parametrize("version", VERSIONS)
@@ -159,11 +216,14 @@ def test_a_projection_is_a_small_exact_offline_registry(
             member for member in registry.fields(version) if member.name in {"Side", "QuoteID"}
         ]
         assert projected.fields(version) == expected
-    # A seventh of the published dictionary, and every byte of the remainder
-    # is component declarations: those travel whole rather than being selected
-    # with the fields, because a component says where a repeating group starts
-    # and ends and a tree missing members would end it somewhere else.
-    assert target.stat().st_size < DATA.stat().st_size // 5
+    # A third of the published dictionary for two fields, and every byte of the
+    # remainder is component declarations: those travel whole rather than being
+    # selected with the fields, because a component says where a repeating
+    # group starts and ends and a tree missing members would end it elsewhere.
+    assert target.stat().st_size < DATA.stat().st_size // 2
+    with zipfile.ZipFile(target) as opened:
+        fields = [name for name in opened.namelist() if name.startswith("fields/")]
+    assert sorted(fields) == ["fields/quote_id.json", "fields/side.json"]
     for version in projected.versions:
         assert projected.components(version) == registry.components(version)
 

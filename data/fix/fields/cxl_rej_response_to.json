@@ -1,0 +1,96 @@
+{
+ "name": "CxlRejResponseTo",
+ "tag": 434,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Identifies the type of request that a Cancel Reject <9> is in response to.",
+   "values": {
+    "1": "Order Cancel Request <F>",
+    "2": "Order Cancel/Replace Request <G>"
+   },
+   "value_names": {
+    "1": "ORDER_CANCEL_REQUEST",
+    "2": "ORDER_CANCEL_REPLACE_REQUEST"
+   },
+   "used_in": [
+    "OrderCancelReject"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Identifies the type of request that a Cancel Reject <9> is in response to.",
+   "values": {
+    "1": "Order Cancel Request <F>",
+    "2": "Order Cancel/Replace Request <G>"
+   },
+   "value_names": {
+    "1": "ORDER_CANCEL_REQUEST",
+    "2": "ORDER_CANCEL"
+   },
+   "used_in": [
+    "OrderCancelReject"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Identifies the type of request that a Cancel Reject <9> is in response to.",
+   "values": {
+    "1": "Order Cancel Request <F>",
+    "2": "Order Cancel/Replace Request <G>"
+   },
+   "value_names": {
+    "1": "ORDER_CANCEL_REQUEST",
+    "2": "ORDER_CANCEL"
+   },
+   "used_in": [
+    "OrderCancelReject"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Identifies the type of request that a Cancel Reject <9> is in response to.",
+   "values": {
+    "1": "Order Cancel Request <F>",
+    "2": "Order Cancel/Replace Request <G>"
+   },
+   "value_names": {
+    "1": "ORDER_CANCEL_REQUEST",
+    "2": "ORDER_CANCEL"
+   },
+   "used_in": [
+    "Order Cancel Reject"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Identifies the type of request that a Cancel Reject <9> is in response to.",
+   "values": {
+    "1": "Order Cancel Request <F>",
+    "2": "Order Cancel/Replace Request <G>"
+   },
+   "value_names": {
+    "2": "ORDER_CANCEL",
+    "1": "ORDER_CANCEL_REQUEST"
+   },
+   "used_in": [
+    "Order Cancel Reject"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Identifies the type of request that a Cancel Reject <9> is in response to.",
+   "values": {
+    "1": "Order Cancel Request <F>",
+    "2": "Order Cancel/Replace Request <G>"
+   },
+   "value_names": {
+    "1": "ORDER_CANCEL_REQUEST",
+    "2": "ORDER_CANCEL"
+   },
+   "used_in": [
+    "Order Cancel Reject"
+   ]
+  }
+ }
+}

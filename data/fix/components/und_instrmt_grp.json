@@ -1,0 +1,77 @@
+{
+ "name": "UndInstrmtGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 239,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyings",
+     "required": false,
+     "tag": 711,
+     "members": [
+      {
+       "kind": "component",
+       "name": "UnderlyingInstrument",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 88,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyings",
+     "required": false,
+     "tag": 711,
+     "members": [
+      {
+       "kind": "component",
+       "name": "UnderlyingInstrument",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 89,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyings",
+     "required": false,
+     "tag": 711,
+     "members": [
+      {
+       "kind": "component",
+       "name": "UnderlyingInstrument",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 89,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyings",
+     "required": false,
+     "tag": 711,
+     "members": [
+      {
+       "kind": "component",
+       "name": "UnderlyingInstrument",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

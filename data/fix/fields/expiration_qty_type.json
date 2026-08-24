@@ -1,0 +1,61 @@
+{
+ "name": "ExpirationQtyType",
+ "tag": 982,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Expiration Quantity type",
+   "values": {
+    "1": "Auto Exercise",
+    "2": "Non Auto Exercise",
+    "3": "Final Will Be Exercised",
+    "4": "Contrary Intention",
+    "5": "Difference"
+   },
+   "value_names": {
+    "1": "AUTO_EXERCISE",
+    "2": "NON_AUTO_EXERCISE",
+    "3": "FINAL_WILL_BE_EXERCISED",
+    "4": "CONTRARY_INTENTION",
+    "5": "DIFFERENCE"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Expiration Quantity type",
+   "values": {
+    "1": "Auto Exercise",
+    "2": "Non Auto Exercise",
+    "3": "Final Will Be Exercised",
+    "4": "Contrary Intention",
+    "5": "Difference"
+   },
+   "value_names": {
+    "1": "AUTO_EXERCISE",
+    "2": "NON_AUTO_EXERCISE",
+    "3": "FINAL_WILL_BE_EXERCISED",
+    "4": "CONTRARY_INTENTION",
+    "5": "DIFFERENCE"
+   }
+  },
+  "5.0": {
+   "name": "ExpType",
+   "type": "int",
+   "description": "Expiration Qty types.",
+   "values": {
+    "1": "Auto Exercise",
+    "2": "Non Auto Exercise",
+    "3": "Final Will Be Exercised",
+    "4": "Contrary Intention",
+    "5": "Difference"
+   },
+   "value_names": {
+    "1": "AUTO_EXERCISE",
+    "2": "NON_AUTO_EXERCISE",
+    "3": "FINAL_WILL_BE_EXERCISED",
+    "4": "CONTRARY_INTENTION",
+    "5": "DIFFERENCE"
+   }
+  }
+ }
+}

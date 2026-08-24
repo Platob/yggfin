@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingEndPrice",
+ "tag": 883,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Price (percent-of-par or per unit) of the underlying security or basket at the end of the agreement."
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Price (percent-of-par or per unit) of the underlying security or basket at the end of the agreement."
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Price (percent-of-par or per unit) of the underlying security or basket at the end of the agreement."
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Price (percent-of-par or per unit) of the underlying security or basket at the end of the agreement."
+  }
+ }
+}

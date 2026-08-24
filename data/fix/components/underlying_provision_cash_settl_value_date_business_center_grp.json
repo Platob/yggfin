@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingProvisionCashSettlValueDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 624,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingProvisionCashSettlValueDateBusinessCenters",
+     "required": false,
+     "tag": 42182,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionCashSettlValueDateBusinessCenter",
+       "required": false,
+       "tag": 42183
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

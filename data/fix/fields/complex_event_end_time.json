@@ -1,0 +1,10 @@
+{
+ "name": "ComplexEventEndTime",
+ "tag": 1496,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTimeOnly",
+   "description": "Specifies the end time of the time range on which a complex event date is effective. ComplexEventEndTime must always be greater than or equal to ComplexEventStartTime <1495> ."
+  }
+ }
+}

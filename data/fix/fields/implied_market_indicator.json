@@ -1,0 +1,38 @@
+{
+ "name": "ImpliedMarketIndicator",
+ "tag": 1144,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates that an implied market should be created for either the legs of a multi-leg instrument (Implied-in) or for the multi-leg instrument based on the existence of the legs (Implied-out). Determination as to whether implied markets should be created is generally done at the level of the multi-leg instrument. Commonly used in listed derivatives.",
+   "values": {
+    "0": "Not implied",
+    "1": "Implied-in - The existence of a multi-leg instrument is implied by the legs of that instrument",
+    "2": "Implied-out - The existence of the underlying legs are implied by the multi-leg instrument",
+    "3": "Both Implied-in and Implied-out"
+   },
+   "value_names": {
+    "0": "NOT_IMPLIED",
+    "1": "IMPLIED_IN",
+    "2": "IMPLIED_OUT",
+    "3": "BOTH_IMPLIED_IN_AND_IMPLIED_OUT"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Indicates that an implied market should be created for either the legs of a multi-leg instrument (Implied-in) or for the multi-leg instrument based on the existence of the legs (Implied-out). Determination as to whether implied markets should be created is generally done at the level of the multi-leg instrument. Commonly used in listed derivatives.",
+   "values": {
+    "0": "Not implied",
+    "1": "Implied-in - The existence of a multi-leg instrument is implied by the legs of that instrument",
+    "2": "Implied-out - The existence of the underlying legs are implied by the multi-leg instrument",
+    "3": "Both Implied-in and Implied-out"
+   },
+   "value_names": {
+    "0": "NOT_IMPLIED",
+    "1": "IMPLIED_IN",
+    "2": "IMPLIED_OUT",
+    "3": "BOTH_IMPLIED_IN_AND_IMPLIED_OUT"
+   }
+  }
+ }
+}

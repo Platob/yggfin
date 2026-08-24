@@ -1,0 +1,55 @@
+{
+ "name": "Subject",
+ "tag": 147,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The subject of an Email message",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The subject of an Email message",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "The subject of an Email message",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "The subject of an Email <C> message",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "The subject of an Email <C> message",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "The subject of an Email <C> message",
+   "used_in": [
+    "Email"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "The subject of an Email <C> message",
+   "used_in": [
+    "Email"
+   ]
+  }
+ }
+}

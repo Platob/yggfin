@@ -1,0 +1,10 @@
+{
+ "name": "NoComplexEventTimes",
+ "tag": 1494,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of complex event time occurrences for a given complex event date The default in case of an absence of time fields is 00:00:00-23:59:59."
+  }
+ }
+}

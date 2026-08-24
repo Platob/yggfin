@@ -1,0 +1,107 @@
+{
+ "name": "FillsGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 294,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoFills",
+     "required": false,
+     "tag": 1362,
+     "members": [
+      {
+       "kind": "field",
+       "name": "FillExecID",
+       "required": false,
+       "tag": 1363
+      },
+      {
+       "kind": "field",
+       "name": "FillPx",
+       "required": false,
+       "tag": 1364
+      },
+      {
+       "kind": "field",
+       "name": "FillQty",
+       "required": false,
+       "tag": 1365
+      },
+      {
+       "kind": "field",
+       "name": "FillMatchID",
+       "required": false,
+       "tag": 2673
+      },
+      {
+       "kind": "field",
+       "name": "FillMatchSubID",
+       "required": false,
+       "tag": 2674
+      },
+      {
+       "kind": "field",
+       "name": "FillLiquidityInd",
+       "required": false,
+       "tag": 1443
+      },
+      {
+       "kind": "field",
+       "name": "FillYieldType",
+       "required": false,
+       "tag": 1622
+      },
+      {
+       "kind": "field",
+       "name": "FillYield",
+       "required": false,
+       "tag": 1623
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties4",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 155,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoFills",
+     "required": false,
+     "tag": 1362,
+     "members": [
+      {
+       "kind": "field",
+       "name": "FillExecID",
+       "required": false,
+       "tag": 1363
+      },
+      {
+       "kind": "field",
+       "name": "FillPx",
+       "required": false,
+       "tag": 1364
+      },
+      {
+       "kind": "field",
+       "name": "FillQty",
+       "required": false,
+       "tag": 1365
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties4",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

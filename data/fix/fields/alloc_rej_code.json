@@ -1,0 +1,295 @@
+{
+ "name": "AllocRejCode",
+ "tag": 88,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies reason for rejection.",
+   "values": {
+    "0": "Unknown account(s)",
+    "1": "Incorrect quantity",
+    "2": "Incorrect averageg price",
+    "3": "Unknown executing broker mnemonic",
+    "4": "Commission difference",
+    "5": "Unknown OrderID <37>",
+    "6": "Unknown ListID <66>",
+    "7": "Other (further in Text <58> )",
+    "8": "Incorrect allocated quantity",
+    "9": "Calculation difference",
+    "10": "Unknown or stale ExecID <17>",
+    "11": "Mismatched data",
+    "12": "Unknown ClOrdID <11>",
+    "13": "Warehouse request rejected",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "UNKNOWN_ACCOUNT",
+    "1": "INCORRECT_QUANTITY",
+    "2": "INCORRECT_AVERAGE_PRICE",
+    "3": "UNKNOWN_EXECUTING_BROKER_MNEMONIC",
+    "4": "COMMISSION_DIFFERENCE",
+    "5": "UNKNOWN_ORDER_ID",
+    "6": "UNKNOWN_LIST_ID",
+    "7": "OTHER_SEE_TEXT",
+    "8": "INCORRECT_ALLOCATED_QUANTITY",
+    "9": "CALCULATION_DIFFERENCE",
+    "10": "UNKNOWN_OR_STALE_EXEC_ID",
+    "11": "MISMATCHED_DATA",
+    "12": "UNKNOWN_CL_ORD_ID",
+    "13": "WAREHOUSE_REQUEST_REJECTED",
+    "14": "DUPLICATE_OR_MISSING_INDIVIDUAL_ALLOC_ID",
+    "15": "TRADE_NOT_RECOGNIZED",
+    "16": "DUPLICATE_TRADE",
+    "17": "INCORRECT_OR_MISSING_INSTRUMENT",
+    "18": "INCORRECT_OR_MISSING_SETTL_DATE",
+    "19": "INCORRECT_OR_MISSING_FUND_ID_OR_FUND_NAME",
+    "20": "INCORRECT_OR_MISSING_SETTL_INSTRUCTIONS",
+    "21": "INCORRECT_OR_MISSING_FEES",
+    "22": "INCORRECT_OR_MISSING_TAX",
+    "23": "UNKNOWN_OR_MISSING_PARTY",
+    "24": "INCORRECT_OR_MISSING_SIDE",
+    "25": "INCORRECT_OR_MISSING_NET_MONEY",
+    "26": "INCORRECT_OR_MISSING_TRADE_DATE",
+    "27": "INCORRECT_OR_MISSING_SETTL_CCY_INSTRUCTIONS",
+    "28": "INCORRECT_OR_MISSING_PROCESS_CODE",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationReportAck",
+    "AllocationInstructionAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies reason for rejection.",
+   "values": {
+    "0": "Unknown account(s)",
+    "1": "Incorrect quantity",
+    "2": "Incorrect averageg price",
+    "3": "Unknown executing broker mnemonic",
+    "4": "Commission difference",
+    "5": "Unknown OrderID <37>",
+    "6": "Unknown ListID <66>",
+    "7": "Other (further in Text <58> )",
+    "8": "Incorrect allocated quantity",
+    "9": "Calculation difference",
+    "10": "Unknown or stale ExecID <17>",
+    "11": "Mismatched data",
+    "12": "Unknown ClOrdID <11>",
+    "13": "Warehouse request rejected"
+   },
+   "value_names": {
+    "0": "UNKNOWN_ACCOUNT",
+    "1": "INCORRECT_QUANTITY",
+    "2": "INCORRECT_AVERAGEG_PRICE",
+    "3": "UNKNOWN_EXECUTING_BROKER_MNEMONIC",
+    "4": "COMMISSION_DIFFERENCE",
+    "5": "UNKNOWN_ORDER_ID",
+    "6": "UNKNOWN_LIST_ID",
+    "7": "OTHER_SEE_TEXT",
+    "8": "INCORRECT_ALLOCATED_QUANTITY",
+    "9": "CALCULATION_DIFFERENCE",
+    "10": "UNKNOWN_OR_STALE_EXEC_ID",
+    "11": "MISMATCHED_DATA",
+    "12": "UNKNOWN_CL_ORD_ID",
+    "13": "WAREHOUSE_REQUEST_REJECTED"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationReportAck",
+    "AllocationInstructionAck"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identifies reason for rejection.",
+   "values": {
+    "0": "Unknown account(s)",
+    "1": "Incorrect quantity",
+    "2": "Incorrect averageg price",
+    "3": "Unknown executing broker mnemonic",
+    "4": "Commission difference",
+    "5": "Unknown OrderID <37>",
+    "6": "Unknown ListID <66>",
+    "7": "Other (further in Text <58> )",
+    "8": "Incorrect allocated quantity",
+    "9": "Calculation difference",
+    "10": "Unknown or stale ExecID <17>",
+    "11": "Mismatched data",
+    "12": "Unknown ClOrdID <11>",
+    "13": "Warehouse request rejected"
+   },
+   "value_names": {
+    "0": "UNKNOWN_ACCOUNT",
+    "1": "INCORRECT_QUANTITY",
+    "2": "INCORRECT_AVERAGEG_PRICE",
+    "3": "UNKNOWN_EXECUTING_BROKER_MNEMONIC",
+    "4": "COMMISSION_DIFFERENCE",
+    "5": "UNKNOWN_ORDER_ID",
+    "6": "UNKNOWN_LIST_ID",
+    "7": "OTHER_SEE_TEXT",
+    "8": "INCORRECT_ALLOCATED_QUANTITY",
+    "9": "CALCULATION_DIFFERENCE",
+    "10": "UNKNOWN_OR_STALE_EXEC_ID",
+    "11": "MISMATCHED_DATA",
+    "12": "UNKNOWN_CL_ORD_ID",
+    "13": "WAREHOUSE_REQUEST_REJECTED"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationReportAck",
+    "AllocationInstructionAck"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Identifies reason for rejection.",
+   "values": {
+    "0": "unknown account(s)",
+    "1": "incorrect quantity",
+    "2": "incorrect average price",
+    "3": "unknown executing broker mnemonic",
+    "4": "commission difference",
+    "5": "unknown OrderID <37>",
+    "6": "unknown ListID <66>",
+    "7": "other (further in Text <58> )",
+    "8": "incorrect allocated quantity",
+    "9": "calculation difference",
+    "10": "unknown or stale ExecID <17>",
+    "11": "mismatched data value (further in Text <58> )",
+    "12": "unknown ClOrdID <11>",
+    "13": "warehouse request rejected"
+   },
+   "value_names": {
+    "0": "UNKNOWN_ACCOUNT",
+    "1": "INCORRECT_QUANTITY",
+    "2": "INCORRECT_AVERAGEG_PRICE",
+    "3": "UNKNOWN_EXECUTING_BROKER_MNEMONIC",
+    "4": "COMMISSION_DIFFERENCE",
+    "5": "UNKNOWN_ORDER_ID",
+    "6": "UNKNOWN_LIST_ID",
+    "7": "OTHER_SEE_TEXT",
+    "8": "INCORRECT_ALLOCATED_QUANTITY",
+    "9": "CALCULATION_DIFFERENCE",
+    "10": "UNKNOWN_OR_STALE_EXEC_ID",
+    "11": "MISMATCHED_DATA",
+    "12": "UNKNOWN_CL_ORD_ID",
+    "13": "WAREHOUSE_REQUEST_REJECTED"
+   },
+   "used_in": [
+    "Allocation Report",
+    "Allocation Report Ack",
+    "Allocation Instruction Ack"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Identifies reason for rejection.",
+   "values": {
+    "0": "unknown account(s)",
+    "1": "incorrect quantity",
+    "2": "incorrect average price",
+    "3": "unknown executing broker mnemonic",
+    "4": "commission difference",
+    "5": "unknown OrderID <37>",
+    "6": "unknown ListID <66>",
+    "7": "other"
+   },
+   "value_names": {
+    "0": "UNKNOWN_ACCOUNT",
+    "6": "UNKNOWN_LIST_ID",
+    "3": "UNKNOWN_EXECUTING_BROKER_MNEMONIC",
+    "5": "UNKNOWN_ORDER_ID",
+    "7": "OTHER_SEE_TEXT",
+    "4": "COMMISSION_DIFFERENCE",
+    "1": "INCORRECT_QUANTITY",
+    "2": "INCORRECT_AVERAGEG_PRICE"
+   },
+   "used_in": [
+    "Allocation ACK"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Identifies reason for rejection.",
+   "values": {
+    "0": "unknown account(s)",
+    "1": "incorrect quantity",
+    "2": "incorrect average price",
+    "3": "unknown executing broker mnemonic",
+    "4": "commission difference",
+    "5": "unknown OrderID <37>",
+    "6": "unknown ListID <66>",
+    "7": "other"
+   },
+   "value_names": {
+    "0": "UNKNOWN_ACCOUNT",
+    "1": "INCORRECT_QUANTITY",
+    "2": "INCORRECT_AVERAGEG_PRICE",
+    "3": "UNKNOWN_EXECUTING_BROKER_MNEMONIC",
+    "4": "COMMISSION_DIFFERENCE",
+    "5": "UNKNOWN_ORDER_ID",
+    "6": "UNKNOWN_LIST_ID",
+    "7": "OTHER_SEE_TEXT"
+   },
+   "used_in": [
+    "Allocation ACK"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Identifies reason for rejection.",
+   "values": {
+    "0": "unknown account(s)",
+    "1": "incorrect quantity",
+    "2": "incorrect average price",
+    "3": "unknown executing broker mnemonic",
+    "4": "commission difference",
+    "5": "unknown OrderID <37>",
+    "6": "unknown ListID <66>",
+    "7": "other"
+   },
+   "value_names": {
+    "0": "UNKNOWN_ACCOUNT",
+    "1": "INCORRECT_QUANTITY",
+    "2": "INCORRECT_AVERAGEG_PRICE",
+    "3": "UNKNOWN_EXECUTING_BROKER_MNEMONIC",
+    "4": "COMMISSION_DIFFERENCE",
+    "5": "UNKNOWN_ORDER_ID",
+    "6": "UNKNOWN_LIST_ID",
+    "7": "OTHER_SEE_TEXT"
+   },
+   "used_in": [
+    "Allocation ACK"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Identifies reason for rejection.",
+   "values": {
+    "0": "unknown account(s)",
+    "1": "incorrect quantity",
+    "2": "incorrect average price",
+    "3": "unknown executing broker mnemonic",
+    "4": "commission difference",
+    "5": "unknown OrderID <37>",
+    "6": "unknown ListID <66>",
+    "7": "other"
+   },
+   "value_names": {
+    "0": "UNKNOWN_ACCOUNT",
+    "1": "INCORRECT_QUANTITY",
+    "2": "INCORRECT_AVERAGEG_PRICE",
+    "3": "UNKNOWN_EXECUTING_BROKER_MNEMONIC",
+    "4": "COMMISSION_DIFFERENCE",
+    "5": "UNKNOWN_ORDER_ID",
+    "6": "UNKNOWN_LIST_ID",
+    "7": "OTHER_SEE_TEXT"
+   },
+   "used_in": [
+    "Allocation ACK"
+   ]
+  }
+ }
+}

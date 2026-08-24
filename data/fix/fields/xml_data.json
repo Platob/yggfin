@@ -1,0 +1,34 @@
+{
+ "name": "XmlData",
+ "tag": 213,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data",
+   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
+  },
+  "5.0.SP1": {
+   "type": "data",
+   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
+  },
+  "5.0": {
+   "type": "data",
+   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
+  },
+  "4.4": {
+   "type": "data",
+   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
+  },
+  "4.3": {
+   "type": "data",
+   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
+  },
+  "4.2": {
+   "type": "data",
+   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
+  },
+  "FIXT1.1": {
+   "type": "data",
+   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
+  }
+ }
+}

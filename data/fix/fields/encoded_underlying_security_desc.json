@@ -1,0 +1,36 @@
+{
+ "name": "EncodedUnderlyingSecurityDesc",
+ "tag": 365,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingSecurityDesc <307> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingSecurityeDesc field."
+  },
+  "5.0.SP1": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingSecurityDesc <307> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingSecurityeDesc field."
+  },
+  "5.0": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingSecurityDesc <307> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingSecurityeDesc field."
+  },
+  "4.4": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingSecurityDesc <307> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingSecurityeDesc field."
+  },
+  "4.3": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingSecurityDesc <307> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingSecurityeDesc field."
+  },
+  "4.2": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingSecurityDesc <307> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingSecurityeDesc field.",
+   "used_in": [
+    "Quote Acknowledgement",
+    "Security Definition Request",
+    "Security Definition",
+    "Mass Quote"
+   ]
+  }
+ }
+}

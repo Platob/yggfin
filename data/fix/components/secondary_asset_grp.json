@@ -1,0 +1,42 @@
+{
+ "name": "SecondaryAssetGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 413,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSecondaryAssetClasses",
+     "required": false,
+     "tag": 1976,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SecondaryAssetClass",
+       "required": false,
+       "tag": 1977
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryAssetSubClass",
+       "required": false,
+       "tag": 1978
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryAssetType",
+       "required": false,
+       "tag": 1979
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryAssetSubType",
+       "required": false,
+       "tag": 2741
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

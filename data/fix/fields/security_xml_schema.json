@@ -1,0 +1,14 @@
+{
+ "name": "SecurityXMLSchema",
+ "tag": 1186,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The schema used to validate the contents of SecurityXML <1185>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The schema used to validate the contents of SecurityXML <1185>"
+  }
+ }
+}

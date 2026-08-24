@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingCPRegType",
+ "tag": 878,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The registration type of the underlying commercial paper issuance"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The registration type of the underlying commercial paper issuance"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "The registration type of the underlying commercial paper issuance"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "The registration type of the underlying commercial paper issuance"
+  }
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "name": "ExecutionAggregationGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 719,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoExecs",
+     "required": false,
+     "tag": 124,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LastQty",
+       "required": false,
+       "tag": 32
+      },
+      {
+       "kind": "field",
+       "name": "ExecID",
+       "required": false,
+       "tag": 17
+      },
+      {
+       "kind": "field",
+       "name": "TradeID",
+       "required": false,
+       "tag": 1003
+      },
+      {
+       "kind": "field",
+       "name": "LastPx",
+       "required": false,
+       "tag": 31
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

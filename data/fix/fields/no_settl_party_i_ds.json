@@ -1,0 +1,22 @@
+{
+ "name": "NoSettlPartyIDs",
+ "tag": 781,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of SettlPartyID <782> , SettlPartyIDSource <783> , and SettlPartyRole <784> entries"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of SettlPartyID <782> , SettlPartyIDSource <783> , and SettlPartyRole <784> entries"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of SettlPartyID <782> , SettlPartyIDSource <783> , and SettlPartyRole <784> entries"
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of SettlPartyID <782> , SettlPartyIDSource <783> , and SettlPartyRole <784> entries"
+  }
+ }
+}

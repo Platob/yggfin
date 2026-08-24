@@ -1,0 +1,30 @@
+{
+ "name": "LegReturnRateValuationDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 671,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegReturnRateValuationDates",
+     "required": false,
+     "tag": 42571,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegReturnRateValuationDate",
+       "required": false,
+       "tag": 42572
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateValuationDateType",
+       "required": false,
+       "tag": 42573
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

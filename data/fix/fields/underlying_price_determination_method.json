@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingPriceDeterminationMethod",
+ "tag": 1481,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Specifies how the underlying price is determined at the point of option exercise. The underlying price may be set to the current settlement price, set to a special reference, set to the optimal value of the underlying during the defined period (\"Look-back\") or set to the average value of the underlying during the defined period (\"Asian option\").",
+   "values": {
+    "1": "Regular",
+    "2": "Special reference",
+    "3": "Optimal value (Lookback)",
+    "4": "Average value (Asian option)"
+   },
+   "value_names": {
+    "1": "REGULAR",
+    "2": "SPECIAL_REFERENCE",
+    "3": "OPTIMAL_VALUE",
+    "4": "AVERAGE_VALUE"
+   }
+  }
+ }
+}

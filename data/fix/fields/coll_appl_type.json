@@ -1,0 +1,54 @@
+{
+ "name": "CollApplType",
+ "tag": 1043,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Conveys how the collateral should be/has been applied",
+   "values": {
+    "0": "Specific Deposit",
+    "1": "General"
+   },
+   "value_names": {
+    "0": "SPECIFIC_DEPOSIT",
+    "1": "GENERAL"
+   },
+   "used_in": [
+    "CollateralResponse",
+    "CollateralReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Conveys how the collateral should be/has been applied",
+   "values": {
+    "0": "Specific Deposit",
+    "1": "General"
+   },
+   "value_names": {
+    "0": "SPECIFIC_DEPOSIT",
+    "1": "GENERAL"
+   },
+   "used_in": [
+    "CollateralResponse",
+    "CollateralReport"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Conveys how the collateral should be/has been applied",
+   "values": {
+    "0": "Specific Deposit",
+    "1": "General"
+   },
+   "value_names": {
+    "0": "SPECIFIC_DEPOSIT",
+    "1": "GENERAL"
+   },
+   "used_in": [
+    "CollateralResponse",
+    "CollateralReport"
+   ]
+  }
+ }
+}

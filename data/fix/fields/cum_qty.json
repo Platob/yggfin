@@ -1,0 +1,70 @@
+{
+ "name": "CumQty",
+ "tag": 14,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "ExecutionAcknowledgement"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "ExecutionAcknowledgement"
+   ]
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "ExecutionAcknowledgement"
+   ]
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "List Status"
+   ]
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "List Status"
+   ]
+  },
+  "4.2": {
+   "type": "Qty",
+   "description": "Total number of shares filled. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "List Status"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Total number of shares filled.",
+   "used_in": [
+    "Execution Report",
+    "List Status"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Total number of shares filled.",
+   "used_in": [
+    "Execution Report",
+    "List Status"
+   ]
+  }
+ }
+}

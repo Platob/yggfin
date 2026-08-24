@@ -1,0 +1,32 @@
+{
+ "name": "NoRegistDtls",
+ "tag": 473,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "The number of registration details on a Registration Instructions <o> message"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "The number of registration details on a Registration Instructions <o> message"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "The number of registration details on a Registration Instructions <o> message"
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "The number of registration details on a Registration Instructions <o> message",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "The number of registration details on a Registration Instructions <o> message",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  }
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeSecurityExchange",
+ "tag": 1272,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Exchange"
+  },
+  "5.0.SP1": {
+   "type": "Exchange"
+  }
+ }
+}

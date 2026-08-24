@@ -1,0 +1,143 @@
+{
+ "name": "MsgTypeGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 267,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMsgTypes",
+     "required": false,
+     "tag": 384,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RefMsgType",
+       "required": false,
+       "tag": 372
+      },
+      {
+       "kind": "field",
+       "name": "MsgDirection",
+       "required": false,
+       "tag": 385
+      },
+      {
+       "kind": "field",
+       "name": "RefApplVerID",
+       "required": false,
+       "tag": 1130
+      },
+      {
+       "kind": "field",
+       "name": "RefApplExtID",
+       "required": false,
+       "tag": 1406
+      },
+      {
+       "kind": "field",
+       "name": "RefCstmApplVerID",
+       "required": false,
+       "tag": 1131
+      },
+      {
+       "kind": "field",
+       "name": "DefaultVerIndicator",
+       "required": false,
+       "tag": 1410
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 118,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMsgTypes",
+     "required": false,
+     "tag": 384,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RefMsgType",
+       "required": false,
+       "tag": 372
+      },
+      {
+       "kind": "field",
+       "name": "MsgDirection",
+       "required": false,
+       "tag": 385
+      },
+      {
+       "kind": "field",
+       "name": "RefApplVerID",
+       "required": false,
+       "tag": 1130
+      },
+      {
+       "kind": "field",
+       "name": "RefApplExtID",
+       "required": false,
+       "tag": 1406
+      },
+      {
+       "kind": "field",
+       "name": "RefCstmApplVerID",
+       "required": false,
+       "tag": 1131
+      },
+      {
+       "kind": "field",
+       "name": "DefaultVerIndicator",
+       "required": false,
+       "tag": 1410
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 120,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMsgTypes",
+     "required": false,
+     "tag": 384,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RefMsgType",
+       "required": false,
+       "tag": 372
+      },
+      {
+       "kind": "field",
+       "name": "MsgDirection",
+       "required": false,
+       "tag": 385
+      },
+      {
+       "kind": "field",
+       "name": "RefApplVerID",
+       "required": false,
+       "tag": 1130
+      },
+      {
+       "kind": "field",
+       "name": "RefCstmApplVerID",
+       "required": false,
+       "tag": 1131
+      }
+     ]
+    }
+   ]
+  },
+  "FIXT1.1": {
+   "order": 1
+  }
+ }
+}

@@ -1,0 +1,48 @@
+{
+ "name": "ContingencyType",
+ "tag": 1385,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Defines the type of contingency.",
+   "values": {
+    "1": "One Cancels the Other (OCO)",
+    "2": "One Triggers the Other (OTO)",
+    "3": "One Updates the Other (OUO) - Absolute Quantity Reduction",
+    "4": "One Updates the Other (OUO) - Proportional Quantity Reduction"
+   },
+   "value_names": {
+    "1": "ONE_CANCELS_THE_OTHER",
+    "2": "ONE_TRIGGERS_THE_OTHER",
+    "3": "ONE_UPDATES_THE_OTHER_ABSOLUTE",
+    "4": "ONE_UPDATES_THE_OTHER_PROPORTIONAL",
+    "5": "BID_AND_OFFER",
+    "6": "BID_AND_OFFER_OCO"
+   },
+   "used_in": [
+    "NewOrderList",
+    "ListStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Defines the type of contingency.",
+   "values": {
+    "1": "One Cancels the Other (OCO)",
+    "2": "One Triggers the Other (OTO)",
+    "3": "One Updates the Other (OUO) - Absolute Quantity Reduction",
+    "4": "One Updates the Other (OUO) - Proportional Quantity Reduction"
+   },
+   "value_names": {
+    "1": "ONE_CANCELS_THE_OTHER",
+    "2": "ONE_TRIGGERS_THE_OTHER",
+    "3": "ONE_UPDATES_THE_OTHER_ABSOLUTE",
+    "4": "ONE_UPDATES_THE_OTHER_PROPORTIONAL"
+   },
+   "used_in": [
+    "NewOrderList",
+    "ListStatus"
+   ]
+  }
+ }
+}

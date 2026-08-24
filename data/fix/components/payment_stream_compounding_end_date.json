@@ -1,0 +1,46 @@
+{
+ "name": "PaymentStreamCompoundingEndDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 134,
+   "members": [
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingEndDateUnadjusted",
+     "required": false,
+     "tag": 42622
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingEndDateRelativeTo",
+     "required": false,
+     "tag": 42623
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingEndDateOffsetPeriod",
+     "required": false,
+     "tag": 42624
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingEndDateOffsetUnit",
+     "required": false,
+     "tag": 42625
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingEndDateOffsetDayType",
+     "required": false,
+     "tag": 42626
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingEndDateAdjusted",
+     "required": false,
+     "tag": 42627
+    }
+   ]
+  }
+ }
+}

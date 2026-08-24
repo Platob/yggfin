@@ -1,0 +1,22 @@
+{
+ "name": "YieldRedemptionDate",
+ "tag": 696,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date)."
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date)."
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date)."
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date)."
+  }
+ }
+}

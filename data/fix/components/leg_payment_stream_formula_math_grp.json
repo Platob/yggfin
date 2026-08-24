@@ -1,0 +1,36 @@
+{
+ "name": "LegPaymentStreamFormulaMathGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 662,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegPaymentStreamFormulas",
+     "required": false,
+     "tag": 42485,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegPaymentStreamFormulaLength",
+       "required": false,
+       "tag": 43110
+      },
+      {
+       "kind": "field",
+       "name": "LegPaymentStreamFormula",
+       "required": false,
+       "tag": 42486
+      },
+      {
+       "kind": "field",
+       "name": "LegPaymentStreamFormulaDesc",
+       "required": false,
+       "tag": 42487
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

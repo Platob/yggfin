@@ -1,0 +1,24 @@
+{
+ "name": "PricingDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 508,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPricingDateBusinessCenters",
+     "required": false,
+     "tag": 41230,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PricingDateBusinessCenter",
+       "required": false,
+       "tag": 41231
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

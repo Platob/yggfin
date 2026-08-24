@@ -1,0 +1,63 @@
+{
+ "name": "NoMiscFees",
+ "tag": 136,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of miscellaneous fees"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of miscellaneous fees"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of miscellaneous fees"
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of miscellaneous fees",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Confirmation",
+    "Allocation Report",
+    "Collateral Request",
+    "Collateral Assignment",
+    "Collateral Response",
+    "Collateral Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of miscellaneous fees",
+   "used_in": [
+    "Trade Capture Report",
+    "Allocation"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Number of repeating groups of miscellaneous fees",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Number of repeating groups of miscellaneous fees",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Number of repeating groups of miscellaneous fees",
+   "used_in": [
+    "Execution Report",
+    "Allocation"
+   ]
+  }
+ }
+}

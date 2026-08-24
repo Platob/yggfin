@@ -1,0 +1,55 @@
+{
+ "name": "MarketDisruption",
+ "versions": {
+  "5.0.SP2": {
+   "order": 81,
+   "members": [
+    {
+     "kind": "field",
+     "name": "MarketDisruptionProvision",
+     "required": false,
+     "tag": 41087
+    },
+    {
+     "kind": "component",
+     "name": "MarketDisruptionEventGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "MarketDisruptionFallbackProvision",
+     "required": false,
+     "tag": 41088
+    },
+    {
+     "kind": "component",
+     "name": "MarketDisruptionFallbackGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "MarketDisruptionFallbackReferencePriceGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "MarketDisruptionMaximumDays",
+     "required": false,
+     "tag": 41089
+    },
+    {
+     "kind": "field",
+     "name": "MarketDisruptionMaterialityPercentage",
+     "required": false,
+     "tag": 41090
+    },
+    {
+     "kind": "field",
+     "name": "MarketDisruptionMinimumFuturesContracts",
+     "required": false,
+     "tag": 41091
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,208 @@
+{
+ "name": "LegProvisionGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 387,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegProvisions",
+     "required": false,
+     "tag": 40448,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegProvisionType",
+       "required": false,
+       "tag": 40449
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionDateUnadjusted",
+       "required": false,
+       "tag": 40450
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionDateBusinessDayConvention",
+       "required": false,
+       "tag": 40451
+      },
+      {
+       "kind": "component",
+       "name": "LegProvisionDateBusinessCenterGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionDateAdjusted",
+       "required": false,
+       "tag": 40453
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionDateTenorPeriod",
+       "required": false,
+       "tag": 40454
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionDateTenorUnit",
+       "required": false,
+       "tag": 40455
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionBreakFeeElection",
+       "required": false,
+       "tag": 42506
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionBreakFeeRate",
+       "required": false,
+       "tag": 42507
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionCalculationAgent",
+       "required": false,
+       "tag": 40456
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionOptionSinglePartyBuyerSide",
+       "required": false,
+       "tag": 40457
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionOptionSinglePartySellerSide",
+       "required": false,
+       "tag": 40458
+      },
+      {
+       "kind": "component",
+       "name": "LegProvisionCashSettlValueDates",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "LegProvisionOptionExerciseDates",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "LegProvisionOptionExpirationDate",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "LegProvisionOptionRelevantUnderlyingDate",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionOptionExerciseStyle",
+       "required": false,
+       "tag": 40459
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionOptionExerciseMultipleNotional",
+       "required": false,
+       "tag": 40460
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionOptionExerciseMinimumNotional",
+       "required": false,
+       "tag": 40461
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionOptionExerciseMaximumNotional",
+       "required": false,
+       "tag": 40462
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionOptionMinimumNumber",
+       "required": false,
+       "tag": 40463
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionOptionMaximumNumber",
+       "required": false,
+       "tag": 40464
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionOptionExerciseConfirmation",
+       "required": false,
+       "tag": 40465
+      },
+      {
+       "kind": "component",
+       "name": "LegProvisionCashSettlPaymentDates",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionCashSettlMethod",
+       "required": false,
+       "tag": 40466
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionCashSettlCurrency",
+       "required": false,
+       "tag": 40467
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionCashSettlCurrency2",
+       "required": false,
+       "tag": 40468
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionCashSettlQuoteType",
+       "required": false,
+       "tag": 40469
+      },
+      {
+       "kind": "component",
+       "name": "LegProvisionCashSettlQuoteSource",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegProvisionText",
+       "required": false,
+       "tag": 40472
+      },
+      {
+       "kind": "field",
+       "name": "EncodedLegProvisionTextLen",
+       "required": false,
+       "tag": 40980
+      },
+      {
+       "kind": "field",
+       "name": "EncodedLegProvisionText",
+       "required": false,
+       "tag": 40981
+      },
+      {
+       "kind": "component",
+       "name": "LegProvisionParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

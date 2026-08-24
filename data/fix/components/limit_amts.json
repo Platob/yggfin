@@ -1,0 +1,66 @@
+{
+ "name": "LimitAmts",
+ "versions": {
+  "5.0.SP2": {
+   "order": 312,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLimitAmts",
+     "required": false,
+     "tag": 1630,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LimitAmtType",
+       "required": false,
+       "tag": 1631
+      },
+      {
+       "kind": "field",
+       "name": "LastLimitAmt",
+       "required": false,
+       "tag": 1632
+      },
+      {
+       "kind": "field",
+       "name": "LimitAmtRemaining",
+       "required": false,
+       "tag": 1633
+      },
+      {
+       "kind": "field",
+       "name": "LimitUtilizationAmt",
+       "required": false,
+       "tag": 2394
+      },
+      {
+       "kind": "field",
+       "name": "LimitAmt",
+       "required": false,
+       "tag": 2395
+      },
+      {
+       "kind": "field",
+       "name": "LimitAmtCurrency",
+       "required": false,
+       "tag": 1634
+      },
+      {
+       "kind": "field",
+       "name": "LimitAmtCurrencyCodeSource",
+       "required": false,
+       "tag": 2935
+      },
+      {
+       "kind": "field",
+       "name": "LimitRole",
+       "required": false,
+       "tag": 2396
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,34 @@
+{
+ "name": "CollAsgnRefID",
+ "tag": 907,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Collateral Assignment Identifier to which a transaction refers",
+   "used_in": [
+    "CollateralAssignment"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Collateral Assignment Identifier to which a transaction refers",
+   "used_in": [
+    "CollateralAssignment"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Collateral Assignment Identifier to which a transaction refers",
+   "used_in": [
+    "CollateralAssignment"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Collateral Assignment Identifier to which a transaction refers",
+   "used_in": [
+    "Collateral Assignment"
+   ]
+  }
+ }
+}

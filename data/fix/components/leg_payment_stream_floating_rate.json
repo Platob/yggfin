@@ -1,0 +1,508 @@
+{
+ "name": "LegPaymentStreamFloatingRate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 33,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndex",
+     "required": false,
+     "tag": 40331
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndexSource",
+     "required": false,
+     "tag": 40332
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndexID",
+     "required": false,
+     "tag": 43088
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndexIDSource",
+     "required": false,
+     "tag": 43089
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndexCurveUnit",
+     "required": false,
+     "tag": 40333
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndexCurvePeriod",
+     "required": false,
+     "tag": 40334
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndex2",
+     "required": false,
+     "tag": 43116
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndex2Source",
+     "required": false,
+     "tag": 43117
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndex2ID",
+     "required": false,
+     "tag": 43118
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndex2IDSource",
+     "required": false,
+     "tag": 43119
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndex2CurveUnit",
+     "required": false,
+     "tag": 41563
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndex2CurvePeriod",
+     "required": false,
+     "tag": 41564
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndexLocation",
+     "required": false,
+     "tag": 41565
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndexLevel",
+     "required": false,
+     "tag": 41566
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateIndexUnitOfMeasure",
+     "required": false,
+     "tag": 41567
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamSettlLevel",
+     "required": false,
+     "tag": 41568
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamReferenceLevel",
+     "required": false,
+     "tag": 41569
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamReferenceLevelUnitOfMeasure",
+     "required": false,
+     "tag": 41570
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamReferenceLevelEqualsZeroIndicator",
+     "required": false,
+     "tag": 41571
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateMultiplier",
+     "required": false,
+     "tag": 40335
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateSpread",
+     "required": false,
+     "tag": 40336
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateSpreadCurrency",
+     "required": false,
+     "tag": 41572
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateSpreadUnitOfMeasure",
+     "required": false,
+     "tag": 41573
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateConversionFactor",
+     "required": false,
+     "tag": 41574
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateSpreadType",
+     "required": false,
+     "tag": 41575
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateSpreadPositionType",
+     "required": false,
+     "tag": 40337
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRateTreatment",
+     "required": false,
+     "tag": 40338
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCapRate",
+     "required": false,
+     "tag": 40339
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCapRateBuySide",
+     "required": false,
+     "tag": 40340
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCapRateSellSide",
+     "required": false,
+     "tag": 40341
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFloorRate",
+     "required": false,
+     "tag": 40342
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFloorRateBuySide",
+     "required": false,
+     "tag": 40343
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFloorRateSellSide",
+     "required": false,
+     "tag": 40344
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInitialRate",
+     "required": false,
+     "tag": 40345
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamLastResetRate",
+     "required": false,
+     "tag": 41576
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFinalRate",
+     "required": false,
+     "tag": 41577
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFinalRateRoundingDirection",
+     "required": false,
+     "tag": 40346
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFinalRatePrecision",
+     "required": false,
+     "tag": 40347
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamAveragingMethod",
+     "required": false,
+     "tag": 40348
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamNegativeRateTreatment",
+     "required": false,
+     "tag": 40349
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCalculationLagPeriod",
+     "required": false,
+     "tag": 41578
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamCalculationLagUnit",
+     "required": false,
+     "tag": 41579
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFirstObservationDateUnadjusted",
+     "required": false,
+     "tag": 42462
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFirstObservationDateRelativeTo",
+     "required": false,
+     "tag": 42463
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFirstObservationDateOffsetDayType",
+     "required": false,
+     "tag": 42464
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFirstObservationDateOffsetPeriod",
+     "required": false,
+     "tag": 41580
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFirstObservationDateOffsetUnit",
+     "required": false,
+     "tag": 41581
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFirstObservationDateAdjusted",
+     "required": false,
+     "tag": 42465
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamPricingDayType",
+     "required": false,
+     "tag": 41582
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamPricingDayDistribution",
+     "required": false,
+     "tag": 41583
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamPricingDayCount",
+     "required": false,
+     "tag": 41584
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamPricingBusinessCalendar",
+     "required": false,
+     "tag": 41585
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamPricingBusinessDayConvention",
+     "required": false,
+     "tag": 41586
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamPricingBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamPricingDayGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamPricingDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInflationLagPeriod",
+     "required": false,
+     "tag": 40350
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInflationLagUnit",
+     "required": false,
+     "tag": 40351
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInflationLagDayType",
+     "required": false,
+     "tag": 40352
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInflationInterpolationMethod",
+     "required": false,
+     "tag": 40353
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInflationIndexSource",
+     "required": false,
+     "tag": 40354
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInflationPublicationSource",
+     "required": false,
+     "tag": 40355
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInflationInitialIndexLevel",
+     "required": false,
+     "tag": 40356
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamInflationFallbackBondApplicable",
+     "required": false,
+     "tag": 40357
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFRADiscounting",
+     "required": false,
+     "tag": 40358
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamUnderlierRefID",
+     "required": false,
+     "tag": 42466
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamFormula",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegDividendConditions",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateNotionalReset",
+     "required": false,
+     "tag": 42467
+    },
+    {
+     "kind": "component",
+     "name": "LegReturnRateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamLinkInitialLevel",
+     "required": false,
+     "tag": 42468
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamLinkClosingLevelIndicator",
+     "required": false,
+     "tag": 42469
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamLinkExpiringLevelIndicator",
+     "required": false,
+     "tag": 42470
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamLinkEstimatedTradingDays",
+     "required": false,
+     "tag": 42471
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamLinkStrikePrice",
+     "required": false,
+     "tag": 42472
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamLinkStrikePriceType",
+     "required": false,
+     "tag": 42473
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamLinkMaximumBoundary",
+     "required": false,
+     "tag": 42474
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamLinkMinimumBoundary",
+     "required": false,
+     "tag": 42475
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamLinkNumberOfDataSeries",
+     "required": false,
+     "tag": 42476
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamVarianceUnadjustedCap",
+     "required": false,
+     "tag": 42477
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamRealizedVarianceMethod",
+     "required": false,
+     "tag": 42478
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamDaysAdjustmentIndicator",
+     "required": false,
+     "tag": 42479
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamNearestExchangeContractRefID",
+     "required": false,
+     "tag": 42480
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamVegaNotionalAmount",
+     "required": false,
+     "tag": 42481
+    }
+   ]
+  }
+ }
+}

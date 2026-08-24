@@ -1,0 +1,70 @@
+{
+ "name": "DeskOrderHandlingInst",
+ "tag": 1035,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MultipleStringValue",
+   "description": "Codes that apply special information that the Broker / Dealer needs to report. Same values as CustOrderHandlingInst <1031>"
+  },
+  "5.0.SP1": {
+   "type": "MultipleStringValue",
+   "description": "Codes that apply special information that the Broker / Dealer needs to report. Same values as CustOrderHandlingInst <1031>",
+   "value_names": {
+    "ADD": "ADD_ON_ORDER",
+    "AON": "ALL_OR_NONE",
+    "CNH": "CASH_NOT_HELD",
+    "DIR": "DIRECTED_ORDER",
+    "E.W": "EXCHANGE_FOR_PHYSICAL_TRANSACTION",
+    "FOK": "FILL_OR_KILL",
+    "IO": "IMBALANCE_ONLY",
+    "IOC": "IMMEDIATE_OR_CANCEL",
+    "LOO": "LIMIT_ON_OPEN",
+    "LOC": "LIMIT_ON_CLOSE",
+    "MAO": "MARKET_AT_OPEN",
+    "MAC": "MARKET_AT_CLOSE",
+    "MOO": "MARKET_ON_OPEN",
+    "MOC": "MARKET_ON_CLOSE",
+    "MQT": "MINIMUM_QUANTITY",
+    "NH": "NOT_HELD",
+    "OVD": "OVER_THE_DAY",
+    "PEG": "PEGGED",
+    "RSV": "RESERVE_SIZE_ORDER",
+    "S.W": "STOP_STOCK_TRANSACTION",
+    "SCL": "SCALE",
+    "TMO": "TIME_ORDER",
+    "TS": "TRAILING_STOP",
+    "WRK": "WORK"
+   }
+  },
+  "5.0": {
+   "type": "MultipleStringValue",
+   "description": "Codes that apply special information that the Broker / Dealer needs to report. Same values as CustOrderHandlingInst <1031>",
+   "value_names": {
+    "ADD": "ADD_ON_ORDER",
+    "AON": "ALL_OR_NONE",
+    "CNH": "CASH_NOT_HELD",
+    "DIR": "DIRECTED_ORDER",
+    "E.W": "EXCHANGE_FOR_PHYSICAL_TRANSACTION",
+    "FOK": "FILL_OR_KILL",
+    "IO": "IMBALANCE_ONLY",
+    "IOC": "IMMEDIATE_OR_CANCEL",
+    "LOO": "LIMIT_ON_OPEN",
+    "LOC": "LIMIT_ON_CLOSE",
+    "MAO": "MARKET_AT_OPEN",
+    "MAC": "MARKET_AT_CLOSE",
+    "MOO": "MARKET_ON_OPEN",
+    "MOC": "MARKET_ON_CLOSE",
+    "MQT": "MINIMUM_QUANTITY",
+    "NH": "NOT_HELD",
+    "OVD": "OVER_THE_DAY",
+    "PEG": "PEGGED",
+    "RSV": "RESERVE_SIZE_ORDER",
+    "S.W": "STOP_STOCK_TRANSACTION",
+    "SCL": "SCALE",
+    "TMO": "TIME_ORDER",
+    "TS": "TRAILING_STOP",
+    "WRK": "WORK"
+   }
+  }
+ }
+}

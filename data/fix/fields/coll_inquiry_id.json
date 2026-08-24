@@ -1,0 +1,42 @@
+{
+ "name": "CollInquiryID",
+ "tag": 909,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Collateral Inquiry Identifier",
+   "used_in": [
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Collateral Inquiry Identifier",
+   "used_in": [
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Collateral Inquiry Identifier",
+   "used_in": [
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Collateral Inquiry Identifier",
+   "used_in": [
+    "Collateral Report",
+    "Collateral Inquiry",
+    "Collateral Inquiry Ack"
+   ]
+  }
+ }
+}

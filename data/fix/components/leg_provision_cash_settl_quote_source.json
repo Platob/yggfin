@@ -1,0 +1,22 @@
+{
+ "name": "LegProvisionCashSettlQuoteSource",
+ "versions": {
+  "5.0.SP2": {
+   "order": 78,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegProvisionCashSettlQuoteSource",
+     "required": false,
+     "tag": 40470
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionCashSettlQuoteReferencePage",
+     "required": false,
+     "tag": 41407
+    }
+   ]
+  }
+ }
+}

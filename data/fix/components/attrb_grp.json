@@ -1,0 +1,105 @@
+{
+ "name": "AttrbGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 245,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoInstrAttrib",
+     "required": false,
+     "tag": 870,
+     "members": [
+      {
+       "kind": "field",
+       "name": "InstrAttribType",
+       "required": false,
+       "tag": 871
+      },
+      {
+       "kind": "field",
+       "name": "InstrAttribValue",
+       "required": false,
+       "tag": 872
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 94,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoInstrAttrib",
+     "required": false,
+     "tag": 870,
+     "members": [
+      {
+       "kind": "field",
+       "name": "InstrAttribType",
+       "required": false,
+       "tag": 871
+      },
+      {
+       "kind": "field",
+       "name": "InstrAttribValue",
+       "required": false,
+       "tag": 872
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 96,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoInstrAttrib",
+     "required": false,
+     "tag": 870,
+     "members": [
+      {
+       "kind": "field",
+       "name": "InstrAttribType",
+       "required": false,
+       "tag": 871
+      },
+      {
+       "kind": "field",
+       "name": "InstrAttribValue",
+       "required": false,
+       "tag": 872
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 96,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoInstrAttrib",
+     "required": false,
+     "tag": 870,
+     "members": [
+      {
+       "kind": "field",
+       "name": "InstrAttribType",
+       "required": false,
+       "tag": 871
+      },
+      {
+       "kind": "field",
+       "name": "InstrAttribValue",
+       "required": false,
+       "tag": 872
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

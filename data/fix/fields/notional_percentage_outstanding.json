@@ -1,0 +1,10 @@
+{
+ "name": "NotionalPercentageOutstanding",
+ "tag": 1451,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "Indicates the notional percentage of the deal that is still outstanding based on the remaining components of the index. Used to calculate the true value of a CDS trade or position."
+  }
+ }
+}

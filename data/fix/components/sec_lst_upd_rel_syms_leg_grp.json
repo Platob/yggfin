@@ -1,0 +1,125 @@
+{
+ "name": "SecLstUpdRelSymsLegGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 255,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegSwapType",
+       "required": false,
+       "tag": 690
+      },
+      {
+       "kind": "field",
+       "name": "LegSettlType",
+       "required": false,
+       "tag": 587
+      },
+      {
+       "kind": "component",
+       "name": "LegStipulations",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "LegBenchmarkCurveData",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 104,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegSwapType",
+       "required": false,
+       "tag": 690
+      },
+      {
+       "kind": "field",
+       "name": "LegSettlType",
+       "required": false,
+       "tag": 587
+      },
+      {
+       "kind": "component",
+       "name": "LegStipulations",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "LegBenchmarkCurveData",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 106,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegSwapType",
+       "required": false,
+       "tag": 690
+      },
+      {
+       "kind": "field",
+       "name": "LegSettlType",
+       "required": false,
+       "tag": 587
+      },
+      {
+       "kind": "component",
+       "name": "LegStipulations",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "LegBenchmarkCurveData",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

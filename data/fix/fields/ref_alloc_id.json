@@ -1,0 +1,69 @@
+{
+ "name": "RefAllocID",
+ "tag": 72,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Reference identifier to be used with AllocTransType <71> = 'Replace' or 'Cancel'. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Reference identifier to be used with AllocTransType <71> = 'Replace' or 'Cancel'. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Reference identifier to be used with AllocTransType <71> = 'Replace' or 'Cancel'. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Reference identifier to be used with AllocTransType <71> = 'Replace' or 'Cancel'. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Reference identifier to be used with AllocTransType <71> ='Replace' or 'Cancel' or with AllocType <626> = \"Sellside Calculated Using Preliminary\". (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Reference identifier to be used with Replace, Cancel, and Calculated AllocTransType <71> messages. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Reference identifier to be used with 'Replace' and 'Cancel' AllocTransType <71> records. (Prior to FIX 4.1 this field was of type int)",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Reference identifier to be used with Replace and Cancel AllocTransType <71> records.",
+   "used_in": [
+    "Allocation"
+   ]
+  }
+ }
+}

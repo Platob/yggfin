@@ -1,0 +1,92 @@
+{
+ "name": "LastQty",
+ "tag": 32,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Quantity (e.g. shares) bought/sold on this (last) fill. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "ExecutionAcknowledgement",
+    "DontKnowTradeDK"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Quantity (e.g. shares) bought/sold on this (last) fill. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "ExecutionAcknowledgement",
+    "DontKnowTradeDK"
+   ]
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Quantity (e.g. shares) bought/sold on this (last) fill. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "ExecutionAcknowledgement",
+    "DontKnowTradeDK"
+   ]
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Quantity (e.g. shares) bought/sold on this (last) fill. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Allocation Report",
+    "Allocation Instruction",
+    "Don't Know Trade"
+   ]
+  },
+  "4.3": {
+   "name": "LastShares prior to FIX 4.3)",
+   "type": "Qty",
+   "note": "formerly named: LastShares prior to FIX 4.3",
+   "description": "Quantity (e.g. shares) bought/sold on this (last) fill. (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Allocation",
+    "Don't Know Trade"
+   ]
+  },
+  "4.2": {
+   "name": "LastShares",
+   "type": "Qty",
+   "description": "Quantity of shares bought/sold on this (last) fill. Field not required for ExecTransType <20> ='3' (Status) (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "Allocation",
+    "Don't Know Trade"
+   ]
+  },
+  "4.1": {
+   "name": "LastShares",
+   "type": "int",
+   "description": "Quantity of shares bought/sold on this (last) fill. Field not required for ExecTransType <20> ='3' (Status)",
+   "used_in": [
+    "Execution Report",
+    "Allocation",
+    "Don't Know Trade"
+   ]
+  },
+  "4.0": {
+   "name": "LastShares",
+   "type": "int",
+   "description": "Quantity of shares bought/sold on this fill. Field not required for ExecTransType <20> ='3' (Status)",
+   "used_in": [
+    "Execution Report",
+    "Allocation",
+    "Don't Know Trade"
+   ]
+  }
+ }
+}

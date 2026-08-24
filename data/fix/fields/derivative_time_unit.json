@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeTimeUnit",
+ "tag": 1271,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Same values as TimeUnit <997>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Same values as TimeUnit <997>"
+  }
+ }
+}

@@ -1,0 +1,83 @@
+{
+ "name": "RiskLimitTypesGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 321,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRiskLimitTypes",
+     "required": false,
+     "tag": 1529,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RiskLimitType",
+       "required": false,
+       "tag": 1530
+      },
+      {
+       "kind": "field",
+       "name": "RiskLimitAmount",
+       "required": false,
+       "tag": 1531
+      },
+      {
+       "kind": "field",
+       "name": "RiskLimitAction",
+       "required": false,
+       "tag": 1767
+      },
+      {
+       "kind": "field",
+       "name": "RiskLimitUtilizationAmount",
+       "required": false,
+       "tag": 1766
+      },
+      {
+       "kind": "field",
+       "name": "RiskLimitUtilizationPercent",
+       "required": false,
+       "tag": 1765
+      },
+      {
+       "kind": "field",
+       "name": "RiskLimitCurrency",
+       "required": false,
+       "tag": 1532
+      },
+      {
+       "kind": "field",
+       "name": "RiskLimitCurrencyCodeSource",
+       "required": false,
+       "tag": 2939
+      },
+      {
+       "kind": "field",
+       "name": "RiskLimitPlatform",
+       "required": false,
+       "tag": 1533
+      },
+      {
+       "kind": "field",
+       "name": "RiskLimitVelocityPeriod",
+       "required": false,
+       "tag": 2336
+      },
+      {
+       "kind": "field",
+       "name": "RiskLimitVelocityUnit",
+       "required": false,
+       "tag": 2337
+      },
+      {
+       "kind": "component",
+       "name": "RiskWarningLevelGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

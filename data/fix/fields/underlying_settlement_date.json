@@ -1,0 +1,27 @@
+{
+ "name": "UnderlyingSettlementDate",
+ "tag": 987,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "Date the underlying instrument will settle. Used for derivatives that deliver into more than one underlying instrument. Settlement dates can vary across underlying instruments.",
+   "used_in": [
+    "TradeCaptureReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "Date the underlying instrument will settle. Used for derivatives that deliver into more than one underlying instrument. Settlement dates can vary across underlying instruments.",
+   "used_in": [
+    "TradeCaptureReport"
+   ]
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "Date the underlying instrument will settle. Used for derivatives that deliver into more than one underlying instrument. Settlement dates can vary across underlying instruments.",
+   "used_in": [
+    "TradeCaptureReport"
+   ]
+  }
+ }
+}

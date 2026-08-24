@@ -1,0 +1,136 @@
+{
+ "name": "CustOrderCapacity",
+ "tag": 582,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Capacity of customer placing the order. Primarily used by futures exchanges to indicate the CTICode (customer type indicator) as required by the US CFTC (Commodity Futures Trading Commission).",
+   "values": {
+    "1": "Member trading for their own account",
+    "2": "Clearing Firm trading for its proprietary account",
+    "3": "Member trading for another member",
+    "4": "All other"
+   },
+   "value_names": {
+    "1": "MEMBER_TRADING_FOR_THEIR_OWN_ACCOUNT",
+    "2": "CLEARING_FIRM_TRADING_FOR_ITS_PROPRIETARY_ACCOUNT",
+    "3": "MEMBER_TRADING_FOR_ANOTHER_MEMBER",
+    "4": "ALL_OTHER",
+    "5": "RETAIL_CUSTOMER"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "AllocationInstruction",
+    "Quote"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Capacity of customer placing the order. Primarily used by futures exchanges to indicate the CTICode (customer type indicator) as required by the US CFTC (Commodity Futures Trading Commission).",
+   "values": {
+    "1": "Member trading for their own account",
+    "2": "Clearing Firm trading for its proprietary account",
+    "3": "Member trading for another member",
+    "4": "All other"
+   },
+   "value_names": {
+    "1": "MEMBER_TRADING_FOR_THEIR_OWN_ACCOUNT",
+    "2": "CLEARING_FIRM_TRADING_FOR_ITS_PROPRIETARY_ACCOUNT",
+    "3": "MEMBER_TRADING_FOR_ANOTHER_MEMBER",
+    "4": "ALL_OTHER"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "AllocationInstruction",
+    "Quote"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Capacity of customer placing the order. Primarily used by futures exchanges to indicate the CTICode (customer type indicator) as required by the US CFTC (Commodity Futures Trading Commission).",
+   "values": {
+    "1": "Member trading for their own account",
+    "2": "Clearing Firm trading for its proprietary account",
+    "3": "Member trading for another member",
+    "4": "All other"
+   },
+   "value_names": {
+    "1": "MEMBER_TRADING_FOR_THEIR_OWN_ACCOUNT",
+    "2": "CLEARING_FIRM_TRADING_FOR_ITS_PROPRIETARY_ACCOUNT",
+    "3": "MEMBER_TRADING_FOR_ANOTHER_MEMBER",
+    "4": "ALL_OTHER"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "AllocationInstruction",
+    "Quote"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Capacity of customer placing the order 1 = Member trading for their own account 2 = Clearing Firm trading for its proprietary account 3 = Member trading for another member 4 = All other Primarily used by futures exchanges to indicate the CTICode (customer type indicator) as required by the US CFTC (Commodity Futures Trading Commission).",
+   "value_names": {
+    "1": "MEMBER_TRADING_FOR_THEIR_OWN_ACCOUNT",
+    "2": "CLEARING_FIRM_TRADING_FOR_ITS_PROPRIETARY_ACCOUNT",
+    "3": "MEMBER_TRADING_FOR_ANOTHER_MEMBER",
+    "4": "ALL_OTHER"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Quote Status Report",
+    "Quote Response",
+    "Trade Capture Report Ack",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "New Order Cross",
+    "Quote",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Capacity of customer placing the order 1 = Member trading for their own account 2 = Clearing Firm trading for its proprietary account 3 = Member trading for another member 4 = All other Primarily used by futures exchanges to indicate the CTICode (customer type indicator) as required by the US CFTC (Commodity Futures Trading Commission).",
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "Trade Capture Report",
+    "Quote Status Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Quote",
+    "Cross Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

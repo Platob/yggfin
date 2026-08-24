@@ -1,0 +1,74 @@
+{
+ "name": "SettlCurrAmt",
+ "tag": 119,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "Total amount due expressed in settlement currency (includes the effect of the forex transaction)",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "Total amount due expressed in settlement currency (includes the effect of the forex transaction)",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation"
+   ]
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "Total amount due expressed in settlement currency (includes the effect of the forex transaction)",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation"
+   ]
+  },
+  "4.4": {
+   "type": "Amt",
+   "description": "Total amount due expressed in settlement currency (includes the effect of the forex transaction)",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Confirmation",
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "Amt",
+   "description": "Total amount due expressed in settlement currency (includes the effect of the forex transaction)",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Allocation"
+   ]
+  },
+  "4.2": {
+   "type": "Amt",
+   "description": "Total amount due expressed in settlement currency (includes the effect of the forex transaction)",
+   "used_in": [
+    "Allocation",
+    "Execution Report"
+   ]
+  },
+  "4.1": {
+   "type": "float",
+   "description": "Total amount due expressed in settlement currency (includes the effect of the forex transaction)",
+   "used_in": [
+    "Execution Report",
+    "Allocation"
+   ]
+  },
+  "4.0": {
+   "type": "float",
+   "description": "Total amount due expressed in settlement currency (includes the effect of the forex transaction)",
+   "used_in": [
+    "Execution Report",
+    "Allocation"
+   ]
+  }
+ }
+}

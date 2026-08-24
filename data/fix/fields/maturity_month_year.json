@@ -1,0 +1,78 @@
+{
+ "name": "MaturityMonthYear",
+ "tag": 200,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MonthYear",
+   "description": "Can be used with standardized derivatives vs. the MaturityDate <541> field. Month and Year of the maturity (used for standardized futures and options). Format: YYYYMM (i.e. 199903) YYYYMMDD (20030323) YYYYMMwN (200303w1) for week A specific date or can be appended to the MaturityMonthYear. For instance, if multiple standard products exist that mature in the same Year and Month, but actually mature at a different time, a value can be appended, such as \"w1\" or \"w2\" to indicate week 1 as opposed to week 2 expiration. Likewise, the date (01-31) can be appended to indicate a specific expiration (maturity date)."
+  },
+  "5.0.SP1": {
+   "type": "MonthYear",
+   "description": "Can be used with standardized derivatives vs. the MaturityDate <541> field. Month and Year of the maturity (used for standardized futures and options). Format: YYYYMM (i.e. 199903) YYYYMMDD (20030323) YYYYMMwN (200303w1) for week A specific date or can be appended to the MaturityMonthYear. For instance, if multiple standard products exist that mature in the same Year and Month, but actually mature at a different time, a value can be appended, such as \"w1\" or \"w2\" to indicate week 1 as opposed to week 2 expiration. Likewise, the date (01-31) can be appended to indicate a specific expiration (maturity date)."
+  },
+  "5.0": {
+   "type": "MonthYear",
+   "description": "Can be used with standardized derivatives vs. the MaturityDate <541> field. Month and Year of the maturity (used for standardized futures and options). Format: YYYYMM (i.e. 199903) YYYYMMDD (20030323) YYYYMMwN (200303w1) for week A specific date or can be appended to the MaturityMonthYear. For instance, if multiple standard products exist that mature in the same Year and Month, but actually mature at a different time, a value can be appended, such as \"w1\" or \"w2\" to indicate week 1 as opposed to week 2 expiration. Likewise, the date (01-31) can be appended to indicate a specific expiration (maturity date)."
+  },
+  "4.4": {
+   "type": "MonthYear",
+   "description": "Can be used with standardized derivatives vs. the MaturityDate <541> field. Month and Year of the maturity (used for standardized futures and options). Format: YYYYMM (i.e. 199903) YYYYMMDD (20030323) YYYYMMwN (200303w1) for week A specific date or can be appended to the MaturityMonthYear <200> . For instance, if multiple standard products exist that mature in the same Year and Month, but actually mature at a different time, a value can be appended, such as \"w1\" or \"w2\" to indicate week 1 as opposed to week 2 expiration. Likewise, the date (01-31) can be appended to indicate a specific expiration (maturity date)."
+  },
+  "4.3": {
+   "type": "MonthYear",
+   "description": "Can be used with standardized derivatives vs. the MaturityDate <541> field. Month and Year of the maturity (used for standardized futures and options). Format: YYYYMM (i.e. 199903)"
+  },
+  "4.2": {
+   "type": "MonthYear",
+   "description": "Month and Year of the maturity for SecurityType <167> =FUT or SecurityType <167> =OPT. Required if MaturityDay <205> is specified. Format: YYYYMM (i.e. 199903)",
+   "used_in": [
+    "Indication of Interest",
+    "Advertisement",
+    "Execution Report",
+    "Quote Status Request",
+    "Quote Acknowledgement",
+    "News",
+    "Security Definition Request",
+    "Email",
+    "Security Definition",
+    "New Order - Single",
+    "Security Status Request",
+    "New Order - List",
+    "Security Status",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Mass Quote",
+    "Allocation",
+    "List Strike Price",
+    "Don't Know Trade",
+    "Quote Request",
+    "Quote",
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh",
+    "Quote Cancel"
+   ]
+  },
+  "4.1": {
+   "type": "month",
+   "description": "Month and Year of the maturity for SecurityType <167> =FUT or SecurityType <167> =OPT. Format: YYYYMM (i.e. 199903)",
+   "used_in": [
+    "Indication of Interest",
+    "Advertisement",
+    "Execution Report",
+    "News",
+    "Email",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Allocation",
+    "Don't Know Trade",
+    "Quote Request",
+    "Quote"
+   ]
+  }
+ }
+}

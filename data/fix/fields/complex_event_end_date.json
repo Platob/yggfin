@@ -1,0 +1,10 @@
+{
+ "name": "ComplexEventEndDate",
+ "tag": 1493,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTimestamp",
+   "description": "Specifies the end date of the date range on which a complex event is effective. The start date will be set equal to the end date for single day events such as Bermuda options ComplexEventEndDate must always be greater than or equal to ComplexEventStartDate <1492> ."
+  }
+ }
+}

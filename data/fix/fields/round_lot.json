@@ -1,0 +1,38 @@
+{
+ "name": "RoundLot",
+ "tag": 561,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "The trading lot size of a security"
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "The trading lot size of a security"
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "The trading lot size of a security",
+   "used_in": [
+    "SecurityDefinitionUpdateReport",
+    "SecurityDefinition"
+   ]
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "The trading lot size of a security",
+   "used_in": [
+    "Security Definition",
+    "Security List"
+   ]
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "The trading lot size of a security",
+   "used_in": [
+    "Security Definition",
+    "Security List"
+   ]
+  }
+ }
+}

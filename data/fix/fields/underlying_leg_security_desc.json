@@ -1,0 +1,14 @@
+{
+ "name": "UnderlyingLegSecurityDesc",
+ "tag": 1392,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Refer to definition of SecurityDesc <107>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Refer to definition of SecurityDesc <107>"
+  }
+ }
+}

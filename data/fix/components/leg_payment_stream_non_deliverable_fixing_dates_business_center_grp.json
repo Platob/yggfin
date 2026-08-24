@@ -1,0 +1,24 @@
+{
+ "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 433,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegPaymentStreamNonDeliverableFixingDateBusinessCenters",
+     "required": false,
+     "tag": 40929,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenter",
+       "required": false,
+       "tag": 40361
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

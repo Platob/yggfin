@@ -1,0 +1,30 @@
+{
+ "name": "LegOptionExerciseDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 547,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegOptionExerciseDates",
+     "required": false,
+     "tag": 41512,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegOptionExerciseDate",
+       "required": false,
+       "tag": 41513
+      },
+      {
+       "kind": "field",
+       "name": "LegOptionExerciseDateType",
+       "required": false,
+       "tag": 41514
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,146 @@
+{
+ "name": "MoneyLaunderingStatus",
+ "tag": 481,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "A one character code identifying Money laundering status.",
+   "values": {
+    "Y": "Passed",
+    "N": "Not checked",
+    "1": "Exempt - Below The Limit",
+    "2": "Exempt - Client Money Type Exemption",
+    "3": "Exempt - Authorised Credit or Financial Institution."
+   },
+   "value_names": {
+    "Y": "PASSED",
+    "N": "NOT_CHECKED",
+    "1": "EXEMPT_BELOW_LIMIT",
+    "2": "EXEMPT_MONEY_TYPE",
+    "3": "EXEMPT_AUTHORISED"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "NewOrderList",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "A one character code identifying Money laundering status.",
+   "values": {
+    "Y": "Passed",
+    "N": "Not checked",
+    "1": "Exempt - Below The Limit",
+    "2": "Exempt - Client Money Type Exemption",
+    "3": "Exempt - Authorised Credit or Financial Institution."
+   },
+   "value_names": {
+    "Y": "PASSED",
+    "N": "NOT_CHECKED",
+    "1": "EXEMPT_BELOW_LIMIT",
+    "2": "EXEMPT_MONEY_TYPE",
+    "3": "EXEMPT_AUTHORISED"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "NewOrderList",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "A one character code identifying Money laundering status.",
+   "values": {
+    "Y": "Passed",
+    "N": "Not checked",
+    "1": "Exempt - Below The Limit",
+    "2": "Exempt - Client Money Type Exemption",
+    "3": "Exempt - Authorised Credit or Financial Institution."
+   },
+   "value_names": {
+    "Y": "PASSED",
+    "N": "NOT_CHECKED",
+    "1": "EXEMPT_BELOW_LIMIT",
+    "2": "EXEMPT_MONEY_TYPE",
+    "3": "EXEMPT_AUTHORISED"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "NewOrderList",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "A one character code identifying Money laundering status.",
+   "values": {
+    "Y": "Passed",
+    "N": "Not checked",
+    "1": "Exempt - Below The Limit",
+    "2": "Exempt - Client Money Type Exemption",
+    "3": "Exempt - Authorised Credit or Financial Institution."
+   },
+   "value_names": {
+    "Y": "PASSED",
+    "N": "NOT_CHECKED",
+    "1": "EXEMPT_BELOW_LIMIT",
+    "2": "EXEMPT_MONEY_TYPE",
+    "3": "EXEMPT_AUTHORISED"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "For CIV - A one character code identifying Money laundering status.",
+   "values": {
+    "Y": "Passed",
+    "N": "Not checked",
+    "1": "Exempt - Below The Limit",
+    "2": "Exempt - Client Money Type Exemption",
+    "3": "Exempt - Authorised Credit or Financial Institution."
+   },
+   "value_names": {
+    "3": "EXEMPT_AUTHORISED",
+    "2": "EXEMPT_MONEY_TYPE",
+    "1": "EXEMPT_BELOW_LIMIT",
+    "Y": "PASSED",
+    "N": "NOT_CHECKED"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

@@ -1,0 +1,83 @@
+{
+ "name": "UserRequestType",
+ "tag": 924,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates the action required by a UserRequest <BE> Message",
+   "values": {
+    "1": "Log On User",
+    "2": "Log Off User",
+    "3": "Change Password For User",
+    "4": "Request Individual User Status"
+   },
+   "value_names": {
+    "1": "LOG_ON_USER",
+    "2": "LOG_OFF_USER",
+    "3": "CHANGE_PASSWORD_FOR_USER",
+    "4": "REQUEST_INDIVIDUAL_USER_STATUS",
+    "5": "REQUEST_THROTTLE_LIMIT"
+   },
+   "used_in": [
+    "UserRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Indicates the action required by a UserRequest <BE> Message",
+   "values": {
+    "1": "Log On User",
+    "2": "Log Off User",
+    "3": "Change Password For User",
+    "4": "Request Individual User Status"
+   },
+   "value_names": {
+    "1": "LOG_ON_USER",
+    "2": "LOG_OFF_USER",
+    "3": "CHANGE_PASSWORD_FOR_USER",
+    "4": "REQUEST_INDIVIDUAL_USER_STATUS"
+   },
+   "used_in": [
+    "UserRequest"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Indicates the action required by a UserRequest <BE> Message",
+   "values": {
+    "1": "Log On User",
+    "2": "Log Off User",
+    "3": "Change Password For User",
+    "4": "Request Individual User Status"
+   },
+   "value_names": {
+    "1": "LOG_ON_USER",
+    "2": "LOG_OFF_USER",
+    "3": "CHANGE_PASSWORD_FOR_USER",
+    "4": "REQUEST_INDIVIDUAL_USER_STATUS"
+   },
+   "used_in": [
+    "UserRequest"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Indicates the action required by a User Request <BE> Message",
+   "values": {
+    "1": "LogOnUser",
+    "2": "LogOffUser",
+    "3": "ChangePasswordForUser",
+    "4": "Request Individual User Status"
+   },
+   "value_names": {
+    "1": "LOG_ON_USER",
+    "2": "LOG_OFF_USER",
+    "3": "CHANGE_PASSWORD_FOR_USER",
+    "4": "REQUEST_INDIVIDUAL_USER_STATUS"
+   },
+   "used_in": [
+    "User Request"
+   ]
+  }
+ }
+}

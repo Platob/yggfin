@@ -1,0 +1,24 @@
+{
+ "name": "FinancingContractualDefinitionGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 377,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoContractualDefinitions",
+     "required": false,
+     "tag": 40040,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ContractualDefinition",
+       "required": false,
+       "tag": 40041
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,65 @@
+{
+ "name": "StrmAsgnRptInstrmtGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 310,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRelatedSym",
+     "required": false,
+     "tag": 146,
+     "members": [
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "SettlType",
+       "required": false,
+       "tag": 63
+      },
+      {
+       "kind": "field",
+       "name": "StreamAsgnType",
+       "required": false,
+       "tag": 1617
+      },
+      {
+       "kind": "field",
+       "name": "MDStreamID",
+       "required": false,
+       "tag": 1500
+      },
+      {
+       "kind": "field",
+       "name": "StreamAsgnRejReason",
+       "required": false,
+       "tag": 1502
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,59 @@
+{
+ "name": "TotalTakedown",
+ "tag": 237,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "The price at which the securities are distributed to the different members of an underwriting group for the primary market in Municipals, total gross underwriter's spread. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "The price at which the securities are distributed to the different members of an underwriting group for the primary market in Municipals, total gross underwriter's spread. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "The price at which the securities are distributed to the different members of an underwriting group for the primary market in Municipals, total gross underwriter's spread. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "4.4": {
+   "type": "Amt",
+   "description": "The price at which the securities are distributed to the different members of an underwriting group for the primary market in Municipals, total gross underwriter's spread. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Confirmation",
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "Amt",
+   "description": "The price at which the securities are distributed to the different members of an underwriting group for the primary market in Municipals, total gross underwriter's spread. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Allocation"
+   ]
+  }
+ }
+}

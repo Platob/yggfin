@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingPaymentStreamResetDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 472,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingPaymentStreamResetDateBusinessCenters",
+     "required": false,
+     "tag": 40970,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
+       "required": false,
+       "tag": 40594
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

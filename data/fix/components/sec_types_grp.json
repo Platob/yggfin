@@ -1,0 +1,165 @@
+{
+ "name": "SecTypesGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 229,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSecurityTypes",
+     "required": false,
+     "tag": 558,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SecurityType",
+       "required": false,
+       "tag": 167
+      },
+      {
+       "kind": "field",
+       "name": "SecuritySubType",
+       "required": false,
+       "tag": 762
+      },
+      {
+       "kind": "field",
+       "name": "Product",
+       "required": false,
+       "tag": 460
+      },
+      {
+       "kind": "field",
+       "name": "CFICode",
+       "required": false,
+       "tag": 461
+      },
+      {
+       "kind": "field",
+       "name": "UPICode",
+       "required": false,
+       "tag": 2891
+      },
+      {
+       "kind": "field",
+       "name": "TransactTime",
+       "required": false,
+       "tag": 60
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 78,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSecurityTypes",
+     "required": false,
+     "tag": 558,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SecurityType",
+       "required": false,
+       "tag": 167
+      },
+      {
+       "kind": "field",
+       "name": "SecuritySubType",
+       "required": false,
+       "tag": 762
+      },
+      {
+       "kind": "field",
+       "name": "Product",
+       "required": false,
+       "tag": 460
+      },
+      {
+       "kind": "field",
+       "name": "CFICode",
+       "required": false,
+       "tag": 461
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 79,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSecurityTypes",
+     "required": false,
+     "tag": 558,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SecurityType",
+       "required": false,
+       "tag": 167
+      },
+      {
+       "kind": "field",
+       "name": "SecuritySubType",
+       "required": false,
+       "tag": 762
+      },
+      {
+       "kind": "field",
+       "name": "Product",
+       "required": false,
+       "tag": 460
+      },
+      {
+       "kind": "field",
+       "name": "CFICode",
+       "required": false,
+       "tag": 461
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 79,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSecurityTypes",
+     "required": false,
+     "tag": 558,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SecurityType",
+       "required": false,
+       "tag": 167
+      },
+      {
+       "kind": "field",
+       "name": "SecuritySubType",
+       "required": false,
+       "tag": 762
+      },
+      {
+       "kind": "field",
+       "name": "Product",
+       "required": false,
+       "tag": 460
+      },
+      {
+       "kind": "field",
+       "name": "CFICode",
+       "required": false,
+       "tag": 461
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

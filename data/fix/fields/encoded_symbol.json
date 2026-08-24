@@ -1,0 +1,14 @@
+{
+ "name": "EncodedSymbol",
+ "tag": 1360,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the Symbol <55> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation can also be specified in the Symbol field."
+  },
+  "5.0.SP1": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the Symbol <55> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation can also be specified in the Symbol field."
+  }
+ }
+}

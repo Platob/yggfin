@@ -1,0 +1,39 @@
+{
+ "name": "BidDescriptor",
+ "tag": 400,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "BidDescriptor value. Usage depends upon BidDescriptorType <399> . If BidDescriptorType = 1 Industrials etc - Free text If BidDescriptorType = 2 \"FR\" etc - ISO Country Codes If BidDescriptorType = 3 FT00, FT250, STOX - Free text"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "BidDescriptor value. Usage depends upon BidDescriptorType <399> . If BidDescriptorType = 1 Industrials etc - Free text If BidDescriptorType = 2 \"FR\" etc - ISO Country Codes If BidDescriptorType = 3 FT00, FT250, STOX - Free text"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "BidDescriptor value. Usage depends upon BidDescriptorType <399> . If BidDescriptorType = 1 Industrials etc - Free text If BidDescriptorType = 2 \"FR\" etc - ISO Country Codes If BidDescriptorType = 3 FT00, FT250, STOX - Free text"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "BidDescriptor value. Usage depends upon BidDescriptorType <399> . If BidDescriptorType = 1 Industrials etc - Free text If BidDescriptorType = 2 \"FR\" etc - ISO Country <421> Codes If BidDescriptorType = 3 FT100, FT250, STOX - Free text",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": ">BidDescriptor value. Usage depends upon BidDescriptorType <399> . If BidDescriptorType = 1 Industrials etc - Free text If BidDescriptorType = 2 \"FR\" etc - ISO Country <421> Codes If BidDescriptorType = 3 FT100, FT250, STOX - Free text",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "BidDescriptor value. Usage depends upon BidDescriptorType <399> . If BidDescriptorType = 1 Industrials etc - Free text If BidDescriptorType = 2 \"FR\" etc - ISO Country <421> Codes If BidDescriptorType = 3 FT100, FT250, STOX - Free text",
+   "used_in": [
+    "Bid Request"
+   ]
+  }
+ }
+}

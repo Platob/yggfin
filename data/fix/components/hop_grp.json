@@ -1,0 +1,129 @@
+{
+ "name": "HopGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 250,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoHops",
+     "required": false,
+     "tag": 627,
+     "members": [
+      {
+       "kind": "field",
+       "name": "HopCompID",
+       "required": false,
+       "tag": 628
+      },
+      {
+       "kind": "field",
+       "name": "HopSendingTime",
+       "required": false,
+       "tag": 629
+      },
+      {
+       "kind": "field",
+       "name": "HopRefID",
+       "required": false,
+       "tag": 630
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 99,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoHops",
+     "required": false,
+     "tag": 627,
+     "members": [
+      {
+       "kind": "field",
+       "name": "HopCompID",
+       "required": false,
+       "tag": 628
+      },
+      {
+       "kind": "field",
+       "name": "HopSendingTime",
+       "required": false,
+       "tag": 629
+      },
+      {
+       "kind": "field",
+       "name": "HopRefID",
+       "required": false,
+       "tag": 630
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 101,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoHops",
+     "required": false,
+     "tag": 627,
+     "members": [
+      {
+       "kind": "field",
+       "name": "HopCompID",
+       "required": false,
+       "tag": 628
+      },
+      {
+       "kind": "field",
+       "name": "HopSendingTime",
+       "required": false,
+       "tag": 629
+      },
+      {
+       "kind": "field",
+       "name": "HopRefID",
+       "required": false,
+       "tag": 630
+      }
+     ]
+    }
+   ]
+  },
+  "FIXT1.1": {
+   "order": 0,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoHops",
+     "required": false,
+     "tag": 627,
+     "members": [
+      {
+       "kind": "field",
+       "name": "HopCompID",
+       "required": false,
+       "tag": 628
+      },
+      {
+       "kind": "field",
+       "name": "HopSendingTime",
+       "required": false,
+       "tag": 629
+      },
+      {
+       "kind": "field",
+       "name": "HopRefID",
+       "required": false,
+       "tag": 630
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

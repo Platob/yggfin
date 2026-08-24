@@ -1,0 +1,32 @@
+{
+ "name": "AffectedSecondaryOrderID",
+ "tag": 536,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> ."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> ."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> ."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> .",
+   "used_in": [
+    "Order Mass Cancel Report"
+   ]
+  },
+  "4.3": {
+   "type": "Stirng",
+   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> .",
+   "used_in": [
+    "Order Mass Cancel Report"
+   ]
+  }
+ }
+}

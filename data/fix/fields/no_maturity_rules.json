@@ -1,0 +1,14 @@
+{
+ "name": "NoMaturityRules",
+ "tag": 1236,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of maturity rules in <MarurityRules> component block"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of maturity rules in <MarurityRules> component block"
+  }
+ }
+}

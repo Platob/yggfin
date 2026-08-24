@@ -1,0 +1,42 @@
+{
+ "name": "UnderlyingReturnRatePriceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 705,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingReturnRatePrices",
+     "required": false,
+     "tag": 43064,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRatePriceBasis",
+       "required": false,
+       "tag": 43065
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRatePrice",
+       "required": false,
+       "tag": 43066
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRatePriceCurrency",
+       "required": false,
+       "tag": 43067
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingReturnRatePriceType",
+       "required": false,
+       "tag": 43068
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

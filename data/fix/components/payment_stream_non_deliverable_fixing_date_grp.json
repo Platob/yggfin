@@ -1,0 +1,30 @@
+{
+ "name": "PaymentStreamNonDeliverableFixingDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 399,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoNonDeliverableFixingDates",
+     "required": false,
+     "tag": 40825,
+     "members": [
+      {
+       "kind": "field",
+       "name": "NonDeliverableFixingDate",
+       "required": false,
+       "tag": 40826
+      },
+      {
+       "kind": "field",
+       "name": "NonDeliverableFixingDateType",
+       "required": false,
+       "tag": 40827
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

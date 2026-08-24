@@ -1,0 +1,115 @@
+{
+ "name": "MDUpdateAction",
+ "tag": 279,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Type of Market Data update action.",
+   "values": {
+    "0": "New",
+    "1": "Change",
+    "2": "Delete",
+    "3": "Delete Thru",
+    "4": "Delete From",
+    "5": "Overlay"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "CHANGE",
+    "2": "DELETE",
+    "3": "DELETE_THRU",
+    "4": "DELETE_FROM",
+    "5": "OVERLAY"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Type of Market Data update action.",
+   "values": {
+    "0": "New",
+    "1": "Change",
+    "2": "Delete",
+    "3": "Delete Thru",
+    "4": "Delete From",
+    "5": "Overlay"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "CHANGE",
+    "2": "DELETE",
+    "3": "DELETE_THRU",
+    "4": "DELETE_FROM",
+    "5": "OVERLAY"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Type of Market Data update action.",
+   "values": {
+    "0": "New",
+    "1": "Change",
+    "2": "Delete",
+    "3": "Delete Thru",
+    "4": "Delete From"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "CHANGE",
+    "2": "DELETE",
+    "3": "DELETE_THRU",
+    "4": "DELETE_FROM"
+   }
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Type of Market Data update action.",
+   "values": {
+    "0": "New",
+    "1": "Change",
+    "2": "Delete"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "CHANGE",
+    "2": "DELETE"
+   },
+   "used_in": [
+    "Market Data - Incremental Refresh"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Type of Market Data update action.",
+   "values": {
+    "0": "New",
+    "1": "Change",
+    "2": "Delete"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "CHANGE",
+    "2": "DELETE"
+   },
+   "used_in": [
+    "Market Data - Incremental Refresh"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Type of Market Data update action.",
+   "values": {
+    "0": "New",
+    "1": "Change",
+    "2": "Delete"
+   },
+   "value_names": {
+    "0": "NEW",
+    "1": "CHANGE",
+    "2": "DELETE"
+   },
+   "used_in": [
+    "Market Data - Incremental Refresh"
+   ]
+  }
+ }
+}

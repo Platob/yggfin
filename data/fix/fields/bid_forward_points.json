@@ -1,0 +1,69 @@
+{
+ "name": "BidForwardPoints",
+ "tag": 189,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PriceOffset",
+   "description": "Bid F/X forward points added to spot rate. May be a negative value.",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "PriceOffset",
+   "description": "Bid F/X forward points added to spot rate. May be a negative value.",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "5.0": {
+   "type": "PriceOffset",
+   "description": "Bid F/X forward points added to spot rate. May be a negative value.",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "4.4": {
+   "type": "PriceOffset",
+   "description": "Bid F/X forward points added to spot rate. May be a negative value.",
+   "used_in": [
+    "Quote Status Report",
+    "Quote Response",
+    "Mass Quote Acknowledgement",
+    "Mass Quote",
+    "Quote"
+   ]
+  },
+  "4.3": {
+   "type": "PriceOffset",
+   "description": "Bid F/X forward points added to spot rate. May be a negative value.",
+   "used_in": [
+    "Quote Status Report",
+    "Mass Quote Acknowledgement",
+    "Mass Quote",
+    "Quote"
+   ]
+  },
+  "4.2": {
+   "type": "PriceOffset",
+   "description": "Bid F/X forward points added to spot rate. May be a negative value.",
+   "used_in": [
+    "Mass Quote",
+    "Quote"
+   ]
+  },
+  "4.1": {
+   "type": "float",
+   "description": "Bid F/X forward points added to spot rate. May be a negative value.",
+   "used_in": [
+    "Quote"
+   ]
+  }
+ }
+}

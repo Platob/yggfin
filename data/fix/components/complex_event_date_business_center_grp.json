@@ -1,0 +1,24 @@
+{
+ "name": "ComplexEventDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 488,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoComplexEventDateBusinessCenters",
+     "required": false,
+     "tag": 41018,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ComplexEventDateBusinessCenter",
+       "required": false,
+       "tag": 41019
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

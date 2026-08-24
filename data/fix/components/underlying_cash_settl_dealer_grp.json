@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingCashSettlDealerGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 609,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingCashSettlDealers",
+     "required": false,
+     "tag": 42039,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingCashSettlDealer",
+       "required": false,
+       "tag": 42040
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

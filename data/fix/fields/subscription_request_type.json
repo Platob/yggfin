@@ -1,0 +1,188 @@
+{
+ "name": "SubscriptionRequestType",
+ "tag": 263,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Subscription Request Type",
+   "values": {
+    "0": "Snapshot",
+    "1": "Snapshot + Updates (Subscribe)",
+    "2": "Disable previous Snapshot + Update Request (Unsubscribe)"
+   },
+   "value_names": {
+    "0": "SNAPSHOT",
+    "1": "SNAPSHOT_AND_UPDATES",
+    "2": "DISABLE_PREVIOUS_SNAPSHOT"
+   },
+   "used_in": [
+    "QuoteStatusRequest",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "RFQRequest",
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "PositionReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "CollateralInquiry",
+    "TradingSessionListRequest",
+    "MarketDefinitionRequest",
+    "SecurityDefinitionRequest",
+    "PartyDetailsListRequest",
+    "SecurityStatusRequest",
+    "TradingSessionStatusRequest",
+    "MarketDataRequest",
+    "SecurityTypes",
+    "SecurityListRequest",
+    "DerivativeSecurityListRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Subscription Request Type",
+   "values": {
+    "0": "Snapshot",
+    "1": "Snapshot + Updates (Subscribe)",
+    "2": "Disable previous Snapshot + Update Request (Unsubscribe)"
+   },
+   "value_names": {
+    "0": "SNAPSHOT",
+    "1": "SNAPSHOT_AND_UPDATES",
+    "2": "DISABLE_PREVIOUS_SNAPSHOT"
+   },
+   "used_in": [
+    "QuoteStatusRequest",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "RFQRequest",
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "PositionReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "CollateralInquiry",
+    "TradingSessionListRequest",
+    "MarketDefinitionRequest",
+    "SecurityDefinitionRequest",
+    "SecurityStatusRequest",
+    "TradingSessionStatusRequest",
+    "MarketDataRequest",
+    "SecurityTypes",
+    "SecurityListRequest",
+    "DerivativeSecurityListRequest"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Subscription Request Type",
+   "values": {
+    "0": "Snapshot",
+    "1": "Snapshot + Updates (Subscribe)",
+    "2": "Disable previous Snapshot + Update Request (Unsubscribe)"
+   },
+   "value_names": {
+    "0": "SNAPSHOT",
+    "1": "SNAPSHOT_AND_UPDATES",
+    "2": "DISABLE_PREVIOUS_SNAPSHOT"
+   },
+   "used_in": [
+    "QuoteStatusRequest",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "RFQRequest",
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "PositionReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "CollateralInquiry",
+    "TradingSessionListRequest",
+    "SecurityDefinitionRequest",
+    "SecurityStatusRequest",
+    "TradingSessionStatusRequest",
+    "MarketDataRequest",
+    "SecurityTypes",
+    "SecurityListRequest",
+    "DerivativeSecurityListRequest"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Subscription Request Type",
+   "values": {
+    "0": "Snapshot",
+    "1": "Snapshot + Updates (Subscribe)",
+    "2": "Disable previous Snapshot + Update Request (Unsubscribe)"
+   },
+   "value_names": {
+    "0": "SNAPSHOT",
+    "1": "SNAPSHOT_AND_UPDATES",
+    "2": "DISABLE_PREVIOUS_SNAPSHOT"
+   },
+   "used_in": [
+    "Quote Status Request",
+    "Trade Capture Report Request",
+    "Trade Capture Report",
+    "RFQ Request",
+    "Request For Positions",
+    "Position Report",
+    "Trade Capture Report Request Ack",
+    "Trade Capture Report Ack",
+    "Collateral Inquiry",
+    "Security Definition Request",
+    "Security Status Request",
+    "Trading Session Status Request",
+    "Market Data Request",
+    "Security Types",
+    "Security List Request",
+    "Derivative Security List Request"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Subscription Request Type",
+   "values": {
+    "0": "Snapshot",
+    "1": "Snapshot + Updates (Subscribe)",
+    "2": "Disable previous Snapshot + Update Request (Unsubscribe)"
+   },
+   "value_names": {
+    "1": "SNAPSHOT_AND_UPDATES",
+    "2": "DISABLE_PREVIOUS_SNAPSHOT",
+    "0": "SNAPSHOT"
+   },
+   "used_in": [
+    "Quote Status Request",
+    "Trade Capture Report Request",
+    "RFQ Request",
+    "Security Definition Request",
+    "Security Status Request",
+    "Trading Session Status Request",
+    "Market Data Request",
+    "Security Types",
+    "Security List Request",
+    "Derivative Security List Request"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Subscription Request Type",
+   "values": {
+    "0": "Snapshot",
+    "1": "Snapshot + Updates (Subscribe)",
+    "2": "Disable previous Snapshot + Update Request (Unsubscribe)"
+   },
+   "value_names": {
+    "0": "SNAPSHOT",
+    "1": "SNAPSHOT_AND_UPDATES",
+    "2": "DISABLE_PREVIOUS_SNAPSHOT"
+   },
+   "used_in": [
+    "Security Status Request",
+    "Trading Session Status Request",
+    "Market Data Request"
+   ]
+  }
+ }
+}

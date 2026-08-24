@@ -1,0 +1,24 @@
+{
+ "name": "PaymentScheduleFixingDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 449,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPaymentScheduleFixingDateBusinessCenters",
+     "required": false,
+     "tag": 40977,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PaymentScheduleFixingDateBusinessCenter",
+       "required": false,
+       "tag": 40854
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

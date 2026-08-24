@@ -1,0 +1,81 @@
+{
+ "name": "MultiLegRptTypeReq",
+ "tag": 563,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates the method of execution reporting requested by issuer of the order.",
+   "values": {
+    "0": "Report by mulitleg security only (do not report legs)",
+    "1": "Report by multileg security and by instrument legs belonging to the multileg security",
+    "2": "Report by instrument legs belonging to the multileg security only (do not report status of multileg security)"
+   },
+   "value_names": {
+    "0": "REPORT_BY_MULITLEG_SECURITY_ONLY",
+    "1": "REPORT_BY_MULTILEG_SECURITY_AND_INSTRUMENT_LEGS",
+    "2": "REPORT_BY_INSTRUMENT_LEGS_ONLY"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Indicates the method of execution reporting requested by issuer of the order.",
+   "values": {
+    "0": "Report by mulitleg security only (do not report legs)",
+    "1": "Report by multileg security and by instrument legs belonging to the multileg security",
+    "2": "Report by instrument legs belonging to the multileg security only (do not report status of multileg security)"
+   },
+   "value_names": {
+    "0": "REPORT_BY_MULITLEG_SECURITY_ONLY",
+    "1": "REPORT_BY_MULTILEG_SECURITY_AND_INSTRUMENT_LEGS",
+    "2": "REPORT_BY_INSTRUMENT_LEGS_ONLY"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Indicates the method of execution reporting requested by issuer of the order.",
+   "values": {
+    "0": "Report by mulitleg security only (do not report legs)",
+    "1": "Report by multileg security and by instrument legs belonging to the multileg security",
+    "2": "Report by instrument legs belonging to the multileg security only (do not report status of multileg security)"
+   },
+   "value_names": {
+    "0": "REPORT_BY_MULITLEG_SECURITY_ONLY",
+    "1": "REPORT_BY_MULTILEG_SECURITY_AND_INSTRUMENT_LEGS",
+    "2": "REPORT_BY_INSTRUMENT_LEGS_ONLY"
+   },
+   "used_in": [
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Indicates the method of execution reporting requested by issuer of the order. 0 = Report by mulitleg security only (Do not report legs) 1 = Report by multileg security and by instrument legs belonging to the multileg security. 2 = Report by instrument legs belonging to the multileg security only (Do not report status of multileg security)",
+   "value_names": {
+    "0": "REPORT_BY_MULITLEG_SECURITY_ONLY",
+    "1": "REPORT_BY_MULTILEG_SECURITY_AND_INSTRUMENT_LEGS",
+    "2": "REPORT_BY_INSTRUMENT_LEGS_ONLY"
+   },
+   "used_in": [
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Indicates the method of execution reporting requested by issuer of the order. 0 = Report by mulitleg security only (Do not report legs) 1 = Report by multileg security and by instrument legs belonging to the multileg security. 2 = Report by instrument legs belonging to the multileg security only (Do not report status of multileg security)",
+   "used_in": [
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

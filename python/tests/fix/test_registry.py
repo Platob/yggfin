@@ -301,6 +301,14 @@ def test_only_the_answers_that_mean_later_are_retried() -> None:
 # -- a directory or a zip -----------------------------------------------------
 
 
+def _rooted(folder: Path, target: Path) -> Path:
+    """`zip -r fix.zip fix/`: every member under the folder it came from."""
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out:
+        for path in sorted(folder.rglob("*.json")):
+            out.write(path, f"fix/{path.relative_to(folder).as_posix()}")
+    return target
+
+
 @pytest.fixture
 def dumped(registry: FixtureRegistry) -> Path:
     """The fixture dictionary as a directory of JSON, ready to be read either way."""
@@ -321,10 +329,17 @@ def test_the_extension_says_which_store_this_is(tmp_path: Path) -> None:
 def test_the_published_folder_is_the_archive_uncompressed() -> None:
     folder = PUBLISHED / "fix"
     archive = PUBLISHED / "fix.zip"
-    files = {path.name: path.read_bytes() for path in folder.glob("*.json")}
+    files = {
+        path.relative_to(folder).as_posix(): path.read_bytes() for path in folder.rglob("*.json")
+    }
     with zipfile.ZipFile(archive) as opened:
         members = {name: opened.read(name) for name in opened.namelist()}
     assert files == members
+    assert {name.split("/")[0] for name in members} == {
+        "fields",
+        "components",
+        "versions.json",
+    }, "one file per identity, in two folders beside the version index"
     unpacked = FixRegistry(cache_dir=folder, offline=True)
     zipped = FixRegistry(cache_dir=archive, offline=True)
     assert unpacked.fields_available("4.4") and zipped.fields_available("4.4")
@@ -343,9 +358,12 @@ def test_a_file_url_reads_the_original_archive_without_materializing() -> None:
 
 def test_an_arrow_filesystem_directory_is_a_registry_store() -> None:
     filesystem = pyarrow.fs._MockFileSystem()
-    filesystem.create_dir("registry")
-    for source in (PUBLISHED / "fix").glob("*.json"):
-        with filesystem.open_output_stream(f"registry/{source.name}") as stream:
+    folder = PUBLISHED / "fix"
+    for name in ("registry", "registry/fields", "registry/components"):
+        filesystem.create_dir(name)
+    for source in folder.rglob("*.json"):
+        name = source.relative_to(folder).as_posix()
+        with filesystem.open_output_stream(f"registry/{name}") as stream:
             stream.write(source.read_bytes())
 
     registry = FixRegistry(cache_dir="registry", filesystem=filesystem, offline=True)
@@ -399,24 +417,27 @@ def test_a_zip_answers_everything_the_directory_answers(dumped: Path, tmp_path: 
 
 
 def test_the_archive_holds_one_member_per_file(dumped: Path, tmp_path: Path) -> None:
-    """Derived from the directory, then pinned: five files, five members."""
+    """One member per document, whatever the layout spells them."""
     archive = FixRegistry(cache_dir=dumped).into_zip(tmp_path / "fix.zip")
     with zipfile.ZipFile(archive) as opened:
         names = opened.namelist()
-    assert sorted(names) == sorted(path.name for path in dumped.glob("*.json"))
-    assert len(names) == 2, "the 4.4 dump and the version list"
-    assert archive.stat().st_size < sum(path.stat().st_size for path in dumped.glob("*.json"))
+    written = [path.relative_to(dumped).as_posix() for path in dumped.rglob("*.json")]
+    assert sorted(names) == sorted(written)
+    # Derived from the fixture, then pinned: twelve fields, two components and
+    # the version index, each in its own file. Not a size claim -- fifteen
+    # documents of a few hundred bytes each cost more in zip headers than
+    # deflating them saves, and what compresses is the whole dictionary
+    # (`tests/test_data.py`), not a fixture.
+    assert len(names) == EXPECTED_FIELDS + 3
 
 
 def test_a_zip_made_of_the_folder_reads_the_same(dumped: Path, tmp_path: Path) -> None:
     """`zip -r fix.zip fix/` prefixes every member, and is what people type."""
-    rooted = tmp_path / "rooted.zip"
-    with zipfile.ZipFile(rooted, "w", zipfile.ZIP_DEFLATED) as out:
-        for path in sorted(dumped.glob("*.json")):
-            out.write(path, f"fix/{path.name}")
+    rooted = _rooted(dumped, tmp_path / "rooted.zip")
     prefixed = OfflineRegistry(cache_dir=rooted)
     assert prefixed.versions == OfflineRegistry(cache_dir=dumped).versions
     assert prefixed.field("Side").fix["tag"] == "54"
+    assert prefixed.component("Parties", "4.4").members[0].tag == 453
 
 
 def test_a_scrape_lands_in_the_archive_it_was_pointed_at(tmp_path: Path) -> None:
@@ -424,7 +445,10 @@ def test_a_scrape_lands_in_the_archive_it_was_pointed_at(tmp_path: Path) -> None
     archived = FixtureRegistry(cache_dir=tmp_path / "fix.zip")
     assert len(archived.fields("4.4")) == EXPECTED_FIELDS
     with zipfile.ZipFile(tmp_path / "fix.zip") as opened:
-        assert "4.4.json" in opened.namelist()
+        names = opened.namelist()
+    assert "fields/side.json" in names
+    assert "components/parties.json" in names
+    assert not [name for name in names if name.count("/") > 1], "no member nested twice"
     reopened = OfflineRegistry(cache_dir=tmp_path / "fix.zip")
     assert len(reopened.fields("4.4")) == EXPECTED_FIELDS, "and read back without a fetch"
 
@@ -433,27 +457,29 @@ def test_writing_a_member_twice_replaces_it(dumped: Path, tmp_path: Path) -> Non
     """A zip will hold two members of one name, and then a reader has to guess."""
     archive = FixRegistry(cache_dir=dumped).into_zip(tmp_path / "fix.zip")
     registry = OfflineRegistry(cache_dir=archive)
-    registry._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])
+    registry._store_fields("4.4", [fix_field("Side", 54, "String", version="4.4")])
     with zipfile.ZipFile(archive) as opened:
         names = opened.namelist()
-    assert names.count("4.4.json") == 1
+    assert names.count("fields/side.json") == 1
     assert len(names) == len(set(names))
-    assert [member.name for member in OfflineRegistry(cache_dir=archive).fields("4.4")] == ["Side"]
+    reopened = OfflineRegistry(cache_dir=archive)
+    assert reopened.field("Side", "4.4").fix["type"] == "String", "the fresh reading"
+    assert [member.name for member in reopened.fields("4.4")] == ["Side"]
 
 
 def test_a_member_written_into_a_prefixed_zip_joins_its_neighbours(
     dumped: Path, tmp_path: Path
 ) -> None:
     """A member written at the root of a `zip -r` archive would be an orphan."""
-    rooted = tmp_path / "rooted.zip"
-    with zipfile.ZipFile(rooted, "w", zipfile.ZIP_DEFLATED) as out:
-        for path in sorted(dumped.glob("*.json")):
-            out.write(path, f"fix/{path.name}")
+    rooted = _rooted(dumped, tmp_path / "rooted.zip")
     registry = OfflineRegistry(cache_dir=rooted)
-    registry._store_fields("9.9", [fix_field("Side", 54, "char", version="9.9")])
+    registry._store_fields("9.9", [fix_field("Marvellous", 9999, "char", version="9.9")])
     with zipfile.ZipFile(rooted) as opened:
-        assert "fix/9.9.json" in opened.namelist()
-    assert [member.name for member in OfflineRegistry(cache_dir=rooted).fields("9.9")] == ["Side"]
+        names = opened.namelist()
+    assert "fix/fields/marvellous.json" in names
+    assert not [name for name in names if name.startswith("fields/")], "never at the root"
+    reopened = OfflineRegistry(cache_dir=rooted)
+    assert [member.name for member in reopened.fields("9.9")] == ["Marvellous"]
 
 
 def test_a_torn_archive_is_a_cold_cache_and_not_a_dead_registry(tmp_path: Path) -> None:
@@ -464,7 +490,7 @@ def test_a_torn_archive_is_a_cold_cache_and_not_a_dead_registry(tmp_path: Path) 
     assert registry.versions
     assert len(registry.fields("4.4")) == EXPECTED_FIELDS, "scraped over the wreck"
     with zipfile.ZipFile(torn) as opened:
-        assert "4.4.json" in opened.namelist(), "and left a readable archive behind"
+        assert "fields/side.json" in opened.namelist(), "and left a readable archive behind"
 
 
 def test_an_archive_that_holds_nothing_yet_is_not_an_error(tmp_path: Path) -> None:
@@ -485,7 +511,7 @@ def test_a_second_call_answers_from_the_cache(registry: FixtureRegistry) -> None
     fetched = len(registry.fetched)
     registry.fields("4.4")
     assert len(registry.fetched) == fetched, "no page is fetched twice"
-    assert (Path(registry.cache_dir) / "4.4.json").exists()
+    assert (Path(registry.cache_dir) / "fields" / "side.json").exists()
 
 
 def test_the_cache_survives_offline(registry: FixtureRegistry) -> None:
@@ -507,9 +533,29 @@ def test_offline_with_only_field_caches_still_knows_its_versions(
 
 
 def test_a_torn_cache_file_is_scraped_over(registry: FixtureRegistry) -> None:
+    """One identity per file makes a torn write cost one field, not a version.
+
+    Which is better, and would be worse if it went unnoticed: the version
+    still answers, one field short, and nothing downstream can tell. So it
+    says so and writes the store again.
+    """
     registry.fields("4.4")
-    (Path(registry.cache_dir) / "4.4.json").write_text("{ torn")
-    assert len(registry.fields("4.4")) == EXPECTED_FIELDS
+    (Path(registry.cache_dir) / "fields" / "side.json").write_text("{ torn")
+    fresh = FixtureRegistry(cache_dir=registry.cache_dir)
+    with pytest.warns(RuntimeWarning, match=r"cannot read \['fields/side.json'\]"):
+        assert len(fresh.fields("4.4")) == EXPECTED_FIELDS
+    assert FixtureRegistry(cache_dir=registry.cache_dir).field("Side", "4.4").name == "Side"
+
+
+def test_a_torn_cache_file_offline_is_reported_and_not_hidden(
+    registry: FixtureRegistry,
+) -> None:
+    """Offline there is nothing to write over it with, so saying so is all there is."""
+    registry.fields("4.4")
+    (Path(registry.cache_dir) / "fields" / "side.json").write_text("{ torn")
+    offline = OfflineRegistry(cache_dir=registry.cache_dir, offline=True)
+    with pytest.warns(RuntimeWarning, match="cannot read"):
+        assert len(offline.fields("4.4")) == EXPECTED_FIELDS - 1
 
 
 def test_refresh_scrapes_again(registry: FixtureRegistry) -> None:
@@ -543,8 +589,7 @@ def test_the_version_filter_is_case_insensitive_too(registry: FixtureRegistry) -
 
 def test_the_cache_answers_a_version_in_any_case(registry: FixtureRegistry) -> None:
     registry.fields("4.4")
-    cached = Path(registry.cache_dir) / "4.4.json"
-    (Path(registry.cache_dir) / "FIXT1.1.json").write_text(cached.read_text())
+    registry._store_fields("FIXT1.1", registry.fields("4.4"))
     offline = OfflineRegistry(cache_dir=registry.cache_dir)
     assert [f.name for f in offline.fields("fixt1.1")] == [f.name for f in offline.fields("4.4")]
 
@@ -576,9 +621,9 @@ def test_duplicate_case_spellings_in_the_cache_are_one_version(
     registry: FixtureRegistry,
 ) -> None:
     registry.fields("4.4")
-    cached = (Path(registry.cache_dir) / "4.4.json").read_text()
-    (Path(registry.cache_dir) / "FIXT1.1.json").write_text(cached)
-    (Path(registry.cache_dir) / "fixt1.1.json").write_text(cached)
+    stored = registry.fields("4.4")
+    registry._store_fields("FIXT1.1", stored)
+    registry._store_fields("fixt1.1", stored)
     offline = OfflineRegistry(cache_dir=registry.cache_dir)
     assert [version.lower() for version in offline.versions] == ["4.4", "fixt1.1"]
 

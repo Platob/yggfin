@@ -1,0 +1,48 @@
+{
+ "name": "BuyVolume",
+ "tag": 330,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Quantity bought.",
+   "used_in": [
+    "SecurityStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Quantity bought.",
+   "used_in": [
+    "SecurityStatus"
+   ]
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Quantity bought.",
+   "used_in": [
+    "SecurityStatus"
+   ]
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Quantity bought.",
+   "used_in": [
+    "Security Status"
+   ]
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "Quantity bought.",
+   "used_in": [
+    "Security Status"
+   ]
+  },
+  "4.2": {
+   "type": "Qty",
+   "description": "Number of shares bought.",
+   "used_in": [
+    "Security Status"
+   ]
+  }
+ }
+}

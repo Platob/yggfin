@@ -1,0 +1,69 @@
+{
+ "name": "EndSeqNo",
+ "tag": 16,
+ "versions": {
+  "5.0.SP2": {
+   "type": "SeqNum",
+   "description": "Message sequence number of last message in range to be resent. If request is for a single message BeginSeqNo <7> = EndSeqNo <16> . If request is for all messages subsequent to a particular message, EndSeqNo <16> = 0 (representing infinity).",
+   "used_in": [
+    "ResendRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "SeqNum",
+   "description": "Message sequence number of last message in range to be resent. If request is for a single message BeginSeqNo <7> = EndSeqNo <16> . If request is for all messages subsequent to a particular message, EndSeqNo <16> = 0 (representing infinity).",
+   "used_in": [
+    "ResendRequest"
+   ]
+  },
+  "5.0": {
+   "type": "SeqNum",
+   "description": "Message sequence number of last message in range to be resent. If request is for a single message BeginSeqNo <7> = EndSeqNo <16> . If request is for all messages subsequent to a particular message, EndSeqNo <16> = 0 (representing infinity).",
+   "used_in": [
+    "ResendRequest"
+   ]
+  },
+  "4.4": {
+   "type": "SeqNum",
+   "description": "Message sequence number of last message in range to be resent. If request is for a single message BeginSeqNo <7> = EndSeqNo <16> . If request is for all messages subsequent to a particular message, EndSeqNo <16> = 0 (representing infinity).",
+   "used_in": [
+    "Resend Request"
+   ]
+  },
+  "4.3": {
+   "type": "SeqNum",
+   "description": "Message sequence number of last message in range to be resent. If request is for a single message BeginSeqNo <7> = EndSeqNo <16> . If request is for all messages subsequent to a particular message, EndSeqNo <16> = \"0\" (representing infinity).",
+   "used_in": [
+    "Resend Request"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Message sequence number of last message in range to be resent. If request is for a single message BeginSeqNo <7> = EndSeqNo <16> . If request is for all messages subsequent to a particular message, EndSeqNo <16> = 0 (representing infinity).",
+   "used_in": [
+    "Resend Request"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Message sequence number of last record in range to be resent. If request is for a single record BeginSeqNo <7> = EndSeqNo <16> . If request is for all messages subsequent to a particular message, EndSeqNo <16> = \"999999\"",
+   "used_in": [
+    "Resend Request"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Message sequence number of last record in range to be resent. If request is for a single record BeginSeqNo <7> = EndSeqNo <16> . If request is for all messages subsequent to a particular message, EndSeqNo <16> = \"999999\"",
+   "used_in": [
+    "Resend Request"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "SeqNum",
+   "description": "Message sequence number of last message in range to be resent. If request is for a single message BeginSeqNo (7) = EndSeqNo. If request is for all messages subsequent to a particular message, EndSeqNo = \"0\" (representing infinity).",
+   "used_in": [
+    "ResendRequest"
+   ]
+  }
+ }
+}

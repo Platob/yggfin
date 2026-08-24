@@ -1,0 +1,24 @@
+{
+ "name": "AffectedMarketSegmentGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 352,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAffectedMarketSegments",
+     "required": false,
+     "tag": 1791,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AffectedMarketSegmentID",
+       "required": false,
+       "tag": 1792
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

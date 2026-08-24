@@ -1,0 +1,22 @@
+{
+ "name": "AsgnReqID",
+ "tag": 831,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Deprecated in FIX 4.4 See Appendix 6-F: 24.Removed AsgnReqID (831) from Data Dictionary [Removed in FIX 5.0 SP2] Unique identifier for the Assignment Report Request"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Deprecated in FIX 4.4 Unique identifier for the Assignment Report Request"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Deprecated in FIX 4.4 Unique identifier for the Assignment Report Request"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Deprecated in FIX 4.4 Unique identifier for the Assignment Report Request"
+  }
+ }
+}

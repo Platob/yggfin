@@ -1,0 +1,129 @@
+{
+ "name": "SideCrossLegGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 356,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoCrossLegs",
+     "required": false,
+     "tag": 1829,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegRefID",
+       "required": false,
+       "tag": 654
+      },
+      {
+       "kind": "field",
+       "name": "LegOrderQty",
+       "required": false,
+       "tag": 685
+      },
+      {
+       "kind": "field",
+       "name": "LegSwapType",
+       "required": false,
+       "tag": 690
+      },
+      {
+       "kind": "component",
+       "name": "LegStipulations",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegAllocID",
+       "required": false,
+       "tag": 1366
+      },
+      {
+       "kind": "component",
+       "name": "LegPreAllocGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegClearingAccountType",
+       "required": false,
+       "tag": 1817
+      },
+      {
+       "kind": "field",
+       "name": "LegPositionEffect",
+       "required": false,
+       "tag": 564
+      },
+      {
+       "kind": "field",
+       "name": "LegCoveredOrUncovered",
+       "required": false,
+       "tag": 565
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties3",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegSettlType",
+       "required": false,
+       "tag": 587
+      },
+      {
+       "kind": "field",
+       "name": "LegSettlDate",
+       "required": false,
+       "tag": 588
+      },
+      {
+       "kind": "field",
+       "name": "LegSettlCurrency",
+       "required": false,
+       "tag": 675
+      },
+      {
+       "kind": "field",
+       "name": "LegSettlCurrencyCodeSource",
+       "required": false,
+       "tag": 2900
+      },
+      {
+       "kind": "field",
+       "name": "LegVolatility",
+       "required": false,
+       "tag": 1379
+      },
+      {
+       "kind": "field",
+       "name": "LegDividendYield",
+       "required": false,
+       "tag": 1381
+      },
+      {
+       "kind": "field",
+       "name": "LegCurrencyRatio",
+       "required": false,
+       "tag": 1383
+      },
+      {
+       "kind": "field",
+       "name": "LegExecInst",
+       "required": false,
+       "tag": 1384
+      },
+      {
+       "kind": "field",
+       "name": "LegShortSaleExemptionReason",
+       "required": false,
+       "tag": 1689
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

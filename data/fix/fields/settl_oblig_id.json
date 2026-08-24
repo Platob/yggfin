@@ -1,0 +1,14 @@
+{
+ "name": "SettlObligID",
+ "tag": 1161,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique ID for this settlement instruction."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique ID for this settlement instruction."
+  }
+ }
+}

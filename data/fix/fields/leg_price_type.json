@@ -1,0 +1,26 @@
+{
+ "name": "LegPriceType",
+ "tag": 686,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "The price type of the LegBidPx <681> and/or LegOfferPx <684> . See PriceType <423> for description and"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "The price type of the LegBidPx <681> and/or LegOfferPx <684> . See PriceType <423> for description and"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "The price type of the LegBidPx <681> and/or LegOfferPx <684> . See PriceType <423> for description and"
+  },
+  "4.4": {
+   "type": "int",
+   "description": "The price type of the LegBidPx <681> and/or LegOfferPx <684> . See PriceType <423> for description and",
+   "used_in": [
+    "Quote Response",
+    "Quote"
+   ]
+  }
+ }
+}

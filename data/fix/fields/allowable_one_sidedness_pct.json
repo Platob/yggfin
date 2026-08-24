@@ -1,0 +1,34 @@
+{
+ "name": "AllowableOneSidednessPct",
+ "tag": 765,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "The maximum percentage that execution of one side of a program trade can exceed execution of the other.",
+   "used_in": [
+    "NewOrderList"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Percentage",
+   "description": "The maximum percentage that execution of one side of a program trade can exceed execution of the other.",
+   "used_in": [
+    "NewOrderList"
+   ]
+  },
+  "5.0": {
+   "type": "Percentage",
+   "description": "The maximum percentage that execution of one side of a program trade can exceed execution of the other.",
+   "used_in": [
+    "NewOrderList"
+   ]
+  },
+  "4.4": {
+   "type": "Percentage",
+   "description": "The maximum percentage that execution of one side of a program trade can exceed execution of the other.",
+   "used_in": [
+    "New Order List"
+   ]
+  }
+ }
+}

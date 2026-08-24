@@ -1,0 +1,182 @@
+{
+ "name": "UnderlyingDeliveryStream",
+ "versions": {
+  "5.0.SP2": {
+   "order": 96,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamType",
+     "required": false,
+     "tag": 41777
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingDeliveryStreamCommoditySourceGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamPipeline",
+     "required": false,
+     "tag": 41778
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamEntryPoint",
+     "required": false,
+     "tag": 41779
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamWithdrawalPoint",
+     "required": false,
+     "tag": 41780
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamDeliveryPoint",
+     "required": false,
+     "tag": 41781
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamDeliveryPointSource",
+     "required": false,
+     "tag": 42196
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamDeliveryPointDesc",
+     "required": false,
+     "tag": 42197
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamDeliveryRestriction",
+     "required": false,
+     "tag": 41782
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamDeliveryContingency",
+     "required": false,
+     "tag": 41783
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamDeliveryContingentPartySide",
+     "required": false,
+     "tag": 41784
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamDeliverAtSourceIndicator",
+     "required": false,
+     "tag": 41785
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamRiskApportionment",
+     "required": false,
+     "tag": 41786
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamRiskApportionmentSource",
+     "required": false,
+     "tag": 41587
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingDeliveryStreamCycleGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamTitleTransferLocation",
+     "required": false,
+     "tag": 41787
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamTitleTransferCondition",
+     "required": false,
+     "tag": 41788
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamImporterOfRecord",
+     "required": false,
+     "tag": 41789
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamNegativeTolerance",
+     "required": false,
+     "tag": 41790
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamPositiveTolerance",
+     "required": false,
+     "tag": 41791
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamToleranceUnitOfMeasure",
+     "required": false,
+     "tag": 41792
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamToleranceType",
+     "required": false,
+     "tag": 41793
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamToleranceOptionSide",
+     "required": false,
+     "tag": 41794
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamTotalPositiveTolerance",
+     "required": false,
+     "tag": 41795
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamTotalNegativeTolerance",
+     "required": false,
+     "tag": 41796
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamNotionalConversionFactor",
+     "required": false,
+     "tag": 41797
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamTransportEquipment",
+     "required": false,
+     "tag": 41798
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamElectingPartySide",
+     "required": false,
+     "tag": 41799
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDeliveryStreamRouteOrCharter",
+     "required": false,
+     "tag": 43096
+    }
+   ]
+  }
+ }
+}

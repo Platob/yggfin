@@ -1,0 +1,33 @@
+{
+ "name": "RefApplVerID",
+ "tag": 1130,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied to a message at the session level. Enumerated field with values assigned at time of service pack release. Uses same values as ApplVerID <1128>",
+   "used_in": [
+    "Reject",
+    "BusinessMessageReject"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied to a message at the session level. Enumerated field with values assigned at time of service pack release. Uses same values as ApplVerID <1128>",
+   "used_in": [
+    "Reject",
+    "BusinessMessageReject"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied to a message at the session level. Enumerated field with values assigned at time of service pack release. Uses same values as ApplVerID <1128>"
+  },
+  "FIXT1.1": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied to a message at the session level. Enumerated field with values assigned at time of service pack release. Uses same values as ApplVerID.",
+   "used_in": [
+    "Reject"
+   ]
+  }
+ }
+}

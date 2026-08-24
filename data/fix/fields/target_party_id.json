@@ -1,0 +1,10 @@
+{
+ "name": "TargetPartyID",
+ "tag": 1462,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "PartyID <448> value within an target party repeating group."
+  }
+ }
+}

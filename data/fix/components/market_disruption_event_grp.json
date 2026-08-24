@@ -1,0 +1,30 @@
+{
+ "name": "MarketDisruptionEventGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 496,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMarketDisruptionEvents",
+     "required": false,
+     "tag": 41092,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MarketDisruptionEvent",
+       "required": false,
+       "tag": 41093
+      },
+      {
+       "kind": "field",
+       "name": "MarketDisruptionValue",
+       "required": false,
+       "tag": 40991
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

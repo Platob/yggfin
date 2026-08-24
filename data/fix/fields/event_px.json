@@ -1,0 +1,22 @@
+{
+ "name": "EventPx",
+ "tag": 867,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Predetermined price of issue at event, if applicable"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Predetermined price of issue at event, if applicable"
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Predetermined price of issue at event, if applicable"
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Predetermined price of issue at event, if applicable"
+  }
+ }
+}

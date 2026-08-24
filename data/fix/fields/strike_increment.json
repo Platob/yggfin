@@ -1,0 +1,14 @@
+{
+ "name": "StrikeIncrement",
+ "tag": 1204,
+ "versions": {
+  "5.0.SP2": {
+   "type": "float",
+   "description": "Value by which strike price should be incremented within the specified price range."
+  },
+  "5.0.SP1": {
+   "type": "float",
+   "description": "Value by which strike price should be incremented within the specified price range."
+  }
+ }
+}

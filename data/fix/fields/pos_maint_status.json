@@ -1,0 +1,90 @@
+{
+ "name": "PosMaintStatus",
+ "tag": 722,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Status of Position Maintenance Request <AL>",
+   "values": {
+    "0": "Accepted",
+    "1": "Accepted With Warnings",
+    "2": "Rejected",
+    "3": "Completed",
+    "4": "Completed With Warnings"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "ACCEPTED_WITH_WARNINGS",
+    "2": "REJECTED",
+    "3": "COMPLETED",
+    "4": "COMPLETED_WITH_WARNINGS"
+   },
+   "used_in": [
+    "PositionMaintenanceReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Status of Position Maintenance Request <AL>",
+   "values": {
+    "0": "Accepted",
+    "1": "Accepted With Warnings",
+    "2": "Rejected",
+    "3": "Completed",
+    "4": "Completed With Warnings"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "ACCEPTED_WITH_WARNINGS",
+    "2": "REJECTED",
+    "3": "COMPLETED",
+    "4": "COMPLETED_WITH_WARNINGS"
+   },
+   "used_in": [
+    "PositionMaintenanceReport"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Status of Position Maintenance Request <AL>",
+   "values": {
+    "0": "Accepted",
+    "1": "Accepted With Warnings",
+    "2": "Rejected",
+    "3": "Completed",
+    "4": "Completed With Warnings"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "ACCEPTED_WITH_WARNINGS",
+    "2": "REJECTED",
+    "3": "COMPLETED",
+    "4": "COMPLETED_WITH_WARNINGS"
+   },
+   "used_in": [
+    "PositionMaintenanceReport"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Status of Position Maintenance Request <AL>",
+   "values": {
+    "0": "Accepted",
+    "1": "Accepted with Warnings",
+    "2": "Rejected",
+    "3": "Completed",
+    "4": "Completed with Warnings"
+   },
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "ACCEPTED_WITH_WARNINGS",
+    "2": "REJECTED",
+    "3": "COMPLETED",
+    "4": "COMPLETED_WITH_WARNINGS"
+   },
+   "used_in": [
+    "Position Maintenance Report"
+   ]
+  }
+ }
+}

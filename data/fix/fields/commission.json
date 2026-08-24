@@ -1,0 +1,84 @@
+{
+ "name": "Commission",
+ "tag": 12,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "Commission. Note if CommType <13> is percentage, Commission <12> of 5% should be represented as .05.",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "Commission. Note if CommType <13> is percentage, Commission <12> of 5% should be represented as .05.",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "Commission. Note if CommType <13> is percentage, Commission <12> of 5% should be represented as .05.",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "4.4": {
+   "type": "Amt",
+   "description": "Commission. Note if CommType <13> is percentage, Commission <12> of 5% should be represented as .05.",
+   "used_in": [
+    "Quote Status Report",
+    "Quote Response",
+    "Quote"
+   ]
+  },
+  "4.3": {
+   "type": "Amt",
+   "description": "Commission. Note if CommType <13> is percentage, Commission <12> of 5% should be represented as .05.",
+   "used_in": [
+    "Quote Status Report",
+    "Quote"
+   ]
+  },
+  "4.2": {
+   "type": "Amt",
+   "description": "Commission. Note if CommType <13> is percentage, Commission <12> of 5% should be represented as .05.",
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "Bid Response"
+   ]
+  },
+  "4.1": {
+   "type": "float",
+   "description": "Commission. Note if CommType <13> is percentage, Commission <12> of 5% should be represented as .05.",
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation"
+   ]
+  },
+  "4.0": {
+   "type": "float",
+   "description": "Commission.",
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation"
+   ]
+  }
+ }
+}

@@ -1,0 +1,34 @@
+{
+ "name": "TargetStrategyPerformance",
+ "tag": 850,
+ "versions": {
+  "5.0.SP2": {
+   "type": "float",
+   "description": "For communication of the performance of the order versus the target strategy",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "float",
+   "description": "For communication of the performance of the order versus the target strategy",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0": {
+   "type": "float",
+   "description": "For communication of the performance of the order versus the target strategy",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "4.4": {
+   "type": "float",
+   "description": "For communication of the performance of the order versus the target strategy",
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

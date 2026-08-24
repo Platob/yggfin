@@ -1,0 +1,24 @@
+{
+ "name": "StreamEffectiveDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 465,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStreamEffectiveDateBusinessCenters",
+     "required": false,
+     "tag": 40960,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StreamEffectiveDateBusinessCenter",
+       "required": false,
+       "tag": 40909
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

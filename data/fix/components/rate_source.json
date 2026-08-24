@@ -1,0 +1,48 @@
+{
+ "name": "RateSource",
+ "versions": {
+  "5.0.SP2": {
+   "order": 301,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRateSources",
+     "required": false,
+     "tag": 1445,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RateSource",
+       "required": false,
+       "tag": 1446
+      },
+      {
+       "kind": "field",
+       "name": "RateSourceType",
+       "required": false,
+       "tag": 1447
+      },
+      {
+       "kind": "field",
+       "name": "ReferencePage",
+       "required": false,
+       "tag": 1448
+      },
+      {
+       "kind": "field",
+       "name": "RateSourceReferemcePageHeading",
+       "required": false,
+       "tag": 2412
+      },
+      {
+       "kind": "field",
+       "name": "FXBenchmarkRateFix",
+       "required": false,
+       "tag": 2796
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

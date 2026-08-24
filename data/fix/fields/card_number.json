@@ -1,0 +1,32 @@
+{
+ "name": "CardNumber",
+ "tag": 489,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The number of the payment card as specified on the card being used for payment."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The number of the payment card as specified on the card being used for payment."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "The number of the payment card as specified on the card being used for payment."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "The number of the payment card as specified on the card being used for payment.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "The number of the payment card as specified on the card being used for payment.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

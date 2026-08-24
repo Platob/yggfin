@@ -1,0 +1,14 @@
+{
+ "name": "StartTickPriceRange",
+ "tag": 1206,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Starting price range for specified tick increment"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Starting price range for specified tick increment"
+  }
+ }
+}

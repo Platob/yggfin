@@ -1,0 +1,24 @@
+{
+ "name": "LegProvisionOptionRelevantUnderlyingDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 442,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegProvisionOptionRelevantUnderlyingDateBusinessCenters",
+     "required": false,
+     "tag": 40938,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegProvisionOptionRelevantUnderlyingDateBusinessCenter",
+       "required": false,
+       "tag": 40510
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

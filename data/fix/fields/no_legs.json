@@ -1,0 +1,87 @@
+{
+ "name": "NoLegs",
+ "tag": 555,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of <InstrumentLeg> repeating group instances."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of <InstrumentLeg> repeating group instances."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of <InstrumentLeg> repeating group instances."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of <InstrumentLeg> repeating group instances.",
+   "used_in": [
+    "IOI",
+    "Advertisement",
+    "Execution Report",
+    "Quote Status Request",
+    "Derivative Security List",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report Request",
+    "Trade Capture Report",
+    "Quote Request Reject",
+    "RFQ Request",
+    "Quote Status Report",
+    "Quote Response",
+    "Confirmation",
+    "Position Maintenance Request",
+    "Position Maintenance Report",
+    "Request For Positions",
+    "Request for Positions Ack",
+    "Position Report",
+    "Trade Capture Report Request Ack",
+    "Trade Capture Report Ack",
+    "Allocation Report",
+    "Assignment Report",
+    "Collateral Request",
+    "Collateral Assignment",
+    "Collateral Response",
+    "Mass Quote Acknowledgement",
+    "News",
+    "Collateral Report",
+    "Collateral Inquiry",
+    "Collateral Inquiry Ack",
+    "Security Definition Request",
+    "Email",
+    "Security Definition",
+    "Security Status Request",
+    "Security Status",
+    "Mass Quote",
+    "Allocation Instruction",
+    "Don't Know Trade",
+    "Quote Request",
+    "New Order Cross",
+    "Quote",
+    "Cross Order Cancel/Replace Request",
+    "Cross Order Cancel Request",
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Security List Request",
+    "Market Data - Incremental Refresh",
+    "Security List",
+    "Quote Cancel"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of <InstrumentLeg> repeating group instances.",
+   "used_in": [
+    "Execution Report",
+    "Derivative Security List",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "Security Definition Request",
+    "Security Definition",
+    "Security List"
+   ]
+  }
+ }
+}

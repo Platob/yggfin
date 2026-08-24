@@ -1,0 +1,38 @@
+{
+ "name": "UnderlyingPaymentStreamFormula",
+ "versions": {
+  "5.0.SP2": {
+   "order": 156,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFormulaCurrency",
+     "required": false,
+     "tag": 42978
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFormulaCurrencyDeterminationMethod",
+     "required": false,
+     "tag": 42979
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamFormulaReferenceAmount",
+     "required": false,
+     "tag": 42980
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamFormulaMathGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingPaymentStreamFormulaImage",
+     "required": false
+    }
+   ]
+  }
+ }
+}

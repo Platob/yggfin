@@ -1,0 +1,35 @@
+{
+ "name": "UnderlyingDeliveryScheduleSettlDayGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 581,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingDeliveryScheduleSettlDays",
+     "required": false,
+     "tag": 41770,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleSettlDay",
+       "required": false,
+       "tag": 41771
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingDeliveryScheduleSettlTotalHours",
+       "required": false,
+       "tag": 41772
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingDeliveryScheduleSettlTimeGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

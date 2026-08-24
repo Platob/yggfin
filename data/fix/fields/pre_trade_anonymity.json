@@ -1,0 +1,45 @@
+{
+ "name": "PreTradeAnonymity",
+ "tag": 1091,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Allows trader to explicitly request anonymity or disclosure in pre-trade market data feeds. Anonymity is relevant in markets where counterparties are regularly disclosed in order depth feeds. Disclosure is relevant when counterparties are not normally visible.",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "QuoteRequestReject",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "QuoteRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Allows trader to explicitly request anonymity or disclosure in pre-trade market data feeds. Anonymity is relevant in markets where counterparties are regularly disclosed in order depth feeds. Disclosure is relevant when counterparties are not normally visible.",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "QuoteRequestReject",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "QuoteRequest"
+   ]
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Allows trader to explicitly request anonymity or disclosure in pre-trade market data feeds. Anonymity is relevant in markets where counterparties are regularly disclosed in order depth feeds. Disclosure is relevant when counterparties are not normally visible.",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
+  }
+ }
+}

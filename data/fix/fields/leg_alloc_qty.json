@@ -1,0 +1,26 @@
+{
+ "name": "LegAllocQty",
+ "tag": 673,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Leg allocation quantity. See AllocQty <80> for description and"
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Leg allocation quantity. See AllocQty <80> for description and"
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Leg allocation quantity. See AllocQty <80> for description and"
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Leg allocation quantity. See AllocQty <80> for description and",
+   "used_in": [
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace"
+   ]
+  }
+ }
+}

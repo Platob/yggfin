@@ -1,0 +1,42 @@
+{
+ "name": "LegComplexEventRateSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 528,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegComplexEventRateSources",
+     "required": false,
+     "tag": 41382,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegComplexEventRateSource",
+       "required": false,
+       "tag": 41383
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventRateSourceType",
+       "required": false,
+       "tag": 41384
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventReferencePage",
+       "required": false,
+       "tag": 41385
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEvenReferencePageHeading",
+       "required": false,
+       "tag": 41386
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

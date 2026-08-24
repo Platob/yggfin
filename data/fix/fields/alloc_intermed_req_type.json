@@ -1,0 +1,113 @@
+{
+ "name": "AllocIntermedReqType",
+ "tag": 808,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Response to allocation to be communicated to a counterparty through an intermediary, i.e. clearing house. Used in conjunction with AllocType <626> = \"Request to Intermediary\" and AllocReportType <794> = \"Request to Intermediary\"",
+   "values": {
+    "1": "Pending Accept",
+    "2": "Pending Release",
+    "3": "Pending Reversal",
+    "4": "Accept",
+    "5": "Block Level Reject",
+    "6": "Account Level Reject"
+   },
+   "value_names": {
+    "1": "PENDING_ACCEPT",
+    "2": "PENDING_RELEASE",
+    "3": "PENDING_REVERSAL",
+    "4": "ACCEPT",
+    "5": "BLOCK_LEVEL_REJECT",
+    "6": "ACCOUNT_LEVEL_REJECT"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationReportAck",
+    "AllocationInstructionAlert",
+    "AllocationInstruction",
+    "AllocationInstructionAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Response to allocation to be communicated to a counterparty through an intermediary, i.e. clearing house. Used in conjunction with AllocType <626> = \"Request to Intermediary\" and AllocReportType <794> = \"Request to Intermediary\"",
+   "values": {
+    "1": "Pending Accept",
+    "2": "Pending Release",
+    "3": "Pending Reversal",
+    "4": "Accept",
+    "5": "Block Level Reject",
+    "6": "Account Level Reject"
+   },
+   "value_names": {
+    "1": "PENDING_ACCEPT",
+    "2": "PENDING_RELEASE",
+    "3": "PENDING_REVERSAL",
+    "4": "ACCEPT",
+    "5": "BLOCK_LEVEL_REJECT",
+    "6": "ACCOUNT_LEVEL_REJECT"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationReportAck",
+    "AllocationInstructionAlert",
+    "AllocationInstruction",
+    "AllocationInstructionAck"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Response to allocation to be communicated to a counterparty through an intermediary, i.e. clearing house. Used in conjunction with AllocType <626> = \"Request to Intermediary\" and AllocReportType <794> = \"Request to Intermediary\"",
+   "values": {
+    "1": "Pending Accept",
+    "2": "Pending Release",
+    "3": "Pending Reversal",
+    "4": "Accept",
+    "5": "Block Level Reject",
+    "6": "Account Level Reject"
+   },
+   "value_names": {
+    "1": "PENDING_ACCEPT",
+    "2": "PENDING_RELEASE",
+    "3": "PENDING_REVERSAL",
+    "4": "ACCEPT",
+    "5": "BLOCK_LEVEL_REJECT",
+    "6": "ACCOUNT_LEVEL_REJECT"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationReportAck",
+    "AllocationInstructionAlert",
+    "AllocationInstruction",
+    "AllocationInstructionAck"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Response to allocation to be communicated to a counterparty through an intermediary, i.e. clearing house. Used in conjunction with AllocType <626> = \"Request to Intermediary\" and AllocReportType <794> = \"Request to Intermediary\"",
+   "values": {
+    "1": "Pending Accept",
+    "2": "Pending Release",
+    "3": "Pending Reversal",
+    "4": "Accept",
+    "5": "Block Level Reject",
+    "6": "Account Level Reject"
+   },
+   "value_names": {
+    "1": "PENDING_ACCEPT",
+    "2": "PENDING_RELEASE",
+    "3": "PENDING_REVERSAL",
+    "4": "ACCEPT",
+    "5": "BLOCK_LEVEL_REJECT",
+    "6": "ACCOUNT_LEVEL_REJECT"
+   },
+   "used_in": [
+    "Allocation Report",
+    "Allocation Report Ack",
+    "Allocation Instruction",
+    "Allocation Instruction Ack"
+   ]
+  }
+ }
+}

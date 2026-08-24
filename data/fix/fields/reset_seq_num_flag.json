@@ -1,0 +1,126 @@
+{
+ "name": "ResetSeqNumFlag",
+ "tag": 141,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Indicates that the both sides of the FIX session should reset sequence numbers.",
+   "values": {
+    "N": "No",
+    "Y": "Yes, reset sequence numbers"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Indicates that the both sides of the FIX session should reset sequence numbers.",
+   "values": {
+    "N": "No",
+    "Y": "Yes, reset sequence numbers"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Indicates that the both sides of the FIX session should reset sequence numbers.",
+   "values": {
+    "N": "No",
+    "Y": "Yes, reset sequence numbers"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.4": {
+   "type": "Boolean",
+   "description": "Indicates that the both sides of the FIX session should reset sequence numbers.",
+   "values": {
+    "Y": "Yes, reset sequence numbers",
+    "N": "No"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.3": {
+   "type": "Boolean",
+   "description": "Indicates that the both sides of the FIX session should reset sequence numbers.",
+   "values": {
+    "Y": "Yes, reset sequence numbers",
+    "N": "No"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.2": {
+   "type": "Boolean",
+   "description": "Indicates that the both sides of the FIX session should reset sequence numbers.",
+   "values": {
+    "Y": "Yes, reset sequence numbers",
+    "N": "No"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Indicates that the both sides of the FIX session should reset sequence numbers.",
+   "values": {
+    "Y": "Yes, reset sequence numbers",
+    "N": "No"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "Boolean",
+   "description": "Indicates that the both sides of the FIX session should reset sequence numbers.",
+   "values": {
+    "N": "No",
+    "Y": "Yes, reset sequence numbers"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  }
+ }
+}

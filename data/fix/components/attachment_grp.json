@@ -1,0 +1,71 @@
+{
+ "name": "AttachmentGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 479,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAttachments",
+     "required": false,
+     "tag": 2104,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AttachmentName",
+       "required": false,
+       "tag": 2105
+      },
+      {
+       "kind": "field",
+       "name": "AttachmentMediaType",
+       "required": false,
+       "tag": 2106
+      },
+      {
+       "kind": "field",
+       "name": "AttachmentClassification",
+       "required": false,
+       "tag": 2107
+      },
+      {
+       "kind": "field",
+       "name": "AttachmentExternalURL",
+       "required": false,
+       "tag": 2108
+      },
+      {
+       "kind": "field",
+       "name": "AttachmentEncodingType",
+       "required": false,
+       "tag": 2109
+      },
+      {
+       "kind": "field",
+       "name": "UnencodedAttachmentLen",
+       "required": false,
+       "tag": 2110
+      },
+      {
+       "kind": "field",
+       "name": "EncodedAttachmentLen",
+       "required": false,
+       "tag": 2111
+      },
+      {
+       "kind": "field",
+       "name": "EncodedAttachment",
+       "required": false,
+       "tag": 2112
+      },
+      {
+       "kind": "component",
+       "name": "AttachmentKeywordGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

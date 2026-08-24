@@ -1,0 +1,57 @@
+{
+ "name": "RelatedPartyDetailGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 324,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRelatedPartyDetailID",
+     "required": false,
+     "tag": 1562,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RelatedPartyDetailID",
+       "required": false,
+       "tag": 1563
+      },
+      {
+       "kind": "field",
+       "name": "RelatedPartyDetailIDSource",
+       "required": false,
+       "tag": 1564
+      },
+      {
+       "kind": "field",
+       "name": "RelatedPartyDetailRole",
+       "required": false,
+       "tag": 1565
+      },
+      {
+       "kind": "field",
+       "name": "RelatedPartyDetailRoleQualifier",
+       "required": false,
+       "tag": 1675
+      },
+      {
+       "kind": "component",
+       "name": "RelatedPartyDetailSubGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "RelatedPartyDetailAltIDGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "PartyRelationshipGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

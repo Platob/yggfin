@@ -1,0 +1,50 @@
+{
+ "name": "DisplayMethod",
+ "tag": 1084,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Defines what value to use in DisplayQty <1138> . If not specified the default DisplayMethod is \"1\"",
+   "values": {
+    "1": "Initial (use original DisplayQty <1138> )",
+    "2": "New (use RefreshQty <1088> )",
+    "3": "Random (randomize value)",
+    "4": "Undisclosed (invisible order)"
+   },
+   "value_names": {
+    "1": "INITIAL",
+    "2": "NEW",
+    "3": "RANDOM",
+    "4": "UNDISCLOSED"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Defines what value to use in DisplayQty <1138> . If not specified the default DisplayMethod is \"1\"",
+   "values": {
+    "1": "Initial (use original DisplayQty)",
+    "2": "New (use RefreshQty <1088> )",
+    "3": "Random (randomize value)"
+   },
+   "value_names": {
+    "1": "INITIAL",
+    "2": "NEW",
+    "3": "RANDOM"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Defines what value to use in DisplayQty <1138> . If not specified the default DisplayMethod is \"1\"",
+   "values": {
+    "1": "Initial (use original DisplayQty)",
+    "2": "New (use RefreshQty <1088> )",
+    "3": "Random (randomize value)"
+   },
+   "value_names": {
+    "1": "INITIAL",
+    "2": "NEW",
+    "3": "RANDOM"
+   }
+  }
+ }
+}

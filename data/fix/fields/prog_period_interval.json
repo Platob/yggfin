@@ -1,0 +1,54 @@
+{
+ "name": "ProgPeriodInterval",
+ "tag": 415,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Time in minutes between each ListStatus <N> report sent by SellSide. Zero means don\u2019t send status.",
+   "used_in": [
+    "NewOrderList",
+    "BidRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Time in minutes between each ListStatus <N> report sent by SellSide. Zero means don\u2019t send status.",
+   "used_in": [
+    "NewOrderList",
+    "BidRequest"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Time in minutes between each ListStatus <N> report sent by SellSide. Zero means don\u2019t send status.",
+   "used_in": [
+    "BidRequest",
+    "NewOrderList"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Time in minutes between each ListStatus <N> report sent by SellSide. Zero means don't send status.",
+   "used_in": [
+    "New Order List",
+    "Bid Request"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Time in minutes between each List Status <N> report sent by SellSide. Zero means don't send status.",
+   "used_in": [
+    "New Order - List",
+    "Bid Request"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Time in minutes between each List Status <N> report sent by SellSide. Zero means don't send status.",
+   "used_in": [
+    "New Order - List",
+    "Bid Request"
+   ]
+  }
+ }
+}

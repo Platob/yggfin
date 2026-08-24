@@ -1,0 +1,14 @@
+{
+ "name": "SecurityListRefID",
+ "tag": 1466,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Specifies a reference from one Security List to another. Used to support a hierarchy of Security Lists.",
+   "used_in": [
+    "SecurityListUpdateReport",
+    "SecurityList"
+   ]
+  }
+ }
+}

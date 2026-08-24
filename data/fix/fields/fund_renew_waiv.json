@@ -1,0 +1,66 @@
+{
+ "name": "FundRenewWaiv",
+ "tag": 497,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "A one character code identifying whether the Fund based renewal commission is to be waived.",
+   "values": {
+    "N": "No",
+    "Y": "Yes"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "A one character code identifying whether the Fund based renewal commission is to be waived.",
+   "values": {
+    "N": "No",
+    "Y": "Yes"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "A one character code identifying whether the Fund based renewal commission is to be waived.",
+   "values": {
+    "N": "No",
+    "Y": "Yes"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  },
+  "4.4": {
+   "type": "char",
+   "description": "A one character code identifying whether the Fund based renewal commission is to be waived.",
+   "values": {
+    "Y": "Yes",
+    "N": "No"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   }
+  },
+  "4.3": {
+   "type": "char",
+   "description": "A one character code identifying whether the Fund based renewal commission is to be waived.",
+   "values": {
+    "Y": "Yes",
+    "N": "No"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  }
+ }
+}

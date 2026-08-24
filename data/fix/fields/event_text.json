@@ -1,0 +1,22 @@
+{
+ "name": "EventText",
+ "tag": 868,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Comments related to the event."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Comments related to the event."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Comments related to the event."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Comments related to the event."
+  }
+ }
+}

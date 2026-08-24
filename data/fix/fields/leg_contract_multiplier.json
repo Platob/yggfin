@@ -1,0 +1,26 @@
+{
+ "name": "LegContractMultiplier",
+ "tag": 614,
+ "versions": {
+  "5.0.SP2": {
+   "type": "float",
+   "description": "Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier <231> field for description"
+  },
+  "5.0.SP1": {
+   "type": "float",
+   "description": "Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier <231> field for description"
+  },
+  "5.0": {
+   "type": "float",
+   "description": "Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier <231> field for description"
+  },
+  "4.4": {
+   "type": "float",
+   "description": "Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier <231> field for description"
+  },
+  "4.3": {
+   "type": "float",
+   "description": "Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier <231> field for description"
+  }
+ }
+}

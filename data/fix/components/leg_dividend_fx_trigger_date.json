@@ -1,0 +1,57 @@
+{
+ "name": "LegDividendFXTriggerDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 120,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegDividendFXTriggerDateRelativeTo",
+     "required": false,
+     "tag": 42357
+    },
+    {
+     "kind": "field",
+     "name": "LegDividendFXTriggerDateOffsetPeriod",
+     "required": false,
+     "tag": 42358
+    },
+    {
+     "kind": "field",
+     "name": "LegDividendFXTriggerDateOffsetUnit",
+     "required": false,
+     "tag": 42359
+    },
+    {
+     "kind": "field",
+     "name": "LegDividendFXTriggerDateOffsetDayType",
+     "required": false,
+     "tag": 42360
+    },
+    {
+     "kind": "field",
+     "name": "LegDividendFXTriggerDateUnadjusted",
+     "required": false,
+     "tag": 42361
+    },
+    {
+     "kind": "field",
+     "name": "LegDividendFXTriggerDateBusinessDayConvention",
+     "required": false,
+     "tag": 42362
+    },
+    {
+     "kind": "component",
+     "name": "LegDividendFXTriggerDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegDividendFXTriggerDateAdjusted",
+     "required": false,
+     "tag": 42363
+    }
+   ]
+  }
+ }
+}

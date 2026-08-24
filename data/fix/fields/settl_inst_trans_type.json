@@ -1,0 +1,124 @@
+{
+ "name": "SettlInstTransType",
+ "tag": 163,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "SettlementInstructions <T> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace",
+    "T": "Restate"
+   },
+   "value_names": {
+    "N": "NEW",
+    "C": "CANCEL",
+    "R": "REPLACE",
+    "T": "RESTATE"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "SettlementInstructions <T> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace",
+    "T": "Restate"
+   },
+   "value_names": {
+    "N": "NEW",
+    "C": "CANCEL",
+    "R": "REPLACE",
+    "T": "RESTATE"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "SettlementInstructions <T> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace",
+    "T": "Restate"
+   },
+   "value_names": {
+    "N": "NEW",
+    "C": "CANCEL",
+    "R": "REPLACE",
+    "T": "RESTATE"
+   }
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Settlement Instructions <T> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace",
+    "T": "Restate (used where the Settlement Instruction is being used to communicate standing instructions which have not been changed or added to)"
+   },
+   "value_names": {
+    "N": "NEW",
+    "C": "CANCEL",
+    "R": "REPLACE",
+    "T": "RESTATE"
+   },
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Settlement Instructions <T> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace"
+   },
+   "value_names": {
+    "N": "NEW",
+    "R": "REPLACE",
+    "C": "CANCEL"
+   },
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Settlement Instructions <T> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace"
+   },
+   "value_names": {
+    "C": "CANCEL",
+    "N": "NEW",
+    "R": "REPLACE"
+   },
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Settlement Instructions <T> message transaction type",
+   "values": {
+    "N": "New",
+    "C": "Cancel",
+    "R": "Replace"
+   },
+   "value_names": {
+    "C": "CANCEL",
+    "N": "NEW",
+    "R": "REPLACE"
+   },
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

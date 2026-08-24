@@ -1,0 +1,65 @@
+{
+ "name": "LegComplexEventCreditEventGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 524,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegComplexEventCreditEvents",
+     "required": false,
+     "tag": 41366,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegComplexEventCreditEventType",
+       "required": false,
+       "tag": 41367
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventCreditEventValue",
+       "required": false,
+       "tag": 41368
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventCreditEventCurrency",
+       "required": false,
+       "tag": 41369
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventCreditEventPeriod",
+       "required": false,
+       "tag": 41370
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventCreditEventUnit",
+       "required": false,
+       "tag": 41371
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventCreditEventDayType",
+       "required": false,
+       "tag": 41372
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventCreditEventRateSource",
+       "required": false,
+       "tag": 41373
+      },
+      {
+       "kind": "component",
+       "name": "LegComplexEventCreditEventQualifierGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,43 @@
+{
+ "name": "TotalAffectedOrders",
+ "tag": 533,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Total number of orders affected by either the OrderMassActionRequest <CA> or OrderMassCancelRequest <q> .",
+   "used_in": [
+    "OrderMassActionReport",
+    "OrderMassCancelReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Total number of orders affected by Order Mass Cancel Request <q> .",
+   "used_in": [
+    "OrderMassActionReport",
+    "OrderMassCancelReport"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Total number of orders affected by Order Mass Cancel Request <q> .",
+   "used_in": [
+    "OrderMassCancelReport"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Total number of orders affected by Order Mass Cancel Request <q> .",
+   "used_in": [
+    "Order Mass Cancel Report"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Total number of orders affected by Mass Cancel Request <q> .",
+   "used_in": [
+    "Order Mass Cancel Report"
+   ]
+  }
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "name": "SideTrdRegTS",
+ "versions": {
+  "5.0.SP2": {
+   "order": 260,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSideTrdRegTS",
+     "required": false,
+     "tag": 1016,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SideTrdRegTimestamp",
+       "required": false,
+       "tag": 1012
+      },
+      {
+       "kind": "field",
+       "name": "SideTrdRegTimestampType",
+       "required": false,
+       "tag": 1013
+      },
+      {
+       "kind": "field",
+       "name": "SideTrdRegTimestampSrc",
+       "required": false,
+       "tag": 1014
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 109,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSideTrdRegTS",
+     "required": false,
+     "tag": 1016,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SideTrdRegTimestamp",
+       "required": false,
+       "tag": 1012
+      },
+      {
+       "kind": "field",
+       "name": "SideTrdRegTimestampType",
+       "required": false,
+       "tag": 1013
+      },
+      {
+       "kind": "field",
+       "name": "SideTrdRegTimestampSrc",
+       "required": false,
+       "tag": 1014
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 111,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSideTrdRegTS",
+     "required": false,
+     "tag": 1016,
+     "members": [
+      {
+       "kind": "field",
+       "name": "SideTrdRegTimestamp",
+       "required": false,
+       "tag": 1012
+      },
+      {
+       "kind": "field",
+       "name": "SideTrdRegTimestampType",
+       "required": false,
+       "tag": 1013
+      },
+      {
+       "kind": "field",
+       "name": "SideTrdRegTimestampSrc",
+       "required": false,
+       "tag": 1014
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

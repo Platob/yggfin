@@ -1,0 +1,127 @@
+{
+ "name": "AllocReportType",
+ "tag": 794,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Describes the specific type or purpose of an Allocation Report <AS> message",
+   "values": {
+    "2": "Preliminary Request to Intermediary",
+    "3": "Sellside Calculated Using Preliminary (includes MiscFees and NetMoney <118> )",
+    "4": "Sellside Calculated Without Preliminary (sent unsolicited by sellside, includes MiscFees and NetMoney)",
+    "5": "Warehouse Recap",
+    "8": "Request to Intermediary",
+    "9": "Accept",
+    "10": "Reject",
+    "11": "Accept Pending",
+    "12": "Complete",
+    "14": "Reverse Pending"
+   },
+   "value_names": {
+    "2": "PRELIMINARY_REQUEST_TO_INTERMEDIARY",
+    "3": "SELLSIDE_CALCULATED_USING_PRELIMINARY",
+    "4": "SELLSIDE_CALCULATED_WITHOUT_PRELIMINARY",
+    "5": "WAREHOUSE_RECAP",
+    "8": "REQUEST_TO_INTERMEDIARY",
+    "9": "ACCEPT",
+    "10": "REJECT",
+    "11": "ACCEPT_PENDING",
+    "12": "COMPLETE",
+    "14": "REVERSE_PENDING",
+    "15": "GIVEUP",
+    "16": "TAKEUP",
+    "17": "REVERSAL",
+    "18": "ALLEGED",
+    "19": "SUB_ALLOCATION_GIVEUP"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Describes the specific type or purpose of an Allocation Report <AS> message",
+   "values": {
+    "2": "Preliminary Request to Intermediary",
+    "3": "Sellside Calculated Using Preliminary (includes MiscFees and NetMoney <118> )",
+    "4": "Sellside Calculated Without Preliminary (sent unsolicited by sellside, includes MiscFees and NetMoney)",
+    "5": "Warehouse Recap",
+    "8": "Request to Intermediary",
+    "9": "Accept",
+    "10": "Reject",
+    "11": "Accept Pending",
+    "12": "Complete",
+    "14": "Reverse Pending"
+   },
+   "value_names": {
+    "2": "PRELIMINARY_REQUEST_TO_INTERMEDIARY",
+    "3": "SELLSIDE_CALCULATED_USING_PRELIMINARY",
+    "4": "SELLSIDE_CALCULATED_WITHOUT_PRELIMINARY",
+    "5": "WAREHOUSE_RECAP",
+    "8": "REQUEST_TO_INTERMEDIARY",
+    "9": "ACCEPT",
+    "10": "REJECT",
+    "11": "ACCEPT_PENDING",
+    "12": "COMPLETE",
+    "14": "REVERSE_PENDING"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationReportAck"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Describes the specific type or purpose of an Allocation Report <AS> message",
+   "values": {
+    "2": "Preliminary Request to Intermediary",
+    "3": "Sellside Calculated Using Preliminary (includes MiscFees and NetMoney <118> )",
+    "4": "Sellside Calculated Without Preliminary (sent unsolicited by sellside, includes MiscFees and NetMoney)",
+    "5": "Warehouse Recap",
+    "8": "Request to Intermediary",
+    "9": "Accept",
+    "10": "Reject",
+    "11": "Accept Pending",
+    "12": "Complete",
+    "14": "Reverse Pending"
+   },
+   "value_names": {
+    "2": "PRELIMINARY_REQUEST_TO_INTERMEDIARY",
+    "3": "SELLSIDE_CALCULATED_USING_PRELIMINARY",
+    "4": "SELLSIDE_CALCULATED_WITHOUT_PRELIMINARY",
+    "5": "WAREHOUSE_RECAP",
+    "8": "REQUEST_TO_INTERMEDIARY",
+    "9": "ACCEPT",
+    "10": "REJECT",
+    "11": "ACCEPT_PENDING",
+    "12": "COMPLETE",
+    "14": "REVERSE_PENDING"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationReportAck"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Describes the specific type or purpose of an Allocation Report <AS> message",
+   "values": {
+    "3": "Sellside Calculated Using Preliminary (includes MiscFees and NetMoney <118> )",
+    "4": "Sellside Calculated Without Preliminary (sent unsolicited by sellside, includes MiscFees and NetMoney <118> )",
+    "5": "Warehouse recap",
+    "8": "Request to Intermediary"
+   },
+   "value_names": {
+    "3": "SELLSIDE_CALCULATED_USING_PRELIMINARY",
+    "4": "SELLSIDE_CALCULATED_WITHOUT_PRELIMINARY",
+    "5": "WAREHOUSE_RECAP",
+    "8": "REQUEST_TO_INTERMEDIARY"
+   },
+   "used_in": [
+    "Allocation Report",
+    "Allocation Report Ack"
+   ]
+  }
+ }
+}

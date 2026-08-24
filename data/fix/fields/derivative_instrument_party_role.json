@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeInstrumentPartyRole",
+ "tag": 1295,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "REfer to definition of PartyRole <452>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "REfer to definition of PartyRole <452>"
+  }
+ }
+}

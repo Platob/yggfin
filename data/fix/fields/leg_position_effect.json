@@ -1,0 +1,38 @@
+{
+ "name": "LegPositionEffect",
+ "tag": 564,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description"
+  },
+  "5.0": {
+   "type": "char",
+   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description"
+  },
+  "4.4": {
+   "type": "char",
+   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description",
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Trade Capture Report Ack"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description",
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

@@ -1,0 +1,36 @@
+{
+ "name": "UnderlyingCouponRate",
+ "tag": 435,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "Underlying security's CouponRate. See CouponRate <223> field for description"
+  },
+  "5.0.SP1": {
+   "type": "Percentage",
+   "description": "Underlying security's CouponRate. See CouponRate <223> field for description"
+  },
+  "5.0": {
+   "type": "Percentage",
+   "description": "Underlying security's CouponRate. See CouponRate <223> field for description"
+  },
+  "4.4": {
+   "type": "Percentage",
+   "description": "Underlying security's CouponRate. See CouponRate <223> field for description"
+  },
+  "4.3": {
+   "type": "Percentage",
+   "description": "Underlying security's CouponRate. See CouponRate <223> field for description"
+  },
+  "4.2": {
+   "type": "float",
+   "description": "Underlying security's CouponRate. See CouponRate <223> field for description",
+   "used_in": [
+    "Quote Acknowledgement",
+    "Security Definition Request",
+    "Security Definition",
+    "Mass Quote"
+   ]
+  }
+ }
+}

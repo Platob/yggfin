@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeEventPx",
+ "tag": 1290,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price"
+  },
+  "5.0.SP1": {
+   "type": "Price"
+  }
+ }
+}

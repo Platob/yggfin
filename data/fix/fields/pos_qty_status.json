@@ -1,0 +1,62 @@
+{
+ "name": "PosQtyStatus",
+ "tag": 706,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Status of this position.",
+   "values": {
+    "0": "Submitted",
+    "1": "Accepted",
+    "2": "Rejected"
+   },
+   "value_names": {
+    "0": "SUBMITTED",
+    "1": "ACCEPTED",
+    "2": "REJECTED"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Status of this position.",
+   "values": {
+    "0": "Submitted",
+    "1": "Accepted",
+    "2": "Rejected"
+   },
+   "value_names": {
+    "0": "SUBMITTED",
+    "1": "ACCEPTED",
+    "2": "REJECTED"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Status of this position.",
+   "values": {
+    "0": "Submitted",
+    "1": "Accepted",
+    "2": "Rejected"
+   },
+   "value_names": {
+    "0": "SUBMITTED",
+    "1": "ACCEPTED",
+    "2": "REJECTED"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Status of this position.",
+   "values": {
+    "0": "Submitted",
+    "1": "Accepted",
+    "2": "Rejected"
+   },
+   "value_names": {
+    "0": "SUBMITTED",
+    "1": "ACCEPTED",
+    "2": "REJECTED"
+   }
+  }
+ }
+}

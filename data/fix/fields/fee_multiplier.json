@@ -1,0 +1,22 @@
+{
+ "name": "FeeMultiplier",
+ "tag": 1329,
+ "versions": {
+  "5.0.SP2": {
+   "type": "float",
+   "description": "This is a multiplier that Clearing (Fee system) will use to calculate fees and will be sent to the firms on their confirms.",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "float",
+   "description": "This is a multiplier that Clearing (Fee system) will use to calculate fees and will be sent to the firms on their confirms.",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  }
+ }
+}

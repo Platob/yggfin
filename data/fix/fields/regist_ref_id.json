@@ -1,0 +1,46 @@
+{
+ "name": "RegistRefID",
+ "tag": 508,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Reference identifier for the RegistID <513> with 'Cancel' and 'Replace' RegistTransType <514> transaction types.",
+   "used_in": [
+    "RegistrationInstructions",
+    "RegistrationInstructionsResponse"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Reference identifier for the RegistID <513> with 'Cancel' and 'Replace' RegistTransType <514> transaction types.",
+   "used_in": [
+    "RegistrationInstructions",
+    "RegistrationInstructionsResponse"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Reference identifier for the RegistID <513> with 'Cancel' and 'Replace' RegistTransType <514> transaction types.",
+   "used_in": [
+    "RegistrationInstructions",
+    "RegistrationInstructionsResponse"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Reference identifier for the RegistID <513> with 'Cancel' and 'Replace' RegistTransType <514> transaction types.",
+   "used_in": [
+    "Registration Instructions",
+    "Registration Instructions Response"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Reference identifier for the RegistID <513> with Cancel and Replace RegistTransType <514> transaction types.",
+   "used_in": [
+    "Registration Instructions",
+    "Registration Instructions Response"
+   ]
+  }
+ }
+}

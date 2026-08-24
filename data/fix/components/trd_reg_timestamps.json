@@ -1,0 +1,219 @@
+{
+ "name": "TrdRegTimestamps",
+ "versions": {
+  "5.0.SP2": {
+   "order": 171,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTrdRegTimestamps",
+     "required": false,
+     "tag": 768,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TrdRegTimestamp",
+       "required": false,
+       "tag": 769
+      },
+      {
+       "kind": "field",
+       "name": "TrdRegTimestampType",
+       "required": false,
+       "tag": 770
+      },
+      {
+       "kind": "field",
+       "name": "TrdRegTimestampOrigin",
+       "required": false,
+       "tag": 771
+      },
+      {
+       "kind": "field",
+       "name": "TrdRegTimestampManualIndicator",
+       "required": false,
+       "tag": 2839
+      },
+      {
+       "kind": "field",
+       "name": "DeskType",
+       "required": false,
+       "tag": 1033
+      },
+      {
+       "kind": "field",
+       "name": "DeskTypeSource",
+       "required": false,
+       "tag": 1034
+      },
+      {
+       "kind": "field",
+       "name": "DeskOrderHandlingInst",
+       "required": false,
+       "tag": 1035
+      },
+      {
+       "kind": "field",
+       "name": "InformationBarrierID",
+       "required": false,
+       "tag": 1727
+      },
+      {
+       "kind": "field",
+       "name": "NBBOEntryType",
+       "required": false,
+       "tag": 2831
+      },
+      {
+       "kind": "field",
+       "name": "NBBOPrice",
+       "required": false,
+       "tag": 2832
+      },
+      {
+       "kind": "field",
+       "name": "NBBOQty",
+       "required": false,
+       "tag": 2833
+      },
+      {
+       "kind": "field",
+       "name": "NBBOSource",
+       "required": false,
+       "tag": 2834
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 18,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTrdRegTimestamps",
+     "required": false,
+     "tag": 768,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TrdRegTimestamp",
+       "required": false,
+       "tag": 769
+      },
+      {
+       "kind": "field",
+       "name": "TrdRegTimestampType",
+       "required": false,
+       "tag": 770
+      },
+      {
+       "kind": "field",
+       "name": "TrdRegTimestampOrigin",
+       "required": false,
+       "tag": 771
+      },
+      {
+       "kind": "field",
+       "name": "DeskType",
+       "required": false,
+       "tag": 1033
+      },
+      {
+       "kind": "field",
+       "name": "DeskTypeSource",
+       "required": false,
+       "tag": 1034
+      },
+      {
+       "kind": "field",
+       "name": "DeskOrderHandlingInst",
+       "required": false,
+       "tag": 1035
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 18,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTrdRegTimestamps",
+     "required": false,
+     "tag": 768,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TrdRegTimestamp",
+       "required": false,
+       "tag": 769
+      },
+      {
+       "kind": "field",
+       "name": "TrdRegTimestampType",
+       "required": false,
+       "tag": 770
+      },
+      {
+       "kind": "field",
+       "name": "TrdRegTimestampOrigin",
+       "required": false,
+       "tag": 771
+      },
+      {
+       "kind": "field",
+       "name": "DeskType",
+       "required": false,
+       "tag": 1033
+      },
+      {
+       "kind": "field",
+       "name": "DeskTypeSource",
+       "required": false,
+       "tag": 1034
+      },
+      {
+       "kind": "field",
+       "name": "DeskOrderHandlingInst",
+       "required": false,
+       "tag": 1035
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 18,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTrdRegTimestamps",
+     "required": false,
+     "tag": 768,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TrdRegTimestamp",
+       "required": false,
+       "tag": 769
+      },
+      {
+       "kind": "field",
+       "name": "TrdRegTimestampType",
+       "required": false,
+       "tag": 770
+      },
+      {
+       "kind": "field",
+       "name": "TrdRegTimestampOrigin",
+       "required": false,
+       "tag": 771
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

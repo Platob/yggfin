@@ -1,0 +1,150 @@
+{
+ "name": "EventType",
+ "tag": 865,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Code to represent the type of event",
+   "values": {
+    "1": "Put",
+    "2": "Call",
+    "3": "Tender",
+    "4": "Sinking Fund Call",
+    "5": "Activation",
+    "6": "Inactiviation",
+    "7": "Last Eligible Trade Date",
+    "8": "Swap Start Date",
+    "9": "Swap End Date",
+    "10": "Swap Roll Date",
+    "11": "Swap Next Start Date",
+    "12": "Swap Next Roll Date",
+    "13": "First Delivery Date",
+    "14": "Last Delivery Date",
+    "15": "Initial Inventory Due Date",
+    "16": "Final Inventory Due Date",
+    "17": "First Intent Date",
+    "18": "Last Intent Date",
+    "19": "Position Removal Date",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "PUT",
+    "2": "CALL",
+    "3": "TENDER",
+    "4": "SINKING_FUND_CALL",
+    "5": "ACTIVATION",
+    "6": "INACTIVIATION",
+    "7": "LAST_ELIGIBLE_TRADE_DATE",
+    "8": "SWAP_START_DATE",
+    "9": "SWAP_END_DATE",
+    "10": "SWAP_ROLL_DATE",
+    "11": "SWAP_NEXT_START_DATE",
+    "12": "SWAP_NEXT_ROLL_DATE",
+    "13": "FIRST_DELIVERY_DATE",
+    "14": "LAST_DELIVERY_DATE",
+    "15": "INITIAL_INVENTORY_DUE_DATE",
+    "16": "FINAL_INVENTORY_DUE_DATE",
+    "17": "FIRST_INTENT_DATE",
+    "18": "LAST_INTENT_DATE",
+    "19": "POSITION_REMOVAL_DATE",
+    "20": "MINIMUM_NOTICE",
+    "21": "DELIVERY_START_TIME",
+    "22": "DELIVERY_END_TIME",
+    "23": "FIRST_NOTICE_DATE",
+    "24": "LAST_NOTICE_DATE",
+    "25": "FIRST_EXERCISE_DATE",
+    "26": "REDEMPTION_DATE",
+    "27": "TRD_CNTNTN_EFCTV_DT",
+    "99": "OTHER"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Code to represent the type of event",
+   "values": {
+    "1": "Put",
+    "2": "Call",
+    "3": "Tender",
+    "4": "Sinking Fund Call",
+    "5": "Activation",
+    "6": "Inactiviation",
+    "7": "Last Eligible Trade Date",
+    "8": "Swap Start Date",
+    "9": "Swap End Date",
+    "10": "Swap Roll Date",
+    "11": "Swap Next Start Date",
+    "12": "Swap Next Roll Date",
+    "13": "First Delivery Date",
+    "14": "Last Delivery Date",
+    "15": "Initial Inventory Due Date",
+    "16": "Final Inventory Due Date",
+    "17": "First Intent Date",
+    "18": "Last Intent Date",
+    "19": "Position Removal Date",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "PUT",
+    "2": "CALL",
+    "3": "TENDER",
+    "4": "SINKING_FUND_CALL",
+    "5": "ACTIVATION",
+    "6": "INACTIVIATION",
+    "7": "LAST_ELIGIBLE_TRADE_DATE",
+    "8": "SWAP_START_DATE",
+    "9": "SWAP_END_DATE",
+    "10": "SWAP_ROLL_DATE",
+    "11": "SWAP_NEXT_START_DATE",
+    "12": "SWAP_NEXT_ROLL_DATE",
+    "13": "FIRST_DELIVERY_DATE",
+    "14": "LAST_DELIVERY_DATE",
+    "15": "INITIAL_INVENTORY_DUE_DATE",
+    "16": "FINAL_INVENTORY_DUE_DATE",
+    "17": "FIRST_INTENT_DATE",
+    "18": "LAST_INTENT_DATE",
+    "19": "POSITION_REMOVAL_DATE",
+    "99": "OTHER"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Code to represent the type of event.",
+   "values": {
+    "1": "Put",
+    "2": "Call",
+    "3": "Tender",
+    "4": "Sinking Fund Call",
+    "5": "Activation",
+    "6": "Inactiviation",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "PUT",
+    "2": "CALL",
+    "3": "TENDER",
+    "4": "SINKING_FUND_CALL",
+    "5": "ACTIVATION",
+    "6": "INACTIVIATION",
+    "99": "OTHER"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Code to represent the type of event",
+   "values": {
+    "1": "Put",
+    "2": "Call",
+    "3": "Tender",
+    "4": "Sinking Fund Call",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "PUT",
+    "2": "CALL",
+    "3": "TENDER",
+    "4": "SINKING_FUND_CALL",
+    "99": "OTHER"
+   }
+  }
+ }
+}

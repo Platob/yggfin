@@ -1,0 +1,62 @@
+{
+ "name": "NoLinesOfText",
+ "tag": 33,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Identifies number of lines of text body"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Identifies number of lines of text body"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Identifies number of lines of text body"
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Identifies number of lines of text body",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  },
+  "4.3": {
+   "name": "LinesOfText",
+   "type": "NumInGroup",
+   "description": "Identifies number of lines of text body",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  },
+  "4.2": {
+   "name": "LinesOfText",
+   "type": "int",
+   "description": "Identifies number of lines of text body",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  },
+  "4.1": {
+   "name": "LinesOfText",
+   "type": "int",
+   "description": "Identifies number of lines of text body",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  },
+  "4.0": {
+   "name": "LinesOfText",
+   "type": "int",
+   "description": "Identifies number of lines of text body",
+   "used_in": [
+    "News",
+    "Email"
+   ]
+  }
+ }
+}

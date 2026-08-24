@@ -1,0 +1,96 @@
+{
+ "name": "AllocAccount",
+ "tag": 79,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Sub-account mnemonic",
+   "used_in": [
+    "Confirmation",
+    "SettlementInstructionRequest",
+    "ConfirmationRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Sub-account mnemonic",
+   "used_in": [
+    "Confirmation",
+    "SettlementInstructionRequest",
+    "ConfirmationRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Sub-account mnemonic",
+   "used_in": [
+    "Confirmation",
+    "SettlementInstructionRequest",
+    "ConfirmationRequest"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Sub-account mnemonic",
+   "used_in": [
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Confirmation",
+    "Trade Capture Report Ack",
+    "Allocation Report",
+    "Allocation Report Ack",
+    "Settlement Instruction Request",
+    "Confirmation Request",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "Allocation Instruction",
+    "Allocation Instruction Ack",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Sub-account mnemonic",
+   "used_in": [
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request",
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Sub-account mnemonic",
+   "used_in": [
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Sub-account mnemonic",
+   "used_in": [
+    "Allocation",
+    "Settlement Instructions"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Sub-account mnemonic",
+   "used_in": [
+    "Allocation"
+   ]
+  }
+ }
+}

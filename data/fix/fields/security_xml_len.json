@@ -1,0 +1,14 @@
+{
+ "name": "SecurityXMLLen",
+ "tag": 1184,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Lenght of the SecurityXML <1185> data block."
+  },
+  "5.0.SP1": {
+   "type": "Length",
+   "description": "Lenght of the SecurityXML <1185> data block."
+  }
+ }
+}

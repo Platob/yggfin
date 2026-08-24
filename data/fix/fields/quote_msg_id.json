@@ -1,0 +1,26 @@
+{
+ "name": "QuoteMsgID",
+ "tag": 1166,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier for a quote message.",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote",
+    "QuoteCancel"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier for a quote message.",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote",
+    "QuoteCancel"
+   ]
+  }
+ }
+}

@@ -1,0 +1,28 @@
+{
+ "name": "DealingCapacity",
+ "tag": 1048,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Identifies role of dealer; Agent, Principal, RisklessPrincipal",
+   "values": {
+    "A": "Agent",
+    "P": "Principal",
+    "R": "Riskless Principal"
+   },
+   "value_names": {
+    "A": "AGENT",
+    "P": "PRINCIPAL",
+    "R": "RISKLESS_PRINCIPAL"
+   }
+  },
+  "5.0.SP1": {
+   "type": "PriceOffset",
+   "description": "Identifies role of dealer; Agent, Principal, RisklessPrincipal"
+  },
+  "5.0": {
+   "type": "PriceOffset",
+   "description": "Identifies role of dealer; Agent, Principal, RisklessPrincipal"
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "name": "PaymentStreamPaymentDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 452,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPaymentStreamPaymentDateBusinessCenters",
+     "required": false,
+     "tag": 40947,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PaymentStreamPaymentDateBusinessCenter",
+       "required": false,
+       "tag": 40752
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

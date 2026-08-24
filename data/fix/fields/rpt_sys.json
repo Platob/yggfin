@@ -1,0 +1,27 @@
+{
+ "name": "RptSys",
+ "tag": 1135,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Indicates the system or medium on which the report has been published",
+   "used_in": [
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Indicates the system or medium on which the report has been published",
+   "used_in": [
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Indicates the system or medium on which the report has been published",
+   "used_in": [
+    "TradeCaptureReportAck"
+   ]
+  }
+ }
+}

@@ -1,0 +1,143 @@
+{
+ "name": "OpenCloseSettlFlag",
+ "tag": 286,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MultipleCharValue",
+   "description": "Flag that identifies a market data entry.",
+   "values": {
+    "0": "Daily Open / Close / Settlement entry",
+    "1": "Session Open / Close / Settlement entry",
+    "2": "Delivery Settlement entry",
+    "3": "Expected entry",
+    "4": "Entry from previous business day",
+    "5": "Theoretical Price value"
+   },
+   "value_names": {
+    "0": "DAILY_OPEN",
+    "1": "SESSION_OPEN",
+    "2": "DELIVERY_SETTLEMENT_ENTRY",
+    "3": "EXPECTED_ENTRY",
+    "4": "ENTRY_FROM_PREVIOUS_BUSINESS_DAY",
+    "5": "THEORETICAL_PRICE_VALUE"
+   },
+   "used_in": [
+    "MarketDataRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "MultipleCharValue",
+   "description": "Flag that identifies a market data entry.",
+   "values": {
+    "0": "Daily Open / Close / Settlement entry",
+    "1": "Session Open / Close / Settlement entry",
+    "2": "Delivery Settlement entry",
+    "3": "Expected entry",
+    "4": "Entry from previous business day",
+    "5": "Theoretical Price value"
+   },
+   "value_names": {
+    "0": "DAILY_OPEN",
+    "1": "SESSION_OPEN",
+    "2": "DELIVERY_SETTLEMENT_ENTRY",
+    "3": "EXPECTED_ENTRY",
+    "4": "ENTRY_FROM_PREVIOUS_BUSINESS_DAY",
+    "5": "THEORETICAL_PRICE_VALUE"
+   },
+   "used_in": [
+    "MarketDataRequest"
+   ]
+  },
+  "5.0": {
+   "type": "MultipleCharValue",
+   "description": "Flag that identifies a market data entry.",
+   "values": {
+    "0": "Daily Open / Close / Settlement entry",
+    "1": "Session Open / Close / Settlement entry",
+    "2": "Delivery Settlement entry",
+    "3": "Expected entry",
+    "4": "Entry from previous business day",
+    "5": "Theoretical Price value"
+   },
+   "value_names": {
+    "0": "DAILY_OPEN",
+    "1": "SESSION_OPEN",
+    "2": "DELIVERY_SETTLEMENT_ENTRY",
+    "3": "EXPECTED_ENTRY",
+    "4": "ENTRY_FROM_PREVIOUS_BUSINESS_DAY",
+    "5": "THEORETICAL_PRICE_VALUE"
+   },
+   "used_in": [
+    "MarketDataRequest"
+   ]
+  },
+  "4.4": {
+   "type": "MultipleValueString",
+   "description": "Flag that identifies a market data entry.",
+   "values": {
+    "0": "Daily Open / Close / Settlement entry",
+    "1": "Session Open / Close / Settlement entry",
+    "2": "Delivery Settlement entry",
+    "3": "Expected entry",
+    "4": "Entry from previous business day",
+    "5": "Theoretical Price value"
+   },
+   "value_names": {
+    "0": "DAILY_OPEN",
+    "1": "SESSION_OPEN",
+    "2": "DELIVERY_SETTLEMENT_ENTRY",
+    "3": "EXPECTED_ENTRY",
+    "4": "ENTRY_FROM_PREVIOUS_BUSINESS_DAY",
+    "5": "THEORETICAL_PRICE_VALUE"
+   },
+   "used_in": [
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh"
+   ]
+  },
+  "4.3": {
+   "name": "OpenCloseSettleFlag",
+   "type": "MultipleValueString",
+   "description": "Flag that identifies a price.",
+   "values": {
+    "0": "Daily Open / Close / Settlement price",
+    "1": "Session Open / Close / Settlement price",
+    "2": "Delivery Settlement price",
+    "3": "Expected price",
+    "4": "Price from previous business day"
+   },
+   "value_names": {
+    "1": "SESSION_OPEN",
+    "2": "DELIVERY_SETTLEMENT_ENTRY",
+    "3": "EXPECTED_ENTRY",
+    "4": "ENTRY_FROM_PREVIOUS_BUSINESS_DAY",
+    "0": "DAILY_OPEN"
+   },
+   "used_in": [
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh"
+   ]
+  },
+  "4.2": {
+   "name": "OpenCloseSettleFlag",
+   "type": "char",
+   "description": "Flag that identifies a price.",
+   "values": {
+    "0": "Daily Open / Close / Settlement price",
+    "1": "Session Open / Close / Settlement price",
+    "2": "Delivery Settlement price"
+   },
+   "value_names": {
+    "0": "DAILY_OPEN",
+    "1": "SESSION_OPEN",
+    "2": "DELIVERY_SETTLEMENT_ENTRY"
+   },
+   "used_in": [
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh"
+   ]
+  }
+ }
+}

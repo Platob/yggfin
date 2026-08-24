@@ -1,0 +1,10 @@
+{
+ "name": "FillLiquidityInd",
+ "tag": 1443,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicator to identify whether this fill was a result of a liquidity provider providing or liquidity taker taking the liquidity. Applicable only for OrdStatus <39> of 'Partial' or 'Filled'. Same values as LastLiquidityInd <851>"
+  }
+ }
+}

@@ -1,0 +1,38 @@
+{
+ "name": "LegCoveredOrUncovered",
+ "tag": 565,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description"
+  },
+  "4.4": {
+   "type": "int",
+   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description",
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Trade Capture Report Ack"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description",
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

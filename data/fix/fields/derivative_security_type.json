@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeSecurityType",
+ "tag": 1249,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Same values as SecurityType <167>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Same values as SecurityType <167>"
+  }
+ }
+}

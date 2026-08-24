@@ -1,0 +1,41 @@
+{
+ "name": "BasisFeatureDate",
+ "tag": 259,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "BasisFeatureDate allows requesting firms within fixed income the ability to request an alternative yield-to-worst, -maturity, -extended or other call. This flows through the confirm process. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "BasisFeatureDate allows requesting firms within fixed income the ability to request an alternative yield-to-worst, -maturity, -extended or other call. This flows through the confirm process. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "BasisFeatureDate allows requesting firms within fixed income the ability to request an alternative yield-to-worst, -maturity, -extended or other call. This flows through the confirm process. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "used_in": [
+    "ExecutionReport"
+   ]
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "BasisFeatureDate <259> allows requesting firms within fixed income the ability to request an alternative yield-to-worst, -maturity, -extended or other call. This flows through the confirm process. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "used_in": [
+    "Execution Report"
+   ]
+  },
+  "4.3": {
+   "type": "UTCDate",
+   "description": "BasisFeatureDate <259> allows requesting firms within fixed income the ability to request an alternative yield-to-worst, -maturity, -extended or other call. This flows through the confirm process. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

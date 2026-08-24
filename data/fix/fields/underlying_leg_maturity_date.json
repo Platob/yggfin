@@ -1,0 +1,14 @@
+{
+ "name": "UnderlyingLegMaturityDate",
+ "tag": 1345,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "Date of maturity."
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "Date of maturity."
+  }
+ }
+}

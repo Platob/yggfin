@@ -1,0 +1,73 @@
+{
+ "name": "GrossTradeAmt",
+ "tag": 381,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "Total amount traded (i.e. quantity * price) expressed in units of currency. For FX Futures this is used to express the notional value of a fill when quantity fields are expressed in terms of contract size (i.e. quantity * price * contract size).",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "Confirmation",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "Total amount traded (e.g. CumQty <14> * AvgPx <6> ) expressed in units of currency. For FX Futures this is used to express the notional value of a fill when LastQty <32> and other quantity fields are express in terms of contract size.",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "Confirmation",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "Total amount traded (e.g. CumQty <14> * AvgPx <6> ) expressed in units of currency. For FX Futures this is used to express the notional value of a fill when LastQty <32> and other quantity fields are express in terms of contract size.",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "Confirmation",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "4.4": {
+   "type": "Amt",
+   "description": "Total amount traded (e.g. CumQty <14> * AvgPx <6> ) expressed in units of currency.",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Confirmation",
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "Amt",
+   "description": "Total amount traded (e.g. CumQty <14> * AvgPx <6> ) expressed in units of currency.",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Allocation"
+   ]
+  },
+  "4.2": {
+   "type": "Amt",
+   "description": "Total amount traded (e.g. CumQty <14> * AvgPx <6> ) expressed in units of currency.",
+   "used_in": [
+    "Execution Report",
+    "Allocation"
+   ]
+  }
+ }
+}

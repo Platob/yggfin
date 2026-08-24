@@ -1,0 +1,66 @@
+{
+ "name": "TotNoRelatedSym",
+ "tag": 393,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Total number of securities. (Prior to FIX 4.4 this field was named TotalNumSecurities)",
+   "used_in": [
+    "DerivativeSecurityList",
+    "SecurityListUpdateReport",
+    "DerivativeSecurityListUpdateReport",
+    "BidRequest",
+    "SecurityList"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Total number of securities. (Prior to FIX 4.4 this field was named TotalNumSecurities)",
+   "used_in": [
+    "DerivativeSecurityList",
+    "SecurityListUpdateReport",
+    "DerivativeSecurityListUpdateReport",
+    "BidRequest",
+    "SecurityList"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Total number of securities. (Prior to FIX 4.4 this field was named TotalNumSecurities)",
+   "used_in": [
+    "DerivativeSecurityList",
+    "SecurityListUpdateReport",
+    "BidRequest",
+    "SecurityList"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Total number of securities. (Prior to FIX 4.4 this field was named TotalNumSecurities)",
+   "used_in": [
+    "Derivative Security List",
+    "Bid Request",
+    "Security List"
+   ]
+  },
+  "4.3": {
+   "name": "TotalNumSecurities",
+   "type": "int",
+   "description": "Total number of securities.",
+   "used_in": [
+    "Derivative Security List",
+    "Bid Request",
+    "Security List"
+   ]
+  },
+  "4.2": {
+   "name": "TotalNumSecurities",
+   "type": "int",
+   "description": "Total number of securities.",
+   "used_in": [
+    "Security Definition",
+    "Bid Request"
+   ]
+  }
+ }
+}

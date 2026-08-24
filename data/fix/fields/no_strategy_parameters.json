@@ -1,0 +1,18 @@
+{
+ "name": "NoStrategyParameters",
+ "tag": 957,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Indicates number of strategy parameters"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Indicates number of strategy parameters"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Indicates number of strategy parameters"
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 467,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingBusinessCenters",
+     "required": false,
+     "tag": 40962,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingBusinessCenter",
+       "required": false,
+       "tag": 40963
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

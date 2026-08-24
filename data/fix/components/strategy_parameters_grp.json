@@ -1,0 +1,98 @@
+{
+ "name": "StrategyParametersGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 253,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStrategyParameters",
+     "required": false,
+     "tag": 957,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StrategyParameterName",
+       "required": false,
+       "tag": 958
+      },
+      {
+       "kind": "field",
+       "name": "StrategyParameterType",
+       "required": false,
+       "tag": 959
+      },
+      {
+       "kind": "field",
+       "name": "StrategyParameterValue",
+       "required": false,
+       "tag": 960
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 102,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStrategyParameters",
+     "required": false,
+     "tag": 957,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StrategyParameterName",
+       "required": false,
+       "tag": 958
+      },
+      {
+       "kind": "field",
+       "name": "StrategyParameterType",
+       "required": false,
+       "tag": 959
+      },
+      {
+       "kind": "field",
+       "name": "StrategyParameterValue",
+       "required": false,
+       "tag": 960
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 104,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoStrategyParameters",
+     "required": false,
+     "tag": 957,
+     "members": [
+      {
+       "kind": "field",
+       "name": "StrategyParameterName",
+       "required": false,
+       "tag": 958
+      },
+      {
+       "kind": "field",
+       "name": "StrategyParameterType",
+       "required": false,
+       "tag": 959
+      },
+      {
+       "kind": "field",
+       "name": "StrategyParameterValue",
+       "required": false,
+       "tag": 960
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

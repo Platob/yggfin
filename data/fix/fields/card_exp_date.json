@@ -1,0 +1,32 @@
+{
+ "name": "CardExpDate",
+ "tag": 490,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "The expiry date of the payment card as specified on the card being used for payment."
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "The expiry date of the payment card as specified on the card being used for payment."
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "The expiry date of the payment card as specified on the card being used for payment."
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "The expiry date of the payment card as specified on the card being used for payment.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "LocalMktDate",
+   "description": "The expiry date of the payment card as specified on the card being used for payment.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "name": "MDEntryID",
+ "tag": 278,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique Market Data Entry identifier."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique Market Data Entry identifier."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique Market Data Entry identifier."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique Market Data Entry identifier.",
+   "used_in": [
+    "Market Data - Incremental Refresh"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique Market Data Entry identifier.",
+   "used_in": [
+    "Market Data - Incremental Refresh"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique Market Data Entry identifier.",
+   "used_in": [
+    "Market Data - Incremental Refresh"
+   ]
+  }
+ }
+}

@@ -1,0 +1,10 @@
+{
+ "name": "DetachmentPoint",
+ "tag": 1458,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "Upper bound percentage of the loss the tranche can endure."
+  }
+ }
+}

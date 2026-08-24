@@ -1,0 +1,55 @@
+{
+ "name": "SecSizesGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 270,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoOfSecSizes",
+     "required": false,
+     "tag": 1177,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MDSecSizeType",
+       "required": false,
+       "tag": 1178
+      },
+      {
+       "kind": "field",
+       "name": "MDSecSize",
+       "required": false,
+       "tag": 1179
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 122,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoOfSecSizes",
+     "required": false,
+     "tag": 1177,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MDSecSizeType",
+       "required": false,
+       "tag": 1178
+      },
+      {
+       "kind": "field",
+       "name": "MDSecSize",
+       "required": false,
+       "tag": 1179
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

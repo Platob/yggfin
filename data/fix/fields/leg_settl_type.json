@@ -1,0 +1,45 @@
+{
+ "name": "LegSettlType",
+ "tag": 587,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Refer to values for SettlType <63>"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Refer to values for SettlType <63>"
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Refer to values for SettlType <63>"
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Refer to values for SettlType <63>",
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Quote Request Reject",
+    "Quote Status Report",
+    "Quote Response",
+    "Trade Capture Report Ack",
+    "Quote Request",
+    "Quote",
+    "Security List"
+   ]
+  },
+  "4.3": {
+   "name": "LegSettlmntTyp",
+   "type": "char",
+   "description": "Refer to values for SettlmntTyp <63>",
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

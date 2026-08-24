@@ -1,0 +1,81 @@
+{
+ "name": "UnderlyingProtectionTermGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 613,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingProtectionTerms",
+     "required": false,
+     "tag": 42068,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingProtectionTermNotional",
+       "required": false,
+       "tag": 42069
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProtectionTermCurrency",
+       "required": false,
+       "tag": 42070
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProtectionTermSellerNotifies",
+       "required": false,
+       "tag": 42071
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProtectionTermBuyerNotifies",
+       "required": false,
+       "tag": 42072
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProtectionTermEventBusinessCenter",
+       "required": false,
+       "tag": 42073
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProtectionTermStandardSources",
+       "required": false,
+       "tag": 42074
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProtectionTermEventMinimumSources",
+       "required": false,
+       "tag": 42075
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProtectionTermEventNewsSourceGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProtectionTermEventGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProtectionTermObligationGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProtectionTermXID",
+       "required": false,
+       "tag": 42076
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

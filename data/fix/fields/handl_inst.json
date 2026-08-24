@@ -1,0 +1,181 @@
+{
+ "name": "HandlInst",
+ "tag": 21,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Instructions for order handling on Broker trading floor",
+   "values": {
+    "1": "Automated execution order, private, no Broker intervention",
+    "2": "Automated execution order, public, Broker intervention OK",
+    "3": "Manual order, best execution"
+   },
+   "value_names": {
+    "1": "AUTOMATED_EXECUTION_NO_INTERVENTION",
+    "2": "AUTOMATED_EXECUTION_INTERVENTION_OK",
+    "3": "MANUAL_ORDER"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Instructions for order handling on Broker trading floor",
+   "values": {
+    "1": "Automated execution order, private, no Broker intervention",
+    "2": "Automated execution order, public, Broker intervention OK",
+    "3": "Manual order, best execution"
+   },
+   "value_names": {
+    "1": "AUTOMATED_EXECUTION_NO_INTERVENTION",
+    "2": "AUTOMATED_EXECUTION_INTERVENTION_OK",
+    "3": "MANUAL_ORDER"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Instructions for order handling on Broker trading floor",
+   "values": {
+    "1": "Automated execution order, private, no Broker intervention",
+    "2": "Automated execution order, public, Broker intervention OK",
+    "3": "Manual order, best execution"
+   },
+   "value_names": {
+    "1": "AUTOMATED_EXECUTION_NO_INTERVENTION",
+    "2": "AUTOMATED_EXECUTION_INTERVENTION_OK",
+    "3": "MANUAL_ORDER"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Instructions for order handling on Broker trading floor",
+   "values": {
+    "1": "Automated execution order, private, no Broker intervention",
+    "2": "Automated execution order, public, Broker intervention OK",
+    "3": "Manual order, best execution"
+   },
+   "value_names": {
+    "1": "AUTOMATED_EXECUTION_NO_INTERVENTION",
+    "2": "AUTOMATED_EXECUTION_INTERVENTION_OK",
+    "3": "MANUAL_ORDER"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Instructions for order handling on Broker trading floor",
+   "values": {
+    "1": "Automated execution order, private, no Broker intervention",
+    "2": "Automated execution order, public, Broker intervention OK",
+    "3": "Manual order, best execution"
+   },
+   "value_names": {
+    "1": "AUTOMATED_EXECUTION_NO_INTERVENTION",
+    "2": "AUTOMATED_EXECUTION_INTERVENTION_OK",
+    "3": "MANUAL_ORDER"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Instructions for order handling on Broker trading floor",
+   "values": {
+    "1": "Automated execution order, private, no Broker intervention",
+    "2": "Automated execution order, public, Broker intervention OK",
+    "3": "Manual order, best execution"
+   },
+   "value_names": {
+    "1": "AUTOMATED_EXECUTION_NO_INTERVENTION",
+    "2": "AUTOMATED_EXECUTION_INTERVENTION_OK",
+    "3": "MANUAL_ORDER"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Instructions for order handling on Broker trading floor",
+   "values": {
+    "1": "Automated execution order, private, no Broker intervention",
+    "2": "Automated execution order, public, Broker intervention OK",
+    "3": "Manual order, best execution"
+   },
+   "value_names": {
+    "1": "AUTOMATED_EXECUTION_NO_INTERVENTION",
+    "2": "AUTOMATED_EXECUTION_INTERVENTION_OK",
+    "3": "MANUAL_ORDER"
+   },
+   "used_in": [
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Instructions for order handling on Broker trading floor",
+   "values": {
+    "1": "Automated execution order, private, no Broker intervention",
+    "2": "Automated execution order, public, Broker intervention OK",
+    "3": "Manual order, best execution"
+   },
+   "value_names": {
+    "1": "AUTOMATED_EXECUTION_NO_INTERVENTION",
+    "2": "AUTOMATED_EXECUTION_INTERVENTION_OK",
+    "3": "MANUAL_ORDER"
+   },
+   "used_in": [
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

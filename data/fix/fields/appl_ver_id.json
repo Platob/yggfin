@@ -1,0 +1,113 @@
+{
+ "name": "ApplVerID",
+ "tag": 1128,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied at message level. Enumerated field with values assigned at time of service pack release",
+   "values": {
+    "0": "FIX27",
+    "1": "FIX30",
+    "2": "FIX40",
+    "3": "FIX41",
+    "4": "FIX42",
+    "5": "FIX43",
+    "6": "FIX44",
+    "7": "FIX50",
+    "8": "FIX50SP1",
+    "9": "FIX50SP2"
+   },
+   "value_names": {
+    "0": "FIX27",
+    "1": "FIX30",
+    "2": "FIX40",
+    "3": "FIX41",
+    "4": "FIX42",
+    "5": "FIX43",
+    "6": "FIX44",
+    "7": "FIX50",
+    "8": "FIX50_SP1",
+    "9": "FIX50_SP2",
+    "10": "FIX_LATEST"
+   }
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied at message level. Enumerated field with values assigned at time of service pack release",
+   "values": {
+    "0": "FIX27",
+    "1": "FIX30",
+    "2": "FIX40",
+    "3": "FIX41",
+    "4": "FIX42",
+    "5": "FIX43",
+    "6": "FIX44",
+    "7": "FIX50",
+    "8": "FIX50SP1"
+   },
+   "value_names": {
+    "0": "FIX27",
+    "1": "FIX30",
+    "2": "FIX40",
+    "3": "FIX41",
+    "4": "FIX42",
+    "5": "FIX43",
+    "6": "FIX44",
+    "7": "FIX50",
+    "8": "FIX50_SP1"
+   }
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied at message level. Enumerated field with values assigned at time of service pack release",
+   "values": {
+    "0": "FIX27",
+    "1": "FIX30",
+    "2": "FIX40",
+    "3": "FIX41",
+    "4": "FIX42",
+    "5": "FIX43",
+    "6": "FIX44",
+    "7": "FIX50"
+   },
+   "value_names": {
+    "0": "FIX27",
+    "1": "FIX30",
+    "2": "FIX40",
+    "3": "FIX41",
+    "4": "FIX42",
+    "5": "FIX43",
+    "6": "FIX44",
+    "7": "FIX50"
+   }
+  },
+  "FIXT1.1": {
+   "type": "String",
+   "description": "Specifies the service pack release being applied at message level. Enumerated field with values assigned at time of service pack release",
+   "values": {
+    "0": "FIX27",
+    "1": "FIX30",
+    "2": "FIX40",
+    "3": "FIX41",
+    "4": "FIX42",
+    "5": "FIX43",
+    "6": "FIX44",
+    "7": "FIX50",
+    "8": "FIX50SP1",
+    "9": "FIX50SP2"
+   },
+   "value_names": {
+    "0": "FIX27",
+    "1": "FIX30",
+    "2": "FIX40",
+    "3": "FIX41",
+    "4": "FIX42",
+    "5": "FIX43",
+    "6": "FIX44",
+    "7": "FIX50",
+    "8": "FIX50_SP1",
+    "9": "FIX50_SP2"
+   }
+  }
+ }
+}

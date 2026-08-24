@@ -1,0 +1,48 @@
+{
+ "name": "ComplexEventScheduleGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 490,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoComplexEventSchedules",
+     "required": false,
+     "tag": 41031,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ComplexEventScheduleStartDate",
+       "required": false,
+       "tag": 41032
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventScheduleEndDate",
+       "required": false,
+       "tag": 41033
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventScheduleFrequencyPeriod",
+       "required": false,
+       "tag": 41034
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventScheduleFrequencyUnit",
+       "required": false,
+       "tag": 41035
+      },
+      {
+       "kind": "field",
+       "name": "ComplexEventScheduleRollConvention",
+       "required": false,
+       "tag": 41036
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

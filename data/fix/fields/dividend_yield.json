@@ -1,0 +1,22 @@
+{
+ "name": "DividendYield",
+ "tag": 1380,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "The continuously-compounded annualized dividend yield of the underlying(s) of an option. Used as a parameter to theoretical option pricing models.",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Percentage",
+   "description": "The continuously-compounded annualized dividend yield of the underlying(s) of an option. Used as a parameter to theoretical option pricing models.",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport"
+   ]
+  }
+ }
+}

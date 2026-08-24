@@ -1,0 +1,66 @@
+{
+ "name": "MarginAmount",
+ "versions": {
+  "5.0.SP2": {
+   "order": 314,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMarginAmt",
+     "required": false,
+     "tag": 1643,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MarginAmt",
+       "required": false,
+       "tag": 1645
+      },
+      {
+       "kind": "field",
+       "name": "MarginAmtType",
+       "required": false,
+       "tag": 1644
+      },
+      {
+       "kind": "field",
+       "name": "MarginAmtCcy",
+       "required": false,
+       "tag": 1646
+      },
+      {
+       "kind": "field",
+       "name": "MarginAmtFXRate",
+       "required": false,
+       "tag": 2088
+      },
+      {
+       "kind": "field",
+       "name": "MarginAmtFXRateCalc",
+       "required": false,
+       "tag": 2089
+      },
+      {
+       "kind": "field",
+       "name": "MarginAmountMarketSegmentID",
+       "required": false,
+       "tag": 1714
+      },
+      {
+       "kind": "field",
+       "name": "MarginAmountMarketID",
+       "required": false,
+       "tag": 1715
+      },
+      {
+       "kind": "field",
+       "name": "MarginDirection",
+       "required": false,
+       "tag": 2851
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

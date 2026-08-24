@@ -1,0 +1,10 @@
+{
+ "name": "OrderDelay",
+ "tag": 1428,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Time lapsed from order entry until match, based on the unit of time specified in OrderDelayUnit <1429> . Default is seconds if OrderDelayUnit is not specified. Value = 0, indicates the aggressor (the initiating side of the trade)."
+  }
+ }
+}

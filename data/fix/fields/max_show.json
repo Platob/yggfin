@@ -1,0 +1,92 @@
+{
+ "name": "MaxShow",
+ "tag": 210,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 10.Deprecated MaxFloor (111) and MaxShow (210) [deprecated in FIX 5.0] Maximum quantity (e.g. number of shares) within an order to be shown to other customers (i.e. sent via an IOI). (Prior to FIX 4.2 this field was of type int )",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 10.Deprecated MaxFloor (111) and MaxShow (210) [deprecated in FIX 5.0] Maximum quantity (e.g. number of shares) within an order to be shown to other customers (i.e. sent via an IOI). (Prior to FIX 4.2 this field was of type int )",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 10.Deprecated MaxFloor (111) and MaxShow (210) [deprecated in FIX 5.0] Maximum quantity (e.g. number of shares) within an order to be shown to other customers (i.e. sent via an IOI). (Prior to FIX 4.2 this field was of type int )",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Maximum quantity (e.g. number of shares) within an order to be shown to other customers (i.e. sent via an IOI <6> ). (Prior to FIX 4.2 this field was of type int )",
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "Maximum quantity (e.g. number of shares) within an order to be shown to other customers (i.e. sent via an IOI). (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.2": {
+   "type": "Qty",
+   "description": "Maximum number of shares within an order to be shown to other customers (i.e. sent via an IOI). (Prior to FIX 4.2 this field was of type int)",
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Maximum number of shares within an order to be shown to other customers (i.e. sent via an IOI).",
+   "used_in": [
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

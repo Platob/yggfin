@@ -1,0 +1,44 @@
+{
+ "name": "TradSesEvent",
+ "tag": 1368,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies an event related to a TradSesStatus <340> . An event occurs and is gone, it is not a state that applies for a period of time.",
+   "values": {
+    "0": "Trading resumes (after Halt)",
+    "1": "Change of Trading Session",
+    "2": "Change of Trading Subsession",
+    "3": "Change of Trading Status"
+   },
+   "value_names": {
+    "0": "TRADING_RESUMES",
+    "1": "CHANGE_OF_TRADING_SESSION",
+    "2": "CHANGE_OF_TRADING_SUBSESSION",
+    "3": "CHANGE_OF_TRADING_STATUS"
+   },
+   "used_in": [
+    "TradingSessionStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies an event related to a TradSesStatus <340> . An event occurs and is gone, it is not a state that applies for a period of time.",
+   "values": {
+    "0": "Trading resumes (after Halt)",
+    "1": "Change of Trading Session",
+    "2": "Change of Trading Subsession",
+    "3": "Change of Trading Status"
+   },
+   "value_names": {
+    "0": "TRADING_RESUMES",
+    "1": "CHANGE_OF_TRADING_SESSION",
+    "2": "CHANGE_OF_TRADING_SUBSESSION",
+    "3": "CHANGE_OF_TRADING_STATUS"
+   },
+   "used_in": [
+    "TradingSessionStatus"
+   ]
+  }
+ }
+}

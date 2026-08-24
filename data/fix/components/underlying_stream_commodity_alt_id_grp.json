@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingStreamCommodityAltIDGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 601,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingStreamCommodityAltIDs",
+     "required": false,
+     "tag": 41990,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommodityAltID",
+       "required": false,
+       "tag": 41991
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommodityAltIDSource",
+       "required": false,
+       "tag": 41992
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

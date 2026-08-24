@@ -1,0 +1,126 @@
+{
+ "name": "IOINaturalFlag",
+ "tag": 130,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Indicates that IOI is the result of an existing agency order or a facilitation position resulting from an agency order, not from principal trading or order solicitation activity.",
+   "values": {
+    "N": "Not Natural",
+    "Y": "Natural"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Indicates that IOI is the result of an existing agency order or a facilitation position resulting from an agency order, not from principal trading or order solicitation activity.",
+   "values": {
+    "N": "Not Natural",
+    "Y": "Natural"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Indicates that IOI is the result of an existing agency order or a facilitation position resulting from an agency order, not from principal trading or order solicitation activity.",
+   "values": {
+    "N": "Not Natural",
+    "Y": "Natural"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "4.4": {
+   "type": "Boolean",
+   "description": "Indicates that IOI <6> is the result of an existing agency order or a facilitation position resulting from an agency order, not from principal trading or order solicitation activity.",
+   "values": {
+    "Y": "Natural",
+    "N": "Not natural"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "4.3": {
+   "type": "Boolean",
+   "description": "Indicates that IOI is the result of an existing agency order or a facilitation position resulting from an agency order, not from principal trading or order solicitation activity.",
+   "values": {
+    "Y": "Natural",
+    "N": "Not natural"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "Indications of Interest"
+   ]
+  },
+  "4.2": {
+   "type": "Boolean",
+   "description": "Indicates that IOI is the result of an existing agency order or a facilitation position resulting from an agency order, not from principal trading or order solicitation activity.",
+   "values": {
+    "Y": "Natural",
+    "N": "Not natural"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Indication of Interest"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Indicates that IOI is the result of an existing agency order or a facilitation position resulting from an agency order, not from principal trading or order solicitation activity.",
+   "values": {
+    "Y": "Natural",
+    "N": "Not natural"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Indication of Interest"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Indicates that IOI is the result of an existing agency order or a facilitation position resulting from an agency order, not from principal trading or order solicitation activity.",
+   "values": {
+    "Y": "Natural",
+    "N": "Not natural"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Indication of Interest"
+   ]
+  }
+ }
+}

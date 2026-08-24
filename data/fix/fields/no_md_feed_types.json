@@ -1,0 +1,14 @@
+{
+ "name": "NoMDFeedTypes",
+ "tag": 1141,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "The number of feed types and corresponding book depths associated with a security"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "The number of feed types and corresponding book depths associated with a security"
+  }
+ }
+}

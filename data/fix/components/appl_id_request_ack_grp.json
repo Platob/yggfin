@@ -1,0 +1,102 @@
+{
+ "name": "ApplIDRequestAckGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 297,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoApplIDs",
+     "required": false,
+     "tag": 1351,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RefApplID",
+       "required": false,
+       "tag": 1355
+      },
+      {
+       "kind": "field",
+       "name": "RefApplReqID",
+       "required": false,
+       "tag": 1433
+      },
+      {
+       "kind": "field",
+       "name": "ApplBegSeqNum",
+       "required": false,
+       "tag": 1182
+      },
+      {
+       "kind": "field",
+       "name": "ApplEndSeqNum",
+       "required": false,
+       "tag": 1183
+      },
+      {
+       "kind": "field",
+       "name": "RefApplLastSeqNum",
+       "required": false,
+       "tag": 1357
+      },
+      {
+       "kind": "field",
+       "name": "ApplResponseError",
+       "required": false,
+       "tag": 1354
+      },
+      {
+       "kind": "component",
+       "name": "NestedParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 159,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoApplIDs",
+     "required": false,
+     "tag": 1351,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RefApplID",
+       "required": false,
+       "tag": 1355
+      },
+      {
+       "kind": "field",
+       "name": "ApplBegSeqNum",
+       "required": false,
+       "tag": 1182
+      },
+      {
+       "kind": "field",
+       "name": "ApplEndSeqNum",
+       "required": false,
+       "tag": 1183
+      },
+      {
+       "kind": "field",
+       "name": "RefApplLastSeqNum",
+       "required": false,
+       "tag": 1357
+      },
+      {
+       "kind": "field",
+       "name": "ApplResponseError",
+       "required": false,
+       "tag": 1354
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

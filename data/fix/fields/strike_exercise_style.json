@@ -1,0 +1,14 @@
+{
+ "name": "StrikeExerciseStyle",
+ "tag": 1304,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Expiration Style for an option class Same values as ExerciseStyle <1194>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Expiration Style for an option class Same values as ExerciseStyle <1194>"
+  }
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "name": "StreamAsgnRejReason",
+ "tag": 1502,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Reason code for stream assignment request reject.",
+   "values": {
+    "0": "Unknown client",
+    "1": "Exceeds maximum size",
+    "2": "Unknown or Invalid currency pair",
+    "3": "No available stream",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "UNKNOWN_CLIENT",
+    "1": "EXCEEDS_MAXIMUM_SIZE",
+    "2": "UNKNOWN_OR_INVALID_CURRENCY_PAIR",
+    "3": "NO_AVAILABLE_STREAM",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "StreamAssignmentReportACK"
+   ]
+  }
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "name": "ProvisionCashSettlPaymentDates",
+ "versions": {
+  "5.0.SP2": {
+   "order": 51,
+   "members": [
+    {
+     "kind": "field",
+     "name": "ProvisionCashSettlPaymentDateBusinessDayConvention",
+     "required": false,
+     "tag": 40163
+    },
+    {
+     "kind": "component",
+     "name": "ProvisionCashSettlPaymentDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "ProvisionCashSettlPaymentDateRelativeTo",
+     "required": false,
+     "tag": 40165
+    },
+    {
+     "kind": "field",
+     "name": "ProvisionCashSettlPaymentDateOffsetPeriod",
+     "required": false,
+     "tag": 40166
+    },
+    {
+     "kind": "field",
+     "name": "ProvisionCashSettlPaymentDateOffsetUnit",
+     "required": false,
+     "tag": 40167
+    },
+    {
+     "kind": "field",
+     "name": "ProvisionCashSettlPaymentDateOffsetDayType",
+     "required": false,
+     "tag": 40168
+    },
+    {
+     "kind": "field",
+     "name": "ProvisionCashSettlPaymentDateRangeFirst",
+     "required": false,
+     "tag": 40169
+    },
+    {
+     "kind": "field",
+     "name": "ProvisionCashSettlPaymentDateRangeLast",
+     "required": false,
+     "tag": 40170
+    },
+    {
+     "kind": "component",
+     "name": "ProvisionCashSettlPaymentFixedDateGrp",
+     "required": false
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "name": "ModelType",
+ "tag": 1434,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Type of pricing model used",
+   "values": {
+    "0": "Utility provided standard model",
+    "1": "Proprietary (user supplied) model"
+   },
+   "value_names": {
+    "0": "UTILITY_PROVIDED_STANDARD_MODEL",
+    "1": "PROPRIETARY_MODEL"
+   },
+   "used_in": [
+    "PositionReport"
+   ]
+  }
+ }
+}

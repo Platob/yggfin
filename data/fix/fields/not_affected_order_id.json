@@ -1,0 +1,14 @@
+{
+ "name": "NotAffectedOrderID",
+ "tag": 1371,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "OrderID <37> of an order not affected by a mass cancel request."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "OrderID <37> of an order not affected by a mass cancel request."
+  }
+ }
+}

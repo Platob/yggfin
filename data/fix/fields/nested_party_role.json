@@ -1,0 +1,26 @@
+{
+ "name": "NestedPartyRole",
+ "tag": 538,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "PartyRole value within a nested repeating group. Same values as PartyRole <452>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "PartyRole value within a nested repeating group. Same values as PartyRole <452>"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "PartyRole value within a nested repeating group. Same values as PartyRole <452>"
+  },
+  "4.4": {
+   "type": "int",
+   "description": "PartyRole value within a nested repeating group. Same values as PartyRole <452>"
+  },
+  "4.3": {
+   "type": "int",
+   "description": "PartyRole value within a nested repeating group. Same values as PartyRole <452>"
+  }
+ }
+}

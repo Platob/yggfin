@@ -1,0 +1,40 @@
+{
+ "name": "ApplResponseType",
+ "tag": 1348,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Used to indicate the type of acknowledgement being sent.",
+   "values": {
+    "0": "Request successfully processed",
+    "1": "Application does not exist",
+    "2": "Messages not available"
+   },
+   "value_names": {
+    "0": "REQUEST_SUCCESSFULLY_PROCESSED",
+    "1": "APPLICATION_DOES_NOT_EXIST",
+    "2": "MESSAGES_NOT_AVAILABLE"
+   },
+   "used_in": [
+    "ApplicationMessageRequestAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Used to indicate the type of acknowledgement being sent.",
+   "values": {
+    "0": "Request successfully processed",
+    "1": "Application does not exist",
+    "2": "Messages not available"
+   },
+   "value_names": {
+    "0": "REQUEST_SUCCESSFULLY_PROCESSED",
+    "1": "APPLICATION_DOES_NOT_EXIST",
+    "2": "MESSAGES_NOT_AVAILABLE"
+   },
+   "used_in": [
+    "ApplicationMessageRequestAck"
+   ]
+  }
+ }
+}

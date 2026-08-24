@@ -1,0 +1,29 @@
+{
+ "name": "InstrumentScopeGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 328,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoInstrumentScopes",
+     "required": false,
+     "tag": 1656,
+     "members": [
+      {
+       "kind": "field",
+       "name": "InstrumentScopeOperator",
+       "required": false,
+       "tag": 1535
+      },
+      {
+       "kind": "component",
+       "name": "InstrumentScope",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

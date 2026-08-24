@@ -1,0 +1,14 @@
+{
+ "name": "Nested4PartySubIDType",
+ "tag": 1411,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Refer to definition of PartySubIDType <803>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Refer to definition of PartySubIDType <803>"
+  }
+ }
+}

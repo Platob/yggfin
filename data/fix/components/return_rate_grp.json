@@ -1,0 +1,188 @@
+{
+ "name": "ReturnRateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 681,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoReturnRates",
+     "required": false,
+     "tag": 42735,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ReturnRatePriceSequence",
+       "required": false,
+       "tag": 42736
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateCommissionBasis",
+       "required": false,
+       "tag": 42737
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateCommissionAmount",
+       "required": false,
+       "tag": 42738
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateCommissionCurrency",
+       "required": false,
+       "tag": 42739
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateTotalCommissionPerTrade",
+       "required": false,
+       "tag": 42740
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateDeterminationMethod",
+       "required": false,
+       "tag": 42741
+      },
+      {
+       "kind": "component",
+       "name": "ReturnRatePriceGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "ReturnRateFXConversionGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateAmountRelativeTo",
+       "required": false,
+       "tag": 42742
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteMeasureType",
+       "required": false,
+       "tag": 42743
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteUnits",
+       "required": false,
+       "tag": 42744
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteMethod",
+       "required": false,
+       "tag": 42745
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteCurrency",
+       "required": false,
+       "tag": 42746
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteCurrencyType",
+       "required": false,
+       "tag": 42747
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteTimeType",
+       "required": false,
+       "tag": 42748
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteTime",
+       "required": false,
+       "tag": 42749
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteDate",
+       "required": false,
+       "tag": 42750
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteExpirationTime",
+       "required": false,
+       "tag": 42751
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteBusinessCenter",
+       "required": false,
+       "tag": 42752
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuoteExchange",
+       "required": false,
+       "tag": 42753
+      },
+      {
+       "kind": "component",
+       "name": "ReturnRateInformationSourceGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateQuotePricingModel",
+       "required": false,
+       "tag": 42754
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateCashFlowType",
+       "required": false,
+       "tag": 42755
+      },
+      {
+       "kind": "component",
+       "name": "ReturnRateDateGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateValuationTimeType",
+       "required": false,
+       "tag": 42756
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateValuationTime",
+       "required": false,
+       "tag": 42757
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateValuationTimeBusinessCenter",
+       "required": false,
+       "tag": 42758
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateValuationPriceOption",
+       "required": false,
+       "tag": 42759
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRateFinalPriceFallback",
+       "required": false,
+       "tag": 42760
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "name": "DividendAccrualPaymentDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 648,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoDividendAccrualPaymentDateBusinessCenters",
+     "required": false,
+     "tag": 42236,
+     "members": [
+      {
+       "kind": "field",
+       "name": "DividendAccrualPaymentDateBusinessCenter",
+       "required": false,
+       "tag": 42237
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "name": "LegReturnRateValuationDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 670,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegReturnRateValuationDateBusinessCenters",
+     "required": false,
+     "tag": 42569,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegReturnRateValuationDateBusinessCenter",
+       "required": false,
+       "tag": 42570
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

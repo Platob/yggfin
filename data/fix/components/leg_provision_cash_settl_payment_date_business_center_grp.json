@@ -1,0 +1,24 @@
+{
+ "name": "LegProvisionCashSettlPaymentDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 438,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegProvisionCashSettlPaymentDateBusinessCenters",
+     "required": false,
+     "tag": 40934,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegProvisionCashSettlPaymentDateBusinessCenter",
+       "required": false,
+       "tag": 40517
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,256 @@
+{
+ "name": "PaymentGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 393,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPayments",
+     "required": false,
+     "tag": 40212,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PaymentType",
+       "required": false,
+       "tag": 40213
+      },
+      {
+       "kind": "field",
+       "name": "PaymentSubType",
+       "required": false,
+       "tag": 40993
+      },
+      {
+       "kind": "field",
+       "name": "PaymentPaySide",
+       "required": false,
+       "tag": 40214
+      },
+      {
+       "kind": "field",
+       "name": "PaymentReceiveSide",
+       "required": false,
+       "tag": 40215
+      },
+      {
+       "kind": "field",
+       "name": "PaymentDesc",
+       "required": false,
+       "tag": 43087
+      },
+      {
+       "kind": "field",
+       "name": "PaymentCurrency",
+       "required": false,
+       "tag": 40216
+      },
+      {
+       "kind": "field",
+       "name": "PaymentAmount",
+       "required": false,
+       "tag": 40217
+      },
+      {
+       "kind": "field",
+       "name": "PaymentAmountRelativeTo",
+       "required": false,
+       "tag": 42598
+      },
+      {
+       "kind": "field",
+       "name": "PaymentAmountDeterminationMethod",
+       "required": false,
+       "tag": 42599
+      },
+      {
+       "kind": "field",
+       "name": "PaymentFixedRate",
+       "required": false,
+       "tag": 43097
+      },
+      {
+       "kind": "field",
+       "name": "PaymentFloatingRateIndex",
+       "required": false,
+       "tag": 43098
+      },
+      {
+       "kind": "field",
+       "name": "PaymentFloatingRateIndexCurveUnit",
+       "required": false,
+       "tag": 43100
+      },
+      {
+       "kind": "field",
+       "name": "PaymentFloatingRateIndexCurvePeriod",
+       "required": false,
+       "tag": 43099
+      },
+      {
+       "kind": "field",
+       "name": "PaymentFloatingRateSpread",
+       "required": false,
+       "tag": 43101
+      },
+      {
+       "kind": "field",
+       "name": "PaymentRateResetFrequencyUnit",
+       "required": false,
+       "tag": 43105
+      },
+      {
+       "kind": "field",
+       "name": "PaymentRateResetFrequencyPeriod",
+       "required": false,
+       "tag": 43104
+      },
+      {
+       "kind": "field",
+       "name": "PaymentFrequencyUnit",
+       "required": false,
+       "tag": 43103
+      },
+      {
+       "kind": "field",
+       "name": "PaymentFrequencyPeriod",
+       "required": false,
+       "tag": 43102
+      },
+      {
+       "kind": "field",
+       "name": "PaymentPrice",
+       "required": false,
+       "tag": 40218
+      },
+      {
+       "kind": "field",
+       "name": "PaymentPriceType",
+       "required": false,
+       "tag": 40919
+      },
+      {
+       "kind": "field",
+       "name": "PaymentUnitOfMeasure",
+       "required": false,
+       "tag": 41155
+      },
+      {
+       "kind": "field",
+       "name": "PaymentDateUnadjusted",
+       "required": false,
+       "tag": 40219
+      },
+      {
+       "kind": "field",
+       "name": "PaymentBusinessDayConvention",
+       "required": false,
+       "tag": 40220
+      },
+      {
+       "kind": "component",
+       "name": "PaymentBusinessCenterGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "PaymentDateRelativeTo",
+       "required": false,
+       "tag": 41156
+      },
+      {
+       "kind": "field",
+       "name": "PaymentDateOffsetPeriod",
+       "required": false,
+       "tag": 41157
+      },
+      {
+       "kind": "field",
+       "name": "PaymentDateOffsetUnit",
+       "required": false,
+       "tag": 41158
+      },
+      {
+       "kind": "field",
+       "name": "PaymentDateOffsetDayType",
+       "required": false,
+       "tag": 41159
+      },
+      {
+       "kind": "field",
+       "name": "PaymentDateAdjusted",
+       "required": false,
+       "tag": 40222
+      },
+      {
+       "kind": "field",
+       "name": "PaymentForwardStartType",
+       "required": false,
+       "tag": 41160
+      },
+      {
+       "kind": "field",
+       "name": "PaymentDiscountFactor",
+       "required": false,
+       "tag": 40224
+      },
+      {
+       "kind": "field",
+       "name": "PaymentPresentValueAmount",
+       "required": false,
+       "tag": 40225
+      },
+      {
+       "kind": "field",
+       "name": "PaymentPresentValueCurrency",
+       "required": false,
+       "tag": 40226
+      },
+      {
+       "kind": "field",
+       "name": "PaymentSettlStyle",
+       "required": false,
+       "tag": 40227
+      },
+      {
+       "kind": "field",
+       "name": "PaymentMethod",
+       "required": false,
+       "tag": 492
+      },
+      {
+       "kind": "component",
+       "name": "PaymentSettlGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "PaymentLegRefID",
+       "required": false,
+       "tag": 41304
+      },
+      {
+       "kind": "field",
+       "name": "PaymentText",
+       "required": false,
+       "tag": 40229
+      },
+      {
+       "kind": "field",
+       "name": "EncodedPaymentTextLen",
+       "required": false,
+       "tag": 40984
+      },
+      {
+       "kind": "field",
+       "name": "EncodedPaymentText",
+       "required": false,
+       "tag": 40985
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

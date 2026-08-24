@@ -1,0 +1,24 @@
+{
+ "name": "LegOptionExerciseExpirationDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 548,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegOptionExerciseExpirationDateBusinessCenters",
+     "required": false,
+     "tag": 41515,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegOptionExerciseExpirationDateBusinessCenter",
+       "required": false,
+       "tag": 41516
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "name": "NoDerivativeEvents",
+ "tag": 1286,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup"
+  }
+ }
+}

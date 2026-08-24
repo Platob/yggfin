@@ -1,0 +1,126 @@
+{
+ "name": "QuoteEntryRejectReason",
+ "tag": 368,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Reason Quote Entry was rejected:",
+   "values": {
+    "1": "Unknown Symbol (security)",
+    "2": "Exhcnage (Security) closed",
+    "3": "Quote Request exceeds limit",
+    "4": "Too late to enter",
+    "5": "Unknown quote",
+    "6": "Duplicate quote",
+    "7": "Invalid bid/ask spread",
+    "8": "Invalid price",
+    "9": "Not authorized to quote security",
+    "10": "Price exceeds current price band",
+    "11": "Quote Locked - Unable to Update/Cancel",
+    "12": "Invalid or unknown Security Issuer",
+    "13": "Invalid or unknown Issuer of Underlying",
+    "99": "Other"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Reason Quote Entry was rejected:",
+   "values": {
+    "1": "Unknown Symbol (security)",
+    "2": "Exhcnage (Security) closed",
+    "3": "Quote Request exceeds limit",
+    "4": "Too late to enter",
+    "5": "Unknown Quote",
+    "6": "Duplicate Quote",
+    "7": "Invalid bid/ask spread",
+    "8": "Invalid price",
+    "9": "Not authorized to quote security",
+    "10": "Price exceeds current price band",
+    "11": "Quote Locked - Unable to Update/Cancel",
+    "99": "Other"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Reason Quote Entry was rejected:",
+   "values": {
+    "1": "Unknown symbol (security)",
+    "2": "Exhcnage (security) closed",
+    "3": "Quote exceeds limit",
+    "4": "Too late to enter",
+    "5": "Unknown quote",
+    "6": "Duplicate quote",
+    "7": "Invalid bid/ask spread",
+    "8": "Invalid price",
+    "9": "Not authorized to quote security",
+    "99": "Other"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Reason Quote Entry was rejected:",
+   "values": {
+    "1": "Unknown symbol (Security)",
+    "2": "Exchange(Security) closed",
+    "3": "Quote exceeds limit",
+    "4": "Too late to enter",
+    "5": "Unknown Quote",
+    "6": "Duplicate Quote",
+    "7": "Invalid bid/ask spread",
+    "8": "Invalid price",
+    "9": "Not authorized to quote security",
+    "99": "Other"
+   },
+   "used_in": [
+    "Mass Quote Acknowledgement"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Reason Quote Entry was rejected:",
+   "values": {
+    "1": "Unknown symbol (Security)",
+    "2": "Exchange(Security) closed",
+    "3": "Quote exceeds limit",
+    "4": "Too late to enter",
+    "5": "Unknown Quote",
+    "6": "Duplicate Quote",
+    "7": "Invalid bid/ask spread",
+    "8": "Invalid price",
+    "9": "Not authorized to quote security"
+   },
+   "used_in": [
+    "Mass Quote Acknowledgement"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Reason Quote Entry was rejected:",
+   "values": {
+    "1": "Unknown symbol (Security)",
+    "2": "Exchange(Security) closed",
+    "3": "Quote exceeds limit",
+    "4": "Too late to enter",
+    "5": "Unknown Quote",
+    "6": "Duplicate Quote",
+    "7": "Invalid bid/ask spread",
+    "8": "Invalid price",
+    "9": "Not authorized to quote security"
+   },
+   "value_names": {
+    "1": "UNKNOWN_SYMBOL",
+    "2": "EXCHANGE",
+    "3": "QUOTE_EXCEEDS_LIMIT",
+    "4": "TOO_LATE_TO_ENTER",
+    "5": "UNKNOWN_QUOTE",
+    "6": "DUPLICATE_QUOTE",
+    "7": "INVALID_BID_ASK_SPREAD",
+    "8": "INVALID_PRICE",
+    "9": "NOT_AUTHORIZED_TO_QUOTE_SECURITY"
+   },
+   "used_in": [
+    "Quote Acknowledgement"
+   ]
+  }
+ }
+}

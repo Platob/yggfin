@@ -1,0 +1,62 @@
+{
+ "name": "AllocLinkID",
+ "tag": 196,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Can be used to link two different Allocation messages (each with unique AllocID <70> ) together, i.e. for F/X \"Netting\" or \"Swaps\". Should be unique.",
+   "used_in": [
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Can be used to link two different Allocation messages (each with unique AllocID <70> ) together, i.e. for F/X \"Netting\" or \"Swaps\". Should be unique.",
+   "used_in": [
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Can be used to link two different Allocation messages (each with unique AllocID <70> ) together, i.e. for F/X \"Netting\" or \"Swaps\". Should be unique.",
+   "used_in": [
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Can be used to link two different Allocation messages (each with unique AllocID <70> together, i.e. for F/X \"Netting\" or \"Swaps\". Should be unique.",
+   "used_in": [
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Can be used to link two different Allocation <J> messages (each with unique AllocID <70> ) together, i.e. for F/X \"Netting\" or \"Swaps\". Should be unique.",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Can be used to link two different Allocation <J> messages (each with unique AllocID <70> ) together, i.e. for F/X 'Netting' or 'Swaps'. Should be unique.",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Can be used to link two different Allocation <J> messages (each with unique AllocID <70> ) together, i.e. for F/X 'Netting' or 'Swaps'. Should be unique.",
+   "used_in": [
+    "Allocation"
+   ]
+  }
+ }
+}

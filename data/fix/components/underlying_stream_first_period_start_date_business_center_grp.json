@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 476,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingStreamFirstPeriodStartDateBusinessCenters",
+     "required": false,
+     "tag": 40974,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
+       "required": false,
+       "tag": 40560
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

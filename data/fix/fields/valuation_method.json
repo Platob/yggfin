@@ -1,0 +1,39 @@
+{
+ "name": "ValuationMethod",
+ "tag": 1197,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Specifies the type of valuation method applied.",
+   "values": {
+    "EQTY": "premium style",
+    "FUT": "futures style mark-to-market",
+    "FUTDA": "futures style with an attached cash adjustment",
+    "CDS": "CDS style collateralization of market to market and coupon",
+    "CDSD": "CDS in delivery - use recovery rate to calculate obligation"
+   },
+   "value_names": {
+    "EQTY": "PREMIUM_STYLE",
+    "FUT": "FUTURES_STYLE_MARK_TO_MARKET",
+    "FUTDA": "FUTURES_STYLE_WITH_AN_ATTACHED_CASH_ADJUSTMENT",
+    "CDS": "CDS_STYLE_COLLATERALIZATION",
+    "CDSD": "CDS_IN_DELIVERY_USE_RECOVERY_RATE_TO_CALCULATE"
+   }
+  },
+  "5.0.SP1": {
+   "name": "FuturesValuationMethod",
+   "type": "String",
+   "description": "For futures, indicates type of valuation method applied",
+   "values": {
+    "EQTY": "premium style",
+    "FUT": "futures style mark-to-market",
+    "FUTDA": "futures style with an attached cash adjustment"
+   },
+   "value_names": {
+    "EQTY": "PREMIUM_STYLE",
+    "FUT": "FUTURES_STYLE_MARK_TO_MARKET",
+    "FUTDA": "FUTURES_STYLE_WITH_AN_ATTACHED_CASH_ADJUSTMENT"
+   }
+  }
+ }
+}

@@ -1,0 +1,136 @@
+{
+ "name": "CancellationRights",
+ "tag": 480,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "For CIV \u2013 A one character code identifying whether Cancellation rights/Cooling off period applies.",
+   "values": {
+    "M": "No - Waiver agreement",
+    "N": "No - Execution Only",
+    "O": "No - Institutional",
+    "Y": "Yes"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO_EXECUTION_ONLY",
+    "M": "NO_WAIVER_AGREEMENT",
+    "O": "NO_INSTITUTIONAL"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "NewOrderList",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "For CIV \u2013 A one character code identifying whether Cancellation rights/Cooling off period applies.",
+   "values": {
+    "M": "No - Waiver agreement",
+    "N": "No - Execution Only",
+    "O": "No - Institutional",
+    "Y": "Yes"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO_EXECUTION_ONLY",
+    "M": "NO_WAIVER_AGREEMENT",
+    "O": "NO_INSTITUTIONAL"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "NewOrderList",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "For CIV \u2013 A one character code identifying whether Cancellation rights/Cooling off period applies.",
+   "values": {
+    "M": "No - Waiver agreement",
+    "N": "No - Execution Only",
+    "O": "No - Institutional",
+    "Y": "Yes"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO_EXECUTION_ONLY",
+    "M": "NO_WAIVER_AGREEMENT",
+    "O": "NO_INSTITUTIONAL"
+   },
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "NewOrderSingle",
+    "NewOrderList",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "For CIV - A one character code identifying whether Cancellation rights/Cooling off period applies.",
+   "values": {
+    "Y": "Yes",
+    "N": "No - execution only",
+    "M": "No - waiver agreement",
+    "O": "No - institutional."
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO_EXECUTION_ONLY",
+    "M": "NO_WAIVER_AGREEMENT",
+    "O": "NO_INSTITUTIONAL"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "For CIV - A one character code identifying whether Cancellation rights/Cooling off period applies.",
+   "values": {
+    "Y": "Yes",
+    "N": "No - execution only",
+    "M": "No - waiver agreement",
+    "O": "No - institutional."
+   },
+   "value_names": {
+    "M": "NO_WAIVER_AGREEMENT",
+    "N": "NO_EXECUTION_ONLY",
+    "Y": "YES",
+    "O": "NO_INSTITUTIONAL"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

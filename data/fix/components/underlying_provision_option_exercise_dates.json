@@ -1,0 +1,128 @@
+{
+ "name": "UnderlyingProvisionOptionExerciseDates",
+ "versions": {
+  "5.0.SP2": {
+   "order": 106,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseBusinessDayConvention",
+     "required": false,
+     "tag": 42115
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingProvisionOptionExerciseBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingProvisionOptionExerciseFixedDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseEarliestDateOffsetPeriod",
+     "required": false,
+     "tag": 42116
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseEarliestDateOffsetUnit",
+     "required": false,
+     "tag": 42117
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseFrequencyPeriod",
+     "required": false,
+     "tag": 42118
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseFrequencyUnit",
+     "required": false,
+     "tag": 42119
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseStartDateUnadjusted",
+     "required": false,
+     "tag": 42120
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseStartDateRelativeTo",
+     "required": false,
+     "tag": 42121
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseStartDateOffsetPeriod",
+     "required": false,
+     "tag": 42122
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseStartDateOffsetUnit",
+     "required": false,
+     "tag": 42123
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseStartDateOffsetDayType",
+     "required": false,
+     "tag": 42124
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseStartDateAdjusted",
+     "required": false,
+     "tag": 42125
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExercisePeriodSkip",
+     "required": false,
+     "tag": 42126
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseBoundsFirstDateUnadjusted",
+     "required": false,
+     "tag": 42127
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseBoundsLastDateUnadjusted",
+     "required": false,
+     "tag": 42128
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseEarliestTime",
+     "required": false,
+     "tag": 42129
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseEarliestTimeBusinessCenter",
+     "required": false,
+     "tag": 42130
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseLatestTime",
+     "required": false,
+     "tag": 42131
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProvisionOptionExerciseLatestTimeBusinessCenter",
+     "required": false,
+     "tag": 42132
+    }
+   ]
+  }
+ }
+}

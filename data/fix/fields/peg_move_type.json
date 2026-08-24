@@ -1,0 +1,54 @@
+{
+ "name": "PegMoveType",
+ "tag": 835,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Describes whether peg is static or floats",
+   "values": {
+    "0": "Floating (default)",
+    "1": "Fixed"
+   },
+   "value_names": {
+    "0": "FLOATING",
+    "1": "FIXED"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Describes whether peg is static or floats",
+   "values": {
+    "0": "Floating (default)",
+    "1": "Fixed"
+   },
+   "value_names": {
+    "0": "FLOATING",
+    "1": "FIXED"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Describes whether peg is static or floats",
+   "values": {
+    "0": "Floating (default)",
+    "1": "Fixed"
+   },
+   "value_names": {
+    "0": "FLOATING",
+    "1": "FIXED"
+   }
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Describes whether peg is static or floats",
+   "values": {
+    "0": "Floating (default)",
+    "1": "Fixed"
+   },
+   "value_names": {
+    "0": "FLOATING",
+    "1": "FIXED"
+   }
+  }
+ }
+}

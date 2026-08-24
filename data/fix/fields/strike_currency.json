@@ -1,0 +1,22 @@
+{
+ "name": "StrikeCurrency",
+ "tag": 947,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Currency",
+   "description": "Currency in which the StrikePrice <202> is denominated."
+  },
+  "5.0.SP1": {
+   "type": "Currency",
+   "description": "Currency in which the StrikePrice <202> is denominated."
+  },
+  "5.0": {
+   "type": "Currency",
+   "description": "Currency in which the StrikePrice <202> is denominated."
+  },
+  "4.4": {
+   "type": "Currency",
+   "description": "Currency in which the StrikePrice <202> is denominated."
+  }
+ }
+}

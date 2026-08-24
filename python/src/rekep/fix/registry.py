@@ -6,18 +6,17 @@ import concurrent.futures
 import dataclasses
 import html
 import importlib.resources
-import io
 import json
 import os
 import pathlib
-import posixpath
 import re
 import time
 import urllib.error
 import urllib.request
-import zipfile
-from collections.abc import Sequence
+import warnings
+from collections.abc import Mapping, Sequence
 from functools import cache, cached_property
+from types import MappingProxyType
 from typing import Any, Self
 
 import pyarrow.fs
@@ -25,6 +24,7 @@ import pyarrow.fs
 from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.filesystems import local_path, read_bytes, resolve, write_bytes
+from rekep.fix.entries import Alias, ComponentEntry, FieldEntry, fold, merged_field, slug_of
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
@@ -34,6 +34,20 @@ from rekep.fix.quickfix import (
     parse_session,
     parse_spec,
     spec_name,
+)
+from rekep.fix.store import (
+    EXPLODED,
+    LAYOUTS,
+    ArchiveDocuments,
+    DirectoryDocuments,
+    Documents,
+    ExplodedLayout,
+    Layout,
+    documents_of,
+    explode,
+    layout_of,
+    slug_collisions,
+    write_archive,
 )
 from rekep.urls import HTTP, LOCAL, Url
 
@@ -88,6 +102,19 @@ _USED_IN = re.compile(
 #: A parenthetical note beside a name on the by-tag page -- `(no longer
 #: used)`, `(replaced)` -- which is the one deprecation signal the site has.
 _NOTE = re.compile(r"\(([^)]*)\)\s*$")
+
+#: The tiers `resolve` walks, in the order it walks them: an identity's own
+#: name, then a name some version spells for it, then a declared alias.
+_CANONICAL = "canonical"
+_VERSIONED = "versioned"
+_ALIASED = "aliased"
+
+#: Where a field FIX never numbered sorts among the ones it did: after all of
+#: them, in one place, rather than at tag zero beside `BeginString`.
+_NO_TAG = 1 << 31
+
+#: One version's fields, three ways: by tag, by lowercased name, in order.
+_Index = tuple[dict[int, Field], dict[str, Field], list[Field]]
 
 _TAGS = re.compile(r"<[^>]+>")
 _SPACES = re.compile(r"\s+")
@@ -148,23 +175,49 @@ class FixRegistry(Convertible):
     #: handles "cannot be had right now".
     offline: bool = False
 
+    #: Which shape a **cold** store is written in. An existing store says what
+    #: it is by what it holds, and is never rewritten into the other shape by
+    #: being opened -- `migrate` is how a store changes layout, deliberately.
+    layout: str = EXPLODED
+
+    #: How long a local store may go without being checked against upstream,
+    #: in seconds. `0` -- the default -- never refetches: the local copy is
+    #: what this registry serves, which is the whole of what "offline-first"
+    #: means and what every pipeline reading a packaged dictionary wants.
+    #:
+    #: Above zero, a store older than this is regenerated from the spec before
+    #: it is served, once per registry. A refetch that fails is reported and
+    #: the local copy is served anyway: a dictionary that is a day stale still
+    #: parses every message, and one that raises parses none.
+    cache_ttl: float = 0.0
+
     def __post_init__(self) -> None:
         """Normalise the two locations once, so everything downstream agrees."""
         self.base_url = Url.from_string(str(self.base_url)).into_string().rstrip("/")
         self.spec_url = Url.from_string(str(self.spec_url)).into_string().rstrip("/")
+        if self.layout not in LAYOUTS:
+            raise ValueError(f"unknown FIX registry layout {self.layout!r}; one of {list(LAYOUTS)}")
+        if self.cache_ttl < 0:
+            raise ValueError(f"a FIX registry cache TTL cannot be negative: {self.cache_ttl}")
 
     @classmethod
     @cache
-    def from_builtin(cls) -> Self:
-        """The packaged field projection, offline and shared by declarations."""
+    def from_builtin(cls, cache_ttl: float = 0.0) -> Self:
+        """The packaged field projection, offline and shared by declarations.
+
+        `cache_ttl` above zero makes this registry check its age against the
+        spec before serving -- which needs the network, so it also lifts
+        `offline`. Zero, the default, is the packaged copy and nothing else.
+        """
         stored = importlib.resources.files(__package__).joinpath("registry.zip")
-        return cls(cache_dir=os.fspath(stored), offline=True)
+        return cls(cache_dir=os.fspath(stored), offline=not cache_ttl, cache_ttl=cache_ttl)
 
     # -- versions ------------------------------------------------------------
 
     @cached_property
     def versions(self) -> tuple[str, ...]:
         """Every FIX version the dictionary carries, newest first."""
+        self.refresh_if_stale()
         stored = self._stored_versions()
         if stored:
             return stored
@@ -213,7 +266,8 @@ class FixRegistry(Convertible):
     def fields(self, version: str, *, refresh: bool = False) -> list[Field]:
         """Every field of one FIX version, from the cache or from one scrape."""
         version = self._spelling(version)
-        if not refresh:
+        if not refresh and not self._torn():
+            self.refresh_if_stale()
             stored = self._stored_fields(version)
             if stored is not None:
                 return stored
@@ -278,10 +332,7 @@ class FixRegistry(Convertible):
         nothing and works offline. Empty for a version stored before this was
         kept, or one whose spec could not be read.
         """
-        cached = self._read_cache(f"{self._spelling(version)}.json")
-        if not cached:
-            return ()
-        return tuple((str(name), bool(required)) for name, required in cached.get("session", ()))
+        return self._stored_session(self._spelling(version))
 
     def components(self, version: str, *, refresh: bool = False) -> list[SpecComponent]:
         """Every reusable component of one FIX version, in spec order."""
@@ -375,7 +426,7 @@ class FixRegistry(Convertible):
             indexed = self._index(candidate)
             if indexed is None:
                 continue
-            by_tag, by_name = indexed
+            by_tag, by_name, _ = indexed
             member = by_tag.get(int(key)) if _is_tag(key) else by_name.get(str(key).strip().lower())
             if member is not None:
                 found.append(member)
@@ -414,15 +465,13 @@ class FixRegistry(Convertible):
     def tags(self, version: str | None = None) -> dict[str, int]:
         """Every field name to its tag number, lowercased, newest version winning."""
         mapping: dict[str, int] = {}
-        if version is not None:
-            (candidate,) = self._versions(version)
-            members = self.fields(candidate)
+        candidates = self._versions(version) if version is not None else self._versions(None)
+        for candidate in candidates:
+            members = self.fields(candidate) if version is not None else self._members(candidate)
             for member in members:
-                mapping.setdefault(member.name.lower(), int(member.fix["tag"]))
-            return mapping
-        for candidate in self._versions(None):
-            for member in self._members(candidate):
-                mapping.setdefault(member.name.lower(), int(member.fix["tag"]))
+                tag = member.fix.get("tag")
+                if tag:
+                    mapping.setdefault(member.name.lower(), int(tag))
         return mapping
 
     def search(
@@ -442,19 +491,388 @@ class FixRegistry(Convertible):
             for member in self._members(candidate):
                 rank = _rank(member, wanted)
                 if rank is not None:
-                    ranked.append((rank, order, int(member.fix["tag"]), member))
+                    ranked.append((rank, order, int(member.fix.get("tag") or _NO_TAG), member))
         if not ranked and fuzzy and not _is_tag(wanted):
             ceiling = max(2, len(wanted) // 3)
             for order, candidate in enumerate(self._versions(version)):
                 for member in self._members(candidate):
                     distance = _levenshtein(wanted, member.name.lower(), ceiling)
                     if distance is not None:
-                        ranked.append((100 + distance, order, int(member.fix["tag"]), member))
+                        ranked.append(
+                            (100 + distance, order, int(member.fix.get("tag") or _NO_TAG), member)
+                        )
         ranked.sort(key=lambda entry: entry[:3])
         return [member for *_, member in ranked[:limit]]
 
+    # -- one identity, every version -----------------------------------------
+    #
+    # `lookup` and `scalar` answer about one key at a time and read a version
+    # at a time. These answer about the whole dictionary at once, and about an
+    # identity rather than a version's reading of one -- which is what a tool
+    # comparing a capture's key names against the standard needs, and what
+    # nine per-version documents could not be asked.
+
+    def field_entries(self) -> Mapping[str, FieldEntry]:
+        """Every field identity this registry holds, keyed by canonical name."""
+        return MappingProxyType({entry.name: entry for entry in self._entries[0].values()})
+
+    def component_entries(self) -> Mapping[str, ComponentEntry]:
+        """Every component identity this registry holds, keyed by canonical name."""
+        return MappingProxyType({entry.name: entry for entry in self._entries[1].values()})
+
+    def merged_fields(self) -> Mapping[str, Field]:
+        """The whole unified field table: `{canonical name: merged declaration}`.
+
+        `scalar()` for every field at once, and the same declaration it builds
+        -- one canonical identity carrying each version's disagreement as
+        metadata rather than resolving it away.
+        """
+        order = self.versions
+        found: dict[str, Field] = {}
+        for entry in self._entries[0].values():
+            members = entry.into_fields(order)
+            if members:
+                found[entry.name] = merged_field(members)
+        return MappingProxyType(found)
+
+    def merged_components(self) -> Mapping[str, ComponentEntry]:
+        """The whole unified component table: `{canonical name: entry}`.
+
+        An entry, not a declaration, because "the Parties component across all
+        versions" is not one member tree -- it is every version's tree, and
+        `paths`, `delimiters` and `diff` are the questions worth asking of it.
+        """
+        return self.component_entries()
+
+    def merged_component(self, name: str) -> ComponentEntry:
+        """One component across every version it is declared for."""
+        wanted = fold(name)
+        for entry in self._entries[1].values():
+            if wanted in {fold(spelled) for spelled in entry.spellings()}:
+                return entry
+        raise KeyError(f"no FIX component {name!r} in any version")
+
+    def resolve(self, name: str) -> FieldEntry | None:
+        """The identity a rendered name means, or None when nothing here is it.
+
+        Deterministic, in three tiers, and the tiers are the whole rule:
+
+        1. the canonical name of an identity;
+        2. a name some version spells for it (tag 64 is `FutSettDate` through
+           4.3 and `SettlDate` after, and both are that identity);
+        3. a declared alias -- a rendered or vendor spelling, a legacy name, a
+           near miss confirmed against a capture.
+
+        A later tier is only consulted when every earlier one missed, so
+        adding an alias can never take a name away from a field that already
+        claims it. Two identities claiming one name in the same tier is a
+        defect in the store, not something to resolve at read time:
+        `alias_conflicts` finds it and `check` fails the build on it.
+        """
+        return self._resolutions.get(fold(name))
+
+    def alias_conflicts(self) -> dict[str, list[str]]:
+        """`{name: the identities claiming it}` for every name two fields claim.
+
+        Read per tier, because a canonical name overruling an alias is the
+        rule and not a conflict -- what this reports is two identities meeting
+        inside one tier, where nothing decides between them.
+        """
+        conflicts: dict[str, list[str]] = {}
+        claimed: set[str] = set()
+        for tier in (_CANONICAL, _VERSIONED, _ALIASED):
+            names: dict[str, list[str]] = {}
+            for entry in self._entries[0].values():
+                for spelled in _tier(entry, tier):
+                    names.setdefault(fold(spelled), []).append(entry.name)
+            for folded, owners in names.items():
+                unique = list(dict.fromkeys(owners))
+                if len(unique) > 1 and folded not in claimed:
+                    conflicts[folded] = unique
+                claimed.add(folded)
+        return conflicts
+
+    def check(self) -> list[str]:
+        """Everything wrong with this store, as lines; empty when it is sound.
+
+        What a build runs. Three failures, and each one is silent otherwise: an
+        alias two fields claim resolves a rendered key to whichever was read
+        first; two identities stored in one file lose one of themselves on the
+        next write; an entry declared for no version answers nothing.
+        """
+        return _problems(self._entries)
+
     @cached_property
-    def _indexes(self) -> dict[str, tuple[dict[int, Field], dict[str, Field]] | None]:
+    def _entries(self) -> tuple[dict[str, FieldEntry], dict[str, ComponentEntry]]:
+        """The identity view of this store, however the store itself is laid out.
+
+        Read straight off an exploded store, and derived from a versioned one,
+        so every reading above answers the same for both and a migration has
+        something to be checked against.
+        """
+        layout = self._layout
+        if isinstance(layout, ExplodedLayout):
+            return layout.field_entries, layout.component_entries
+        order = self.versions
+        return explode(
+            order,
+            {version: self._members(version) for version in order},
+            {version: self._stored_components(version) or () for version in order},
+        )
+
+    @cached_property
+    def _resolutions(self) -> dict[str, FieldEntry]:
+        """`{folded name: identity}`, built once in tier order."""
+        found: dict[str, FieldEntry] = {}
+        for tier in (_CANONICAL, _VERSIONED, _ALIASED):
+            for entry in self._entries[0].values():
+                for spelled in _tier(entry, tier):
+                    found.setdefault(fold(spelled), entry)
+        return found
+
+    # -- editing the store ----------------------------------------------------
+    #
+    # Registering a newly observed vendor field or a newly confirmed alias is
+    # a supported operation, not a hand edit of a JSON file: every change goes
+    # through one of these, is checked against the schema and against what the
+    # store already holds, and is refused whole rather than written half.
+
+    def add_field(self, entry: FieldEntry) -> FieldEntry:
+        """Store one new field identity; `KeyError` when it is already here."""
+        held = self._entries[0]
+        if entry.slug in held:
+            raise KeyError(f"FIX field {entry.name!r} is already stored as {entry.slug}.json")
+        return self._write_field(entry)
+
+    def update_field(self, entry: FieldEntry) -> FieldEntry:
+        """Replace one stored field identity; `KeyError` when there is none."""
+        if entry.slug not in self._entries[0]:
+            raise KeyError(f"no FIX field stored as {entry.slug}.json")
+        return self._write_field(entry)
+
+    def remove_field(self, name: str) -> bool:
+        """Delete one field identity; False when the store did not hold it."""
+        removed = self._editable.remove_field(slug_of(name))
+        self._forget()
+        return removed
+
+    def add_component(self, entry: ComponentEntry) -> ComponentEntry:
+        """Store one new component identity; `KeyError` when it is already here."""
+        if entry.slug in self._entries[1]:
+            raise KeyError(f"FIX component {entry.name!r} is already stored")
+        return self._write_component(entry)
+
+    def update_component(self, entry: ComponentEntry) -> ComponentEntry:
+        """Replace one stored component identity; `KeyError` when there is none."""
+        if entry.slug not in self._entries[1]:
+            raise KeyError(f"no FIX component stored as {entry.slug}.json")
+        return self._write_component(entry)
+
+    def remove_component(self, name: str) -> bool:
+        """Delete one component identity; False when the store did not hold it."""
+        removed = self._editable.remove_component(slug_of(name))
+        self._forget()
+        return removed
+
+    def alias_field(self, name: str, *aliases: Alias | str) -> FieldEntry:
+        """Add spellings one field has been observed under, and keep the entry.
+
+        The operation a classification run produces: a near miss confirmed
+        against a capture becomes a data change here, never a branch in a
+        resolver.
+        """
+        entry = self.resolve(name)
+        if entry is None:
+            raise KeyError(f"no FIX field {name!r} in this registry")
+        added = tuple(alias if isinstance(alias, Alias) else Alias(name=alias) for alias in aliases)
+        held = {alias.folded for alias in entry.aliases}
+        return self.update_field(
+            dataclasses.replace(
+                entry,
+                aliases=(*entry.aliases, *(a for a in added if a.folded not in held)),
+            )
+        )
+
+    @property
+    def _editable(self) -> ExplodedLayout:
+        """The store, refusing the edit when it is not one that can be edited."""
+        layout = self._layout
+        if not isinstance(layout, ExplodedLayout):
+            raise TypeError(
+                "this FIX registry store keeps one file per version and cannot be edited "
+                "one identity at a time; migrate it first"
+            )
+        return layout
+
+    def _write_field(self, entry: FieldEntry) -> FieldEntry:
+        """Validate one field entry against the whole store, then write it."""
+        layout = self._editable
+        self._validated(fields={**self._entries[0], entry.slug: entry})
+        layout.store_field(entry)
+        self._forget()
+        return entry
+
+    def _write_component(self, entry: ComponentEntry) -> ComponentEntry:
+        """Validate one component entry against the whole store, then write it."""
+        layout = self._editable
+        self._validated(components={**self._entries[1], entry.slug: entry})
+        layout.store_component(entry)
+        self._forget()
+        return entry
+
+    def _validated(
+        self,
+        fields: Mapping[str, FieldEntry] | None = None,
+        components: Mapping[str, ComponentEntry] | None = None,
+    ) -> None:
+        """Refuse a change that would make the store inconsistent, before writing.
+
+        Checked against what the store would hold *after* the change rather
+        than against the change alone: an alias is only a collision beside the
+        entry that already claims it.
+        """
+        held = (fields or self._entries[0], components or self._entries[1])
+        problems = _problems(held)
+        if problems:
+            raise ValueError("; ".join(problems))
+
+    # -- changing the layout --------------------------------------------------
+
+    def migrate(
+        self,
+        target: str | os.PathLike[str],
+        filesystem: pyarrow.fs.FileSystem | None = None,
+    ) -> Self:
+        """Write this store's dictionary into `target` as one file per identity.
+
+        The whole of it, in one pass, and then read back: what comes out has to
+        answer every version of every question the same as what went in, or the
+        migration failed and says so rather than shipping a store that answers
+        differently. `verify` is that comparison on its own, for a target
+        somebody else wrote.
+        """
+        order = self.versions
+        fields = {version: self._members(version) for version in order}
+        components = {
+            version: stored
+            for version in order
+            if (stored := self._stored_components(version)) is not None
+        }
+        sessions = {version: self.session(version) for version in order}
+        field_entries, component_entries = explode(order, fields, components)
+        documents = documents_of(order, field_entries, component_entries, sessions, components)
+        migrated = dataclasses.replace(
+            self, cache_dir=os.fspath(target), filesystem=filesystem, offline=True, cache_ttl=0.0
+        )
+        if migrated.archived:
+            ArchiveDocuments(migrated._cache_path).write_all(documents)
+            migrated._sync_archive()
+        else:
+            for name, document in documents.items():
+                migrated._documents.write(name, document)
+        differences = self.verify(migrated)
+        if differences:
+            raise ValueError(
+                f"migrating the FIX registry to {target} changed what it answers: "
+                + "; ".join(differences[:5])
+            )
+        return migrated
+
+    def verify(self, other: FixRegistry) -> list[str]:
+        """Every question these two registries answer differently, as lines.
+
+        Every version, every field, every component, every session layer and
+        the whole name-to-tag mapping -- the readings a parse depends on. Empty
+        means the two are the same dictionary however either is stored.
+        """
+        differences = []
+        if self.versions != other.versions:
+            differences.append(f"versions {self.versions} != {other.versions}")
+        for version in self.versions:
+            mine, theirs = self.fields(version), other.fields(version)
+            if mine != theirs:
+                names = {member.name for member in mine} ^ {member.name for member in theirs}
+                differences.append(
+                    f"{version} fields differ ({len(mine)} vs {len(theirs)}"
+                    + (f", {sorted(names)[:5]}" if names else "")
+                    + ")"
+                )
+            if self._stored_components(version) != other._stored_components(version):
+                differences.append(f"{version} components differ")
+            if self.session(version) != other.session(version):
+                differences.append(f"{version} session layer differs")
+        if self.tags() != other.tags():
+            differences.append("the name to tag mapping differs")
+        for key in sorted(self.tags().values()):
+            if self.scalar(key) != other.scalar(key):
+                differences.append(f"the merged declaration of tag {key} differs")
+        return differences
+
+    # -- keeping the store fresh ----------------------------------------------
+
+    def refresh_if_stale(self) -> bool:
+        """Regenerate the store from upstream when it is older than `cache_ttl`.
+
+        True when a refetch ran and the store was written. False when the TTL
+        is off, when the store is young enough, or when the refetch failed --
+        the last of which is reported and then served stale, because a
+        dictionary a day old parses every message and one that raises parses
+        none.
+        """
+        if not self.cache_ttl or self.__dict__.get("_refreshed"):
+            return False
+        self.__dict__["_refreshed"] = True
+        age = self._store_age()
+        if age is not None and age <= self.cache_ttl:
+            return False
+        try:
+            refreshed = self._refresh()
+        except (OSError, ValueError) as error:
+            aged = "of unknown age" if age is None else f"{age:.0f}s old"
+            warnings.warn(
+                f"the FIX registry at {self.cache_dir} is {aged} and could not be "
+                f"refreshed ({error}); serving the local copy",
+                RuntimeWarning,
+                stacklevel=3,
+            )
+            return False
+        return refreshed
+
+    def _store_age(self) -> float | None:
+        """How many seconds since this store was last written; None when never."""
+        stamps = [
+            stamp for name in self._documents.names() if (stamp := self._documents.stamp(name))
+        ]
+        return time.time() - max(stamps) if stamps else None
+
+    def _refresh(self) -> bool:
+        """Read the spec for every stored version and write what it says."""
+        spellings = self._stored_spellings()
+        if not spellings:
+            raise ValueError("this FIX registry store holds no version to refresh")
+        refreshed = False
+        for version in spellings:
+            document = self._fetch(f"{self.spec_url}/{spec_name(version)}")
+            spec = parse_spec(document)
+            if not spec:
+                raise ValueError(f"the spec for {version} says nothing")
+            stored = self._stored_fields(version) or []
+            for member in stored:
+                tag = member.fix.get("tag")
+                known = spec.get(int(tag)) if tag and tag.isdigit() else None
+                if known and known.values:
+                    member.fix["value_names"] = json.dumps(known.values, separators=(",", ":"))
+            self._store_fields(
+                version,
+                stored,
+                parse_session(document) or self.session(version),
+                list(parse_components(document).values()),
+            )
+            refreshed = True
+        return refreshed
+
+    @cached_property
+    def _indexes(self) -> dict[str, _Index | None]:
         return {}
 
     @cached_property
@@ -473,12 +891,12 @@ class FixRegistry(Convertible):
         # A version may annotate the canonical name (`Field(Deprecated)`) while
         # retaining its tag. Once the newest name resolves, the tag is the
         # cross-version identity and must bring that version back into history.
-        if not _is_tag(key):
+        if not _is_tag(key) and found[0].fix.get("tag"):
             found = self.lookup(int(found[0].fix["tag"]))
         built = self._scalars[identity] = _merged_scalar(found)
         return built
 
-    def _index(self, version: str) -> tuple[dict[int, Field], dict[str, Field]] | None:
+    def _index(self, version: str) -> _Index | None:
         """`(by tag, by lowercased name)` for one version, built once.
 
         None for a version that cannot be had right now -- offline with no
@@ -494,22 +912,24 @@ class FixRegistry(Convertible):
             except OSError:
                 built = self._indexes[version] = None
             else:
-                by_tag = {int(member.fix["tag"]): member for member in members}
+                # A field FIX never numbered -- a bridge's rendered
+                # `AMON.ISINCODE` -- has no tag and belongs to the name index
+                # alone. Writing it under `0` would make every such field the
+                # same field.
+                by_tag = {int(tag): member for member in members if (tag := member.fix.get("tag"))}
                 # First declaration wins on a duplicated name, matching
                 # `tags()` -- so the tag a name resolves to and the field a
                 # lookup returns can never disagree about each other.
                 by_name: dict[str, Field] = {}
                 for member in members:
                     by_name.setdefault(member.name.lower(), member)
-                built = self._indexes[version] = (by_tag, by_name)
+                built = self._indexes[version] = (by_tag, by_name, members)
         return built
 
     def _members(self, version: str) -> list[Field]:
         """`fields(version)` for a walk over many versions: absent means empty."""
         indexed = self._index(version)
-        if indexed is None:
-            return []
-        return list(indexed[0].values())
+        return [] if indexed is None else list(indexed[2])
 
     # -- scraping ------------------------------------------------------------
 
@@ -635,19 +1055,20 @@ class FixRegistry(Convertible):
 
     # -- the store -----------------------------------------------------------
     #
-    # Five methods, and they are the whole of where the dictionary is kept.
+    # Seven methods, and they are the whole of where the dictionary is kept.
     # Everything above -- the scraping, the version rules, the ordering, the
-    # searching -- is written against these and is the same wherever the
-    # fields live: a directory of JSON, or a zip of the same files.
+    # searching -- is written against these and is the same wherever the fields
+    # live and in whichever layout: a directory or a zip, one file per version
+    # or one file per identity. `rekep.fix.store` owns both of those choices;
+    # nothing here reads a path or a member name.
 
     def _stored_versions(self) -> tuple[str, ...]:
         """The version list this store already holds; empty when it holds none."""
-        cached = self._read_cache("versions.json")
-        return tuple(cached["versions"]) if cached else ()
+        return self._layout.versions()
 
     def _store_versions(self, versions: tuple[str, ...]) -> None:
         """Keep the version list, so the front page is fetched once."""
-        self._write_cache("versions.json", {"versions": list(versions)})
+        self._layout.store_versions(versions)
 
     def _known_versions(self) -> tuple[str, ...]:
         """The versions this store has *fields* for, newest first.
@@ -666,31 +1087,19 @@ class FixRegistry(Convertible):
 
     def _stored_spellings(self) -> tuple[str, ...]:
         """Every version this store has fields for, spelled as it stored them."""
-        if self.archived:
-            names = _archived_names(self._cache_path)
-        else:
-            filesystem, directory = self._cache
-            selector = pyarrow.fs.FileSelector(directory, recursive=False, allow_not_found=True)
-            names = {
-                posixpath.basename(info.path): info.path
-                for info in filesystem.get_file_info(selector)
-                if info.type == pyarrow.fs.FileType.File and info.path.endswith(".json")
-            }
-        return tuple(sorted(name[: -len(".json")] for name in names if name != "versions.json"))
+        return self._layout.spellings()
 
     def _stored_fields(self, version: str) -> list[Field] | None:
         """One version's fields as this store holds them; None when it does not."""
-        cached = self._read_cache(f"{version}.json")
-        if cached is None:
-            return None
-        return [Field.from_dict(member) for member in cached["fields"]]
+        return self._layout.fields(version)
 
     def _stored_components(self, version: str) -> list[SpecComponent] | None:
         """Stored component declarations; None means this predates them."""
-        cached = self._read_cache(f"{version}.json")
-        if cached is None or "components" not in cached:
-            return None
-        return [SpecComponent.from_dict(component) for component in cached["components"]]
+        return self._layout.components(version)
+
+    def _stored_session(self, version: str) -> tuple[tuple[str, bool], ...]:
+        """One version's session layer as this store holds it."""
+        return self._layout.session(version)
 
     def _store_fields(
         self,
@@ -700,16 +1109,38 @@ class FixRegistry(Convertible):
         components: Sequence[SpecComponent] | None = None,
     ) -> None:
         """Keep one version's fields and optional spec declarations."""
-        payload: dict[str, Any] = {
-            "version": version,
-            "url": f"{self.base_url}/{version}/",
-            "fields": [member.into_dict() for member in fields],
-        }
-        if session:
-            payload["session"] = [[name, required] for name, required in session]
-        if components is not None:
-            payload["components"] = [component.into_dict() for component in components]
-        self._write_cache(f"{version}.json", payload)
+        self._layout.store(version, fields, session, components, url=f"{self.base_url}/{version}/")
+        self._forget()
+
+    def _torn(self) -> bool:
+        """Whether this store holds documents it cannot read, said out loud.
+
+        A torn write used to cost a whole version, which read as a cold cache
+        and was scraped over. One identity per file makes it cost one field --
+        and a version that still answers, one field short, is exactly the
+        silence this store exists to avoid. So it is written again, and an
+        offline registry that cannot says so.
+        """
+        torn = getattr(self._layout, "torn", ())
+        if not torn:
+            return False
+        warnings.warn(
+            f"the FIX registry at {self.cache_dir} cannot read {list(torn[:5])}"
+            + ("" if self.offline else "; scraping over them"),
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        return not self.offline
+
+    def _forget(self) -> None:
+        """Drop everything derived from the store, after the store changed."""
+        forget = getattr(self._layout, "forget", None)
+        if forget is not None:
+            forget()
+        self._indexes.clear()
+        self._scalars.clear()
+        self.__dict__.pop("_entries", None)
+        self.__dict__.pop("_resolutions", None)
 
     # -- the cache files and the wire -----------------------------------------
 
@@ -769,19 +1200,27 @@ class FixRegistry(Convertible):
             return
         write_bytes(pathlib.Path(self._cache_path).read_bytes(), path, filesystem)
 
+    @cached_property
+    def _documents(self) -> Documents:
+        """Where this registry's documents are read and written, resolved once."""
+        if self.archived:
+            return ArchiveDocuments(self._cache_path, self._sync_archive)
+        filesystem, directory = self._cache
+        return DirectoryDocuments(filesystem, directory)
+
+    @cached_property
+    def _layout(self) -> Layout:
+        """Which shape this store's documents are in, read off what it holds."""
+        return layout_of(self._documents, self.layout)
+
     def into_zip(self, target: str | os.PathLike[str]) -> pathlib.Path | str:
-        """Write everything this registry holds into one archive, and name it."""
-        output = io.BytesIO()
-        with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
-            listed = self._stored_versions()
-            if listed:
-                archive.writestr(_member("versions.json"), _document({"versions": list(listed)}))
-            for version in self._stored_spellings():
-                stored = self._read_cache(f"{version}.json")
-                if stored is not None:
-                    archive.writestr(_member(f"{version}.json"), _document(stored))
-        write_bytes(output.getvalue(), target)
-        return _written_target(target)
+        """Write everything this registry holds into one archive, and name it.
+
+        Whatever it holds, in whichever layout: the documents are copied
+        verbatim, so an archive of an exploded store is an exploded store and
+        an archive of a versioned one is a versioned one.
+        """
+        return write_archive(target, self._documents.read_many(""))
 
     def into_projection(
         self,
@@ -825,78 +1264,38 @@ class FixRegistry(Convertible):
 
         if _resource_identity(target) == _resource_identity(self.cache_dir, self.filesystem):
             raise ValueError("a registry projection cannot replace its source")
-        output = io.BytesIO()
-        with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
-            versions = (*extra_by_version, *self.versions)
-            archive.writestr(_member("versions.json"), _document({"versions": list(versions)}))
-            for version in versions:
-                if version in extra_by_version:
-                    projected = sorted(
-                        extra_by_version[version], key=lambda member: int(member.fix["tag"])
-                    )
-                    payload = {
-                        "version": version,
-                        "url": f"{self.base_url}/{version}/",
-                        "fields": [member.into_dict() for member in projected],
-                    }
-                    archive.writestr(_member(f"{version}.json"), _document(payload))
-                    continue
-                selected = [
-                    member for member in self.fields(version) if int(member.fix["tag"]) in wanted
-                ]
-                payload: dict[str, Any] = {
-                    "version": version,
-                    "url": f"{self.base_url}/{version}/",
-                    "fields": [member.into_dict() for member in selected],
-                }
-                session = self.session(version)
-                if session:
-                    names = {member.name for member in selected}
-                    carried = [[name, required] for name, required in session if name in names]
-                    if carried:
-                        payload["session"] = carried
-                # Whole, never projected: a component declares where a group
-                # starts and ends, and a tree missing the members whose tags
-                # this projection did not select would split the group
-                # somewhere else. Dropping them entirely is worse still --
-                # `components()` then answers `[]` for every version and the
-                # Parties extractor silently produces nothing.
-                components = self._stored_components(version)
-                if components is not None:
-                    payload["components"] = [member.into_dict() for member in components]
-                archive.writestr(_member(f"{version}.json"), _document(payload))
-        write_bytes(output.getvalue(), target)
-        return _written_target(target)
-
-    def _read_cache(self, name: str) -> dict[str, Any] | None:
-        if self.archived:
-            return _read_archived(self._cache_path, name)
-        filesystem, directory = self._cache
-        path = posixpath.join(directory, name)
-        try:
-            with filesystem.open_input_stream(path) as stream:
-                return json.loads(stream.read().decode("utf-8"))
-        except FileNotFoundError:
-            return None
-        except (OSError, ValueError, pyarrow.ArrowException):
-            # A torn write or someone else's file: scrape over it rather than
-            # refuse to run offline forever.
-            return None
-
-    def _write_cache(self, name: str, payload: dict[str, Any]) -> None:
-        if self.archived:
-            _write_archived(self._cache_path, name, _document(payload))
-            self._sync_archive()
-            return
-        filesystem, directory = self._cache
-        filesystem.create_dir(directory, recursive=True)
-        path = posixpath.join(directory, name)
-        # Written beside then renamed, so a reader never sees half a file and
-        # a crash never costs the cache that was already there.
-        scratch = f"{path}.tmp"
-        with filesystem.open_output_stream(scratch) as stream:
-            stream.write(_document(payload).encode())
-        filesystem.move(scratch, path)
+        versions = (*extra_by_version, *self.versions)
+        projected: dict[str, list[Field]] = {}
+        sessions: dict[str, Sequence[tuple[str, bool]]] = {}
+        declared: dict[str, Sequence[SpecComponent]] = {}
+        for version in versions:
+            if version in extra_by_version:
+                projected[version] = sorted(
+                    extra_by_version[version], key=lambda member: int(member.fix["tag"])
+                )
+                continue
+            selected = [
+                member for member in self.fields(version) if int(member.fix["tag"]) in wanted
+            ]
+            projected[version] = selected
+            names = {member.name for member in selected}
+            sessions[version] = [
+                (name, required) for name, required in self.session(version) if name in names
+            ]
+            # Whole, never projected: a component declares where a group starts
+            # and ends, and a tree missing the members whose tags this
+            # projection did not select would split the group somewhere else.
+            # Dropping them entirely is worse still -- `components()` then
+            # answers `[]` for every version and the Parties extractor silently
+            # produces nothing.
+            stored = self._stored_components(version)
+            if stored is not None:
+                declared[version] = stored
+        field_entries, component_entries = explode(versions, projected, declared)
+        return write_archive(
+            target,
+            documents_of(versions, field_entries, component_entries, sessions, declared),
+        )
 
     def _fetch(self, url: str) -> str:
         """One page, as text, retried while the site says "later"."""
@@ -937,85 +1336,6 @@ def _written_target(target: str | os.PathLike[str]) -> pathlib.Path | str:
     """A local output as a `Path`, and a remote one as its canonical URI."""
     parsed = Url.from_string(os.fspath(target))
     return pathlib.Path(parsed.store_path) if parsed.scheme in LOCAL else parsed.into_string()
-
-
-def _document(payload: dict[str, Any]) -> str:
-    """One cache file's text. The one place the on-disk spelling is decided."""
-    return json.dumps(payload, indent=1)
-
-
-def _member(name: str) -> zipfile.ZipInfo:
-    """One archive member, stamped at the start of zip time and on no host."""
-    entry = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
-    entry.compress_type = zipfile.ZIP_DEFLATED
-    entry.create_system = 3
-    entry.external_attr = 0o644 << 16
-    return entry
-
-
-def _archived_names(archive: str | os.PathLike[str]) -> dict[str, str]:
-    """`{file name: member name}` for the JSON in an archive, or nothing."""
-    try:
-        with zipfile.ZipFile(archive) as opened:
-            members = opened.namelist()
-    except (OSError, zipfile.BadZipFile):
-        return {}
-    found: dict[str, str] = {}
-    for member in sorted(members, key=lambda name: (name.count("/"), name)):
-        name = member.rsplit("/", 1)[-1]
-        if name.endswith(".json"):
-            found.setdefault(name, member)
-    return found
-
-
-def _read_archived(archive: str | os.PathLike[str], name: str) -> dict[str, Any] | None:
-    """One member of an archive, as the document it holds; None when absent."""
-    member = _archived_names(archive).get(name)
-    if member is None:
-        return None
-    try:
-        with zipfile.ZipFile(archive) as opened:
-            return json.loads(opened.read(member).decode("utf-8"))
-    except (OSError, ValueError, zipfile.BadZipFile):
-        # A torn archive is a cold cache, not a dead registry -- the same
-        # reading a torn file gets.
-        return None
-
-
-def _write_archived(archive: str | os.PathLike[str], name: str, document: str) -> None:
-    """Put one member into an archive, replacing what was there.
-
-    Rewritten whole rather than appended to: a zip will happily hold two
-    members of one name, and the reader that then picks between them is
-    picking between a stale version and a fresh one. The archive is built
-    beside and renamed over, so a reader never sees half of it -- the same
-    rule the directory store writes by.
-    """
-    path = pathlib.Path(archive)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    existing = _archived_names(path)
-    # A zip of a folder keeps its folder: a member written into one goes in
-    # beside its neighbours rather than at the root, where nothing else is.
-    prefix = ""
-    for member in existing.values():
-        if "/" in member:
-            prefix = member.rsplit("/", 1)[0] + "/"
-        break
-    scratch = path.with_name(f"{path.name}.tmp")
-    with zipfile.ZipFile(scratch, "w", zipfile.ZIP_DEFLATED) as fresh:
-        try:
-            with zipfile.ZipFile(path) as opened:
-                for member in opened.infolist():
-                    if member.filename != existing.get(name):
-                        fresh.writestr(member, opened.read(member))
-        except (OSError, zipfile.BadZipFile):
-            # Nothing there, or nothing readable there. A torn archive is
-            # written over rather than mourned -- the same reading the
-            # directory store gives a torn file -- and what could not be read
-            # was not being served anyway.
-            pass
-        fresh.writestr(_member(existing.get(name, f"{prefix}{name}")), document)
-    scratch.replace(path)
 
 
 # -- the wire ----------------------------------------------------------------
@@ -1206,6 +1526,42 @@ def _version_key(version: str) -> tuple[int, ...]:
     transport = 0 if version.upper().startswith("FIXT") else 1
     numbers = tuple(int(part) for part in re.findall(r"\d+", version))
     return (transport, *numbers)
+
+
+def _tier(entry: FieldEntry, tier: str) -> tuple[str, ...]:
+    """The names one entry claims in one resolution tier."""
+    if tier == _CANONICAL:
+        return (entry.name,)
+    if tier == _VERSIONED:
+        return tuple(dict.fromkeys(entry.names().values()))
+    return tuple(alias.name for alias in entry.aliases)
+
+
+def _problems(
+    held: tuple[Mapping[str, FieldEntry], Mapping[str, ComponentEntry]],
+) -> list[str]:
+    """Everything inconsistent about a set of entries, as lines.
+
+    Written against the entries rather than against a registry, so a change
+    can be checked before it is written and refused whole.
+    """
+    problems = []
+    claimed: set[str] = set()
+    for tier in (_CANONICAL, _VERSIONED, _ALIASED):
+        names: dict[str, list[str]] = {}
+        for entry in held[0].values():
+            for spelled in _tier(entry, tier):
+                names.setdefault(fold(spelled), []).append(entry.name)
+        for folded, owners in sorted(names.items()):
+            unique = list(dict.fromkeys(owners))
+            if len(unique) > 1 and folded not in claimed:
+                problems.append(f"{folded!r} is claimed by {unique}")
+            claimed.add(folded)
+    for slug, shared in sorted(slug_collisions(e.name for e in held[0].values()).items()):
+        problems.append(f"FIX fields {shared} are all stored as fields/{slug}.json")
+    for slug, shared in sorted(slug_collisions(e.name for e in held[1].values()).items()):
+        problems.append(f"FIX components {shared} are all stored as components/{slug}.json")
+    return problems
 
 
 def _is_tag(key: Any) -> bool:

@@ -1,0 +1,30 @@
+{
+ "name": "RequestedPartyRoleGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 316,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoRequestedPartyRoles",
+     "required": false,
+     "tag": 1508,
+     "members": [
+      {
+       "kind": "field",
+       "name": "RequestedPartyRole",
+       "required": false,
+       "tag": 1509
+      },
+      {
+       "kind": "field",
+       "name": "RequestedPartyRoleQualifier",
+       "required": false,
+       "tag": 2386
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

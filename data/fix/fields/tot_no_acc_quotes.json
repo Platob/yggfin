@@ -1,0 +1,14 @@
+{
+ "name": "TotNoAccQuotes",
+ "tag": 1169,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Specifies the number of accepted quotes"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Specifies the number of accepted quotes"
+  }
+ }
+}

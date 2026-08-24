@@ -1,0 +1,151 @@
+{
+ "name": "LegBenchmarkCurveData",
+ "versions": {
+  "5.0.SP2": {
+   "order": 6,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurveCurrency",
+     "required": false,
+     "tag": 676
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurveCurrencyCodeSource",
+     "required": false,
+     "tag": 2951
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurveName",
+     "required": false,
+     "tag": 677
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurvePoint",
+     "required": false,
+     "tag": 678
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkPrice",
+     "required": false,
+     "tag": 679
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkPriceType",
+     "required": false,
+     "tag": 680
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 6,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurveCurrency",
+     "required": false,
+     "tag": 676
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurveName",
+     "required": false,
+     "tag": 677
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurvePoint",
+     "required": false,
+     "tag": 678
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkPrice",
+     "required": false,
+     "tag": 679
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkPriceType",
+     "required": false,
+     "tag": 680
+    }
+   ]
+  },
+  "5.0": {
+   "order": 6,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurveCurrency",
+     "required": false,
+     "tag": 676
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurveName",
+     "required": false,
+     "tag": 677
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurvePoint",
+     "required": false,
+     "tag": 678
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkPrice",
+     "required": false,
+     "tag": 679
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkPriceType",
+     "required": false,
+     "tag": 680
+    }
+   ]
+  },
+  "4.4": {
+   "order": 6,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurveCurrency",
+     "required": false,
+     "tag": 676
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurveName",
+     "required": false,
+     "tag": 677
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkCurvePoint",
+     "required": false,
+     "tag": 678
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkPrice",
+     "required": false,
+     "tag": 679
+    },
+    {
+     "kind": "field",
+     "name": "LegBenchmarkPriceType",
+     "required": false,
+     "tag": 680
+    }
+   ]
+  }
+ }
+}

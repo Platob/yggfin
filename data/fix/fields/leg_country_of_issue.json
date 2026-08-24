@@ -1,0 +1,26 @@
+{
+ "name": "LegCountryOfIssue",
+ "tag": 596,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Country",
+   "description": "Multileg instrument's individual leg security's CountryOfIssue. See CountryOfIssue <470> field for description"
+  },
+  "5.0.SP1": {
+   "type": "Country",
+   "description": "Multileg instrument's individual leg security's CountryOfIssue. See CountryOfIssue <470> field for description"
+  },
+  "5.0": {
+   "type": "Country",
+   "description": "Multileg instrument's individual leg security's CountryOfIssue. See CountryOfIssue <470> field for description"
+  },
+  "4.4": {
+   "type": "Country",
+   "description": "Multileg instrument's individual leg security's CountryOfIssue. See CountryOfIssue <470> field for description"
+  },
+  "4.3": {
+   "type": "Country",
+   "description": "Multileg instrument's individual leg security's CountryOfIssue. See CountryOfIssue <470> field for description"
+  }
+ }
+}

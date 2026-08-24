@@ -1,0 +1,22 @@
+{
+ "name": "Nested2PartySubID",
+ "tag": 760,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "PartySubID value within a \"second instance\" Nested repeating group. Same values as PartySubID <523>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "PartySubID value within a \"second instance\" Nested repeating group. Same values as PartySubID <523>"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "PartySubID value within a \"second instance\" Nested repeating group. Same values as PartySubID <523>"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "PartySubID value within a \"second instance\" Nested repeating group. Same values as PartySubID <523>"
+  }
+ }
+}

@@ -1,0 +1,57 @@
+{
+ "name": "LegStreamEffectiveDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 43,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegStreamEffectiveDateUnadjusted",
+     "required": false,
+     "tag": 40249
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamEffectiveDateBusinessDayConvention",
+     "required": false,
+     "tag": 40250
+    },
+    {
+     "kind": "component",
+     "name": "LegStreamEffectiveDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamEffectiveDateRelativeTo",
+     "required": false,
+     "tag": 40252
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamEffectiveDateOffsetPeriod",
+     "required": false,
+     "tag": 40253
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamEffectiveDateOffsetUnit",
+     "required": false,
+     "tag": 40254
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamEffectiveDateOffsetDayType",
+     "required": false,
+     "tag": 40255
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamEffectiveDateAdjusted",
+     "required": false,
+     "tag": 40256
+    }
+   ]
+  }
+ }
+}

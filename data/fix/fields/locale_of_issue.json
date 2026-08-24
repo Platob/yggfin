@@ -1,0 +1,26 @@
+{
+ "name": "LocaleOfIssue",
+ "tag": 472,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Identifies the locale. For Municipal Security Issuers other than state or province. Refer to http://www.atmos.albany.edu/cgi/stagrep-cgi Reference the IATA city codes for values. Note IATA (International Air Transport Association) maintains the codes at www.iata.org"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Identifies the locale. For Municipal Security Issuers other than state or province. Refer to http://www.atmos.albany.edu/cgi/stagrep-cgi Reference the IATA city codes for values. Note IATA (International Air Transport Association) maintains the codes at www.iata.org"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Identifies the locale. For Municipal Security Issuers other than state or province. Refer to http://www.atmos.albany.edu/cgi/stagrep-cgi Reference the IATA city codes for values. Note IATA (International Air Transport Association) maintains the codes at www.iata.org"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Identifies the locale. For Municipal Security Issuers other than state or province. Refer to http://www.atmos.albany.edu/cgi/stagrep-cgi Reference the IATA city codes for values. Note IATA (International Air Transport Association) maintains the codes at www.iata.org"
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Identifies the locale. For Municipal Security Issuers other than state or province. Refer to http://www.atmos.albany.edu/cgi/stagrep-cgi Reference the IATA city codes for values. Note IATA (International Air Transport Association) maintains the codes at www.iata.org. See \"Volume 7 - PRODUCT: FIXED INCOME\" for example."
+  }
+ }
+}

@@ -1,0 +1,38 @@
+{
+ "name": "LegPaymentStreamFormula",
+ "versions": {
+  "5.0.SP2": {
+   "order": 128,
+   "members": [
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFormulaCurrency",
+     "required": false,
+     "tag": 42482
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFormulaCurrencyDeterminationMethod",
+     "required": false,
+     "tag": 42483
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamFormulaReferenceAmount",
+     "required": false,
+     "tag": 42484
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamFormulaMathGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStreamFormulaImage",
+     "required": false
+    }
+   ]
+  }
+ }
+}

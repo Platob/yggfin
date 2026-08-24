@@ -1,0 +1,36 @@
+{
+ "name": "AssetAttributeGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 481,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAssetAttributes",
+     "required": false,
+     "tag": 2304,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AssetAttributeType",
+       "required": false,
+       "tag": 2305
+      },
+      {
+       "kind": "field",
+       "name": "AssetAttributeValue",
+       "required": false,
+       "tag": 2306
+      },
+      {
+       "kind": "field",
+       "name": "AssetAttributeLimit",
+       "required": false,
+       "tag": 2307
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

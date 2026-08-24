@@ -1,0 +1,40 @@
+{
+ "name": "PriorSettlPrice",
+ "tag": 734,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Previous settlement price",
+   "used_in": [
+    "PositionReport",
+    "AssignmentReport",
+    "AdjustedPositionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Previous settlement price",
+   "used_in": [
+    "PositionReport",
+    "AssignmentReport",
+    "AdjustedPositionReport"
+   ]
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Previous settlement price",
+   "used_in": [
+    "PositionReport",
+    "AssignmentReport",
+    "AdjustedPositionReport"
+   ]
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Previous settlement price",
+   "used_in": [
+    "Position Report"
+   ]
+  }
+ }
+}

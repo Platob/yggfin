@@ -1,0 +1,14 @@
+{
+ "name": "TotNoCxldQuotes",
+ "tag": 1168,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Specifies the number of canceled quotes"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Specifies the number of canceled quotes"
+  }
+ }
+}

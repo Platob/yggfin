@@ -1,0 +1,24 @@
+{
+ "name": "LegSettlMethodElectionDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 672,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegSettlMethodElectionDateBusinessCenters",
+     "required": false,
+     "tag": 42581,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegSettlMethodElectionDateBusinessCenter",
+       "required": false,
+       "tag": 42582
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,48 @@
+{
+ "name": "EntitlementAttribGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 349,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoEntitlementAttrib",
+     "required": false,
+     "tag": 1777,
+     "members": [
+      {
+       "kind": "field",
+       "name": "EntitlementAttribType",
+       "required": false,
+       "tag": 1778
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementAttribDatatype",
+       "required": false,
+       "tag": 1779
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementAttribValue",
+       "required": false,
+       "tag": 1780
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementAttribCurrency",
+       "required": false,
+       "tag": 1781
+      },
+      {
+       "kind": "field",
+       "name": "EntitlementAttribCurrencyCodeSource",
+       "required": false,
+       "tag": 2940
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,38 @@
+{
+ "name": "TotalNumPosReports",
+ "tag": 727,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Total number of Position Reports being returned.",
+   "used_in": [
+    "RequestForPositionsAck",
+    "PositionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Total number of Position Reports being returned.",
+   "used_in": [
+    "RequestForPositionsAck",
+    "PositionReport"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Total number of Position Reports being returned.",
+   "used_in": [
+    "RequestForPositionsAck",
+    "PositionReport"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Total number of Position Reports being returned.",
+   "used_in": [
+    "Request for Positions Ack",
+    "Position Report"
+   ]
+  }
+ }
+}

@@ -1,0 +1,30 @@
+{
+ "name": "FlowScheduleType",
+ "tag": 1439,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "The industry standard flow schedule by which electricity or natural gas is traded. Schedules exist by regions and on-peak and off-peak status, such as \"Western Peak\".",
+   "values": {
+    "0": "NERC Eastern Off-Peak",
+    "1": "NERC Western Off-Peak",
+    "2": "NERC Calendar-All Days in month",
+    "3": "NERC Eastern Peak",
+    "4": "NERC Western Peak"
+   },
+   "value_names": {
+    "0": "NERC_EASTERN_OFF_PEAK",
+    "1": "NERC_WESTERN_OFF_PEAK",
+    "2": "NERC_CALENDAR_ALL_DAYS_IN_MONTH",
+    "3": "NERC_EASTERN_PEAK",
+    "4": "NERC_WESTERN_PEAK",
+    "5": "ALL_TIMES",
+    "6": "ON_PEAK",
+    "7": "OFF_PEAK",
+    "8": "BASE",
+    "9": "BLOCK",
+    "99": "OTHER"
+   }
+  }
+ }
+}

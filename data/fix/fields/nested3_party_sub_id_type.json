@@ -1,0 +1,22 @@
+{
+ "name": "Nested3PartySubIDType",
+ "tag": 954,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "PartySubIDType value within a \"third instance\" Nested repeating group. Same values as PartySubIDType <803>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "PartySubIDType value within a \"third instance\" Nested repeating group. Same values as PartySubIDType <803>"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "PartySubIDType value within a \"third instance\" Nested repeating group. Same values as PartySubIDType <803>"
+  },
+  "4.4": {
+   "type": "int",
+   "description": "PartySubIDType value within a \"third instance\" Nested repeating group. Same values as PartySubIDType <803>"
+  }
+ }
+}

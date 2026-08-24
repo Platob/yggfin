@@ -1,0 +1,14 @@
+{
+ "name": "TickIncrement",
+ "tag": 1208,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Tick increment for stated price range. Specifies the valid price increments at which a security can be quoted and traded"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Tick increment for stated price range. Specifies the valid price increments at which a security can be quoted and traded"
+  }
+ }
+}

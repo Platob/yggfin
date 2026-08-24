@@ -1,0 +1,75 @@
+{
+ "name": "NoAllocs",
+ "tag": 78,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries.",
+   "used_in": [
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Trade Capture Report Ack",
+    "Allocation Report",
+    "Allocation Report Ack",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "Allocation Instruction",
+    "Allocation Instruction Ack",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries.",
+   "used_in": [
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries.",
+   "used_in": [
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Number of AllocAccount <79> / AllocShares <80> / ProcessCode <81> instances included in allocation record.",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Number of AllocAccount <79> / AllocShares <80> / ProcessCode <81> instances included in allocation record.",
+   "used_in": [
+    "Allocation"
+   ]
+  }
+ }
+}

@@ -1,0 +1,30 @@
+{
+ "name": "FinancingTermSupplementGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 379,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoFinancingTermSupplements",
+     "required": false,
+     "tag": 40046,
+     "members": [
+      {
+       "kind": "field",
+       "name": "FinancingTermSupplementDesc",
+       "required": false,
+       "tag": 40047
+      },
+      {
+       "kind": "field",
+       "name": "FinancingTermSupplementDate",
+       "required": false,
+       "tag": 40048
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

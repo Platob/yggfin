@@ -1,0 +1,42 @@
+{
+ "name": "MatchingInstructions",
+ "versions": {
+  "5.0.SP2": {
+   "order": 311,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMatchInst",
+     "required": false,
+     "tag": 1624,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MatchInst",
+       "required": false,
+       "tag": 1625
+      },
+      {
+       "kind": "field",
+       "name": "MatchInstMarketID",
+       "required": false,
+       "tag": 1673
+      },
+      {
+       "kind": "field",
+       "name": "MatchAttribTagID",
+       "required": false,
+       "tag": 1626
+      },
+      {
+       "kind": "field",
+       "name": "MatchAttribValue",
+       "required": false,
+       "tag": 1627
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

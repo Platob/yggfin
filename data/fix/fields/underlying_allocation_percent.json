@@ -1,0 +1,18 @@
+{
+ "name": "UnderlyingAllocationPercent",
+ "tag": 972,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "Percent of the Strike Price that this underlying represents."
+  },
+  "5.0.SP1": {
+   "type": "Percentage",
+   "description": "Percent of the Strike Price that this underlying represents."
+  },
+  "5.0": {
+   "type": "Percentage",
+   "description": "Percent of the Strike Price that this underlying represents."
+  }
+ }
+}

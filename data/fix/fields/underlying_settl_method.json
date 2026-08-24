@@ -1,0 +1,18 @@
+{
+ "name": "UnderlyingSettlMethod",
+ "tag": 1039,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Settlement method for a contract or instrument. Additional values may be used with bilateral agreement. Same values as SettlMethod <1193>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Settlement method for a contract or instrument. Additional values may be used with bilateral agreement. Same values as SettlMethod <1193>"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Settlement method for a contract or instrument. Additional values may be used with bilateral agreement."
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "NoOrdTypeRules",
+ "tag": 1237,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of order types"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of order types"
+  }
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "name": "SenderCompID",
+ "tag": 49,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Assigned value used to identify firm sending message."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Assigned value used to identify firm sending message."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Assigned value used to identify firm sending message."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Assigned value used to identify firm sending message."
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Assigned value used to identify firm sending message."
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Assigned value used to identify firm sending message."
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Assigned value used to identify firm sending message."
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Assigned value used to identify firm sending message."
+  },
+  "FIXT1.1": {
+   "type": "String",
+   "description": "Assigned value used to identify firm sending message."
+  }
+ }
+}

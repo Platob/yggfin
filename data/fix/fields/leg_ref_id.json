@@ -1,0 +1,38 @@
+{
+ "name": "LegRefID",
+ "tag": 654,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique indicator for a specific leg."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique indicator for a specific leg."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique indicator for a specific leg."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique indicator for a specific leg.",
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Trade Capture Report Ack"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique indicator for a specific leg.",
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request"
+   ]
+  }
+ }
+}

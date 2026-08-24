@@ -1,0 +1,403 @@
+{
+ "name": "SideCrossOrdCxlGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 231,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSides",
+     "required": false,
+     "tag": 552,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": true,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "OrigClOrdID",
+       "required": false,
+       "tag": 41
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": true,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryClOrdID",
+       "required": false,
+       "tag": 526
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdLinkID",
+       "required": false,
+       "tag": 583
+      },
+      {
+       "kind": "field",
+       "name": "OrigOrdModTime",
+       "required": false,
+       "tag": 586
+      },
+      {
+       "kind": "component",
+       "name": "Parties",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "TradeOriginationDate",
+       "required": false,
+       "tag": 229
+      },
+      {
+       "kind": "field",
+       "name": "TradeDate",
+       "required": false,
+       "tag": 75
+      },
+      {
+       "kind": "component",
+       "name": "OrderQtyData",
+       "required": true
+      },
+      {
+       "kind": "field",
+       "name": "ComplianceID",
+       "required": false,
+       "tag": 376
+      },
+      {
+       "kind": "field",
+       "name": "ComplianceText",
+       "required": false,
+       "tag": 2404
+      },
+      {
+       "kind": "field",
+       "name": "EncodedComplianceTextLen",
+       "required": false,
+       "tag": 2351
+      },
+      {
+       "kind": "field",
+       "name": "EncodedComplianceText",
+       "required": false,
+       "tag": 2352
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 80,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSides",
+     "required": true,
+     "tag": 552,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": true,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "OrigClOrdID",
+       "required": false,
+       "tag": 41
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": true,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryClOrdID",
+       "required": false,
+       "tag": 526
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdLinkID",
+       "required": false,
+       "tag": 583
+      },
+      {
+       "kind": "field",
+       "name": "OrigOrdModTime",
+       "required": false,
+       "tag": 586
+      },
+      {
+       "kind": "component",
+       "name": "Parties",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "TradeOriginationDate",
+       "required": false,
+       "tag": 229
+      },
+      {
+       "kind": "field",
+       "name": "TradeDate",
+       "required": false,
+       "tag": 75
+      },
+      {
+       "kind": "component",
+       "name": "OrderQtyData",
+       "required": true
+      },
+      {
+       "kind": "field",
+       "name": "ComplianceID",
+       "required": false,
+       "tag": 376
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 81,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSides",
+     "required": true,
+     "tag": 552,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": true,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "OrigClOrdID",
+       "required": true,
+       "tag": 41
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": true,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryClOrdID",
+       "required": false,
+       "tag": 526
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdLinkID",
+       "required": false,
+       "tag": 583
+      },
+      {
+       "kind": "field",
+       "name": "OrigOrdModTime",
+       "required": false,
+       "tag": 586
+      },
+      {
+       "kind": "component",
+       "name": "Parties",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "TradeOriginationDate",
+       "required": false,
+       "tag": 229
+      },
+      {
+       "kind": "field",
+       "name": "TradeDate",
+       "required": false,
+       "tag": 75
+      },
+      {
+       "kind": "component",
+       "name": "OrderQtyData",
+       "required": true
+      },
+      {
+       "kind": "field",
+       "name": "ComplianceID",
+       "required": false,
+       "tag": 376
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 81,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoSides",
+     "required": true,
+     "tag": 552,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": true,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "OrigClOrdID",
+       "required": true,
+       "tag": 41
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": true,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "SecondaryClOrdID",
+       "required": false,
+       "tag": 526
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdLinkID",
+       "required": false,
+       "tag": 583
+      },
+      {
+       "kind": "field",
+       "name": "OrigOrdModTime",
+       "required": false,
+       "tag": 586
+      },
+      {
+       "kind": "component",
+       "name": "Parties",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "TradeOriginationDate",
+       "required": false,
+       "tag": 229
+      },
+      {
+       "kind": "field",
+       "name": "TradeDate",
+       "required": false,
+       "tag": 75
+      },
+      {
+       "kind": "component",
+       "name": "OrderQtyData",
+       "required": true
+      },
+      {
+       "kind": "field",
+       "name": "ComplianceID",
+       "required": false,
+       "tag": 376
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

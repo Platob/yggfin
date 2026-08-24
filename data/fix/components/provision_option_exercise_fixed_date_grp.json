@@ -1,0 +1,30 @@
+{
+ "name": "ProvisionOptionExerciseFixedDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 408,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoProvisionOptionExerciseFixedDates",
+     "required": false,
+     "tag": 40142,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ProvisionOptionExerciseFixedDate",
+       "required": false,
+       "tag": 40143
+      },
+      {
+       "kind": "field",
+       "name": "ProvisionOptionExerciseFixedDateType",
+       "required": false,
+       "tag": 40144
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

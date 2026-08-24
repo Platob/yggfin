@@ -1,0 +1,29 @@
+{
+ "name": "UnderlyingRepoCollateralSecurityType",
+ "tag": 243,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Underlying security's RepoCollateralSecurityType. See RepoCollateralSecurityType <239> field for description. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Underlying security's RepoCollateralSecurityType. See RepoCollateralSecurityType <239> field for description. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  },
+  "5.0": {
+   "type": "String",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Underlying security's RepoCollateralSecurityType. See RepoCollateralSecurityType <239> field for description. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  },
+  "4.4": {
+   "type": "String",
+   "note": "Deprecated",
+   "description": "*** DEPRECATED FIELD - See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] *** Underlying security's RepoCollateralSecurityType. See RepoCollateralSecurityType <239> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Underlying security's RepoCollateralSecurityType. See RepoCollateralSecurityType <239> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  }
+ }
+}

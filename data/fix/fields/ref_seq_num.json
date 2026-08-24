@@ -1,0 +1,75 @@
+{
+ "name": "RefSeqNum",
+ "tag": 45,
+ "versions": {
+  "5.0.SP2": {
+   "type": "SeqNum",
+   "description": "Reference message sequence number",
+   "used_in": [
+    "Reject",
+    "BusinessMessageReject"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "SeqNum",
+   "description": "Reference message sequence number",
+   "used_in": [
+    "Reject",
+    "BusinessMessageReject"
+   ]
+  },
+  "5.0": {
+   "type": "SeqNum",
+   "description": "Reference message sequence number",
+   "used_in": [
+    "Reject",
+    "BusinessMessageReject"
+   ]
+  },
+  "4.4": {
+   "type": "SeqNum",
+   "description": "Reference message sequence number",
+   "used_in": [
+    "Reject",
+    "Business Message Reject"
+   ]
+  },
+  "4.3": {
+   "type": "SeqNum",
+   "description": "Reference message sequence number",
+   "used_in": [
+    "Business Message Reject",
+    "Reject"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Reference message sequence number",
+   "used_in": [
+    "Reject",
+    "Business Message Reject"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Reference message sequence number",
+   "used_in": [
+    "Reject"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Reference message sequence number",
+   "used_in": [
+    "Reject"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "SeqNum",
+   "description": "Reference message sequence number",
+   "used_in": [
+    "Reject"
+   ]
+  }
+ }
+}

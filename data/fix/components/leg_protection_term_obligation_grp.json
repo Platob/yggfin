@@ -1,0 +1,30 @@
+{
+ "name": "LegProtectionTermObligationGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 562,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegProtectionTermObligations",
+     "required": false,
+     "tag": 41635,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegProtectionTermObligationType",
+       "required": false,
+       "tag": 41636
+      },
+      {
+       "kind": "field",
+       "name": "LegProtectionTermObligationValue",
+       "required": false,
+       "tag": 41637
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

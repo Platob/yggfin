@@ -1,0 +1,66 @@
+{
+ "name": "IndividualAllocID",
+ "tag": 467,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier for a specific NoAllocs <78> repeating group instance (e.g. for an AllocAccount <79> ).",
+   "used_in": [
+    "Confirmation",
+    "ConfirmationRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier for a specific NoAllocs <78> repeating group instance (e.g. for an AllocAccount <79> ).",
+   "used_in": [
+    "Confirmation",
+    "ConfirmationRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique identifier for a specific NoAllocs <78> repeating group instance (e.g. for an AllocAccount <79> ).",
+   "used_in": [
+    "Confirmation",
+    "ConfirmationRequest"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique identifier for a specific NoAllocs <78> repeating group instance (e.g. for an AllocAccount <79> ).",
+   "used_in": [
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Confirmation",
+    "Trade Capture Report Ack",
+    "Allocation Report",
+    "Allocation Report Ack",
+    "Confirmation Request",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "Allocation Instruction",
+    "Allocation Instruction Ack",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique identifier for a specific NoAllocs <78> repeating group instance (e.g. for an AllocAccount <79> ).",
+   "used_in": [
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request",
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

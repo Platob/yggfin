@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingDirtyPrice",
+ "tag": 882,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Price (percent-of-par or per unit) of the underlying security or basket. \"Dirty\" means it includes accrued interest"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Price (percent-of-par or per unit) of the underlying security or basket. \"Dirty\" means it includes accrued interest"
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Price (percent-of-par or per unit) of the underlying security or basket. \"Dirty\" means it includes accrued interest"
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Price (percent-of-par or per unit) of the underlying security or basket. \"Dirty\" means it includes accrued interest"
+  }
+ }
+}

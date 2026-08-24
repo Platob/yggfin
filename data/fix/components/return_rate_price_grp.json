@@ -1,0 +1,42 @@
+{
+ "name": "ReturnRatePriceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 683,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoReturnRatePrices",
+     "required": false,
+     "tag": 42765,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ReturnRatePriceBasis",
+       "required": false,
+       "tag": 42766
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRatePrice",
+       "required": false,
+       "tag": 42767
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRatePriceCurrency",
+       "required": false,
+       "tag": 42768
+      },
+      {
+       "kind": "field",
+       "name": "ReturnRatePriceType",
+       "required": false,
+       "tag": 42769
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

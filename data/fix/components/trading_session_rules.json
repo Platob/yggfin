@@ -1,0 +1,70 @@
+{
+ "name": "TradingSessionRules",
+ "versions": {
+  "5.0.SP2": {
+   "order": 19,
+   "members": [
+    {
+     "kind": "component",
+     "name": "OrdTypeRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "TimeInForceRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "ExecInstRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "AuctionTypeRuleGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "MatchRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "MarketDataFeedTypes",
+     "required": false
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 136,
+   "members": [
+    {
+     "kind": "component",
+     "name": "OrdTypeRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "TimeInForceRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "ExecInstRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "MatchRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "MarketDataFeedTypes",
+     "required": false
+    }
+   ]
+  }
+ }
+}

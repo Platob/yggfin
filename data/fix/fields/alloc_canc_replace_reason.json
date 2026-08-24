@@ -1,0 +1,82 @@
+{
+ "name": "AllocCancReplaceReason",
+ "tag": 796,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Reason for cancelling or replacing an Allocation Instruction <J> or Allocation Report <AS> message",
+   "values": {
+    "1": "Original details incomplete/incorrect",
+    "2": "Change in underlying order details",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "ORIGINAL_DETAILS_INCOMPLETE",
+    "2": "CHANGE_IN_UNDERLYING_ORDER_DETAILS",
+    "3": "CANCELLED_BY_GIVEUP_FIRM",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Reason for cancelling or replacing an Allocation Instruction <J> or Allocation Report <AS> message",
+   "values": {
+    "1": "Original details incomplete/incorrect",
+    "2": "Change in underlying order details",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "ORIGINAL_DETAILS_INCOMPLETE",
+    "2": "CHANGE_IN_UNDERLYING_ORDER_DETAILS",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Reason for cancelling or replacing an Allocation Instruction <J> or Allocation Report <AS> message",
+   "values": {
+    "1": "Original details incomplete/incorrect",
+    "2": "Change in underlying order details",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "ORIGINAL_DETAILS_INCOMPLETE",
+    "2": "CHANGE_IN_UNDERLYING_ORDER_DETAILS",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Reason for cancelling or replacing an Allocation Instruction <J> or Allocation Report <AS> message",
+   "values": {
+    "1": "Original details incomplete/incorrect",
+    "2": "Change in underlying order details",
+    "99": "Other"
+   },
+   "value_names": {
+    "1": "ORIGINAL_DETAILS_INCOMPLETE",
+    "2": "CHANGE_IN_UNDERLYING_ORDER_DETAILS",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  }
+ }
+}

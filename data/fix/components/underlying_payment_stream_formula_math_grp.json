@@ -1,0 +1,36 @@
+{
+ "name": "UnderlyingPaymentStreamFormulaMathGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 697,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingPaymentStreamFormulas",
+     "required": false,
+     "tag": 42981,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStreamFormulaLength",
+       "required": false,
+       "tag": 43111
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStreamFormula",
+       "required": false,
+       "tag": 42982
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStreamFormulaDesc",
+       "required": false,
+       "tag": 42983
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

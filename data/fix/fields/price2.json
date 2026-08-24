@@ -1,0 +1,52 @@
+{
+ "name": "Price2",
+ "tag": 640,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 13.Deprecated OrderQty2 (192), SettlDate2 (193), Price2 (640), LastForwardPoints2 (641), BidForwardPoints2 (642), and OfferForwardPoints2 (643) [deprecated in FIX 5.0] Price of the future part of a F/X swap order. See Price <44> for description.",
+   "used_in": [
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 13.Deprecated OrderQty2 (192), SettlDate2 (193), Price2 (640), LastForwardPoints2 (641), BidForwardPoints2 (642), and OfferForwardPoints2 (643) [deprecated in FIX 5.0] Price of the future part of a F/X swap order. See Price <44> for description.",
+   "used_in": [
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 13.Deprecated OrderQty2 (192), SettlDate2 (193), Price2 (640), LastForwardPoints2 (641), BidForwardPoints2 (642), and OfferForwardPoints2 (643) [deprecated in FIX 5.0] Price of the future part of a F/X swap order. See Price <44> for description.",
+   "used_in": [
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Price of the future part of a F/X swap order. See Price <44> for description.",
+   "used_in": [
+    "Quote Request Reject",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "Quote Request"
+   ]
+  },
+  "4.3": {
+   "type": "Price",
+   "description": "Price of the future part of a F/X swap order. See Price <44> for description.",
+   "used_in": [
+    "Quote Request Reject",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Quote Request"
+   ]
+  }
+ }
+}

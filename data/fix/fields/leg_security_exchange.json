@@ -1,0 +1,26 @@
+{
+ "name": "LegSecurityExchange",
+ "tag": 616,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Exchange",
+   "description": "Multileg instrument's individual security's SecurityExchange. See SecurityExchange <207> field for description"
+  },
+  "5.0.SP1": {
+   "type": "Exchange",
+   "description": "Multileg instrument's individual security's SecurityExchange. See SecurityExchange <207> field for description"
+  },
+  "5.0": {
+   "type": "Exchange",
+   "description": "Multileg instrument's individual security's SecurityExchange. See SecurityExchange <207> field for description"
+  },
+  "4.4": {
+   "type": "Exchange",
+   "description": "Multileg instrument's individual security's SecurityExchange. See SecurityExchange <207> field for description"
+  },
+  "4.3": {
+   "type": "Exchange",
+   "description": "Multileg instrument's individual security's SecurityExchange. See SecurityExchange <207> field for description"
+  }
+ }
+}

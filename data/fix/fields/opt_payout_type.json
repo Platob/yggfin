@@ -1,0 +1,26 @@
+{
+ "name": "OptPayoutType",
+ "tag": 1482,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates the type of payout that will result from an in-the-money option.",
+   "values": {
+    "1": "Vanilla",
+    "2": "Capped",
+    "3": "Binary"
+   },
+   "value_names": {
+    "1": "VANILLA",
+    "2": "CAPPED",
+    "3": "BINARY",
+    "4": "ASIAN",
+    "5": "BARRIER",
+    "6": "DIGITAL_BARRIER",
+    "7": "LOOKBACK",
+    "8": "OTHER_PATH_DEPENDENT",
+    "99": "OTHER"
+   }
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "name": "LegStreamCommoditySettlBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 564,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegStreamCommoditySettlBusinessCenters",
+     "required": false,
+     "tag": 41646,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegStreamCommoditySettlBusinessCenter",
+       "required": false,
+       "tag": 41647
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

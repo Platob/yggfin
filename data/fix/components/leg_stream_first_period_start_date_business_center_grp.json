@@ -1,0 +1,24 @@
+{
+ "name": "LegStreamFirstPeriodStartDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 445,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegStreamFirstPeriodStartDateBusinessCenters",
+     "required": false,
+     "tag": 40941,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegStreamFirstPeriodStartDateBusinessCenter",
+       "required": false,
+       "tag": 40269
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

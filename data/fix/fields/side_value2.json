@@ -1,0 +1,48 @@
+{
+ "name": "SideValue2",
+ "tag": 397,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "Amounts in currency",
+   "used_in": [
+    "BidRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Amt",
+   "description": "Amounts in currency",
+   "used_in": [
+    "BidRequest"
+   ]
+  },
+  "5.0": {
+   "type": "Amt",
+   "description": "Amounts in currency",
+   "used_in": [
+    "BidRequest"
+   ]
+  },
+  "4.4": {
+   "type": "Amt",
+   "description": "Amounts in currency",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.3": {
+   "type": "Amt",
+   "description": "Amounts in currency",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.2": {
+   "type": "Amt",
+   "description": "Amounts in currency",
+   "used_in": [
+    "Bid Request"
+   ]
+  }
+ }
+}

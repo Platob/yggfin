@@ -1,0 +1,24 @@
+{
+ "name": "PaymentBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 448,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPaymentBusinessCenters",
+     "required": false,
+     "tag": 40944,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PaymentBusinessCenter",
+       "required": false,
+       "tag": 40221
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

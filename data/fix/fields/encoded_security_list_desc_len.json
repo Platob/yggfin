@@ -1,0 +1,14 @@
+{
+ "name": "EncodedSecurityListDescLen",
+ "tag": 1468,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedSecurityListDesc <1469> (tbd) field.",
+   "used_in": [
+    "SecurityListUpdateReport",
+    "SecurityList"
+   ]
+  }
+ }
+}

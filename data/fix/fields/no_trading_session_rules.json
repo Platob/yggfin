@@ -1,0 +1,14 @@
+{
+ "name": "NoTradingSessionRules",
+ "tag": 1309,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Allows trading rules to be expressed by trading session"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Allows trading rules to be expressed by trading session"
+  }
+ }
+}

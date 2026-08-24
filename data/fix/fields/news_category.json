@@ -1,0 +1,27 @@
+{
+ "name": "NewsCategory",
+ "tag": 1473,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Category of news mesage.",
+   "values": {
+    "0": "Company News",
+    "1": "Marketplace News",
+    "2": "Financial Market News",
+    "3": "Technical News",
+    "99": "Other News"
+   },
+   "value_names": {
+    "0": "COMPANY_NEWS",
+    "1": "MARKETPLACE_NEWS",
+    "2": "FINANCIAL_MARKET_NEWS",
+    "3": "TECHNICAL_NEWS",
+    "99": "OTHER_NEWS"
+   },
+   "used_in": [
+    "News"
+   ]
+  }
+ }
+}

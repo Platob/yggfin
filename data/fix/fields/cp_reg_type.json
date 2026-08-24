@@ -1,0 +1,22 @@
+{
+ "name": "CPRegType",
+ "tag": 876,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The registration type of a commercial paper issuance"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The registration type of a commercial paper issuance"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "The registration type of a commercial paper issuance"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "The registration type of a commercial paper issuance"
+  }
+ }
+}

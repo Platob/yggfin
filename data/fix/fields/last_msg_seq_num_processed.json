@@ -1,0 +1,34 @@
+{
+ "name": "LastMsgSeqNumProcessed",
+ "tag": 369,
+ "versions": {
+  "5.0.SP2": {
+   "type": "SeqNum",
+   "description": "The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty."
+  },
+  "5.0.SP1": {
+   "type": "SeqNum",
+   "description": "The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty."
+  },
+  "5.0": {
+   "type": "SeqNum",
+   "description": "The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty."
+  },
+  "4.4": {
+   "type": "SeqNum",
+   "description": "The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty."
+  },
+  "4.3": {
+   "type": "SeqNum",
+   "description": "The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty."
+  },
+  "4.2": {
+   "type": "int",
+   "description": "The last MsgSeqNum <34> value received and processed. Can be specified on every message sent. Useful for detecting a backlog with a counterparty."
+  },
+  "FIXT1.1": {
+   "type": "SeqNum",
+   "description": "The last MsgSeqNum (34) value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty."
+  }
+ }
+}

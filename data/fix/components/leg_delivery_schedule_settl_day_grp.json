@@ -1,0 +1,35 @@
+{
+ "name": "LegDeliveryScheduleSettlDayGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 536,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegDeliveryScheduleSettlDays",
+     "required": false,
+     "tag": 41422,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegDeliveryScheduleSettlDay",
+       "required": false,
+       "tag": 41423
+      },
+      {
+       "kind": "field",
+       "name": "LegDeliveryScheduleSettlTotalHours",
+       "required": false,
+       "tag": 41424
+      },
+      {
+       "kind": "component",
+       "name": "LegDeliveryScheduleSettlTimeGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

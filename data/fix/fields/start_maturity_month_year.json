@@ -1,0 +1,14 @@
+{
+ "name": "StartMaturityMonthYear",
+ "tag": 1241,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MonthYear",
+   "description": "Starting maturity month year for an option class"
+  },
+  "5.0.SP1": {
+   "type": "MonthYear",
+   "description": "Starting maturity month year for an option class"
+  }
+ }
+}

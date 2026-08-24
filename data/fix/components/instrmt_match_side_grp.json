@@ -1,0 +1,104 @@
+{
+ "name": "InstrmtMatchSideGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 367,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoInstrmtMatchSides",
+     "required": false,
+     "tag": 1889,
+     "members": [
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "InstrmtLegGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "UndInstrmtGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "TrdMatchSubID",
+       "required": false,
+       "tag": 1891
+      },
+      {
+       "kind": "field",
+       "name": "Quantity",
+       "required": false,
+       "tag": 53
+      },
+      {
+       "kind": "field",
+       "name": "Currency",
+       "required": false,
+       "tag": 15
+      },
+      {
+       "kind": "field",
+       "name": "CurrencyCodeSource",
+       "required": false,
+       "tag": 2897
+      },
+      {
+       "kind": "field",
+       "name": "SettlCurrency",
+       "required": false,
+       "tag": 120
+      },
+      {
+       "kind": "field",
+       "name": "SettlCurrencyCodeSource",
+       "required": false,
+       "tag": 2899
+      },
+      {
+       "kind": "field",
+       "name": "QtyType",
+       "required": false,
+       "tag": 854
+      },
+      {
+       "kind": "field",
+       "name": "LastQty",
+       "required": false,
+       "tag": 32
+      },
+      {
+       "kind": "field",
+       "name": "PriceType",
+       "required": false,
+       "tag": 423
+      },
+      {
+       "kind": "field",
+       "name": "LastPx",
+       "required": false,
+       "tag": 31
+      },
+      {
+       "kind": "field",
+       "name": "LastMkt",
+       "required": false,
+       "tag": 30
+      },
+      {
+       "kind": "component",
+       "name": "TrdMatchSideGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "name": "IndexRollMonthGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 714,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoIndexRollMonths",
+     "required": false,
+     "tag": 2734,
+     "members": [
+      {
+       "kind": "field",
+       "name": "IndexRollMonth",
+       "required": false,
+       "tag": 2733
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

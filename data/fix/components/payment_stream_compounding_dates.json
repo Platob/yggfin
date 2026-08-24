@@ -1,0 +1,96 @@
+{
+ "name": "PaymentStreamCompoundingDates",
+ "versions": {
+  "5.0.SP2": {
+   "order": 133,
+   "members": [
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingDatesBusinessDayConvention",
+     "required": false,
+     "tag": 42609
+    },
+    {
+     "kind": "component",
+     "name": "PaymentStreamCompoundingDatesBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "PaymentStreamCompoundingDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingDatesRelativeTo",
+     "required": false,
+     "tag": 42610
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingDatesOffsetPeriod",
+     "required": false,
+     "tag": 42611
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingDatesOffsetUnit",
+     "required": false,
+     "tag": 42612
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingDatesOffsetDayType",
+     "required": false,
+     "tag": 42613
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingPeriodSkip",
+     "required": false,
+     "tag": 42614
+    },
+    {
+     "kind": "component",
+     "name": "PaymentStreamCompoundingStartDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "PaymentStreamCompoundingEndDate",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingFrequencyPeriod",
+     "required": false,
+     "tag": 42615
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingFrequencyUnit",
+     "required": false,
+     "tag": 42616
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamCompoundingRollConvention",
+     "required": false,
+     "tag": 42617
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamBoundsFirstDateUnadjusted",
+     "required": false,
+     "tag": 42618
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamBoundsLastDateUnadjusted",
+     "required": false,
+     "tag": 42619
+    }
+   ]
+  }
+ }
+}

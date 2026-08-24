@@ -1,0 +1,30 @@
+{
+ "name": "LegStreamCommodityDataSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 566,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegStreamCommodityDataSources",
+     "required": false,
+     "tag": 41677,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegStreamCommodityDataSourceID",
+       "required": false,
+       "tag": 41678
+      },
+      {
+       "kind": "field",
+       "name": "LegStreamCommodityDataSourceIDType",
+       "required": false,
+       "tag": 41679
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

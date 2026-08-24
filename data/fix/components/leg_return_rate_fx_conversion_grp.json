@@ -1,0 +1,36 @@
+{
+ "name": "LegReturnRateFXConversionGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 666,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegReturnRateFXConversions",
+     "required": false,
+     "tag": 42530,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegReturnRateFXCurrencySymbol",
+       "required": false,
+       "tag": 42531
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateFXRate",
+       "required": false,
+       "tag": 42532
+      },
+      {
+       "kind": "field",
+       "name": "LegReturnRateFXRateCalc",
+       "required": false,
+       "tag": 42533
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

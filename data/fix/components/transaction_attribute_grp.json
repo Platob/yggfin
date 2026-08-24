@@ -1,0 +1,30 @@
+{
+ "name": "TransactionAttributeGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 722,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTransactionAttributes",
+     "required": false,
+     "tag": 2871,
+     "members": [
+      {
+       "kind": "field",
+       "name": "TransactionAttributeType",
+       "required": false,
+       "tag": 2872
+      },
+      {
+       "kind": "field",
+       "name": "TransactionAttributeValue",
+       "required": false,
+       "tag": 2873
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

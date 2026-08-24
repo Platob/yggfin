@@ -1,0 +1,55 @@
+{
+ "name": "StandInstDbName",
+ "tag": 170,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Name of the Standing Instruction database represented with StandInstDbType <169> (i.e. the Global Custodian\u2019s name).",
+   "used_in": [
+    "SettlementInstructionRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Name of the Standing Instruction database represented with StandInstDbType <169> (i.e. the Global Custodian\u2019s name).",
+   "used_in": [
+    "SettlementInstructionRequest"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Name of the Standing Instruction database represented with StandInstDbType <169> (i.e. the Global Custodian\u2019s name).",
+   "used_in": [
+    "SettlementInstructionRequest"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Name of the Standing Instruction database represented with StandInstDbType <169> (i.e. the Global Custodian's name).",
+   "used_in": [
+    "Settlement Instruction Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Name of the Standing Instruction database represented with StandInstDbType <169> (i.e. the Global Custodian's name).",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Name of the Standing Instruction database represented with StandInstDbType <169> (i.e. the Global Custodian's name).",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Name of the Standing Instruction database represented with StandInstDbType <169> (i.e. the Global Custodian's name).",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

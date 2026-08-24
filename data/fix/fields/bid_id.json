@@ -1,0 +1,66 @@
+{
+ "name": "BidID",
+ "tag": 390,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier for Bid Response as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day.",
+   "used_in": [
+    "NewOrderList",
+    "BidRequest",
+    "BidResponse",
+    "ListExecute"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier for Bid Response as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day.",
+   "used_in": [
+    "NewOrderList",
+    "BidRequest",
+    "BidResponse",
+    "ListExecute"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique identifier for Bid Response as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day.",
+   "used_in": [
+    "NewOrderList",
+    "BidRequest",
+    "BidResponse",
+    "ListExecute"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique identifier for Bid Response <l> as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day.",
+   "used_in": [
+    "New Order List",
+    "Bid Request",
+    "Bid Response",
+    "List Execute"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Unique identifier for Bid Response <l> as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day.",
+   "used_in": [
+    "New Order - List",
+    "Bid Request",
+    "Bid Response",
+    "List Execute"
+   ]
+  },
+  "4.2": {
+   "type": "String",
+   "description": "Unique identifier for Bid Response <l> as assigned by broker. Uniqueness must be guaranteed within a single trading day.",
+   "used_in": [
+    "New Order - List",
+    "Bid Request",
+    "Bid Response",
+    "List Execute"
+   ]
+  }
+ }
+}

@@ -1,0 +1,49 @@
+{
+ "name": "AllocMethod",
+ "tag": 1002,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Specifies the method under which a trade quantity was allocated.",
+   "values": {
+    "1": "Automatic",
+    "2": "Guarantor",
+    "3": "Manual"
+   },
+   "value_names": {
+    "1": "AUTOMATIC",
+    "2": "GUARANTOR",
+    "3": "MANUAL",
+    "4": "BROKER_ASSIGNED"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Specifies the method under which a trade quantity was allocated.",
+   "values": {
+    "1": "Automatic",
+    "2": "Guarantor",
+    "3": "Manual"
+   },
+   "value_names": {
+    "1": "AUTOMATIC",
+    "2": "GUARANTOR",
+    "3": "MANUAL"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Specifies the method under which a trade quantity was allocated.",
+   "values": {
+    "1": "Automatic",
+    "2": "Guarantor",
+    "3": "Manual"
+   },
+   "value_names": {
+    "1": "AUTOMATIC",
+    "2": "GUARANTOR",
+    "3": "MANUAL"
+   }
+  }
+ }
+}

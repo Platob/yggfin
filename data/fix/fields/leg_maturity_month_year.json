@@ -1,0 +1,26 @@
+{
+ "name": "LegMaturityMonthYear",
+ "tag": 610,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MonthYear",
+   "description": "Multileg instrument's individual security's MaturityMonthYear. See MaturityMonthYear <200> field for description"
+  },
+  "5.0.SP1": {
+   "type": "MonthYear",
+   "description": "Multileg instrument's individual security's MaturityMonthYear. See MaturityMonthYear <200> field for description"
+  },
+  "5.0": {
+   "type": "MonthYear",
+   "description": "Multileg instrument's individual security's MaturityMonthYear. See MaturityMonthYear <200> field for description"
+  },
+  "4.4": {
+   "type": "MonthYear",
+   "description": "Multileg instrument's individual security's MaturityMonthYear. See MaturityMonthYear <200> field for description"
+  },
+  "4.3": {
+   "type": "MonthYear",
+   "description": "Multileg instrument's individual security's MaturityMonthYear. See MaturityMonthYear <200> field for description"
+  }
+ }
+}

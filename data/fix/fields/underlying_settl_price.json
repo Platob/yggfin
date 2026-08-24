@@ -1,0 +1,35 @@
+{
+ "name": "UnderlyingSettlPrice",
+ "tag": 732,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Underlying security's SettlPrice. See SettlPrice <730> field for description",
+   "used_in": [
+    "AssignmentReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Underlying security's SettlPrice. See SettlPrice <730> field for description",
+   "used_in": [
+    "AssignmentReport"
+   ]
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Underlying security's SettlPrice. See SettlPrice <730> field for description",
+   "used_in": [
+    "AssignmentReport"
+   ]
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Underlying security's SettlPrice. See SettlPrice <730> field for description",
+   "used_in": [
+    "Position Report",
+    "Assignment Report"
+   ]
+  }
+ }
+}

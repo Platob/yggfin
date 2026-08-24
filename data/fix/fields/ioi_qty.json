@@ -1,0 +1,153 @@
+{
+ "name": "IOIQty",
+ "tag": 27,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Quantity (e.g. number of shares) in numeric form or relative size.",
+   "values": {
+    "S": "Small",
+    "M": "Medium",
+    "L": "Large",
+    "U": "Undisclosed Quantity"
+   },
+   "value_names": {
+    "S": "SMALL",
+    "M": "MEDIUM",
+    "L": "LARGE",
+    "U": "UNDISCLOSED_QUANTITY"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Quantity (e.g. number of shares) in numeric form or relative size.",
+   "values": {
+    "S": "Small",
+    "M": "Medium",
+    "L": "Large",
+    "U": "Undisclosed Quantity"
+   },
+   "value_names": {
+    "S": "SMALL",
+    "M": "MEDIUM",
+    "L": "LARGE",
+    "U": "UNDISCLOSED_QUANTITY"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Quantity (e.g. number of shares) in numeric form or relative size.",
+   "values": {
+    "S": "Small",
+    "M": "Medium",
+    "L": "Large",
+    "U": "Undisclosed Quantity"
+   },
+   "value_names": {
+    "S": "SMALL",
+    "M": "MEDIUM",
+    "L": "LARGE",
+    "U": "UNDISCLOSED_QUANTITY"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Quantity (e.g. number of shares) in numeric form or relative size.",
+   "values": {
+    "S": "Small",
+    "M": "Medium",
+    "L": "Large"
+   },
+   "value_names": {
+    "S": "SMALL",
+    "M": "MEDIUM",
+    "L": "LARGE"
+   },
+   "used_in": [
+    "IOI"
+   ]
+  },
+  "4.3": {
+   "name": "IOIShares prior to FIX 4.3)",
+   "type": "String",
+   "note": "formerly named: IOIShares prior to FIX 4.3",
+   "description": "Quantity (e.g. number of shares) in numeric form or relative size.",
+   "values": {
+    "S": "Small",
+    "M": "Medium",
+    "L": "Large"
+   },
+   "value_names": {
+    "L": "LARGE",
+    "M": "MEDIUM",
+    "S": "SMALL"
+   },
+   "used_in": [
+    "Indications of Interest"
+   ]
+  },
+  "4.2": {
+   "name": "IOIShares",
+   "type": "String",
+   "description": "Number of shares in numeric or relative size.",
+   "values": {
+    "S": "Small",
+    "M": "Medium",
+    "L": "Large"
+   },
+   "value_names": {
+    "L": "LARGE",
+    "M": "MEDIUM",
+    "S": "SMALL"
+   },
+   "used_in": [
+    "Indication of Interest"
+   ]
+  },
+  "4.1": {
+   "name": "IOIShares",
+   "type": "char",
+   "description": "Number of shares in numeric or relative size.",
+   "values": {
+    "S": "Small",
+    "M": "Medium",
+    "L": "Large"
+   },
+   "value_names": {
+    "L": "LARGE",
+    "M": "MEDIUM",
+    "S": "SMALL"
+   },
+   "used_in": [
+    "Indication of Interest"
+   ]
+  },
+  "4.0": {
+   "name": "IOIShares",
+   "type": "char",
+   "description": "Number of shares in numeric or relative size.",
+   "values": {
+    "S": "Small",
+    "M": "Medium",
+    "L": "Large"
+   },
+   "value_names": {
+    "L": "LARGE",
+    "M": "MEDIUM",
+    "S": "SMALL"
+   },
+   "used_in": [
+    "Indication of Interest"
+   ]
+  }
+ }
+}

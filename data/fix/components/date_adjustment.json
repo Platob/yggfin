@@ -1,0 +1,27 @@
+{
+ "name": "DateAdjustment",
+ "versions": {
+  "5.0.SP2": {
+   "order": 68,
+   "members": [
+    {
+     "kind": "field",
+     "name": "BusinessDayConvention",
+     "required": false,
+     "tag": 40921
+    },
+    {
+     "kind": "component",
+     "name": "BusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "DateRollConvention",
+     "required": false,
+     "tag": 40922
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "name": "InstrumentPartySubID",
+ "tag": 1053,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "PartySubID value within an instrument party repeating group. Same values as PartySubID <523>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "PartySubID value within an instrument party repeating group. Same values as PartySubID <523>"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "PartySubID value within an instrument party repeating group. Same values as PartySubID <523>"
+  }
+ }
+}

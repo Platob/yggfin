@@ -1,0 +1,64 @@
+{
+ "name": "NoOrders",
+ "tag": 73,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Indicates number of orders to be combined for average pricing and allocation."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Indicates number of orders to be combined for average pricing and allocation."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Indicates number of orders to be combined for average pricing and allocation."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Indicates number of orders to be combined for average pricing and allocation.",
+   "used_in": [
+    "Confirmation",
+    "Allocation Report",
+    "Confirmation Request",
+    "New Order List",
+    "Allocation Instruction",
+    "List Status"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Indicates number of orders to be combined for average pricing and allocation.",
+   "used_in": [
+    "New Order - List",
+    "Allocation",
+    "List Status"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Indicates number of orders to be combined for average pricing and allocation.",
+   "used_in": [
+    "New Order - List",
+    "Allocation",
+    "List Status"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Indicates number of orders to be combined for average pricing and allocation.",
+   "used_in": [
+    "Allocation",
+    "List Status"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Indicates number of orders to be combined for average pricing and allocation.",
+   "used_in": [
+    "Allocation",
+    "List Status"
+   ]
+  }
+ }
+}

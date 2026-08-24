@@ -1,0 +1,36 @@
+{
+ "name": "LegStreamAssetAttributeGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 538,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegStreamAssetAttributes",
+     "required": false,
+     "tag": 41452,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegStreamAssetAttributeType",
+       "required": false,
+       "tag": 41453
+      },
+      {
+       "kind": "field",
+       "name": "LegStreamAssetAttributeValue",
+       "required": false,
+       "tag": 41454
+      },
+      {
+       "kind": "field",
+       "name": "LegStreamAssetAttributeLimit",
+       "required": false,
+       "tag": 41455
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

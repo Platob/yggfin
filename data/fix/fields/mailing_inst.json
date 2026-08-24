@@ -1,0 +1,32 @@
+{
+ "name": "MailingInst",
+ "tag": 482,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Free format text to specify mailing instruction requirements, e.g. \"no third party mailings\"."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Free format text to specify mailing instruction requirements, e.g. \"no third party mailings\"."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Free format text to specify mailing instruction requirements, e.g. \"no third party mailings\"."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Free format text to specify mailing instruction requirements, e.g. \"no third party mailings\".",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Free format text to specify mailing instruction requirements, e.g. \"no third party mailings\".",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  }
+ }
+}

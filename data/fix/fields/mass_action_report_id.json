@@ -1,0 +1,22 @@
+{
+ "name": "MassActionReportID",
+ "tag": 1369,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier of Order Mass Cancel Report or Order Mass Action Report message as assigned by sell-side (broker, exchange, ECN)",
+   "used_in": [
+    "OrderMassActionReport",
+    "OrderMassCancelReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier of Order Mass Cancel Report or Order Mass Action Report message as assigned by sell-side (broker, exchange, ECN)",
+   "used_in": [
+    "OrderMassActionReport",
+    "OrderMassCancelReport"
+   ]
+  }
+ }
+}

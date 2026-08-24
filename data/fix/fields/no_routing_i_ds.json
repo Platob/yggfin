@@ -1,0 +1,45 @@
+{
+ "name": "NoRoutingIDs",
+ "tag": 215,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing"
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing",
+   "used_in": [
+    "IOI",
+    "News",
+    "Email"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing",
+   "used_in": [
+    "Indications of Interest",
+    "News",
+    "Email"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix L: Pre-Trade Message Targeting/Routing",
+   "used_in": [
+    "Indication of Interest",
+    "News",
+    "Email"
+   ]
+  }
+ }
+}

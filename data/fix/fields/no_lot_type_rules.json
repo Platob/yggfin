@@ -1,0 +1,14 @@
+{
+ "name": "NoLotTypeRules",
+ "tag": 1234,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of Lot Type Rules"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of Lot Type Rules"
+  }
+ }
+}

@@ -1,0 +1,57 @@
+{
+ "name": "UnderlyingCashSettlDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 143,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingCashSettlDateUnadjusted",
+     "required": false,
+     "tag": 42790
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingCashSettlDateBusinessDayConvention",
+     "required": false,
+     "tag": 42791
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingCashSettlDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingCashSettlDateRelativeTo",
+     "required": false,
+     "tag": 42792
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingCashSettlDateOffsetPeriod",
+     "required": false,
+     "tag": 42793
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingCashSettlDateOffsetUnit",
+     "required": false,
+     "tag": 42794
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingCashSettlDateOffsetDayType",
+     "required": false,
+     "tag": 42795
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingCashSettlDateAdjusted",
+     "required": false,
+     "tag": 42796
+    }
+   ]
+  }
+ }
+}

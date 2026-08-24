@@ -1,0 +1,30 @@
+{
+ "name": "AuctionTypeRuleGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 638,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoAuctionTypeRules",
+     "required": false,
+     "tag": 2548,
+     "members": [
+      {
+       "kind": "field",
+       "name": "AuctionType",
+       "required": false,
+       "tag": 1803
+      },
+      {
+       "kind": "field",
+       "name": "AuctionTypeProductComplex",
+       "required": false,
+       "tag": 2549
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

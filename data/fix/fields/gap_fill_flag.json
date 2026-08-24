@@ -1,0 +1,141 @@
+{
+ "name": "GapFillFlag",
+ "tag": 123,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Indicates that the Sequence Reset message is replacing administrative or application messages which will not be resent.",
+   "values": {
+    "N": "Sequence Reset <4> , Ignore MsgSeqNum <34> (N/A For FIXML - Not Used)",
+    "Y": "Gap Fill <4> Message, MsgSeqNum <34> Field Valid"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "SequenceReset"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Indicates that the Sequence Reset message is replacing administrative or application messages which will not be resent.",
+   "values": {
+    "N": "Sequence Reset <4> , Ignore MsgSeqNum <34> (N/A For FIXML - Not Used)",
+    "Y": "Gap Fill <4> Message, MsgSeqNum <34> Field Valid"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "SequenceReset"
+   ]
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Indicates that the Sequence Reset message is replacing administrative or application messages which will not be resent.",
+   "values": {
+    "N": "Sequence Reset <4> , Ignore MsgSeqNum <34> (N/A For FIXML - Not Used)",
+    "Y": "Gap Fill <4> Message, MsgSeqNum <34> Field Valid"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "SequenceReset"
+   ]
+  },
+  "4.4": {
+   "type": "Boolean",
+   "description": "Indicates that the Sequence Reset <4> message is replacing administrative or application messages which will not be resent.",
+   "values": {
+    "Y": "Gap Fill <4> message, MsgSeqNum <34> field valid",
+    "N": "Sequence Reset <4> , ignore MsgSeqNum <34>"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "Sequence Reset"
+   ]
+  },
+  "4.3": {
+   "type": "Boolean",
+   "description": "Indicates that the Sequence Reset <4> message is replacing administrative or application messages which will not be resent.",
+   "values": {
+    "Y": "Gap Fill <4> message, MsgSeqNum <34> field valid",
+    "N": "Sequence Reset <4> , ignore MsgSeqNum <34>"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "Sequence Reset"
+   ]
+  },
+  "4.2": {
+   "type": "Boolean",
+   "description": "Indicates that the Sequence Reset <4> message is replacing administrative or application messages which will not be resent.",
+   "values": {
+    "Y": "Gap Fill <4> message, MsgSeqNum <34> field valid",
+    "N": "Sequence Reset <4> , ignore MsgSeqNum <34>"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Sequence Reset"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Indicates that the Sequence Reset <4> message is replacing administrative or application messages which will not be resent.",
+   "values": {
+    "Y": "Gap Fill message, MsgSeqNum <34> field valid",
+    "N": "Sequence Reset <4> , ignore MsgSeqNum <34>"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Sequence Reset"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Indicates that the Sequence Reset <4> message is replacing administrative or application messages which will not be resent.",
+   "values": {
+    "Y": "Gap Fill message, MsgSeqNum <34> field valid",
+    "N": "Sequence Reset <4> , ignore MsgSeqNum <34>"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Sequence Reset"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "Boolean",
+   "description": "Indicates that the Sequence Reset message is replacing administrative or application messages which will not be resent.",
+   "values": {
+    "N": "Sequence Reset, Ignore Msg Seq Num (N/A For FIXML - Not Used)",
+    "Y": "Gap Fill Message, Msg Seq Num Field Valid"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "SequenceReset"
+   ]
+  }
+ }
+}

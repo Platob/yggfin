@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeEventTime",
+ "tag": 1289,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTimestamp"
+  },
+  "5.0.SP1": {
+   "type": "UTCTimestamp"
+  }
+ }
+}

@@ -1,0 +1,208 @@
+{
+ "name": "UnderlyingProvisionGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 620,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingProvisions",
+     "required": false,
+     "tag": 42149,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionType",
+       "required": false,
+       "tag": 42150
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionDateUnadjusted",
+       "required": false,
+       "tag": 42151
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionDateBusinessDayConvention",
+       "required": false,
+       "tag": 42152
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProvisionDateBusinessCenterGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionDateAdjusted",
+       "required": false,
+       "tag": 42153
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionDateTenorPeriod",
+       "required": false,
+       "tag": 42154
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionDateTenorUnit",
+       "required": false,
+       "tag": 42155
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionBreakFeeElection",
+       "required": false,
+       "tag": 43002
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionBreakFeeRate",
+       "required": false,
+       "tag": 43003
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionCalculationAgent",
+       "required": false,
+       "tag": 42156
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionSinglePartyBuyerSide",
+       "required": false,
+       "tag": 42157
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionSinglePartySellerSide",
+       "required": false,
+       "tag": 42158
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProvisionCashSettlValueDates",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProvisionOptionExerciseDates",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProvisionOptionExpirationDate",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProvisionOptionRelevantUnderlyingDate",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionExerciseStyle",
+       "required": false,
+       "tag": 42159
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionExerciseMultipleNotional",
+       "required": false,
+       "tag": 42160
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionExerciseMinimumNotional",
+       "required": false,
+       "tag": 42161
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionExerciseMaximumNotional",
+       "required": false,
+       "tag": 42162
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionMinimumNumber",
+       "required": false,
+       "tag": 42163
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionMaximumNumber",
+       "required": false,
+       "tag": 42164
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionOptionExerciseConfirmation",
+       "required": false,
+       "tag": 42165
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProvisionCashSettlPaymentDates",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionCashSettlMethod",
+       "required": false,
+       "tag": 42166
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionCashSettlCurrency",
+       "required": false,
+       "tag": 42167
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionCashSettlCurrency2",
+       "required": false,
+       "tag": 42168
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionCashSettlQuoteType",
+       "required": false,
+       "tag": 42169
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProvisionCashSettlQuoteSource",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionText",
+       "required": false,
+       "tag": 42170
+      },
+      {
+       "kind": "field",
+       "name": "EncodedUnderlyingProvisionTextLen",
+       "required": false,
+       "tag": 42171
+      },
+      {
+       "kind": "field",
+       "name": "EncodedUnderlyingProvisionText",
+       "required": false,
+       "tag": 42172
+      },
+      {
+       "kind": "component",
+       "name": "UnderlyingProvisionParties",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

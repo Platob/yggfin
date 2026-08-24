@@ -1,0 +1,17 @@
+{
+ "name": "DefaultVerIndicator",
+ "tag": 1410,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Indicates that the Application Version is the default for the RefMsgType <372> field."
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Indicates that the Application Version is the default for the RefMsgType <372> field."
+  },
+  "FIXT1.1": {
+   "type": "Boolean"
+  }
+ }
+}

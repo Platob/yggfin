@@ -1,0 +1,14 @@
+{
+ "name": "StartStrikePxRange",
+ "tag": 1202,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Starting price for the range to which the StrikeIncrement <1204> applies. Price refers to the price of the underlying"
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Starting price for the range to which the StrikeIncrement <1204> applies. Price refers to the price of the underlying"
+  }
+ }
+}

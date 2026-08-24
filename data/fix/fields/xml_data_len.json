@@ -1,0 +1,34 @@
+{
+ "name": "XmlDataLen",
+ "tag": 212,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Length of the XmlData <213> data block."
+  },
+  "5.0.SP1": {
+   "type": "Length",
+   "description": "Length of the XmlData <213> data block."
+  },
+  "5.0": {
+   "type": "Length",
+   "description": "Length of the XmlData <213> data block."
+  },
+  "4.4": {
+   "type": "Length",
+   "description": "Length of the XmlData <213> data block."
+  },
+  "4.3": {
+   "type": "Length",
+   "description": "Length of the XmlData <213> data block."
+  },
+  "4.2": {
+   "type": "Length",
+   "description": "Length of the XmlData <213> data block."
+  },
+  "FIXT1.1": {
+   "type": "Length",
+   "description": "Length of the XmlData data block."
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "name": "LegBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 430,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegBusinessCenters",
+     "required": false,
+     "tag": 40923,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegBusinessCenter",
+       "required": false,
+       "tag": 40924
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

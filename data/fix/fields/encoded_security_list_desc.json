@@ -1,0 +1,14 @@
+{
+ "name": "EncodedSecurityListDesc",
+ "tag": 1469,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data",
+   "description": "Encoded (non-ASCII characters) representation of the SecurityListDesc <1467> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityListDesc field.",
+   "used_in": [
+    "SecurityListUpdateReport",
+    "SecurityList"
+   ]
+  }
+ }
+}

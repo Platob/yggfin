@@ -1,0 +1,46 @@
+{
+ "name": "UnderlyingPaymentStreamCompoundingStartDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 153,
+   "members": [
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCompoundingStartDateUnadjusted",
+     "required": false,
+     "tag": 42941
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCompoundingStartDateRelativeTo",
+     "required": false,
+     "tag": 42942
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCompoundingStartDateOffsetPeriod",
+     "required": false,
+     "tag": 42943
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCompoundingStartDateOffsetUnit",
+     "required": false,
+     "tag": 42944
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCompoundingStartDateOffsetDayType",
+     "required": false,
+     "tag": 42945
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingPaymentStreamCompoundingStartDateAdjusted",
+     "required": false,
+     "tag": 42946
+    }
+   ]
+  }
+ }
+}

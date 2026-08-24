@@ -1,0 +1,42 @@
+{
+ "name": "AllocPrice",
+ "tag": 366,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan)."
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan)."
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan)."
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan).",
+   "used_in": [
+    "Allocation Report",
+    "Allocation Report Ack",
+    "Allocation Instruction",
+    "Allocation Instruction Ack"
+   ]
+  },
+  "4.3": {
+   "type": "Price",
+   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan).",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.2": {
+   "type": "Price",
+   "description": "Executed price for an AllocAccount <79> entry used when using 'executed price' vs. 'average price' allocations (e.g. Japan).",
+   "used_in": [
+    "Allocation"
+   ]
+  }
+ }
+}

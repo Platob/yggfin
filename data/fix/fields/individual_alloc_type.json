@@ -1,0 +1,42 @@
+{
+ "name": "IndividualAllocType",
+ "tag": 992,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies whether the allocation is to be sub-allocated or allocated to a third party",
+   "values": {
+    "1": "Sub Allocate",
+    "2": "Third Party Allocation"
+   },
+   "value_names": {
+    "1": "SUB_ALLOCATE",
+    "2": "THIRD_PARTY_ALLOCATION"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies whether the allocation is to be sub-allocated or allocated to a third party",
+   "values": {
+    "1": "Sub Allocate",
+    "2": "Third Party Allocation"
+   },
+   "value_names": {
+    "1": "SUB_ALLOCATE",
+    "2": "THIRD_PARTY_ALLOCATION"
+   }
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identifies whether the allocation is to be sub-allocated or allocated to a third party",
+   "values": {
+    "1": "Sub Allocate",
+    "2": "Third Party Allocation"
+   },
+   "value_names": {
+    "1": "SUB_ALLOCATE",
+    "2": "THIRD_PARTY_ALLOCATION"
+   }
+  }
+ }
+}

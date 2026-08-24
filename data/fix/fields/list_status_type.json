@@ -1,0 +1,136 @@
+{
+ "name": "ListStatusType",
+ "tag": 429,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Code to represent the status type.",
+   "values": {
+    "1": "Ack",
+    "2": "Response",
+    "3": "Timed",
+    "4": "Exec Started",
+    "5": "All Done",
+    "6": "Alert"
+   },
+   "value_names": {
+    "1": "ACK",
+    "2": "RESPONSE",
+    "3": "TIMED",
+    "4": "EXEC_STARTED",
+    "5": "ALL_DONE",
+    "6": "ALERT"
+   },
+   "used_in": [
+    "ListStatus"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Code to represent the status type.",
+   "values": {
+    "1": "Ack",
+    "2": "Response",
+    "3": "Timed",
+    "4": "Exec Started",
+    "5": "All Done",
+    "6": "Alert"
+   },
+   "value_names": {
+    "1": "ACK",
+    "2": "RESPONSE",
+    "3": "TIMED",
+    "4": "EXEC_STARTED",
+    "5": "ALL_DONE",
+    "6": "ALERT"
+   },
+   "used_in": [
+    "ListStatus"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Code to represent the status type.",
+   "values": {
+    "1": "Ack",
+    "2": "Response",
+    "3": "Timed",
+    "4": "Exec Started",
+    "5": "All Done",
+    "6": "Alert"
+   },
+   "value_names": {
+    "1": "ACK",
+    "2": "RESPONSE",
+    "3": "TIMED",
+    "4": "EXEC_STARTED",
+    "5": "ALL_DONE",
+    "6": "ALERT"
+   },
+   "used_in": [
+    "ListStatus"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Code to represent the status type.",
+   "values": {
+    "1": "Ack",
+    "2": "Response",
+    "3": "Timed",
+    "4": "ExecStarted",
+    "5": "AllDone",
+    "6": "Alert"
+   },
+   "value_names": {
+    "1": "ACK",
+    "2": "RESPONSE",
+    "3": "TIMED",
+    "4": "EXEC_STARTED",
+    "5": "ALL_DONE",
+    "6": "ALERT"
+   },
+   "used_in": [
+    "List Status"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Code to represent the status type.",
+   "values": {
+    "1": "Ack",
+    "2": "Response",
+    "3": "Timed",
+    "4": "ExecStarted",
+    "5": "AllDone",
+    "6": "Alert"
+   },
+   "value_names": {
+    "6": "ALERT",
+    "4": "EXEC_STARTED",
+    "3": "TIMED",
+    "2": "RESPONSE",
+    "1": "ACK",
+    "5": "ALL_DONE"
+   },
+   "used_in": [
+    "List Status"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Code to represent the price type.",
+   "values": {
+    "1": "Ack",
+    "2": "Response",
+    "3": "Timed",
+    "4": "ExecStarted",
+    "5": "AllDone",
+    "6": "Alert"
+   },
+   "used_in": [
+    "List Status"
+   ]
+  }
+ }
+}

@@ -1,0 +1,36 @@
+{
+ "name": "UnderlyingPaymentScheduleRateSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 422,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingPaymentScheduleRateSources",
+     "required": false,
+     "tag": 40704,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentScheduleRateSource",
+       "required": false,
+       "tag": 40705
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentScheduleRateSourceType",
+       "required": false,
+       "tag": 40706
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentScheduleReferencePage",
+       "required": false,
+       "tag": 40707
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

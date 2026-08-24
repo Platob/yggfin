@@ -1,0 +1,30 @@
+{
+ "name": "ProtectionTermObligationGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 406,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoProtectionTermObligations",
+     "required": false,
+     "tag": 40201,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ProtectionTermObligationType",
+       "required": false,
+       "tag": 40202
+      },
+      {
+       "kind": "field",
+       "name": "ProtectionTermObligationValue",
+       "required": false,
+       "tag": 40203
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

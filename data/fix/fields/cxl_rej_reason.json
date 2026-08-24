@@ -1,0 +1,202 @@
+{
+ "name": "CxlRejReason",
+ "tag": 102,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Code to identify reason for cancel rejection.",
+   "values": {
+    "0": "Too late to cancel",
+    "1": "Unknown order",
+    "2": "Broker / Exchange Option",
+    "3": "Order already in Pending Cancel or Pending Replace status",
+    "4": "Unable to process Order Mass Cancel Request <q>",
+    "5": "OrigOrdModTime <586> did not match last TransactTime <60> of order",
+    "6": "Duplicate ClOrdID <11> received",
+    "7": "Price exceeds current price",
+    "8": "Price exceeds current price band",
+    "18": "Invalid price increment",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "TOO_LATE_TO_CANCEL",
+    "1": "UNKNOWN_ORDER",
+    "2": "BROKER_CREDIT",
+    "3": "ORDER_ALREADY_IN_PENDING_STATUS",
+    "4": "UNABLE_TO_PROCESS_ORDER_MASS_CANCEL_REQUEST",
+    "5": "ORIG_ORD_MOD_TIME",
+    "6": "DUPLICATE_CL_ORD_ID",
+    "7": "PRICE_EXCEEDS_CURRENT_PRICE",
+    "8": "PRICE_EXCEEDS_CURRENT_PRICE_BAND",
+    "18": "INVALID_PRICE_INCREMENT",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "OrderCancelReject"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Code to identify reason for cancel rejection.",
+   "values": {
+    "0": "Too late to cancel",
+    "1": "Unknown order",
+    "2": "Broker / Exchange Option",
+    "3": "Order already in Pending Cancel or Pending Replace status",
+    "4": "Unable to process Order Mass Cancel Request <q>",
+    "5": "OrigOrdModTime <586> did not match last TransactTime <60> of order",
+    "6": "Duplicate ClOrdID <11> received",
+    "7": "Price exceeds current price",
+    "8": "Price exceeds current price band",
+    "18": "Invalid price increment",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "TOO_LATE_TO_CANCEL",
+    "1": "UNKNOWN_ORDER",
+    "2": "BROKER_CREDIT",
+    "3": "ORDER_ALREADY_IN_PENDING_STATUS",
+    "4": "UNABLE_TO_PROCESS_ORDER_MASS_CANCEL_REQUEST",
+    "5": "ORIG_ORD_MOD_TIME",
+    "6": "DUPLICATE_CL_ORD_ID",
+    "7": "PRICE_EXCEEDS_CURRENT_PRICE",
+    "8": "PRICE_EXCEEDS_CURRENT_PRICE_BAND",
+    "18": "INVALID_PRICE_INCREMENT",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "OrderCancelReject"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Code to identify reason for cancel rejection.",
+   "values": {
+    "0": "Too late to cancel",
+    "1": "Unknown order",
+    "2": "Broker / Exchange Option",
+    "3": "Order already in Pending Cancel or Pending Replace status",
+    "4": "Unable to process Order Mass Cancel Request <q>",
+    "5": "OrigOrdModTime <586> did not match last TransactTime <60> of order",
+    "6": "Duplicate ClOrdID <11> received",
+    "18": "Invalid price increment",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "TOO_LATE_TO_CANCEL",
+    "1": "UNKNOWN_ORDER",
+    "2": "BROKER_CREDIT",
+    "3": "ORDER_ALREADY_IN_PENDING_STATUS",
+    "4": "UNABLE_TO_PROCESS_ORDER_MASS_CANCEL_REQUEST",
+    "5": "ORIG_ORD_MOD_TIME",
+    "6": "DUPLICATE_CL_ORD_ID",
+    "18": "INVALID_PRICE_INCREMENT",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "OrderCancelReject"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Code to identify reason for cancel rejection.",
+   "values": {
+    "0": "Too late to cancel",
+    "1": "Unknown order",
+    "2": "Broker / Exchange Option",
+    "3": "Order already in Pending Cancel or Pending Replace status",
+    "4": "Unable to process Order Mass Cancel Request <q>",
+    "5": "OrigOrdModTime <586> did not match last TransactTime <60> of order",
+    "6": "Duplicate ClOrdID <11> received",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "TOO_LATE_TO_CANCEL",
+    "1": "UNKNOWN_ORDER",
+    "2": "BROKER_CREDIT",
+    "3": "ORDER_ALREADY_IN_PENDING_STATUS",
+    "4": "UNABLE_TO_PROCESS_ORDER_MASS_CANCEL_REQUEST",
+    "5": "ORIG_ORD_MOD_TIME",
+    "6": "DUPLICATE_CL_ORD_ID",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "Order Cancel Reject"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Code to identify reason for cancel rejection.",
+   "values": {
+    "0": "Too late to cancel",
+    "1": "Unknown order",
+    "2": "Broker / Exchange Option",
+    "3": "Order already in Pending Cancel or Pending Replace status",
+    "4": "Unable to process Order Mass Cancel Request <q>",
+    "5": "OrigOrdModTime <586> did not match last TransactTime <60> of order",
+    "6": "Duplicate ClOrdID <11> received"
+   },
+   "value_names": {
+    "1": "UNKNOWN_ORDER",
+    "0": "TOO_LATE_TO_CANCEL",
+    "6": "DUPLICATE_CL_ORD_ID",
+    "5": "ORIG_ORD_MOD_TIME",
+    "4": "UNABLE_TO_PROCESS_ORDER_MASS_CANCEL_REQUEST",
+    "3": "ORDER_ALREADY_IN_PENDING_STATUS",
+    "2": "BROKER_CREDIT"
+   },
+   "used_in": [
+    "Order Cancel Reject"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Code to identify reason for cancel rejection.",
+   "values": {
+    "0": "Too late to cancel",
+    "1": "Unknown order",
+    "2": "Broker Option",
+    "3": "Order already in Pending Cancel or Pending Replace status"
+   },
+   "value_names": {
+    "0": "TOO_LATE_TO_CANCEL",
+    "1": "UNKNOWN_ORDER",
+    "2": "BROKER_CREDIT",
+    "3": "ORDER_ALREADY_IN_PENDING_STATUS"
+   },
+   "used_in": [
+    "Order Cancel Reject"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Code to identify reason for cancel rejection.",
+   "values": {
+    "0": "Too late to cancel",
+    "1": "Unknown order"
+   },
+   "value_names": {
+    "0": "TOO_LATE_TO_CANCEL",
+    "1": "UNKNOWN_ORDER"
+   },
+   "used_in": [
+    "Order Cancel Reject"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Code to identify reason for cancel rejection.",
+   "values": {
+    "0": "Too late to cancel",
+    "1": "Unknown order"
+   },
+   "value_names": {
+    "0": "TOO_LATE_TO_CANCEL",
+    "1": "UNKNOWN_ORDER"
+   },
+   "used_in": [
+    "Order Cancel Reject"
+   ]
+  }
+ }
+}

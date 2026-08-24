@@ -1,0 +1,14 @@
+{
+ "name": "NoTrdRepIndicators",
+ "tag": 1387,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of trade reporting indicators"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of trade reporting indicators"
+  }
+ }
+}

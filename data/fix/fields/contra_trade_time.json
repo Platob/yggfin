@@ -1,0 +1,39 @@
+{
+ "name": "ContraTradeTime",
+ "tag": 438,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTimestamp",
+   "description": "Identifes the time of the trade with the ContraBroker <375> . (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+  },
+  "5.0.SP1": {
+   "type": "UTCTimestamp",
+   "description": "Identifes the time of the trade with the ContraBroker <375> . (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+  },
+  "5.0": {
+   "type": "UTCTimestamp",
+   "description": "Identifes the time of the trade with the ContraBroker <375> . (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+  },
+  "4.4": {
+   "type": "UTCTimestamp",
+   "description": "Identifes the time of the trade with the ContraBroker <375> . Always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "used_in": [
+    "Execution Report"
+   ]
+  },
+  "4.3": {
+   "type": "UTCTimestamp",
+   "description": "Identifes the time of the trade with the ContraBroker <375> . (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "used_in": [
+    "Execution Report"
+   ]
+  },
+  "4.2": {
+   "type": "UTCTimestamp",
+   "description": "Identifes the time of the trade with the ContraBroker <375> . (always expressed in UTC (Universal Time Coordinated, also known as 'GMT')",
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

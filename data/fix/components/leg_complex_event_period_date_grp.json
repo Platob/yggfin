@@ -1,0 +1,30 @@
+{
+ "name": "LegComplexEventPeriodDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 526,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegComplexEventPeriodDateTimes",
+     "required": false,
+     "tag": 41376,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegComplexEventPeriodDate",
+       "required": false,
+       "tag": 41377
+      },
+      {
+       "kind": "field",
+       "name": "LegComplexEventPeriodTime",
+       "required": false,
+       "tag": 41378
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

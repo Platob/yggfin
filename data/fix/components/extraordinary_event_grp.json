@@ -1,0 +1,30 @@
+{
+ "name": "ExtraordinaryEventGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 652,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoExtraordinaryEvents",
+     "required": false,
+     "tag": 42296,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ExtraordinaryEventType",
+       "required": false,
+       "tag": 42297
+      },
+      {
+       "kind": "field",
+       "name": "ExtraordinaryEventValue",
+       "required": false,
+       "tag": 42298
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

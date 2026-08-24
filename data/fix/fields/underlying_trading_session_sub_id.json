@@ -1,0 +1,37 @@
+{
+ "name": "UnderlyingTradingSessionSubID",
+ "tag": 823,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Trading Session sub identifier in which the underlying instrument trades",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Trading Session sub identifier in which the underlying instrument trades",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Trading Session sub identifier in which the underlying instrument trades",
+   "used_in": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Trading Session sub identifier in which the underlying instrument trades",
+   "used_in": [
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

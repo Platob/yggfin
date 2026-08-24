@@ -1,0 +1,30 @@
+{
+ "name": "MarketDisruptionFallbackGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 497,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMarketDisruptionFallbacks",
+     "required": false,
+     "tag": 41094,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MarketDisruptionFallbackType",
+       "required": false,
+       "tag": 41095
+      },
+      {
+       "kind": "field",
+       "name": "MarketDisruptionFallbackValue",
+       "required": false,
+       "tag": 40992
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

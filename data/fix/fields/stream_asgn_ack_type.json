@@ -1,0 +1,21 @@
+{
+ "name": "StreamAsgnAckType",
+ "tag": 1503,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Type of acknowledgement.",
+   "values": {
+    "0": "Assignment Accepted",
+    "1": "Assignment Rejected"
+   },
+   "value_names": {
+    "0": "ASSIGNMENT_ACCEPTED",
+    "1": "ASSIGNMENT_REJECTED"
+   },
+   "used_in": [
+    "StreamAssignmentReportACK"
+   ]
+  }
+ }
+}

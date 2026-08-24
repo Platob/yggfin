@@ -1,0 +1,32 @@
+{
+ "name": "CashDistribAgentAcctNumber",
+ "tag": 500,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Account number at agent bank for distributions."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Account number at agent bank for distributions."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Account number at agent bank for distributions."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Account <1> number at agent bank for distributions.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Account <1> number at agent bank for distributions.",
+   "used_in": [
+    "Registration Instructions"
+   ]
+  }
+ }
+}

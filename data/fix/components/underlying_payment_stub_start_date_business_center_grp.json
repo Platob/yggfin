@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingPaymentStubStartDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 699,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingPaymentStubStartDateBusinessCenters",
+     "required": false,
+     "tag": 43000,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingPaymentStubStartDateBusinessCenter",
+       "required": false,
+       "tag": 43001
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,33 @@
+{
+ "name": "LastSwapPoints",
+ "tag": 1071,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PriceOffset",
+   "description": "For FX Swap, this is used to express the last market event for the differential between the far leg's bid/offer and the near leg's bid/offer in a fill or partial fill. Value can be negative. Expressed in decimal form. For example, 61.99 points is expressed and sent as 0.006199",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "PriceOffset",
+   "description": "For FX Swap, this is used to express the last market event for the differential between the far leg's bid/offer and the near leg's bid/offer in a fill or partial fill. Value can be negative. Expressed in decimal form. For example, 61.99 points is expressed and sent as 0.006199",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0": {
+   "type": "PriceOffset",
+   "description": "For FX Swap, this is used to express the last market event for the differential between the far leg's bid/offer and the near leg's bid/offer in a fill or partial fill. Value can be negative. Expressed in decimal form. For example, 61.99 points is expressed and sent as 0.006199",
+   "used_in": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
+  }
+ }
+}

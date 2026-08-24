@@ -1,0 +1,18 @@
+{
+ "name": "ExchangeSpecialInstructions",
+ "tag": 1139,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Free format test string related to exchange."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Free format test string related to exchange."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Free format test string related to exchange."
+  }
+ }
+}

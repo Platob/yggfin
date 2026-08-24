@@ -1,0 +1,26 @@
+{
+ "name": "IndividualAllocRejCode",
+ "tag": 776,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identified reason for rejecting an individual AllocAccount <79> detail. Same values as AllocRejCode <88>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identified reason for rejecting an individual AllocAccount <79> detail. Same values as AllocRejCode <88>"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identified reason for rejecting an individual AllocAccount <79> detail. Same values as AllocRejCode <88>"
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Identified reason for rejecting an individual AllocAccount <79> detail. Same values as AllocRejCode <88>",
+   "used_in": [
+    "Allocation Report Ack",
+    "Allocation Instruction Ack"
+   ]
+  }
+ }
+}

@@ -1,0 +1,20 @@
+{
+ "name": "ContractMultiplierUnit",
+ "tag": 1435,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates the type of multiplier being applied to the contract. Can be optionally used to further define what unit ContractMultiplier <231> is expressed in.",
+   "values": {
+    "0": "Shares",
+    "1": "Hours",
+    "2": "Days"
+   },
+   "value_names": {
+    "0": "SHARES",
+    "1": "HOURS",
+    "2": "DAYS"
+   }
+  }
+ }
+}

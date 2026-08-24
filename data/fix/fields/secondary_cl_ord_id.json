@@ -1,0 +1,132 @@
+{
+ "name": "SecondaryClOrdID",
+ "tag": 526,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Assigned by the party which originates the order. Can be used to provide the ClOrdID <11> used by an exchange or executing system.",
+   "used_in": [
+    "ExecutionReport",
+    "OrderCancelReject",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralResponse",
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "OrderMassActionReport",
+    "OrderMassActionRequest",
+    "NewOrderSingle",
+    "OrderCancelRequest",
+    "OrderCancelReplaceRequest",
+    "OrderStatusRequest",
+    "OrderMassCancelRequest",
+    "OrderMassCancelReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Assigned by the party which originates the order. Can be used to provide the ClOrdID <11> used by an exchange or executing system.",
+   "used_in": [
+    "ExecutionReport",
+    "OrderCancelReject",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralResponse",
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "OrderMassActionReport",
+    "OrderMassActionRequest",
+    "NewOrderSingle",
+    "OrderCancelRequest",
+    "OrderCancelReplaceRequest",
+    "OrderStatusRequest",
+    "OrderMassCancelRequest",
+    "OrderMassCancelReport"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Assigned by the party which originates the order. Can be used to provide the ClOrdID <11> used by an exchange or executing system.",
+   "used_in": [
+    "ExecutionReport",
+    "OrderCancelReject",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralResponse",
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "NewOrderSingle",
+    "OrderCancelRequest",
+    "OrderCancelReplaceRequest",
+    "OrderStatusRequest",
+    "OrderMassCancelRequest",
+    "OrderMassCancelReport"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Assigned by the party which originates the order. Can be used to provide the ClOrdID <11> used by an exchange or executing system.",
+   "used_in": [
+    "Execution Report",
+    "Order Cancel Reject",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Trade Capture Report",
+    "Confirmation",
+    "Allocation Report",
+    "Collateral Request",
+    "Collateral Assignment",
+    "Collateral Response",
+    "Collateral Report",
+    "Collateral Inquiry",
+    "Collateral Inquiry Ack",
+    "Confirmation Request",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Allocation Instruction",
+    "List Strike Price",
+    "List Status",
+    "Order Mass Cancel Request",
+    "Order Mass Cancel Report",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request",
+    "Cross Order Cancel Request"
+   ]
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Assigned by the party which originates the order. Can be used to provide the ClOrdID <11> used by an exchange or executing system.",
+   "used_in": [
+    "Execution Report",
+    "Order Cancel Reject",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Allocation",
+    "List Strike Price",
+    "List Status",
+    "Order Mass Cancel Request",
+    "Order Mass Cancel Report",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request",
+    "Cross Order Cancel Request"
+   ]
+  }
+ }
+}

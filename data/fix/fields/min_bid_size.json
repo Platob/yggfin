@@ -1,0 +1,50 @@
+{
+ "name": "MinBidSize",
+ "tag": 647,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Used to indicate a minimum quantity for a bid. If this field is used the BidSize <134> field is interpreted as the maximum bid size",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Used to indicate a minimum quantity for a bid. If this field is used the BidSize <134> field is interpreted as the maximum bid size",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Used to indicate a minimum quantity for a bid. If this field is used the BidSize <134> field is interpreted as the maximum bid size",
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Used to indicate a minimum quantity for a bid. If this field is used the BidSize <134> field is interpreted as the maximum bid size",
+   "used_in": [
+    "Quote Status Report",
+    "Quote Response",
+    "Quote"
+   ]
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "Used to indicate a minimum quantity for a bid. If this field is used the BidSize <134> field is interpreted as the maximum bid size",
+   "used_in": [
+    "Quote Status Report",
+    "Quote"
+   ]
+  }
+ }
+}

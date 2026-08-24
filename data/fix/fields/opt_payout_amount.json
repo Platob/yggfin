@@ -1,0 +1,15 @@
+{
+ "name": "OptPayoutAmount",
+ "tag": 1195,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Amt",
+   "description": "Cash amount indicating the pay out associated with an option. For binary options this is a fixed amount. Conditionally required if OptPayoutType <1482> is set to binary."
+  },
+  "5.0.SP1": {
+   "name": "OptPayAmount",
+   "type": "Amt",
+   "description": "Cash amount indicating the pay out associated with an option. For binary options this is a fixed amount"
+  }
+ }
+}

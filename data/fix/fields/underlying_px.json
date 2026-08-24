@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingPx",
+ "tag": 810,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "Underlying price associate with a derivative instrument."
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "Underlying price associate with a derivative instrument."
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "Underlying price associate with a derivative instrument."
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "Underlying price associate with a derivative instrument."
+  }
+ }
+}

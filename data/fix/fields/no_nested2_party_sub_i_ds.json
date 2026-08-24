@@ -1,0 +1,22 @@
+{
+ "name": "NoNested2PartySubIDs",
+ "tag": 806,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of Nested2PartySubID <760> and Nested2PartySubIDType <807> entries. Second instance of <NestedParties> ."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of Nested2PartySubID <760> and Nested2PartySubIDType <807> entries. Second instance of <NestedParties> ."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of Nested2PartySubID <760> and Nested2PartySubIDType <807> entries. Second instance of <NestedParties> ."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of Nested2PartySubID <760> and Nested2PartySubIDType <807> entries. Second instance of <NestedParties> ."
+  }
+ }
+}

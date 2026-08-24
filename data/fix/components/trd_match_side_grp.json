@@ -1,0 +1,326 @@
+{
+ "name": "TrdMatchSideGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 368,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoTrdMatchSides",
+     "required": false,
+     "tag": 1890,
+     "members": [
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": false,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "SideExecID",
+       "required": false,
+       "tag": 1427
+      },
+      {
+       "kind": "field",
+       "name": "SideExecRefID",
+       "required": false,
+       "tag": 1900
+      },
+      {
+       "kind": "field",
+       "name": "SideTradeID",
+       "required": false,
+       "tag": 1506
+      },
+      {
+       "kind": "field",
+       "name": "SideTradeReportID",
+       "required": false,
+       "tag": 1005
+      },
+      {
+       "kind": "field",
+       "name": "OrderDelay",
+       "required": false,
+       "tag": 1428
+      },
+      {
+       "kind": "field",
+       "name": "OrderDelayUnit",
+       "required": false,
+       "tag": 1429
+      },
+      {
+       "kind": "field",
+       "name": "SideLastQty",
+       "required": false,
+       "tag": 1009
+      },
+      {
+       "kind": "field",
+       "name": "SideClearingTradePrice",
+       "required": false,
+       "tag": 1597
+      },
+      {
+       "kind": "field",
+       "name": "SidePriceDifferential",
+       "required": false,
+       "tag": 1599
+      },
+      {
+       "kind": "field",
+       "name": "SideClearingTradePriceType",
+       "required": false,
+       "tag": 1598
+      },
+      {
+       "kind": "field",
+       "name": "SideFillStationCd",
+       "required": false,
+       "tag": 1006
+      },
+      {
+       "kind": "field",
+       "name": "SideReasonCd",
+       "required": false,
+       "tag": 1007
+      },
+      {
+       "kind": "field",
+       "name": "SideTrdSubType",
+       "required": false,
+       "tag": 1008
+      },
+      {
+       "kind": "field",
+       "name": "NetGrossInd",
+       "required": false,
+       "tag": 430
+      },
+      {
+       "kind": "field",
+       "name": "SideCurrency",
+       "required": false,
+       "tag": 1154
+      },
+      {
+       "kind": "field",
+       "name": "SideCurrencyCodeSource",
+       "required": false,
+       "tag": 2901
+      },
+      {
+       "kind": "field",
+       "name": "SideSettlCurrency",
+       "required": false,
+       "tag": 1155
+      },
+      {
+       "kind": "field",
+       "name": "SideSettlCurrencyCodeSource",
+       "required": false,
+       "tag": 2902
+      },
+      {
+       "kind": "component",
+       "name": "Parties",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "TradeInputSource",
+       "required": false,
+       "tag": 578
+      },
+      {
+       "kind": "field",
+       "name": "TradeInputDevice",
+       "required": false,
+       "tag": 579
+      },
+      {
+       "kind": "field",
+       "name": "ComplianceID",
+       "required": false,
+       "tag": 376
+      },
+      {
+       "kind": "field",
+       "name": "ComplianceText",
+       "required": false,
+       "tag": 2404
+      },
+      {
+       "kind": "field",
+       "name": "EncodedComplianceTextLen",
+       "required": false,
+       "tag": 2351
+      },
+      {
+       "kind": "field",
+       "name": "EncodedComplianceText",
+       "required": false,
+       "tag": 2352
+      },
+      {
+       "kind": "field",
+       "name": "SolicitedFlag",
+       "required": false,
+       "tag": 377
+      },
+      {
+       "kind": "field",
+       "name": "CustOrderCapacity",
+       "required": false,
+       "tag": 582
+      },
+      {
+       "kind": "field",
+       "name": "TimeBracket",
+       "required": false,
+       "tag": 943
+      },
+      {
+       "kind": "field",
+       "name": "PositionEffect",
+       "required": false,
+       "tag": 77
+      },
+      {
+       "kind": "field",
+       "name": "ExchangeRule",
+       "required": false,
+       "tag": 825
+      },
+      {
+       "kind": "field",
+       "name": "TradeAllocIndicator",
+       "required": false,
+       "tag": 826
+      },
+      {
+       "kind": "field",
+       "name": "PreallocMethod",
+       "required": false,
+       "tag": 591
+      },
+      {
+       "kind": "field",
+       "name": "AllocID",
+       "required": false,
+       "tag": 70
+      },
+      {
+       "kind": "component",
+       "name": "TrdAllocGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "SideGrossTradeAmt",
+       "required": false,
+       "tag": 1072
+      },
+      {
+       "kind": "field",
+       "name": "AggressorIndicator",
+       "required": false,
+       "tag": 1057
+      },
+      {
+       "kind": "field",
+       "name": "ExchangeSpecialInstructions",
+       "required": false,
+       "tag": 1139
+      },
+      {
+       "kind": "field",
+       "name": "SideShortSaleExemptionReason",
+       "required": false,
+       "tag": 1690
+      },
+      {
+       "kind": "field",
+       "name": "OrderCategory",
+       "required": false,
+       "tag": 1115
+      },
+      {
+       "kind": "field",
+       "name": "AvgPxIndicator",
+       "required": false,
+       "tag": 819
+      },
+      {
+       "kind": "field",
+       "name": "AvgPxGroupID",
+       "required": false,
+       "tag": 1731
+      },
+      {
+       "kind": "field",
+       "name": "SideMarketSegmentID",
+       "required": false,
+       "tag": 1898
+      },
+      {
+       "kind": "field",
+       "name": "SideVenueType",
+       "required": false,
+       "tag": 1899
+      },
+      {
+       "kind": "field",
+       "name": "ClearingFeeIndicator",
+       "required": false,
+       "tag": 635
+      },
+      {
+       "kind": "component",
+       "name": "TradeReportOrderDetail",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "TrdInstrmtLegExecGrp",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "CustOrderHandlingInst",
+       "required": false,
+       "tag": 1031
+      },
+      {
+       "kind": "field",
+       "name": "OrderHandlingInstSource",
+       "required": false,
+       "tag": 1032
+      },
+      {
+       "kind": "field",
+       "name": "Text",
+       "required": false,
+       "tag": 58
+      },
+      {
+       "kind": "field",
+       "name": "EncodedTextLen",
+       "required": false,
+       "tag": 354
+      },
+      {
+       "kind": "field",
+       "name": "EncodedText",
+       "required": false,
+       "tag": 355
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

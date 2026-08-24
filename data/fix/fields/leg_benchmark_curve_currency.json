@@ -1,0 +1,22 @@
+{
+ "name": "LegBenchmarkCurveCurrency",
+ "tag": 676,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Currency",
+   "description": "LegBenchmarkPrice <679> currency See BenchmarkCurveCurrency <220> for description and"
+  },
+  "5.0.SP1": {
+   "type": "Currency",
+   "description": "LegBenchmarkPrice <679> currency See BenchmarkCurveCurrency <220> for description and"
+  },
+  "5.0": {
+   "type": "Currency",
+   "description": "LegBenchmarkPrice <679> currency See BenchmarkCurveCurrency <220> for description and"
+  },
+  "4.4": {
+   "type": "Currency",
+   "description": "LegBenchmarkPrice <679> currency See BenchmarkCurveCurrency <220> for description and"
+  }
+ }
+}

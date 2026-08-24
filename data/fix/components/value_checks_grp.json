@@ -1,0 +1,30 @@
+{
+ "name": "ValueChecksGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 363,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoValueChecks",
+     "required": false,
+     "tag": 1868,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ValueCheckType",
+       "required": false,
+       "tag": 1869
+      },
+      {
+       "kind": "field",
+       "name": "ValueCheckAction",
+       "required": false,
+       "tag": 1870
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,20 @@
+{
+ "name": "ApplResponseID",
+ "tag": 1353,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Identifier for the Applicaton Message Request Ack",
+   "used_in": [
+    "ApplicationMessageRequestAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Identifier for the Applicaton Message Request Ack",
+   "used_in": [
+    "ApplicationMessageRequestAck"
+   ]
+  }
+ }
+}

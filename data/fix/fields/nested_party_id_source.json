@@ -1,0 +1,26 @@
+{
+ "name": "NestedPartyIDSource",
+ "tag": 525,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "PartyIDSource value within a nested repeating group. Same values as PartyIDSource <447>"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "PartyIDSource value within a nested repeating group. Same values as PartyIDSource <447>"
+  },
+  "5.0": {
+   "type": "char",
+   "description": "PartyIDSource value within a nested repeating group. Same values as PartyIDSource <447>"
+  },
+  "4.4": {
+   "type": "char",
+   "description": "PartyIDSource value within a nested repeating group. Same values as PartyIDSource <447>"
+  },
+  "4.3": {
+   "type": "char",
+   "description": "PartyIDSource value within a nested repeating group. Same values as PartyIDSource <447>"
+  }
+ }
+}

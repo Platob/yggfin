@@ -1,0 +1,24 @@
+{
+ "name": "LegProtectionTermEventNewsSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 558,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegProtectionTermEventNewsSources",
+     "required": false,
+     "tag": 41614,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegProtectionTermEventNewsSource",
+       "required": false,
+       "tag": 41615
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

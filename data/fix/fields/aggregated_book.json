@@ -1,0 +1,96 @@
+{
+ "name": "AggregatedBook",
+ "tag": 266,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Specifies whether or not book entries should be aggregated. (Not specified) = broker option",
+   "values": {
+    "Y": "book entries to be aggregated",
+    "N": "book entries should not be aggregated"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "MarketDataRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Specifies whether or not book entries should be aggregated. (Not specified) = broker option",
+   "values": {
+    "Y": "book entries to be aggregated",
+    "N": "book entries should not be aggregated"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "MarketDataRequest"
+   ]
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Specifies whether or not book entries should be aggregated. (Not specified) = broker option",
+   "values": {
+    "Y": "book entries to be aggregated",
+    "N": "book entries should not be aggregated"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "MarketDataRequest"
+   ]
+  },
+  "4.4": {
+   "type": "Boolean",
+   "description": "Specifies whether or not book entries should be aggregated.",
+   "values": {
+    "Y": "one book entry per side per price",
+    "N": "Multiple entries per side per price allowed"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "Market Data Request"
+   ]
+  },
+  "4.3": {
+   "type": "Boolean",
+   "description": "Specifies whether or not book entries should be aggregated.",
+   "values": {
+    "Y": "one book entry per side per price",
+    "N": "Multiple entries per side per price allowed"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   },
+   "used_in": [
+    "Market Data Request"
+   ]
+  },
+  "4.2": {
+   "type": "Boolean",
+   "description": "Specifies whether or not book entries should be aggregated.",
+   "values": {
+    "Y": "one book entry per side per price",
+    "N": "Multiple entries per side per price allowed"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   },
+   "used_in": [
+    "Market Data Request"
+   ]
+  }
+ }
+}

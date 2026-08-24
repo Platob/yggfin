@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingProvisionPtysSubGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 622,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingProvisionPartySubIDs",
+     "required": false,
+     "tag": 42177,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionPartySubID",
+       "required": false,
+       "tag": 42178
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingProvisionPartySubIDType",
+       "required": false,
+       "tag": 42179
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

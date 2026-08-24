@@ -1,0 +1,36 @@
+{
+ "name": "UnderlyingStreamCommoditySettlTimeGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 604,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingStreamCommoditySettlTimes",
+     "required": false,
+     "tag": 41999,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlStart",
+       "required": false,
+       "tag": 42000
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlEnd",
+       "required": false,
+       "tag": 42001
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamCommoditySettlTimeType",
+       "required": false,
+       "tag": 41936
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,106 @@
+{
+ "name": "PossResend",
+ "tag": 97,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Indicates that message may contain information that has been sent under another sequence number.",
+   "values": {
+    "N": "Original Transmission",
+    "Y": "Possible Resend"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Indicates that message may contain information that has been sent under another sequence number.",
+   "values": {
+    "N": "Original Transmission",
+    "Y": "Possible Resend"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Indicates that message may contain information that has been sent under another sequence number.",
+   "values": {
+    "N": "Original Transmission",
+    "Y": "Possible Resend"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  },
+  "4.4": {
+   "type": "Boolean",
+   "description": "Indicates that message may contain information that has been sent under another sequence number.",
+   "values": {
+    "Y": "Possible resend",
+    "N": "Original transmission"
+   },
+   "value_names": {
+    "Y": "YES",
+    "N": "NO"
+   }
+  },
+  "4.3": {
+   "type": "Boolean",
+   "description": "Indicates that message may contain information that has been sent under another sequence number.",
+   "values": {
+    "Y": "Possible resend",
+    "N": "Original transmission"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  },
+  "4.2": {
+   "type": "Boolean",
+   "description": "Indicates that message may contain information that has been sent under another sequence number.",
+   "values": {
+    "Y": "Possible resend",
+    "N": "Original transmission"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Indicates that message may contain information that has been sent under another sequence number.",
+   "values": {
+    "Y": "Possible resend",
+    "N": "Original transmission"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Indicates that message may contain information that has been sent under another sequence number."
+  },
+  "FIXT1.1": {
+   "type": "Boolean",
+   "description": "The PossResend is set to Y when reissuing a message with a new sequence number (i.e. when resending an order). The receiving application should process message with PossResend = \"Y\" as follows: forward message to application and determine if previously received (i.e. verify order id and parameters).",
+   "values": {
+    "N": "Original Transmission",
+    "Y": "Possible Resend"
+   },
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  }
+ }
+}

@@ -1,0 +1,36 @@
+{
+ "name": "LegDeliveryScheduleSettlTimeGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 537,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegDeliveryScheduleSettlTimes",
+     "required": false,
+     "tag": 41425,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegDeliveryScheduleSettlStart",
+       "required": false,
+       "tag": 41426
+      },
+      {
+       "kind": "field",
+       "name": "LegDeliveryScheduleSettlEnd",
+       "required": false,
+       "tag": 41427
+      },
+      {
+       "kind": "field",
+       "name": "LegDeliveryScheduleSettlTimeType",
+       "required": false,
+       "tag": 41428
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

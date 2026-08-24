@@ -123,12 +123,9 @@ def test_the_security_type_map_only_holds_values_the_dictionary_defines() -> Non
     archive = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
     published: set[str] = set()
     with zipfile.ZipFile(archive) as opened:
-        for member in opened.namelist():
-            if member == "versions.json":
-                continue
-            for entry in json.loads(opened.read(member))["fields"]:
-                if entry["name"] == "SecurityType":
-                    published |= set(json.loads(entry["metadata"].get("fix:values") or "{}"))
+        entry = json.loads(opened.read("fields/security_type.json"))
+    for variant in entry["versions"].values():
+        published |= set(variant.get("values") or {})
     unknown = sorted(set(SECURITY_TYPES) - published)
     assert not unknown, f"no FIX version defines SecurityType {unknown}"
 

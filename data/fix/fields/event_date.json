@@ -1,0 +1,22 @@
+{
+ "name": "EventDate",
+ "tag": 866,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "Date of event"
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "Date of event"
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "Date of event"
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "Date of event"
+  }
+ }
+}

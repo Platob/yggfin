@@ -1,0 +1,59 @@
+{
+ "name": "CxlType",
+ "tag": 125,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "note": "no longer used",
+   "description": "Deprecated in FIX 4.2"
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "note": "no longer used",
+   "description": "Deprecated in FIX 4.2"
+  },
+  "5.0": {
+   "type": "char",
+   "note": "no longer used",
+   "description": "Deprecated in FIX 4.2"
+  },
+  "4.4": {
+   "type": "char",
+   "note": "no longer used",
+   "description": "No longer used. Included here for reference to prior versions."
+  },
+  "4.3": {
+   "name": "CxlType(no longer used)",
+   "type": "char",
+   "note": "no longer used",
+   "description": "No longer used. Included here for reference to prior versions."
+  },
+  "4.2": {
+   "name": "CxlType(no longer used)",
+   "type": "char",
+   "note": "no longer used",
+   "description": "No longer used. Included here for reference to prior versions."
+  },
+  "4.1": {
+   "name": "CxlType(no longer used)",
+   "type": "char",
+   "note": "no longer used",
+   "description": "No longer used. Included here for reference to prior versions."
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Defines if cancel is for part or all of the remaining quantity of an order.",
+   "values": {
+    "P": "partial cancel (reduce quantity)",
+    "F": "full remaining quantity"
+   },
+   "value_names": {
+    "F": "FULL_REMAINING_QUANTITY",
+    "P": "PARTIAL_CANCEL"
+   },
+   "used_in": [
+    "Order Cancel Request"
+   ]
+  }
+ }
+}

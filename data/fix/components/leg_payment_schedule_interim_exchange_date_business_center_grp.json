@@ -1,0 +1,24 @@
+{
+ "name": "LegPaymentScheduleInterimExchangeDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 432,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegPaymentScheduleInterimExchangeDateBusinessCenters",
+     "required": false,
+     "tag": 40928,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegPaymentScheduleInterimExchangeDatesBusinessCenter",
+       "required": false,
+       "tag": 40409
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

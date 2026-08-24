@@ -1,0 +1,86 @@
+{
+ "name": "ApplQueueResolution",
+ "tag": 814,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Resolution taken when ApplQueueDepth <813> exceeds ApplQueueMax <812> or system specified maximum queue size.",
+   "values": {
+    "0": "No Action Taken",
+    "1": "Queue Flushed",
+    "2": "Overlay Last",
+    "3": "End Session"
+   },
+   "value_names": {
+    "0": "NO_ACTION_TAKEN",
+    "1": "QUEUE_FLUSHED",
+    "2": "OVERLAY_LAST",
+    "3": "END_SESSION"
+   },
+   "used_in": [
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Resolution taken when ApplQueueDepth <813> exceeds ApplQueueMax <812> or system specified maximum queue size.",
+   "values": {
+    "0": "No Action Taken",
+    "1": "Queue Flushed",
+    "2": "Overlay Last",
+    "3": "End Session"
+   },
+   "value_names": {
+    "0": "NO_ACTION_TAKEN",
+    "1": "QUEUE_FLUSHED",
+    "2": "OVERLAY_LAST",
+    "3": "END_SESSION"
+   },
+   "used_in": [
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Resolution taken when ApplQueueDepth <813> exceeds ApplQueueMax <812> or system specified maximum queue size.",
+   "values": {
+    "0": "No Action Taken",
+    "1": "Queue Flushed",
+    "2": "Overlay Last",
+    "3": "End Session"
+   },
+   "value_names": {
+    "0": "NO_ACTION_TAKEN",
+    "1": "QUEUE_FLUSHED",
+    "2": "OVERLAY_LAST",
+    "3": "END_SESSION"
+   },
+   "used_in": [
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataIncrementalRefresh"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Resolution taken when ApplQueueDepth <813> exceeds ApplQueueMax <812> or system specified maximum queue size.",
+   "values": {
+    "0": "No action taken",
+    "1": "Queue flushed",
+    "2": "Overlay last",
+    "3": "End session"
+   },
+   "value_names": {
+    "0": "NO_ACTION_TAKEN",
+    "1": "QUEUE_FLUSHED",
+    "2": "OVERLAY_LAST",
+    "3": "END_SESSION"
+   },
+   "used_in": [
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh"
+   ]
+  }
+ }
+}

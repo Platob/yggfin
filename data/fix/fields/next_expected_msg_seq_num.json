@@ -1,0 +1,41 @@
+{
+ "name": "NextExpectedMsgSeqNum",
+ "tag": 789,
+ "versions": {
+  "5.0.SP2": {
+   "type": "SeqNum",
+   "description": "Next expected MsgSeqNum <34> value to be received.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "SeqNum",
+   "description": "Next expected MsgSeqNum <34> value to be received.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "5.0": {
+   "type": "SeqNum",
+   "description": "Next expected MsgSeqNum <34> value to be received.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.4": {
+   "type": "SeqNum",
+   "description": "Next expected MsgSeqNum <34> value to be received.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "SeqNum",
+   "description": "Next expected MsgSeqNum value to be received.",
+   "used_in": [
+    "Logon"
+   ]
+  }
+ }
+}

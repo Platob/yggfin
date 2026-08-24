@@ -1,0 +1,26 @@
+{
+ "name": "NoPartyIDs",
+ "tag": 453,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of PartyID <448> , PartyIDSource <447> , and PartyRole <452> entries"
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of PartyID <448> , PartyIDSource <447> , and PartyRole <452> entries"
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of PartyID <448> , PartyIDSource <447> , and PartyRole <452> entries"
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of PartyID <448> , PartyIDSource <447> , and PartyRole <452> entries"
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of PartyID <448> , PartyIDSource <447> , and PartyRole <452> entries"
+  }
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "name": "NestedPartySubIDType",
+ "tag": 805,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Type of NestedPartySubID <545> value. Same values as PartySubIDType <803>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Type of NestedPartySubID <545> value. Same values as PartySubIDType <803>"
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Type of NestedPartySubID <545> value. Same values as PartySubIDType <803>"
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Type of NestedPartySubID <545> value. Same values as PartySubIDType <803>"
+  }
+ }
+}

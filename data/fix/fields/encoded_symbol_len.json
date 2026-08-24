@@ -1,0 +1,14 @@
+{
+ "name": "EncodedSymbolLen",
+ "tag": 1359,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedSymbol <1360> field."
+  },
+  "5.0.SP1": {
+   "type": "Length",
+   "description": "Byte length of encoded (non-ASCII characters) EncodedSymbol <1360> field."
+  }
+ }
+}

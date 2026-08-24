@@ -1,0 +1,10 @@
+{
+ "name": "UnderlyingSeniority",
+ "tag": 1454,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "See Seniority <1450>"
+  }
+ }
+}

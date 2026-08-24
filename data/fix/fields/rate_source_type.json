@@ -1,0 +1,18 @@
+{
+ "name": "RateSourceType",
+ "tag": 1447,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Indicates whether the rate source specified is a primary or secondary source.",
+   "values": {
+    "0": "Primary",
+    "1": "Secondary"
+   },
+   "value_names": {
+    "0": "PRIMARY",
+    "1": "SECONDARY"
+   }
+  }
+ }
+}

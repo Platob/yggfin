@@ -1,0 +1,57 @@
+{
+ "name": "SettlMethodElectionDate",
+ "versions": {
+  "5.0.SP2": {
+   "order": 142,
+   "members": [
+    {
+     "kind": "field",
+     "name": "SettlMethodElectionDateUnadjusted",
+     "required": false,
+     "tag": 42777
+    },
+    {
+     "kind": "field",
+     "name": "SettlMethodElectionDateBusinessDayConvention",
+     "required": false,
+     "tag": 42778
+    },
+    {
+     "kind": "component",
+     "name": "SettlMethodElectionDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "SettlMethodElectionDateRelativeTo",
+     "required": false,
+     "tag": 42779
+    },
+    {
+     "kind": "field",
+     "name": "SettlMethodElectionDateOffsetPeriod",
+     "required": false,
+     "tag": 42780
+    },
+    {
+     "kind": "field",
+     "name": "SettlMethodElectionDateOffsetUnit",
+     "required": false,
+     "tag": 42781
+    },
+    {
+     "kind": "field",
+     "name": "SettlMethodElectionDateOffsetDayType",
+     "required": false,
+     "tag": 42782
+    },
+    {
+     "kind": "field",
+     "name": "SettlMethodElectionDateAdjusted",
+     "required": false,
+     "tag": 42783
+    }
+   ]
+  }
+ }
+}

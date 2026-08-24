@@ -1,0 +1,123 @@
+{
+ "name": "SettlSessID",
+ "tag": 716,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Identifies a specific settlement session",
+   "values": {
+    "ITD": "Intraday",
+    "RTH": "Regular Trading Hours",
+    "ETH": "Electronic Trading Hours",
+    "EOD": "End Of Day"
+   },
+   "value_names": {
+    "ITD": "INTRADAY",
+    "RTH": "REGULAR_TRADING_HOURS",
+    "ETH": "ELECTRONIC_TRADING_HOURS",
+    "EOD": "END_OF_DAY"
+   },
+   "used_in": [
+    "TradeCaptureReport",
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport",
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "PositionReport",
+    "TradeCaptureReportAck",
+    "AssignmentReport",
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "AdjustedPositionReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Identifies a specific settlement session",
+   "values": {
+    "ITD": "Intraday",
+    "RTH": "Regular Trading Hours",
+    "ETH": "Electronic Trading Hours",
+    "EOD": "End Of Day"
+   },
+   "value_names": {
+    "ITD": "INTRADAY",
+    "RTH": "REGULAR_TRADING_HOURS",
+    "ETH": "ELECTRONIC_TRADING_HOURS",
+    "EOD": "END_OF_DAY"
+   },
+   "used_in": [
+    "TradeCaptureReport",
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport",
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "PositionReport",
+    "TradeCaptureReportAck",
+    "AssignmentReport",
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "AdjustedPositionReport"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Identifies a specific settlement session",
+   "values": {
+    "ITD": "Intraday",
+    "RTH": "Regular Trading Hours",
+    "ETH": "Electronic Trading Hours",
+    "EOD": "End Of Day"
+   },
+   "value_names": {
+    "ITD": "INTRADAY",
+    "RTH": "REGULAR_TRADING_HOURS",
+    "ETH": "ELECTRONIC_TRADING_HOURS",
+    "EOD": "END_OF_DAY"
+   },
+   "used_in": [
+    "TradeCaptureReport",
+    "PositionMaintenanceRequest",
+    "PositionMaintenanceReport",
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "PositionReport",
+    "TradeCaptureReportAck",
+    "AssignmentReport",
+    "CollateralRequest",
+    "CollateralAssignment",
+    "CollateralReport",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "AdjustedPositionReport"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Identifies a specific settlement session Examples: ITD = Intraday RTH = Regular Trading Hours ETH = Electronic Trading Hours",
+   "value_names": {
+    "ITD": "INTRADAY",
+    "RTH": "REGULAR_TRADING_HOURS",
+    "ETH": "ELECTRONIC_TRADING_HOURS"
+   },
+   "used_in": [
+    "Position Maintenance Request",
+    "Position Maintenance Report",
+    "Request For Positions",
+    "Position Report",
+    "Assignment Report",
+    "Collateral Request",
+    "Collateral Assignment",
+    "Collateral Report",
+    "Collateral Inquiry",
+    "Collateral Inquiry Ack"
+   ]
+  }
+ }
+}

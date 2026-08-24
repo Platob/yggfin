@@ -1,0 +1,28 @@
+{
+ "name": "PriceMovementGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 370,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPriceMovements",
+     "required": false,
+     "tag": 1919,
+     "members": [
+      {
+       "kind": "component",
+       "name": "PriceMovementValueGrp",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "ClearingAccountTypeGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,10 @@
+{
+ "name": "StrikePriceBoundaryPrecision",
+ "tag": 1480,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Percentage",
+   "description": "Used in combination with StrikePriceBoundaryMethod <1479> to specify the percentage of the strike price in relation to the underlying price. The percentage is generally 100 or greater for puts and 100 or less for calls."
+  }
+ }
+}

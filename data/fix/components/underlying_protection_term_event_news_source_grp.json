@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingProtectionTermEventNewsSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 617,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingProtectionTermEventNewsSources",
+     "required": false,
+     "tag": 42090,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingProtectionTermEventNewsSource",
+       "required": false,
+       "tag": 42091
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

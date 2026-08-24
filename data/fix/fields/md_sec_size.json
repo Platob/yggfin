@@ -1,0 +1,14 @@
+{
+ "name": "MDSecSize",
+ "tag": 1179,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "A part of the MDEntrySize <271> that represents secondary interest as specified by MDSecSizeType <1178> ."
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "A part of the MDEntrySize <271> that represents secondary interest as specified by MDSecSizeType <1178> ."
+  }
+ }
+}

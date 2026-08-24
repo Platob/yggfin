@@ -1,0 +1,105 @@
+{
+ "name": "SettlDate2",
+ "tag": 193,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX.5.0 See Appendix 6-E: 13.Deprecated OrderQty2 (192), SettlDate2 (193), Price2 (640), LastForwardPoints2 (641), BidForwardPoints2 (642), and OfferForwardPoints2 (643) [deprecated in FIX 5.0] SettDate <64> of the future part of a F/X swap order.",
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "Quote"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX.5.0 See Appendix 6-E: 13.Deprecated OrderQty2 (192), SettlDate2 (193), Price2 (640), LastForwardPoints2 (641), BidForwardPoints2 (642), and OfferForwardPoints2 (643) [deprecated in FIX 5.0] SettDate <64> of the future part of a F/X swap order.",
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "Quote"
+   ]
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "note": "Deprecated",
+   "description": "Deprecated in FIX.5.0 See Appendix 6-E: 13.Deprecated OrderQty2 (192), SettlDate2 (193), Price2 (640), LastForwardPoints2 (641), BidForwardPoints2 (642), and OfferForwardPoints2 (643) [deprecated in FIX 5.0] SettDate <64> of the future part of a F/X swap order.",
+   "used_in": [
+    "ExecutionReport",
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "Quote"
+   ]
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "SettDate <64> of the future part of a F/X swap order.",
+   "used_in": [
+    "Execution Report",
+    "Quote Request Reject",
+    "Quote Status Report",
+    "Quote Response",
+    "Mass Quote Acknowledgement",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "Mass Quote",
+    "Quote Request",
+    "Quote"
+   ]
+  },
+  "4.3": {
+   "name": "FutSettDate2",
+   "type": "LocalMktDate",
+   "description": "FutSettDate <64> of the future part of a F/X swap order.",
+   "used_in": [
+    "Execution Report",
+    "Quote Request Reject",
+    "Quote Status Report",
+    "Mass Quote Acknowledgement",
+    "New Order - List",
+    "New Order - Single",
+    "Order Cancel/Replace Request",
+    "Mass Quote",
+    "Quote Request",
+    "Quote"
+   ]
+  },
+  "4.2": {
+   "name": "FutSettDate2",
+   "type": "LocalMktDate",
+   "description": "FutSettDate <64> of the future part of a F/X swap order.",
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Mass Quote",
+    "Quote Request",
+    "Quote"
+   ]
+  },
+  "4.1": {
+   "name": "FutSettDate2",
+   "type": "date",
+   "description": "FutSettDate <64> of the future part of a F/X swap order.",
+   "used_in": [
+    "Order - Single",
+    "Order - List",
+    "Order Cancel/Replace Request",
+    "Quote Request",
+    "Quote"
+   ]
+  }
+ }
+}

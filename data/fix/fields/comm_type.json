@@ -1,0 +1,196 @@
+{
+ "name": "CommType",
+ "tag": 13,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Commission type",
+   "values": {
+    "1": "Per Unit (implying shares, par, currency, etc.)",
+    "2": "Percent",
+    "3": "Absolute (total monetary amount)",
+    "4": "Percentage waived - cash discount (for CIV buy orders)",
+    "5": "Percentage waived - enhanced units (for CIV buy orders)",
+    "6": "Points per bond or contract (supply ContractMultiplier <231> in the <Instrument> component block if the object security is denominated in a size other than the industry default - 1000 par for bonds)"
+   },
+   "value_names": {
+    "1": "PER_UNIT",
+    "2": "PERCENT",
+    "3": "ABSOLUTE",
+    "4": "PERCENTAGE_WAIVED_CASH_DISCOUNT",
+    "5": "PERCENTAGE_WAIVED_ENHANCED_UNITS",
+    "6": "POINTS_PER_BOND_OR_CONTRACT",
+    "7": "BASIS_POINTS",
+    "8": "AMOUNT_PER_CONTRACT"
+   },
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Commission type",
+   "values": {
+    "1": "Per Unit (implying shares, par, currency, etc.)",
+    "2": "Percent",
+    "3": "Absolute (total monetary amount)",
+    "4": "Percentage waived - cash discount (for CIV buy orders)",
+    "5": "Percentage waived - enhanced units (for CIV buy orders)",
+    "6": "Points per bond or contract (supply ContractMultiplier <231> in the <Instrument> component block if the object security is denominated in a size other than the industry default - 1000 par for bonds)"
+   },
+   "value_names": {
+    "1": "PER_UNIT",
+    "2": "PERCENT",
+    "3": "ABSOLUTE",
+    "4": "PERCENTAGE_WAIVED_CASH_DISCOUNT",
+    "5": "PERCENTAGE_WAIVED_ENHANCED_UNITS",
+    "6": "POINTS_PER_BOND_OR_CONTRACT"
+   },
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Commission type",
+   "values": {
+    "1": "Per Unit (implying shares, par, currency, etc.)",
+    "2": "Percent",
+    "3": "Absolute (total monetary amount)",
+    "4": "Percentage waived - cash discount (for CIV buy orders)",
+    "5": "Percentage waived - enhanced units (for CIV buy orders)",
+    "6": "Points per bond or contract (supply ContractMultiplier <231> in the <Instrument> component block if the object security is denominated in a size other than the industry default - 1000 par for bonds)"
+   },
+   "value_names": {
+    "1": "PER_UNIT",
+    "2": "PERCENT",
+    "3": "ABSOLUTE",
+    "4": "PERCENTAGE_WAIVED_CASH_DISCOUNT",
+    "5": "PERCENTAGE_WAIVED_ENHANCED_UNITS",
+    "6": "POINTS_PER_BOND_OR_CONTRACT"
+   },
+   "used_in": [
+    "QuoteStatusReport",
+    "QuoteResponse",
+    "Quote"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Commission <12> type",
+   "values": {
+    "1": "per unit (implying shares, par, currency, etc)",
+    "2": "percentage",
+    "3": "absolute (total monetary amount)",
+    "4": "(for CIV buy orders) percentage waived - cash discount",
+    "5": "(for CIV buy orders) percentage waived - enhanced units",
+    "6": "points per bond or or contract [Supply ContractMultiplier <231> in the <Instrument> component block if the object security is denominated in a size other than the industry default - 1000 par for bonds.]"
+   },
+   "value_names": {
+    "1": "PER_UNIT",
+    "2": "PERCENT",
+    "3": "ABSOLUTE",
+    "4": "PERCENTAGE_WAIVED_CASH_DISCOUNT",
+    "5": "PERCENTAGE_WAIVED_ENHANCED_UNITS",
+    "6": "POINTS_PER_BOND_OR_CONTRACT"
+   },
+   "used_in": [
+    "Quote Status Report",
+    "Quote Response",
+    "Quote"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Commission <12> type",
+   "values": {
+    "1": "per share",
+    "2": "percentage",
+    "3": "absolute",
+    "4": "(for CIV buy orders) percentage waived - cash discount",
+    "5": "(for CIV buy orders) percentage waived - enhanced units",
+    "6": "per bond"
+   },
+   "value_names": {
+    "6": "POINTS_PER_BOND_OR_CONTRACT",
+    "1": "PER_UNIT",
+    "2": "PERCENT",
+    "3": "ABSOLUTE",
+    "5": "PERCENTAGE_WAIVED_ENHANCED_UNITS",
+    "4": "PERCENTAGE_WAIVED_CASH_DISCOUNT"
+   },
+   "used_in": [
+    "Quote Status Report",
+    "Quote"
+   ]
+  },
+  "4.2": {
+   "type": "char",
+   "description": "Commission <12> type",
+   "values": {
+    "1": "per share",
+    "2": "percentage",
+    "3": "absolute"
+   },
+   "value_names": {
+    "1": "PER_UNIT",
+    "2": "PERCENT",
+    "3": "ABSOLUTE"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation",
+    "Bid Response"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Commission <12> type",
+   "values": {
+    "1": "per share",
+    "2": "percentage",
+    "3": "absolute"
+   },
+   "value_names": {
+    "1": "PER_UNIT",
+    "2": "PERCENT",
+    "3": "ABSOLUTE"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation"
+   ]
+  },
+  "4.0": {
+   "type": "char",
+   "description": "Commission <12> type",
+   "values": {
+    "1": "per share",
+    "2": "percentage",
+    "3": "absolute"
+   },
+   "value_names": {
+    "1": "PER_UNIT",
+    "2": "PERCENT",
+    "3": "ABSOLUTE"
+   },
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Allocation"
+   ]
+  }
+ }
+}

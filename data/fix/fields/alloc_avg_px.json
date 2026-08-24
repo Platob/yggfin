@@ -1,0 +1,47 @@
+{
+ "name": "AllocAvgPx",
+ "tag": 153,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Price",
+   "description": "AvgPx <6> for a specific AllocAccount <79> For Fixed Income this is always expressed as \" percent of par \" price type."
+  },
+  "5.0.SP1": {
+   "type": "Price",
+   "description": "AvgPx <6> for a specific AllocAccount <79> For Fixed Income this is always expressed as \" percent of par \" price type."
+  },
+  "5.0": {
+   "type": "Price",
+   "description": "AvgPx <6> for a specific AllocAccount <79> For Fixed Income this is always expressed as \" percent of par \" price type."
+  },
+  "4.4": {
+   "type": "Price",
+   "description": "AvgPx <6> for a specific AllocAccount <79> For Fixed Income this is always expressed as \" percent of par \" price type.",
+   "used_in": [
+    "Allocation Report",
+    "Allocation Instruction"
+   ]
+  },
+  "4.3": {
+   "type": "Price",
+   "description": "AvgPx <6> for a specific AllocAccount <79>",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.2": {
+   "type": "Price",
+   "description": "AvgPx <6> for a specific AllocAccount <79>",
+   "used_in": [
+    "Allocation"
+   ]
+  },
+  "4.1": {
+   "type": "float",
+   "description": "AvgPx <6> for a specific AllocAccount <79>",
+   "used_in": [
+    "Allocation"
+   ]
+  }
+ }
+}

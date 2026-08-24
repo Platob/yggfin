@@ -1,0 +1,47 @@
+{
+ "name": "ExDate",
+ "tag": 230,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "The date when a distribution of interest is deducted from a securities assets or set aside for payment to bondholders. On the ex-date, the securities price drops by the amount of the distribution (plus or minus any market activity). (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "The date when a distribution of interest is deducted from a securities assets or set aside for payment to bondholders. On the ex-date, the securities price drops by the amount of the distribution (plus or minus any market activity). (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation"
+   ]
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "The date when a distribution of interest is deducted from a securities assets or set aside for payment to bondholders. On the ex-date, the securities price drops by the amount of the distribution (plus or minus any market activity). (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "used_in": [
+    "ExecutionReport",
+    "Confirmation"
+   ]
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "The date when a distribution of interest is deducted from a securities assets or set aside for payment to bondholders. On the ex-date, the securities price drops by the amount of the distribution (plus or minus any market activity). (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report",
+    "Confirmation"
+   ]
+  },
+  "4.3": {
+   "type": "UTCDate",
+   "description": "The date when a distribution of interest is deducted from a securities assets or set aside for payment to bondholders. On the ex-date, the securities price drops by the amount of the distribution (plus or minus any market activity). (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "used_in": [
+    "Execution Report",
+    "Trade Capture Report"
+   ]
+  }
+ }
+}

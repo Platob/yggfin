@@ -1,0 +1,22 @@
+{
+ "name": "UnderlyingStipType",
+ "tag": 888,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Type of stipulation. Same values as StipulationType <233>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Type of stipulation. Same values as StipulationType <233>"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Type of stipulation. Same values as StipulationType <233>"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Type of stipulation. Same values as StipulationType <233>"
+  }
+ }
+}

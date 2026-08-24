@@ -1,0 +1,22 @@
+{
+ "name": "StartDate",
+ "tag": 916,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "Start date of a financing deal, i.e. the date the buyer pays the seller cash and takes control of the collateral"
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "Start date of a financing deal, i.e. the date the buyer pays the seller cash and takes control of the collateral"
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "Start date of a financing deal, i.e. the date the buyer pays the seller cash and takes control of the collateral"
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "Start date of a financing deal, i.e. the date the buyer pays the seller cash and takes control of the collateral"
+  }
+ }
+}

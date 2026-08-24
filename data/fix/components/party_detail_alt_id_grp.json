@@ -1,0 +1,35 @@
+{
+ "name": "PartyDetailAltIDGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 319,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPartyDetailAltID",
+     "required": false,
+     "tag": 1516,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PartyDetailAltID",
+       "required": false,
+       "tag": 1517
+      },
+      {
+       "kind": "field",
+       "name": "PartyDetailAltIDSource",
+       "required": false,
+       "tag": 1518
+      },
+      {
+       "kind": "component",
+       "name": "PartyDetailAltSubGrp",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

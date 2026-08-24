@@ -1,0 +1,121 @@
+{
+ "name": "InstrmtLegIOIGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 193,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegIOIQty",
+       "required": false,
+       "tag": 682
+      },
+      {
+       "kind": "component",
+       "name": "LegStipulations",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 42,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegIOIQty",
+       "required": false,
+       "tag": 682
+      },
+      {
+       "kind": "component",
+       "name": "LegStipulations",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 43,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegIOIQty",
+       "required": false,
+       "tag": 682
+      },
+      {
+       "kind": "component",
+       "name": "LegStipulations",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 43,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegs",
+     "required": false,
+     "tag": 555,
+     "members": [
+      {
+       "kind": "component",
+       "name": "InstrumentLeg",
+       "required": false
+      },
+      {
+       "kind": "field",
+       "name": "LegIOIQty",
+       "required": false,
+       "tag": 682
+      },
+      {
+       "kind": "component",
+       "name": "LegStipulations",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

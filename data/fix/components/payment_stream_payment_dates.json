@@ -1,0 +1,91 @@
+{
+ "name": "PaymentStreamPaymentDates",
+ "versions": {
+  "5.0.SP2": {
+   "order": 49,
+   "members": [
+    {
+     "kind": "field",
+     "name": "PaymentStreamPaymentDateBusinessDayConvention",
+     "required": false,
+     "tag": 40751
+    },
+    {
+     "kind": "component",
+     "name": "PaymentStreamPaymentDateBusinessCenterGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "PaymentStreamPaymentDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamPaymentFrequencyPeriod",
+     "required": false,
+     "tag": 40753
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamPaymentFrequencyUnit",
+     "required": false,
+     "tag": 40754
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamPaymentRollConvention",
+     "required": false,
+     "tag": 40755
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamFirstPaymentDateUnadjusted",
+     "required": false,
+     "tag": 40756
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamLastRegularPaymentDateUnadjusted",
+     "required": false,
+     "tag": 40757
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamPaymentDateRelativeTo",
+     "required": false,
+     "tag": 40758
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamPaymentDateOffsetPeriod",
+     "required": false,
+     "tag": 40759
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamPaymentDateOffsetUnit",
+     "required": false,
+     "tag": 40760
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamPaymentDateOffsetDayType",
+     "required": false,
+     "tag": 40920
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamMasterAgreementPaymentDatesIndicator",
+     "required": false,
+     "tag": 41223
+    },
+    {
+     "kind": "component",
+     "name": "PaymentStreamFinalPricePaymentDate",
+     "required": false
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,152 @@
+{
+ "name": "MassCancelRequestType",
+ "tag": 530,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Specifies scope of Order Mass Cancel Request <q> .",
+   "values": {
+    "1": "Cancel orders for a security",
+    "2": "Cancel orders for an underlying security",
+    "3": "Cancel orders for a Product <460>",
+    "4": "Cancel orders for a CFICode <461>",
+    "5": "Cancel orders for a SecurityType <167>",
+    "6": "Cancel orders for a trading session",
+    "7": "Cancel all orders",
+    "8": "Cancel orders for a market",
+    "9": "Cancel orders for a market segment",
+    "A": "Cancel orders for a security group",
+    "B": "Cancel for Security Issuer",
+    "C": "Cancel for Issuer of Underlying Security"
+   },
+   "value_names": {
+    "1": "CANCEL_ORDERS_FOR_A_SECURITY",
+    "2": "CANCEL_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "CANCEL_ORDERS_FOR_A_PRODUCT",
+    "4": "CANCEL_ORDERS_FOR_ACFI_CODE",
+    "5": "CANCEL_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "CANCEL_ORDERS_FOR_A_TRADING_SESSION",
+    "7": "CANCEL_ALL_ORDERS",
+    "8": "CANCEL_ORDERS_FOR_A_MARKET",
+    "9": "CANCEL_ORDERS_FOR_A_MARKET_SEGMENT",
+    "A": "CANCEL_ORDERS_FOR_A_SECURITY_GROUP",
+    "B": "CANCEL_ORDERS_FOR_SECURITY_ISSUER",
+    "C": "CANCEL_FOR_ISSUER_OF_UNDERLYING_SECURITY"
+   },
+   "used_in": [
+    "OrderMassCancelRequest",
+    "OrderMassCancelReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Specifies scope of Order Mass Cancel Request <q> .",
+   "values": {
+    "1": "Cancel orders for a security",
+    "2": "Cancel orders for an underlying security",
+    "3": "Cancel orders for a Product <460>",
+    "4": "Cancel orders for a CFICode <461>",
+    "5": "Cancel orders for a SecurityType <167>",
+    "6": "Cancel orders for a trading session",
+    "7": "Cancel all orders",
+    "8": "Cancel orders for a market",
+    "9": "Cancel orders for a market segment",
+    "A": "Cancel orders for a security group"
+   },
+   "value_names": {
+    "1": "CANCEL_ORDERS_FOR_A_SECURITY",
+    "2": "CANCEL_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "CANCEL_ORDERS_FOR_A_PRODUCT",
+    "4": "CANCEL_ORDERS_FOR_ACFI_CODE",
+    "5": "CANCEL_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "CANCEL_ORDERS_FOR_A_TRADING_SESSION",
+    "7": "CANCEL_ALL_ORDERS",
+    "8": "CANCEL_ORDERS_FOR_A_MARKET",
+    "9": "CANCEL_ORDERS_FOR_A_MARKET_SEGMENT",
+    "A": "CANCEL_ORDERS_FOR_A_SECURITY_GROUP"
+   },
+   "used_in": [
+    "OrderMassCancelRequest",
+    "OrderMassCancelReport"
+   ]
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Specifies scope of Order Mass Cancel Request <q> .",
+   "values": {
+    "1": "Cancel orders for a security",
+    "2": "Cancel orders for an underlying security",
+    "3": "Cancel orders for a Product <460>",
+    "4": "Cancel orders for a CFICode <461>",
+    "5": "Cancel orders for a SecurityType <167>",
+    "6": "Cancel orders for a trading session",
+    "7": "Cancel all orders"
+   },
+   "value_names": {
+    "1": "CANCEL_ORDERS_FOR_A_SECURITY",
+    "2": "CANCEL_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "CANCEL_ORDERS_FOR_A_PRODUCT",
+    "4": "CANCEL_ORDERS_FOR_ACFI_CODE",
+    "5": "CANCEL_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "CANCEL_ORDERS_FOR_A_TRADING_SESSION",
+    "7": "CANCEL_ALL_ORDERS"
+   },
+   "used_in": [
+    "OrderMassCancelRequest",
+    "OrderMassCancelReport"
+   ]
+  },
+  "4.4": {
+   "type": "char",
+   "description": "Specifies scope of Order Mass Cancel Request <q> .",
+   "values": {
+    "1": "Cancel orders for a security",
+    "2": "Cancel orders for an Underlying security",
+    "3": "Cancel orders for a Product <460>",
+    "4": "Cancel orders for a CFICode <461>",
+    "5": "Cancel orders for a SecurityType <167>",
+    "6": "Cancel orders for a trading session",
+    "7": "Cancel all orders"
+   },
+   "value_names": {
+    "1": "CANCEL_ORDERS_FOR_A_SECURITY",
+    "2": "CANCEL_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "CANCEL_ORDERS_FOR_A_PRODUCT",
+    "4": "CANCEL_ORDERS_FOR_ACFI_CODE",
+    "5": "CANCEL_ORDERS_FOR_A_SECURITY_TYPE",
+    "6": "CANCEL_ORDERS_FOR_A_TRADING_SESSION",
+    "7": "CANCEL_ALL_ORDERS"
+   },
+   "used_in": [
+    "Order Mass Cancel Request",
+    "Order Mass Cancel Report"
+   ]
+  },
+  "4.3": {
+   "type": "char",
+   "description": "Specifies scope of Order Mass Cancel Request <q> .",
+   "values": {
+    "1": "Cancel orders for a security",
+    "2": "Cancel orders for an Underlying security",
+    "3": "Cancel orders for a Product <460>",
+    "4": "Cancel orders for a CFICode <461>",
+    "5": "Cancel orders for a SecurityType <167>",
+    "6": "Cancel orders for a trading session",
+    "7": "Cancel all orders"
+   },
+   "value_names": {
+    "1": "CANCEL_ORDERS_FOR_A_SECURITY",
+    "7": "CANCEL_ALL_ORDERS",
+    "6": "CANCEL_ORDERS_FOR_A_TRADING_SESSION",
+    "5": "CANCEL_ORDERS_FOR_A_SECURITY_TYPE",
+    "4": "CANCEL_ORDERS_FOR_ACFI_CODE",
+    "2": "CANCEL_ORDERS_FOR_AN_UNDERLYING_SECURITY",
+    "3": "CANCEL_ORDERS_FOR_A_PRODUCT"
+   },
+   "used_in": [
+    "Order Mass Cancel Request",
+    "Order Mass Cancel Report"
+   ]
+  }
+ }
+}

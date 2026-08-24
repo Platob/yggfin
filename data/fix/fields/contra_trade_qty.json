@@ -1,0 +1,39 @@
+{
+ "name": "ContraTradeQty",
+ "tag": 437,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Quantity traded with the ContraBroker <375> ."
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Quantity traded with the ContraBroker <375> ."
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Quantity traded with the ContraBroker <375> ."
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Quantity traded with the ContraBroker <375> .",
+   "used_in": [
+    "Execution Report"
+   ]
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "Quantity traded with the ContraBroker <375> .",
+   "used_in": [
+    "Execution Report"
+   ]
+  },
+  "4.2": {
+   "type": "Qty",
+   "description": "Quantity traded with the ContraBroker <375> .",
+   "used_in": [
+    "Execution Report"
+   ]
+  }
+ }
+}

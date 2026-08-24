@@ -1,0 +1,231 @@
+{
+ "name": "EncryptMethod",
+ "tag": 98,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Method of encryption.",
+   "values": {
+    "0": "None / Other",
+    "1": "PKCS (Proprietary)",
+    "2": "DES (ECB Mode)",
+    "3": "PKCS / DES (Proprietary)",
+    "4": "PGP / DES (Defunct)",
+    "5": "PGP / DES-MD5 (See app note on FIX web site)",
+    "6": "PEM / DES-MD5 (see app note on FIX web site)"
+   },
+   "value_names": {
+    "0": "NONE",
+    "1": "PKCS",
+    "2": "DES",
+    "3": "PKCSDES",
+    "4": "PGPDES",
+    "5": "PGPDESMD5",
+    "6": "PEM"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Method of encryption.",
+   "values": {
+    "0": "None / Other",
+    "1": "PKCS (Proprietary)",
+    "2": "DES (ECB Mode)",
+    "3": "PKCS / DES (Proprietary)",
+    "4": "PGP / DES (Defunct)",
+    "5": "PGP / DES-MD5 (See app note on FIX web site)",
+    "6": "PEM / DES-MD5 (see app note on FIX web site)"
+   },
+   "value_names": {
+    "0": "NONE",
+    "1": "PKCS",
+    "2": "DES",
+    "3": "PKCSDES",
+    "4": "PGPDES",
+    "5": "PGPDESMD5",
+    "6": "PEM"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Method of encryption.",
+   "values": {
+    "0": "None / Other",
+    "1": "PKCS (Proprietary)",
+    "2": "DES (ECB Mode)",
+    "3": "PKCS / DES (Proprietary)",
+    "4": "PGP / DES (Defunct)",
+    "5": "PGP / DES-MD5 (See app note on FIX web site)",
+    "6": "PEM / DES-MD5 (see app note on FIX web site)"
+   },
+   "value_names": {
+    "0": "NONE",
+    "1": "PKCS",
+    "2": "DES",
+    "3": "PKCSDES",
+    "4": "PGPDES",
+    "5": "PGPDESMD5",
+    "6": "PEM"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Method of encryption.",
+   "values": {
+    "0": "None / other",
+    "1": "PKCS (proprietary)",
+    "2": "DES (ECB mode)",
+    "3": "PKCS/DES (proprietary)",
+    "4": "PGP/DES (defunct)",
+    "5": "PGP/DES-MD5 (see app note on FIX web site)",
+    "6": "PEM/DES-MD5 (see app note on FIX web site)"
+   },
+   "value_names": {
+    "0": "NONE",
+    "1": "PKCS",
+    "2": "DES",
+    "3": "PKCSDES",
+    "4": "PGPDES",
+    "5": "PGPDESMD5",
+    "6": "PEM"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Method of encryption.",
+   "values": {
+    "0": "None / other",
+    "1": "PKCS (proprietary)",
+    "2": "DES (ECB mode)",
+    "3": "PKCS/DES (proprietary)",
+    "4": "PGP/DES (defunct)",
+    "5": "PGP/DES-MD5 (see app note on FIX web site)",
+    "6": "PEM/DES-MD5 (see app note on FIX web site)"
+   },
+   "value_names": {
+    "2": "DES",
+    "6": "PEM",
+    "5": "PGPDESMD5",
+    "3": "PKCSDES",
+    "0": "NONE",
+    "1": "PKCS",
+    "4": "PGPDES"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Method of encryption.",
+   "values": {
+    "0": "None / other",
+    "1": "PKCS (proprietary)",
+    "2": "DES (ECB mode)",
+    "3": "PKCS/DES (proprietary)",
+    "4": "PGP/DES (defunct)",
+    "5": "PGP/DES-MD5 (see app note on FIX web site)",
+    "6": "PEM/DES-MD5 (see app note on FIX web site)"
+   },
+   "value_names": {
+    "0": "NONE",
+    "1": "PKCS",
+    "2": "DES",
+    "3": "PKCSDES",
+    "4": "PGPDES",
+    "5": "PGPDESMD5",
+    "6": "PEM"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Method of encryption.",
+   "values": {
+    "0": "None / other",
+    "1": "PKCS (proprietary)",
+    "2": "DES (ECB mode)",
+    "3": "PKCS/DES (proprietary)",
+    "4": "PGP/DES (defunct)",
+    "5": "PGP/DES-MD5 (see app note on FIX web site)",
+    "6": "PEM/DES-MD5 (see app note on FIX web site)"
+   },
+   "value_names": {
+    "0": "NONE",
+    "1": "PKCS",
+    "2": "DES",
+    "3": "PKCSDES",
+    "4": "PGPDES",
+    "5": "PGPDESMD5",
+    "6": "PEM"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.0": {
+   "type": "int",
+   "description": "Method of encryption.",
+   "values": {
+    "0": "None / other",
+    "1": "PKCS (proprietary)",
+    "2": "DES (EBC mode)",
+    "3": "PKCS/DES (proprietary)",
+    "4": "PGP/DES (defunct)",
+    "5": "PGP/DES-MD5 (see app note on FIX home page)",
+    "6": "PEM/DES-MD5 (see app note on FIX home page)"
+   },
+   "value_names": {
+    "0": "NONE",
+    "1": "PKCS",
+    "2": "DES",
+    "3": "PKCSDES",
+    "4": "PGPDES",
+    "5": "PGPDESMD5",
+    "6": "PEM"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "int",
+   "description": "Method of encryption.",
+   "values": {
+    "0": "None / Other",
+    "1": "PKCS (Proprietary)",
+    "2": "DES (ECB Mode)",
+    "3": "PKCS / DES (Proprietary)",
+    "4": "PGP / DES (Defunct)",
+    "5": "PGP / DES-MD5 (See app note on FIX web site)",
+    "6": "PEM / DES-MD5 (see app note on FIX web site)"
+   },
+   "value_names": {
+    "0": "NONE_OTHER",
+    "1": "PKCS",
+    "2": "DES",
+    "3": "PKCSDES",
+    "4": "PGPDES",
+    "5": "PGPDESMD5",
+    "6": "PEMDESMD5"
+   },
+   "used_in": [
+    "Logon"
+   ]
+  }
+ }
+}

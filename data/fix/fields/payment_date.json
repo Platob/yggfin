@@ -1,0 +1,32 @@
+{
+ "name": "PaymentDate",
+ "tag": 504,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system."
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system."
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system."
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "LocalMktDate",
+   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system.",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

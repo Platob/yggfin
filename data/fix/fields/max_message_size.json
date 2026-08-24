@@ -1,0 +1,55 @@
+{
+ "name": "MaxMessageSize",
+ "tag": 383,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length",
+   "description": "Maximum number of bytes supported for a single message.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Length",
+   "description": "Maximum number of bytes supported for a single message.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "5.0": {
+   "type": "Length",
+   "description": "Maximum number of bytes supported for a single message.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.4": {
+   "type": "Length",
+   "description": "Maximum number of bytes supported for a single message.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.3": {
+   "type": "Length",
+   "description": "Maximum number of bytes supported for a single message.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Maximum number of bytes supported for a single message.",
+   "used_in": [
+    "Logon"
+   ]
+  },
+  "FIXT1.1": {
+   "type": "Length",
+   "description": "Maximum number of bytes supported for a single message.",
+   "used_in": [
+    "Logon"
+   ]
+  }
+ }
+}

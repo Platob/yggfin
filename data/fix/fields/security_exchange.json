@@ -1,0 +1,90 @@
+{
+ "name": "SecurityExchange",
+ "tag": 207,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Exchange",
+   "description": "Market used to help identify a security.",
+   "used_in": [
+    "TradingSessionListRequest",
+    "TradingSessionStatusRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Exchange",
+   "description": "Market used to help identify a security.",
+   "used_in": [
+    "TradingSessionListRequest",
+    "TradingSessionStatusRequest"
+   ]
+  },
+  "5.0": {
+   "type": "Exchange",
+   "description": "Market used to help identify a security.",
+   "used_in": [
+    "TradingSessionListRequest",
+    "TradingSessionStatusRequest"
+   ]
+  },
+  "4.4": {
+   "type": "Exchange",
+   "description": "Market used to help identify a security."
+  },
+  "4.3": {
+   "type": "Exchange",
+   "description": "Market used to help identify a security."
+  },
+  "4.2": {
+   "type": "Exchange",
+   "description": "Market used to help identify a security.",
+   "used_in": [
+    "Indication of Interest",
+    "Advertisement",
+    "Execution Report",
+    "Quote Status Request",
+    "Quote Acknowledgement",
+    "News",
+    "Security Definition Request",
+    "Email",
+    "Security Definition",
+    "New Order - Single",
+    "Security Status Request",
+    "New Order - List",
+    "Security Status",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Mass Quote",
+    "Allocation",
+    "List Strike Price",
+    "Don't Know Trade",
+    "Quote Request",
+    "Quote",
+    "Market Data Request",
+    "Market Data - Snapshot/Full Refresh",
+    "Market Data - Incremental Refresh",
+    "Quote Cancel"
+   ]
+  },
+  "4.1": {
+   "type": "char",
+   "description": "Market used to help identify a security.",
+   "used_in": [
+    "Indication of Interest",
+    "Advertisement",
+    "Execution Report",
+    "News",
+    "Email",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel Request",
+    "Order Cancel/Replace Request",
+    "Order Status Request",
+    "Allocation",
+    "Don't Know Trade",
+    "Quote Request",
+    "Quote"
+   ]
+  }
+ }
+}

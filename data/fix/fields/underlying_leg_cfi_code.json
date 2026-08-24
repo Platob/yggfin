@@ -1,0 +1,14 @@
+{
+ "name": "UnderlyingLegCFICode",
+ "tag": 1344,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Refer to definition for CFICode <461>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Refer to definition for CFICode <461>"
+  }
+ }
+}

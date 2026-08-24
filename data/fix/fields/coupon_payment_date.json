@@ -1,0 +1,26 @@
+{
+ "name": "CouponPaymentDate",
+ "tag": 224,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LocalMktDate",
+   "description": "Date interest is to be paid. Used in identifying Corporate Bond issues. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+  },
+  "5.0.SP1": {
+   "type": "LocalMktDate",
+   "description": "Date interest is to be paid. Used in identifying Corporate Bond issues. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+  },
+  "5.0": {
+   "type": "LocalMktDate",
+   "description": "Date interest is to be paid. Used in identifying Corporate Bond issues. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+  },
+  "4.4": {
+   "type": "LocalMktDate",
+   "description": "Date interest is to be paid. Used in identifying Corporate Bond issues. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+  },
+  "4.3": {
+   "type": "UTCDate",
+   "description": "Date interest is to be paid. Used in identifying Corporate Bond issues. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+  }
+ }
+}

@@ -1,0 +1,36 @@
+{
+ "name": "TradeID",
+ "tag": 1003,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The unique ID assigned to the trade entity once it is received or matched by the exchange or central counterparty.",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The unique ID assigned to the trade entity once it is received or matched by the exchange or central counterparty.",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "The unique ID assigned to the trade entity once it is received or matched by the exchange or central counterparty.",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck"
+   ]
+  }
+ }
+}

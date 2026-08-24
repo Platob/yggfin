@@ -1,0 +1,26 @@
+{
+ "name": "NoUnderlyingSecurityAltID",
+ "tag": 457,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of UnderlyingSecurityAltID <458> entries."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of UnderlyingSecurityAltID <458> entries."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of UnderlyingSecurityAltID <458> entries."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of UnderlyingSecurityAltID <458> entries."
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of UnderlyingSecurityAltID <458> entries."
+  }
+ }
+}

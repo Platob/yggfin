@@ -1,0 +1,34 @@
+{
+ "name": "PriceLimitType",
+ "tag": 1306,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Describes the how the price limits are expressed",
+   "values": {
+    "0": "Price",
+    "1": "Ticks",
+    "2": "Percentage"
+   },
+   "value_names": {
+    "0": "PRICE",
+    "1": "TICKS",
+    "2": "PERCENTAGE"
+   }
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Describes the how the price limits are expressed",
+   "values": {
+    "0": "Price",
+    "1": "Ticks",
+    "2": "Percentage"
+   },
+   "value_names": {
+    "0": "PRICE",
+    "1": "TICKS",
+    "2": "PERCENTAGE"
+   }
+  }
+ }
+}

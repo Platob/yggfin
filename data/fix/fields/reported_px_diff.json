@@ -1,0 +1,27 @@
+{
+ "name": "ReportedPxDiff",
+ "tag": 1134,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Boolean",
+   "description": "Indicates that the reported price that is different from the market price. The price difference should be stated by using field TrdType <828> and, if required, field TrdSubType <829>",
+   "used_in": [
+    "TradeCaptureReport"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Boolean",
+   "description": "Indicates that the reported price that is different from the market price. The price difference should be stated by using field TrdType <828> and, if required, field TrdSubType <829>",
+   "used_in": [
+    "TradeCaptureReport"
+   ]
+  },
+  "5.0": {
+   "type": "Boolean",
+   "description": "Shows that the reported price that is different from the market price",
+   "used_in": [
+    "TradeCaptureReport"
+   ]
+  }
+ }
+}

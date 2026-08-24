@@ -1,0 +1,147 @@
+{
+ "name": "StandInstDbType",
+ "tag": 169,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies the Standing Instruction database used",
+   "values": {
+    "0": "Other",
+    "1": "DTC SID",
+    "2": "Thomson ALERT",
+    "3": "A Global Custodian ( StandInstDBName <170> must be provided)",
+    "4": "AccountNet"
+   },
+   "value_names": {
+    "0": "OTHER",
+    "1": "DTCSID",
+    "2": "THOMSON_ALERT",
+    "3": "A_GLOBAL_CUSTODIAN",
+    "4": "ACCOUNT_NET"
+   },
+   "used_in": [
+    "SettlementInstructionRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies the Standing Instruction database used",
+   "values": {
+    "0": "Other",
+    "1": "DTC SID",
+    "2": "Thomson ALERT",
+    "3": "A Global Custodian ( StandInstDBName <170> must be provided)",
+    "4": "AccountNet"
+   },
+   "value_names": {
+    "0": "OTHER",
+    "1": "DTCSID",
+    "2": "THOMSON_ALERT",
+    "3": "A_GLOBAL_CUSTODIAN",
+    "4": "ACCOUNT_NET"
+   },
+   "used_in": [
+    "SettlementInstructionRequest"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identifies the Standing Instruction database used",
+   "values": {
+    "0": "Other",
+    "1": "DTC SID",
+    "2": "Thomson ALERT",
+    "3": "A Global Custodian ( StandInstDBName <170> must be provided)",
+    "4": "AccountNet"
+   },
+   "value_names": {
+    "0": "OTHER",
+    "1": "DTCSID",
+    "2": "THOMSON_ALERT",
+    "3": "A_GLOBAL_CUSTODIAN",
+    "4": "ACCOUNT_NET"
+   },
+   "used_in": [
+    "SettlementInstructionRequest"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Identifies the Standing Instruction database used",
+   "values": {
+    "0": "Other",
+    "1": "DTC SID",
+    "2": "Thomson ALERT",
+    "3": "A Global Custodian ( StandInstDbName <170> must be provided)",
+    "4": "AccountNet"
+   },
+   "value_names": {
+    "0": "OTHER",
+    "1": "DTCSID",
+    "2": "THOMSON_ALERT",
+    "3": "A_GLOBAL_CUSTODIAN",
+    "4": "ACCOUNT_NET"
+   },
+   "used_in": [
+    "Settlement Instruction Request"
+   ]
+  },
+  "4.3": {
+   "type": "int",
+   "description": "Identifies the Standing Instruction database used",
+   "values": {
+    "0": "Other",
+    "1": "DTC SID",
+    "2": "Thomson ALERT",
+    "3": "A Global Custodian ( StandInstDbName <170> must be provided)"
+   },
+   "value_names": {
+    "0": "OTHER",
+    "1": "DTCSID",
+    "3": "A_GLOBAL_CUSTODIAN",
+    "2": "THOMSON_ALERT"
+   },
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Identifies the Standing Instruction database used",
+   "values": {
+    "0": "Other",
+    "1": "DTC SID",
+    "2": "Thomson ALERT",
+    "3": "A Global Custodian ( StandInstDbName <170> must be provided)"
+   },
+   "value_names": {
+    "0": "OTHER",
+    "1": "DTCSID",
+    "2": "THOMSON_ALERT",
+    "3": "A_GLOBAL_CUSTODIAN"
+   },
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "int",
+   "description": "Identifies the Standing Instruction database used",
+   "values": {
+    "0": "Other",
+    "1": "DTC SID",
+    "2": "Thomson ALERT",
+    "3": "A Global Custodian ( StandInstDbName <170> must be provided)"
+   },
+   "value_names": {
+    "0": "OTHER",
+    "1": "DTCSID",
+    "2": "THOMSON_ALERT",
+    "3": "A_GLOBAL_CUSTODIAN"
+   },
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

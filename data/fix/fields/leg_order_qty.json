@@ -1,0 +1,22 @@
+{
+ "name": "LegOrderQty",
+ "tag": 685,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Quantity ordered of this leg. See OrderQty <38> for description and"
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Quantity ordered of this leg. See OrderQty <38> for description and"
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Quantity ordered of this leg. See OrderQty <38> for description and"
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Quantity ordered of this leg. See OrderQty <38> for description and"
+  }
+ }
+}

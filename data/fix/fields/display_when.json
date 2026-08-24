@@ -1,0 +1,42 @@
+{
+ "name": "DisplayWhen",
+ "tag": 1083,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Instructs when to refresh DisplayQty <1138> .",
+   "values": {
+    "1": "Immediate (after each fill)",
+    "2": "Exhaust (when DisplayQty <1138> = 0)"
+   },
+   "value_names": {
+    "1": "IMMEDIATE",
+    "2": "EXHAUST"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Instructs when to refresh DisplayQty <1138> .",
+   "values": {
+    "1": "Immediate (after each fill)",
+    "2": "Exhaust (when DisplayQty = 0)"
+   },
+   "value_names": {
+    "1": "IMMEDIATE",
+    "2": "EXHAUST"
+   }
+  },
+  "5.0": {
+   "type": "char",
+   "description": "Instructs when to refresh DisplayQty <1138> .",
+   "values": {
+    "1": "Immediate (after each fill)",
+    "2": "Exhaust (when DisplayQty = 0)"
+   },
+   "value_names": {
+    "1": "IMMEDIATE",
+    "2": "EXHAUST"
+   }
+  }
+ }
+}

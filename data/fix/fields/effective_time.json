@@ -1,0 +1,97 @@
+{
+ "name": "EffectiveTime",
+ "tag": 168,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTimestamp",
+   "description": "Time the details within the message should take effect (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "SettlementInstructionRequest",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "UTCTimestamp",
+   "description": "Time the details within the message should take effect (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "SettlementInstructionRequest",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "5.0": {
+   "type": "UTCTimestamp",
+   "description": "Time the details within the message should take effect (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "used_in": [
+    "ExecutionReport",
+    "NewOrderMultileg",
+    "MultilegOrderCancelReplace",
+    "SettlementInstructionRequest",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "NewOrderCross",
+    "CrossOrderCancelReplaceRequest"
+   ]
+  },
+  "4.4": {
+   "type": "UTCTimestamp",
+   "description": "Time the details within the message should take effect (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "used_in": [
+    "Execution Report",
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace",
+    "Settlement Instruction Request",
+    "New Order Single",
+    "New Order List",
+    "Order Cancel/Replace Request",
+    "New Order Cross",
+    "Cross Order Cancel/Replace Request",
+    "Settlement Instructions"
+   ]
+  },
+  "4.3": {
+   "type": "UTCTimestamp",
+   "description": "Time the details within the message should take effect (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "used_in": [
+    "Execution Report",
+    "New Order - Multileg",
+    "Multileg Order Cancel/Replace Request",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "New Order - Cross",
+    "Cross Order Cancel/Replace Request",
+    "Settlement Instructions"
+   ]
+  },
+  "4.2": {
+   "type": "UTCTimestamp",
+   "description": "Time the details within the message should take effect (always expressed in UTC (Universal Time Coordinated, also known as 'GMT')",
+   "used_in": [
+    "Execution Report",
+    "New Order - Single",
+    "New Order - List",
+    "Order Cancel/Replace Request",
+    "Settlement Instructions"
+   ]
+  },
+  "4.1": {
+   "type": "time",
+   "description": "Time the details within the message should take effect (always expressed in GMT)",
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

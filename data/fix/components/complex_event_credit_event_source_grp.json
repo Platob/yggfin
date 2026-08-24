@@ -1,0 +1,24 @@
+{
+ "name": "ComplexEventCreditEventSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 489,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoComplexEventCreditEventSources",
+     "required": false,
+     "tag": 41029,
+     "members": [
+      {
+       "kind": "field",
+       "name": "ComplexEventCreditEventSource",
+       "required": false,
+       "tag": 41030
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

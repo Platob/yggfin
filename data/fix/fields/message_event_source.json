@@ -1,0 +1,48 @@
+{
+ "name": "MessageEventSource",
+ "tag": 1011,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Used to identify the event or source which gave rise to a message.",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "PositionReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Used to identify the event or source which gave rise to a message.",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "PositionReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Used to identify the event or source which gave rise to a message.",
+   "used_in": [
+    "TradeCaptureReportRequest",
+    "TradeCaptureReport",
+    "PositionReport",
+    "TradeCaptureReportRequestAck",
+    "TradeCaptureReportAck",
+    "AllocationReport",
+    "AllocationInstructionAlert",
+    "AllocationInstruction"
+   ]
+  }
+ }
+}

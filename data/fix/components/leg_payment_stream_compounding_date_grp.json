@@ -1,0 +1,30 @@
+{
+ "name": "LegPaymentStreamCompoundingDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 659,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoLegPaymentStreamCompoundingDates",
+     "required": false,
+     "tag": 42405,
+     "members": [
+      {
+       "kind": "field",
+       "name": "LegPaymentStreamCompoundingDate",
+       "required": false,
+       "tag": 42406
+      },
+      {
+       "kind": "field",
+       "name": "LegPaymentStreamCompoundingDateType",
+       "required": false,
+       "tag": 42407
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

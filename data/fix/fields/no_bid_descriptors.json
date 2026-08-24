@@ -1,0 +1,39 @@
+{
+ "name": "NoBidDescriptors",
+ "tag": 398,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of BidDescriptor <400> entries."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of BidDescriptor <400> entries."
+  },
+  "5.0": {
+   "type": "NumInGroup",
+   "description": "Number of BidDescriptor <400> entries."
+  },
+  "4.4": {
+   "type": "NumInGroup",
+   "description": "Number of BidDescriptor <400> entries.",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.3": {
+   "type": "NumInGroup",
+   "description": "Number of BidDescriptor <400> entries.",
+   "used_in": [
+    "Bid Request"
+   ]
+  },
+  "4.2": {
+   "type": "int",
+   "description": "Number of BidDescriptor <400> entries.",
+   "used_in": [
+    "Bid Request"
+   ]
+  }
+ }
+}

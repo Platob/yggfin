@@ -1,0 +1,14 @@
+{
+ "name": "LegExecInst",
+ "tag": 1384,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MultipleCharValue",
+   "description": "Refer to ExecInst Same values as ExecInst <18>"
+  },
+  "5.0.SP1": {
+   "type": "MultipleCharValue",
+   "description": "Refer to ExecInst Same values as ExecInst <18>"
+  }
+ }
+}

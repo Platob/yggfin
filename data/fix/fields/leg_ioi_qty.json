@@ -1,0 +1,25 @@
+{
+ "name": "LegIOIQty",
+ "tag": 682,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Leg-specific IOI <6> quantity. See IOIQty <27> for description and"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Leg-specific IOI <6> quantity. See IOIQty <27> for description and"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Leg-specific IOI <6> quantity. See IOIQty <27> for description and"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Leg-specific IOI <6> quantity. See IOIQty <27> for description and",
+   "used_in": [
+    "IOI"
+   ]
+  }
+ }
+}

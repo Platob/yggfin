@@ -1,0 +1,26 @@
+{
+ "name": "LegSymbol",
+ "tag": 600,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Multileg instrument's individual security's Symbol. See Symbol <55> field for description"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Multileg instrument's individual security's Symbol. See Symbol <55> field for description"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Multileg instrument's individual security's Symbol. See Symbol <55> field for description"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Multileg instrument's individual security's Symbol. See Symbol <55> field for description"
+  },
+  "4.3": {
+   "type": "String",
+   "description": "Multileg instrument's individual security's Symbol. See Symbol <55> field for description"
+  }
+ }
+}

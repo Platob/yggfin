@@ -1,0 +1,34 @@
+{
+ "name": "NetworkResponseID",
+ "tag": 932,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Unique identifier for a network response.",
+   "used_in": [
+    "NetworkCounterpartySystemStatusResponse"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Unique identifier for a network response.",
+   "used_in": [
+    "NetworkCounterpartySystemStatusResponse"
+   ]
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Unique identifier for a network response.",
+   "used_in": [
+    "NetworkCounterpartySystemStatusResponse"
+   ]
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Unique identifier for a network response.",
+   "used_in": [
+    "Network Counterparty System Status Response"
+   ]
+  }
+ }
+}

@@ -1,0 +1,124 @@
+{
+ "name": "OrderEntryAckGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 630,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoOrderEntries",
+     "required": false,
+     "tag": 2428,
+     "members": [
+      {
+       "kind": "field",
+       "name": "OrdStatus",
+       "required": false,
+       "tag": 39
+      },
+      {
+       "kind": "field",
+       "name": "ExecType",
+       "required": false,
+       "tag": 150
+      },
+      {
+       "kind": "field",
+       "name": "ExecTypeReason",
+       "required": false,
+       "tag": 2431
+      },
+      {
+       "kind": "field",
+       "name": "OrderEntryAction",
+       "required": false,
+       "tag": 2429
+      },
+      {
+       "kind": "field",
+       "name": "OrderEntryID",
+       "required": false,
+       "tag": 2430
+      },
+      {
+       "kind": "field",
+       "name": "ClOrdID",
+       "required": false,
+       "tag": 11
+      },
+      {
+       "kind": "field",
+       "name": "OrigClOrdID",
+       "required": false,
+       "tag": 41
+      },
+      {
+       "kind": "field",
+       "name": "OrderID",
+       "required": false,
+       "tag": 37
+      },
+      {
+       "kind": "field",
+       "name": "OrdRejReason",
+       "required": false,
+       "tag": 103
+      },
+      {
+       "kind": "field",
+       "name": "CumQty",
+       "required": false,
+       "tag": 14
+      },
+      {
+       "kind": "field",
+       "name": "LeavesQty",
+       "required": false,
+       "tag": 151
+      },
+      {
+       "kind": "field",
+       "name": "CxlQty",
+       "required": false,
+       "tag": 84
+      },
+      {
+       "kind": "field",
+       "name": "OrdType",
+       "required": false,
+       "tag": 40
+      },
+      {
+       "kind": "field",
+       "name": "Price",
+       "required": false,
+       "tag": 44
+      },
+      {
+       "kind": "field",
+       "name": "Side",
+       "required": false,
+       "tag": 54
+      },
+      {
+       "kind": "field",
+       "name": "TimeInForce",
+       "required": false,
+       "tag": 59
+      },
+      {
+       "kind": "component",
+       "name": "OrderQtyData",
+       "required": false
+      },
+      {
+       "kind": "component",
+       "name": "Instrument",
+       "required": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

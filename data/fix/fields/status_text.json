@@ -1,0 +1,25 @@
+{
+ "name": "StatusText",
+ "tag": 929,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "A text description associated with a network status."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "A text description associated with a network status."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "A text description associated with a network status."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "A text description associated with a network status.",
+   "used_in": [
+    "Network Counterparty System Status Response"
+   ]
+  }
+ }
+}

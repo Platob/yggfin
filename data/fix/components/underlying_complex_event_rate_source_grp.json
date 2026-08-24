@@ -1,0 +1,42 @@
+{
+ "name": "UnderlyingComplexEventRateSourceGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 576,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingComplexEventRateSources",
+     "required": false,
+     "tag": 41732,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingComplexEventRateSource",
+       "required": false,
+       "tag": 41733
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingComplexEventRateSourceType",
+       "required": false,
+       "tag": 41734
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingComplexEventReferencePage",
+       "required": false,
+       "tag": 41735
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingComplexEventReferencePageHeading",
+       "required": false,
+       "tag": 41736
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

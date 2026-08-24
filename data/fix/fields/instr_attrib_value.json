@@ -1,0 +1,22 @@
+{
+ "name": "InstrAttribValue",
+ "tag": 872,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Attribute value appropriate to the InstrAttribType <871> field."
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Attribute value appropriate to the InstrAttribType <871> field."
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Attribute value appropriate to the InstrAttribType <871> field."
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Attribute value appropriate to the InstrAttribType <871> field."
+  }
+ }
+}

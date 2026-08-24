@@ -1,0 +1,81 @@
+{
+ "name": "MDReqGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 206,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMDEntryTypes",
+     "required": false,
+     "tag": 267,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MDEntryType",
+       "required": true,
+       "tag": 269
+      }
+     ]
+    }
+   ]
+  },
+  "5.0.SP1": {
+   "order": 55,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMDEntryTypes",
+     "required": true,
+     "tag": 267,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MDEntryType",
+       "required": true,
+       "tag": 269
+      }
+     ]
+    }
+   ]
+  },
+  "5.0": {
+   "order": 56,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMDEntryTypes",
+     "required": true,
+     "tag": 267,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MDEntryType",
+       "required": true,
+       "tag": 269
+      }
+     ]
+    }
+   ]
+  },
+  "4.4": {
+   "order": 56,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoMDEntryTypes",
+     "required": true,
+     "tag": 267,
+     "members": [
+      {
+       "kind": "field",
+       "name": "MDEntryType",
+       "required": true,
+       "tag": 269
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

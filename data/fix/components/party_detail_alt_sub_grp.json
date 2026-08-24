@@ -1,0 +1,30 @@
+{
+ "name": "PartyDetailAltSubGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 320,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoPartyDetailAltSubIDs",
+     "required": false,
+     "tag": 1519,
+     "members": [
+      {
+       "kind": "field",
+       "name": "PartyDetailAltSubID",
+       "required": false,
+       "tag": 1520
+      },
+      {
+       "kind": "field",
+       "name": "PartyDetailAltSubIDType",
+       "required": false,
+       "tag": 1521
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

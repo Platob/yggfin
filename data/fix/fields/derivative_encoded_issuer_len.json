@@ -1,0 +1,12 @@
+{
+ "name": "DerivativeEncodedIssuerLen",
+ "tag": 1277,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Length"
+  },
+  "5.0.SP1": {
+   "type": "Length"
+  }
+ }
+}

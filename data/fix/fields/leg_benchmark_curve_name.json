@@ -1,0 +1,22 @@
+{
+ "name": "LegBenchmarkCurveName",
+ "tag": 677,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Name of the Leg Benchmark Curve. See BenchmarkCurveName <221> for description and"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Name of the Leg Benchmark Curve. See BenchmarkCurveName <221> for description and"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "Name of the Leg Benchmark Curve. See BenchmarkCurveName <221> for description and"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "Name of the Leg Benchmark Curve. See BenchmarkCurveName <221> for description and"
+  }
+ }
+}

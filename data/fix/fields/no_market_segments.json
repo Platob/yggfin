@@ -1,0 +1,14 @@
+{
+ "name": "NoMarketSegments",
+ "tag": 1310,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NumInGroup",
+   "description": "Number of Market Segments on which a security may trade."
+  },
+  "5.0.SP1": {
+   "type": "NumInGroup",
+   "description": "Number of Market Segments on which a security may trade."
+  }
+ }
+}

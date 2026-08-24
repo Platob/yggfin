@@ -1,0 +1,14 @@
+{
+ "name": "DerivativeInstrumentPartySubIDType",
+ "tag": 1298,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Refer to definition for PartySubIDType <803>"
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Refer to definition for PartySubIDType <803>"
+  }
+ }
+}

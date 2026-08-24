@@ -1,0 +1,30 @@
+{
+ "name": "UnderlyingOptionExerciseExpirationDateGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 589,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingOptionExerciseExpirationDates",
+     "required": false,
+     "tag": 41856,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingOptionExerciseExpirationDate",
+       "required": false,
+       "tag": 41857
+      },
+      {
+       "kind": "field",
+       "name": "UnderlyingOptionExerciseExpirationDateType",
+       "required": false,
+       "tag": 41858
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,106 @@
+{
+ "name": "CollAsgnRejectReason",
+ "tag": 906,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Collateral Assignment <AY> Reject Reason",
+   "values": {
+    "0": "Unknown deal (order / trade)",
+    "1": "Unknown or invalid instrument",
+    "2": "Unauthorized transaction",
+    "3": "Insufficient collateral",
+    "4": "Invalid type of collateral",
+    "5": "Excessive substitution",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "UNKNOWN_DEAL",
+    "1": "UNKNOWN_OR_INVALID_INSTRUMENT",
+    "2": "UNAUTHORIZED_TRANSACTION",
+    "3": "INSUFFICIENT_COLLATERAL",
+    "4": "INVALID_TYPE_OF_COLLATERAL",
+    "5": "EXCESSIVE_SUBSTITUTION",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "CollateralResponse"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Collateral Assignment <AY> Reject Reason",
+   "values": {
+    "0": "Unknown deal (order / trade)",
+    "1": "Unknown or invalid instrument",
+    "2": "Unauthorized transaction",
+    "3": "Insufficient collateral",
+    "4": "Invalid type of collateral",
+    "5": "Excessive substitution",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "UNKNOWN_DEAL",
+    "1": "UNKNOWN_OR_INVALID_INSTRUMENT",
+    "2": "UNAUTHORIZED_TRANSACTION",
+    "3": "INSUFFICIENT_COLLATERAL",
+    "4": "INVALID_TYPE_OF_COLLATERAL",
+    "5": "EXCESSIVE_SUBSTITUTION",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "CollateralResponse"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Collateral Assignment <AY> Reject Reason",
+   "values": {
+    "0": "Unknown deal (order / trade)",
+    "1": "Unknown or invalid instrument",
+    "2": "Unauthorized transaction",
+    "3": "Insufficient collateral",
+    "4": "Invalid type of collateral",
+    "5": "Excessive substitution",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "UNKNOWN_DEAL",
+    "1": "UNKNOWN_OR_INVALID_INSTRUMENT",
+    "2": "UNAUTHORIZED_TRANSACTION",
+    "3": "INSUFFICIENT_COLLATERAL",
+    "4": "INVALID_TYPE_OF_COLLATERAL",
+    "5": "EXCESSIVE_SUBSTITUTION",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "CollateralResponse"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Collateral Assignment <AY> Reject Reason",
+   "values": {
+    "0": "Unknown deal (order / trade)",
+    "1": "Unknown or invalid instrument",
+    "2": "Unauthorized transaction",
+    "3": "Insufficient collateral",
+    "4": "Invalid type of collateral",
+    "5": "Excessive substitution",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "UNKNOWN_DEAL",
+    "1": "UNKNOWN_OR_INVALID_INSTRUMENT",
+    "2": "UNAUTHORIZED_TRANSACTION",
+    "3": "INSUFFICIENT_COLLATERAL",
+    "4": "INVALID_TYPE_OF_COLLATERAL",
+    "5": "EXCESSIVE_SUBSTITUTION",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "Collateral Response"
+   ]
+  }
+ }
+}

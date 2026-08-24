@@ -1,0 +1,48 @@
+{
+ "name": "DefBidSize",
+ "tag": 293,
+ "versions": {
+  "5.0.SP2": {
+   "type": "Qty",
+   "description": "Default Bid Size.",
+   "used_in": [
+    "MassQuote"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "Qty",
+   "description": "Default Bid Size.",
+   "used_in": [
+    "MassQuote"
+   ]
+  },
+  "5.0": {
+   "type": "Qty",
+   "description": "Default Bid Size.",
+   "used_in": [
+    "MassQuote"
+   ]
+  },
+  "4.4": {
+   "type": "Qty",
+   "description": "Default Bid Size.",
+   "used_in": [
+    "Mass Quote"
+   ]
+  },
+  "4.3": {
+   "type": "Qty",
+   "description": "Default Bid Size.",
+   "used_in": [
+    "Mass Quote"
+   ]
+  },
+  "4.2": {
+   "type": "Qty",
+   "description": "Default Bid Size.",
+   "used_in": [
+    "Mass Quote"
+   ]
+  }
+ }
+}

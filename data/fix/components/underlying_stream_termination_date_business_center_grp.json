@@ -1,0 +1,24 @@
+{
+ "name": "UnderlyingStreamTerminationDateBusinessCenterGrp",
+ "versions": {
+  "5.0.SP2": {
+   "order": 478,
+   "members": [
+    {
+     "kind": "group",
+     "name": "NoUnderlyingStreamTerminationDateBusinessCenters",
+     "required": false,
+     "tag": 40976,
+     "members": [
+      {
+       "kind": "field",
+       "name": "UnderlyingStreamTerminationDateBusinessCenter",
+       "required": false,
+       "tag": 40550
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,26 @@
+{
+ "name": "LegAllocAcctIDSource",
+ "tag": 674,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "The source of the LegAllocAccount <671> See AllocAcctIDSource <661> for description and"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "The source of the LegAllocAccount <671> See AllocAcctIDSource <661> for description and"
+  },
+  "5.0": {
+   "type": "String",
+   "description": "The source of the LegAllocAccount <671> See AllocAcctIDSource <661> for description and"
+  },
+  "4.4": {
+   "type": "String",
+   "description": "The source of the LegAllocAccount <671> See AllocAcctIDSource <661> for description and",
+   "used_in": [
+    "New Order Multileg",
+    "Multileg Order Cancel/Replace"
+   ]
+  }
+ }
+}

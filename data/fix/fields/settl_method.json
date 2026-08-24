@@ -1,0 +1,31 @@
+{
+ "name": "SettlMethod",
+ "tag": 1193,
+ "versions": {
+  "5.0.SP2": {
+   "type": "char",
+   "description": "Settlement method for a contract. Can be used as an alternative to CFI Code value",
+   "values": {
+    "C": "Cash settlement required",
+    "P": "Physical settlement required"
+   },
+   "value_names": {
+    "C": "CASH_SETTLEMENT_REQUIRED",
+    "P": "PHYSICAL_SETTLEMENT_REQUIRED",
+    "E": "ELECTION"
+   }
+  },
+  "5.0.SP1": {
+   "type": "char",
+   "description": "Settlement method for a contract. Can be used as an alternative to CFI Code value",
+   "values": {
+    "C": "Cash settlement required",
+    "P": "Physical settlement required"
+   },
+   "value_names": {
+    "C": "CASH_SETTLEMENT_REQUIRED",
+    "P": "PHYSICAL_SETTLEMENT_REQUIRED"
+   }
+  }
+ }
+}

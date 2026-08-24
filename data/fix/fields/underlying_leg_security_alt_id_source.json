@@ -1,0 +1,14 @@
+{
+ "name": "UnderlyingLegSecurityAltIDSource",
+ "tag": 1336,
+ "versions": {
+  "5.0.SP2": {
+   "type": "String",
+   "description": "Refer to definition for SecurityAltIDSource <456>"
+  },
+  "5.0.SP1": {
+   "type": "String",
+   "description": "Refer to definition for SecurityAltIDSource <456>"
+  }
+ }
+}

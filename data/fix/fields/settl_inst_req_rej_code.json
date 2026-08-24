@@ -1,0 +1,82 @@
+{
+ "name": "SettlInstReqRejCode",
+ "tag": 792,
+ "versions": {
+  "5.0.SP2": {
+   "type": "int",
+   "description": "Identifies reason for rejection (of a Settlement Instruction Request <AV> message).",
+   "values": {
+    "0": "Unable to process request",
+    "1": "Unknown account",
+    "2": "No matching settlement instructions found",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "UNABLE_TO_PROCESS_REQUEST",
+    "1": "UNKNOWN_ACCOUNT",
+    "2": "NO_MATCHING_SETTLEMENT_INSTRUCTIONS_FOUND",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "SettlementInstructions"
+   ]
+  },
+  "5.0.SP1": {
+   "type": "int",
+   "description": "Identifies reason for rejection (of a Settlement Instruction Request <AV> message).",
+   "values": {
+    "0": "Unable to process request",
+    "1": "Unknown account",
+    "2": "No matching settlement instructions found",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "UNABLE_TO_PROCESS_REQUEST",
+    "1": "UNKNOWN_ACCOUNT",
+    "2": "NO_MATCHING_SETTLEMENT_INSTRUCTIONS_FOUND",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "SettlementInstructions"
+   ]
+  },
+  "5.0": {
+   "type": "int",
+   "description": "Identifies reason for rejection (of a Settlement Instruction Request <AV> message).",
+   "values": {
+    "0": "Unable to process request",
+    "1": "Unknown account",
+    "2": "No matching settlement instructions found",
+    "99": "Other"
+   },
+   "value_names": {
+    "0": "UNABLE_TO_PROCESS_REQUEST",
+    "1": "UNKNOWN_ACCOUNT",
+    "2": "NO_MATCHING_SETTLEMENT_INSTRUCTIONS_FOUND",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "SettlementInstructions"
+   ]
+  },
+  "4.4": {
+   "type": "int",
+   "description": "Identifies reason for rejection (of a Settlement Instruction Request <AV> message).",
+   "values": {
+    "0": "unable to process request (e.g. database unavailable)",
+    "1": "unknown account",
+    "2": "no matching settlement instructions found",
+    "99": "other"
+   },
+   "value_names": {
+    "0": "UNABLE_TO_PROCESS_REQUEST",
+    "1": "UNKNOWN_ACCOUNT",
+    "2": "NO_MATCHING_SETTLEMENT_INSTRUCTIONS_FOUND",
+    "99": "OTHER"
+   },
+   "used_in": [
+    "Settlement Instructions"
+   ]
+  }
+ }
+}

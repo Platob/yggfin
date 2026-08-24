@@ -1,0 +1,26 @@
+{
+ "name": "EncodedLegSecurityDesc",
+ "tag": 622,
+ "versions": {
+  "5.0.SP2": {
+   "type": "data",
+   "description": "Multileg instrument's individual security's EncodedSecurityDesc. See EncodedSecurityDesc <351> field for description"
+  },
+  "5.0.SP1": {
+   "type": "data",
+   "description": "Multileg instrument's individual security's EncodedSecurityDesc. See EncodedSecurityDesc <351> field for description"
+  },
+  "5.0": {
+   "type": "data",
+   "description": "Multileg instrument's individual security's EncodedSecurityDesc. See EncodedSecurityDesc <351> field for description"
+  },
+  "4.4": {
+   "type": "data",
+   "description": "Multileg instrument's individual security's EncodedSecurityDesc. See EncodedSecurityDesc <351> field for description"
+  },
+  "4.3": {
+   "type": "data",
+   "description": "Multileg instrument's individual security's EncodedSecurityDesc. See EncodedSecurityDesc <351> field for description"
+  }
+ }
+}
