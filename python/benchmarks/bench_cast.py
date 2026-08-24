@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
-import argparse
 import datetime
 import pathlib
 import sys
-import time
 from collections.abc import Callable
 
 import pyarrow
 
+# `src` for the package under measurement, and this folder for `_bench`,
+# so a benchmark imports the same whether it is run or imported.
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from _bench import best_of as best  # noqa: E402
+from _bench import parser
 
 from rekep.fields import Field  # noqa: E402
 
@@ -52,16 +56,6 @@ def target_schema() -> pyarrow.Schema:
             pyarrow.field("desk", pyarrow.string()),  # the source never produced it
         ]
     )
-
-
-def best(call: Callable[[], object], repeat: int) -> float:
-    """Seconds of the fastest of `repeat` runs."""
-    fastest = float("inf")
-    for _ in range(repeat):
-        started = time.perf_counter()
-        call()
-        fastest = min(fastest, time.perf_counter() - started)
-    return fastest
 
 
 def cases(rows: int) -> list[tuple[str, Callable[[], object], Callable[[], object] | None]]:
@@ -177,11 +171,7 @@ def sweep(rows: int, repeat: int) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--rows", type=int, default=200_000)
-    parser.add_argument("--repeat", type=int, default=7)
-    parser.add_argument("--quick", action="store_true")
-    arguments = parser.parse_args()
+    arguments = parser(__doc__, rows=200_000, repeat=7).parse_args()
     rows = 50_000 if arguments.quick else arguments.rows
     sweep(rows, 3 if arguments.quick else arguments.repeat)
     return 0

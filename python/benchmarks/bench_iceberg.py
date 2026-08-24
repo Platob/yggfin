@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import datetime
 import functools
 import pathlib
@@ -16,7 +15,12 @@ from typing import Annotated, Any
 
 import pyarrow
 
+# `src` for the package under measurement, and this folder for `_bench`,
+# so a benchmark imports the same whether it is run or imported.
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from _bench import parser, timed  # noqa: E402
 
 from rekep import Convertible, Field, FixMessage, TextFile, scalar  # noqa: E402
 from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
@@ -149,12 +153,6 @@ def stats(target: IcebergDataset) -> dict[str, int]:
     }
 
 
-def timed(call: Callable[[], Any]) -> tuple[float, Any]:
-    started = time.perf_counter()
-    result = call()
-    return time.perf_counter() - started, result
-
-
 # -- writing ----------------------------------------------------------------
 
 
@@ -176,14 +174,25 @@ def write_case(
         target.plan_merges = plan_merges
         if preload is not None:  # something for a merge to match against
             target.append_arrow(preload, commit_row_size=0)
-        merge_by = True if mode.startswith("merge") else None
-        seconds, _ = timed(
-            lambda: target.overwrite_arrow(
-                batches(table, batch_row_size),
-                merge_by=merge_by,
-                commit_row_size=commit_row_size,
+        # A merge mode is an overwrite; every other mode is putting rows in,
+        # which is what `append_arrow` is -- the two are not one call with a
+        # flag any more, so neither is the measurement.
+        write = (
+            (
+                lambda: target.overwrite_arrow(
+                    batches(table, batch_row_size),
+                    merge_by=True,
+                    commit_row_size=commit_row_size,
+                )
+            )
+            if mode.startswith("merge")
+            else (
+                lambda: target.append_arrow(
+                    batches(table, batch_row_size), commit_row_size=commit_row_size
+                )
             )
         )
+        seconds, _ = timed(write)
         report = {"seconds": seconds, "rows": table.num_rows, **stats(target)}
         report["stored"] = target.read_arrow_table().num_rows
         return report
@@ -946,17 +955,14 @@ def narrow_field() -> Any:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--rows", type=int, default=100_000)
-    parser.add_argument("--days", type=int, default=8)
-    parser.add_argument("--repeat", type=int, default=3)
-    parser.add_argument("--quick", action="store_true")
-    parser.add_argument(
+    options = parser(__doc__, rows=100_000, repeat=3)
+    options.add_argument("--days", type=int, default=8)
+    options.add_argument(
         "--only",
         choices=["write", "insert", "polars", "read", "fs", "maintain", "update", "backfill"],
         default=None,
     )
-    arguments = parser.parse_args()
+    arguments = options.parse_args()
     rows = 5_000 if arguments.quick else arguments.rows
     days = 4 if arguments.quick else arguments.days
 

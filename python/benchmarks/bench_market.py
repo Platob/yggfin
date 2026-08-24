@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import builtins
 import contextlib
 import copy
@@ -20,7 +19,12 @@ from collections.abc import Callable, Iterator
 import pyarrow
 import pyarrow.compute
 
+# `src` for the package under measurement, and this folder for `_bench`,
+# so a benchmark imports the same whether it is run or imported.
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from _bench import best_of, parser, report  # noqa: E402
 
 from rekep.fix import FixPairs, parse_arrow_array  # noqa: E402
 from rekep.market import (  # noqa: E402
@@ -49,20 +53,8 @@ STATES = [210, 310, 410, 510, 610, 240]
 
 
 def timed(work: Callable[[], object], repeat: int) -> tuple[float, object]:
-    """Best of `repeat`, warmed once -- a first call charges its own set-up."""
-    result = work()
-    best = float("inf")
-    for _ in range(repeat):
-        start = time.perf_counter()
-        work()
-        best = min(best, time.perf_counter() - start)
-    return best, result
-
-
-def report(label: str, seconds: float, rows: int, against: float | None = None) -> None:
-    per_row = seconds / rows * 1e9
-    ratio = f"  {against / seconds:6.1f}x" if against else ""
-    print(f"  {label:<44} {seconds * 1000:8.2f} ms  {per_row:7.1f} ns/row{ratio}")
+    """`best_of`, keeping what the work returned -- the callers here read it."""
+    return best_of(work, repeat), work()
 
 
 @contextlib.contextmanager
@@ -338,6 +330,7 @@ def envelope(rows: int) -> dict[str, object]:
         "code": [f"S{index % 5000}" for index in range(rows)],
         "codes": [{"symbol": f"S{index % 5000}"} for index in range(rows)],
         "instrument_xhash": [index % 5000 + 1 for index in range(rows)],
+        "instrument_code": [f"S{index % 5000}" for index in range(rows)],
         "kind": [0] * rows,
         "side": [0] * rows,
         "px_unit": ["USD"] * rows,
@@ -1019,16 +1012,13 @@ def bench_fold(events: int, repeat: int) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--rows", type=int, default=20_000)
-    parser.add_argument("--quick", action="store_true")
-    parser.add_argument(
+    options = parser(__doc__, rows=20_000)
+    options.add_argument(
         "--matrix",
         action="store_true",
         help="run the selected 10K/100K/1M replay matrix (quick keeps its small matrix)",
     )
-    parser.add_argument("--repeat", type=int, default=5)
-    parsed = parser.parse_args()
+    parsed = options.parse_args()
     rows = 2_000 if parsed.quick else parsed.rows
     repeat = 1 if parsed.quick else parsed.repeat
 

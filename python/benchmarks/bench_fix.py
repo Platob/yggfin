@@ -2,25 +2,27 @@
 
 from __future__ import annotations
 
-import argparse
 import pathlib
 import random
 import re
 import sys
-import time
-from collections.abc import Callable
 
 import pyarrow
 import pyarrow.compute
 
+# `src` for the package under measurement, and this folder for `_bench`,
+# so a benchmark imports the same whether it is run or imported.
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from _bench import best_of, parser  # noqa: E402
 
 from rekep.fix import (  # noqa: E402
     FixPairs,
     parse_arrow_array,
     tag_arrow_array,
 )
-from rekep.fix.message import _fold  # noqa: E402
+from rekep.fix.message import _folded, _resolved_key  # noqa: E402
 
 NOISE = "2026-08-14 00:05:01.147_250 [250-e7256476:9effef3e6a:72505] [ULBridge] (INFO) sent "
 
@@ -101,17 +103,6 @@ def rendered_lines(rows: int, *, groups: bool = True) -> list[str]:
         )
         for i in range(rows)
     ]
-
-
-def best_of(function: Callable[[], object], repeat: int) -> float:
-    """Fastest of `repeat` timed calls, after one untimed warm-up."""
-    function()
-    fastest = float("inf")
-    for _ in range(repeat):
-        started = time.perf_counter()
-        function()
-        fastest = min(fastest, time.perf_counter() - started)
-    return fastest
 
 
 def check(column: pyarrow.Array, **kwargs: object) -> None:
@@ -297,58 +288,53 @@ def _sized_names(size: int) -> dict[str, int]:
 
 
 def _race_keys(keys: list[str], names: dict[str, int], repeat: int) -> None:
-    """Four readings of the same keys, each resolving to a **tag**.
+    """Three readings of the same keys, each resolving to a **tag**.
 
-    All four, because an alternation that only answers "is this a known name"
-    is half a resolution: the tag still has to be looked up afterwards, and
+    All three resolve, because an alternation that only answers "is this a
+    known name" is half a lookup: the tag still has to be found afterwards, and
     racing the half against the whole is how a regex wins a benchmark it would
     lose in production.
     """
-    folded = {_fold(name): str(tag) for name, tag in names.items()}
+    folded = _folded(names)
     lowered = {name.lower(): str(tag) for name, tag in names.items()}
     alternation = re.compile(
         r"^(?:" + "|".join(sorted(map(re.escape, names), key=len, reverse=True)) + r")$",
         re.IGNORECASE,
     )
 
-    def by_fold() -> object:
-        return [folded.get(_fold(key)) for key in keys]
+    def by_resolved_key() -> object:
+        return [_resolved_key(key, folded) for key in keys]
 
     def by_alternation() -> object:
         found = []
         for key in keys:
             match = alternation.match(key)
-            found.append(lowered.get(match[0].lower()) if match else None)
-        return found
-
-    def by_probe_then_fold() -> object:
-        found = []
-        for key in keys:
-            tag = folded.get(key.lower())
-            found.append(tag if tag is not None else folded.get(_fold(key)))
+            found.append(lowered.get(match[0].lower()) if match else key)
         return found
 
     def by_probe() -> object:
-        return [lowered.get(key.lower()) for key in keys]
+        return [lowered.get(key.lower(), key) for key in keys]
 
-    assert by_probe_then_fold() == by_fold(), "the fast path has to give the same answer"
+    # Not equal outputs: the shipped path also resolves a *rendered* key --
+    # `PartyID[0]`, `Instrument.Side` -- which neither of the other two can
+    # see, and that is the difference being priced. What has to hold is that
+    # where the plain probe answers at all, all three answer the same.
+    shipped, plain = by_resolved_key(), by_probe()
+    for key, one, other in zip(keys, shipped, plain, strict=True):
+        if other != key:
+            assert one == other, (key, one, other)
     print(f"    {len(names):,} names in the dictionary")
     for label, reading in (
-        ("probe, then fold (shipped)", by_probe_then_fold),
-        ("fold, then probe", by_fold),
+        ("_resolved_key (shipped)", by_resolved_key),
         ("one case-insensitive alternation", by_alternation),
-        ("lower, then probe (no folding)", by_probe),
+        ("lower, then probe", by_probe),
     ):
         seconds = best_of(reading, repeat)
         print(f"{label:>40} {len(keys) / seconds:>14,.0f} keys/s")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--rows", type=int, default=100_000)
-    parser.add_argument("--repeat", type=int, default=5)
-    parser.add_argument("--quick", action="store_true")
-    arguments = parser.parse_args()
+    arguments = parser(__doc__, rows=100_000).parse_args()
     rows = 10_000 if arguments.quick else arguments.rows
     repeat = 3 if arguments.quick else arguments.repeat
     sweep_parsing(rows, repeat)
