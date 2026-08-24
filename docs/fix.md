@@ -136,6 +136,42 @@ uv run python -c "from rekep.fix.publish import publish_builtin; \
 publish_builtin('../data/fix.zip', 'src/rekep/fix/registry.zip')"
 ```
 
+## Classifying a capture's key names
+
+About half the key occurrences in a bridge capture match nothing the registry
+has, and that is not one problem. `rekep fix classify` counts every distinct
+key name a capture spells -- streamed, names and counts only, never a value --
+and says which of four things each one is:
+
+| kind | what it means | what closes it |
+| --- | --- | --- |
+| `exact` | the dictionary has this name | nothing |
+| `aliased` | a spelling already recorded against a field | nothing |
+| `near` | one or two edits from a known name | record an alias, with its count |
+| `vendor` | a name FIX never numbered | declare the field |
+
+```bash
+rekep fix classify --source /captures/brk --store data/fix \
+    --drivers '^UL' --report brk.json
+rekep fix apply --store data/fix --report brk.json --aliases --minimum 50
+```
+
+Nothing is applied unless asked for, and a near miss never silently: a case or
+spelling variant is *evidence* that two names are one field, and the point of
+separating it from an exact match is that somebody decides. What `apply` does
+is make that decision one command instead of a thousand file edits -- and the
+alias it writes carries the capture and the count that earned it.
+
+Two readings the classification depends on:
+
+- A dotted key is a component path when every segment in front of the last one
+  names something the dictionary has, and a vendor namespace otherwise. So
+  `NoPartyIDs.PartyID` is `PartyID` inside a group, and `TECH.CLIENTID` is a
+  vendor's own field rather than `ClientID <109>` with a prefix.
+- `#Foo` and `Foo` are counted apart. The two namespaces a bridge writes are
+  asymmetric -- some names only ever marked, some only ever bare, a few both --
+  and a count that summed them would say nothing about which.
+
 ## Groups and components
 
 Repeating groups remain ordered entries. Known components such as Parties are

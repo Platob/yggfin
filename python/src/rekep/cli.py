@@ -11,6 +11,7 @@ import sys
 from typing import Any
 
 from rekep.fields import Field, StructField, field_of
+from rekep.fix.classify import KeyReport, apply_report, classify, count_files, report_document
 from rekep.fix.entries import ANY_VERSION, STANDARD, VENDOR, Alias, ComponentEntry, FieldEntry
 from rekep.fix.registry import FixRegistry
 
@@ -243,6 +244,45 @@ def _field_entry(arguments: argparse.Namespace) -> FieldEntry:
     )
 
 
+# -- classifying a capture's key names ---------------------------------------
+
+
+def classify_keys(arguments: argparse.Namespace) -> int:
+    """Count every key name a capture spells, and say what each one is."""
+    registry = FixRegistry(cache_dir=arguments.store, offline=True)
+    counts = count_files(
+        arguments.source,
+        pattern=arguments.pattern,
+        recursive=not arguments.flat,
+        drivers=arguments.drivers,
+        limit=arguments.limit,
+    )
+    report = classify(counts, registry)
+    if arguments.report:
+        pathlib.Path(arguments.report).write_text(report_document(report))
+        print(f"{arguments.source} -> {arguments.report}", file=sys.stderr)
+    print(report.into_text())
+    return 0
+
+
+def apply_keys(arguments: argparse.Namespace) -> int:
+    """Register what a report found, through the registry's own verbs."""
+    registry = FixRegistry(cache_dir=arguments.store, offline=True)
+    report = KeyReport.from_dict(json.loads(pathlib.Path(arguments.report).read_text()))
+    applied = apply_report(
+        registry,
+        report,
+        aliases=arguments.aliases,
+        vendor=arguments.vendor,
+        minimum=arguments.minimum,
+    )
+    for line in applied:
+        print(line, file=sys.stderr)
+    if not applied:
+        print("nothing to apply: name --aliases, --vendor, or both", file=sys.stderr)
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rekep", description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -344,7 +384,45 @@ def _parser() -> argparse.ArgumentParser:
         "--name", required=True, help="the component to remove"
     )
 
+    counting = protocol.add_parser(
+        "classify", help="count a capture's key names and say what each one is"
+    )
+    counting.add_argument("--source", required=True, help="a capture file or a folder of them")
+    counting.add_argument("--store", required=True, help="the registry to classify against")
+    counting.add_argument("--pattern", default="*", help="which files under --source to read")
+    counting.add_argument(
+        "--flat", action="store_true", help="read only --source itself, not what is under it"
+    )
+    counting.add_argument(
+        "--drivers",
+        default=None,
+        help="a regular expression a line's driver_name must match, for instance ^UL",
+    )
+    counting.add_argument(
+        "--limit", type=int, default=None, help="stop after this many lines, for a sample"
+    )
+    counting.add_argument("--report", default=None, help="where to write the report as JSON")
+    counting.set_defaults(run=classify_keys)
+
+    applying = protocol.add_parser("apply", help="register what a classification report found")
+    applying.add_argument("--store", required=True, help="the registry to write to")
+    applying.add_argument("--report", required=True, help="a report written by `fix classify`")
+    applying.add_argument(
+        "--aliases", action="store_true", help="record each near miss against the field it means"
+    )
+    applying.add_argument(
+        "--vendor", action="store_true", help="declare each name FIX never numbered"
+    )
+    applying.add_argument(
+        "--minimum",
+        type=int,
+        default=0,
+        help="skip anything counted fewer times than this",
+    )
+    applying.set_defaults(run=apply_keys)
+
     verb("check", "report everything inconsistent about a store", check_registry)
+
     verb("migrate", "rewrite a store one file per identity", migrate_registry).add_argument(
         "--target", required=True, help="where to write the migrated store"
     )

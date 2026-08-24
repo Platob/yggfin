@@ -1,7 +1,24 @@
 """FIX: messages out of log lines, and the dictionary that says what they mean."""
 
-from rekep.fix.columns import COMMON, FLAT, QUOTE, SESSION
+from rekep.fix.classify import (
+    KeyCount,
+    KeyCounts,
+    KeyReport,
+    apply_report,
+    classify,
+    count_files,
+    count_reader,
+)
+from rekep.fix.columns import COMMON, FLAT, NAMED, QUOTE, SESSION, named_columns
 from rekep.fix.components import PARTIES, Parties, Party
+from rekep.fix.entries import (
+    ANY_VERSION,
+    Alias,
+    ComponentEntry,
+    FieldEntry,
+    merged_field,
+    slug_of,
+)
 from rekep.fix.fields import (
     FIX_SCALARS,
     arrow_type_of,
@@ -19,7 +36,9 @@ from rekep.fix.message import (
     FixMessage,
     detect_entry_separator,
     detect_separator,
+    message_bodies,
     parse_arrow_array,
+    rendered_keys,
     tag_arrow_array,
 )
 from rekep.fix.quickfix import (
@@ -46,6 +65,7 @@ from rekep.fix.rules import (
     Rule,
     Rules,
 )
+from rekep.fix.store import COMPONENTS, EXPLODED, FIELDS, VERSIONED
 from rekep.fix.transcribe import (
     FIX_MISS_TAGS,
     FIX_TAGS,
@@ -57,6 +77,8 @@ from rekep.fix.transcribe import (
 )
 
 __all__ = [
+    "ANY_VERSION",
+    "Alias",
     "BASE_URL",
     "BEGIN_STRING",
     "BRIDGE",
@@ -64,20 +86,31 @@ __all__ = [
     "CACHE_DIRECTORY",
     "CODECS",
     "COMMON",
-    "FIX_SCALARS",
+    "COMPONENTS",
+    "ComponentEntry",
+    "EXPLODED",
+    "FIELDS",
     "FIX_MISS_TAGS",
+    "FIX_SCALARS",
     "FIX_TAGS",
     "FLAT",
+    "FieldEntry",
     "FixCodec",
     "FixMessage",
     "FixRegistry",
     "KEYVAL",
+    "KeyCount",
+    "KeyCounts",
+    "KeyReport",
     "MARKER",
     "MARKET_CATEGORY",
     "MISC_CATEGORY",
+    "NAMED",
     "NO_PROTOCOL",
     "NULL_VALUES",
     "PARTIES",
+    "Parties",
+    "Party",
     "QUICKFIX_URL",
     "QUOTE",
     "Rule",
@@ -93,19 +126,27 @@ __all__ = [
     "SpecMember",
     "TagIndex",
     "UNKNOWN_CATEGORY",
-    "Parties",
-    "Party",
+    "VERSIONED",
+    "apply_report",
     "arrow_type_of",
     "cast_arrow_bool",
     "cast_arrow_fix",
+    "classify",
+    "count_files",
+    "count_reader",
     "detect_entry_separator",
     "detect_separator",
     "fix_field",
     "infer_version_from_pairs",
+    "merged_field",
+    "message_bodies",
+    "named_columns",
     "parse_arrow_array",
     "parse_components",
     "parse_session",
     "parse_spec",
+    "rendered_keys",
+    "slug_of",
     "spec_name",
     "tag_arrow_array",
     "unix_of",

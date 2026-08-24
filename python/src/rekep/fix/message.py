@@ -487,6 +487,92 @@ class FixMessage(Convertible):
 # -- whole columns -----------------------------------------------------------
 
 
+def message_bodies(column: Any, named: bool) -> tuple[Any, Any]:
+    """A column of log lines cut down to the messages inside them.
+
+    `(bodies, wire)`: what each line carries, and whether it was found by its
+    BeginString. The scalar rule in one kernel -- a line with a message inside
+    it starts at its `8=FIX`, so the log's own prefix never glues onto the
+    first tag. RE2 has no lookbehind, so the non-digit guard rides outside the
+    capture, and `(?s)`, or a message holding a newline would end at it here
+    where the scalar slice keeps it.
+
+    Shared, rather than repeated, because anything reading a line's tokens has
+    to start where the parser starts: a reading that began one character
+    earlier would count `toBridge #ISINCODE` as a key.
+    """
+    compute = pyarrow.compute
+    values = column.cast(pyarrow.string(), safe=False)
+    starts = compute.starts_with(values, "8=FIX")
+    if compute.all(starts, min_count=0).as_py():
+        wire = compute.fill_null(starts, False)
+    else:
+        begun = compute.struct_field(compute.extract_regex(values, _BEGIN_VECTOR), "msg")
+        wire = compute.is_valid(begun)
+        values = compute.if_else(wire, begun, values)
+    if named:
+        # The other kind of message start, and **only** where there was no
+        # first one: a line carrying a wire header and a bridge body starts at
+        # the header, or the tags that say what it is are cut off with the
+        # log's prefix. The scalar parser applies the same guard, so the two
+        # agree by construction.
+        bridged = compute.struct_field(compute.extract_regex(values, _BRIDGE_VECTOR), "msg")
+        values = compute.if_else(
+            compute.and_(compute.invert(wire), compute.is_valid(bridged)), bridged, values
+        )
+    return values, wire
+
+
+#: One token's marker and key, for counting what a capture spells rather than
+#: parsing it. The same token rule `_TOKEN_VECTOR` reads, with the `#` kept:
+#: only a parse may shed it, and what a bridge writes `#Foo` and what it
+#: writes `Foo` are two different things to count.
+_MARKED_KEY_VECTOR = (
+    rf"(?s)^{_WS}*(?P<marker>#?)(?P<key>\d+|{_NAME})"
+    rf"(?P<index>\[\d+\])?"
+    rf"(?:\.(?P<member>[A-Za-z0-9_.\-]+))?"
+    rf"{_WS}*="
+)
+
+
+def rendered_keys(
+    column: Any, separator: str | None = None, *, named: bool | None = None
+) -> tuple[Any, Any]:
+    """`(marker, key)` for every token of every line, flattened, in kernels.
+
+    What a capture *spells*, which a parse deliberately does not keep: named
+    mode sheds the `#`, and the two namespaces a bridge writes -- `#Side`
+    before enrichment and `Side` after -- are then indistinguishable. A tool
+    counting key names needs both, and needs them to be the parser's own
+    notion of a token rather than a second one.
+
+    A group index is dropped from the key, because `NOPARTYIDS[0]` and
+    `NOPARTYIDS[1]` are one name written twice.
+    """
+    compute = pyarrow.compute
+    if isinstance(column, pyarrow.ChunkedArray):
+        column = column.combine_chunks()
+    if separator is None or named is None:
+        sampled = _column_style(column, named)
+        separator = sampled[0] if separator is None else separator
+        named = sampled[1] if named is None else named
+    values, _ = message_bodies(column, named)
+    flat = compute.split_pattern(values, separator).values
+    parsed = compute.extract_regex(flat, _MARKED_KEY_VECTOR)
+    keys = compute.struct_field(parsed, "key")
+    member = compute.struct_field(parsed, "member")
+    keys = compute.if_else(
+        compute.fill_null(compute.greater(compute.binary_length(member), 0), False),
+        compute.binary_join_element_wise(keys, compute.fill_null(member, ""), "."),
+        keys,
+    )
+    valid = compute.is_valid(keys)
+    return (
+        compute.filter(compute.struct_field(parsed, "marker"), valid),
+        compute.filter(keys, valid),
+    )
+
+
 def parse_arrow_array(
     column: Any,
     separator: str | None = None,
@@ -517,29 +603,7 @@ def parse_arrow_array(
         # has nothing to infer from.
         return pyarrow.chunked_array(parsed, type=pyarrow.map_(pyarrow.string(), pyarrow.string()))
     compute = pyarrow.compute
-    values = column.cast(pyarrow.string(), safe=False)
-    # The scalar rule, in one kernel: a line with a message inside it starts
-    # at its `8=FIX`, so the log's own prefix never glues onto the first tag.
-    # RE2 has no lookbehind, so the non-digit guard rides outside the capture
-    # -- and `(?s)`, or a message holding a newline would end at it here
-    # where the scalar slice keeps it.
-    starts = compute.starts_with(values, "8=FIX")
-    if compute.all(starts, min_count=0).as_py():
-        wire = compute.fill_null(starts, False)
-    else:
-        begun = compute.struct_field(compute.extract_regex(values, _BEGIN_VECTOR), "msg")
-        wire = compute.is_valid(begun)
-        values = compute.if_else(wire, begun, values)
-    if named:
-        # The other kind of message start, and **only** where there was no
-        # first one: a line carrying a wire header and a bridge body starts at
-        # the header, or the tags that say what it is are cut off with the
-        # log's prefix. The scalar parser applies the same guard, so the two
-        # agree by construction.
-        bridged = compute.struct_field(compute.extract_regex(values, _BRIDGE_VECTOR), "msg")
-        values = compute.if_else(
-            compute.and_(compute.invert(wire), compute.is_valid(bridged)), bridged, values
-        )
+    values, wire = message_bodies(column, named)
     canonical = False
     wire_pattern = _canonical_wire_pattern(separator) if not named else None
     if wire_pattern is not None:

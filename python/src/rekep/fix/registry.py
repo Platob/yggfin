@@ -774,14 +774,17 @@ class FixRegistry(Convertible):
         somebody else wrote.
         """
         order = self.versions
-        fields = {version: self._members(version) for version in order}
         components = {
             version: stored
             for version in order
             if (stored := self._stored_components(version)) is not None
         }
         sessions = {version: self.session(version) for version in order}
-        field_entries, component_entries = explode(order, fields, components)
+        # The identity view, not a fresh explosion of the per-version one: a
+        # store that already holds identities holds the spellings each answers
+        # to, and re-deriving them from the fields would migrate a dictionary
+        # into one that had forgotten every alias in it.
+        field_entries, component_entries = self._entries
         documents = documents_of(order, field_entries, component_entries, sessions, components)
         migrated = dataclasses.replace(
             self, cache_dir=os.fspath(target), filesystem=filesystem, offline=True, cache_ttl=0.0
