@@ -1,0 +1,9 @@
+{
+ "name": "LegAdditionalTermBondCouponType",
+ "tag": 41327,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

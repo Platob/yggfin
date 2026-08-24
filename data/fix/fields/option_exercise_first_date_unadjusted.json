@@ -1,0 +1,9 @@
+{
+ "name": "OptionExerciseFirstDateUnadjusted",
+ "tag": 41132,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

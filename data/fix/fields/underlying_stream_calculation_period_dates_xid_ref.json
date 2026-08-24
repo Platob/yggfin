@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamCalculationPeriodDatesXIDRef",
+ "tag": 41958,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XIDREF"
+  }
+ }
+}

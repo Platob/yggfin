@@ -1,0 +1,9 @@
+{
+ "name": "LegCashSettlValuationTime",
+ "tag": 41349,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTTIME"
+  }
+ }
+}

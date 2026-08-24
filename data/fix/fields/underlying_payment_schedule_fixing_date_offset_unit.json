@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleFixingDateOffsetUnit",
+ "tag": 40692,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

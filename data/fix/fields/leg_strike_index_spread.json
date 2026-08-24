@@ -1,0 +1,9 @@
+{
+ "name": "LegStrikeIndexSpread",
+ "tag": 2185,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICEOFFSET"
+  }
+ }
+}

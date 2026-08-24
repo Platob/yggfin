@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "PartyIDSource value within a Settlement Parties component. Same values as PartyIDSource <447>"
+   "description": "PartyIDSource value within a Settlement Parties component. Same values as PartyIDSource <447>",
+   "components": [
+    "SettlParties"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
-   "description": "PartyIDSource value within a Settlement Parties component. Same values as PartyIDSource <447>"
+   "description": "PartyIDSource value within a Settlement Parties component. Same values as PartyIDSource <447>",
+   "components": [
+    "SettlParties"
+   ]
   },
   "5.0": {
    "type": "char",
-   "description": "PartyIDSource value within a Settlement Parties component. Same values as PartyIDSource <447>"
+   "description": "PartyIDSource value within a Settlement Parties component. Same values as PartyIDSource <447>",
+   "components": [
+    "SettlParties"
+   ]
   },
   "4.4": {
    "type": "char",
-   "description": "PartyIDSource value within a Settlement Parties component. Same values as PartyIDSource <447>"
+   "description": "PartyIDSource value within a Settlement Parties component. Same values as PartyIDSource <447>",
+   "components": [
+    "SettlParties"
+   ]
   }
  }
 }

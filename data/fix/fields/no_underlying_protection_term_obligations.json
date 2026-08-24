@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingProtectionTermObligations",
+ "tag": 42087,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

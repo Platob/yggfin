@@ -14,7 +14,10 @@
     "1": "CALL",
     "2": "OTHER",
     "3": "CHOOSER"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -26,7 +29,10 @@
    "value_names": {
     "0": "PUT",
     "1": "CALL"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "int",

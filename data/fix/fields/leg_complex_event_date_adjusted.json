@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventDateAdjusted",
+ "tag": 41395,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

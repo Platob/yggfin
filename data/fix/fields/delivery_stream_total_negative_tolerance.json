@@ -1,0 +1,9 @@
+{
+ "name": "DeliveryStreamTotalNegativeTolerance",
+ "tag": 41077,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

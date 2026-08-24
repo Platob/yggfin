@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamReferenceLevelUnitOfMeasure",
+ "tag": 41918,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

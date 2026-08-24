@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingExchangeLookAlike",
+ "tag": 2625,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

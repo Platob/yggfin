@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Sequence of individual order within list (i.e. ListSeqNo <67> of TotNoOrders <68> , 2 of 25, 3 of 25, . . .)"
+   "description": "Sequence of individual order within list (i.e. ListSeqNo <67> of TotNoOrders <68> , 2 of 25, 3 of 25, . . .)",
+   "components": [
+    "ListOrdGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Sequence of individual order within list (i.e. ListSeqNo <67> of TotNoOrders <68> , 2 of 25, 3 of 25, . . . )"
+   "description": "Sequence of individual order within list (i.e. ListSeqNo <67> of TotNoOrders <68> , 2 of 25, 3 of 25, . . . )",
+   "components": [
+    "ListOrdGrp"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "Sequence of individual order within list (i.e. ListSeqNo <67> of TotNoOrders <68> , 2 of 25, 3 of 25, . . . )"
+   "description": "Sequence of individual order within list (i.e. ListSeqNo <67> of TotNoOrders <68> , 2 of 25, 3 of 25, . . . )",
+   "components": [
+    "ListOrdGrp"
+   ]
   },
   "4.4": {
    "type": "int",

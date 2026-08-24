@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentScheduleSettlPeriodPriceUnitOfMeasure",
+ "tag": 41541,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

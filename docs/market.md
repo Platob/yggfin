@@ -63,6 +63,16 @@ FIX fields, indexes normalized Instrument rows by event type, restores prior
 Book snapshots, and emits only `Book` rows. It is deliberately single-threaded
 because order state is sequential.
 
+Three settings bound what stays alive, and they answer different questions.
+`max_order_age_ns` expires an order nothing has touched for that long;
+`max_side_alive` evicts past that many per side by price-time priority; and
+`purge_alive` decides what happens to whatever is still resting when the
+*stream* ends. A window ending is not an order ageing out, and a reader of the
+last book cannot otherwise tell a resting order from one nobody cancelled --
+so `purge_alive=True` ends each of them as its own `INTERNAL_EXPIRED` version,
+linked to the book that closed it. It is off by default, which is what a run
+that will be resumed from its snapshots wants.
+
 A compact level contains only price and quantity. `bid_levels` and `ask_levels`
 keep best-price order. On normal rows, `deltas` and `executions` say what
 changed while the level lists contain only changed levels. `bid_alive` and

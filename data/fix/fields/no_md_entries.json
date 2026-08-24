@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of entries in Market Data message."
+   "description": "Number of entries in Market Data message.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of entries in Market Data message."
+   "description": "Number of entries in Market Data message.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of entries in Market Data message."
+   "description": "Number of entries in Market Data message.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

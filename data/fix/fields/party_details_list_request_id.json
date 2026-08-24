@@ -1,0 +1,9 @@
+{
+ "name": "PartyDetailsListRequestID",
+ "tag": 1505,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

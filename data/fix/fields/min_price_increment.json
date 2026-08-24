@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "float",
-   "description": "Minimum price increase for a given exchange-traded Instrument"
+   "description": "Minimum price increase for a given exchange-traded Instrument",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "float",
-   "description": "Minimum price increase for a given exchange-traded Instrument"
+   "description": "Minimum price increase for a given exchange-traded Instrument",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "float",
-   "description": "Minimum price increase for a given exchange-traded Instrument"
+   "description": "Minimum price increase for a given exchange-traded Instrument",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "For Fixed Income, identifies MBS / ABS pool for a specific leg of a multi-leg instrument. See Pool <691> for description and"
+   "description": "For Fixed Income, identifies MBS / ABS pool for a specific leg of a multi-leg instrument. See Pool <691> for description and",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "For Fixed Income, identifies MBS / ABS pool for a specific leg of a multi-leg instrument. See Pool <691> for description and"
+   "description": "For Fixed Income, identifies MBS / ABS pool for a specific leg of a multi-leg instrument. See Pool <691> for description and",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "For Fixed Income, identifies MBS / ABS pool for a specific leg of a multi-leg instrument. See Pool <691> for description and"
+   "description": "For Fixed Income, identifies MBS / ABS pool for a specific leg of a multi-leg instrument. See Pool <691> for description and",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "For Fixed Income, identifies MBS / ABS pool for a specific leg of a multi-leg instrument. See Pool <691> for description and"
+   "description": "For Fixed Income, identifies MBS / ABS pool for a specific leg of a multi-leg instrument. See Pool <691> for description and",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

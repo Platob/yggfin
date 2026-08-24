@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRateQuoteExchange",
+ "tag": 42753,
+ "versions": {
+  "5.0.SP2": {
+   "type": "EXCHANGE"
+  }
+ }
+}

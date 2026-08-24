@@ -1,0 +1,9 @@
+{
+ "name": "ComplexOptPayoutCurrencyCodeSource",
+ "tag": 2941,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

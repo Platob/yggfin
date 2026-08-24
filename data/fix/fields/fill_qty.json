@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Quantity of Fill. Refer to LastQty <32> ."
+   "description": "Quantity of Fill. Refer to LastQty <32> .",
+   "components": [
+    "FillsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Quantity of Fill. Refer to LastQty <32> ."
+   "description": "Quantity of Fill. Refer to LastQty <32> .",
+   "components": [
+    "FillsGrp"
+   ]
   }
  }
 }

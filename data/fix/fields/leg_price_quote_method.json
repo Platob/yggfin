@@ -1,0 +1,9 @@
+{
+ "name": "LegPriceQuoteMethod",
+ "tag": 2195,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

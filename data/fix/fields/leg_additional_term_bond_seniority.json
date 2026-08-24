@@ -1,0 +1,9 @@
+{
+ "name": "LegAdditionalTermBondSeniority",
+ "tag": 41326,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

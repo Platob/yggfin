@@ -1,0 +1,9 @@
+{
+ "name": "NoProtectionTermEvents",
+ "tag": 40191,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

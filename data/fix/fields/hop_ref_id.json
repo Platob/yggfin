@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "SeqNum",
-   "description": "Reference identifier assigned by HopCompID <628> associated with the message sent. It is recommended that this value be the MsgSeqNum <34> of the message sent by the third party. Applicable when messages are communicated/re-distributed via third parties which function as service bureaus or \"hubs\". Only applicable if OnBehalfOfCompID <115> is being used."
+   "description": "Reference identifier assigned by HopCompID <628> associated with the message sent. It is recommended that this value be the MsgSeqNum <34> of the message sent by the third party. Applicable when messages are communicated/re-distributed via third parties which function as service bureaus or \"hubs\". Only applicable if OnBehalfOfCompID <115> is being used.",
+   "components": [
+    "HopGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "SeqNum",
-   "description": "Reference identifier assigned by HopCompID <628> associated with the message sent. It is recommended that this value be the MsgSeqNum <34> of the message sent by the third party. Applicable when messages are communicated/re-distributed via third parties which function as service bureaus or \"hubs\". Only applicable if OnBehalfOfCompID <115> is being used."
+   "description": "Reference identifier assigned by HopCompID <628> associated with the message sent. It is recommended that this value be the MsgSeqNum <34> of the message sent by the third party. Applicable when messages are communicated/re-distributed via third parties which function as service bureaus or \"hubs\". Only applicable if OnBehalfOfCompID <115> is being used.",
+   "components": [
+    "HopGrp"
+   ]
   },
   "5.0": {
    "type": "SeqNum",
-   "description": "Reference identifier assigned by HopCompID <628> associated with the message sent. It is recommended that this value be the MsgSeqNum <34> of the message sent by the third party. Applicable when messages are communicated/re-distributed via third parties which function as service bureaus or \"hubs\". Only applicable if OnBehalfOfCompID <115> is being used."
+   "description": "Reference identifier assigned by HopCompID <628> associated with the message sent. It is recommended that this value be the MsgSeqNum <34> of the message sent by the third party. Applicable when messages are communicated/re-distributed via third parties which function as service bureaus or \"hubs\". Only applicable if OnBehalfOfCompID <115> is being used.",
+   "components": [
+    "HopGrp"
+   ]
   },
   "4.4": {
    "type": "SeqNum",
@@ -24,7 +33,10 @@
   },
   "FIXT1.1": {
    "type": "SeqNum",
-   "description": "Reference identifier assigned by HopCompID(628) associated with the message sent. It is recommended that this value be the MsgSeqNum(34) of the message sent by the third party. Applicable when messages are communicated/re-distributed via third parties which function as service bureaus or \"hubs\". Only applicable if OnBehalfOfCompID(115) is being used."
+   "description": "Reference identifier assigned by HopCompID(628) associated with the message sent. It is recommended that this value be the MsgSeqNum(34) of the message sent by the third party. Applicable when messages are communicated/re-distributed via third parties which function as service bureaus or \"hubs\". Only applicable if OnBehalfOfCompID(115) is being used.",
+   "components": [
+    "HopGrp"
+   ]
   }
  }
 }

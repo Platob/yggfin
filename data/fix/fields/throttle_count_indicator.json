@@ -1,0 +1,13 @@
+{
+ "name": "ThrottleCountIndicator",
+ "tag": 1686,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "OUTSTANDING_REQUESTS_UNCHANGED",
+    "1": "OUTSTANDING_REQUESTS_DECREASED"
+   }
+  }
+ }
+}

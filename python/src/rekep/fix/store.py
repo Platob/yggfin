@@ -33,6 +33,7 @@ from rekep.fields import Field
 from rekep.filesystems import write_bytes
 from rekep.fix.entries import ANY_VERSION, ComponentEntry, FieldEntry, slug_of, variant_of
 from rekep.fix.quickfix import SpecComponent
+from rekep.require import require
 from rekep.urls import LOCAL, Url
 
 #: What the exploded layout calls its two folders. Named here because the
@@ -40,10 +41,21 @@ from rekep.urls import LOCAL, Url
 FIELDS = "fields"
 COMPONENTS = "components"
 
+#: What a stored document may be named, the one a store is written in first.
+#: JSON, and measured: the dictionary is seven thousand documents and every
+#: process that imports this package parses a projection of it, where
+#: pure-Python YAML costs 25 seconds against a tenth of one for JSON. A store
+#: somebody wrote in YAML still reads, and converts itself the first time
+#: anything rewrites it -- the sibling under the other suffix is dropped with
+#: that write, so one identity never sits in a store twice.
+DOCUMENT_SUFFIXES: tuple[str, ...] = (".json", ".yaml")
+DOCUMENT_SUFFIX = DOCUMENT_SUFFIXES[0]
+
+
 #: Where the exploded layout keeps what belongs to no single identity: the
 #: version list, each version's session layer, and which versions have had
 #: their components read at all.
-VERSIONS_FILE = "versions.json"
+VERSIONS_FILE = f"versions{DOCUMENT_SUFFIX}"
 SESSIONS = "sessions"
 STORED = "stored"
 DECLARED = "declared"
@@ -97,9 +109,51 @@ class Documents(Protocol):
         ...
 
 
-def document_text(payload: Mapping[str, Any]) -> str:
+def is_document(name: str) -> bool:
+    """Whether `name` is a stored document, whichever format it is written in."""
+    return name.endswith(DOCUMENT_SUFFIXES)
+
+
+def document_stem(name: str) -> str:
+    """`fields/party_role.json` -> `fields/party_role`; the name without a format."""
+    for suffix in DOCUMENT_SUFFIXES:
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
+
+
+def document_names(name: str) -> tuple[str, ...]:
+    """`name`, then the same document under every other format, in read order."""
+    stem = document_stem(name)
+    return tuple(f"{stem}{suffix}" for suffix in DOCUMENT_SUFFIXES)
+
+
+def document_text(payload: Mapping[str, Any], name: str = DOCUMENT_SUFFIX) -> str:
     """One stored document's text. The one place the on-disk spelling is decided."""
+    if name.endswith(".yaml"):
+        return _yaml().safe_dump(dict(payload), sort_keys=False, allow_unicode=True)
     return json.dumps(payload, indent=1)
+
+
+def document_of(payload: bytes, name: str) -> Any:
+    """One stored document's text read back, by the format its name names.
+
+    A torn document raises `ValueError` whichever format it is in, because
+    that is the one thing every caller here already handles: a half-written
+    file is a cold cache, not a dead registry.
+    """
+    if not name.endswith(".yaml"):
+        return json.loads(payload.decode("utf-8"))
+    yaml = _yaml()
+    try:
+        return yaml.safe_load(payload.decode("utf-8"))
+    except yaml.YAMLError as error:
+        raise ValueError(f"{name} is not a document this store can read: {error}") from error
+
+
+def _yaml() -> Any:
+    """The YAML reader, which only a store somebody wrote in YAML needs."""
+    return require("yaml", "yaml")
 
 
 # -- the two places ----------------------------------------------------------
@@ -107,16 +161,23 @@ def document_text(payload: Mapping[str, Any]) -> str:
 
 @dataclasses.dataclass(eq=False)
 class DirectoryDocuments:
-    """JSON under a directory, on any Arrow filesystem."""
+    """Documents under a directory, on any Arrow filesystem."""
 
     filesystem: pyarrow.fs.FileSystem
     directory: str
 
     def read(self, name: str) -> dict[str, Any] | None:
         """One document, or None for anything that cannot be read as one."""
+        for spelling in document_names(name):
+            found = self._read_one(spelling)
+            if found is not None:
+                return found
+        return None
+
+    def _read_one(self, name: str) -> dict[str, Any] | None:
         try:
             with self.filesystem.open_input_stream(self._path(name)) as stream:
-                return json.loads(stream.read().decode("utf-8"))
+                return document_of(stream.read(), name)
         except FileNotFoundError:
             return None
         except (OSError, ValueError, pyarrow.ArrowException):
@@ -130,11 +191,17 @@ class DirectoryDocuments:
         self.filesystem.create_dir(posixpath.dirname(path), recursive=True)
         scratch = f"{path}.tmp"
         with self.filesystem.open_output_stream(scratch) as stream:
-            stream.write(document_text(payload).encode())
+            stream.write(document_text(payload, name).encode())
         self.filesystem.move(scratch, path)
+        for stale in document_names(name):
+            if stale != name:
+                self._remove_one(stale)
 
     def remove(self, name: str) -> bool:
-        """Delete one document; False when the store did not hold it."""
+        """Delete one document, whichever format holds it; False when absent."""
+        return any(self._remove_one(spelling) for spelling in document_names(name))
+
+    def _remove_one(self, name: str) -> bool:
         try:
             self.filesystem.delete_file(self._path(name))
         except (FileNotFoundError, OSError):
@@ -142,23 +209,28 @@ class DirectoryDocuments:
         return True
 
     def names(self) -> tuple[str, ...]:
-        """Every JSON document under the directory, folders included."""
+        """Every document under the directory, folders included."""
         selector = pyarrow.fs.FileSelector(self.directory, recursive=True, allow_not_found=True)
         prefix = self.directory.rstrip("/") + "/"
         found = []
         for info in self.filesystem.get_file_info(selector):
-            if info.type != pyarrow.fs.FileType.File or not info.path.endswith(".json"):
+            if info.type != pyarrow.fs.FileType.File or not is_document(info.path):
                 continue
             path = info.path
             found.append(path[len(prefix) :] if path.startswith(prefix) else path)
         return tuple(sorted(found))
 
     def read_many(self, prefix: str) -> dict[str, dict[str, Any]]:
-        """Every document under `prefix`, one file open each."""
+        """Every document under `prefix`, one file open each.
+
+        `_read_one` and not `read`: these names came off the directory, so each
+        already spells the format it is in and probing the others is a failed
+        open per document.
+        """
         return {
             name: document
             for name in self.names()
-            if name.startswith(prefix) and (document := self.read(name)) is not None
+            if name.startswith(prefix) and (document := self._read_one(name)) is not None
         }
 
     def stamp(self, name: str) -> float:
@@ -177,7 +249,7 @@ class DirectoryDocuments:
 
 @dataclasses.dataclass(eq=False)
 class ArchiveDocuments:
-    """JSON inside one zip, which is a store and not only a way to publish one.
+    """Documents inside one zip, a store and not only a way to publish one.
 
     A `zip -r fix.zip fix/` archive prefixes every member with its folder, so
     what a name means is resolved against what the archive already holds rather
@@ -190,29 +262,33 @@ class ArchiveDocuments:
 
     def read(self, name: str) -> dict[str, Any] | None:
         """One member, as the document it holds; None when it is not there."""
-        member = self._members().get(name)
-        if member is None:
+        held = self._members()
+        spelling = next((one for one in document_names(name) if one in held), None)
+        if spelling is None:
             return None
         try:
             with zipfile.ZipFile(self.archive) as opened:
-                return json.loads(opened.read(member).decode("utf-8"))
+                return document_of(opened.read(held[spelling]), spelling)
         except (OSError, ValueError, zipfile.BadZipFile):
             # A torn archive is a cold cache, not a dead registry.
             return None
 
     def write(self, name: str, payload: Mapping[str, Any]) -> None:
-        """Put one member in, replacing what was there."""
-        self._rewrite({name: document_text(payload)}, drop=())
+        """Put one member in, replacing what was there under any format."""
+        stale = tuple(one for one in document_names(name) if one != name)
+        self._rewrite({name: document_text(payload, name)}, drop=stale)
 
     def remove(self, name: str) -> bool:
         """Drop one member; False when the archive did not hold it."""
-        if name not in self._members():
+        held = self._members()
+        stale = tuple(one for one in document_names(name) if one in held)
+        if not stale:
             return False
-        self._rewrite({}, drop=(name,))
+        self._rewrite({}, drop=stale)
         return True
 
     def names(self) -> tuple[str, ...]:
-        """Every JSON member, under the name the layout addresses it by."""
+        """Every member, under the name the layout addresses it by."""
         return tuple(sorted(self._members()))
 
     def read_many(self, prefix: str) -> dict[str, dict[str, Any]]:
@@ -232,7 +308,7 @@ class ArchiveDocuments:
             with zipfile.ZipFile(self.archive) as opened:
                 for name, member in wanted.items():
                     try:
-                        found[name] = json.loads(opened.read(member).decode("utf-8"))
+                        found[name] = document_of(opened.read(member), name)
                     except (OSError, ValueError, zipfile.BadZipFile):
                         continue
         except (OSError, zipfile.BadZipFile):
@@ -263,7 +339,7 @@ class ArchiveDocuments:
         output = io.BytesIO()
         with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as fresh:
             for name in sorted(documents):
-                fresh.writestr(archive_member(name), document_text(documents[name]))
+                fresh.writestr(archive_member(name), document_text(documents[name], name))
         write_bytes(output.getvalue(), self.archive)
         self._cached_members = None
         self._synchronise()
@@ -282,7 +358,7 @@ class ArchiveDocuments:
         prefix = _archive_prefix(members)
         found: dict[str, str] = {}
         for member in sorted(members):
-            if not member.endswith(".json"):
+            if not is_document(member):
                 continue
             found.setdefault(member[len(prefix) :] if prefix else member, member)
         self._cached_members = found
@@ -341,11 +417,11 @@ def _archive_prefix(members: Sequence[str]) -> str:
     never merely the first one's folder, which for an exploded store is
     `fields/` and made the next write land in `fields/fields/`.
     """
-    leading = {name.split("/", 1)[0] for name in members if name.endswith(".json")}
+    leading = {name.split("/", 1)[0] for name in members if is_document(name)}
     if len(leading) != 1:
         return ""
     (folder,) = leading
-    if folder.endswith(".json") or folder in (FIELDS, COMPONENTS):
+    if is_document(folder) or folder in (FIELDS, COMPONENTS):
         return ""
     return f"{folder}/"
 
@@ -379,29 +455,29 @@ class VersionedLayout:
         """Every version this store has fields for, spelled as it stored them."""
         return tuple(
             sorted(
-                name[: -len(".json")]
+                document_stem(name)
                 for name in self.documents.names()
-                if "/" not in name and name != VERSIONS_FILE
+                if "/" not in name and document_stem(name) != document_stem(VERSIONS_FILE)
             )
         )
 
     def fields(self, version: str) -> list[Field] | None:
         """One version's fields; None when the store does not hold that version."""
-        stored = self.documents.read(f"{version}.json")
+        stored = self.documents.read(f"{version}{DOCUMENT_SUFFIX}")
         if stored is None:
             return None
         return [Field.from_dict(member) for member in stored["fields"]]
 
     def components(self, version: str) -> list[SpecComponent] | None:
         """Stored component declarations; None means this store predates them."""
-        stored = self.documents.read(f"{version}.json")
+        stored = self.documents.read(f"{version}{DOCUMENT_SUFFIX}")
         if stored is None or "components" not in stored:
             return None
         return [SpecComponent.from_dict(member) for member in stored["components"]]
 
     def session(self, version: str) -> tuple[tuple[str, bool], ...]:
         """`((name, required), ...)`: the standard header, then the trailer."""
-        stored = self.documents.read(f"{version}.json")
+        stored = self.documents.read(f"{version}{DOCUMENT_SUFFIX}")
         if not stored:
             return ()
         return tuple((str(name), bool(required)) for name, required in stored.get("session", ()))
@@ -424,7 +500,7 @@ class VersionedLayout:
             payload["session"] = [[name, required] for name, required in session]
         if components is not None:
             payload["components"] = [member.into_dict() for member in components]
-        self.documents.write(f"{version}.json", payload)
+        self.documents.write(f"{version}{DOCUMENT_SUFFIX}", payload)
 
 
 @dataclasses.dataclass(eq=False)
@@ -484,7 +560,7 @@ class ExplodedLayout:
         self.__dict__.pop("_torn", None)
 
     def spellings(self) -> tuple[str, ...]:
-        """Every version any identity is declared for, `sessions.json` included.
+        """Every version any identity is declared for, the session layer included.
 
         The wildcard a namespaced field carries is not a version and never appears
         here: it means "whichever version this store already has".
@@ -589,7 +665,7 @@ class ExplodedLayout:
             # The identity moved -- a newer version renamed the tag -- so the
             # file it used to be in goes rather than shadowing the new one.
             self.remove_field(held)
-        self.documents.write(f"{FIELDS}/{chosen}.json", entry.into_dict())
+        self.documents.write(f"{FIELDS}/{chosen}{DOCUMENT_SUFFIX}", entry.into_dict())
         self.field_entries[chosen] = entry
         return chosen
 
@@ -601,18 +677,18 @@ class ExplodedLayout:
 
     def store_component(self, entry: ComponentEntry) -> None:
         """Write one component identity, replacing what was under its slug."""
-        self.documents.write(f"{COMPONENTS}/{entry.slug}.json", entry.into_dict())
+        self.documents.write(f"{COMPONENTS}/{entry.slug}{DOCUMENT_SUFFIX}", entry.into_dict())
         self.component_entries[entry.slug] = entry
 
     def remove_field(self, slug: str) -> bool:
         """Delete one field identity; False when the store did not hold it."""
         self.field_entries.pop(slug, None)
-        return self.documents.remove(f"{FIELDS}/{slug}.json")
+        return self.documents.remove(f"{FIELDS}/{slug}{DOCUMENT_SUFFIX}")
 
     def remove_component(self, slug: str) -> bool:
         """Delete one component identity; False when the store did not hold it."""
         self.component_entries.pop(slug, None)
-        return self.documents.remove(f"{COMPONENTS}/{slug}.json")
+        return self.documents.remove(f"{COMPONENTS}/{slug}{DOCUMENT_SUFFIX}")
 
     def store(
         self,
@@ -717,7 +793,7 @@ class ExplodedLayout:
         torn.update(name for name in self.documents.names() if name.startswith(prefix))
         torn.difference_update(readable)
         return {
-            name[len(prefix) : -len(".json")]: kind.from_dict(document)
+            document_stem(name[len(prefix) :]): kind.from_dict(document)
             for name, document in sorted(readable.items())
         }
 
@@ -855,13 +931,32 @@ def explode(
             by_identity[identity] = fold_field(held, member, version, newest=held is None)
     field_entries: dict[str, FieldEntry] = {}
     taken: dict[str, tuple[str, Any]] = {}
+    # A store is created here, so the two ways one lookup could answer with
+    # whichever entry was read first are refused here rather than reported by
+    # a later `check`: a dictionary that ships with them answers differently
+    # on two machines, and nothing downstream can see why.
+    by_tag: dict[int, str] = {}
+    by_name: dict[str, str] = {}
     for entry in by_identity.values():
+        if entry.tag is not None and (held := by_tag.get(int(entry.tag))) is not None:
+            raise ValueError(
+                f"FIX tag {entry.tag} is claimed by {held!r} and {entry.name!r}: one tag is "
+                "one identity, so record the second spelling as an alias of the first"
+            )
+        if (held := by_name.get(entry.folded)) is not None:
+            raise ValueError(
+                f"FIX field name {entry.folded!r} is claimed by {held!r} and {entry.name!r}: "
+                "one name is one identity, so rename one or record it as an alias"
+            )
         slug = allocate_slug(entry, taken)
         if slug in field_entries:
             raise ValueError(
                 f"FIX fields {field_entries[slug].name!r} and {entry.name!r} are both "
-                f"stored as {FIELDS}/{slug}.json"
+                f"stored as {FIELDS}/{slug}{DOCUMENT_SUFFIX}"
             )
+        if entry.tag is not None:
+            by_tag[int(entry.tag)] = entry.name
+        by_name[entry.folded] = entry.name
         field_entries[slug] = entry
         taken[slug] = (entry.name, entry_identity(entry))
 
@@ -881,12 +976,17 @@ def documents_of(
     component_entries: Mapping[str, ComponentEntry],
     sessions: Mapping[str, Sequence[tuple[str, bool]]],
     declared: Iterable[str] = (),
+    suffix: str = DOCUMENT_SUFFIX,
 ) -> dict[str, dict[str, Any]]:
     """A whole exploded store as `{document name: document}`, ready to write.
 
     `declared` names the versions whose components have been read, however few
     each has: a version missing from it answers "nobody asked" rather than
     "this version declares none".
+
+    `suffix` is what the documents are named -- and so what they are written
+    in, since `document_text` reads the name. A store written for people keeps
+    the default; one written to be loaded says so.
     """
     documents: dict[str, dict[str, Any]] = {}
     index: dict[str, Any] = {}
@@ -904,11 +1004,13 @@ def documents_of(
     if declared:
         index[DECLARED] = sorted(declared)
     if index:
-        documents[VERSIONS_FILE] = {key: index[key] for key in sorted(index)}
+        documents[f"{document_stem(VERSIONS_FILE)}{suffix}"] = {
+            key: index[key] for key in sorted(index)
+        }
     for slug, entry in field_entries.items():
-        documents[f"{FIELDS}/{slug}.json"] = entry.into_dict()
+        documents[f"{FIELDS}/{slug}{suffix}"] = entry.into_dict()
     for slug, entry in component_entries.items():
-        documents[f"{COMPONENTS}/{slug}.json"] = entry.into_dict()
+        documents[f"{COMPONENTS}/{slug}{suffix}"] = entry.into_dict()
     return documents
 
 
@@ -924,7 +1026,7 @@ def write_archive(
     output = io.BytesIO()
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for name in sorted(documents):
-            archive.writestr(archive_member(name), document_text(documents[name]))
+            archive.writestr(archive_member(name), document_text(documents[name], name))
     write_bytes(output.getvalue(), target)
     parsed = Url.from_string(os.fspath(target))
     return pathlib.Path(parsed.store_path) if parsed.scheme in LOCAL else parsed.into_string()

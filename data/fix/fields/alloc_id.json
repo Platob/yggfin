@@ -18,6 +18,12 @@
     "OrderCancelReplaceRequest",
     "AllocationInstruction",
     "AllocationInstructionAck"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0.SP1": {
@@ -36,6 +42,12 @@
     "OrderCancelReplaceRequest",
     "AllocationInstruction",
     "AllocationInstructionAck"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -53,6 +65,12 @@
     "OrderCancelReplaceRequest",
     "AllocationInstruction",
     "AllocationInstructionAck"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

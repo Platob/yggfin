@@ -1,0 +1,9 @@
+{
+ "name": "PartyActionRequestID",
+ "tag": 2328,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRateNotionalReset",
+ "tag": 42668,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

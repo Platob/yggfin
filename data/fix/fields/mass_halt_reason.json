@@ -1,0 +1,9 @@
+{
+ "name": "MassHaltReason",
+ "tag": 1681,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

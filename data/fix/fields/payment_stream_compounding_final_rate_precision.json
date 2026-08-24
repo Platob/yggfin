@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamCompoundingFinalRatePrecision",
+ "tag": 42643,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

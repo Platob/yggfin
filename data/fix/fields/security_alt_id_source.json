@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Identifies class or source of the SecurityAltID <455> value. Required if SecurityAltID is specified."
+   "description": "Identifies class or source of the SecurityAltID <455> value. Required if SecurityAltID is specified.",
+   "components": [
+    "SecAltIDGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Identifies class or source of the SecurityAltID <455> value. Required if SecurityAltID is specified."
+   "description": "Identifies class or source of the SecurityAltID <455> value. Required if SecurityAltID is specified.",
+   "components": [
+    "SecAltIDGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Identifies class or source of the SecurityAltID <455> value. Required if SecurityAltID is specified."
+   "description": "Identifies class or source of the SecurityAltID <455> value. Required if SecurityAltID is specified.",
+   "components": [
+    "SecAltIDGrp"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Identifies class or source of the SecurityAltID <455> value. Required if SecurityAltID <455> is specified."
+   "description": "Identifies class or source of the SecurityAltID <455> value. Required if SecurityAltID <455> is specified.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Identifies class or source of the SecurityAltID <455> value. Required if SecurityAltID <455> is specified."
+   "description": "Identifies class or source of the SecurityAltID <455> value. Required if SecurityAltID <455> is specified.",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

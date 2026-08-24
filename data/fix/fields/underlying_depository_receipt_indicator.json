@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDepositoryReceiptIndicator",
+ "tag": 2628,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

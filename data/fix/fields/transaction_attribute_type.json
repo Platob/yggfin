@@ -1,0 +1,14 @@
+{
+ "name": "TransactionAttributeType",
+ "tag": 2872,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "EXCLUSIVE_ARRANGEMENT",
+    "1": "COLLATERAL_REUSE",
+    "2": "COLLATERAL_ARRANGMENT_TYPE"
+   }
+  }
+ }
+}

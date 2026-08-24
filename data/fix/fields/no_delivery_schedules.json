@@ -1,0 +1,9 @@
+{
+ "name": "NoDeliverySchedules",
+ "tag": 41037,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

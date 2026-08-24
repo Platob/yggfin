@@ -1,0 +1,15 @@
+{
+ "name": "NBBOSource",
+ "tag": 2834,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NOT_APPLICABLE",
+    "1": "DIRECT",
+    "2": "SIP",
+    "3": "HYBRID"
+   }
+  }
+ }
+}

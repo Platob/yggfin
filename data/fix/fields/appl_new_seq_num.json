@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "SeqNum",
-   "description": "Used to specify a new application sequence number."
+   "description": "Used to specify a new application sequence number.",
+   "components": [
+    "ApplIDReportGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "SeqNum",
-   "description": "Used to specify a new application sequence number."
+   "description": "Used to specify a new application sequence number.",
+   "components": [
+    "ApplIDReportGrp"
+   ]
   }
  }
 }

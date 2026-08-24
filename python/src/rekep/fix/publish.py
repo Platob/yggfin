@@ -14,8 +14,6 @@ import os
 import pathlib
 from collections.abc import Sequence
 
-from rekep.fields import Field
-from rekep.fix.fields import fix_field
 from rekep.fix.registry import FixRegistry
 
 #: Session and application fields the parsed log lifts into its own columns.
@@ -105,6 +103,10 @@ LOG_FIELDS: tuple[str, ...] = (
     "NoPartySubIDs",
     "PartySubID",
     "PartySubIDType",
+    "TrdRegTimestamp",
+    "TrdRegTimestampType",
+    "TrdRegTimestampOrigin",
+    "NoTrdRegTimestamps",
 )
 
 #: Fields the market translation reads, whether or not it stores each as its
@@ -190,7 +192,6 @@ BRIDGE_FIELDS: tuple[str, ...] = (
     "MaxFloor",
     "MultiLegReportingType",
     "NoTradingSessions",
-    "NoTrdRegTimestamps",
     "OrdRejReason",
     "OrderCapacity",
     "Rule80A",
@@ -202,9 +203,6 @@ BRIDGE_FIELDS: tuple[str, ...] = (
     "SettlType",
     "TradingSessionID",
     "TradingSessionSubID",
-    "TrdRegTimestamp",
-    "TrdRegTimestampOrigin",
-    "TrdRegTimestampType",
 )
 
 #: Fields FIX never numbered that the parsed log gives a column of its own.
@@ -217,32 +215,13 @@ PROJECTED: tuple[str, ...] = tuple(
 )
 
 
-def latest_fields() -> list[Field]:
-    """Fields no published version carries, declared here as `FIX.Latest`.
-
-    The dictionary's per-version pages stop where each version's standard
-    does, and these two arrived with an extension pack after `5.0.SP2` was
-    written. A projection cannot select what its source has never held, so
-    they travel as their own version rather than being wished into an older
-    one.
-    """
-    return [
-        _latest("ExposureDuration", 1629, "Duration for which an order remains exposed."),
-        _latest("ExposureDurationUnit", 1916, "Time unit in which ExposureDuration is expressed."),
-    ]
-
-
-def _latest(name: str, tag: int, description: str) -> Field:
-    return fix_field(name, tag, "int", description=description, version="FIX.Latest")
-
-
 def publish_builtin(
     source: str | os.PathLike[str],
     target: str | os.PathLike[str],
 ) -> pathlib.Path | str:
     """Rebuild the wheel's registry from the published dictionary, and name it."""
     registry = FixRegistry(cache_dir=source, offline=True)
-    return registry.into_projection(target, PROJECTED, latest_fields())
+    return registry.into_projection(target, PROJECTED)
 
 
 def missing_from(registry: FixRegistry, keys: Sequence[str] = PROJECTED) -> list[str]:

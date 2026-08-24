@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Refer to definition for SecuritySubType <762>"
+   "description": "Refer to definition for SecuritySubType <762>",
+   "components": [
+    "UnderlyingLegInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Refer to definition for SecuritySubType <762>"
+   "description": "Refer to definition for SecuritySubType <762>",
+   "components": [
+    "UnderlyingLegInstrument"
+   ]
   }
  }
 }

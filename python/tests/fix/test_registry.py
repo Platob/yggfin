@@ -645,7 +645,7 @@ def test_the_builtin_registry_is_cached_offline_and_versioned() -> None:
     registry = FixRegistry.from_builtin()
     assert registry is FixRegistry.from_builtin()
     assert registry.offline
-    assert registry.versions[:2] == ("FIX.Latest", "5.0.SP2")
+    assert registry.versions[:2] == ("5.0.SP2", "5.0.SP1")
     assert registry.versions[-1] == "FIXT1.1"
 
 

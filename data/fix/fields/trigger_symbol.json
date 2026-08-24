@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Defines the common, 'human understood' representation of the security whose prices will be tracked by the trigger logic."
+   "description": "Defines the common, 'human understood' representation of the security whose prices will be tracked by the trigger logic.",
+   "components": [
+    "TriggeringInstruction"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Defines the common, 'human understood' representation of the security whose prices will be tracked by the trigger logic."
+   "description": "Defines the common, 'human understood' representation of the security whose prices will be tracked by the trigger logic.",
+   "components": [
+    "TriggeringInstruction"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Defines the common, 'human understood' representation of the security whose prices will be tracked by the trigger logic."
+   "description": "Defines the common, 'human understood' representation of the security whose prices will be tracked by the trigger logic.",
+   "components": [
+    "TriggeringInstruction"
+   ]
   }
  }
 }

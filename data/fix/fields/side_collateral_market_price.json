@@ -1,0 +1,9 @@
+{
+ "name": "SideCollateralMarketPrice",
+ "tag": 2698,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

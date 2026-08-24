@@ -21,6 +21,16 @@
     "NewOrderSingle",
     "OrderCancelReplaceRequest",
     "Quote"
+   ],
+   "components": [
+    "AllocGrp",
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotReqGrp",
+    "SettlInstGrp",
+    "SettlObligationInstructions",
+    "SideCrossOrdModGrp"
    ]
   },
   "5.0.SP1": {
@@ -41,6 +51,13 @@
     "SettlementInstructionRequest",
     "NewOrderSingle",
     "OrderCancelReplaceRequest"
+   ],
+   "components": [
+    "AllocGrp",
+    "ListOrdGrp",
+    "SettlInstGrp",
+    "SettlObligationInstructions",
+    "SideCrossOrdModGrp"
    ]
   },
   "5.0": {
@@ -59,6 +76,14 @@
     "SettlementInstructionRequest",
     "NewOrderSingle",
     "OrderCancelReplaceRequest"
+   ],
+   "components": [
+    "AllocGrp",
+    "ListOrdGrp",
+    "SettlInstGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

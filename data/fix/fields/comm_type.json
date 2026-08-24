@@ -27,6 +27,9 @@
     "QuoteStatusReport",
     "QuoteResponse",
     "Quote"
+   ],
+   "components": [
+    "CommissionData"
    ]
   },
   "5.0.SP1": {
@@ -52,6 +55,9 @@
     "QuoteStatusReport",
     "QuoteResponse",
     "Quote"
+   ],
+   "components": [
+    "CommissionData"
    ]
   },
   "5.0": {
@@ -77,6 +83,9 @@
     "QuoteStatusReport",
     "QuoteResponse",
     "Quote"
+   ],
+   "components": [
+    "CommissionData"
    ]
   },
   "4.4": {
@@ -102,6 +111,9 @@
     "Quote Status Report",
     "Quote Response",
     "Quote"
+   ],
+   "components": [
+    "CommissionData"
    ]
   },
   "4.3": {
@@ -126,6 +138,9 @@
    "used_in": [
     "Quote Status Report",
     "Quote"
+   ],
+   "components": [
+    "CommissionData"
    ]
   },
   "4.2": {

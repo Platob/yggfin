@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of statistics indicator repeating group entries"
+   "description": "Number of statistics indicator repeating group entries",
+   "components": [
+    "StatsIndGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of statistics indicator repeating group entries"
+   "description": "Number of statistics indicator repeating group entries",
+   "components": [
+    "StatsIndGrp"
+   ]
   }
  }
 }

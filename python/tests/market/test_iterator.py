@@ -1307,3 +1307,45 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
     assert latest.deltas[0].prev_qty == 1_200.0
     assert latest.deltas[0].version == 1 and latest.deltas[0].prev_unix == placed.unix
     assert latest.executions[0].qty == 400.0
+
+
+# -- what happens to what is still resting when the stream ends ---------------
+
+
+def _resting_stream() -> list[MarketEvent]:
+    """Two live orders and nothing that ends them."""
+    return [
+        order(BASE, BTC, Side.BID, 100.0, 5.0, "b-1"),
+        order(BASE + 1, BTC, Side.ASK, 101.0, 4.0, "a-1"),
+    ]
+
+
+def test_orders_still_resting_at_the_end_are_kept_by_default() -> None:
+    """A run that will be resumed from its snapshots wants them exactly as they are."""
+    books = list(BookIterator.from_events(_resting_stream(), snapshot_every=0))
+    last = books[-1]
+    assert (last.bid_depth, last.ask_depth) == (1, 1)
+    assert [one.state for one in last.deltas] == [State.NEW]
+
+
+def test_purge_alive_ends_them_as_auditable_versions() -> None:
+    """A window that ends is not an order that aged out, so it says so per order."""
+    books = list(BookIterator.from_events(_resting_stream(), snapshot_every=0, purge_alive=True))
+    purged = [one for book in books for one in book.deltas if one.state is State.INTERNAL_EXPIRED]
+    assert len(purged) == 2, "one terminal version per side, and no more"
+    assert {one.qty for one in purged} == {0.0}
+    assert all("still resting when the stream ended" in (one.reason or "") for one in purged)
+    assert (books[-1].bid_depth, books[-1].ask_depth) == (0, 0)
+
+
+def test_purging_leaves_the_lifecycles_it_ended_linked_to_their_book() -> None:
+    """An expiry nobody can join back to its order is an expiry nobody can audit."""
+    books = list(BookIterator.from_events(_resting_stream(), snapshot_every=0, purge_alive=True))
+    last = books[-1]
+    purged = [one for one in last.deltas if one.state is State.INTERNAL_EXPIRED]
+    linked = {xhash for _, xhash in last.linked_events}
+    assert {one.xhash for one in purged} <= linked
+
+
+def test_purge_alive_on_an_empty_stream_emits_nothing() -> None:
+    assert list(BookIterator.from_events([], purge_alive=True)) == []

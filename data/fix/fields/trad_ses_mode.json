@@ -19,6 +19,9 @@
     "TradingSessionListRequest",
     "TradingSessionStatusRequest",
     "TradingSessionStatus"
+   ],
+   "components": [
+    "TrdSessLstGrp"
    ]
   },
   "5.0.SP1": {
@@ -38,6 +41,9 @@
     "TradingSessionListRequest",
     "TradingSessionStatusRequest",
     "TradingSessionStatus"
+   ],
+   "components": [
+    "TrdSessLstGrp"
    ]
   },
   "5.0": {
@@ -57,6 +63,9 @@
     "TradingSessionListRequest",
     "TradingSessionStatusRequest",
     "TradingSessionStatus"
+   ],
+   "components": [
+    "TrdSessLstGrp"
    ]
   },
   "4.4": {

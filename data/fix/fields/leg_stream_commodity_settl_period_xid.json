@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCommoditySettlPeriodXID",
+ "tag": 41698,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XID"
+  }
+ }
+}

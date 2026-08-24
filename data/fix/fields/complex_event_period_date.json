@@ -1,0 +1,9 @@
+{
+ "name": "ComplexEventPeriodDate",
+ "tag": 41008,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

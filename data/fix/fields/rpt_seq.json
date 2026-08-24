@@ -7,6 +7,12 @@
    "description": "Sequence number of message within report series. Used to carry reporting sequence number of the fill as represented on the Trade Report Side.",
    "used_in": [
     "ListStatus"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0.SP1": {
@@ -14,6 +20,12 @@
    "description": "Sequence number of message within report series. Used to carry reporting sequence number of the fill as represented on the Trade Report Side.",
    "used_in": [
     "ListStatus"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -21,6 +33,12 @@
    "description": "Sequence number of message within report series. Used to carry reporting sequence number of the fill as represented on the Trade Report Side.",
    "used_in": [
     "ListStatus"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

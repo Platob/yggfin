@@ -1,0 +1,15 @@
+{
+ "name": "AveragePriceType",
+ "tag": 2763,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "TIME_WEIGHTED_AVERAGE_PRICE",
+    "1": "VOLUME_WEIGHTED_AVERAGE_PRICE",
+    "2": "PERCENT_OF_VOLUME_AVERAGE_PRICE",
+    "3": "LIMIT_ORDER_AVERAGE_PRICE"
+   }
+  }
+ }
+}

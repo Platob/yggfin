@@ -17,6 +17,12 @@
     "ExecutionAcknowledgement",
     "DontKnowTradeDK",
     "OrderMassCancelReport"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "OrdAllocGrp",
+    "TradeReportOrderDetail"
    ]
   },
   "5.0.SP1": {
@@ -34,6 +40,13 @@
     "ExecutionAcknowledgement",
     "DontKnowTradeDK",
     "OrderMassCancelReport"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "OrdAllocGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -51,6 +64,13 @@
     "ExecutionAcknowledgement",
     "DontKnowTradeDK",
     "OrderMassCancelReport"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "OrdAllocGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

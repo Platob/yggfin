@@ -1,0 +1,9 @@
+{
+ "name": "DeliveryScheduleSettlTotalHours",
+ "tag": 41053,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

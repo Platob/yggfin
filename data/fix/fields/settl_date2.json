@@ -13,6 +13,13 @@
     "NewOrderSingle",
     "OrderCancelReplaceRequest",
     "Quote"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
    ]
   },
   "5.0.SP1": {
@@ -26,6 +33,13 @@
     "NewOrderSingle",
     "OrderCancelReplaceRequest",
     "Quote"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
    ]
   },
   "5.0": {
@@ -39,6 +53,13 @@
     "NewOrderSingle",
     "OrderCancelReplaceRequest",
     "Quote"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
    ]
   },
   "4.4": {

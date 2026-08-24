@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "PartyIDSource value within an target party repeating group. Same values as PartyIDSource <447>"
+   "description": "PartyIDSource value within an target party repeating group. Same values as PartyIDSource <447>",
+   "components": [
+    "TargetParties"
+   ]
   }
  }
 }

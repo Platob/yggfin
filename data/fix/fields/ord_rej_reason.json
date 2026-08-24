@@ -60,6 +60,9 @@
    },
    "used_in": [
     "ExecutionReport"
+   ],
+   "components": [
+    "OrdListStatGrp"
    ]
   },
   "5.0.SP1": {
@@ -109,6 +112,9 @@
    },
    "used_in": [
     "ExecutionReport"
+   ],
+   "components": [
+    "OrdListStatGrp"
    ]
   },
   "5.0": {
@@ -156,6 +162,9 @@
    },
    "used_in": [
     "ExecutionReport"
+   ],
+   "components": [
+    "OrdListStatGrp"
    ]
   },
   "4.4": {

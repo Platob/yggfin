@@ -1,0 +1,9 @@
+{
+ "name": "LastLimitAmt",
+ "tag": 1632,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

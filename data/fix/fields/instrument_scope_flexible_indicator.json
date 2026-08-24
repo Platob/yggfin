@@ -1,0 +1,9 @@
+{
+ "name": "InstrumentScopeFlexibleIndicator",
+ "tag": 1554,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

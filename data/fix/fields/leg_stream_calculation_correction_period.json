@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCalculationCorrectionPeriod",
+ "tag": 41644,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

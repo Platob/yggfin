@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDeliveryStreamDeliverAtSourceIndicator",
+ "tag": 41785,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

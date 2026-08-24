@@ -174,7 +174,11 @@
     "4": "MULTILEG_TO_MULTILEG_TRADE",
     "5": "SHORT_SALE_MIN_PRICE",
     "6": "BENCHMARK"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "MultipleStringValue",
@@ -336,7 +340,11 @@
     "2": "MARKETPLACE_ENTERED_TRADE",
     "3": "MULT_ASSET_CLASS_MULTILEG_TRADE",
     "4": "MULTILEG_TO_MULTILEG_TRADE"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "MultipleStringValue",
@@ -488,7 +496,11 @@
     "AR": "FORM_T",
     "AS": "BASKET_INDEX",
     "AT": "BURST_BASKET"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "MultipleValueString",

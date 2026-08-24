@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamCommoditySettlPeriodXID",
+ "tag": 42014,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XID"
+  }
+ }
+}

@@ -26,6 +26,9 @@
     "AllocationReportAck",
     "Confirmation_Ack",
     "AllocationInstructionAck"
+   ],
+   "components": [
+    "AllocGrp"
    ]
   },
   "5.0.SP1": {
@@ -51,6 +54,9 @@
     "AllocationReportAck",
     "Confirmation_Ack",
     "AllocationInstructionAck"
+   ],
+   "components": [
+    "AllocGrp"
    ]
   },
   "5.0": {
@@ -76,6 +82,9 @@
     "AllocationReportAck",
     "Confirmation_Ack",
     "AllocationInstructionAck"
+   ],
+   "components": [
+    "AllocGrp"
    ]
   },
   "4.4": {

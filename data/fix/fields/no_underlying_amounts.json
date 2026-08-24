@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Total number of occurrences of Amount to pay in order to receive the underlying instrument"
+   "description": "Total number of occurrences of Amount to pay in order to receive the underlying instrument",
+   "components": [
+    "UnderlyingAmount"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Total number of occurrences of Amount to pay in order to receive the underlying instrument"
+   "description": "Total number of occurrences of Amount to pay in order to receive the underlying instrument",
+   "components": [
+    "UnderlyingAmount"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Total number of occurrences of Amount to pay in order to receive the underlying instrument"
+   "description": "Total number of occurrences of Amount to pay in order to receive the underlying instrument",
+   "components": [
+    "UnderlyingAmount"
+   ]
   }
  }
 }

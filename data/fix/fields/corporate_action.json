@@ -61,6 +61,11 @@
     "SecurityDefinition",
     "SecurityStatus",
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp",
+    "RelSymDerivSecGrp",
+    "RelSymDerivSecUpdGrp"
    ]
   },
   "5.0.SP1": {
@@ -122,6 +127,11 @@
     "SecurityDefinition",
     "SecurityStatus",
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp",
+    "RelSymDerivSecGrp",
+    "RelSymDerivSecUpdGrp"
    ]
   },
   "5.0": {
@@ -180,6 +190,9 @@
     "SecurityDefinitionUpdateReport",
     "SecurityStatus",
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp"
    ]
   },
   "4.4": {

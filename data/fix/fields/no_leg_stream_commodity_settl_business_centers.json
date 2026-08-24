@@ -1,0 +1,9 @@
+{
+ "name": "NoLegStreamCommoditySettlBusinessCenters",
+ "tag": 41646,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

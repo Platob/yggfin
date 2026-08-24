@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRateValuationEndDateOffsetUnit",
+ "tag": 42724,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "SeqNum",
-   "description": "Data sequence number to be used when FIX session is not in effect"
+   "description": "Data sequence number to be used when FIX session is not in effect",
+   "components": [
+    "ApplicationSequenceControl"
+   ]
   },
   "5.0.SP1": {
    "type": "SeqNum",
-   "description": "Data sequence number to be used when FIX session is not in effect"
+   "description": "Data sequence number to be used when FIX session is not in effect",
+   "components": [
+    "ApplicationSequenceControl"
+   ]
   }
  }
 }

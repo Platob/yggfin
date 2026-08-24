@@ -1,0 +1,9 @@
+{
+ "name": "ProvisionOptionExerciseFrequencyUnit",
+ "tag": 40128,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

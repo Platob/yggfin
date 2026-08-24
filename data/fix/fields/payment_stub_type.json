@@ -1,0 +1,15 @@
+{
+ "name": "PaymentStubType",
+ "tag": 40873,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "INITIAL",
+    "1": "FINAL",
+    "2": "COMPOUNDING_INITIAL",
+    "3": "COMPOUNDING_FINAL"
+   }
+  }
+ }
+}

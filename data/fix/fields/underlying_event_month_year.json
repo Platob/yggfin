@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingEventMonthYear",
+ "tag": 2342,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MONTHYEAR"
+  }
+ }
+}

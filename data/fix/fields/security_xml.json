@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "XMLData",
-   "description": "Actual XML data stream describing a security, normally FpML."
+   "description": "Actual XML data stream describing a security, normally FpML.",
+   "components": [
+    "SecurityXML"
+   ]
   },
   "5.0.SP1": {
    "type": "XMLData",
-   "description": "Actual XML data stream describing a security, normally FpML."
+   "description": "Actual XML data stream describing a security, normally FpML.",
+   "components": [
+    "SecurityXML"
+   ]
   }
  }
 }

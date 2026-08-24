@@ -18,7 +18,10 @@
     "3": "FINAL_WILL_BE_EXERCISED",
     "4": "CONTRARY_INTENTION",
     "5": "DIFFERENCE"
-   }
+   },
+   "components": [
+    "ExpirationQty"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -36,7 +39,10 @@
     "3": "FINAL_WILL_BE_EXERCISED",
     "4": "CONTRARY_INTENTION",
     "5": "DIFFERENCE"
-   }
+   },
+   "components": [
+    "ExpirationQty"
+   ]
   },
   "5.0": {
    "name": "ExpType",
@@ -55,7 +61,10 @@
     "3": "FINAL_WILL_BE_EXERCISED",
     "4": "CONTRARY_INTENTION",
     "5": "DIFFERENCE"
-   }
+   },
+   "components": [
+    "ExpirationQty"
+   ]
   }
  }
 }

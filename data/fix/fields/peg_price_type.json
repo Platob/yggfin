@@ -25,7 +25,10 @@
     "8": "TRAILING_STOP_PEG",
     "9": "PEG_TO_LIMIT_PRICE",
     "10": "SHORT_SALE_MIN_PRICE_PEG"
-   }
+   },
+   "components": [
+    "PegInstructions"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -49,7 +52,10 @@
     "7": "PEG_TO_VWAP",
     "8": "TRAILING_STOP_PEG",
     "9": "PEG_TO_LIMIT_PRICE"
-   }
+   },
+   "components": [
+    "PegInstructions"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -75,7 +81,10 @@
     "7": "PEG_TO_VWAP",
     "8": "TRAILING_STOP_PEG",
     "9": "PEG_TO_LIMIT_PRICE"
-   }
+   },
+   "components": [
+    "PegInstructions"
+   ]
   }
  }
 }

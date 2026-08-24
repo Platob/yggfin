@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentScheduleInterimExchangeDatesOffsetPeriod",
+ "tag": 40410,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

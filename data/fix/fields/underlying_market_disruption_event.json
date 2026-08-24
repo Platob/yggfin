@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingMarketDisruptionEvent",
+ "tag": 41865,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

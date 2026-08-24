@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "PartyRole value within a root parties component. Same values as PartyRole <452>"
+   "description": "PartyRole value within a root parties component. Same values as PartyRole <452>",
+   "components": [
+    "RootParties"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "PartyRole value within a root parties component. Same values as PartyRole <452>"
+   "description": "PartyRole value within a root parties component. Same values as PartyRole <452>",
+   "components": [
+    "RootParties"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "PartyRole value within a root parties component. Same values as PartyRole <452>"
+   "description": "PartyRole value within a root parties component. Same values as PartyRole <452>",
+   "components": [
+    "RootParties"
+   ]
   }
  }
 }

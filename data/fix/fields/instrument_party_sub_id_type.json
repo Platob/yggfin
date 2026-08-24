@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Type of InstrumentPartySubID <1053> value. Same values as PartySubIDType <803>"
+   "description": "Type of InstrumentPartySubID <1053> value. Same values as PartySubIDType <803>",
+   "components": [
+    "InstrumentPtysSubGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Type of InstrumentPartySubID <1053> value. Same values as PartySubIDType <803>"
+   "description": "Type of InstrumentPartySubID <1053> value. Same values as PartySubIDType <803>",
+   "components": [
+    "InstrumentPtysSubGrp"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "Type of InstrumentPartySubID <1053> value. Same values as PartySubIDType <803>"
+   "description": "Type of InstrumentPartySubID <1053> value. Same values as PartySubIDType <803>",
+   "components": [
+    "InstrumentPtysSubGrp"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStubEndDateBusinessDayConvention",
+ "tag": 42690,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Defines the identity of the security off whose prices the order will peg. Same values as SecurityIDSource <22>"
+   "description": "Defines the identity of the security off whose prices the order will peg. Same values as SecurityIDSource <22>",
+   "components": [
+    "PegInstructions"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Defines the identity of the security off whose prices the order will peg. Same values as SecurityIDSource <22>"
+   "description": "Defines the identity of the security off whose prices the order will peg. Same values as SecurityIDSource <22>",
+   "components": [
+    "PegInstructions"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Defines the identity of the security off whose prices the order will peg. Same values as SecurityIDSource <22>"
+   "description": "Defines the identity of the security off whose prices the order will peg. Same values as SecurityIDSource <22>",
+   "components": [
+    "PegInstructions"
+   ]
   }
  }
 }

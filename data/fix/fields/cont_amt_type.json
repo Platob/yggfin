@@ -38,7 +38,10 @@
     "13": "FUND_BASED_RENEWAL_COMMISSION_ON_ORDER",
     "14": "FUND_BASED_RENEWAL_COMMISSION_ON_FUND",
     "15": "NET_SETTLEMENT_AMOUNT"
-   }
+   },
+   "components": [
+    "ContAmtGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -76,7 +79,10 @@
     "13": "FUND_BASED_RENEWAL_COMMISSION_ON_ORDER",
     "14": "FUND_BASED_RENEWAL_COMMISSION_ON_FUND",
     "15": "NET_SETTLEMENT_AMOUNT"
-   }
+   },
+   "components": [
+    "ContAmtGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -114,7 +120,10 @@
     "13": "FUND_BASED_RENEWAL_COMMISSION_ON_ORDER",
     "14": "FUND_BASED_RENEWAL_COMMISSION_ON_FUND",
     "15": "NET_SETTLEMENT_AMOUNT"
-   }
+   },
+   "components": [
+    "ContAmtGrp"
+   ]
   },
   "4.4": {
    "type": "int",

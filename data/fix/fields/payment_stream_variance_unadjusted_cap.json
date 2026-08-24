@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamVarianceUnadjustedCap",
+ "tag": 42678,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

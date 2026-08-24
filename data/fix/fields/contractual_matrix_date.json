@@ -1,0 +1,9 @@
+{
+ "name": "ContractualMatrixDate",
+ "tag": 40044,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

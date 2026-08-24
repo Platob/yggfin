@@ -1,0 +1,46 @@
+{
+ "name": "EntitlementAttribDatatype",
+ "tag": 1779,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "29": "TENOR",
+    "32": "PATTERN",
+    "33": "RESERVED100_PLUS",
+    "34": "RESERVED1000_PLUS",
+    "35": "RESERVED4000_PLUS",
+    "14": "STRING",
+    "15": "MULTIPLE_CHAR_VALUE",
+    "16": "CURRENCY",
+    "17": "EXCHANGE",
+    "18": "MONTH_YEAR",
+    "19": "UTC_TIMESTAMP",
+    "20": "UTC_TIME_ONLY",
+    "21": "LOCAL_MKT_DATE",
+    "22": "UTC_DATE_ONLY",
+    "23": "DATA",
+    "24": "MULTIPLE_STRING_VALUE",
+    "25": "COUNTRY",
+    "26": "LANGUAGE",
+    "27": "TZ_TIME_ONLY",
+    "28": "TZ_TIMESTAMP",
+    "31": "XML_DATA",
+    "12": "CHAR",
+    "13": "BOOLEAN",
+    "6": "FLOAT",
+    "7": "QTY",
+    "8": "PRICE",
+    "9": "PRICE_OFFSET",
+    "10": "AMT",
+    "11": "PERCENTAGE",
+    "1": "INT",
+    "2": "LENGTH",
+    "3": "NUM_IN_GROUP",
+    "4": "SEQ_NUM",
+    "5": "TAG_NUM",
+    "30": "DAY_OF_MONTH"
+   }
+  }
+ }
+}

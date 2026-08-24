@@ -1,0 +1,29 @@
+{
+ "name": "RiskLimitType",
+ "tag": 1530,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "CREDIT_LIMIT",
+    "1": "GROSS_LIMIT",
+    "2": "NET_LIMIT",
+    "3": "EXPOSURE",
+    "4": "LONG_LIMIT",
+    "5": "SHORT_LIMIT",
+    "6": "CASH_MARGIN",
+    "7": "ADDITIONAL_MARGIN",
+    "8": "TOTAL_MARGIN",
+    "9": "LIMIT_CONSUMED",
+    "10": "CLIP_SIZE",
+    "11": "MAX_NOTIONAL_ORDER_SIZE",
+    "12": "DV01_PV01_LIMIT",
+    "13": "CS01_LIMIT",
+    "14": "VOLUME_LIMIT_PER_TIME_PERIOD",
+    "15": "VOL_FILLED_PCT_ORD_VOL_TM_PERIOD",
+    "16": "NOTL_FILLED_PCT_NOTL_TM_PERIOD",
+    "17": "TRANSACTION_EXECUTION_LIMIT_PER_TIME_PERIOD"
+   }
+  }
+ }
+}

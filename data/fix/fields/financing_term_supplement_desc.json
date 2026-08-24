@@ -1,0 +1,9 @@
+{
+ "name": "FinancingTermSupplementDesc",
+ "tag": 40047,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

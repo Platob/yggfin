@@ -1,0 +1,14 @@
+{
+ "name": "PayReportTransType",
+ "tag": 2804,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NEW",
+    "1": "REPLACE",
+    "2": "STATUS"
+   }
+  }
+ }
+}

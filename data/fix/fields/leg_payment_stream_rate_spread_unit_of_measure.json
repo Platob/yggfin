@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamRateSpreadUnitOfMeasure",
+ "tag": 41573,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

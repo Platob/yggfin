@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "An exchange specific name assigned to a group of related securities which may be concurrently affected by market events and actions."
+   "description": "An exchange specific name assigned to a group of related securities which may be concurrently affected by market events and actions.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "An exchange specific name assigned to a group of related securities which may be concurrently affected by market events and actions."
+   "description": "An exchange specific name assigned to a group of related securities which may be concurrently affected by market events and actions.",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

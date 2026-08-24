@@ -15,7 +15,11 @@
     "2": "GUARANTOR",
     "3": "MANUAL",
     "4": "BROKER_ASSIGNED"
-   }
+   },
+   "components": [
+    "AllocGrp",
+    "TrdAllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -29,7 +33,11 @@
     "1": "AUTOMATIC",
     "2": "GUARANTOR",
     "3": "MANUAL"
-   }
+   },
+   "components": [
+    "AllocGrp",
+    "TrdAllocGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -43,7 +51,11 @@
     "1": "AUTOMATIC",
     "2": "GUARANTOR",
     "3": "MANUAL"
-   }
+   },
+   "components": [
+    "AllocGrp",
+    "TrdAllocGrp"
+   ]
   }
  }
 }

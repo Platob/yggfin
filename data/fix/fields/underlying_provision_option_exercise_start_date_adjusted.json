@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingProvisionOptionExerciseStartDateAdjusted",
+ "tag": 42125,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

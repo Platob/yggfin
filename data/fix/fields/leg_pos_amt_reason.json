@@ -1,0 +1,9 @@
+{
+ "name": "LegPosAmtReason",
+ "tag": 1590,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "InstrumentScopeMaturityMonthYear",
+ "tag": 1549,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MONTHYEAR"
+  }
+ }
+}

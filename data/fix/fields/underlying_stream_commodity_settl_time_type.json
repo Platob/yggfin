@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamCommoditySettlTimeType",
+ "tag": 41936,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

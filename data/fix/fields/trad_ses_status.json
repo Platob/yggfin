@@ -25,6 +25,9 @@
    },
    "used_in": [
     "TradingSessionStatus"
+   ],
+   "components": [
+    "TrdSessLstGrp"
    ]
   },
   "5.0.SP1": {
@@ -50,6 +53,9 @@
    },
    "used_in": [
     "TradingSessionStatus"
+   ],
+   "components": [
+    "TrdSessLstGrp"
    ]
   },
   "5.0": {
@@ -75,6 +81,9 @@
    },
    "used_in": [
     "TradingSessionStatus"
+   ],
+   "components": [
+    "TrdSessLstGrp"
    ]
   },
   "4.4": {

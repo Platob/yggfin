@@ -1,0 +1,9 @@
+{
+ "name": "NoLegComplexEventCreditEventSources",
+ "tag": 41398,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

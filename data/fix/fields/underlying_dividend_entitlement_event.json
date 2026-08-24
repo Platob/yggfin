@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDividendEntitlementEvent",
+ "tag": 42827,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

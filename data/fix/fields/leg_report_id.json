@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Additional attribute to store the Trade ID of the Leg."
+   "description": "Additional attribute to store the Trade ID of the Leg.",
+   "components": [
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Additional attribute to store the Trade ID of the Leg."
+   "description": "Additional attribute to store the Trade ID of the Leg.",
+   "components": [
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Additional attribute to store the Trade ID of the Leg."
+   "description": "Additional attribute to store the Trade ID of the Leg.",
+   "components": [
+    "TrdInstrmtLegGrp"
+   ]
   }
  }
 }

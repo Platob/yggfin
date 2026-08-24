@@ -12,7 +12,10 @@
    "value_names": {
     "1": "BOOK_ENTRY",
     "2": "BEARER"
-   }
+   },
+   "components": [
+    "InstrumentExtension"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -24,7 +27,10 @@
    "value_names": {
     "1": "BOOK_ENTRY",
     "2": "BEARER"
-   }
+   },
+   "components": [
+    "InstrumentExtension"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -36,7 +42,10 @@
    "value_names": {
     "1": "BOOK_ENTRY",
     "2": "BEARER"
-   }
+   },
+   "components": [
+    "InstrumentExtension"
+   ]
   },
   "4.4": {
    "type": "int",
@@ -48,7 +57,10 @@
    "value_names": {
     "1": "BOOK_ENTRY",
     "2": "BEARER"
-   }
+   },
+   "components": [
+    "InstrumentExtension"
+   ]
   }
  }
 }

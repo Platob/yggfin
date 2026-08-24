@@ -1,0 +1,15 @@
+{
+ "name": "PaymentStreamSettlLevel",
+ "tag": 41199,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "AVERAGE",
+    "1": "MAXIMUM",
+    "2": "MINIMUM",
+    "3": "CUMULATIVE"
+   }
+  }
+ }
+}

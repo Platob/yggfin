@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingReturnRateQuoteMethod",
+ "tag": 43044,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

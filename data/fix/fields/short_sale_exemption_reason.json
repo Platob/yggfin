@@ -1,0 +1,21 @@
+{
+ "name": "ShortSaleExemptionReason",
+ "tag": 1688,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "EXEMPTION_REASON_UNKNOWN",
+    "1": "INCOMING_SSE",
+    "2": "ABOVE_NATIONAL_BEST_BID",
+    "3": "DELAYED_DELIVERY",
+    "4": "ODD_LOT",
+    "5": "DOMESTIC_ARBITRAGE",
+    "6": "INTERNATIONAL_ARBITRAGE",
+    "7": "UNDERWRITER_OR_SYNDICATE_DISTRIBUTION",
+    "8": "RISKLESS_PRINCIPAL",
+    "9": "VWAP"
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "RefRiskLimitCheckIDType",
+ "tag": 2335,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "RISK_LIMIT_REQUEST_ID",
+    "1": "RISK_LIMIT_CHECK_ID",
+    "3": "OUT_OF_BAND_ID"
+   }
+  }
+ }
+}

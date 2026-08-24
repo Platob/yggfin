@@ -1,0 +1,9 @@
+{
+ "name": "RequestingPartyID",
+ "tag": 1658,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

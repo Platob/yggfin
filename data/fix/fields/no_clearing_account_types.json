@@ -1,0 +1,9 @@
+{
+ "name": "NoClearingAccountTypes",
+ "tag": 1918,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

@@ -1,0 +1,16 @@
+{
+ "name": "SwapSubClass",
+ "tag": 1575,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING",
+   "value_names": {
+    "AMTZ": "AMORTIZING",
+    "COMP": "COMPOUNDING",
+    "CNST": "CONSTANT_NOTIONAL_SCHEDULE",
+    "ACRT": "ACCRETING_NOTIONAL_SCHEDULE",
+    "CUST": "CUSTOM_NOTIONAL_SCHEDULE"
+   }
+  }
+ }
+}

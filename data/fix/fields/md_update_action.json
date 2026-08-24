@@ -20,7 +20,10 @@
     "3": "DELETE_THRU",
     "4": "DELETE_FROM",
     "5": "OVERLAY"
-   }
+   },
+   "components": [
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -40,7 +43,10 @@
     "3": "DELETE_THRU",
     "4": "DELETE_FROM",
     "5": "OVERLAY"
-   }
+   },
+   "components": [
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -58,7 +64,10 @@
     "2": "DELETE",
     "3": "DELETE_THRU",
     "4": "DELETE_FROM"
-   }
+   },
+   "components": [
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "char",

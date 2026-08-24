@@ -32,7 +32,11 @@
     "13": "WEEKS",
     "14": "MONTHS",
     "15": "YEARS"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   }
  }
 }

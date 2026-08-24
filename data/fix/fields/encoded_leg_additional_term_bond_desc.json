@@ -1,0 +1,9 @@
+{
+ "name": "EncodedLegAdditionalTermBondDesc",
+ "tag": 41321,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

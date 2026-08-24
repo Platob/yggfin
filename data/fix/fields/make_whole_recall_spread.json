@@ -1,0 +1,9 @@
+{
+ "name": "MakeWholeRecallSpread",
+ "tag": 42595,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICEOFFSET"
+  }
+ }
+}

@@ -52,6 +52,14 @@
     "OrderCancelReplaceRequest",
     "QuoteRequest",
     "Quote"
+   ],
+   "components": [
+    "CpctyConfGrp",
+    "ListOrdGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "SideCrossOrdModGrp",
+    "TradeReportOrderDetail"
    ]
   },
   "5.0.SP1": {
@@ -96,6 +104,13 @@
     "QuoteResponse",
     "NewOrderSingle",
     "OrderCancelReplaceRequest"
+   ],
+   "components": [
+    "CpctyConfGrp",
+    "ListOrdGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -131,6 +146,13 @@
     "MultilegOrderCancelReplace",
     "NewOrderSingle",
     "OrderCancelReplaceRequest"
+   ],
+   "components": [
+    "CpctyConfGrp",
+    "ListOrdGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

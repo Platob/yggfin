@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexEventCreditEventBusinessCenter",
+ "tag": 2279,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

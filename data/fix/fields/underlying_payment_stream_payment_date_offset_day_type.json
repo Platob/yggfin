@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamPaymentDateOffsetDayType",
+ "tag": 40591,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

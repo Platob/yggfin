@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Refer to definition of PartySubIDType <803>"
+   "description": "Refer to definition of PartySubIDType <803>",
+   "components": [
+    "NstdPtys4SubGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Refer to definition of PartySubIDType <803>"
+   "description": "Refer to definition of PartySubIDType <803>",
+   "components": [
+    "NstdPtys4SubGrp"
+   ]
   }
  }
 }

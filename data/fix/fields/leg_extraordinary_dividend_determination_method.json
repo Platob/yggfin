@@ -1,0 +1,9 @@
+{
+ "name": "LegExtraordinaryDividendDeterminationMethod",
+ "tag": 42344,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -63,7 +63,10 @@
     "W": "INDEX_NAME",
     "X": "UNIFORM_SYMBOL",
     "Y": "DIGITAL_TOKEN_IDENTIFIER"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -115,7 +118,10 @@
     "K": "ISDA_FP_MLURL",
     "L": "LETTER_OF_CREDIT",
     "M": "MARKETPLACE_ASSIGNED_IDENTIFIER"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -165,7 +171,10 @@
     "J": "OPTION_PRICE_REPORTING_AUTHORITY",
     "K": "ISDA_FP_MLURL",
     "L": "LETTER_OF_CREDIT"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "String",
@@ -211,7 +220,10 @@
     "H": "CLEARING_HOUSE",
     "I": "ISDA_FP_ML_SPECIFICATION",
     "J": "OPTION_PRICE_REPORTING_AUTHORITY"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "name": "IDSource prior to FIX 4.3)",
@@ -253,7 +265,10 @@
     "5": "RIC_CODE",
     "4": "ISIN_NUMBER",
     "G": "COMMON"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "4.2": {
    "name": "IDSource",

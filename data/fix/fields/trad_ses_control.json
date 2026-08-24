@@ -1,0 +1,13 @@
+{
+ "name": "TradSesControl",
+ "tag": 1785,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "AUTOMATIC",
+    "1": "MANUAL"
+   }
+  }
+ }
+}

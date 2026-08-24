@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamInterimPrincipalExchangeIndicator",
+ "tag": 40749,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

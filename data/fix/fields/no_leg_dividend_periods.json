@@ -1,0 +1,9 @@
+{
+ "name": "NoLegDividendPeriods",
+ "tag": 42366,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

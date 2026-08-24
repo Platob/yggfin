@@ -1,0 +1,9 @@
+{
+ "name": "RiskLimitCheckRequestID",
+ "tag": 2318,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

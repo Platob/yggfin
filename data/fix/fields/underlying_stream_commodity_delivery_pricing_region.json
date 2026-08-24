@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamCommodityDeliveryPricingRegion",
+ "tag": 42589,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

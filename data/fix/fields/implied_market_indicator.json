@@ -16,7 +16,10 @@
     "1": "IMPLIED_IN",
     "2": "IMPLIED_OUT",
     "3": "BOTH_IMPLIED_IN_AND_IMPLIED_OUT"
-   }
+   },
+   "components": [
+    "BaseTradingRules"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -32,7 +35,10 @@
     "1": "IMPLIED_IN",
     "2": "IMPLIED_OUT",
     "3": "BOTH_IMPLIED_IN_AND_IMPLIED_OUT"
-   }
+   },
+   "components": [
+    "BaseTradingRules"
+   ]
   }
  }
 }

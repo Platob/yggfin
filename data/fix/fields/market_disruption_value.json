@@ -1,0 +1,9 @@
+{
+ "name": "MarketDisruptionValue",
+ "tag": 40991,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

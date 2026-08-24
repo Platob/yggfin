@@ -4,17 +4,26 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "PartyID value within an underlying instrument party repeating group. Same values as PartyID <448>"
+   "description": "PartyID value within an underlying instrument party repeating group. Same values as PartyID <448>",
+   "components": [
+    "UndlyInstrumentParties"
+   ]
   },
   "5.0.SP1": {
    "name": "UndlyInstrumentPartyID",
    "type": "String",
-   "description": "PartyID value within an underlying instrument party repeating group. Same values as PartyID <448>"
+   "description": "PartyID value within an underlying instrument party repeating group. Same values as PartyID <448>",
+   "components": [
+    "UndlyInstrumentParties"
+   ]
   },
   "5.0": {
    "name": "UndlyInstrumentPartyID",
    "type": "String",
-   "description": "PartyID value within an underlying instrument party repeating group. Same values as PartyID <448>"
+   "description": "PartyID value within an underlying instrument party repeating group. Same values as PartyID <448>",
+   "components": [
+    "UndlyInstrumentParties"
+   ]
   }
  }
 }

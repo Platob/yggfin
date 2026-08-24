@@ -1,0 +1,9 @@
+{
+ "name": "NoLegNonDeliverableFixingDates",
+ "tag": 40367,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

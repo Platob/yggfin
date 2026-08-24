@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamTotalFixedAmount",
+ "tag": 41188,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

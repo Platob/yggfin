@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Underlying security\u2019s CFICode."
+   "description": "Underlying security\u2019s CFICode.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Underlying security\u2019s CFICode."
+   "description": "Underlying security\u2019s CFICode.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Underlying security\u2019s CFICode."
+   "description": "Underlying security\u2019s CFICode.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Underlying security's CFICode."
+   "description": "Underlying security's CFICode.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Underlying security's CFICode."
+   "description": "Underlying security's CFICode.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "The number of registration details on a Registration Instructions <o> message"
+   "description": "The number of registration details on a Registration Instructions <o> message",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "The number of registration details on a Registration Instructions <o> message"
+   "description": "The number of registration details on a Registration Instructions <o> message",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "The number of registration details on a Registration Instructions <o> message"
+   "description": "The number of registration details on a Registration Instructions <o> message",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

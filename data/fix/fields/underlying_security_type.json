@@ -14,7 +14,10 @@
     "CORP": "Corporate",
     "EQUITY": "Equity",
     "SUPRA": "Supra-national agency"
-   }
+   },
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -28,7 +31,10 @@
     "CORP": "Corporate",
     "EQUITY": "Equity",
     "SUPRA": "Supra-national agency"
-   }
+   },
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -42,7 +48,10 @@
     "CORP": "Corporate",
     "EQUITY": "Equity",
     "SUPRA": "Supra-national agency"
-   }
+   },
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "String",
@@ -56,11 +65,17 @@
     "CORP": "Corporate",
     "EQUITY": "Equity",
     "SUPRA": "Supra-national agency"
-   }
+   },
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Underlying security's SecurityType."
+   "description": "Underlying security's SecurityType.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.2": {
    "type": "String",

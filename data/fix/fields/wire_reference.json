@@ -1,0 +1,9 @@
+{
+ "name": "WireReference",
+ "tag": 2486,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

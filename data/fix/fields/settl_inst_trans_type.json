@@ -16,7 +16,10 @@
     "C": "CANCEL",
     "R": "REPLACE",
     "T": "RESTATE"
-   }
+   },
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -32,7 +35,10 @@
     "C": "CANCEL",
     "R": "REPLACE",
     "T": "RESTATE"
-   }
+   },
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -48,7 +54,10 @@
     "C": "CANCEL",
     "R": "REPLACE",
     "T": "RESTATE"
-   }
+   },
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "4.4": {
    "type": "char",

@@ -1,0 +1,9 @@
+{
+ "name": "DividendFXTriggerDateOffsetUnit",
+ "tag": 42267,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexEventCreditEventDayType",
+ "tag": 41722,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

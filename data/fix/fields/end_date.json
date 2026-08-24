@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "LocalMktDate",
-   "description": "End date of a financing deal, i.e. the date the seller reimburses the buyer and takes back control of the collateral"
+   "description": "End date of a financing deal, i.e. the date the seller reimburses the buyer and takes back control of the collateral",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
-   "description": "End date of a financing deal, i.e. the date the seller reimburses the buyer and takes back control of the collateral"
+   "description": "End date of a financing deal, i.e. the date the seller reimburses the buyer and takes back control of the collateral",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
-   "description": "End date of a financing deal, i.e. the date the seller reimburses the buyer and takes back control of the collateral"
+   "description": "End date of a financing deal, i.e. the date the seller reimburses the buyer and takes back control of the collateral",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",
-   "description": "End date of a financing deal, i.e. the date the seller reimburses the buyer and takes back control of the collateral"
+   "description": "End date of a financing deal, i.e. the date the seller reimburses the buyer and takes back control of the collateral",
+   "components": [
+    "FinancingDetails"
+   ]
   }
  }
 }

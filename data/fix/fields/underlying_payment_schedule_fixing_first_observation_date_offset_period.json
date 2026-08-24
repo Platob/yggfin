@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetPeriod",
+ "tag": 41895,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

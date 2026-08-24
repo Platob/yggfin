@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Defines the identity of the security off whose prices the order will peg."
+   "description": "Defines the identity of the security off whose prices the order will peg.",
+   "components": [
+    "PegInstructions"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Defines the identity of the security off whose prices the order will peg."
+   "description": "Defines the identity of the security off whose prices the order will peg.",
+   "components": [
+    "PegInstructions"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Defines the identity of the security off whose prices the order will peg."
+   "description": "Defines the identity of the security off whose prices the order will peg.",
+   "components": [
+    "PegInstructions"
+   ]
   }
  }
 }

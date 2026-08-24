@@ -151,7 +151,7 @@ and orders.
 
 | Contract | Fields | Primary key | Partitions | Nested payloads |
 | --- | ---: | --- | --- | --- |
-| `Log` | 104 | `unix, hash` | `unix_hour` | `kwargs`, `parties`, `codes` |
+| `Log` | 105 | `unix, hash` | `unix_hour` | `kwargs`, `parties`, `trd_reg_timestamps`, `codes` |
 | `Instrument` | 36 | `unix, hash` | `unix_hour` | `alt_ids`, `legs`, `codes` |
 | `Book` | 53 | `unix, hash` | `unix_hour` | levels, deltas, executions, live snapshot orders, `codes` |
 | `Order` | 40 | `unix, hash` | `unix_hour` | standard event lineage, `codes` and metadata |

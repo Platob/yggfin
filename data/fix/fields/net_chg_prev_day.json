@@ -7,6 +7,9 @@
    "description": "Net change from previous day\u2019s closing price vs. last traded price.",
    "used_in": [
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp"
    ]
   },
   "5.0.SP1": {
@@ -14,6 +17,9 @@
    "description": "Net change from previous day\u2019s closing price vs. last traded price.",
    "used_in": [
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp"
    ]
   },
   "5.0": {
@@ -21,6 +27,9 @@
    "description": "Net change from previous day\u2019s closing price vs. last traded price.",
    "used_in": [
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp"
    ]
   },
   "4.4": {

@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingComplexEventPeriodDateTimes",
+ "tag": 41726,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamRateIndexLevel",
+ "tag": 41197,
+ "versions": {
+  "5.0.SP2": {
+   "type": "QTY"
+  }
+ }
+}

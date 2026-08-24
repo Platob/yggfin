@@ -1,0 +1,9 @@
+{
+ "name": "ReplaceText",
+ "tag": 2805,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

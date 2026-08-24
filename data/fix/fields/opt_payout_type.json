@@ -20,7 +20,10 @@
     "7": "LOOKBACK",
     "8": "OTHER_PATH_DEPENDENT",
     "99": "OTHER"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

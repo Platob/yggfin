@@ -1,0 +1,9 @@
+{
+ "name": "LegDividendFinalRateRoundingDirection",
+ "tag": 42326,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR"
+  }
+ }
+}

@@ -11,6 +11,11 @@
     "MultilegOrderCancelReplace",
     "OrderCancelRequest",
     "OrderCancelReplaceRequest"
+   ],
+   "components": [
+    "AffectedOrdGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp"
    ]
   },
   "5.0.SP1": {
@@ -22,6 +27,11 @@
     "MultilegOrderCancelReplace",
     "OrderCancelRequest",
     "OrderCancelReplaceRequest"
+   ],
+   "components": [
+    "AffectedOrdGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp"
    ]
   },
   "5.0": {
@@ -33,6 +43,10 @@
     "MultilegOrderCancelReplace",
     "OrderCancelRequest",
     "OrderCancelReplaceRequest"
+   ],
+   "components": [
+    "AffectedOrdGrp",
+    "SideCrossOrdCxlGrp"
    ]
   },
   "4.4": {

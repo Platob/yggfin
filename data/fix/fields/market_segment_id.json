@@ -28,6 +28,10 @@
     "SecurityListRequest",
     "SecurityList",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "MarketSegmentGrp",
+    "TrdSessLstGrp"
    ]
   },
   "5.0.SP1": {
@@ -53,6 +57,10 @@
     "SecurityListRequest",
     "SecurityList",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "MarketSegmentGrp",
+    "TrdSessLstGrp"
    ]
   }
  }

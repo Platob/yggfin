@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Unique Market Data Entry identifier."
+   "description": "Unique Market Data Entry identifier.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Unique Market Data Entry identifier."
+   "description": "Unique Market Data Entry identifier.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Unique Market Data Entry identifier."
+   "description": "Unique Market Data Entry identifier.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "String",

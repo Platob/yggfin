@@ -1,0 +1,9 @@
+{
+ "name": "NoMDStatistics",
+ "tag": 2474,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

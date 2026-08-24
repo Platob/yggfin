@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
+   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
+   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
+   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource <22> ."
+   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource <22> .",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
+   "description": "Security identifier value of SecurityIDSource <22> type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.2": {
    "type": "String",

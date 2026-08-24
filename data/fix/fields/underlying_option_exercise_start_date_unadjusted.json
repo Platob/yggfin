@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingOptionExerciseStartDateUnadjusted",
+ "tag": 41828,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

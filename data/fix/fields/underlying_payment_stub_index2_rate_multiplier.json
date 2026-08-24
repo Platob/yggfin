@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStubIndex2RateMultiplier",
+ "tag": 40732,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

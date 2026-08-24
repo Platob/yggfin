@@ -54,6 +54,22 @@
     "SecurityListRequest",
     "DerivativeSecurityListRequest",
     "QuoteCancel"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp",
+    "TradingSessionRulesGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp",
+    "TrdSessLstGrp",
+    "TrdgSesGrp"
    ]
   },
   "5.0.SP1": {
@@ -107,6 +123,22 @@
     "SecurityListRequest",
     "DerivativeSecurityListRequest",
     "QuoteCancel"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp",
+    "TradingSessionRulesGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp",
+    "TrdSessLstGrp",
+    "TrdgSesGrp"
    ]
   },
   "5.0": {
@@ -144,6 +176,24 @@
     "SecurityListRequest",
     "DerivativeSecurityListRequest",
     "QuoteCancel"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp",
+    "RelSymDerivSecGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp",
+    "TrdSessLstGrp",
+    "TrdgSesGrp"
    ]
   },
   "4.4": {

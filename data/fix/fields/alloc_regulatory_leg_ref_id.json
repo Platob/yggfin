@@ -1,0 +1,9 @@
+{
+ "name": "AllocRegulatoryLegRefID",
+ "tag": 2406,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -4,15 +4,39 @@
  "versions": {
   "5.0.SP2": {
    "type": "LocalMktDate",
-   "description": "Refer to description for SettlDate <64>"
+   "description": "Refer to description for SettlDate <64>",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
-   "description": "Refer to description for SettlDate <64>"
+   "description": "Refer to description for SettlDate <64>",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
-   "description": "Refer to description for SettlDate <64>"
+   "description": "Refer to description for SettlDate <64>",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",

@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamRateCutoffDateOffsetUnit",
+ "tag": 40324,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "LocalMktDate",
-   "description": "The start date used for calculating accrued interest on debt instruments which are being sold between interest payment dates. Often but not always the same as the IssueDate <225> and the DatedDate <873>"
+   "description": "The start date used for calculating accrued interest on debt instruments which are being sold between interest payment dates. Often but not always the same as the IssueDate <225> and the DatedDate <873>",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
-   "description": "The start date used for calculating accrued interest on debt instruments which are being sold between interest payment dates. Often but not always the same as the IssueDate <225> and the DatedDate <873>"
+   "description": "The start date used for calculating accrued interest on debt instruments which are being sold between interest payment dates. Often but not always the same as the IssueDate <225> and the DatedDate <873>",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
-   "description": "The start date used for calculating accrued interest on debt instruments which are being sold between interest payment dates. Often but not always the same as the IssueDate <225> and the DatedDate <873>"
+   "description": "The start date used for calculating accrued interest on debt instruments which are being sold between interest payment dates. Often but not always the same as the IssueDate <225> and the DatedDate <873>",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",
-   "description": "The start date used for calculating accrued interest on debt instruments which are being sold between interest payment dates. Often but not always the same as the IssueDate <225> and the DatedDate <873>"
+   "description": "The start date used for calculating accrued interest on debt instruments which are being sold between interest payment dates. Often but not always the same as the IssueDate <225> and the DatedDate <873>",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

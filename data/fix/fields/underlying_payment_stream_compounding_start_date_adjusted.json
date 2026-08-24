@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamCompoundingStartDateAdjusted",
+ "tag": 42946,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

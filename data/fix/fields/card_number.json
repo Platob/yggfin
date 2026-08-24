@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "The number of the payment card as specified on the card being used for payment."
+   "description": "The number of the payment card as specified on the card being used for payment.",
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "The number of the payment card as specified on the card being used for payment."
+   "description": "The number of the payment card as specified on the card being used for payment.",
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "The number of the payment card as specified on the card being used for payment."
+   "description": "The number of the payment card as specified on the card being used for payment.",
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "4.4": {
    "type": "String",

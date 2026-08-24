@@ -1,0 +1,9 @@
+{
+ "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDesc",
+ "tag": 41102,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

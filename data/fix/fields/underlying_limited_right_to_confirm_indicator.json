@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingLimitedRightToConfirmIndicator",
+ "tag": 41818,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexEventStrikeNumberOfOptions",
+ "tag": 2276,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

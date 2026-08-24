@@ -1,0 +1,15 @@
+{
+ "name": "PaymentStreamCompoundingMethod",
+ "tag": 40747,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NONE",
+    "1": "FLAT",
+    "2": "STRAIGHT",
+    "3": "SPREAD_EXCLUSIVE"
+   }
+  }
+ }
+}

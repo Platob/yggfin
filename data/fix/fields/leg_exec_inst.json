@@ -4,11 +4,21 @@
  "versions": {
   "5.0.SP2": {
    "type": "MultipleCharValue",
-   "description": "Refer to ExecInst Same values as ExecInst <18>"
+   "description": "Refer to ExecInst Same values as ExecInst <18>",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "MultipleCharValue",
-   "description": "Refer to ExecInst Same values as ExecInst <18>"
+   "description": "Refer to ExecInst Same values as ExecInst <18>",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   }
  }
 }

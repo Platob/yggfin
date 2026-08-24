@@ -1,0 +1,9 @@
+{
+ "name": "TickRuleProductComplex",
+ "tag": 2571,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

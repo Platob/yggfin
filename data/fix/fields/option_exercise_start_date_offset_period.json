@@ -1,0 +1,9 @@
+{
+ "name": "OptionExerciseStartDateOffsetPeriod",
+ "tag": 41126,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

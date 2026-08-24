@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentScheduleRateUnitOfMeasure",
+ "tag": 41536,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

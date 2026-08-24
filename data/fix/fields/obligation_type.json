@@ -1,0 +1,15 @@
+{
+ "name": "ObligationType",
+ "tag": 1739,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING",
+   "value_names": {
+    "0": "BOND",
+    "1": "CONVERT_BOND",
+    "2": "MORTGAGE",
+    "3": "LOAN"
+   }
+  }
+ }
+}

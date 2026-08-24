@@ -1,0 +1,15 @@
+{
+ "name": "ProvisionOptionExerciseEarliestDateOffsetUnit",
+ "tag": 40126,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING",
+   "value_names": {
+    "D": "DAY",
+    "Wk": "WEEK",
+    "Mo": "MONTH",
+    "Yr": "YEAR"
+   }
+  }
+ }
+}

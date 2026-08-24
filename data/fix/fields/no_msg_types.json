@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of MsgTypes <35> in repeating group."
+   "description": "Number of MsgTypes <35> in repeating group.",
+   "components": [
+    "MsgTypeGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of MsgTypes <35> in repeating group."
+   "description": "Number of MsgTypes <35> in repeating group.",
+   "components": [
+    "MsgTypeGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of MsgTypes <35> in repeating group."
+   "description": "Number of MsgTypes <35> in repeating group.",
+   "components": [
+    "MsgTypeGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",
@@ -37,7 +46,10 @@
   },
   "FIXT1.1": {
    "type": "NumInGroup",
-   "description": "Number of MsgTypes (35) in repeating group."
+   "description": "Number of MsgTypes (35) in repeating group.",
+   "components": [
+    "MsgTypeGrp"
+   ]
   }
  }
 }

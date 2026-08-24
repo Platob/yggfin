@@ -72,11 +72,17 @@ def test_a_name_that_slugs_to_nothing_is_refused() -> None:
 
 @pytest.mark.parametrize(
     ("spelled", "folded"),
-    [("PartyRole", "partyrole"), ("party_role", "partyrole"), ("Party Role", "partyrole")],
+    [("PartyRole", "partyrole"), ("PARTYROLE", "partyrole"), (" PartyRole ", "partyrole")],
 )
 def test_a_name_is_matched_folded(spelled: str, folded: str) -> None:
     """The same fold a rendered key gets, so a name resolves here as it does there."""
     assert fold(spelled) == folded
+
+
+@pytest.mark.parametrize("spelled", ["party_role", "Party Role", "party-role"])
+def test_a_separator_is_part_of_a_name_and_not_folded_away(spelled: str) -> None:
+    """Dropping them merged identities a store holds apart; a real spelling is an alias."""
+    assert fold(spelled) != fold("PartyRole")
 
 
 # -- what an entry refuses ---------------------------------------------------
@@ -124,8 +130,14 @@ def test_an_entry_answers_to_its_names_in_resolution_order() -> None:
 
 def test_an_alias_that_folds_to_a_name_the_entry_has_adds_nothing() -> None:
     """`FAKEROLE` is how a bridge shouts `FakeRole`, and matching folds case."""
-    entry = _entry(aliases=(Alias(name="FAKEROLE"), Alias(name="fake_role")))
+    entry = _entry(aliases=(Alias(name="FAKEROLE"),))
     assert entry.spellings() == ("FakeRole", "FakeRoleCode")
+
+
+def test_an_alias_spelled_with_separators_is_a_spelling_of_its_own() -> None:
+    """It is not folded onto the name, so it has to be recorded to be matched."""
+    entry = _entry(aliases=(Alias(name="fake_role"),))
+    assert entry.spellings() == ("FakeRole", "FakeRoleCode", "fake_role")
 
 
 def test_a_version_the_entry_never_saw_has_no_declaration() -> None:

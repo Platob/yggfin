@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateQuoteExchange",
+ "tag": 42552,
+ "versions": {
+  "5.0.SP2": {
+   "type": "EXCHANGE"
+  }
+ }
+}

@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Refer to definition of SecurityType <167>"
+   "description": "Refer to definition of SecurityType <167>",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Refer to definition of SecurityType <167>"
+   "description": "Refer to definition of SecurityType <167>",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Multileg instrument's individual security's SecurityType. See SecurityType <167> field for description"
+   "description": "Multileg instrument's individual security's SecurityType. See SecurityType <167> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Multileg instrument's individual security's SecurityType. See SecurityType <167> field for description"
+   "description": "Multileg instrument's individual security's SecurityType. See SecurityType <167> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Multileg instrument's individual security's SecurityType. See SecurityType <167> field for description"
+   "description": "Multileg instrument's individual security's SecurityType. See SecurityType <167> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

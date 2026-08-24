@@ -1,0 +1,13 @@
+{
+ "name": "DeliveryStreamDeliveryPointSource",
+ "tag": 42192,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "PROPRIETARY",
+    "1": "EIC"
+   }
+  }
+ }
+}

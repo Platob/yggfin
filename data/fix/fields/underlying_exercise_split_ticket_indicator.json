@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingExerciseSplitTicketIndicator",
+ "tag": 41819,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

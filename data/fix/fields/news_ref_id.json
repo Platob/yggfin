@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Reference to another News <B> message identified by NewsID <1472> ."
+   "description": "Reference to another News <B> message identified by NewsID <1472> .",
+   "components": [
+    "NewsRefGrp"
+   ]
   }
  }
 }

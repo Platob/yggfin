@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Underlying security's SecuritySubType. See SecuritySubType <762> field for description"
+   "description": "Underlying security's SecuritySubType. See SecuritySubType <762> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Underlying security's SecuritySubType. See SecuritySubType <762> field for description"
+   "description": "Underlying security's SecuritySubType. See SecuritySubType <762> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Underlying security's SecuritySubType. See SecuritySubType <762> field for description"
+   "description": "Underlying security's SecuritySubType. See SecuritySubType <762> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Underlying security's SecuritySubType. See SecuritySubType <762> field for description"
+   "description": "Underlying security's SecuritySubType. See SecuritySubType <762> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

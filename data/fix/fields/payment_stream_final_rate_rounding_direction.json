@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamFinalRateRoundingDirection",
+ "tag": 40804,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR"
+  }
+ }
+}

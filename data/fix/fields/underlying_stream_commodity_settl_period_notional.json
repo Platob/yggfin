@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamCommoditySettlPeriodNotional",
+ "tag": 42006,
+ "versions": {
+  "5.0.SP2": {
+   "type": "QTY"
+  }
+ }
+}

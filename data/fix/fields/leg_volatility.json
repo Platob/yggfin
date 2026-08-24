@@ -4,11 +4,21 @@
  "versions": {
   "5.0.SP2": {
    "type": "float",
-   "description": "Specifies the volatility of an instrument leg."
+   "description": "Specifies the volatility of an instrument leg.",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "float",
-   "description": "Specifies the volatility of an instrument leg."
+   "description": "Specifies the volatility of an instrument leg.",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   }
  }
 }

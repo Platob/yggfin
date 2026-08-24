@@ -11,6 +11,13 @@
     "NewOrderSingle",
     "NewOrderCross",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "InstrmtStrkPxGrp",
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp"
    ]
   },
   "5.0.SP1": {
@@ -22,6 +29,13 @@
     "NewOrderSingle",
     "NewOrderCross",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "InstrmtStrkPxGrp",
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp"
    ]
   },
   "5.0": {
@@ -33,6 +47,13 @@
     "NewOrderSingle",
     "NewOrderCross",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp",
+    "UndInstrmtStrkPxGrp"
    ]
   },
   "4.4": {

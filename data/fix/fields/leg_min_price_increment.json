@@ -1,0 +1,9 @@
+{
+ "name": "LegMinPriceIncrement",
+ "tag": 2190,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

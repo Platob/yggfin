@@ -9,11 +9,17 @@
     "FIX.4.2": "FIX42",
     "FIX.4.4": "FIX44",
     "FIXT.1.1": "FIXT11"
-   }
+   },
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Identifies beginning of new message and protocol version. ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted)"
+   "description": "Identifies beginning of new message and protocol version. ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted)",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -41,7 +47,10 @@
   },
   "FIXT1.1": {
    "type": "String",
-   "description": "Identifies beginning of new message and protocol version. ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted)"
+   "description": "Identifies beginning of new message and protocol version. ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted)",
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

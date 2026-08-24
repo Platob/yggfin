@@ -1,0 +1,9 @@
+{
+ "name": "PaymentUnitOfMeasure",
+ "tag": 41155,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamEffectiveDateBusinessCenter",
+ "tag": 40059,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

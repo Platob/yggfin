@@ -1,0 +1,9 @@
+{
+ "name": "LegDeliveryStreamCycleDesc",
+ "tag": 41457,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

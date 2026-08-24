@@ -2,6 +2,46 @@
 
 House style for `rekep`. Keep one obvious implementation for each behavior.
 
+## Writing for the next agent
+
+This file, every docstring and every description is read far more often by an
+agent scanning for one fact than by a person reading a chapter. Write for that
+reader.
+
+- Ship the simple implementation. One pass, one obvious data structure, no
+  layer that exists in case something later needs it. A shorter diff is a
+  cheaper diff to scan.
+- Docstrings are synthetic: one line saying what the thing *is*, and a second
+  paragraph only for a constraint or a measurement the code cannot show. Never
+  restate the signature, never narrate the steps.
+- State facts, not history or hedging. "One tag is one identity" beats "we
+  decided that it is probably best if each tag maps to a single identity".
+- Put the answer where it will be looked for: on the class that owns the data,
+  next to the constant it constrains, in the one guide that owns the topic.
+  Two half-answers in two files cost more than one whole answer in one.
+- Name things so a search finds them. A grep for a column name must reach its
+  declaration, its parser and its test.
+- Delete rather than deprecate. There are no compatibility shims here, so a
+  renamed thing has exactly one name.
+
+## Command line
+
+`rekep` is read at a terminal, so it is styled like one written this decade --
+and every bit of that degrades on its own.
+
+- `rekep.console.Console` owns colour, box drawing, spinners and tables.
+  Nothing else writes an escape sequence.
+- Colour is off without a TTY, under `NO_COLOR`, and on `TERM=dumb`. Box
+  drawing falls back to ASCII where the stream cannot encode it.
+- Styling goes to `stderr`; the payload -- a dumped document, a report -- goes
+  to `stdout` alone, so a redirect gets data and never decoration.
+- A step that can take a second animates. A step that writes gets a `✓` or a
+  `✗`, never a bare return.
+- Interactive verbs ask one question at a time, offer the stored value as the
+  default, show the whole change back, and write only after a yes.
+- Every interactive path takes its answers through an injected reader, so it is
+  testable without a terminal.
+
 ## API
 
 - Put behavior on the class that owns the data. Keep justified helpers private.
@@ -95,7 +135,12 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 - Generic `Event` owns snapshot and idle-expiry behavior. Finished states do
   not keep producing snapshots.
 - `BookIterator` consumes time-sorted parsed `Log` records and emits only
-  `Book` rows. Keep state mutation single-threaded and bounded.
+  `Book` rows. Keep state mutation single-threaded and bounded. `purge_alive`
+  decides whether orders still resting when the stream ends are expired.
+- A structured FIX component is a `ComponentGroup` subclass naming its
+  component, its group and the members that earn a column; everything else in
+  an entry lands in `buffer`. The spec's own `required` rules decide member
+  nullability -- `FixRegistry.component_field` reads them.
 
 ## Workflow ownership
 
@@ -134,13 +179,16 @@ execution tables.
 ```text
 python/src/rekep/
   fields/       declarations and recursive Arrow casts
-  fix/          messages, registry, components, and protocol rules
+  fix/          messages, registry, components, protocol rules, and the shell
   enums/        one persisted market enum per file
   market/       event, instrument, order, execution, and book logic
   iceberg/      catalog, dataset, schema bridge, and Arrow FileIO
   text/         Log plus streamed text files
   tasks/        notebook configuration only
+  console.py    terminal styling: colour, boxes, tables, spinners
+  times.py      one reading of "an instant", whatever spelled it
 schemas/rekep/  the five persisted output contracts
+data/fix/       the FIX dictionary, one document per identity
 tasks/          notebooks, adjacent YAML, and Airflow DAG
 ```
 

@@ -1,0 +1,9 @@
+{
+ "name": "TotNoOrderEntries",
+ "tag": 2432,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

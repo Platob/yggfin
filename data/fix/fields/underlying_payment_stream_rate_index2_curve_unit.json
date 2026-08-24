@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamRateIndex2CurveUnit",
+ "tag": 41911,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

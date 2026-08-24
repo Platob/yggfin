@@ -7,6 +7,10 @@
    "description": "Indicates the first trade price of the day/session",
    "used_in": [
     "SecurityStatus"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
    ]
   },
   "5.0.SP1": {

@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "Specifies the action taken for the specified trading sessions. Same values as SecurityUpdateAction <980>"
+   "description": "Specifies the action taken for the specified trading sessions. Same values as SecurityUpdateAction <980>",
+   "components": [
+    "TrdSessLstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",

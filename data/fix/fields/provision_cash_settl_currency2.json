@@ -1,0 +1,9 @@
+{
+ "name": "ProvisionCashSettlCurrency2",
+ "tag": 40110,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

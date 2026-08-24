@@ -1,0 +1,9 @@
+{
+ "name": "LegExerciseSplitTicketIndicator",
+ "tag": 41490,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

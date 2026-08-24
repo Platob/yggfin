@@ -1,0 +1,9 @@
+{
+ "name": "LegTotalTradeQty",
+ "tag": 2357,
+ "versions": {
+  "5.0.SP2": {
+   "type": "QTY"
+  }
+ }
+}

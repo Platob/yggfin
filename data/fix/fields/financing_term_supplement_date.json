@@ -1,0 +1,9 @@
+{
+ "name": "FinancingTermSupplementDate",
+ "tag": 40048,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

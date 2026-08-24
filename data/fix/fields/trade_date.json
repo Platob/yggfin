@@ -26,6 +26,12 @@
     "AllocationInstructionAck",
     "MarketDataSnapshotFullRefresh",
     "MarketDataIncrementalRefresh"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapDtGrp"
    ]
   },
   "5.0.SP1": {
@@ -52,6 +58,12 @@
     "AllocationInstructionAck",
     "MarketDataSnapshotFullRefresh",
     "MarketDataIncrementalRefresh"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapDtGrp"
    ]
   },
   "5.0": {
@@ -78,6 +90,12 @@
     "AllocationInstructionAck",
     "MarketDataSnapshotFullRefresh",
     "MarketDataIncrementalRefresh"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapDtGrp"
    ]
   },
   "4.4": {

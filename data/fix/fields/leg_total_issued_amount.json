@@ -1,0 +1,9 @@
+{
+ "name": "LegTotalIssuedAmount",
+ "tag": 2162,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "MDStatisticScope",
+ "tag": 2457,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "BID_PRICES",
+    "2": "OFFER_PRICES",
+    "3": "BID_DEPTH",
+    "4": "OFFER_DEPTH",
+    "5": "ORDERS",
+    "6": "QUOTES",
+    "7": "ORDERS_AND_QUOTES",
+    "8": "TRADES",
+    "9": "TRADE_PRICES",
+    "10": "AUCTION_PRICES",
+    "11": "OPENING_PRICES",
+    "12": "CLOSING_PRICES",
+    "13": "SETTLEMENT_PRICES",
+    "14": "UNDERLYING_PRICES",
+    "15": "OPEN_INTEREST",
+    "16": "INDEX_VALUES",
+    "17": "MARGIN_RATES",
+    "18": "OUTAGES",
+    "19": "SCHEDULED_AUCTIONS",
+    "20": "REFERENCE_PRICES",
+    "21": "TRADE_VALUE",
+    "22": "MARKET_DATA_FEE_ITEMS",
+    "23": "REBATES",
+    "24": "DISCOUNTS",
+    "25": "PAYMENTS",
+    "26": "TAXES",
+    "27": "LEVIES",
+    "28": "BENEFITS",
+    "29": "FEES",
+    "30": "ORDERS_RF_QS",
+    "31": "MARKET_MAKERS",
+    "32": "TRADING_INTERRUPTIONS",
+    "33": "TRADING_SUSPENSIONS",
+    "34": "NO_QUOTES",
+    "35": "REQUEST_FOR_QUOTES",
+    "36": "TRADE_VOLUME"
+   }
+  }
+ }
+}

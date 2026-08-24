@@ -8,6 +8,13 @@
    "used_in": [
     "Confirmation",
     "ConfirmationRequest"
+   ],
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
    ]
   },
   "5.0.SP1": {
@@ -16,6 +23,13 @@
    "used_in": [
     "Confirmation",
     "ConfirmationRequest"
+   ],
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
    ]
   },
   "5.0": {
@@ -24,6 +38,13 @@
    "used_in": [
     "Confirmation",
     "ConfirmationRequest"
+   ],
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
    ]
   },
   "4.4": {

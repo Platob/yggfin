@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Identifies contra broker. Standard NASD market-maker mnemonic is preferred."
+   "description": "Identifies contra broker. Standard NASD market-maker mnemonic is preferred.",
+   "components": [
+    "ContraGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Identifies contra broker. Standard NASD market-maker mnemonic is preferred."
+   "description": "Identifies contra broker. Standard NASD market-maker mnemonic is preferred.",
+   "components": [
+    "ContraGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Identifies contra broker. Standard NASD market-maker mnemonic is preferred."
+   "description": "Identifies contra broker. Standard NASD market-maker mnemonic is preferred.",
+   "components": [
+    "ContraGrp"
+   ]
   },
   "4.4": {
    "type": "String",

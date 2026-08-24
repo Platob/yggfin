@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingOptionsExchangeDividendsIndicator",
+ "tag": 42843,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

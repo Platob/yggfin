@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "MonthYear",
-   "description": "Underlying security\u2019s MaturityMonthYear. Can be used with standardized derivatives vs. the UnderlyingMaturityDate <542> field. See MaturityMonthYear <200> field for description"
+   "description": "Underlying security\u2019s MaturityMonthYear. Can be used with standardized derivatives vs. the UnderlyingMaturityDate <542> field. See MaturityMonthYear <200> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "MonthYear",
-   "description": "Underlying security\u2019s MaturityMonthYear. Can be used with standardized derivatives vs. the UnderlyingMaturityDate <542> field. See MaturityMonthYear <200> field for description"
+   "description": "Underlying security\u2019s MaturityMonthYear. Can be used with standardized derivatives vs. the UnderlyingMaturityDate <542> field. See MaturityMonthYear <200> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "MonthYear",
-   "description": "Underlying security\u2019s MaturityMonthYear. Can be used with standardized derivatives vs. the UnderlyingMaturityDate <542> field. See MaturityMonthYear <200> field for description"
+   "description": "Underlying security\u2019s MaturityMonthYear. Can be used with standardized derivatives vs. the UnderlyingMaturityDate <542> field. See MaturityMonthYear <200> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "MonthYear",
-   "description": "Underlying security's MaturityMonthYear. Can be used with standardized derivatives vs. the UnderlyingMaturityDate <542> field. See MaturityMonthYear <200> field for description"
+   "description": "Underlying security's MaturityMonthYear. Can be used with standardized derivatives vs. the UnderlyingMaturityDate <542> field. See MaturityMonthYear <200> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.3": {
    "type": "MonthYear",
-   "description": "Underlying security's MaturityMonthYear. Can be used with standardized derivatives vs. the UnderlyingMaturityDate <542> field. See MaturityMonthYear <200> field for description"
+   "description": "Underlying security's MaturityMonthYear. Can be used with standardized derivatives vs. the UnderlyingMaturityDate <542> field. See MaturityMonthYear <200> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.2": {
    "type": "MonthYear",

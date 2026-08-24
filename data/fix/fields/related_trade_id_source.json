@@ -1,0 +1,18 @@
+{
+ "name": "RelatedTradeIDSource",
+ "tag": 1857,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NON_FIX_SOURCE",
+    "1": "TRADE_ID",
+    "2": "SECONDARY_TRADE_ID",
+    "3": "TRADE_REPORT_ID",
+    "4": "FIRM_TRADE_ID",
+    "5": "SECONDARY_FIRM_TRADE_ID",
+    "6": "REGULATORY_TRADE_ID"
+   }
+  }
+ }
+}

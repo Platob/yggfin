@@ -1,0 +1,9 @@
+{
+ "name": "DividendFloorRateBuySide",
+ "tag": 42229,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

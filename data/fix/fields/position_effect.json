@@ -30,6 +30,12 @@
     "NewOrderSingle",
     "OrderCancelReplaceRequest",
     "AllocationInstruction"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0.SP1": {
@@ -60,6 +66,12 @@
     "NewOrderSingle",
     "OrderCancelReplaceRequest",
     "AllocationInstruction"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -86,6 +98,12 @@
     "NewOrderSingle",
     "OrderCancelReplaceRequest",
     "AllocationInstruction"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

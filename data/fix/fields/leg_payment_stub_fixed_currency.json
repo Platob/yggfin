@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStubFixedCurrency",
+ "tag": 40423,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

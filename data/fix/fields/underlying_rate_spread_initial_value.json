@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingRateSpreadInitialValue",
+ "tag": 43004,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

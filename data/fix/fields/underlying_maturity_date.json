@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "LocalMktDate",
-   "description": "Underlying security's maturity date. See MaturityDate <541> field for description"
+   "description": "Underlying security's maturity date. See MaturityDate <541> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
-   "description": "Underlying security's maturity date. See MaturityDate <541> field for description"
+   "description": "Underlying security's maturity date. See MaturityDate <541> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
-   "description": "Underlying security's maturity date. See MaturityDate <541> field for description"
+   "description": "Underlying security's maturity date. See MaturityDate <541> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",
-   "description": "Underlying security's maturity date. See MaturityDate <541> field for description"
+   "description": "Underlying security's maturity date. See MaturityDate <541> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.3": {
    "type": "LocalMktDate",
-   "description": "Underlying security's maturity date. See MaturityDate <541> field for description"
+   "description": "Underlying security's maturity date. See MaturityDate <541> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

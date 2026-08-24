@@ -1,0 +1,9 @@
+{
+ "name": "NoLegPaymentStreamResetDateBusinessCenters",
+ "tag": 40931,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

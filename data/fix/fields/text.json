@@ -80,6 +80,24 @@
     "SecurityListRequest",
     "MarketDataRequestReject",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "BidCompRspGrp",
+    "InstrmtStrkPxGrp",
+    "LinesOfTextGrp",
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "OrdListStatGrp",
+    "RelSymDerivSecGrp",
+    "RelSymDerivSecUpdGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "StrmAsgnRptInstrmtGrp",
+    "TrdCapRptSideGrp",
+    "TrdSessLstGrp"
    ]
   },
   "5.0.SP1": {
@@ -157,6 +175,23 @@
     "SecurityListRequest",
     "MarketDataRequestReject",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "BidCompRspGrp",
+    "InstrmtStrkPxGrp",
+    "LinesOfTextGrp",
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "OrdListStatGrp",
+    "RelSymDerivSecGrp",
+    "RelSymDerivSecUpdGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptSideGrp",
+    "TrdSessLstGrp"
    ]
   },
   "5.0": {
@@ -224,6 +259,22 @@
     "SecurityListRequest",
     "MarketDataRequestReject",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "BidCompRspGrp",
+    "LinesOfTextGrp",
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "OrdListStatGrp",
+    "RelSymDerivSecGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptSideGrp",
+    "TrdSessLstGrp",
+    "UndInstrmtStrkPxGrp"
    ]
   },
   "4.4": {

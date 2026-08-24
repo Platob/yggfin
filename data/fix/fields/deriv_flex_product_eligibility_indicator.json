@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Boolean",
-   "description": "Refer to FlexProductEligibilityIndicator <1242>"
+   "description": "Refer to FlexProductEligibilityIndicator <1242>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Boolean",
-   "description": "Refer to FlexProductEligibilityIndicator <1242>"
+   "description": "Refer to FlexProductEligibilityIndicator <1242>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

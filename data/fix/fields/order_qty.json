@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments. (Prior to FIX 4.2 this field was of type int)"
+   "description": "Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments. (Prior to FIX 4.2 this field was of type int)",
+   "components": [
+    "OrdAllocGrp",
+    "OrderQtyData"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments. (Prior to FIX 4.2 this field was of type int)"
+   "description": "Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments. (Prior to FIX 4.2 this field was of type int)",
+   "components": [
+    "OrdAllocGrp",
+    "OrderQtyData"
+   ]
   },
   "5.0": {
    "type": "Qty",
-   "description": "Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments. (Prior to FIX 4.2 this field was of type int)"
+   "description": "Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments. (Prior to FIX 4.2 this field was of type int)",
+   "components": [
+    "OrdAllocGrp",
+    "OrderQtyData"
+   ]
   },
   "4.4": {
    "type": "Qty",
@@ -22,6 +34,9 @@
     "Allocation Report",
     "Confirmation Request",
     "Allocation Instruction"
+   ],
+   "components": [
+    "OrderQtyData"
    ]
   },
   "4.3": {
@@ -30,6 +45,9 @@
    "used_in": [
     "Quote Request Reject",
     "Quote Request"
+   ],
+   "components": [
+    "OrderQtyData"
    ]
   },
   "4.2": {

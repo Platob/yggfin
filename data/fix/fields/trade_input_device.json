@@ -8,6 +8,10 @@
    "used_in": [
     "TradeCaptureReportRequest",
     "AllocationReport"
+   ],
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0.SP1": {
@@ -16,6 +20,10 @@
    "used_in": [
     "TradeCaptureReportRequest",
     "AllocationReport"
+   ],
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -24,6 +32,10 @@
    "used_in": [
     "TradeCaptureReportRequest",
     "AllocationReport"
+   ],
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

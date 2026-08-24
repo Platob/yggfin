@@ -1,0 +1,9 @@
+{
+ "name": "SideCollateralAmountMarketID",
+ "tag": 2692,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

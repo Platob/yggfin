@@ -1,0 +1,9 @@
+{
+ "name": "TradeClearingInstruction",
+ "tag": 1925,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "CrossedIndicator",
+ "tag": 2523,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NO_CROSS",
+    "1": "CROSS_REJECTED",
+    "2": "CROSS_ACCEPTED"
+   }
+  }
+ }
+}

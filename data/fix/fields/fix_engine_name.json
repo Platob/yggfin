@@ -1,0 +1,9 @@
+{
+ "name": "FIXEngineName",
+ "tag": 1600,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

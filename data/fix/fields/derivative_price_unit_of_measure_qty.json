@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Refer to definition of PriceUnitOfMeasureQty <1192>"
+   "description": "Refer to definition of PriceUnitOfMeasureQty <1192>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Refer to definition of PriceUnitOfMeasureQty <1192>"
+   "description": "Refer to definition of PriceUnitOfMeasureQty <1192>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

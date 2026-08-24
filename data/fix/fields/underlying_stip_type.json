@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Type of stipulation. Same values as StipulationType <233>"
+   "description": "Type of stipulation. Same values as StipulationType <233>",
+   "components": [
+    "UnderlyingStipulations"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Type of stipulation. Same values as StipulationType <233>"
+   "description": "Type of stipulation. Same values as StipulationType <233>",
+   "components": [
+    "UnderlyingStipulations"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Type of stipulation. Same values as StipulationType <233>"
+   "description": "Type of stipulation. Same values as StipulationType <233>",
+   "components": [
+    "UnderlyingStipulations"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Type of stipulation. Same values as StipulationType <233>"
+   "description": "Type of stipulation. Same values as StipulationType <233>",
+   "components": [
+    "UnderlyingStipulations"
+   ]
   }
  }
 }

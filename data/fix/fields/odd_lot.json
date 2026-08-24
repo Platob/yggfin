@@ -13,7 +13,11 @@
    "value_names": {
     "N": "NO",
     "Y": "YES"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Boolean",
@@ -26,7 +30,11 @@
    "value_names": {
     "N": "NO",
     "Y": "YES"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0": {
    "type": "Boolean",
@@ -39,7 +47,11 @@
    "value_names": {
     "N": "NO",
     "Y": "YES"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "4.4": {
    "type": "Boolean",

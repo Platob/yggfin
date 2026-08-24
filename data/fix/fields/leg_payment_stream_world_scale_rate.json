@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamWorldScaleRate",
+ "tag": 41558,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "MDStatisticDelayUnit",
+ "tag": 2463,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingAdditionalTerms",
+ "tag": 42036,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

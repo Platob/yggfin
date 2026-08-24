@@ -17,7 +17,7 @@ from rekep.convert import Convertible
 from rekep.enums import EventType
 from rekep.fields import Field, scalar
 from rekep.fix.columns import DECLARATIONS, ISIN_CODE, KWARGS
-from rekep.fix.components import PARTIES, Party
+from rekep.fix.components import PARTIES, TRD_REG_TIMESTAMPS, Party, TrdRegTimestamp
 from rekep.fix.rules import NO_PROTOCOL
 from rekep.market.event import Event
 from rekep.market.identity import NIL
@@ -125,6 +125,15 @@ class Log(Event):
         ),
     ] = None
     """FIX Parties entries; null when the component is absent."""
+
+    trd_reg_timestamps: Annotated[
+        list[TrdRegTimestamp] | None,
+        Field(
+            arrow_type=TRD_REG_TIMESTAMPS,
+            metadata={"fix:component": "TrdRegTimestamps"},
+        ),
+    ] = None
+    """FIX TrdRegTimestamps entries; null when the component is absent."""
 
     isincode: Annotated[str | None, ISIN_CODE] = None
     """ISIN carried by a rendered `ISINCODE` field."""

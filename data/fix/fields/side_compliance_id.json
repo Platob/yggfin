@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting)."
+   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "components": [
+    "SideCrossOrdModGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting)."
+   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "components": [
+    "SideCrossOrdModGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting)."
+   "description": "ID within repeating group of sides which is used to represent this transaction for compliance purposes (e.g. OATS reporting).",
+   "components": [
+    "SideCrossOrdModGrp"
+   ]
   },
   "4.4": {
    "type": "String",

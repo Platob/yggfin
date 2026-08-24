@@ -72,6 +72,19 @@
     "DontKnowTradeDK",
     "OrderMassCancelReport",
     "Quote"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "InstrmtStrkPxGrp",
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SettlInstGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0.SP1": {
@@ -143,6 +156,19 @@
     "DontKnowTradeDK",
     "OrderMassCancelReport",
     "Quote"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "InstrmtStrkPxGrp",
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SettlInstGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -212,6 +238,19 @@
     "DontKnowTradeDK",
     "OrderMassCancelReport",
     "Quote"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SettlInstGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp",
+    "UndInstrmtStrkPxGrp"
    ]
   },
   "4.4": {

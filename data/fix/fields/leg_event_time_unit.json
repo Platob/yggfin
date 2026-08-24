@@ -1,0 +1,9 @@
+{
+ "name": "LegEventTimeUnit",
+ "tag": 2063,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

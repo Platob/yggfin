@@ -1,0 +1,9 @@
+{
+ "name": "DividendCashEquivalentPercentage",
+ "tag": 42257,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

@@ -4,7 +4,11 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Used on a multi-sided trade to specify the type of trade for a given side. Same values as TrdSubType <829> ."
+   "description": "Used on a multi-sided trade to specify the type of trade for a given side. Same values as TrdSubType <829> .",
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -21,7 +25,11 @@
     "8": "Implied Spread leg executed against an outright",
     "9": "Transaction from Exercise",
     "10": "Transaction from Assignment"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -38,7 +46,11 @@
     "8": "Implied Spread leg executed against an outright",
     "9": "Transaction from Exercise",
     "10": "Transaction from Assignment"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   }
  }
 }

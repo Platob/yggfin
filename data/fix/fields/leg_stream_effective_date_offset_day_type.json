@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamEffectiveDateOffsetDayType",
+ "tag": 40255,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

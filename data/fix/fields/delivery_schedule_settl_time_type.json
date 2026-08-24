@@ -1,0 +1,13 @@
+{
+ "name": "DeliveryScheduleSettlTimeType",
+ "tag": 41057,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "HOUR",
+    "1": "TIMESTAMP"
+   }
+  }
+ }
+}

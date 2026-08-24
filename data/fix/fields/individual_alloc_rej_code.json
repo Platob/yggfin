@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Identified reason for rejecting an individual AllocAccount <79> detail. Same values as AllocRejCode <88>"
+   "description": "Identified reason for rejecting an individual AllocAccount <79> detail. Same values as AllocRejCode <88>",
+   "components": [
+    "AllocAckGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Identified reason for rejecting an individual AllocAccount <79> detail. Same values as AllocRejCode <88>"
+   "description": "Identified reason for rejecting an individual AllocAccount <79> detail. Same values as AllocRejCode <88>",
+   "components": [
+    "AllocAckGrp"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "Identified reason for rejecting an individual AllocAccount <79> detail. Same values as AllocRejCode <88>"
+   "description": "Identified reason for rejecting an individual AllocAccount <79> detail. Same values as AllocRejCode <88>",
+   "components": [
+    "AllocAckGrp"
+   ]
   },
   "4.4": {
    "type": "int",

@@ -1,0 +1,9 @@
+{
+ "name": "RelatedSecurityType",
+ "tag": 1652,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

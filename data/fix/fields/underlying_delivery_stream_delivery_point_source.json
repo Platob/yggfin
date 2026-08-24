@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDeliveryStreamDeliveryPointSource",
+ "tag": 42196,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

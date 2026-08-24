@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "The price type of the LegBidPx <681> and/or LegOfferPx <684> . See PriceType <423> for description and"
+   "description": "The price type of the LegBidPx <681> and/or LegOfferPx <684> . See PriceType <423> for description and",
+   "components": [
+    "LegQuotGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "The price type of the LegBidPx <681> and/or LegOfferPx <684> . See PriceType <423> for description and"
+   "description": "The price type of the LegBidPx <681> and/or LegOfferPx <684> . See PriceType <423> for description and",
+   "components": [
+    "LegQuotGrp"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "The price type of the LegBidPx <681> and/or LegOfferPx <684> . See PriceType <423> for description and"
+   "description": "The price type of the LegBidPx <681> and/or LegOfferPx <684> . See PriceType <423> for description and",
+   "components": [
+    "LegQuotGrp"
+   ]
   },
   "4.4": {
    "type": "int",

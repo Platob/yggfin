@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Expiration Style for an option class Same values as ExerciseStyle <1194>"
+   "description": "Expiration Style for an option class Same values as ExerciseStyle <1194>",
+   "components": [
+    "StrikeRules"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Expiration Style for an option class Same values as ExerciseStyle <1194>"
+   "description": "Expiration Style for an option class Same values as ExerciseStyle <1194>",
+   "components": [
+    "StrikeRules"
+   ]
   }
  }
 }

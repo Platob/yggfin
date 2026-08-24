@@ -9,6 +9,7 @@ import re
 import warnings
 from collections.abc import Iterable, Mapping
 from functools import cached_property
+from types import MappingProxyType
 from typing import Any
 
 import pyarrow
@@ -22,7 +23,7 @@ from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
 from rekep.fix.columns import KWARGS, QUOTE_GROUP_COUNTS, QUOTE_GROUP_STRUCTURE, TAG, named_columns
 from rekep.fix.columns import NAMED as NAMED_COLUMNS
 from rekep.fix.columns import TYPES as FLAT_TYPES
-from rekep.fix.components import Parties
+from rekep.fix.components import ComponentGroup, Parties, TrdRegTimestamps
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.message import (
     _MEMBER_NAME_VECTOR,
@@ -569,12 +570,25 @@ class FixCodec(Convertible):
         keep = compute.or_(compute.invert(lift), _quote_group_structure(parents, tags))
         return columns, _kwargs(kwargs, lengths, keep, *_columns_of(entries, keep))
 
+    @classmethod
+    @functools.cache
+    def into_components(cls) -> Mapping[str, type[ComponentGroup]]:
+        """`{column: the extractor that fills it}`, in the order they are applied.
+
+        In order and against what the last one left: a member lifted into one
+        component's entries cannot also be lifted into another's.
+        """
+        return MappingProxyType({"parties": Parties, "trd_reg_timestamps": TrdRegTimestamps})
+
     def into_component_columns(
         self, kwargs: Any, version: str | None = None
     ) -> tuple[dict[str, Any], Any]:
         """Structured FIX components and what is left of `kwargs`."""
-        parties, rest = self.parties_of(version).into_arrow_arrays(kwargs)
-        return {"parties": parties}, rest
+        columns: dict[str, Any] = {}
+        rest = kwargs
+        for column in self.into_components():
+            columns[column], rest = self.component_of(column, version).into_arrow_arrays(rest)
+        return columns, rest
 
     # -- versions -----------------------------------------------------------
 
@@ -716,16 +730,24 @@ class FixCodec(Convertible):
 
     def parties_of(self, version: str | None = None) -> Parties:
         """Version-aware Parties extractor, cached with the tag index."""
-        if version not in self._parties:
-            components, fallback = self._party_declaration(version)
-            self._parties[version] = Parties(
+        return self.component_of("parties", version)  # type: ignore[return-value]
+
+    def component_of(self, column: str, version: str | None = None) -> ComponentGroup:
+        """Version-aware extractor for one structured component, cached per version."""
+        built = self.into_components()[column]
+        key = (column, version)
+        if key not in self._components:
+            components, fallback = self._component_declaration(built().component, version)
+            self._components[key] = built(
                 components=components,
                 names=self._tags(version),
                 fallback=fallback,
             )
-        return self._parties[version]
+        return self._components[key]
 
-    def _party_declaration(self, version: str | None) -> tuple[list[SpecComponent], bool]:
+    def _component_declaration(
+        self, component: str, version: str | None
+    ) -> tuple[list[SpecComponent], bool]:
         """One version's Parties declaration, and whether to keep the legacy tags.
 
         Three answers, and the middle one is why this is not two lines. A
@@ -744,7 +766,7 @@ class FixCodec(Convertible):
             declared = self.registry.components(version)
         except (KeyError, OSError, ValueError):
             declared = []
-        if any(component.name.lower() == "parties" for component in declared):
+        if any(found.name.lower() == component.lower() for found in declared):
             return list(declared), False
         try:
             available = self.registry.components_available(version)
@@ -754,8 +776,8 @@ class FixCodec(Convertible):
             return [], False
         warnings.warn(
             f"the FIX registry holds no component declarations for {version!r}: "
-            "party extraction falls back to the legacy tags. Rebuild the registry "
-            "so its components travel with its fields.",
+            f"{component} extraction falls back to the legacy tags. Rebuild the "
+            "registry so its components travel with its fields.",
             RuntimeWarning,
             stacklevel=3,
         )
@@ -768,7 +790,7 @@ class FixCodec(Convertible):
         return {}
 
     @cached_property
-    def _parties(self) -> dict[str | None, Parties]:
+    def _components(self) -> dict[tuple[str, str | None], ComponentGroup]:
         return {}
 
     @cached_property

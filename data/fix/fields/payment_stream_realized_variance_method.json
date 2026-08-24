@@ -1,0 +1,14 @@
+{
+ "name": "PaymentStreamRealizedVarianceMethod",
+ "tag": 42679,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "PREVIOUS",
+    "1": "LAST",
+    "2": "BOTH"
+   }
+  }
+ }
+}

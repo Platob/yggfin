@@ -16,7 +16,17 @@
     "2": "MODIFIED_DURATION",
     "4": "RISK",
     "5": "PROCEEDS"
-   }
+   },
+   "components": [
+    "InstrmtLegExecGrp",
+    "InstrmtLegSecListGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "SecLstUpdRelSymsLegGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -32,7 +42,17 @@
     "2": "MODIFIED_DURATION",
     "4": "RISK",
     "5": "PROCEEDS"
-   }
+   },
+   "components": [
+    "InstrmtLegExecGrp",
+    "InstrmtLegSecListGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "SecLstUpdRelSymsLegGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -48,7 +68,17 @@
     "2": "MODIFIED_DURATION",
     "4": "RISK",
     "5": "PROCEEDS"
-   }
+   },
+   "components": [
+    "InstrmtLegExecGrp",
+    "InstrmtLegSecListGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "SecLstUpdRelSymsLegGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "int",

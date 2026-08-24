@@ -3,10 +3,16 @@
  "tag": 1290,
  "versions": {
   "5.0.SP2": {
-   "type": "Price"
+   "type": "Price",
+   "components": [
+    "DerivativeEventsGrp"
+   ]
   },
   "5.0.SP1": {
-   "type": "Price"
+   "type": "Price",
+   "components": [
+    "DerivativeEventsGrp"
+   ]
   }
  }
 }

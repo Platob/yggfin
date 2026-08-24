@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDividendFinalRatePrecision",
+ "tag": 42816,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

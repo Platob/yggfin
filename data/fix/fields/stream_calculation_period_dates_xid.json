@@ -1,0 +1,9 @@
+{
+ "name": "StreamCalculationPeriodDatesXID",
+ "tag": 41244,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XID"
+  }
+ }
+}

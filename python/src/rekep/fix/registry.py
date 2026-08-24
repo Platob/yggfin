@@ -14,7 +14,7 @@ import time
 import urllib.error
 import urllib.request
 import warnings
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from functools import cache, cached_property
 from types import MappingProxyType
 from typing import Any, Self
@@ -36,6 +36,7 @@ from rekep.fix.quickfix import (
     spec_name,
 )
 from rekep.fix.store import (
+    DOCUMENT_SUFFIX,
     EXPLODED,
     LAYOUTS,
     ArchiveDocuments,
@@ -99,6 +100,15 @@ _VALID_VALUES = re.compile(r"Valid values[^<]*", re.IGNORECASE)
 _USED_IN = re.compile(
     r"<a[^>]+name=[\"']UsedIn[\"'][^>]*>|<h\d[^>]*>\s*Used\s+in\s*</h\d\s*>", re.IGNORECASE
 )
+
+#: What a `Used In` link points at: one message, or one component block. Both
+#: kinds sit in the same section, and reading only the first left every field
+#: FIX carries inside a component recorded as used nowhere.
+MESSAGE_LINK = "msgType"
+COMPONENT_LINK = "compBlock"
+
+#: A component link's whole text is `<Name>`; the name is what is inside it.
+_COMPONENT_NAME = re.compile(r"^\s*<\s*(.+?)\s*>\s*$")
 
 #: A parenthetical note beside a name on the by-tag page -- `(no longer
 #: used)`, `(replaced)` -- which is the one deprecation signal the site has.
@@ -561,6 +571,28 @@ class FixRegistry(Convertible):
                 return entry
         raise KeyError(f"no FIX component {name!r} in any version")
 
+    def component_field(self, name: str, version: str) -> Field | None:
+        """One component's declaration as an Arrow field, or None for that version.
+
+        The spec's `required` rules decide nullability and the dictionary
+        decides each member's type, so a component projects into a shape a
+        reader can trust rather than into a struct of nullable strings.
+        """
+        entry = self.merged_component(name)
+        return entry.into_field(
+            self._spelling(version),
+            types=self._component_types(version),
+            components={found.folded: found for found in self._entries[1].values()},
+        )
+
+    def _component_types(self, version: str) -> dict[str, Any]:
+        """`{FIX member name: Arrow type}` for one version, for a projection."""
+        return {
+            member.name: member.arrow_type
+            for member in self.fields(self._spelling(version))
+            if member.arrow_type is not None
+        }
+
     def resolve(self, name: str) -> FieldEntry | None:
         """The identity a rendered name means, or None when nothing here is it.
 
@@ -647,16 +679,22 @@ class FixRegistry(Convertible):
     # store already holds, and is refused whole rather than written half.
 
     def add_field(self, entry: FieldEntry) -> FieldEntry:
-        """Store one new field identity; `KeyError` when it is already here."""
+        """Store one new field identity; `KeyError` when it is already here.
+
+        The duplicate tag and duplicate name checks are in `_validated`, which
+        every write goes through; this one is only the file it would land in.
+        """
         held = self._entries[0]
         if entry.slug in held:
-            raise KeyError(f"FIX field {entry.name!r} is already stored as {entry.slug}.json")
+            raise KeyError(
+                f"FIX field {entry.name!r} is already stored as {entry.slug}{DOCUMENT_SUFFIX}"
+            )
         return self._write_field(entry)
 
     def update_field(self, entry: FieldEntry) -> FieldEntry:
         """Replace one stored field identity; `KeyError` when there is none."""
         if entry.slug not in self._entries[0]:
-            raise KeyError(f"no FIX field stored as {entry.slug}.json")
+            raise KeyError(f"no FIX field stored as {entry.slug}{DOCUMENT_SUFFIX}")
         return self._write_field(entry)
 
     def remove_field(self, name: str) -> bool:
@@ -683,7 +721,7 @@ class FixRegistry(Convertible):
     def update_component(self, entry: ComponentEntry) -> ComponentEntry:
         """Replace one stored component identity; `KeyError` when there is none."""
         if entry.slug not in self._entries[1]:
-            raise KeyError(f"no FIX component stored as {entry.slug}.json")
+            raise KeyError(f"no FIX component stored as {entry.slug}{DOCUMENT_SUFFIX}")
         return self._write_component(entry)
 
     def remove_component(self, name: str) -> bool:
@@ -756,7 +794,10 @@ class FixRegistry(Convertible):
         held = (fields or self._entries[0], components or self._entries[1])
         problems = _problems(held)
         if problems:
-            raise ValueError("; ".join(problems))
+            raise ValueError(
+                f"this change would leave {len(problems)} inconsistencies in the registry, "
+                "so nothing was written: " + "; ".join(problems)
+            )
 
     # -- changing the layout --------------------------------------------------
 
@@ -990,6 +1031,9 @@ class FixRegistry(Convertible):
             used = detail.get("used_in")
             if used:
                 built.fix["used_in"] = json.dumps(used, separators=(",", ":"))
+            components = detail.get("components")
+            if components:
+                built.fix["components"] = json.dumps(components, separators=(",", ":"))
             if known and known.values:
                 # The symbol, beside the description and never over it: the
                 # spec's `description=` attribute holds `BUY`, which is the
@@ -1076,6 +1120,9 @@ class FixRegistry(Convertible):
         used = _used_in(carried)
         if used:
             detail["used_in"] = used
+        components = _used_in(carried, COMPONENT_LINK)
+        if components:
+            detail["components"] = components
         return detail
 
     # -- the store -----------------------------------------------------------
@@ -1467,11 +1514,22 @@ def _values(markup: str) -> dict[str, str]:
     return found
 
 
-def _used_in(markup: str) -> list[str]:
-    """The messages a field page says carry it, names only."""
+def _used_in(markup: str, kind: str = MESSAGE_LINK) -> list[str]:
+    """What a field page's `Used In` links name: its messages, or its components.
+
+    Two kinds of link sit in the same section, and reading only the first left
+    every field that FIX carries *inside a component block* -- `TrdRegTimestamp
+    <769>`, and three hundred others in 4.4 alone -- recorded as used nowhere.
+    """
     names = []
-    for match in re.finditer(r"<a[^>]+href=\"msgType_[^\"]+\"[^>]*>(.*?)</a>", markup, re.DOTALL):
+    pattern = rf"<a[^>]+href=\"{kind}_[^\"]+\"[^>]*>(.*?)</a>"
+    for match in re.finditer(pattern, markup, re.DOTALL):
         name, _ = _split_note(_text(match[1]))
+        # A message link reads `Execution Report <8>` and keeps its name; a
+        # component link is only `<TrdRegTimestamps>` and *is* the brackets'
+        # contents. Cutting the same trailing marker off both would leave a
+        # component with nothing.
+        name = _COMPONENT_NAME.sub(r"\1", name) if kind == COMPONENT_LINK else name
         name = re.sub(r"\s*<\s*\w+\s*>$", "", name).strip()
         if name and name not in names:
             names.append(name)
@@ -1507,13 +1565,14 @@ def _merged_scalar(fields: Sequence[Field]) -> Field:
         if combined:
             metadata[f"fix:{key}"] = _json(combined)
 
-    used: list[str] = []
-    for member in fields:
-        for message in _json_sequence(member.fix.get("used_in")):
-            if message not in used:
-                used.append(message)
-    if used:
-        metadata["fix:used_in"] = _json(used)
+    for key in ("used_in", "components"):
+        carried: list[str] = []
+        for member in fields:
+            for name in _json_sequence(member.fix.get(key)):
+                if name not in carried:
+                    carried.append(name)
+        if carried:
+            metadata[f"fix:{key}"] = _json(carried)
 
     description = next((member.description for member in fields if member.description), "")
     if description:
@@ -1582,7 +1641,7 @@ def _problems(
     Written against the entries rather than against a registry, so a change
     can be checked before it is written and refused whole.
     """
-    problems = []
+    problems = list(_duplicates(held[0]))
     claimed: dict[str, str] = {}
     for tier in (_CANONICAL, _VERSIONED, _ALIASED):
         names: dict[str, list[str]] = {}
@@ -1601,10 +1660,40 @@ def _problems(
                 problems.append(f"{folded!r} is {tier} for {unique} and already {held_by}'s")
             claimed.setdefault(folded, unique[0])
     for slug, shared in sorted(slug_collisions(e.name for e in held[0].values()).items()):
-        problems.append(f"FIX fields {shared} are all stored as fields/{slug}.json")
+        problems.append(f"FIX fields {shared} are all stored as fields/{slug}{DOCUMENT_SUFFIX}")
     for slug, shared in sorted(slug_collisions(e.name for e in held[1].values()).items()):
-        problems.append(f"FIX components {shared} are all stored as components/{slug}.json")
+        problems.append(
+            f"FIX components {shared} are all stored as components/{slug}{DOCUMENT_SUFFIX}"
+        )
     return problems
+
+
+def _duplicates(entries: Mapping[str, FieldEntry]) -> Iterator[str]:
+    """Two identities claiming one tag, or one canonical name.
+
+    The two ways a store answers a lookup with whichever entry it happened to
+    read first, which is the same store answering differently on two machines.
+    Reported before anything else, because every later line is about spellings
+    and these are about identity.
+    """
+    by_tag: dict[int, list[str]] = {}
+    by_name: dict[str, list[str]] = {}
+    for entry in entries.values():
+        if entry.tag is not None:
+            by_tag.setdefault(int(entry.tag), []).append(entry.name)
+        by_name.setdefault(entry.folded, []).append(entry.name)
+    for tag, shared in sorted(by_tag.items()):
+        if len(shared) > 1:
+            yield (
+                f"FIX tag {tag} is claimed by {sorted(shared)}: one tag is one identity, so "
+                "give the newer spelling its own tag or record it as an alias of the older"
+            )
+    for folded, shared in sorted(by_name.items()):
+        if len(shared) > 1:
+            yield (
+                f"FIX field name {folded!r} is claimed by {sorted(shared)}: one name is one "
+                "identity, so rename one of them or record it as an alias"
+            )
 
 
 def _is_tag(key: Any) -> bool:

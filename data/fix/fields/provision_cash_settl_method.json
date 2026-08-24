@@ -1,0 +1,18 @@
+{
+ "name": "ProvisionCashSettlMethod",
+ "tag": 40108,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "CASH_PRICE",
+    "1": "CASH_PRICE_ALTERNATE",
+    "2": "PAR_YIELD_CURVE_ADJUSTED",
+    "3": "ZERO_COUPON_YIELD_CURVE_ADJUSTED",
+    "4": "PAR_YIELD_CURVE_UNADJUSTED",
+    "5": "CROSS_CURRENCY",
+    "6": "COLLATERALIZED_PRICE"
+   }
+  }
+ }
+}

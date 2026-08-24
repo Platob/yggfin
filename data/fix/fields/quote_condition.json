@@ -128,7 +128,11 @@
     "5": "MEDIAN_PRICE",
     "6": "FULL_CURVE",
     "7": "FLAT_CURVE"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "MultipleStringValue",
@@ -252,7 +256,11 @@
     "3": "REST_OF_BOOK_VWAP",
     "4": "BETTER_PRICES_IN_CONDITIONAL_ORDERS",
     "5": "MEDIAN_PRICE"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "MultipleStringValue",
@@ -370,7 +378,11 @@
     "0": "RESERVED_SAM",
     "1": "NO_ACTIVE_SAM",
     "2": "RESTRICTED"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "MultipleValueString",

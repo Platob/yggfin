@@ -11,6 +11,10 @@
     "AllocationReport",
     "AllocationInstructionAlert",
     "AllocationInstruction"
+   ],
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0.SP1": {
@@ -22,6 +26,10 @@
     "AllocationReport",
     "AllocationInstructionAlert",
     "AllocationInstruction"
+   ],
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -33,6 +41,10 @@
     "AllocationReport",
     "AllocationInstructionAlert",
     "AllocationInstruction"
+   ],
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

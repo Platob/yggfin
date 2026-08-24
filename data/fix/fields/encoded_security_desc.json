@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the SecurityDesc <107> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityDesc <107> field."
+   "description": "Encoded (non-ASCII characters) representation of the SecurityDesc <107> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityDesc <107> field.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the SecurityDesc <107> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityDesc <107> field."
+   "description": "Encoded (non-ASCII characters) representation of the SecurityDesc <107> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityDesc <107> field.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the SecurityDesc <107> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityDesc <107> field."
+   "description": "Encoded (non-ASCII characters) representation of the SecurityDesc <107> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityDesc <107> field.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the SecurityDesc <107> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityDesc <107> field."
+   "description": "Encoded (non-ASCII characters) representation of the SecurityDesc <107> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityDesc <107> field.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the SecurityDesc <107> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityDesc <107> field."
+   "description": "Encoded (non-ASCII characters) representation of the SecurityDesc <107> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the SecurityDesc <107> field.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.2": {
    "type": "data",

@@ -1,0 +1,9 @@
+{
+ "name": "PriceMarkup",
+ "tag": 2762,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICEOFFSET"
+  }
+ }
+}

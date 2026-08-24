@@ -44,7 +44,10 @@
     "19": "SIC",
     "20": "EURO_SIC",
     "999": "OTHER"
-   }
+   },
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -82,7 +85,10 @@
     "13": "ACH_CREDIT",
     "14": "BPAY",
     "15": "HIGH_VALUE_CLEARING_SYSTEM"
-   }
+   },
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -120,7 +126,10 @@
     "13": "ACH_CREDIT",
     "14": "BPAY",
     "15": "HIGH_VALUE_CLEARING_SYSTEM"
-   }
+   },
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "4.4": {
    "type": "int",

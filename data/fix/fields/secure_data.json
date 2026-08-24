@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "data",
-   "description": "Deprecated in FIXT 1.1 Actual encrypted data stream"
+   "description": "Deprecated in FIXT 1.1 Actual encrypted data stream",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "data",
-   "description": "Deprecated in FIXT 1.1 Actual encrypted data stream"
+   "description": "Deprecated in FIXT 1.1 Actual encrypted data stream",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "data",
@@ -36,7 +42,10 @@
   },
   "FIXT1.1": {
    "type": "data",
-   "description": "Actual encrypted data stream"
+   "description": "Actual encrypted data stream",
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

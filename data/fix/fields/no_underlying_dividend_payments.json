@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingDividendPayments",
+ "tag": 42855,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

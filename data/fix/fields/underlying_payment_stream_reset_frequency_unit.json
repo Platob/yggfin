@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamResetFrequencyUnit",
+ "tag": 40596,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

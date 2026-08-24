@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of Expiration Qty entries"
+   "description": "Number of Expiration Qty entries",
+   "components": [
+    "ExpirationQty"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of Expiration Qty entries"
+   "description": "Number of Expiration Qty entries",
+   "components": [
+    "ExpirationQty"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of Expiration Qty entries"
+   "description": "Number of Expiration Qty entries",
+   "components": [
+    "ExpirationQty"
+   ]
   }
  }
 }

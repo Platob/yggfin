@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamCommoditySettlTotalHours",
+ "tag": 41998,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

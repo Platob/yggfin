@@ -1,0 +1,13 @@
+{
+ "name": "DeliveryStreamElectingPartySide",
+ "tag": 41080,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "BUYER",
+    "1": "SELLER"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRateValuationEndDateAdjusted",
+ "tag": 42726,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

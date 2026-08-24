@@ -12,7 +12,10 @@
     "1": "CUSTOMER",
     "2": "CUSTOMER_PROFESSIONAL",
     "3": "DO_NOT_TRADE_THROUGH"
-   }
+   },
+   "components": [
+    "SecSizesGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -22,7 +25,10 @@
    },
    "value_names": {
     "1": "CUSTOMER"
-   }
+   },
+   "components": [
+    "SecSizesGrp"
+   ]
   }
  }
 }

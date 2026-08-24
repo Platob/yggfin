@@ -24,7 +24,10 @@
     "8": "BASE",
     "9": "BLOCK",
     "99": "OTHER"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

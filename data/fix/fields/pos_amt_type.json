@@ -61,7 +61,10 @@
     "ENDV": "END_VALE",
     "MGNLN": "OUTSTANDING_MARGIN_LOAN",
     "LNVL": "LOAN_VALUE"
-   }
+   },
+   "components": [
+    "PositionAmountData"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -87,7 +90,10 @@
     "TVAR": "TRADE_VARIATION_AMOUNT",
     "VADJ": "VALUE_ADJUSTED_AMOUNT",
     "SETL": "SETTLEMENT_VALUE"
-   }
+   },
+   "components": [
+    "PositionAmountData"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -113,7 +119,10 @@
     "TVAR": "TRADE_VARIATION_AMOUNT",
     "VADJ": "VALUE_ADJUSTED_AMOUNT",
     "SETL": "SETTLEMENT_VALUE"
-   }
+   },
+   "components": [
+    "PositionAmountData"
+   ]
   },
   "4.4": {
    "type": "String",
@@ -137,7 +146,10 @@
     "CRES": "CASH_RESIDUAL_AMOUNT",
     "CASH": "CASH_AMOUNT",
     "VADJ": "VALUE_ADJUSTED_AMOUNT"
-   }
+   },
+   "components": [
+    "PositionAmountData"
+   ]
   }
  }
 }

@@ -14,7 +14,10 @@
     "0": "APPLICATION_DOES_NOT_EXIST",
     "1": "MESSAGES_REQUESTED_ARE_NOT_AVAILABLE",
     "2": "USER_NOT_AUTHORIZED_FOR_APPLICATION"
-   }
+   },
+   "components": [
+    "ApplIDRequestAckGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -28,7 +31,10 @@
     "0": "APPLICATION_DOES_NOT_EXIST",
     "1": "MESSAGES_REQUESTED_ARE_NOT_AVAILABLE",
     "2": "USER_NOT_AUTHORIZED_FOR_APPLICATION"
-   }
+   },
+   "components": [
+    "ApplIDRequestAckGrp"
+   ]
   }
  }
 }

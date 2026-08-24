@@ -1,0 +1,9 @@
+{
+ "name": "RelatedSecurityIDSource",
+ "tag": 1651,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

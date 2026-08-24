@@ -1,0 +1,9 @@
+{
+ "name": "LegProtectionTermCurrency",
+ "tag": 41619,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "SideCollateralType",
+ "tag": 2701,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

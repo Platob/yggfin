@@ -1,0 +1,9 @@
+{
+ "name": "LegProtectionTermEventUnit",
+ "tag": 41630,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

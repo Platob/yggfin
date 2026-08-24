@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of not affected orders in the repeating group of order ids."
+   "description": "Number of not affected orders in the repeating group of order ids.",
+   "components": [
+    "NotAffectedOrdersGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of not affected orders in the repeating group of order ids."
+   "description": "Number of not affected orders in the repeating group of order ids.",
+   "components": [
+    "NotAffectedOrdersGrp"
+   ]
   }
  }
 }

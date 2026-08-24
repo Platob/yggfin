@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexEventDateOffsetUnit",
+ "tag": 41742,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

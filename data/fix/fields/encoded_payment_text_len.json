@@ -1,0 +1,9 @@
+{
+ "name": "EncodedPaymentTextLen",
+ "tag": 40984,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "name": "DuplicateClOrdIDIndicator",
+ "tag": 2829,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN",
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  }
+ }
+}

@@ -20,7 +20,11 @@
     "6": "QUOTE_NEGOTIATION",
     "7": "VOICE_NEGOTIATION",
     "8": "HYBRID_MARKET"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -34,7 +38,11 @@
     "0": "BOOK",
     "1": "OFF_BOOK",
     "2": "CROSS"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -48,7 +56,11 @@
     "0": "BOOK",
     "1": "OFF_BOOK",
     "2": "CROSS"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   }
  }
 }

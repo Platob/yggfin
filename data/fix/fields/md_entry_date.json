@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "UTCDateOnly",
-   "description": "Date of Market Data Entry. (prior to FIX 4.4 field was of type UTCDate )"
+   "description": "Date of Market Data Entry. (prior to FIX 4.4 field was of type UTCDate )",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "UTCDateOnly",
-   "description": "Date of Market Data Entry. (prior to FIX 4.4 field was of type UTCDate )"
+   "description": "Date of Market Data Entry. (prior to FIX 4.4 field was of type UTCDate )",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "UTCDateOnly",
-   "description": "Date of Market Data Entry. (prior to FIX 4.4 field was of type UTCDate )"
+   "description": "Date of Market Data Entry. (prior to FIX 4.4 field was of type UTCDate )",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "UTCDateOnly",

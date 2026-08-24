@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamInflationInterpolationMethod",
+ "tag": 40642,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

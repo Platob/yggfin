@@ -1,0 +1,9 @@
+{
+ "name": "DeliveryScheduleNotionalCommodityFrequency",
+ "tag": 41042,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

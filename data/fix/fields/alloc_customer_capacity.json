@@ -4,15 +4,30 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Capacity of customer in the allocation block."
+   "description": "Capacity of customer in the allocation block.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "TrdAllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Capacity of customer in the allocation block."
+   "description": "Capacity of customer in the allocation block.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "TrdAllocGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Capacity of customer in the allocation block."
+   "description": "Capacity of customer in the allocation block.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "TrdAllocGrp"
+   ]
   }
  }
 }

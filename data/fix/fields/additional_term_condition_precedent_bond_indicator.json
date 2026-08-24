@@ -1,0 +1,9 @@
+{
+ "name": "AdditionalTermConditionPrecedentBondIndicator",
+ "tag": 40020,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

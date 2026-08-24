@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamRateIndex2CurveUnit",
+ "tag": 41563,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

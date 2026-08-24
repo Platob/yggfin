@@ -1,0 +1,9 @@
+{
+ "name": "OrderEventPx",
+ "tag": 1799,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

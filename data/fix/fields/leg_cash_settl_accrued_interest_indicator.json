@@ -1,0 +1,9 @@
+{
+ "name": "LegCashSettlAccruedInterestIndicator",
+ "tag": 41360,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

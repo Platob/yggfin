@@ -55,6 +55,14 @@
     "MassQuote",
     "Quote",
     "QuoteCancel"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0.SP1": {
@@ -105,6 +113,14 @@
     "MassQuote",
     "Quote",
     "QuoteCancel"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -155,6 +171,14 @@
     "MassQuote",
     "Quote",
     "QuoteCancel"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

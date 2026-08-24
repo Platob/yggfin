@@ -129,7 +129,10 @@
     "85": "SUB_SECTOR_CLASSIFICATION",
     "86": "PARTY_SIDE",
     "87": "LEGAL_REGISTRATION_COUNTRY"
-   }
+   },
+   "components": [
+    "PtysSubGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -204,7 +207,10 @@
     "31": "LOCATION",
     "32": "EXECUTION_VENUE",
     "33": "CURRENCY_DELIVERY_IDENTIFIER"
-   }
+   },
+   "components": [
+    "PtysSubGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -277,7 +283,10 @@
     "30": "PROFESSIONAL_CLIENT",
     "31": "LOCATION",
     "32": "EXECUTION_VENUE"
-   }
+   },
+   "components": [
+    "PtysSubGrp"
+   ]
   },
   "4.4": {
    "type": "int",
@@ -309,7 +318,10 @@
     "24": "DEPARTMENT",
     "25": "LOCATION_DESK",
     "26": "POSITION_ACCOUNT_TYPE"
-   }
+   },
+   "components": [
+    "Parties"
+   ]
   }
  }
 }

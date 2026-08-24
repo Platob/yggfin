@@ -1,0 +1,14 @@
+{
+ "name": "RiskLimitReportRejectReason",
+ "tag": 2317,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "UNK_RISK_LMT_RPRT_ID",
+    "1": "UNK_PTY",
+    "99": "OTHER"
+   }
+  }
+ }
+}

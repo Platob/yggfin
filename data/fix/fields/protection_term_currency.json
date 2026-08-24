@@ -1,0 +1,9 @@
+{
+ "name": "ProtectionTermCurrency",
+ "tag": 40183,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

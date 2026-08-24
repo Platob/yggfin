@@ -1,0 +1,9 @@
+{
+ "name": "ExposureDuration",
+ "tag": 1629,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

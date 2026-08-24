@@ -1,0 +1,15 @@
+{
+ "name": "ReturnRatePriceBasis",
+ "tag": 42766,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "GROSS",
+    "1": "NET",
+    "2": "ACCRUED",
+    "3": "CLEAN_NET"
+   }
+  }
+ }
+}

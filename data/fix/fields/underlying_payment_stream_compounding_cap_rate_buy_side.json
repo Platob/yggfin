@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamCompoundingCapRateBuySide",
+ "tag": 42931,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

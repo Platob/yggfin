@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Identifies the trader (e.g. \"badge number\") of the ContraBroker <375> ."
+   "description": "Identifies the trader (e.g. \"badge number\") of the ContraBroker <375> .",
+   "components": [
+    "ContraGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Identifies the trader (e.g. \"badge number\") of the ContraBroker <375> ."
+   "description": "Identifies the trader (e.g. \"badge number\") of the ContraBroker <375> .",
+   "components": [
+    "ContraGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Identifies the trader (e.g. \"badge number\") of the ContraBroker <375> ."
+   "description": "Identifies the trader (e.g. \"badge number\") of the ContraBroker <375> .",
+   "components": [
+    "ContraGrp"
+   ]
   },
   "4.4": {
    "type": "String",

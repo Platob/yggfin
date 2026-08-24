@@ -1,0 +1,9 @@
+{
+ "name": "CollateralRequestInstruction",
+ "tag": 2516,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

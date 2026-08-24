@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "The price type of the YieldRedemptionPrice <697> See PriceType <423> for description and"
+   "description": "The price type of the YieldRedemptionPrice <697> See PriceType <423> for description and",
+   "components": [
+    "YieldData"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "The price type of the YieldRedemptionPrice <697> See PriceType <423> for description and"
+   "description": "The price type of the YieldRedemptionPrice <697> See PriceType <423> for description and",
+   "components": [
+    "YieldData"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "The price type of the YieldRedemptionPrice <697> See PriceType <423> for description and"
+   "description": "The price type of the YieldRedemptionPrice <697> See PriceType <423> for description and",
+   "components": [
+    "YieldData"
+   ]
   },
   "4.4": {
    "type": "int",
-   "description": "The price type of the YieldRedemptionPrice <697> See PriceType <423> for description and"
+   "description": "The price type of the YieldRedemptionPrice <697> See PriceType <423> for description and",
+   "components": [
+    "YieldData"
+   ]
   }
  }
 }

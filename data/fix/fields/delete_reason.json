@@ -12,7 +12,10 @@
    "value_names": {
     "0": "CANCELLATION",
     "1": "ERROR"
-   }
+   },
+   "components": [
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -24,7 +27,10 @@
    "value_names": {
     "0": "CANCELLATION",
     "1": "ERROR"
-   }
+   },
+   "components": [
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -36,7 +42,10 @@
    "value_names": {
     "0": "CANCELLATION",
     "1": "ERROR"
-   }
+   },
+   "components": [
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "char",

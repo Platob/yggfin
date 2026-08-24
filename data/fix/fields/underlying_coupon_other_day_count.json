@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingCouponOtherDayCount",
+ "tag": 2881,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

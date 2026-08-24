@@ -1,0 +1,9 @@
+{
+ "name": "RelatedPositionID",
+ "tag": 1862,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

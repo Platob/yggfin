@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventStrikeNumberOfOptions",
+ "tag": 2241,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

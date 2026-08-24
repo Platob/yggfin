@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventScheduleEndDate",
+ "tag": 41402,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

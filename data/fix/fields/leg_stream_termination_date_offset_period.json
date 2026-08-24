@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamTerminationDateOffsetPeriod",
+ "tag": 40261,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

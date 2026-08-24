@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "PartyIDSource value within a \"second instance\" Nested repeating group. Same values as PartyIDSource <447>"
+   "description": "PartyIDSource value within a \"second instance\" Nested repeating group. Same values as PartyIDSource <447>",
+   "components": [
+    "NestedParties2"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
-   "description": "PartyIDSource value within a \"second instance\" Nested repeating group. Same values as PartyIDSource <447>"
+   "description": "PartyIDSource value within a \"second instance\" Nested repeating group. Same values as PartyIDSource <447>",
+   "components": [
+    "NestedParties2"
+   ]
   },
   "5.0": {
    "type": "char",
-   "description": "PartyIDSource value within a \"second instance\" Nested repeating group. Same values as PartyIDSource <447>"
+   "description": "PartyIDSource value within a \"second instance\" Nested repeating group. Same values as PartyIDSource <447>",
+   "components": [
+    "NestedParties2"
+   ]
   },
   "4.4": {
    "type": "char",
-   "description": "PartyIDSource value within a \"second instance\" Nested repeating group. Same values as PartyIDSource <447>"
+   "description": "PartyIDSource value within a \"second instance\" Nested repeating group. Same values as PartyIDSource <447>",
+   "components": [
+    "NestedParties2"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "LegProtectionTermEventType",
+ "tag": 41626,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

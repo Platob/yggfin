@@ -1,0 +1,9 @@
+{
+ "name": "LegMarketDisruptionValue",
+ "tag": 40223,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

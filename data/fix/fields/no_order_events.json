@@ -1,0 +1,9 @@
+{
+ "name": "NoOrderEvents",
+ "tag": 1795,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

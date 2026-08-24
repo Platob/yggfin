@@ -14,6 +14,11 @@
     "OrderCancelReplaceRequest",
     "NewOrderCross",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SettlInstGrp",
+    "SettlObligationInstructions"
    ]
   },
   "5.0.SP1": {
@@ -28,6 +33,11 @@
     "OrderCancelReplaceRequest",
     "NewOrderCross",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SettlInstGrp",
+    "SettlObligationInstructions"
    ]
   },
   "5.0": {
@@ -42,6 +52,10 @@
     "OrderCancelReplaceRequest",
     "NewOrderCross",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SettlInstGrp"
    ]
   },
   "4.4": {

@@ -1,0 +1,9 @@
+{
+ "name": "PayRequestRefID",
+ "tag": 2810,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

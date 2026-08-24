@@ -14,15 +14,27 @@
     "A": "AGENT",
     "P": "PRINCIPAL",
     "R": "RISKLESS_PRINCIPAL"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "PriceOffset",
-   "description": "Identifies role of dealer; Agent, Principal, RisklessPrincipal"
+   "description": "Identifies role of dealer; Agent, Principal, RisklessPrincipal",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "PriceOffset",
-   "description": "Identifies role of dealer; Agent, Principal, RisklessPrincipal"
+   "description": "Identifies role of dealer; Agent, Principal, RisklessPrincipal",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   }
  }
 }

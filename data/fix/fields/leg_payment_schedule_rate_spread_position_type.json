@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentScheduleRateSpreadPositionType",
+ "tag": 40386,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

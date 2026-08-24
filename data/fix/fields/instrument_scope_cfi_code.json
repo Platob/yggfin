@@ -1,0 +1,9 @@
+{
+ "name": "InstrumentScopeCFICode",
+ "tag": 1546,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

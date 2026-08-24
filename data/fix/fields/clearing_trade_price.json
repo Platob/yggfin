@@ -1,0 +1,9 @@
+{
+ "name": "ClearingTradePrice",
+ "tag": 1596,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

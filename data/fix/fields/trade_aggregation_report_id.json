@@ -1,0 +1,9 @@
+{
+ "name": "TradeAggregationReportID",
+ "tag": 2792,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Text which identifies the \"origin\" (i.e. system which was used to generate the time stamp) for the Traded / Regulatory timestamp value."
+   "description": "Text which identifies the \"origin\" (i.e. system which was used to generate the time stamp) for the Traded / Regulatory timestamp value.",
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Text which identifies the \"origin\" (i.e. system which was used to generate the time stamp) for the Traded / Regulatory timestamp value."
+   "description": "Text which identifies the \"origin\" (i.e. system which was used to generate the time stamp) for the Traded / Regulatory timestamp value.",
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Text which identifies the \"origin\" (i.e. system which was used to generate the time stamp) for the Traded / Regulatory timestamp value."
+   "description": "Text which identifies the \"origin\" (i.e. system which was used to generate the time stamp) for the Traded / Regulatory timestamp value.",
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Text which identifies the \"origin\" (i.e. system which was used to generate the time stamp) for the Traded / Regulatory timestamp value."
+   "description": "Text which identifies the \"origin\" (i.e. system which was used to generate the time stamp) for the Traded / Regulatory timestamp value.",
+   "components": [
+    "TrdRegTimestamps"
+   ]
   }
  }
 }

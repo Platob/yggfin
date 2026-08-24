@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingAutomaticExerciseThresholdRate",
+ "tag": 41814,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

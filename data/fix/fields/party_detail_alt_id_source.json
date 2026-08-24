@@ -1,0 +1,9 @@
+{
+ "name": "PartyDetailAltIDSource",
+ "tag": 1518,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR"
+  }
+ }
+}

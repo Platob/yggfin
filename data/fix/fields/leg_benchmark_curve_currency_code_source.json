@@ -1,0 +1,9 @@
+{
+ "name": "LegBenchmarkCurveCurrencyCodeSource",
+ "tag": 2951,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

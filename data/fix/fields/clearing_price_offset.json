@@ -1,0 +1,9 @@
+{
+ "name": "ClearingPriceOffset",
+ "tag": 2582,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICEOFFSET"
+  }
+ }
+}

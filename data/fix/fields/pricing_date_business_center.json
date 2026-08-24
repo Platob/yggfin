@@ -1,0 +1,9 @@
+{
+ "name": "PricingDateBusinessCenter",
+ "tag": 41231,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

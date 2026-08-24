@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingNotional",
+ "tag": 2614,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

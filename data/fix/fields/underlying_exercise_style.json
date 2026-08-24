@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Type of exercise of a derivatives security Same values as ExerciseStyle <1194>"
+   "description": "Type of exercise of a derivatives security Same values as ExerciseStyle <1194>",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Type of exercise of a derivatives security Same values as ExerciseStyle <1194>"
+   "description": "Type of exercise of a derivatives security Same values as ExerciseStyle <1194>",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

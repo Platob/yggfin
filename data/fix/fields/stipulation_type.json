@@ -187,7 +187,10 @@
     "PPC": "PERCENT_OF_PROSPECTUS_PREPAYMENT_CURVE",
     "PSA": "PERCENT_OF_BMA_PREPAYMENT_CURVE",
     "SMM": "SINGLE_MONTHLY_MORTALITY"
-   }
+   },
+   "components": [
+    "Stipulations"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -355,7 +358,10 @@
     "PPC": "PERCENT_OF_PROSPECTUS_PREPAYMENT_CURVE",
     "PSA": "PERCENT_OF_BMA_PREPAYMENT_CURVE",
     "SMM": "SINGLE_MONTHLY_MORTALITY"
-   }
+   },
+   "components": [
+    "Stipulations"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -483,7 +489,10 @@
     "PPC": "PERCENT_OF_PROSPECTUS_PREPAYMENT_CURVE",
     "PSA": "PERCENT_OF_BMA_PREPAYMENT_CURVE",
     "SMM": "SINGLE_MONTHLY_MORTALITY"
-   }
+   },
+   "components": [
+    "Stipulations"
+   ]
   },
   "4.4": {
    "type": "String",
@@ -539,7 +548,10 @@
     "WAM": "WEIGHTED_AVERAGE_MATURITY",
     "WHOLE": "WHOLE_POOL",
     "YIELD": "YIELD_RANGE"
-   }
+   },
+   "components": [
+    "Stipulations"
+   ]
   },
   "4.3": {
    "type": "String",
@@ -570,7 +582,10 @@
     "PROD": "PRODUCTION_YEAR",
     "TRDVAR": "TRADE_VARIANCE",
     "GEOG": "GEOGRAPHICS"
-   }
+   },
+   "components": [
+    "Stipulations"
+   ]
   }
  }
 }

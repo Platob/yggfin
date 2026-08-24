@@ -1,0 +1,15 @@
+{
+ "name": "ClearedIndicator",
+ "tag": 1832,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NOT_CLEARED",
+    "1": "CLEARED",
+    "2": "SUBMITTED",
+    "3": "REJECTED"
+   }
+  }
+ }
+}

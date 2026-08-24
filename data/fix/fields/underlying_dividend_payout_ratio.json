@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDividendPayoutRatio",
+ "tag": 42860,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

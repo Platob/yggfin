@@ -1,0 +1,9 @@
+{
+ "name": "OfferID",
+ "tag": 1867,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

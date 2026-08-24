@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventCurrencyOne",
+ "tag": 2233,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

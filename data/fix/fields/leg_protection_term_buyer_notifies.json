@@ -1,0 +1,9 @@
+{
+ "name": "LegProtectionTermBuyerNotifies",
+ "tag": 41621,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

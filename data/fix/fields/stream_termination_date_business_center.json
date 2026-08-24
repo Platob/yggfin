@@ -1,0 +1,9 @@
+{
+ "name": "StreamTerminationDateBusinessCenter",
+ "tag": 40067,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

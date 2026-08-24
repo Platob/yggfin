@@ -29,6 +29,9 @@
     "NewOrderCross",
     "Quote",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp"
    ]
   },
   "5.0.SP1": {
@@ -58,6 +61,9 @@
     "NewOrderCross",
     "Quote",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp"
    ]
   },
   "5.0": {
@@ -87,6 +93,9 @@
     "NewOrderCross",
     "Quote",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp"
    ]
   }
  }

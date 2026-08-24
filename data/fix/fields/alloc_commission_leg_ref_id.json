@@ -1,0 +1,9 @@
+{
+ "name": "AllocCommissionLegRefID",
+ "tag": 2663,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

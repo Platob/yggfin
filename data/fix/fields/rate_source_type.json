@@ -12,7 +12,10 @@
    "value_names": {
     "0": "PRIMARY",
     "1": "SECONDARY"
-   }
+   },
+   "components": [
+    "RateSource"
+   ]
   }
  }
 }

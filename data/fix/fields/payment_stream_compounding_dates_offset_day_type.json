@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamCompoundingDatesOffsetDayType",
+ "tag": 42613,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

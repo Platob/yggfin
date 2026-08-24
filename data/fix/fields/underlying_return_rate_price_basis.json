@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingReturnRatePriceBasis",
+ "tag": 43065,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

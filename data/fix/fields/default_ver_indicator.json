@@ -4,14 +4,23 @@
  "versions": {
   "5.0.SP2": {
    "type": "Boolean",
-   "description": "Indicates that the Application Version is the default for the RefMsgType <372> field."
+   "description": "Indicates that the Application Version is the default for the RefMsgType <372> field.",
+   "components": [
+    "MsgTypeGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Boolean",
-   "description": "Indicates that the Application Version is the default for the RefMsgType <372> field."
+   "description": "Indicates that the Application Version is the default for the RefMsgType <372> field.",
+   "components": [
+    "MsgTypeGrp"
+   ]
   },
   "FIXT1.1": {
-   "type": "Boolean"
+   "type": "Boolean",
+   "components": [
+    "MsgTypeGrp"
+   ]
   }
  }
 }

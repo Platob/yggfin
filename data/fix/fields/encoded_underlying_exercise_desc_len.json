@@ -1,0 +1,9 @@
+{
+ "name": "EncodedUnderlyingExerciseDescLen",
+ "tag": 41811,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamRate",
+ "tag": 40615,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "ReturnRatePriceSequence",
+ "tag": 42736,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "INITIAL",
+    "1": "INTERIM",
+    "2": "FINAL"
+   }
+  }
+ }
+}

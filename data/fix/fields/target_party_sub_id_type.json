@@ -1,0 +1,9 @@
+{
+ "name": "TargetPartySubIDType",
+ "tag": 2435,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

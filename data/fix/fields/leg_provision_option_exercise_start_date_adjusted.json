@@ -1,0 +1,9 @@
+{
+ "name": "LegProvisionOptionExerciseStartDateAdjusted",
+ "tag": 40487,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

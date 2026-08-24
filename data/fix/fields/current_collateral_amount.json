@@ -1,0 +1,9 @@
+{
+ "name": "CurrentCollateralAmount",
+ "tag": 1704,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

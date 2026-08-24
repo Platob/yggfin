@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleSettlPeriodPrice",
+ "tag": 41887,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

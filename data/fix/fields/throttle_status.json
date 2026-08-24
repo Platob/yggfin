@@ -1,0 +1,13 @@
+{
+ "name": "ThrottleStatus",
+ "tag": 1609,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "THROTTLE_LIMIT_NOT_EXCEEDED_NOT_QUEUED",
+    "1": "QUEUED_DUE_TO_THROTTLE_LIMIT_EXCEEDED"
+   }
+  }
+ }
+}

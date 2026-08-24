@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of rate sources being specified."
+   "description": "Number of rate sources being specified.",
+   "components": [
+    "RateSource"
+   ]
   }
  }
 }

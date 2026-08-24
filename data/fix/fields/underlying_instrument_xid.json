@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingInstrumentXID",
+ "tag": 2631,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XID"
+  }
+ }
+}

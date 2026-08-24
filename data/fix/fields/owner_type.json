@@ -43,7 +43,10 @@
     "20": "UNKNOWN_BENEFICIAL_OWNER_TYPE",
     "21": "FIRMS_ERROR_ACCOUNT",
     "22": "FIRM_AGENCY_AVERAGE_PRICE_ACCOUNT"
-   }
+   },
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -77,7 +80,10 @@
     "11": "NON_PROFIT_ORGANIZATION",
     "12": "CORPORATE_BODY",
     "13": "NOMINEE"
-   }
+   },
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -111,7 +117,10 @@
     "11": "NON_PROFIT_ORGANIZATION",
     "12": "CORPORATE_BODY",
     "13": "NOMINEE"
-   }
+   },
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "4.4": {
    "type": "int",

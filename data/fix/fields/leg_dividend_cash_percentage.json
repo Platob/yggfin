@@ -1,0 +1,9 @@
+{
+ "name": "LegDividendCashPercentage",
+ "tag": 42348,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

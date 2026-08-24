@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingSecurityStatus",
+ "tag": 2011,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "name": "AllocationRollupInstruction",
+ "tag": 1735,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "ROLLUP",
+    "1": "DO_NOT_ROLL_UP"
+   }
+  }
+ }
+}

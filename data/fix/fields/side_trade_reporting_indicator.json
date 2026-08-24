@@ -1,0 +1,9 @@
+{
+ "name": "SideTradeReportingIndicator",
+ "tag": 2671,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

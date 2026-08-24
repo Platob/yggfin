@@ -1,0 +1,9 @@
+{
+ "name": "DividendCapRate",
+ "tag": 42225,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

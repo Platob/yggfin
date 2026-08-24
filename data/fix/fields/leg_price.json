@@ -4,15 +4,28 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Price for leg of a multileg See Price <44> field for description"
+   "description": "Price for leg of a multileg See Price <44> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Price for leg of a multileg See Price <44> field for description"
+   "description": "Price for leg of a multileg See Price <44> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "Price",
-   "description": "Price for leg of a multileg See Price <44> field for description"
+   "description": "Price for leg of a multileg See Price <44> field for description",
+   "components": [
+    "InstrumentLeg",
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "QuotReqLegsGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "Price",

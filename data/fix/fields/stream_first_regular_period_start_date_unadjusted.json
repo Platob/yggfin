@@ -1,0 +1,9 @@
+{
+ "name": "StreamFirstRegularPeriodStartDateUnadjusted",
+ "tag": 40079,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

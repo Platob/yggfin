@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Minimum lot size allowed based on lot type specified in LotType <1093>"
+   "description": "Minimum lot size allowed based on lot type specified in LotType <1093>",
+   "components": [
+    "LotTypeRules"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Minimum lot size allowed based on lot type specified in LotType <1093>"
+   "description": "Minimum lot size allowed based on lot type specified in LotType <1093>",
+   "components": [
+    "LotTypeRules"
+   ]
   }
  }
 }

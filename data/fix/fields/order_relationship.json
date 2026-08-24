@@ -1,0 +1,14 @@
+{
+ "name": "OrderRelationship",
+ "tag": 2890,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NOT_SPECIFIED",
+    "1": "ORDER_AGGREGATION",
+    "2": "ORDER_SPLIT"
+   }
+  }
+ }
+}

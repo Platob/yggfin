@@ -1,0 +1,13 @@
+{
+ "name": "PaymentStreamNegativeRateTreatment",
+ "tag": 40807,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "ZERO_INTEREST_RATE_METHOD",
+    "1": "NEGATIVE_INTEREST_RATE_METHOD"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegBusinessDayConvention",
+ "tag": 40925,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

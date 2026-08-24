@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "UTCTimestamp",
-   "description": "Indicates how long the order as specified in the side stays in effect. SideTimeInForce allows a two-sided cross order to specify order behavior separately for each side. Absence of this field indicates that TimeInForce <59> should be referenced. SideTimeInForce will override TimeInForce if both are provided."
+   "description": "Indicates how long the order as specified in the side stays in effect. SideTimeInForce allows a two-sided cross order to specify order behavior separately for each side. Absence of this field indicates that TimeInForce <59> should be referenced. SideTimeInForce will override TimeInForce if both are provided.",
+   "components": [
+    "SideCrossOrdModGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "UTCTimestamp",
-   "description": "Indicates how long the order as specified in the side stays in effect. SideTimeInForce allows a two-sided cross order to specify order behavior separately for each side. Absence of this field indicates that TimeInForce <59> should be referenced. SideTimeInForce will override TimeInForce if both are provided."
+   "description": "Indicates how long the order as specified in the side stays in effect. SideTimeInForce allows a two-sided cross order to specify order behavior separately for each side. Absence of this field indicates that TimeInForce <59> should be referenced. SideTimeInForce will override TimeInForce if both are provided.",
+   "components": [
+    "SideCrossOrdModGrp"
+   ]
   },
   "5.0": {
    "type": "UTCTimestamp",
-   "description": "Indicates how long the order as specified in the side stays in effect. SideTimeInForce allows a two-sided cross order to specify order behavior separately for each side. Absence of this field indicates that TimeInForce <59> should be referenced. SideTimeInForce will override TimeInForce if both are provided."
+   "description": "Indicates how long the order as specified in the side stays in effect. SideTimeInForce allows a two-sided cross order to specify order behavior separately for each side. Absence of this field indicates that TimeInForce <59> should be referenced. SideTimeInForce will override TimeInForce if both are provided.",
+   "components": [
+    "SideCrossOrdModGrp"
+   ]
   }
  }
 }

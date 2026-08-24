@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingAssetAttributes",
+ "tag": 2312,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "MarginClass",
+ "tag": 1639,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

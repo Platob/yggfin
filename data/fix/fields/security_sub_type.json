@@ -8,6 +8,10 @@
    "used_in": [
     "SecurityTypeRequest",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "Instrument",
+    "SecTypesGrp"
    ]
   },
   "5.0.SP1": {
@@ -16,6 +20,10 @@
    "used_in": [
     "SecurityTypeRequest",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "Instrument",
+    "SecTypesGrp"
    ]
   },
   "5.0": {
@@ -24,6 +32,10 @@
    "used_in": [
     "SecurityTypeRequest",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "Instrument",
+    "SecTypesGrp"
    ]
   },
   "4.4": {
@@ -33,6 +45,9 @@
     "Security Type Request",
     "Security Types",
     "Derivative Security List Request"
+   ],
+   "components": [
+    "Instrument"
    ]
   }
  }

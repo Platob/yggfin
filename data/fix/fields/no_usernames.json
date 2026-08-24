@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of Usernames to which this this response is directed"
+   "description": "Number of Usernames to which this this response is directed",
+   "components": [
+    "UsernameGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of Usernames to which this this response is directed"
+   "description": "Number of Usernames to which this this response is directed",
+   "components": [
+    "UsernameGrp"
+   ]
   }
  }
 }

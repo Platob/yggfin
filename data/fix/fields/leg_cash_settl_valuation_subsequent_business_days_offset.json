@@ -1,0 +1,9 @@
+{
+ "name": "LegCashSettlValuationSubsequentBusinessDaysOffset",
+ "tag": 41347,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

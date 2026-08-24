@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRateValuationDateBusinessCenter",
+ "tag": 42771,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

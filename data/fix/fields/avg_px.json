@@ -14,6 +14,9 @@
     "AllocationReport",
     "AllocationInstructionAlert",
     "AllocationInstruction"
+   ],
+   "components": [
+    "OrdListStatGrp"
    ]
   },
   "5.0.SP1": {
@@ -28,6 +31,9 @@
     "AllocationInstructionAlert",
     "ExecutionAcknowledgement",
     "AllocationInstruction"
+   ],
+   "components": [
+    "OrdListStatGrp"
    ]
   },
   "5.0": {
@@ -42,6 +48,9 @@
     "AllocationInstructionAlert",
     "ExecutionAcknowledgement",
     "AllocationInstruction"
+   ],
+   "components": [
+    "OrdListStatGrp"
    ]
   },
   "4.4": {

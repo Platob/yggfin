@@ -4,15 +4,39 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Deprecated in FIX 5.0 SP1 See Appendix 6-E: 7.Deprecated LegQty (tag 687) from certain message types [deprecated in FIX 5.0] and Appendix 6-E: 17.Deprecated LegQty (tag 687) from the specification [deprecated in FIX 5.0 SP1] Quantity of this leg, e.g. in Quote dialog. See Quantity <53> for description and"
+   "description": "Deprecated in FIX 5.0 SP1 See Appendix 6-E: 7.Deprecated LegQty (tag 687) from certain message types [deprecated in FIX 5.0] and Appendix 6-E: 17.Deprecated LegQty (tag 687) from the specification [deprecated in FIX 5.0 SP1] Quantity of this leg, e.g. in Quote dialog. See Quantity <53> for description and",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Deprecated in FIX 5.0 SP1 See Appendix 6-E: 7.Deprecated LegQty (tag 687) from certain message types [deprecated in FIX 5.0] and Appendix 6-E: 17.Deprecated LegQty (tag 687) from the specification [deprecated in FIX 5.0 SP1] Quantity of this leg, e.g. in Quote dialog. See Quantity <53> for description and"
+   "description": "Deprecated in FIX 5.0 SP1 See Appendix 6-E: 7.Deprecated LegQty (tag 687) from certain message types [deprecated in FIX 5.0] and Appendix 6-E: 17.Deprecated LegQty (tag 687) from the specification [deprecated in FIX 5.0 SP1] Quantity of this leg, e.g. in Quote dialog. See Quantity <53> for description and",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "Qty",
-   "description": "Quantity of this leg, e.g. in Quote dialog. See Quantity <53> for description and"
+   "description": "Quantity of this leg, e.g. in Quote dialog. See Quantity <53> for description and",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "Qty",

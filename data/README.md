@@ -11,6 +11,13 @@ data/fix/fields/party_role.json   one field, and every version's reading of it
 data/fix/components/parties.json  one component, and every version's members
 ```
 
+Two sources fill it. The OnixS dictionary supplies prose, enumerated values and
+where each field is used -- in messages *and* in component blocks, which is how
+a field FIX only carries inside a component (`TrdRegTimestamp <769>`, and three
+hundred others in 4.4 alone) records where it lives. The QuickFIX spec supplies
+the symbolic name of every enumerated value and every field an extension pack
+numbered past what the site wrote up.
+
 ```python
 from rekep.fix import FixRegistry
 
@@ -30,6 +37,13 @@ cd python
 uv run rekep fix registry add-field --store ../data/fix \
     --name TECH.CLIENTID --type String --column tech_client_id
 uv run rekep fix registry check --store ../data/fix
+```
+
+Or browse and edit it at a prompt, where every verb above is one command and a
+new field is built one answered question at a time:
+
+```bash
+uv run rekep fix shell --store ../data/fix
 ```
 
 Refresh deliberately, then rebuild the archive:

@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamRateIndexLocation",
+ "tag": 41565,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

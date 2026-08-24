@@ -1,0 +1,9 @@
+{
+ "name": "FloatingRateIndexCurveUnit",
+ "tag": 2730,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

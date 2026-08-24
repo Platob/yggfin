@@ -1,0 +1,9 @@
+{
+ "name": "MDStatisticTime",
+ "tag": 2476,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTIMESTAMP"
+  }
+ }
+}

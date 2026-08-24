@@ -1,0 +1,9 @@
+{
+ "name": "StreamCommoditySettlPeriodFrequencyPeriod",
+ "tag": 41295,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "ValuationBusinessCenter",
+ "tag": 2087,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

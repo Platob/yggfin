@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "UTCTimestamp",
-   "description": "Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+   "description": "Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "UTCTimestamp",
-   "description": "Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+   "description": "Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "UTCTimestamp",
@@ -36,7 +42,10 @@
   },
   "FIXT1.1": {
    "type": "UTCTimestamp",
-   "description": "Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+   "description": "Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

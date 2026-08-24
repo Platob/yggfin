@@ -3,10 +3,16 @@
  "tag": 1263,
  "versions": {
   "5.0.SP2": {
-   "type": "float"
+   "type": "float",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
-   "type": "float"
+   "type": "float",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

@@ -8,6 +8,12 @@
    "used_in": [
     "ExecutionReport",
     "Confirmation"
+   ],
+   "components": [
+    "AllocGrp",
+    "SettlObligationInstructions",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0.SP1": {
@@ -16,6 +22,12 @@
    "used_in": [
     "ExecutionReport",
     "Confirmation"
+   ],
+   "components": [
+    "AllocGrp",
+    "SettlObligationInstructions",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -24,6 +36,11 @@
    "used_in": [
     "ExecutionReport",
     "Confirmation"
+   ],
+   "components": [
+    "AllocGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

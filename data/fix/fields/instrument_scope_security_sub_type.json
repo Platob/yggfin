@@ -1,0 +1,9 @@
+{
+ "name": "InstrumentScopeSecuritySubType",
+ "tag": 1548,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

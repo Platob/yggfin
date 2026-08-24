@@ -1,0 +1,9 @@
+{
+ "name": "DeliveryStreamPipeline",
+ "tag": 41059,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "PriceQualifier",
+ "tag": 2710,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "ACCRUED_INTEREST_IS_FACTORED",
+    "1": "TAX_IS_FACTORED",
+    "2": "BOND_AMORTIZATION_IS_FACTORED"
+   }
+  }
+ }
+}

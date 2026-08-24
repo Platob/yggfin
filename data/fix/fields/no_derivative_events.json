@@ -3,10 +3,16 @@
  "tag": 1286,
  "versions": {
   "5.0.SP2": {
-   "type": "NumInGroup"
+   "type": "NumInGroup",
+   "components": [
+    "DerivativeEventsGrp"
+   ]
   },
   "5.0.SP1": {
-   "type": "NumInGroup"
+   "type": "NumInGroup",
+   "components": [
+    "DerivativeEventsGrp"
+   ]
   }
  }
 }

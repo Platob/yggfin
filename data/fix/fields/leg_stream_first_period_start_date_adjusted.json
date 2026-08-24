@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamFirstPeriodStartDateAdjusted",
+ "tag": 40270,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

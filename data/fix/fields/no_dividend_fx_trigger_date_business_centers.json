@@ -1,0 +1,9 @@
+{
+ "name": "NoDividendFXTriggerDateBusinessCenters",
+ "tag": 42272,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

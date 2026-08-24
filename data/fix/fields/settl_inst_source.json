@@ -14,7 +14,10 @@
     "1": "BROKER_CREDIT",
     "2": "INSTITUTION",
     "3": "INVESTOR"
-   }
+   },
+   "components": [
+    "DlvyInstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -28,7 +31,10 @@
     "1": "BROKER_CREDIT",
     "2": "INSTITUTION",
     "3": "INVESTOR"
-   }
+   },
+   "components": [
+    "DlvyInstGrp"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -42,7 +48,10 @@
     "1": "BROKER_CREDIT",
     "2": "INSTITUTION",
     "3": "INVESTOR"
-   }
+   },
+   "components": [
+    "DlvyInstGrp"
+   ]
   },
   "4.4": {
    "type": "char",
@@ -56,7 +65,10 @@
     "1": "BROKER_CREDIT",
     "2": "INSTITUTION",
     "3": "INVESTOR"
-   }
+   },
+   "components": [
+    "SettlInstructionsData"
+   ]
   },
   "4.3": {
    "type": "char",

@@ -1,0 +1,9 @@
+{
+ "name": "RiskLimitPlatform",
+ "tag": 1533,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

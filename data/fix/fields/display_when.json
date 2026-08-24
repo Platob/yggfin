@@ -12,7 +12,10 @@
    "value_names": {
     "1": "IMMEDIATE",
     "2": "EXHAUST"
-   }
+   },
+   "components": [
+    "DisplayInstruction"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -24,7 +27,10 @@
    "value_names": {
     "1": "IMMEDIATE",
     "2": "EXHAUST"
-   }
+   },
+   "components": [
+    "DisplayInstruction"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -36,7 +42,10 @@
    "value_names": {
     "1": "IMMEDIATE",
     "2": "EXHAUST"
-   }
+   },
+   "components": [
+    "DisplayInstruction"
+   ]
   }
  }
 }

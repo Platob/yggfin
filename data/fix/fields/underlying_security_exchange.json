@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "Exchange",
-   "description": "Underlying security\u2019s SecurityExchange. Can be used to identify the underlying security."
+   "description": "Underlying security\u2019s SecurityExchange. Can be used to identify the underlying security.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Exchange",
-   "description": "Underlying security\u2019s SecurityExchange. Can be used to identify the underlying security."
+   "description": "Underlying security\u2019s SecurityExchange. Can be used to identify the underlying security.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "Exchange",
-   "description": "Underlying security\u2019s SecurityExchange. Can be used to identify the underlying security."
+   "description": "Underlying security\u2019s SecurityExchange. Can be used to identify the underlying security.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "Exchange",
-   "description": "Underlying security's SecurityExchange. Can be used to identify the underlying security."
+   "description": "Underlying security's SecurityExchange. Can be used to identify the underlying security.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.3": {
    "type": "Exchange",
-   "description": "Underlying security's SecurityExchange. Can be used to identify the underlying security."
+   "description": "Underlying security's SecurityExchange. Can be used to identify the underlying security.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.2": {
    "type": "Exchange",

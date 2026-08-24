@@ -58,7 +58,10 @@
     "34": "DISCOUNTS",
     "35": "PAYMENTS",
     "36": "NON_MONETARY_PAYMENTS"
-   }
+   },
+   "components": [
+    "MiscFeesGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -94,7 +97,10 @@
     "12": "AGENT",
     "13": "TRANSFER_FEE",
     "14": "SECURITY_LENDING"
-   }
+   },
+   "components": [
+    "MiscFeesGrp"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -130,7 +136,10 @@
     "12": "AGENT",
     "13": "TRANSFER_FEE",
     "14": "SECURITY_LENDING"
-   }
+   },
+   "components": [
+    "MiscFeesGrp"
+   ]
   },
   "4.4": {
    "type": "char",

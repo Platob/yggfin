@@ -1,0 +1,9 @@
+{
+ "name": "EncodedAllocCommissionDescLen",
+ "tag": 2665,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

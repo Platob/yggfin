@@ -1,0 +1,9 @@
+{
+ "name": "LegDividendPeriodBusinessDayConvention",
+ "tag": 42372,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

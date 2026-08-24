@@ -1,0 +1,9 @@
+{
+ "name": "EncodedUnderlyingStreamCommodityDesc",
+ "tag": 41970,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

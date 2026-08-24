@@ -1,0 +1,13 @@
+{
+ "name": "RiskLimitCheckType",
+ "tag": 2321,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "SUBMIT",
+    "1": "LIMIT_CONSUMED"
+   }
+  }
+ }
+}

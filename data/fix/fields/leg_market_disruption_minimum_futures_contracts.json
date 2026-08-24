@@ -1,0 +1,9 @@
+{
+ "name": "LegMarketDisruptionMinimumFuturesContracts",
+ "tag": 41466,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

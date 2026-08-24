@@ -1,0 +1,18 @@
+{
+ "name": "TrdRegPublicationType",
+ "tag": 2669,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "PRE_TRADE_TRANSPARENCY_WAIVER",
+    "1": "POST_TRADE_DEFERRAL",
+    "2": "EXEMPT_FROM_PUBLICATION",
+    "3": "ORDER_LEVEL_PUBLICATION_TO_SUBSCRIBERS",
+    "4": "PRICE_LEVEL_PUBLICATION_TO_SUBSCRIBERS",
+    "5": "ORDER_LEVEL_PUBLICATION_TO_THE_PUBLIC",
+    "6": "PUBLICATION_INTERNAL_TO_EXECUTION_VENUE"
+   }
+  }
+ }
+}

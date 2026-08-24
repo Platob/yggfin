@@ -1,0 +1,9 @@
+{
+ "name": "EndPriceRange",
+ "tag": 2552,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

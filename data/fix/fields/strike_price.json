@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Strike Price for an Option."
+   "description": "Strike Price for an Option.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Strike Price for an Option."
+   "description": "Strike Price for an Option.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "Price",
-   "description": "Strike Price for an Option."
+   "description": "Strike Price for an Option.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "Price",
-   "description": "Strike Price for an Option."
+   "description": "Strike Price for an Option.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "Price",
-   "description": "Strike Price for an Option."
+   "description": "Strike Price for an Option.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.2": {
    "type": "Price",

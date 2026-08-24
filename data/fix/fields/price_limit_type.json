@@ -14,7 +14,10 @@
     "0": "PRICE",
     "1": "TICKS",
     "2": "PERCENTAGE"
-   }
+   },
+   "components": [
+    "PriceLimits"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -28,7 +31,10 @@
     "0": "PRICE",
     "1": "TICKS",
     "2": "PERCENTAGE"
-   }
+   },
+   "components": [
+    "PriceLimits"
+   ]
   }
  }
 }

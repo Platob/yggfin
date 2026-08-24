@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexEventDateUnadjusted",
+ "tag": 41739,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

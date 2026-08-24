@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Refer to definition of InstrAttribType <871>"
+   "description": "Refer to definition of InstrAttribType <871>",
+   "components": [
+    "DerivativeInstrumentAttribute"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Refer to definition of InstrAttribType <871>"
+   "description": "Refer to definition of InstrAttribType <871>",
+   "components": [
+    "DerivativeInstrumentAttribute"
+   ]
   }
  }
 }

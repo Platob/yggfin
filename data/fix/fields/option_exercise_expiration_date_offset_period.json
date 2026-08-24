@@ -1,0 +1,9 @@
+{
+ "name": "OptionExerciseExpirationDateOffsetPeriod",
+ "tag": 41144,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

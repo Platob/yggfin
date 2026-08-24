@@ -1,0 +1,9 @@
+{
+ "name": "LegMarketDisruptionFallbackBasketCurrency",
+ "tag": 41479,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

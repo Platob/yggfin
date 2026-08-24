@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRatePrice",
+ "tag": 42767,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

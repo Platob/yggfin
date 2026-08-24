@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Refer to ProductComplex <1227>"
+   "description": "Refer to ProductComplex <1227>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Refer to ProductComplex <1227>"
+   "description": "Refer to ProductComplex <1227>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

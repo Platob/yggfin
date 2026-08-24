@@ -19,7 +19,10 @@
     "6": "OFFICIAL_SETTL_PRICE",
     "7": "DERIVATIVES_CLOSE",
     "8": "AS_SPECIFIED_MASTER_CONFIRMATION"
-   }
+   },
+   "components": [
+    "ComplexEvents"
+   ]
   }
  }
 }

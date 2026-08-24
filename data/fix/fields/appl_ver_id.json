@@ -29,7 +29,10 @@
     "8": "FIX50_SP1",
     "9": "FIX50_SP2",
     "10": "FIX_LATEST"
-   }
+   },
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -55,7 +58,10 @@
     "6": "FIX44",
     "7": "FIX50",
     "8": "FIX50_SP1"
-   }
+   },
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -107,7 +113,10 @@
     "7": "FIX50",
     "8": "FIX50_SP1",
     "9": "FIX50_SP2"
-   }
+   },
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

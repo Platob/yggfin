@@ -1,0 +1,9 @@
+{
+ "name": "EncodedLegFinancialInstrumentFullName",
+ "tag": 2719,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

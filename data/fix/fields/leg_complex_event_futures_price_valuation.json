@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventFuturesPriceValuation",
+ "tag": 2608,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

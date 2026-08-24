@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "Same values as InstrmtAssignmentMethod <1049>"
+   "description": "Same values as InstrmtAssignmentMethod <1049>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
-   "description": "Same values as InstrmtAssignmentMethod <1049>"
+   "description": "Same values as InstrmtAssignmentMethod <1049>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

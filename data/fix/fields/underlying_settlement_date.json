@@ -7,6 +7,9 @@
    "description": "Date the underlying instrument will settle. Used for derivatives that deliver into more than one underlying instrument. Settlement dates can vary across underlying instruments.",
    "used_in": [
     "TradeCaptureReport"
+   ],
+   "components": [
+    "UnderlyingAmount"
    ]
   },
   "5.0.SP1": {
@@ -14,6 +17,9 @@
    "description": "Date the underlying instrument will settle. Used for derivatives that deliver into more than one underlying instrument. Settlement dates can vary across underlying instruments.",
    "used_in": [
     "TradeCaptureReport"
+   ],
+   "components": [
+    "UnderlyingAmount"
    ]
   },
   "5.0": {
@@ -21,6 +27,9 @@
    "description": "Date the underlying instrument will settle. Used for derivatives that deliver into more than one underlying instrument. Settlement dates can vary across underlying instruments.",
    "used_in": [
     "TradeCaptureReport"
+   ],
+   "components": [
+    "UnderlyingAmount"
    ]
   }
  }

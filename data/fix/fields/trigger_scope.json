@@ -1,0 +1,17 @@
+{
+ "name": "TriggerScope",
+ "tag": 1628,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "THIS_ORDER",
+    "1": "OTHER_ORDER",
+    "2": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY",
+    "3": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_AND_PRICE",
+    "4": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_AND_SIDE",
+    "5": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_PRICE_AND_SIDE"
+   }
+  }
+ }
+}

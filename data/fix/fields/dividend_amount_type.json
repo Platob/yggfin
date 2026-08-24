@@ -1,0 +1,15 @@
+{
+ "name": "DividendAmountType",
+ "tag": 42247,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "RECORD_AMOUNT",
+    "1": "EX_AMOUNT",
+    "2": "PAID_AMOUNT",
+    "3": "PER_MASTER_CONFIRM"
+   }
+  }
+ }
+}

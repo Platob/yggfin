@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of Nested3PartySubIDs <953> entries"
+   "description": "Number of Nested3PartySubIDs <953> entries",
+   "components": [
+    "NstdPtys3SubGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of Nested3PartySubIDs <953> entries"
+   "description": "Number of Nested3PartySubIDs <953> entries",
+   "components": [
+    "NstdPtys3SubGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of Nested3PartySubIDs <953> entries"
+   "description": "Number of Nested3PartySubIDs <953> entries",
+   "components": [
+    "NstdPtys3SubGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",
-   "description": "Number of Nested3PartySubIDs <953> entries"
+   "description": "Number of Nested3PartySubIDs <953> entries",
+   "components": [
+    "NestedParties3"
+   ]
   }
  }
 }

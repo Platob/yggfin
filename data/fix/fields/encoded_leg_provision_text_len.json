@@ -1,0 +1,9 @@
+{
+ "name": "EncodedLegProvisionTextLen",
+ "tag": 40980,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

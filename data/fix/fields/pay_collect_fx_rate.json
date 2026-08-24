@@ -1,0 +1,9 @@
+{
+ "name": "PayCollectFXRate",
+ "tag": 2094,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

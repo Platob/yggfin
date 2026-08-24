@@ -1,0 +1,9 @@
+{
+ "name": "PaymentScheduleRateUnitOfMeasure",
+ "tag": 41167,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

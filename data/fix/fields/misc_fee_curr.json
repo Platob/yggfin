@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Currency",
-   "description": "Currency of miscellaneous fee"
+   "description": "Currency of miscellaneous fee",
+   "components": [
+    "MiscFeesGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Currency",
-   "description": "Currency of miscellaneous fee"
+   "description": "Currency of miscellaneous fee",
+   "components": [
+    "MiscFeesGrp"
+   ]
   },
   "5.0": {
    "type": "Currency",
-   "description": "Currency of miscellaneous fee"
+   "description": "Currency of miscellaneous fee",
+   "components": [
+    "MiscFeesGrp"
+   ]
   },
   "4.4": {
    "type": "Currency",

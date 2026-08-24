@@ -13,7 +13,10 @@
     "C": "CASH_SETTLEMENT_REQUIRED",
     "P": "PHYSICAL_SETTLEMENT_REQUIRED",
     "E": "ELECTION"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -25,7 +28,10 @@
    "value_names": {
     "C": "CASH_SETTLEMENT_REQUIRED",
     "P": "PHYSICAL_SETTLEMENT_REQUIRED"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

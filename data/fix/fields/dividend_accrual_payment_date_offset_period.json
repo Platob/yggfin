@@ -1,0 +1,9 @@
+{
+ "name": "DividendAccrualPaymentDateOffsetPeriod",
+ "tag": 42239,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingDividendAccrualPaymentDateBusinessCenters",
+ "tag": 42799,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

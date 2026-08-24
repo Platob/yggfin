@@ -14,7 +14,11 @@
     "1": "SINGLE_SECURITY",
     "2": "INDIVIDUAL_LEG_OF_A_MULTILEG_SECURITY",
     "3": "MULTILEG_SECURITY"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -28,7 +32,11 @@
     "1": "SINGLE_SECURITY",
     "2": "INDIVIDUAL_LEG_OF_A_MULTILEG_SECURITY",
     "3": "MULTILEG_SECURITY"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -42,7 +50,11 @@
     "1": "SINGLE_SECURITY",
     "2": "INDIVIDUAL_LEG_OF_A_MULTILEG_SECURITY",
     "3": "MULTILEG_SECURITY"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "4.4": {
    "type": "int",

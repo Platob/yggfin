@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Set of Correspondence address details, possibly including phone, fax, etc."
+   "description": "Set of Correspondence address details, possibly including phone, fax, etc.",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Set of Correspondence address details, possibly including phone, fax, etc."
+   "description": "Set of Correspondence address details, possibly including phone, fax, etc.",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Set of Correspondence address details, possibly including phone, fax, etc."
+   "description": "Set of Correspondence address details, possibly including phone, fax, etc.",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "4.4": {
    "type": "String",

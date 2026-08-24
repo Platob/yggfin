@@ -1,0 +1,9 @@
+{
+ "name": "AdditionalTermBondCouponRate",
+ "tag": 40012,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

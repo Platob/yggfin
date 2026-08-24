@@ -1,0 +1,15 @@
+{
+ "name": "CouponType",
+ "tag": 1946,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "ZERO",
+    "1": "FIXED_RATE",
+    "2": "FLOATING_RATE",
+    "3": "STRUCTURED"
+   }
+  }
+ }
+}

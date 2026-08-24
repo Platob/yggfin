@@ -1,0 +1,9 @@
+{
+ "name": "NoLegComplexEventCreditEventQualifiers",
+ "tag": 41374,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

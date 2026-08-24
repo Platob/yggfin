@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "Code to qualify Quote use See IOIQualifier <104> for description and"
+   "description": "Code to qualify Quote use See IOIQualifier <104> for description and",
+   "components": [
+    "QuotQualGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
-   "description": "Code to qualify Quote use See IOIQualifier <104> for description and"
+   "description": "Code to qualify Quote use See IOIQualifier <104> for description and",
+   "components": [
+    "QuotQualGrp"
+   ]
   },
   "5.0": {
    "type": "char",
-   "description": "Code to qualify Quote use See IOIQualifier <104> for description and"
+   "description": "Code to qualify Quote use See IOIQualifier <104> for description and",
+   "components": [
+    "QuotQualGrp"
+   ]
   },
   "4.4": {
    "type": "char",

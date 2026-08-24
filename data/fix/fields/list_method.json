@@ -12,7 +12,10 @@
    "value_names": {
     "0": "PRE_LISTED_ONLY",
     "1": "USER_REQUESTED"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -24,7 +27,10 @@
    "value_names": {
     "0": "PRE_LISTED_ONLY",
     "1": "USER_REQUESTED"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

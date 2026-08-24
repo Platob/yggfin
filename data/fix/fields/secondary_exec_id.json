@@ -9,6 +9,9 @@
     "ExecutionReport",
     "TradeCaptureReport",
     "TradeCaptureReportAck"
+   ],
+   "components": [
+    "ExecAllocGrp"
    ]
   },
   "5.0.SP1": {
@@ -18,6 +21,9 @@
     "ExecutionReport",
     "TradeCaptureReport",
     "TradeCaptureReportAck"
+   ],
+   "components": [
+    "ExecAllocGrp"
    ]
   },
   "5.0": {
@@ -27,6 +33,9 @@
     "ExecutionReport",
     "TradeCaptureReport",
     "TradeCaptureReportAck"
+   ],
+   "components": [
+    "ExecAllocGrp"
    ]
   },
   "4.4": {

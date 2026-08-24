@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexEventCondition",
+ "tag": 2052,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

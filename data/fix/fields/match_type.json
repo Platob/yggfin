@@ -71,6 +71,10 @@
     "AllocationReport",
     "AllocationInstructionAlert",
     "AllocationInstruction"
+   ],
+   "components": [
+    "MDIncGrp",
+    "MatchRules"
    ]
   },
   "5.0.SP1": {
@@ -139,6 +143,10 @@
     "AllocationReport",
     "AllocationInstructionAlert",
     "AllocationInstruction"
+   ],
+   "components": [
+    "MDIncGrp",
+    "MatchRules"
    ]
   },
   "5.0": {

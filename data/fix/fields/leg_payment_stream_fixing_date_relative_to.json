@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamFixingDateRelativeTo",
+ "tag": 40316,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

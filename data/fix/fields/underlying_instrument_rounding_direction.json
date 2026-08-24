@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingInstrumentRoundingDirection",
+ "tag": 2298,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR"
+  }
+ }
+}

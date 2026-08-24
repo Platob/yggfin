@@ -1,0 +1,9 @@
+{
+ "name": "CurrentWorkingPrice",
+ "tag": 2838,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

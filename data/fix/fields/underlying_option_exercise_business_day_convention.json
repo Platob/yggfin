@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingOptionExerciseBusinessDayConvention",
+ "tag": 41822,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

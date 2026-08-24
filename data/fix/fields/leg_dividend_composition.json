@@ -1,0 +1,9 @@
+{
+ "name": "LegDividendComposition",
+ "tag": 42351,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

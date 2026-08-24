@@ -1,0 +1,15 @@
+{
+ "name": "ExDestinationType",
+ "tag": 2704,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NO_RESTRICTION",
+    "1": "TRADED_ONLY_ON_TRADING_VENUE",
+    "2": "TRADED_ONLY_ON_SI",
+    "3": "TRADED_ON_TRADING_VENUE_OR_SI"
+   }
+  }
+ }
+}

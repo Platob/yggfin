@@ -1,0 +1,9 @@
+{
+ "name": "DividendPeriodValuationDateOffsetDayType",
+ "tag": 42285,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

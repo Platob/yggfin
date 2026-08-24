@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Total quantity canceled for this order. (Prior to FIX 4.2 this field was of type int)"
+   "description": "Total quantity canceled for this order. (Prior to FIX 4.2 this field was of type int)",
+   "components": [
+    "OrdListStatGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Total quantity canceled for this order. (Prior to FIX 4.2 this field was of type int)"
+   "description": "Total quantity canceled for this order. (Prior to FIX 4.2 this field was of type int)",
+   "components": [
+    "OrdListStatGrp"
+   ]
   },
   "5.0": {
    "type": "Qty",
-   "description": "Total quantity canceled for this order. (Prior to FIX 4.2 this field was of type int)"
+   "description": "Total quantity canceled for this order. (Prior to FIX 4.2 this field was of type int)",
+   "components": [
+    "OrdListStatGrp"
+   ]
   },
   "4.4": {
    "type": "Qty",

@@ -1,0 +1,13 @@
+{
+ "name": "InstrumentScopeOperator",
+ "tag": 1535,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "INCLUDE",
+    "2": "EXCLUDE"
+   }
+  }
+ }
+}

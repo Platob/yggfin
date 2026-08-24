@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "float",
-   "description": "Multileg instrument's individual leg security\u2019s Factor. See Factor <228> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Multileg instrument's individual leg security\u2019s Factor. See Factor <228> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "float",
-   "description": "Multileg instrument's individual leg security\u2019s Factor. See Factor <228> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Multileg instrument's individual leg security\u2019s Factor. See Factor <228> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "float",
-   "description": "Multileg instrument's individual leg security\u2019s Factor. See Factor <228> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Multileg instrument's individual leg security\u2019s Factor. See Factor <228> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.4": {
    "type": "float",
-   "description": "Multileg instrument's individual leg security's Factor. See Factor <228> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Multileg instrument's individual leg security's Factor. See Factor <228> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.3": {
    "type": "float",
-   "description": "Multileg instrument's individual leg security's Factor. See Factor <228> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Multileg instrument's individual leg security's Factor. See Factor <228> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

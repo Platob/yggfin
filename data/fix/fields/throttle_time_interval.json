@@ -1,0 +1,9 @@
+{
+ "name": "ThrottleTimeInterval",
+ "tag": 1614,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

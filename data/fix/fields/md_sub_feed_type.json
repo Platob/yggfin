@@ -1,0 +1,9 @@
+{
+ "name": "MDSubFeedType",
+ "tag": 1683,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "name": "TaxonomyType",
+ "tag": 2375,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR",
+   "value_names": {
+    "I": "ISIN_OR_ALT_INSTRMT_ID",
+    "E": "INTERIM_TAXONOMY"
+   }
+  }
+ }
+}

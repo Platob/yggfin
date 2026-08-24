@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Three byte, simple checksum (see FIXT.1.1: \"CheckSum Calculation\" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing <SOH>, as the end-of-message delimiter. Always defined as three characters. (Always unencrypted)"
+   "description": "Three byte, simple checksum (see FIXT.1.1: \"CheckSum Calculation\" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing <SOH>, as the end-of-message delimiter. Always defined as three characters. (Always unencrypted)",
+   "components": [
+    "StandardTrailer"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Three byte, simple checksum (see FIXT.1.1: \"CheckSum Calculation\" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing <SOH>, as the end-of-message delimiter. Always defined as three characters. (Always unencrypted)"
+   "description": "Three byte, simple checksum (see FIXT.1.1: \"CheckSum Calculation\" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing <SOH>, as the end-of-message delimiter. Always defined as three characters. (Always unencrypted)",
+   "components": [
+    "StandardTrailer"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -36,7 +42,10 @@
   },
   "FIXT1.1": {
    "type": "String",
-   "description": "Three byte, simple checksum (see Volume 2: \"Checksum Calculation\" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing , as the end-of-message delimiter. Always defined as three characters. (Always unencrypted)"
+   "description": "Three byte, simple checksum (see Volume 2: \"Checksum Calculation\" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing , as the end-of-message delimiter. Always defined as three characters. (Always unencrypted)",
+   "components": [
+    "StandardTrailer"
+   ]
   }
  }
 }

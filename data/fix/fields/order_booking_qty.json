@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Quantity of the order that is being booked out as part of an Allocation Instruction <J> or Allocation Report <AS> message"
+   "description": "Quantity of the order that is being booked out as part of an Allocation Instruction <J> or Allocation Report <AS> message",
+   "components": [
+    "OrdAllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Quantity of the order that is being booked out as part of an Allocation Instruction <J> or Allocation Report <AS> message"
+   "description": "Quantity of the order that is being booked out as part of an Allocation Instruction <J> or Allocation Report <AS> message",
+   "components": [
+    "OrdAllocGrp"
+   ]
   },
   "5.0": {
    "type": "Qty",
-   "description": "Quantity of the order that is being booked out as part of an Allocation Instruction <J> or Allocation Report <AS> message"
+   "description": "Quantity of the order that is being booked out as part of an Allocation Instruction <J> or Allocation Report <AS> message",
+   "components": [
+    "OrdAllocGrp"
+   ]
   },
   "4.4": {
    "type": "Qty",

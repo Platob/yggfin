@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingProvisionCashSettlValueTime",
+ "tag": 42104,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTTIME"
+  }
+ }
+}

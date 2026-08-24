@@ -1,0 +1,14 @@
+{
+ "name": "ReturnRateValuationPriceOption",
+ "tag": 42759,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NONE",
+    "1": "FUTURES_PRICE",
+    "2": "OPTIONS_PRICE"
+   }
+  }
+ }
+}

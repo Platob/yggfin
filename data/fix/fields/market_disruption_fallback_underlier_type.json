@@ -1,0 +1,23 @@
+{
+ "name": "MarketDisruptionFallbackUnderlierType",
+ "tag": 41097,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "BASKET",
+    "1": "BOND",
+    "2": "CASH",
+    "3": "COMMODITY",
+    "4": "CONVERTIBLE_BOND",
+    "5": "EQUITY",
+    "6": "EXCHANGE_TRADED_FUND",
+    "7": "FUTURE",
+    "8": "INDEX",
+    "9": "LOAN",
+    "10": "MORTGAGE",
+    "11": "MUTUAL_FUND"
+   }
+  }
+ }
+}

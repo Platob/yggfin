@@ -1,0 +1,9 @@
+{
+ "name": "SettlementAmount",
+ "tag": 1701,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "ValueCheckType",
+ "tag": 1869,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "PRICE_CHECK",
+    "2": "NOTIONAL_VALUE_CHECK",
+    "3": "QUANTITY_CHECK"
+   }
+  }
+ }
+}

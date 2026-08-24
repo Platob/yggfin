@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the UnderlyingIssuer <306> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingIssuer field."
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingIssuer <306> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingIssuer field.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the UnderlyingIssuer <306> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingIssuer field."
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingIssuer <306> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingIssuer field.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the UnderlyingIssuer <306> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingIssuer field."
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingIssuer <306> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingIssuer field.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the UnderlyingIssuer <306> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingIssuer <306> field."
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingIssuer <306> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingIssuer <306> field.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.3": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the UnderlyingIssuer <306> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingIssuer <306> field."
+   "description": "Encoded (non-ASCII characters) representation of the UnderlyingIssuer <306> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the UnderlyingIssuer <306> field.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.2": {
    "type": "data",

@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Can be used to provide an optional textual description for a financial instrument."
+   "description": "Can be used to provide an optional textual description for a financial instrument.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Can be used to provide an optional textual description for a financial instrument."
+   "description": "Can be used to provide an optional textual description for a financial instrument.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Security description."
+   "description": "Security description.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Security description."
+   "description": "Security description.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Security description."
+   "description": "Security description.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.2": {
    "type": "String",

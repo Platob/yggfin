@@ -1,0 +1,9 @@
+{
+ "name": "NoComplexEventSchedules",
+ "tag": 41031,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

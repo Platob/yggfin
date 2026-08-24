@@ -1,0 +1,9 @@
+{
+ "name": "LegInstrumentPartyIDSource",
+ "tag": 2256,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR"
+  }
+ }
+}

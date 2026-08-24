@@ -1,0 +1,13 @@
+{
+ "name": "PaymentStreamAveragingMethod",
+ "tag": 40806,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "UNWEIGHTED",
+    "1": "WEIGHTED"
+   }
+  }
+ }
+}

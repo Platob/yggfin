@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStrikePriceDeterminationMethod",
+ "tag": 2023,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

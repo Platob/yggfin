@@ -18,6 +18,9 @@
    "used_in": [
     "NewOrderMultileg",
     "MultilegOrderCancelReplace"
+   ],
+   "components": [
+    "BaseTradingRules"
    ]
   },
   "5.0.SP1": {
@@ -36,6 +39,9 @@
    "used_in": [
     "NewOrderMultileg",
     "MultilegOrderCancelReplace"
+   ],
+   "components": [
+    "BaseTradingRules"
    ]
   }
  }

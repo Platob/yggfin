@@ -1,0 +1,13 @@
+{
+ "name": "TradeAllocGroupInstruction",
+ "tag": 1848,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "ADD",
+    "1": "DO_NOT_ADD"
+   }
+  }
+ }
+}

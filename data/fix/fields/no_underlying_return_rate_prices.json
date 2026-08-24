@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingReturnRatePrices",
+ "tag": 43064,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

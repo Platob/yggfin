@@ -1,0 +1,9 @@
+{
+ "name": "InstrumentScopeEncodedSecurityDescLen",
+ "tag": 1620,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

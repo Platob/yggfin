@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "LocalMktDate",
-   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed."
+   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed.",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
-   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed."
+   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed.",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
-   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed."
+   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed.",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",
-   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed."
+   "description": "A reference to the date the underlying agreement specified by AgreementID <914> and AgreementDesc <913> was executed.",
+   "components": [
+    "FinancingDetails"
+   ]
   }
  }
 }

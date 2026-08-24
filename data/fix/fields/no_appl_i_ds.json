@@ -4,11 +4,21 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Specifies number of application id occurrences"
+   "description": "Specifies number of application id occurrences",
+   "components": [
+    "ApplIDReportGrp",
+    "ApplIDRequestAckGrp",
+    "ApplIDRequestGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Specifies number of application id occurrences"
+   "description": "Specifies number of application id occurrences",
+   "components": [
+    "ApplIDReportGrp",
+    "ApplIDRequestAckGrp",
+    "ApplIDRequestGrp"
+   ]
   }
  }
 }

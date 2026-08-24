@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamRateSpread",
+ "tag": 40625,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICEOFFSET"
+  }
+ }
+}

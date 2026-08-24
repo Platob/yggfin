@@ -1,0 +1,9 @@
+{
+ "name": "LegOptionExerciseBusinessDayConvention",
+ "tag": 41493,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

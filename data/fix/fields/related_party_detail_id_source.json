@@ -1,0 +1,9 @@
+{
+ "name": "RelatedPartyDetailIDSource",
+ "tag": 1564,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR"
+  }
+ }
+}

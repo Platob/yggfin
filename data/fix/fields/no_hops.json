@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of HopCompID <628> entries in repeating group."
+   "description": "Number of HopCompID <628> entries in repeating group.",
+   "components": [
+    "HopGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of HopCompID <628> entries in repeating group."
+   "description": "Number of HopCompID <628> entries in repeating group.",
+   "components": [
+    "HopGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of HopCompID <628> entries in repeating group."
+   "description": "Number of HopCompID <628> entries in repeating group.",
+   "components": [
+    "HopGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",
@@ -24,7 +33,10 @@
   },
   "FIXT1.1": {
    "type": "NumInGroup",
-   "description": "Number of HopCompID entries in repeating group."
+   "description": "Number of HopCompID entries in repeating group.",
+   "components": [
+    "HopGrp"
+   ]
   }
  }
 }

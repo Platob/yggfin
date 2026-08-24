@@ -1,0 +1,16 @@
+{
+ "name": "MDStatisticScopeType",
+ "tag": 2459,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "ENTRY_RATE",
+    "2": "MODIFICATION_RATE",
+    "3": "CANCEL_RATE",
+    "4": "DOWNWARD_MOVE",
+    "5": "UPWARD_MOVE"
+   }
+  }
+ }
+}

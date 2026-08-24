@@ -1,0 +1,9 @@
+{
+ "name": "ComplexEventCreditEventPeriod",
+ "tag": 41001,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

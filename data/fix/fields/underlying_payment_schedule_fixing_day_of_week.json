@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleFixingDayOfWeek",
+ "tag": 41879,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamCalculationLagPeriod",
+ "tag": 41926,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

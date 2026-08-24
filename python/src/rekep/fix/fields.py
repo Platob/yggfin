@@ -53,6 +53,10 @@ FIX_SCALARS: dict[str, pyarrow.DataType] = {
     "tenor": pyarrow.string(),
     "pattern": pyarrow.string(),
     "xmldata": pyarrow.string(),
+    # FIX 5.0 SP2 extension packs number XML identifiers and the references
+    # between them; both are names, and a name is text.
+    "xid": pyarrow.string(),
+    "xidref": pyarrow.string(),
     "data": pyarrow.binary(),
     "utctimestamp": pyarrow.timestamp("ns"),
     "time": pyarrow.timestamp("ns"),

@@ -5,25 +5,40 @@
   "5.0.SP2": {
    "type": "Percentage",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Underlying security's RepurchaseRate. See RepurchaseRate <227> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Underlying security's RepurchaseRate. See RepurchaseRate <227> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Percentage",
-   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Underlying security's RepurchaseRate. See RepurchaseRate <227> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Underlying security's RepurchaseRate. See RepurchaseRate <227> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "Percentage",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Underlying security's RepurchaseRate. See RepurchaseRate <227> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Underlying security's RepurchaseRate. See RepurchaseRate <227> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "Percentage",
    "note": "Deprecated",
-   "description": "*** DEPRECATED FIELD - See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] *** Underlying security's RepurchaseRate. See RepurchaseRate <227> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "*** DEPRECATED FIELD - See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] *** Underlying security's RepurchaseRate. See RepurchaseRate <227> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.3": {
    "type": "Percentage",
-   "description": "Underlying security's RepurchaseRate. See RepurchaseRate <227> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Underlying security's RepurchaseRate. See RepurchaseRate <227> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

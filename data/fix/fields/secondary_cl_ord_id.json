@@ -24,6 +24,15 @@
     "OrderStatusRequest",
     "OrderMassCancelRequest",
     "OrderMassCancelReport"
+   ],
+   "components": [
+    "InstrmtStrkPxGrp",
+    "ListOrdGrp",
+    "OrdAllocGrp",
+    "OrdListStatGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TradeReportOrderDetail"
    ]
   },
   "5.0.SP1": {
@@ -48,6 +57,16 @@
     "OrderStatusRequest",
     "OrderMassCancelRequest",
     "OrderMassCancelReport"
+   ],
+   "components": [
+    "InstrmtStrkPxGrp",
+    "ListOrdGrp",
+    "OrdAllocGrp",
+    "OrdListStatGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -70,6 +89,16 @@
     "OrderStatusRequest",
     "OrderMassCancelRequest",
     "OrderMassCancelReport"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "OrdAllocGrp",
+    "OrdListStatGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp",
+    "UndInstrmtStrkPxGrp"
    ]
   },
   "4.4": {

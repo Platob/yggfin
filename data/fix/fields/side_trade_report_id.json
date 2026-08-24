@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Used on a multi-sided trade to designate the ReportID"
+   "description": "Used on a multi-sided trade to designate the ReportID",
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Used on a multi-sided trade to designate the ReportID"
+   "description": "Used on a multi-sided trade to designate the ReportID",
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Used on a multi-sided trade to designate the ReportID"
+   "description": "Used on a multi-sided trade to designate the ReportID",
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   }
  }
 }

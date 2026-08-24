@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateValuationEndDateRelativeTo",
+ "tag": 42521,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

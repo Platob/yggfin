@@ -1,0 +1,9 @@
+{
+ "name": "RiskLimitVelocityUnit",
+ "tag": 2337,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

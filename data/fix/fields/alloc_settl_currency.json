@@ -4,15 +4,33 @@
  "versions": {
   "5.0.SP2": {
    "type": "Currency",
-   "description": "Currency code of settlement denomination for a specific AllocAccount <79> . See Appendix 6-A: Valid Currency Codes for information on obtaining"
+   "description": "Currency code of settlement denomination for a specific AllocAccount <79> . See Appendix 6-A: Valid Currency Codes for information on obtaining",
+   "components": [
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Currency",
-   "description": "Currency code of settlement denomination for a specific AllocAccount <79> . See Appendix 6-A: Valid Currency Codes for information on obtaining"
+   "description": "Currency code of settlement denomination for a specific AllocAccount <79> . See Appendix 6-A: Valid Currency Codes for information on obtaining",
+   "components": [
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
+   ]
   },
   "5.0": {
    "type": "Currency",
-   "description": "Currency code of settlement denomination for a specific AllocAccount <79> . See Appendix 6-A: Valid Currency Codes for information on obtaining"
+   "description": "Currency code of settlement denomination for a specific AllocAccount <79> . See Appendix 6-A: Valid Currency Codes for information on obtaining",
+   "components": [
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
+   ]
   },
   "4.4": {
    "type": "Currency",

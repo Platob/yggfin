@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of repeating OrderCapacity <528> entries."
+   "description": "Number of repeating OrderCapacity <528> entries.",
+   "components": [
+    "CpctyConfGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of repeating OrderCapacity <528> entries."
+   "description": "Number of repeating OrderCapacity <528> entries.",
+   "components": [
+    "CpctyConfGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of repeating OrderCapacity <528> entries."
+   "description": "Number of repeating OrderCapacity <528> entries.",
+   "components": [
+    "CpctyConfGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

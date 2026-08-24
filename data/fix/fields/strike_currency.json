@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "Currency",
-   "description": "Currency in which the StrikePrice <202> is denominated."
+   "description": "Currency in which the StrikePrice <202> is denominated.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Currency",
-   "description": "Currency in which the StrikePrice <202> is denominated."
+   "description": "Currency in which the StrikePrice <202> is denominated.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "Currency",
-   "description": "Currency in which the StrikePrice <202> is denominated."
+   "description": "Currency in which the StrikePrice <202> is denominated.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "Currency",
-   "description": "Currency in which the StrikePrice <202> is denominated."
+   "description": "Currency in which the StrikePrice <202> is denominated.",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

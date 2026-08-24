@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Same values as SecurityStatus <965>"
+   "description": "Same values as SecurityStatus <965>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Same values as SecurityStatus <965>"
+   "description": "Same values as SecurityStatus <965>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

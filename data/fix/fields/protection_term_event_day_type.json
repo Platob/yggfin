@@ -1,0 +1,17 @@
+{
+ "name": "ProtectionTermEventDayType",
+ "tag": 40197,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "BUSINESS",
+    "1": "CALENDAR",
+    "2": "COMMODITY_BUSINESS",
+    "3": "CURRENCY_BUSINESS",
+    "4": "EXCHANGE_BUSINESS",
+    "5": "SCHEDULED_TRADING_DAY"
+   }
+  }
+ }
+}

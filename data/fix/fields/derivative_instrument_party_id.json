@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Refer to definition of PartyID <448>"
+   "description": "Refer to definition of PartyID <448>",
+   "components": [
+    "DerivativeInstrumentParties"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Refer to definition of PartyID <448>"
+   "description": "Refer to definition of PartyID <448>",
+   "components": [
+    "DerivativeInstrumentParties"
+   ]
   }
  }
 }

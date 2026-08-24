@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDividendCapRate",
+ "tag": 42808,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "TZTimeOnly",
-   "description": "Time of security's maturity expressed in local time with offset to UTC specified"
+   "description": "Time of security's maturity expressed in local time with offset to UTC specified",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "TZTimeOnly",
-   "description": "Time of security's maturity expressed in local time with offset to UTC specified"
+   "description": "Time of security's maturity expressed in local time with offset to UTC specified",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "TZTimeOnly",
-   "description": "Time of security's maturity expressed in local time with offset to UTC specified"
+   "description": "Time of security's maturity expressed in local time with offset to UTC specified",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

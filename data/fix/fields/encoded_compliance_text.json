@@ -1,0 +1,9 @@
+{
+ "name": "EncodedComplianceText",
+ "tag": 2352,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

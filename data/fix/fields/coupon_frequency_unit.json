@@ -1,0 +1,19 @@
+{
+ "name": "CouponFrequencyUnit",
+ "tag": 1949,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING",
+   "value_names": {
+    "D": "DAY",
+    "Wk": "WEEK",
+    "Mo": "MONTH",
+    "Yr": "YEAR",
+    "H": "HOUR",
+    "Min": "MINUTE",
+    "S": "SECOND",
+    "T": "TERM"
+   }
+  }
+ }
+}

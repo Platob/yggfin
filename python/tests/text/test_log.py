@@ -45,6 +45,7 @@ MESSAGE = [
     "msg_seq_num",
     "kwargs",
     "parties",
+    "trd_reg_timestamps",
     "isincode",
 ]
 
@@ -61,7 +62,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 104
+EXPECTED_LOG_COLUMNS = 105
 
 
 @pytest.fixture(scope="module")
@@ -295,7 +296,7 @@ def test_snake_fix_names_do_not_alias_the_generic_event_envelope() -> None:
 
 def test_every_promoted_name_is_snake_case_with_acronyms_split() -> None:
     names = [field.name for field in DECLARATIONS.values()]
-    assert len(names) == 84
+    assert len(names) == 88
     assert all(re.fullmatch(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*", name) for name in names)
     assert {tag: COLUMNS[tag] for tag in (35, 41, 461)} == {
         35: "msg_type",

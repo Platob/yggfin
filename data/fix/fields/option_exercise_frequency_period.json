@@ -1,0 +1,9 @@
+{
+ "name": "OptionExerciseFrequencyPeriod",
+ "tag": 41122,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Reference for the individual allocation ticket See IndividualAllocID <467> for description and"
+   "description": "Reference for the individual allocation ticket See IndividualAllocID <467> for description and",
+   "components": [
+    "LegPreAllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Reference for the individual allocation ticket See IndividualAllocID <467> for description and"
+   "description": "Reference for the individual allocation ticket See IndividualAllocID <467> for description and",
+   "components": [
+    "LegPreAllocGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Reference for the individual allocation ticket See IndividualAllocID <467> for description and"
+   "description": "Reference for the individual allocation ticket See IndividualAllocID <467> for description and",
+   "components": [
+    "LegPreAllocGrp"
+   ]
   },
   "4.4": {
    "type": "String",

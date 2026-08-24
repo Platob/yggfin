@@ -1,0 +1,9 @@
+{
+ "name": "NoLegStreamCalculationPeriodDates",
+ "tag": 41638,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

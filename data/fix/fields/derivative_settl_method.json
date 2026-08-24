@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "Refer to definition of SettlMethod <1193>"
+   "description": "Refer to definition of SettlMethod <1193>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
-   "description": "Refer to definition of SettlMethod <1193>"
+   "description": "Refer to definition of SettlMethod <1193>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

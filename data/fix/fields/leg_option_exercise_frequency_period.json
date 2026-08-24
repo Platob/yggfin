@@ -1,0 +1,9 @@
+{
+ "name": "LegOptionExerciseFrequencyPeriod",
+ "tag": 41497,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

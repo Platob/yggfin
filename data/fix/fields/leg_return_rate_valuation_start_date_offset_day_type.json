@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateValuationStartDateOffsetDayType",
+ "tag": 42518,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

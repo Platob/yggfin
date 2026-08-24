@@ -8,6 +8,9 @@
    "used_in": [
     "MarketDataSnapshotFullRefresh",
     "MarketDataIncrementalRefresh"
+   ],
+   "components": [
+    "MarketDataFeedTypes"
    ]
   },
   "5.0.SP1": {
@@ -16,6 +19,9 @@
    "used_in": [
     "MarketDataSnapshotFullRefresh",
     "MarketDataIncrementalRefresh"
+   ],
+   "components": [
+    "MarketDataFeedTypes"
    ]
   },
   "5.0": {

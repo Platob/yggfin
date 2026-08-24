@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "MultipleStringValue",
-   "description": "Codes that apply special information that the Broker / Dealer needs to report. Same values as CustOrderHandlingInst <1031>"
+   "description": "Codes that apply special information that the Broker / Dealer needs to report. Same values as CustOrderHandlingInst <1031>",
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "5.0.SP1": {
    "type": "MultipleStringValue",
@@ -34,7 +37,10 @@
     "TMO": "TIME_ORDER",
     "TS": "TRAILING_STOP",
     "WRK": "WORK"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "5.0": {
    "type": "MultipleStringValue",
@@ -64,7 +70,10 @@
     "TMO": "TIME_ORDER",
     "TS": "TRAILING_STOP",
     "WRK": "WORK"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   }
  }
 }

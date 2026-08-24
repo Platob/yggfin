@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamLinkExpiringLevelIndicator",
+ "tag": 42470,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

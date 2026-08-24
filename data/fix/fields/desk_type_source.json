@@ -10,7 +10,10 @@
    },
    "value_names": {
     "1": "FINRAOATS"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -20,7 +23,10 @@
    },
    "value_names": {
     "1": "NASDOATS"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -30,7 +36,10 @@
    },
    "value_names": {
     "1": "NASDOATS"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   }
  }
 }

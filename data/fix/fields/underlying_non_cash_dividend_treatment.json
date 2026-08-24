@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingNonCashDividendTreatment",
+ "tag": 42839,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "EncodedWarningText",
+ "tag": 2521,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

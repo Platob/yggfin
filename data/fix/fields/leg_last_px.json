@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values"
+   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values",
+   "components": [
+    "InstrmtLegExecGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values"
+   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values",
+   "components": [
+    "InstrmtLegExecGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "Price",
-   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values"
+   "description": "Execution price assigned to a leg of a multileg instrument. See LastPx <31> field for description and values",
+   "components": [
+    "InstrmtLegExecGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "Price",

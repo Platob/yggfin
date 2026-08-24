@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingPaymentStreamFixingDates",
+ "tag": 42955,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

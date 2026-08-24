@@ -116,8 +116,8 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     """
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "log.yaml")) == 0
     printed = capsys.readouterr().out
-    assert len(Log.into_field().names) == 104
-    assert "Log: 104 columns, builds" in printed
+    assert len(Log.into_field().names) == 105
+    assert "Log: 105 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unix_hour: int64  [partition identity]" in printed
     assert (
@@ -326,7 +326,7 @@ def test_an_alias_is_recorded_with_where_it_was_counted(store: Path) -> None:
     )
     (alias,) = reopened(store).resolve("FakeRole").aliases
     assert (alias.name, alias.source, alias.occurrences) == ("FakeRolle", "brk", 41)
-    assert reopened(store).resolve("fake_rolle").tag == 90001
+    assert reopened(store).resolve("FAKEROLLE").tag == 90001, "matching folds case"
 
 
 def test_a_change_that_would_break_the_store_is_refused_and_not_written(
@@ -427,11 +427,13 @@ def test_a_component_is_registered_from_a_declaration_and_removed(
     )
 
 
-def test_check_reports_an_inconsistent_store_and_says_nothing_about_a_sound_one(
+def test_check_reports_an_inconsistent_store_and_says_a_sound_one_is_sound(
     store: Path, capsys: pytest.CaptureFixture
 ) -> None:
     assert run("fix", "registry", "check", "--store", str(store)) == 0
-    assert capsys.readouterr().err == ""
+    printed = capsys.readouterr()
+    assert printed.out == "", "nothing a pipe would read"
+    assert "sound" in printed.err, "and one line saying so, where a person reads"
 
     clashing = FieldEntry(
         name="FakeOther",

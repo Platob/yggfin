@@ -1,0 +1,9 @@
+{
+ "name": "NoLegProvisionCashSettlValueDateBusinessCenters",
+ "tag": 40935,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

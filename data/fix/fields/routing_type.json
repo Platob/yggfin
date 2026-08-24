@@ -18,7 +18,10 @@
     "4": "BLOCK_LIST",
     "5": "TARGET_PERSON",
     "6": "BLOCK_PERSON"
-   }
+   },
+   "components": [
+    "RoutingGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -34,7 +37,10 @@
     "2": "TARGET_LIST",
     "3": "BLOCK_FIRM",
     "4": "BLOCK_LIST"
-   }
+   },
+   "components": [
+    "RoutingGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -50,7 +56,10 @@
     "2": "TARGET_LIST",
     "3": "BLOCK_FIRM",
     "4": "BLOCK_LIST"
-   }
+   },
+   "components": [
+    "RoutingGrp"
+   ]
   },
   "4.4": {
    "type": "int",

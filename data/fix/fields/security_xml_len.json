@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Length",
-   "description": "Lenght of the SecurityXML <1185> data block."
+   "description": "Lenght of the SecurityXML <1185> data block.",
+   "components": [
+    "SecurityXML"
+   ]
   },
   "5.0.SP1": {
    "type": "Length",
-   "description": "Lenght of the SecurityXML <1185> data block."
+   "description": "Lenght of the SecurityXML <1185> data block.",
+   "components": [
+    "SecurityXML"
+   ]
   }
  }
 }

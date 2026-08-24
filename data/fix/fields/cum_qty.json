@@ -8,6 +8,10 @@
    "used_in": [
     "ExecutionReport",
     "ExecutionAcknowledgement"
+   ],
+   "components": [
+    "OrdListStatGrp",
+    "TradeReportOrderDetail"
    ]
   },
   "5.0.SP1": {
@@ -16,6 +20,9 @@
    "used_in": [
     "ExecutionReport",
     "ExecutionAcknowledgement"
+   ],
+   "components": [
+    "OrdListStatGrp"
    ]
   },
   "5.0": {
@@ -24,6 +31,9 @@
    "used_in": [
     "ExecutionReport",
     "ExecutionAcknowledgement"
+   ],
+   "components": [
+    "OrdListStatGrp"
    ]
   },
   "4.4": {

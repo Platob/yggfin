@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventStartDate",
+ "tag": 2251,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCDATEONLY"
+  }
+ }
+}

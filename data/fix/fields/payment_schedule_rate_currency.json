@@ -1,0 +1,9 @@
+{
+ "name": "PaymentScheduleRateCurrency",
+ "tag": 41166,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

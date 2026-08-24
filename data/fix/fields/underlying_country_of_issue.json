@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "Country",
-   "description": "Underlying security's CountryOfIssue. See CountryOfIssue <470> field for description"
+   "description": "Underlying security's CountryOfIssue. See CountryOfIssue <470> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Country",
-   "description": "Underlying security's CountryOfIssue. See CountryOfIssue <470> field for description"
+   "description": "Underlying security's CountryOfIssue. See CountryOfIssue <470> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "Country",
-   "description": "Underlying security's CountryOfIssue. See CountryOfIssue <470> field for description"
+   "description": "Underlying security's CountryOfIssue. See CountryOfIssue <470> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "Country",
-   "description": "Underlying security's CountryOfIssue. See CountryOfIssue <470> field for description"
+   "description": "Underlying security's CountryOfIssue. See CountryOfIssue <470> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.3": {
    "type": "Country",
-   "description": "Underlying security's CountryOfIssue. See CountryOfIssue <470> field for description"
+   "description": "Underlying security's CountryOfIssue. See CountryOfIssue <470> field for description",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

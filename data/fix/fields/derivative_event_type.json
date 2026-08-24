@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Same values as EventType <865>"
+   "description": "Same values as EventType <865>",
+   "components": [
+    "DerivativeEventsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Same values as EventType <865>"
+   "description": "Same values as EventType <865>",
+   "components": [
+    "DerivativeEventsGrp"
+   ]
   }
  }
 }

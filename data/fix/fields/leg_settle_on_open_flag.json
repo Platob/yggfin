@@ -1,0 +1,9 @@
+{
+ "name": "LegSettleOnOpenFlag",
+ "tag": 2146,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleInterimExchangeDatesBizDayConvention",
+ "tag": 40698,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

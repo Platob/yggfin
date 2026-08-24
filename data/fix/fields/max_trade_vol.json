@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "The maximum order quantity that can be submitted for a security."
+   "description": "The maximum order quantity that can be submitted for a security.",
+   "components": [
+    "BaseTradingRules"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "The maximum order quantity that can be submitted for a security."
+   "description": "The maximum order quantity that can be submitted for a security.",
+   "components": [
+    "BaseTradingRules"
+   ]
   }
  }
 }

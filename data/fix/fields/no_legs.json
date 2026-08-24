@@ -4,15 +4,51 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of <InstrumentLeg> repeating group instances."
+   "description": "Number of <InstrumentLeg> repeating group instances.",
+   "components": [
+    "InstrmtLegExecGrp",
+    "InstrmtLegGrp",
+    "InstrmtLegIOIGrp",
+    "InstrmtLegSecListGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "SecLstUpdRelSymsLegGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of <InstrumentLeg> repeating group instances."
+   "description": "Number of <InstrumentLeg> repeating group instances.",
+   "components": [
+    "InstrmtLegExecGrp",
+    "InstrmtLegGrp",
+    "InstrmtLegIOIGrp",
+    "InstrmtLegSecListGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "SecLstUpdRelSymsLegGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of <InstrumentLeg> repeating group instances."
+   "description": "Number of <InstrumentLeg> repeating group instances.",
+   "components": [
+    "InstrmtLegExecGrp",
+    "InstrmtLegGrp",
+    "InstrmtLegIOIGrp",
+    "InstrmtLegSecListGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "SecLstUpdRelSymsLegGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

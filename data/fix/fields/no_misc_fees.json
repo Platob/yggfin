@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of repeating groups of miscellaneous fees"
+   "description": "Number of repeating groups of miscellaneous fees",
+   "components": [
+    "MiscFeesGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of repeating groups of miscellaneous fees"
+   "description": "Number of repeating groups of miscellaneous fees",
+   "components": [
+    "MiscFeesGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of repeating groups of miscellaneous fees"
+   "description": "Number of repeating groups of miscellaneous fees",
+   "components": [
+    "MiscFeesGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

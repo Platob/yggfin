@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Point on benchmark curve. Free form values: e.g. \"1Y\", \"7Y\", \"INTERPOLATED\". Sample values: 1M = combination of a number between 1-12 and a \"M\" for month 1Y = combination of number between 1-100 and a \"Y\" for year 10Y-OLD = see above, then add \"-OLD\" when appropriate INTERPOLATED = the point is mathematically derived 2/2031 5 3/8 = the point is stated via a combination of maturity month / year and coupon See Fixed Income-specific documentation at www.fixtrading.org for additional values. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Point on benchmark curve. Free form values: e.g. \"1Y\", \"7Y\", \"INTERPOLATED\". Sample values: 1M = combination of a number between 1-12 and a \"M\" for month 1Y = combination of number between 1-100 and a \"Y\" for year 10Y-OLD = see above, then add \"-OLD\" when appropriate INTERPOLATED = the point is mathematically derived 2/2031 5 3/8 = the point is stated via a combination of maturity month / year and coupon See Fixed Income-specific documentation at www.fixtrading.org for additional values. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Point on benchmark curve. Free form values: e.g. \"1Y\", \"7Y\", \"INTERPOLATED\". Sample values: 1M = combination of a number between 1-12 and a \"M\" for month 1Y = combination of number between 1-100 and a \"Y\" for year 10Y-OLD = see above, then add \"-OLD\" when appropriate INTERPOLATED = the point is mathematically derived 2/2031 5 3/8 = the point is stated via a combination of maturity month / year and coupon See Fixed Income-specific documentation at www.fixtrading.org for additional values. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Point on benchmark curve. Free form values: e.g. \"1Y\", \"7Y\", \"INTERPOLATED\". Sample values: 1M = combination of a number between 1-12 and a \"M\" for month 1Y = combination of number between 1-100 and a \"Y\" for year 10Y-OLD = see above, then add \"-OLD\" when appropriate INTERPOLATED = the point is mathematically derived 2/2031 5 3/8 = the point is stated via a combination of maturity month / year and coupon See Fixed Income-specific documentation at www.fixtrading.org for additional values. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Point on benchmark curve. Free form values: e.g. \"1Y\", \"7Y\", \"INTERPOLATED\". Sample values: 1M = combination of a number between 1-12 and a \"M\" for month 1Y = combination of number between 1-100 and a \"Y\" for year 10Y-OLD = see above, then add \"-OLD\" when appropriate INTERPOLATED = the point is mathematically derived 2/2031 5 3/8 = the point is stated via a combination of maturity month / year and coupon See Fixed Income-specific documentation at www.fixtrading.org for additional values. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Point on benchmark curve. Free form values: e.g. \"1Y\", \"7Y\", \"INTERPOLATED\". Sample values: 1M = combination of a number between 1-12 and a \"M\" for month 1Y = combination of number between 1-100 and a \"Y\" for year 10Y-OLD = see above, then add \"-OLD\" when appropriate INTERPOLATED = the point is mathematically derived 2/2031 5 3/8 = the point is stated via a combination of maturity month / year and coupon See Fixed Income-specific documentation at www.fixtrading.org for additional values. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Point on benchmark curve. Free form values: e.g. \"1Y\", \"7Y\", \"INTERPOLATED\". Sample values: 1M = combination of a number between 1-12 and a \"M\" for month 1Y = combination of number between 1-100 and a \"Y\" for year 10Y-OLD = see above, then add \"-OLD\" when appropriate INTERPOLATED = the point is mathematically derived 2/2031 5 3/8 = the point is stated via a combination of maturity month / year and coupon See Fixed Income-specific documentation at www.fixtrading.org for additional values. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Point on benchmark curve. Free form values: e.g. \"1Y\", \"7Y\", \"INTERPOLATED\". Sample values: 1M = combination of a number between 1-12 and a \"M\" for month 1Y = combination of number between 1-100 and a \"Y\" for year 10Y-OLD = see above, then add \"-OLD\" when appropriate INTERPOLATED = the point is mathematically derived 2/2031 5 3/8 = the point is stated via a combination of maturity month / year and coupon See Fixed Income-specific documentation at www.fixtrading.org for additional values. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Point on benchmark curve. Free form values: e.g. \"1Y\", \"7Y\", \"INTERPOLATED\". Sample values: 1M = combination of a number between 1-12 and a \"M\" for month 1Y = combination of number between 1-100 and a \"Y\" for year} 10Y-OLD = see above, then add \"-OLD\" when appropriate INTERPOLATED = the point is mathematically derived 2/2031 5 3/8 = the point is stated via a combination of maturity month / year and coupon See Fixed Income-specific documentation at www.fixtrading.org for additional values. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Point on benchmark curve. Free form values: e.g. \"1Y\", \"7Y\", \"INTERPOLATED\". Sample values: 1M = combination of a number between 1-12 and a \"M\" for month 1Y = combination of number between 1-100 and a \"Y\" for year} 10Y-OLD = see above, then add \"-OLD\" when appropriate INTERPOLATED = the point is mathematically derived 2/2031 5 3/8 = the point is stated via a combination of maturity month / year and coupon See Fixed Income-specific documentation at www.fixtrading.org for additional values. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   }
  }
 }

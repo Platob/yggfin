@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventCreditEventStandardSources",
+ "tag": 2245,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

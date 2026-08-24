@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateValuationDateBusinessCenter",
+ "tag": 42570,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

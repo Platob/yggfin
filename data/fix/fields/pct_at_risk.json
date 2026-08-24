@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "Percentage",
-   "description": "Percent at risk due to lowest possible call."
+   "description": "Percent at risk due to lowest possible call.",
+   "components": [
+    "InstrumentExtension"
+   ]
   },
   "5.0.SP1": {
    "type": "Percentage",
-   "description": "Percent at risk due to lowest possible call."
+   "description": "Percent at risk due to lowest possible call.",
+   "components": [
+    "InstrumentExtension"
+   ]
   },
   "5.0": {
    "type": "Percentage",
-   "description": "Percent at risk due to lowest possible call."
+   "description": "Percent at risk due to lowest possible call.",
+   "components": [
+    "InstrumentExtension"
+   ]
   },
   "4.4": {
    "type": "Percentage",
-   "description": "Percent at risk due to lowest possible call."
+   "description": "Percent at risk due to lowest possible call.",
+   "components": [
+    "InstrumentExtension"
+   ]
   }
  }
 }

@@ -1,0 +1,22 @@
+{
+ "name": "PaymentSubType",
+ "tag": 40993,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "INITIAL",
+    "1": "INTERMEDIATE",
+    "2": "FINAL",
+    "3": "PREPAID",
+    "4": "POSTPAID",
+    "5": "VARIABLE",
+    "6": "FIXED",
+    "7": "SWAP",
+    "8": "CONDITIONAL",
+    "9": "FIXED_RATE",
+    "10": "FLOATING_RATE"
+   }
+  }
+ }
+}

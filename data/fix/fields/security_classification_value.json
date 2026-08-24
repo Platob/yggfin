@@ -1,0 +1,9 @@
+{
+ "name": "SecurityClassificationValue",
+ "tag": 1584,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

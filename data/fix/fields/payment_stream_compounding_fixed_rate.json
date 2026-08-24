@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamCompoundingFixedRate",
+ "tag": 42605,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

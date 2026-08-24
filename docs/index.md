@@ -55,3 +55,17 @@ reader = source.read_arrow_reader(schema=Log.into_field())
 
 Every scalable API returns an Arrow reader. Table helpers are explicit choices
 for data known to fit in memory.
+
+## Command line
+
+```bash
+rekep fields dump --pyclass rekep.text.log:Log --target log.yaml
+rekep fields load --target log.yaml
+rekep fix shell --store data/fix
+```
+
+`fields` publishes a declaration and checks one loads; `fix` reads, edits and
+checks the FIX dictionary, either verb by verb or from a prompt. Styling goes
+to `stderr` and the payload to `stdout`, so a dump piped into a file is the
+document and nothing else -- and colour and box drawing turn themselves off
+without a terminal, under `NO_COLOR`, or where the stream cannot encode them.

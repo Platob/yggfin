@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamCapRateSellSide",
+ "tag": 40799,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

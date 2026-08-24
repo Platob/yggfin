@@ -1,0 +1,9 @@
+{
+ "name": "LegProvisionCashSettlQuoteReferencePage",
+ "tag": 41407,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -14,7 +14,10 @@
     "0": "YEAR_MONTH_ONLY",
     "1": "YEAR_MONTH_DAY",
     "2": "YEAR_MONTH_WEEK"
-   }
+   },
+   "components": [
+    "MaturityRules"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -28,7 +31,10 @@
     "0": "YEAR_MONTH_ONLY",
     "1": "YEAR_MONTH_DAY",
     "2": "YEAR_MONTH_WEEK"
-   }
+   },
+   "components": [
+    "MaturityRules"
+   ]
   }
  }
 }

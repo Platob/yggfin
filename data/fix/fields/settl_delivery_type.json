@@ -16,7 +16,10 @@
     "1": "FREE",
     "2": "TRI_PARTY",
     "3": "HOLD_IN_CUSTODY"
-   }
+   },
+   "components": [
+    "SettlInstructionsData"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -32,7 +35,10 @@
     "1": "FREE",
     "2": "TRI_PARTY",
     "3": "HOLD_IN_CUSTODY"
-   }
+   },
+   "components": [
+    "SettlInstructionsData"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -48,7 +54,10 @@
     "1": "FREE",
     "2": "TRI_PARTY",
     "3": "HOLD_IN_CUSTODY"
-   }
+   },
+   "components": [
+    "SettlInstructionsData"
+   ]
   },
   "4.4": {
    "type": "int",
@@ -58,7 +67,10 @@
     "1": "FREE",
     "2": "TRI_PARTY",
     "3": "HOLD_IN_CUSTODY"
-   }
+   },
+   "components": [
+    "SettlInstructionsData"
+   ]
   },
   "4.3": {
    "type": "int",

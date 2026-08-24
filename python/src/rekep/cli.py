@@ -1,4 +1,4 @@
-"""The `rekep` command: publish a declaration, and check one loads."""
+"""The `rekep` command: publish a declaration, check one loads, edit the dictionary."""
 
 from __future__ import annotations
 
@@ -10,10 +10,18 @@ import pathlib
 import sys
 from typing import Any
 
+from rekep.console import Console
 from rekep.fields import Field, StructField
 from rekep.fix.classify import KeyReport, apply_report, classify, count_files, report_document
 from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
 from rekep.fix.registry import FixRegistry
+from rekep.fix.shell import shell
+
+#: Where everything a person reads goes. `stderr`, so a dump piped into a file
+#: is the document and nothing else -- the styling never lands in the payload.
+#: Named rather than held, so this resolves to whatever `sys.stderr` is when a
+#: line is written and not to whatever it was at import.
+CONSOLE = Console(stream="stderr")
 
 #: Formats a declaration can be written as, and the extensions they are
 #: inferred from. `Convertible` owns the readers and writers; this is only the
@@ -41,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     ) as error:
         # A traceback is for a defect here; a bad path or a class that is not a
         # shape is a thing the caller can fix, and it gets one line saying so.
-        print(f"{type(error).__name__}: {error}", file=sys.stderr)
+        CONSOLE.fail(f"{type(error).__name__}: {error}")
         return 1
 
 
@@ -51,7 +59,7 @@ def dump(arguments: argparse.Namespace) -> int:
     spelling = arguments.format or _format_of(arguments.target)
     payload = getattr(shape, f"into_{spelling}")(arguments.target)
     if payload is None:
-        print(f"{arguments.pyclass} -> {arguments.target}", file=sys.stderr)
+        CONSOLE.ok(f"{arguments.pyclass} {CONSOLE.glyph('arrow')} {arguments.target}")
         return 0
     sys.stdout.buffer.write(payload)
     return 0
@@ -74,6 +82,11 @@ def load(arguments: argparse.Namespace) -> int:
         print(f"  primary keys: {shape.primary_keys() or '-'}")
         print(f"  partition keys: {shape.partition_keys() or '-'}")
     return 0
+
+
+def open_shell(arguments: argparse.Namespace) -> int:
+    """Drive the registry from a prompt rather than from flags."""
+    return shell(arguments.store, console=Console())
 
 
 def _marks(member: Field) -> str:
@@ -139,7 +152,7 @@ def add_field(arguments: argparse.Namespace) -> int:
     """Register one field identity the store does not have yet."""
     registry = _registry(arguments)
     entry = registry.add_field(_field_entry(arguments))
-    print(f"added {entry.name} -> fields/{entry.slug}.json", file=sys.stderr)
+    CONSOLE.ok(f"added {entry.name} {CONSOLE.glyph('arrow')} fields/{entry.slug}")
     return 0
 
 
@@ -151,16 +164,16 @@ def update_field(arguments: argparse.Namespace) -> int:
     if held is not None:
         fresh = dataclasses.replace(fresh, aliases=held.aliases or fresh.aliases)
     entry = registry.update_field(fresh)
-    print(f"updated {entry.name} -> fields/{entry.slug}.json", file=sys.stderr)
+    CONSOLE.ok(f"updated {entry.name} {CONSOLE.glyph('arrow')} fields/{entry.slug}")
     return 0
 
 
 def remove_field(arguments: argparse.Namespace) -> int:
     """Delete one field identity, saying so when the store did not have it."""
     if not _registry(arguments).remove_field(arguments.name):
-        print(f"no FIX field {arguments.name!r} in this registry", file=sys.stderr)
+        CONSOLE.fail(f"no FIX field {arguments.name!r} in this registry")
         return 1
-    print(f"removed {arguments.name}", file=sys.stderr)
+    CONSOLE.ok(f"removed {arguments.name}")
     return 0
 
 
@@ -174,16 +187,16 @@ def alias_field(arguments: argparse.Namespace) -> int:
             for alias in arguments.alias
         ),
     )
-    print(f"{entry.name} answers to {list(entry.spellings())}", file=sys.stderr)
+    CONSOLE.ok(f"{entry.name} answers to {', '.join(entry.spellings())}")
     return 0
 
 
 def remove_component(arguments: argparse.Namespace) -> int:
     """Delete one component identity, saying so when the store did not have it."""
     if not _registry(arguments).remove_component(arguments.name):
-        print(f"no FIX component {arguments.name!r} in this registry", file=sys.stderr)
+        CONSOLE.fail(f"no FIX component {arguments.name!r} in this registry")
         return 1
-    print(f"removed {arguments.name}", file=sys.stderr)
+    CONSOLE.ok(f"removed {arguments.name}")
     return 0
 
 
@@ -191,7 +204,7 @@ def add_component(arguments: argparse.Namespace) -> int:
     """Register one component identity from a document holding its member trees."""
     registry = _registry(arguments)
     entry = registry.add_component(_component_entry(arguments))
-    print(f"added {entry.name} -> components/{entry.slug}.json", file=sys.stderr)
+    CONSOLE.ok(f"added {entry.name} {CONSOLE.glyph('arrow')} components/{entry.slug}")
     return 0
 
 
@@ -199,30 +212,37 @@ def update_component(arguments: argparse.Namespace) -> int:
     """Replace one stored component identity from such a document."""
     registry = _registry(arguments)
     entry = registry.update_component(_component_entry(arguments))
-    print(f"updated {entry.name} -> components/{entry.slug}.json", file=sys.stderr)
+    CONSOLE.ok(f"updated {entry.name} {CONSOLE.glyph('arrow')} components/{entry.slug}")
     return 0
 
 
 def _component_entry(arguments: argparse.Namespace) -> ComponentEntry:
-    """One component identity out of the document `--declaration` names."""
-    return ComponentEntry.from_dict(json.loads(pathlib.Path(arguments.declaration).read_text()))
+    """One component identity out of the document `--declaration` names.
+
+    Whichever format it is written in: `Convertible` reads the extension, so a
+    declaration travels as JSON, YAML or TOML without a flag saying which.
+    """
+    return ComponentEntry.from_file(arguments.declaration)
 
 
 def check_registry(arguments: argparse.Namespace) -> int:
     """Report everything inconsistent about a store; nothing means it is sound."""
-    problems = _registry(arguments).check()
+    with CONSOLE.spinner("checking every identity"):
+        problems = _registry(arguments).check()
     for problem in problems:
-        print(problem, file=sys.stderr)
+        CONSOLE.fail(problem)
+    if not problems:
+        CONSOLE.ok("this store is sound")
     return 1 if problems else 0
 
 
 def migrate_registry(arguments: argparse.Namespace) -> int:
     """Rewrite a store one file per identity, refusing a migration that loses one."""
-    migrated = _registry(arguments).migrate(arguments.target)
-    print(f"{arguments.store} -> {arguments.target}", file=sys.stderr)
-    print(
-        f"{len(migrated.field_entries())} fields, {len(migrated.component_entries())} components",
-        file=sys.stderr,
+    with CONSOLE.spinner(f"migrating {arguments.store}"):
+        migrated = _registry(arguments).migrate(arguments.target)
+    CONSOLE.ok(f"{arguments.store} {CONSOLE.glyph('arrow')} {arguments.target}")
+    CONSOLE.note(
+        f"{len(migrated.field_entries())} fields, {len(migrated.component_entries())} components"
     )
     return 0
 
@@ -260,7 +280,7 @@ def classify_keys(arguments: argparse.Namespace) -> int:
     report = classify(counts, registry)
     if arguments.report:
         pathlib.Path(arguments.report).write_text(report_document(report))
-        print(f"{arguments.source} -> {arguments.report}", file=sys.stderr)
+        CONSOLE.ok(f"{arguments.source} {CONSOLE.glyph('arrow')} {arguments.report}")
     print(report.into_text())
     return 0
 
@@ -277,9 +297,9 @@ def apply_keys(arguments: argparse.Namespace) -> int:
         minimum=arguments.minimum,
     )
     for line in applied:
-        print(line, file=sys.stderr)
+        CONSOLE.ok(line)
     if not applied:
-        print("nothing to apply: name --aliases, --namespace, or both", file=sys.stderr)
+        CONSOLE.warn("nothing to apply: name --aliases, --namespace, or both")
     return 0
 
 
@@ -378,11 +398,21 @@ def _parser() -> argparse.ArgumentParser:
         action.add_argument(
             "--declaration",
             required=True,
-            help="path of a JSON document holding the entry's name and per-version members",
+            help="path of a document holding the entry's name and per-version members",
         )
     verb("remove-component", "delete a component identity", remove_component).add_argument(
         "--name", required=True, help="the component to remove"
     )
+
+    interactive = protocol.add_parser(
+        "shell", help="drive the registry from a prompt rather than from flags"
+    )
+    interactive.add_argument(
+        "--store",
+        required=True,
+        help="path or URI of the registry store: a directory, or a .zip of one",
+    )
+    interactive.set_defaults(run=open_shell)
 
     counting = protocol.add_parser(
         "classify", help="count a capture's key names and say what each one is"

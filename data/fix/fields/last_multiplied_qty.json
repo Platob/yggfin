@@ -1,0 +1,9 @@
+{
+ "name": "LastMultipliedQty",
+ "tag": 2368,
+ "versions": {
+  "5.0.SP2": {
+   "type": "QTY"
+  }
+ }
+}

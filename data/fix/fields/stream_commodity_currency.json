@@ -1,0 +1,9 @@
+{
+ "name": "StreamCommodityCurrency",
+ "tag": 41259,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

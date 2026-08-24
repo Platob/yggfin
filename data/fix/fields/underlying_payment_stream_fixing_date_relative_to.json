@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamFixingDateRelativeTo",
+ "tag": 40605,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

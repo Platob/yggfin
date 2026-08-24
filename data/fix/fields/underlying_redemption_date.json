@@ -5,26 +5,41 @@
   "5.0.SP2": {
    "type": "LocalMktDate",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 3.Deprecated Instrument-affiliated \"RedemptionDate\" Fields: RedemptionDate (240), UnderlyingRedemptionDate (247), and LegRedemptionDate (254) [deprecated in FIX 4.4] Underlying security's RedemptionDate. See RedemptionDate <240> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 3.Deprecated Instrument-affiliated \"RedemptionDate\" Fields: RedemptionDate (240), UnderlyingRedemptionDate (247), and LegRedemptionDate (254) [deprecated in FIX 4.4] Underlying security's RedemptionDate. See RedemptionDate <240> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 3.Deprecated Instrument-affiliated \"RedemptionDate\" Fields: RedemptionDate (240), UnderlyingRedemptionDate (247), and LegRedemptionDate (254) [deprecated in FIX 4.4] Underlying security's RedemptionDate. See RedemptionDate <240> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 3.Deprecated Instrument-affiliated \"RedemptionDate\" Fields: RedemptionDate (240), UnderlyingRedemptionDate (247), and LegRedemptionDate (254) [deprecated in FIX 4.4] Underlying security's RedemptionDate. See RedemptionDate <240> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 3.Deprecated Instrument-affiliated \"RedemptionDate\" Fields: RedemptionDate (240), UnderlyingRedemptionDate (247), and LegRedemptionDate (254) [deprecated in FIX 4.4] Underlying security's RedemptionDate. See RedemptionDate <240> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 3.Deprecated Instrument-affiliated \"RedemptionDate\" Fields: RedemptionDate (240), UnderlyingRedemptionDate (247), and LegRedemptionDate (254) [deprecated in FIX 4.4] Underlying security's RedemptionDate. See RedemptionDate <240> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",
    "note": "Deprecated",
-   "description": "*** DEPRECATED FIELD - See Appendix 6-E: 3.Deprecated Instrument-affiliated \"RedemptionDate\" Fields: RedemptionDate (240), UnderlyingRedemptionDate (247), and LegRedemptionDate (254) [deprecated in FIX 4.4] *** Underlying security's RedemptionDate. See RedemptionDate <240> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )"
+   "description": "*** DEPRECATED FIELD - See Appendix 6-E: 3.Deprecated Instrument-affiliated \"RedemptionDate\" Fields: RedemptionDate (240), UnderlyingRedemptionDate (247), and LegRedemptionDate (254) [deprecated in FIX 4.4] *** Underlying security's RedemptionDate. See RedemptionDate <240> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate )",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.3": {
    "type": "UTCDate",
-   "description": "Underlying security's RedemptionDate. See RedemptionDate <240> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Underlying security's RedemptionDate. See RedemptionDate <240> field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

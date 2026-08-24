@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStubEndDateOffsetPeriod",
+ "tag": 42987,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

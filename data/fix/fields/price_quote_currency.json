@@ -1,0 +1,9 @@
+{
+ "name": "PriceQuoteCurrency",
+ "tag": 1524,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

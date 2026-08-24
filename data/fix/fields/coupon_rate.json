@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "Percentage",
-   "description": "The rate of interest that, when multiplied by the principal, par value, or face value of a bond, provides the currency amount of the periodic interest payment. The coupon is always cited, along with maturity, in any quotation of a bond's price."
+   "description": "The rate of interest that, when multiplied by the principal, par value, or face value of a bond, provides the currency amount of the periodic interest payment. The coupon is always cited, along with maturity, in any quotation of a bond's price.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Percentage",
-   "description": "The rate of interest that, when multiplied by the principal, par value, or face value of a bond, provides the currency amount of the periodic interest payment. The coupon is always cited, along with maturity, in any quotation of a bond's price."
+   "description": "The rate of interest that, when multiplied by the principal, par value, or face value of a bond, provides the currency amount of the periodic interest payment. The coupon is always cited, along with maturity, in any quotation of a bond's price.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "Percentage",
-   "description": "The rate of interest that, when multiplied by the principal, par value, or face value of a bond, provides the currency amount of the periodic interest payment. The coupon is always cited, along with maturity, in any quotation of a bond's price."
+   "description": "The rate of interest that, when multiplied by the principal, par value, or face value of a bond, provides the currency amount of the periodic interest payment. The coupon is always cited, along with maturity, in any quotation of a bond's price.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "Percentage",
-   "description": "The rate of interest that, when multiplied by the principal, par value, or face value of a bond, provides the currency amount of the periodic interest payment. The coupon is always cited, along with maturity, in any quotation of a bond's price."
+   "description": "The rate of interest that, when multiplied by the principal, par value, or face value of a bond, provides the currency amount of the periodic interest payment. The coupon is always cited, along with maturity, in any quotation of a bond's price.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "Percentage",
-   "description": "For Fixed Income. Coupon rate of the bond. Will be zero for step-up bonds."
+   "description": "For Fixed Income. Coupon rate of the bond. Will be zero for step-up bonds.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.2": {
    "type": "float",

@@ -1,0 +1,9 @@
+{
+ "name": "LegDeliveryStreamToleranceUnitOfMeasure",
+ "tag": 41444,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

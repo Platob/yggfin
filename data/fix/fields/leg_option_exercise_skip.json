@@ -1,0 +1,9 @@
+{
+ "name": "LegOptionExerciseSkip",
+ "tag": 41505,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

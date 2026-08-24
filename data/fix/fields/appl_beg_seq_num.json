@@ -4,11 +4,19 @@
  "versions": {
   "5.0.SP2": {
    "type": "SeqNum",
-   "description": "Beginning range of application sequence numbers"
+   "description": "Beginning range of application sequence numbers",
+   "components": [
+    "ApplIDRequestAckGrp",
+    "ApplIDRequestGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "SeqNum",
-   "description": "Beginning range of application sequence numbers"
+   "description": "Beginning range of application sequence numbers",
+   "components": [
+    "ApplIDRequestAckGrp",
+    "ApplIDRequestGrp"
+   ]
   }
  }
 }

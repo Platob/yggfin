@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan)."
+   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan).",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan)."
+   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan).",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "5.0": {
    "type": "Price",
-   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan)."
+   "description": "Executed price for an AllocAccount <79> entry used when using \"executed price\" vs. \"average price\" allocations (e.g. Japan).",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "4.4": {
    "type": "Price",

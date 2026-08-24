@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Indicator to determine if instrument is settle on open"
+   "description": "Indicator to determine if instrument is settle on open",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Indicator to determine if instrument is settle on open"
+   "description": "Indicator to determine if instrument is settle on open",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Indicator to determine if instrument is settle on open"
+   "description": "Indicator to determine if instrument is settle on open",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

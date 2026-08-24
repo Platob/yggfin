@@ -1,0 +1,13 @@
+{
+ "name": "StreamType",
+ "tag": 40050,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "PAYMENT_CASH_SETTLEMENT",
+    "1": "PHYSICAL_DELIVERY"
+   }
+  }
+ }
+}

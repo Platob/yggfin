@@ -1,0 +1,9 @@
+{
+ "name": "AllocRegulatoryTradeIDScope",
+ "tag": 2399,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "SideCollateralReinvestmentCurrency",
+ "tag": 2866,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

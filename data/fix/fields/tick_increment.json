@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Tick increment for stated price range. Specifies the valid price increments at which a security can be quoted and traded"
+   "description": "Tick increment for stated price range. Specifies the valid price increments at which a security can be quoted and traded",
+   "components": [
+    "TickRules"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Tick increment for stated price range. Specifies the valid price increments at which a security can be quoted and traded"
+   "description": "Tick increment for stated price range. Specifies the valid price increments at which a security can be quoted and traded",
+   "components": [
+    "TickRules"
+   ]
   }
  }
 }

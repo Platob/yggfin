@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingStreamCommodityAltIDs",
+ "tag": 41990,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

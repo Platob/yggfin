@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamFixingDateAdjusted",
+ "tag": 40780,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

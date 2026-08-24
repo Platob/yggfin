@@ -1,0 +1,14 @@
+{
+ "name": "RiskLimitRequestType",
+ "tag": 1760,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "DEFINITIONS",
+    "2": "UTILIZATION",
+    "3": "DEFINITIONS_AND_UTILIZATIONS"
+   }
+  }
+ }
+}

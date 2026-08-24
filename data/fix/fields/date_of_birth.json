@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "LocalMktDate",
-   "description": "The date of birth applicable to the individual, e.g. required to open some types of tax-exempt account."
+   "description": "The date of birth applicable to the individual, e.g. required to open some types of tax-exempt account.",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
-   "description": "The date of birth applicable to the individual, e.g. required to open some types of tax-exempt account."
+   "description": "The date of birth applicable to the individual, e.g. required to open some types of tax-exempt account.",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
-   "description": "The date of birth applicable to the individual, e.g. required to open some types of tax-exempt account."
+   "description": "The date of birth applicable to the individual, e.g. required to open some types of tax-exempt account.",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",

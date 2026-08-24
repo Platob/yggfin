@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Multileg instrument's individual security\u2019s SecurityAltID. See SecurityAltID <455> field for description"
+   "description": "Multileg instrument's individual security\u2019s SecurityAltID. See SecurityAltID <455> field for description",
+   "components": [
+    "LegSecAltIDGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Multileg instrument's individual security\u2019s SecurityAltID. See SecurityAltID <455> field for description"
+   "description": "Multileg instrument's individual security\u2019s SecurityAltID. See SecurityAltID <455> field for description",
+   "components": [
+    "LegSecAltIDGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Multileg instrument's individual security\u2019s SecurityAltID. See SecurityAltID <455> field for description"
+   "description": "Multileg instrument's individual security\u2019s SecurityAltID. See SecurityAltID <455> field for description",
+   "components": [
+    "LegSecAltIDGrp"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Multileg instrument's individual security's SecurityAltID. See SecurityAltID <455> field for description"
+   "description": "Multileg instrument's individual security's SecurityAltID. See SecurityAltID <455> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Multileg instrument's individual security'sSecurityAltID. See SecurityAltID <455> field for description"
+   "description": "Multileg instrument's individual security'sSecurityAltID. See SecurityAltID <455> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

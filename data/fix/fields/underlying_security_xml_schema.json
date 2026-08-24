@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingSecurityXMLSchema",
+ "tag": 1876,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

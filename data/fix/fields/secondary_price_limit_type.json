@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Describes the how the price limits are expressed Same values as PriceLimitType <1306>"
+   "description": "Describes the how the price limits are expressed Same values as PriceLimitType <1306>",
+   "components": [
+    "SecondaryPriceLimits"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Describes the how the price limits are expressed Same values as PriceLimitType <1306>"
+   "description": "Describes the how the price limits are expressed Same values as PriceLimitType <1306>",
+   "components": [
+    "SecondaryPriceLimits"
+   ]
   }
  }
 }

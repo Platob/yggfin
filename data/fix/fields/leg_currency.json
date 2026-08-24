@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "Currency",
-   "description": "Currency associated with a particular Leg's quantity"
+   "description": "Currency associated with a particular Leg's quantity",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "Currency",
-   "description": "Currency associated with a particular Leg's quantity"
+   "description": "Currency associated with a particular Leg's quantity",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "Currency",
-   "description": "Currency associated with a particular Leg's quantity"
+   "description": "Currency associated with a particular Leg's quantity",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.4": {
    "type": "Currency",
-   "description": "Currency associated with a particular Leg's quantity"
+   "description": "Currency associated with a particular Leg's quantity",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.3": {
    "type": "Currency",

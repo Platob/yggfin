@@ -1,0 +1,9 @@
+{
+ "name": "RiskLimitCurrencyCodeSource",
+ "tag": 2939,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

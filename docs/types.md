@@ -61,6 +61,27 @@ and document conversion. Shallow instance storage fell from 3,376 to 904 bytes
 for `Log`, from 1,632 to 360 bytes for `Instrument`, and from 1,632 to 424 bytes
 for `Order` and `Execution` on the measured Python 3.12 runtime.
 
+## Reading an instant
+
+`rekep.times.unix_of` and `datetime_of` are the one reading of "an instant",
+whatever spelled it: a `datetime`, a `date`, an integer already in the
+nanoseconds a `*unix` column holds, an ISO or FIX string, a wrapped value a
+pyarrow or numpy scalar hands back, and the named instants `now`, `utcnow`,
+`today`, `yesterday`, `tomorrow` and `epoch`.
+
+```python
+from rekep import unix_of
+
+lower, upper = unix_of(start), unix_of(end, upper=True)
+```
+
+A naive instant is read as UTC. `upper=True` treats a value naming a whole
+day as the exclusive end of it, so `end: 2026-08-14` means all of the 14th.
+Anything that names no instant is `None` and never a guess -- a day-first
+date like `03/04/2026` is refused rather than silently moved a month. Every
+task notebook takes its window through this, so a window written one way in
+one job means the same instant in the next.
+
 ## Optional dependencies
 
 YAML, TOML, Iceberg, and Polars are imported only when used. Install the

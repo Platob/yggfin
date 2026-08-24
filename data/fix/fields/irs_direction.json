@@ -1,0 +1,14 @@
+{
+ "name": "IRSDirection",
+ "tag": 1933,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING",
+   "value_names": {
+    "PAY": "PAY",
+    "RCV": "RCV",
+    "NA": "NA"
+   }
+  }
+ }
+}

@@ -25,10 +25,12 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 from types import MappingProxyType
 from typing import Any, Self
 
+import pyarrow
+
 from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.fix.fields import fix_field
-from rekep.fix.quickfix import SpecComponent, SpecGroup, SpecMember
+from rekep.fix.quickfix import SpecComponent, SpecComponentRef, SpecGroup, SpecMember
 
 #: The version key of a variant that holds for every version, which is what a
 #: field outside the standard has: a bridge renders `TECH.CLIENTID` the same
@@ -57,21 +59,16 @@ VARIANT_KEYS: tuple[str, ...] = (
     "values",
     "value_names",
     "used_in",
+    "components",
     "note",
 )
 
 #: `fix:` keys a stored variant holds as a document and a `Field` holds as
 #: JSON text, because that is how `fix_field` writes them.
-_JSON_KEYS: tuple[str, ...] = ("values", "value_names", "used_in")
+_JSON_KEYS: tuple[str, ...] = ("values", "value_names", "used_in", "components")
 
 _SLUG_SPLIT = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", re.ASCII)
 _SLUG_DROP = re.compile(r"[^a-z0-9]+", re.ASCII)
-
-#: A name is matched folded: case, and the separators a renderer's convention
-#: adds (`party_role`, `PARTY-ROLE`, `Party Role` are one name). The same fold
-#: `rekep.fix.message` applies to a rendered key, so a name resolves here
-#: exactly as it resolves there.
-_FOLD_DROP = re.compile(r"[ _\-]+", re.ASCII)
 
 
 def slug_of(name: str) -> str:
@@ -90,9 +87,30 @@ def slug_of(name: str) -> str:
     return slug
 
 
+#: Where a FIX name splits into words: an acronym before a capitalised word,
+#: and a lowercase or digit before a capital.
+_SNAKE_SPLIT = re.compile(r"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-z0-9])(?=[A-Z])", re.ASCII)
+
+
+def snake_of(name: str) -> str:
+    """FIX's canonical name as a public Arrow name: `NoPartyIDs` -> `no_party_ids`.
+
+    One rule for a lifted column and for a component member, so the flat column
+    and the nested one of the same field are spelled alike.
+    """
+    return _SNAKE_SPLIT.sub("_", re.sub(r"IDs$", "Ids", name)).lower()
+
+
 def fold(name: str) -> str:
-    """A name as it is matched: lowercased, with renderer separators dropped."""
-    return _FOLD_DROP.sub("", str(name).strip().lower())
+    """A name as it is matched: case, and nothing else.
+
+    Separators are part of a name here. Dropping them made `PartyID` and
+    `Part_yid` one key and, worse, silently merged two identities a store
+    holds apart -- a match a registry cannot then tell from a real collision.
+    A spelling that differs by more than case is an alias, which is a thing
+    the store records.
+    """
+    return str(name).strip().lower()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -248,7 +266,7 @@ class FieldEntry(Convertible):
             built.fix["kind"] = NAMESPACE
         if self.column:
             built.fix["column"] = self.column
-        for key in ("value_names", "used_in"):
+        for key in ("value_names", "used_in", "components"):
             value = found.get(key)
             if value:
                 built.fix[key] = json.dumps(value, separators=(",", ":"))
@@ -370,6 +388,33 @@ class ComponentEntry(Convertible):
             return None
         return SpecComponent.from_dict({"name": self.name, "members": found.get("members", ())})
 
+    def into_field(
+        self,
+        version: str,
+        types: Mapping[str, Any] | None = None,
+        components: Mapping[str, ComponentEntry] | None = None,
+    ) -> Field | None:
+        """This component's declaration as one Arrow field, or None for a version
+        it has none for.
+
+        The spec's own `required` decides nullability, which is the whole point:
+        a member a message *must* carry is a column a reader must not have to
+        null-check, and one it may omit is one they must. A repeating group is
+        a list of its members, its entries never null; a referenced component
+        is inlined where it sits, because that is where its fields arrive on
+        the wire.
+        """
+        declared = self.into_component(version)
+        if declared is None:
+            return None
+        members = _component_fields(declared.members, types or {}, components or {}, frozenset())
+        return Field(
+            name=snake_of(self.name),
+            arrow_type=pyarrow.struct([member.into_arrow_field() for member in members]),
+            nullable=True,
+            metadata={"fix:component": self.name, "fix:version": version},
+        )
+
     def paths(self, version: str) -> dict[str, tuple[str, ...]]:
         """`{member name: the groups it sits under}` for one version.
 
@@ -455,6 +500,54 @@ class ComponentEntry(Convertible):
                 for found, version, rank in zip(declared, versions, ranks, strict=True)
             },
         )
+
+
+def _component_fields(
+    members: Sequence[SpecMember],
+    types: Mapping[str, Any],
+    components: Mapping[str, ComponentEntry],
+    seen: frozenset[str],
+) -> list[Field]:
+    """One level of a component tree as Arrow fields, `required` and all."""
+    built: list[Field] = []
+    for member in members:
+        if isinstance(member, SpecGroup):
+            item = _component_fields(member.members, types, components, seen)
+            built.append(
+                Field(
+                    name=snake_of(member.name),
+                    arrow_type=pyarrow.list_(
+                        pyarrow.field(
+                            "item",
+                            pyarrow.struct([one.into_arrow_field() for one in item]),
+                            nullable=False,
+                        )
+                    ),
+                    nullable=not member.required,
+                    metadata={"fix:name": member.name},
+                )
+            )
+        elif isinstance(member, SpecComponentRef):
+            key = fold(member.name)
+            nested = components.get(key)
+            if nested is None or key in seen:
+                continue
+            for version in nested.versions:
+                inner = nested.into_component(version)
+                if inner is not None:
+                    built.extend(_component_fields(inner.members, types, components, seen | {key}))
+                    break
+        else:
+            arrow_type = types.get(member.name) or pyarrow.string()
+            built.append(
+                Field(
+                    name=snake_of(member.name),
+                    arrow_type=arrow_type,
+                    nullable=not member.required,
+                    metadata={"fix:name": member.name},
+                )
+            )
+    return built
 
 
 def component_variant(declared: SpecComponent, order: int) -> dict[str, Any]:

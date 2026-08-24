@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventCurrencyTwoCodeSource",
+ "tag": 2946,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

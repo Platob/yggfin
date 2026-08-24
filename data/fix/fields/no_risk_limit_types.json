@@ -1,0 +1,9 @@
+{
+ "name": "NoRiskLimitTypes",
+ "tag": 1529,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

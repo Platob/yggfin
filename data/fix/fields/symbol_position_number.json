@@ -1,0 +1,9 @@
+{
+ "name": "SymbolPositionNumber",
+ "tag": 2957,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

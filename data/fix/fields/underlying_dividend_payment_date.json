@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDividendPaymentDate",
+ "tag": 42856,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamCompoundingCapRate",
+ "tag": 42635,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

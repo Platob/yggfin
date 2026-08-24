@@ -1,0 +1,9 @@
+{
+ "name": "RelatedToDividendPeriodXIDRef",
+ "tag": 2417,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XIDREF"
+  }
+ }
+}

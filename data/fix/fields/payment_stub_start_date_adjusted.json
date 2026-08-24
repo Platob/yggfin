@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStubStartDateAdjusted",
+ "tag": 42704,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

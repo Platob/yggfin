@@ -1,0 +1,9 @@
+{
+ "name": "PostTradePaymentCurrencyCodeSource",
+ "tag": 2956,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -14,7 +14,10 @@
     "1": "SECTOR",
     "2": "COUNTRY",
     "3": "INDEX"
-   }
+   },
+   "components": [
+    "BidDescReqGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -28,7 +31,10 @@
     "1": "SECTOR",
     "2": "COUNTRY",
     "3": "INDEX"
-   }
+   },
+   "components": [
+    "BidDescReqGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -42,7 +48,10 @@
     "1": "SECTOR",
     "2": "COUNTRY",
     "3": "INDEX"
-   }
+   },
+   "components": [
+    "BidDescReqGrp"
+   ]
   },
   "4.4": {
    "type": "int",

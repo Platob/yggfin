@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Bid price of this leg. See BidPx <132> for description and"
+   "description": "Bid price of this leg. See BidPx <132> for description and",
+   "components": [
+    "LegQuotGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Bid price of this leg. See BidPx <132> for description and"
+   "description": "Bid price of this leg. See BidPx <132> for description and",
+   "components": [
+    "LegQuotGrp"
+   ]
   },
   "5.0": {
    "type": "Price",
-   "description": "Bid price of this leg. See BidPx <132> for description and"
+   "description": "Bid price of this leg. See BidPx <132> for description and",
+   "components": [
+    "LegQuotGrp"
+   ]
   },
   "4.4": {
    "type": "Price",

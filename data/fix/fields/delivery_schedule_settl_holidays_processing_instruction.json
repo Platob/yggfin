@@ -1,0 +1,13 @@
+{
+ "name": "DeliveryScheduleSettlHolidaysProcessingInstruction",
+ "tag": 41050,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "DO_NOT_INCLUDE_HOLIDAYS",
+    "1": "INCLUDE_HOLIDAYS"
+   }
+  }
+ }
+}

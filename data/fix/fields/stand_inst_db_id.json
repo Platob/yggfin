@@ -7,6 +7,9 @@
    "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
    "used_in": [
     "SettlementInstructionRequest"
+   ],
+   "components": [
+    "SettlInstructionsData"
    ]
   },
   "5.0.SP1": {
@@ -14,6 +17,9 @@
    "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
    "used_in": [
     "SettlementInstructionRequest"
+   ],
+   "components": [
+    "SettlInstructionsData"
    ]
   },
   "5.0": {
@@ -21,6 +27,9 @@
    "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
    "used_in": [
     "SettlementInstructionRequest"
+   ],
+   "components": [
+    "SettlInstructionsData"
    ]
   },
   "4.4": {
@@ -28,6 +37,9 @@
    "description": "Unique identifier used on the Standing Instructions database for the Standing Instructions to be referenced.",
    "used_in": [
     "Settlement Instruction Request"
+   ],
+   "components": [
+    "SettlInstructionsData"
    ]
   },
   "4.3": {

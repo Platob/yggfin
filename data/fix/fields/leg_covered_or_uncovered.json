@@ -4,15 +4,30 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description"
+   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description"
+   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description"
+   "description": "CoveredOrUncovered for leg of a multileg See CoveredOrUncovered <203> field for description",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "int",

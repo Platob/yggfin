@@ -28,6 +28,10 @@
    "used_in": [
     "NewOrderMultileg",
     "NewOrderSingle"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "TradeReportOrderDetail"
    ]
   },
   "5.0.SP1": {
@@ -48,6 +52,9 @@
    "used_in": [
     "NewOrderMultileg",
     "NewOrderSingle"
+   ],
+   "components": [
+    "ListOrdGrp"
    ]
   },
   "5.0": {
@@ -68,6 +75,9 @@
    "used_in": [
     "NewOrderMultileg",
     "NewOrderSingle"
+   ],
+   "components": [
+    "ListOrdGrp"
    ]
   }
  }

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingCashSettlValuationMethod",
+ "tag": 42058,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

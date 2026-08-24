@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamTotalNotionalUnitOfMeasure",
+ "tag": 41708,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

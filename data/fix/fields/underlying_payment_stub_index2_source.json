@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStubIndex2Source",
+ "tag": 40729,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

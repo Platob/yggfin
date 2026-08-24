@@ -1,0 +1,13 @@
+{
+ "name": "MiscFeeQualifier",
+ "tag": 2712,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "CONTRIBUTES",
+    "1": "DOES_NOT_CONTRIBUTE"
+   }
+  }
+ }
+}

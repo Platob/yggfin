@@ -37,7 +37,10 @@
     "12": "CUSTOMER_TRADE",
     "13": "SELF_CLEARING",
     "14": "BUY_IN"
-   }
+   },
+   "components": [
+    "ClrInstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -73,7 +76,10 @@
     "11": "QUALIFIED_SERVICE_REPRESENTATIVE_QSR",
     "12": "CUSTOMER_TRADE",
     "13": "SELF_CLEARING"
-   }
+   },
+   "components": [
+    "ClrInstGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -109,7 +115,10 @@
     "11": "QUALIFIED_SERVICE_REPRESENTATIVE_QSR",
     "12": "CUSTOMER_TRADE",
     "13": "SELF_CLEARING"
-   }
+   },
+   "components": [
+    "ClrInstGrp"
+   ]
   },
   "4.4": {
    "type": "int",

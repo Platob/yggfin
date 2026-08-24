@@ -1,0 +1,9 @@
+{
+ "name": "CashSettlDealer",
+ "tag": 40032,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

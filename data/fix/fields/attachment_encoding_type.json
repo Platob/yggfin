@@ -1,0 +1,13 @@
+{
+ "name": "AttachmentEncodingType",
+ "tag": 2109,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "BASE64",
+    "1": "RAW_BINARY"
+   }
+  }
+ }
+}

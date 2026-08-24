@@ -1,0 +1,13 @@
+{
+ "name": "PaymentStreamRateTreatment",
+ "tag": 40796,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "BOND_EQUIVALENT_YIELD",
+    "1": "MONEY_MARKET_YIELD"
+   }
+  }
+ }
+}

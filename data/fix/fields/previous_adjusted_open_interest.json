@@ -1,0 +1,9 @@
+{
+ "name": "PreviousAdjustedOpenInterest",
+ "tag": 2572,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

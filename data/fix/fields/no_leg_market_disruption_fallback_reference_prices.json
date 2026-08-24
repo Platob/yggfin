@@ -1,0 +1,9 @@
+{
+ "name": "NoLegMarketDisruptionFallbackReferencePrices",
+ "tag": 41471,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

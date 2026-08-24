@@ -1,0 +1,9 @@
+{
+ "name": "AllocRefRiskLimitCheckIDType",
+ "tag": 2393,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentScheduleInterimExchangeDatesOffsetUnit",
+ "tag": 40411,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingReturnRateQuoteDate",
+ "tag": 43049,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

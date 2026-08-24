@@ -1,0 +1,15 @@
+{
+ "name": "LienSeniority",
+ "tag": 1954,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "UNKNOWN",
+    "1": "FIRST_LIEN",
+    "2": "SECOND_LIEN",
+    "3": "THIRD_LIEN"
+   }
+  }
+ }
+}

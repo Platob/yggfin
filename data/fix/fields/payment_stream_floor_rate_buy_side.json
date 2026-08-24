@@ -1,0 +1,13 @@
+{
+ "name": "PaymentStreamFloorRateBuySide",
+ "tag": 40801,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "BUYER",
+    "2": "SELLER"
+   }
+  }
+ }
+}

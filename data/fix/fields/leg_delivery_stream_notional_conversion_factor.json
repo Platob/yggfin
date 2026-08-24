@@ -1,0 +1,9 @@
+{
+ "name": "LegDeliveryStreamNotionalConversionFactor",
+ "tag": 41449,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

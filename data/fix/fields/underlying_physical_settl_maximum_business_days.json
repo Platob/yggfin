@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPhysicalSettlMaximumBusinessDays",
+ "tag": 42063,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

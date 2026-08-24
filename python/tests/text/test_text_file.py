@@ -312,6 +312,7 @@ LINE_COLUMNS = [
     "msg_seq_num",
     "kwargs",
     "parties",
+    "trd_reg_timestamps",
     "isincode",
     "begin_string",
     "body_length",
@@ -392,8 +393,8 @@ LINE_COLUMNS = [
 ]
 
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LINE_COLUMNS = 86
-EXPECTED_LOG_COLUMNS = 104
+EXPECTED_LINE_COLUMNS = 87
+EXPECTED_LOG_COLUMNS = 105
 
 
 def test_schema(plain: Path) -> None:
@@ -687,9 +688,7 @@ def test_url_column_identifies_the_source(plain: Path) -> None:
 def test_source_rownum_counts_physical_lines_so_a_fold_shifts_nothing() -> None:
     """The number has to address the file: `sed -n '<n>p' <source_url>` is the row."""
     lines = SAMPLE_BYTES.split(b"\n")
-    expected = [
-        index for index, line in enumerate(lines, start=1) if HEADER_PATTERN.match(line)
-    ]
+    expected = [index for index, line in enumerate(lines, start=1) if HEADER_PATTERN.match(line)]
     assert len(expected) == EXPECTED_RECORDS
 
 

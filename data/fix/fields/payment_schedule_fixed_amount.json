@@ -1,0 +1,9 @@
+{
+ "name": "PaymentScheduleFixedAmount",
+ "tag": 40842,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

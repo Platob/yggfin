@@ -1,0 +1,9 @@
+{
+ "name": "AllocCommissionDesc",
+ "tag": 2664,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

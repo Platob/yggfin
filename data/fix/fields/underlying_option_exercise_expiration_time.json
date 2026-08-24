@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingOptionExerciseExpirationTime",
+ "tag": 41854,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTTIME"
+  }
+ }
+}

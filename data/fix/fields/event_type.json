@@ -56,7 +56,10 @@
     "26": "REDEMPTION_DATE",
     "27": "TRD_CNTNTN_EFCTV_DT",
     "99": "OTHER"
-   }
+   },
+   "components": [
+    "EvntGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -104,7 +107,10 @@
     "18": "LAST_INTENT_DATE",
     "19": "POSITION_REMOVAL_DATE",
     "99": "OTHER"
-   }
+   },
+   "components": [
+    "EvntGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -126,7 +132,10 @@
     "5": "ACTIVATION",
     "6": "INACTIVIATION",
     "99": "OTHER"
-   }
+   },
+   "components": [
+    "EvntGrp"
+   ]
   },
   "4.4": {
    "type": "int",
@@ -144,7 +153,10 @@
     "3": "TENDER",
     "4": "SINKING_FUND_CALL",
     "99": "OTHER"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

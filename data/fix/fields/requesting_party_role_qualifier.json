@@ -1,0 +1,9 @@
+{
+ "name": "RequestingPartyRoleQualifier",
+ "tag": 2338,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

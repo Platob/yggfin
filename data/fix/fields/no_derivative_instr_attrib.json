@@ -3,10 +3,16 @@
  "tag": 1311,
  "versions": {
   "5.0.SP2": {
-   "type": "NumInGroup"
+   "type": "NumInGroup",
+   "components": [
+    "DerivativeInstrumentAttribute"
+   ]
   },
   "5.0.SP1": {
-   "type": "NumInGroup"
+   "type": "NumInGroup",
+   "components": [
+    "DerivativeInstrumentAttribute"
+   ]
   }
  }
 }

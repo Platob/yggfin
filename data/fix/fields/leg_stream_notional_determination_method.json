@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamNotionalDeterminationMethod",
+ "tag": 42585,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

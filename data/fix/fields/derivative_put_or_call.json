@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Indicates whether an Option is for a put or call Same values as PutOrCall <201>"
+   "description": "Indicates whether an Option is for a put or call Same values as PutOrCall <201>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Indicates whether an Option is for a put or call Same values as PutOrCall <201>"
+   "description": "Indicates whether an Option is for a put or call Same values as PutOrCall <201>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

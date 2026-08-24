@@ -1,0 +1,19 @@
+{
+ "name": "BusinessDayConvention",
+ "tag": 40921,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NOT_APPLICABLE",
+    "1": "NONE",
+    "2": "FOLLOWING_DAY",
+    "3": "FLOATING_RATE_NOTE",
+    "4": "MODIFIED_FOLLOWING_DAY",
+    "5": "PRECEDING_DAY",
+    "6": "MODIFIED_PRECEDING_DAY",
+    "7": "NEAREST_DAY"
+   }
+  }
+ }
+}

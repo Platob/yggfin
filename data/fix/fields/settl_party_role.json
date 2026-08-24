@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "PartyRole value within a Settlement Parties component. Same values as PartyRole <452>"
+   "description": "PartyRole value within a Settlement Parties component. Same values as PartyRole <452>",
+   "components": [
+    "SettlParties"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "PartyRole value within a Settlement Parties component. Same values as PartyRole <452>"
+   "description": "PartyRole value within a Settlement Parties component. Same values as PartyRole <452>",
+   "components": [
+    "SettlParties"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "PartyRole value within a Settlement Parties component. Same values as PartyRole <452>"
+   "description": "PartyRole value within a Settlement Parties component. Same values as PartyRole <452>",
+   "components": [
+    "SettlParties"
+   ]
   },
   "4.4": {
    "type": "int",
-   "description": "PartyRole value within a Settlement Parties component. Same values as PartyRole <452>"
+   "description": "PartyRole value within a Settlement Parties component. Same values as PartyRole <452>",
+   "components": [
+    "SettlParties"
+   ]
   }
  }
 }

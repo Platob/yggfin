@@ -1,0 +1,15 @@
+{
+ "name": "PaymentForwardStartType",
+ "tag": 41160,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "PREPAID",
+    "1": "POSTPAID",
+    "2": "VARIABLE",
+    "3": "FIXED"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegDividendInitialRate",
+ "tag": 42325,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

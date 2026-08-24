@@ -1,0 +1,9 @@
+{
+ "name": "NoLegReturnRates",
+ "tag": 42534,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

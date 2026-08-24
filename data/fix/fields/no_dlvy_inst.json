@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of delivery instruction fields in repeating group. Note this field was removed in FIX 4.1 and reinstated in FIX 4.4"
+   "description": "Number of delivery instruction fields in repeating group. Note this field was removed in FIX 4.1 and reinstated in FIX 4.4",
+   "components": [
+    "DlvyInstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of delivery instruction fields in repeating group. Note this field was removed in FIX 4.1 and reinstated in FIX 4.4"
+   "description": "Number of delivery instruction fields in repeating group. Note this field was removed in FIX 4.1 and reinstated in FIX 4.4",
+   "components": [
+    "DlvyInstGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of delivery instruction fields in repeating group. Note this field was removed in FIX 4.1 and reinstated in FIX 4.4"
+   "description": "Number of delivery instruction fields in repeating group. Note this field was removed in FIX 4.1 and reinstated in FIX 4.4",
+   "components": [
+    "DlvyInstGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",
-   "description": "Number of delivery instruction fields in repeating group. Note this field was removed in FIX 4.1 and reinstated in FIX 4.4"
+   "description": "Number of delivery instruction fields in repeating group. Note this field was removed in FIX 4.1 and reinstated in FIX 4.4",
+   "components": [
+    "SettlInstructionsData"
+   ]
   },
   "4.3": {
    "name": "NoDlvyInst(no longer used)",

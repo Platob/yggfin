@@ -1,0 +1,9 @@
+{
+ "name": "EncodedDocumentationText",
+ "tag": 1527,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

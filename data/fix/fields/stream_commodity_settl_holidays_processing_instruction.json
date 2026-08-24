@@ -1,0 +1,9 @@
+{
+ "name": "StreamCommoditySettlHolidaysProcessingInstruction",
+ "tag": 41300,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

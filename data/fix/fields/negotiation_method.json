@@ -1,0 +1,14 @@
+{
+ "name": "NegotiationMethod",
+ "tag": 2115,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "AUTO_SPOT",
+    "1": "NEGOTIATED_SPOT",
+    "2": "PHONE_SPOT"
+   }
+  }
+ }
+}

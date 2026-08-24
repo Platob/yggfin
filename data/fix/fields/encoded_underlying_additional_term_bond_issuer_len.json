@@ -1,0 +1,9 @@
+{
+ "name": "EncodedUnderlyingAdditionalTermBondIssuerLen",
+ "tag": 42025,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

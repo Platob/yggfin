@@ -1,0 +1,14 @@
+{
+ "name": "MarketSegmentRelationship",
+ "tag": 2547,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "MARKET_SEGMENT_POOL_MEMBER",
+    "2": "RETAIL_SEGMENT",
+    "3": "WHOLESALE_SEGMENT"
+   }
+  }
+ }
+}

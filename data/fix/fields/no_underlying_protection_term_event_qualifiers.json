@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingProtectionTermEventQualifiers",
+ "tag": 42085,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

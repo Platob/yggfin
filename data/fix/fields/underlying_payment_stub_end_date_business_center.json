@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStubEndDateBusinessCenter",
+ "tag": 42992,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

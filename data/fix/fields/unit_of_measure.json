@@ -101,7 +101,10 @@
     "Sqyd": "SQUARE_YARD",
     "yd": "YARD",
     "USD": "US_DOLLARS"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -133,7 +136,10 @@
     "t": "METRIC_TONS",
     "tn": "TONS",
     "USD": "US_DOLLARS"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "name": "UnitofMeasure",
@@ -166,7 +172,10 @@
     "t": "METRIC_TONS",
     "tn": "TONS",
     "USD": "US_DOLLARS"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

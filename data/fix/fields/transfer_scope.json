@@ -1,0 +1,14 @@
+{
+ "name": "TransferScope",
+ "tag": 2441,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "INTER_FIRM_TRANSFER",
+    "1": "INTRA_FIRM_TRANSFER",
+    "2": "CMTA"
+   }
+  }
+ }
+}

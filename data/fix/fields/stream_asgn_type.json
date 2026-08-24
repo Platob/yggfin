@@ -14,7 +14,10 @@
     "1": "ASSIGNMENT",
     "2": "REJECTED",
     "3": "TERMINATE"
-   }
+   },
+   "components": [
+    "StrmAsgnRptInstrmtGrp"
+   ]
   }
  }
 }

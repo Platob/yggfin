@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingComplexEventDateBusinessCenters",
+ "tag": 41737,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

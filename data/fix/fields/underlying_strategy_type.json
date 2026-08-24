@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStrategyType",
+ "tag": 2295,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

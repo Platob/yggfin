@@ -1,0 +1,9 @@
+{
+ "name": "StreamCalculationPeriodBusinessCenter",
+ "tag": 40074,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

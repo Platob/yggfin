@@ -14,7 +14,10 @@
     "0": "RETAIN",
     "1": "ADD",
     "2": "REMOVE"
-   }
+   },
+   "components": [
+    "UndInstrmtCollGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -28,7 +31,10 @@
     "0": "RETAIN",
     "1": "ADD",
     "2": "REMOVE"
-   }
+   },
+   "components": [
+    "UndInstrmtCollGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -42,7 +48,10 @@
     "0": "RETAIN",
     "1": "ADD",
     "2": "REMOVE"
-   }
+   },
+   "components": [
+    "UndInstrmtCollGrp"
+   ]
   },
   "4.4": {
    "type": "int",

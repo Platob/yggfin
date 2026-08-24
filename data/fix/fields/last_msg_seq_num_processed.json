@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "SeqNum",
-   "description": "The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty."
+   "description": "The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty.",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "SeqNum",
-   "description": "The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty."
+   "description": "The last MsgSeqNum <34> value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty.",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "SeqNum",
@@ -28,7 +34,10 @@
   },
   "FIXT1.1": {
    "type": "SeqNum",
-   "description": "The last MsgSeqNum (34) value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty."
+   "description": "The last MsgSeqNum (34) value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty.",
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

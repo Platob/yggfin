@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingSwapSubClass",
+ "tag": 2289,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

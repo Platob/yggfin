@@ -18,7 +18,10 @@
     "3": "EQUAL_TO_COMPLEX_EVENT_PRICE",
     "4": "GREATER_THAN_OR_EQUAL_TO_COMPLEX_EVENT_PRICE",
     "5": "GREATER_THAN_COMPLEX_EVENT_PRICE"
-   }
+   },
+   "components": [
+    "ComplexEvents"
+   ]
   }
  }
 }

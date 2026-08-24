@@ -1,0 +1,9 @@
+{
+ "name": "LastQtyVariance",
+ "tag": 1828,
+ "versions": {
+  "5.0.SP2": {
+   "type": "QTY"
+  }
+ }
+}

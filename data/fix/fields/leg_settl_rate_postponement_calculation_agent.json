@@ -1,0 +1,9 @@
+{
+ "name": "LegSettlRatePostponementCalculationAgent",
+ "tag": 40906,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Selling party in a trade"
+   "description": "Selling party in a trade",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Selling party in a trade"
+   "description": "Selling party in a trade",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Selling party in a trade"
+   "description": "Selling party in a trade",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "String",

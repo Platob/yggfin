@@ -1,0 +1,20 @@
+{
+ "name": "AuctionType",
+ "tag": 1803,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NONE",
+    "1": "BLOCK_ORDER_AUCTION",
+    "2": "DIRECTED_ORDER_AUCTION",
+    "3": "EXPOSURE_ORDER_AUCTION",
+    "4": "FLASH_ORDER_AUCTION",
+    "5": "FACILITATION_ORDER_AUCTION",
+    "6": "SOLICITATION_ORDER_AUCTION",
+    "7": "PRICE_IMPROVEMENT_MECHANISM",
+    "8": "DIRECTED_ORDER_PRICE_IMPROVEMENT_MECHANISM"
+   }
+  }
+ }
+}

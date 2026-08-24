@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Type of RootPartySubID <1121> value. Same values as PartySubIDType <803>"
+   "description": "Type of RootPartySubID <1121> value. Same values as PartySubIDType <803>",
+   "components": [
+    "RootSubParties"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Type of RootPartySubID <1121> value. Same values as PartySubIDType <803>"
+   "description": "Type of RootPartySubID <1121> value. Same values as PartySubIDType <803>",
+   "components": [
+    "RootSubParties"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "Type of RootPartySubID <1121> value. Same values as PartySubIDType <803>"
+   "description": "Type of RootPartySubID <1121> value. Same values as PartySubIDType <803>",
+   "components": [
+    "RootSubParties"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "StrategyLinkID",
+ "tag": 1851,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

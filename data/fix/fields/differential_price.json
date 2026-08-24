@@ -1,0 +1,9 @@
+{
+ "name": "DifferentialPrice",
+ "tag": 1522,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICEOFFSET"
+  }
+ }
+}

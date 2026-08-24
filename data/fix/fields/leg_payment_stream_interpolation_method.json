@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamInterpolationMethod",
+ "tag": 42402,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

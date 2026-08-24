@@ -1,0 +1,15 @@
+{
+ "name": "PartyActionRejectReason",
+ "tag": 2333,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "INVALID_PARTY",
+    "1": "UNK_REQ_PARTY",
+    "98": "NOT_AUTHORIZED",
+    "99": "OTHER"
+   }
+  }
+ }
+}

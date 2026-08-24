@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "Indicates execution instructions that are valid for the specified market segment Same values as ExecInst <18>"
+   "description": "Indicates execution instructions that are valid for the specified market segment Same values as ExecInst <18>",
+   "components": [
+    "ExecInstRules"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
-   "description": "Indicates execution instructions that are valid for the specified market segment Same values as ExecInst <18>"
+   "description": "Indicates execution instructions that are valid for the specified market segment Same values as ExecInst <18>",
+   "components": [
+    "ExecInstRules"
+   ]
   }
  }
 }

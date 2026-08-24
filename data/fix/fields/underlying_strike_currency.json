@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "Currency",
-   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated"
+   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Currency",
-   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated"
+   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "Currency",
-   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated"
+   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "Currency",
-   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated"
+   "description": "Currency in which the strike price of an underlying instrument ( UnderlyingStrikePrice <316> ) is denominated",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamFirstObservationDateOffsetUnit",
+ "tag": 41581,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -5,17 +5,29 @@
   "5.0.SP2": {
    "type": "Exchange",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Market posting quote / trade."
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Market posting quote / trade.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Exchange",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Market posting quote / trade."
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Market posting quote / trade.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "Exchange",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Market posting quote / trade."
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Market posting quote / trade.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "Exchange",

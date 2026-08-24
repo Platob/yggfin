@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "A text description associated with a network status."
+   "description": "A text description associated with a network status.",
+   "components": [
+    "CompIDStatGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "A text description associated with a network status."
+   "description": "A text description associated with a network status.",
+   "components": [
+    "CompIDStatGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "A text description associated with a network status."
+   "description": "A text description associated with a network status.",
+   "components": [
+    "CompIDStatGrp"
+   ]
   },
   "4.4": {
    "type": "String",

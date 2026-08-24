@@ -6,7 +6,14 @@ import pyarrow
 import pytest
 
 from rekep.fix.columns import KWARGS
-from rekep.fix.components import PARTIES, Parties, Party
+from rekep.fix.components import (
+    PARTIES,
+    TRD_REG_TIMESTAMPS,
+    Parties,
+    Party,
+    TrdRegTimestamp,
+    TrdRegTimestamps,
+)
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
 
 
@@ -371,10 +378,10 @@ def test_a_slice_keeps_group_state_inside_each_message() -> None:
 # The extraction was written for Parties and reads like it. What it actually
 # needs is a component declaration: which tag counts the entries, which tag
 # opens one, which tags may belong to one and which group each sits inside.
-# All four come out of the tree, so naming the component and its group is the
-# whole of what makes it another group's extractor.
+# All four come out of the tree, so naming the component, its group and the
+# members that earn a column is the whole of what a second extractor is.
 
-TRD_REG_TIMESTAMPS = SpecComponent(
+TRD_REG_SPEC = SpecComponent(
     "TrdRegTimestamps",
     (
         SpecGroup(
@@ -393,12 +400,7 @@ TRD_REG_TIMESTAMPS = SpecComponent(
 
 def test_the_declaration_a_group_needs_comes_out_of_its_own_tree() -> None:
     """Nothing here is named `party`: the tags are the component's, not this file's."""
-    extractor = Parties(
-        components=[TRD_REG_TIMESTAMPS],
-        fallback=False,
-        component="TrdRegTimestamps",
-        group="NoTrdRegTimestamps",
-    )
+    extractor = TrdRegTimestamps(components=[TRD_REG_SPEC], fallback=False)
     counts, members, paths, delimiters = extractor._declaration
     assert sorted(counts) == [768], "the tag that counts the entries"
     assert members == {
@@ -424,28 +426,19 @@ def test_another_group_splits_exactly_as_parties_does() -> None:
             (55, "SYM-TEST"),
         ]
     )
-    extractor = Parties(
-        components=[TRD_REG_TIMESTAMPS],
-        fallback=False,
-        component="TrdRegTimestamps",
-        group="NoTrdRegTimestamps",
-    )
+    extractor = TrdRegTimestamps(components=[TRD_REG_SPEC], fallback=False)
     found, rest = extractor.into_arrow_arrays(source)
     entries = found.to_pylist()[0]
     assert len(entries) == 2, "the count said two, and two delimiters opened"
-    # The projection is still `Party`, which is the one thing about this that
-    # *is* Parties-specific: the delimiter's value lands in `party_id` and
-    # every other member in the buffer. Another group reaching a column of its
-    # own is a change to the parsed log's schema, not to the extraction.
-    assert [entry["party_id"] for entry in entries] == [
-        "20260101-00:00:00",
-        "20260101-00:00:01",
+    # Its own projection: the delimiter lands in `trd_reg_timestamp` and the
+    # two members it declares in their own columns, with nothing left over.
+    assert [entry["trd_reg_timestamp"].isoformat()[:19] for entry in entries] == [
+        "2026-01-01T00:00:00",
+        "2026-01-01T00:00:01",
     ]
-    assert dict(entries[0]["buffer"]) == {
-        "TrdRegTimestampType": "1",
-        "TrdRegTimestampOrigin": "FAKE-ORIGIN",
-    }
-    assert dict(entries[1]["buffer"]) == {"TrdRegTimestampType": "2"}
+    assert [entry["trd_reg_timestamp_type"] for entry in entries] == [1, 2]
+    assert [entry["trd_reg_timestamp_origin"] for entry in entries] == ["FAKE-ORIGIN", None]
+    assert [entry["buffer"] for entry in entries] == [None, None]
     assert _pairs(rest.to_pylist()[0]) == [
         (8, "FIX.4.4"),
         (55, "SYM-TEST"),
@@ -468,23 +461,102 @@ def test_a_group_whose_entries_open_with_something_else_splits_there() -> None:
             ),
         ),
     )
-    extractor = Parties(
-        components=[reordered],
-        fallback=False,
-        component="TrdRegTimestamps",
-        group="NoTrdRegTimestamps",
-    )
+    extractor = TrdRegTimestamps(components=[reordered], fallback=False)
     assert extractor._declaration[3] == {(): {770}}
     source = _tags(
         [(768, "2"), (770, "1"), (769, "20260101-00:00:00"), (770, "2"), (769, "20260101-00:00:01")]
     )
     entries = extractor.into_arrow_arrays(source)[0].to_pylist()[0]
-    assert [entry["party_id"] for entry in entries] == ["1", "2"], "it split at 770"
+    # Two entries, split at 770 -- and the delimiter's own value is `1`/`2`,
+    # which the stamp column cannot hold, so that column stays null while the
+    # member declared for 770 takes it.
+    assert len(entries) == 2
+    assert [entry["trd_reg_timestamp"] for entry in entries] == [None, None], "770 is no stamp"
+    assert [entry["trd_reg_timestamp_type"] for entry in entries] == [1, 2]
 
 
 def test_naming_a_component_the_registry_does_not_have_extracts_nothing() -> None:
     extractor = Parties(
-        components=[TRD_REG_TIMESTAMPS], fallback=False, component="NoSuchGroup", group="NoSuch"
+        components=[TRD_REG_SPEC], fallback=False, component="NoSuchGroup", group="NoSuch"
     )
     assert extractor._declaration == (set(), {}, {}, {})
     assert extractor.into_arrow_arrays(_tags([(768, "1"), (769, "x")]))[0].to_pylist() == [None]
+
+
+# -- another component, extracted by the same machine -------------------------
+
+
+def test_a_regulatory_stamp_is_the_exact_fix_named_shape() -> None:
+    names = TrdRegTimestamp.into_field().names
+    assert names == [
+        "trd_reg_timestamp",
+        "trd_reg_timestamp_type",
+        "trd_reg_timestamp_origin",
+        "buffer",
+    ]
+    field = TrdRegTimestamp.into_field()
+    assert field.field("trd_reg_timestamp").metadata["fix:tag"] == "769"
+    assert field.field("trd_reg_timestamp_type").metadata["fix:tag"] == "770"
+    assert field.field("trd_reg_timestamp_origin").metadata["fix:tag"] == "771"
+
+
+def test_counted_regulatory_stamps_are_lifted_like_parties() -> None:
+    """The same state machine, told which component and which group to read."""
+    source = _tags(
+        [
+            (35, "8"),
+            (768, "2"),
+            (769, "20260814-09:30:00.123"),
+            (770, "1"),
+            (771, "venue"),
+            (769, "20260814-09:30:01.000"),
+            (770, "2"),
+            (10, "000"),
+        ]
+    )
+    stamps, residual = TrdRegTimestamps().into_arrow_arrays(source)
+    assert stamps.type == TRD_REG_TIMESTAMPS
+    entries = stamps.to_pylist()[0]
+    assert [entry["trd_reg_timestamp_type"] for entry in entries] == [1, 2]
+    assert [entry["trd_reg_timestamp_origin"] for entry in entries] == ["venue", None]
+    assert entries[0]["trd_reg_timestamp"].isoformat().startswith("2026-08-14T09:30:00.123")
+    assert _pairs(residual.to_pylist()[0]) == [(35, "8"), (10, "000")]
+
+
+def test_a_malformed_stamp_is_kept_as_text_rather_than_becoming_null() -> None:
+    """A null nobody can explain is worse than the value that actually arrived."""
+    source = _tags([(768, "1"), (769, "not-a-stamp"), (770, "1")])
+    stamps, residual = TrdRegTimestamps().into_arrow_arrays(source)
+    (entry,) = stamps.to_pylist()[0]
+    assert entry["trd_reg_timestamp"] is None
+    assert entry["trd_reg_timestamp_type"] == 1
+    assert dict(entry["buffer"]) == {"TrdRegTimestamp": "not-a-stamp"}
+    assert _pairs(residual.to_pylist()[0]) == []
+
+
+def test_each_extractor_only_takes_its_own_component() -> None:
+    """So the two run in sequence over one message without taking each other's."""
+    source = _tags(
+        [
+            (453, "1"),
+            (448, "A"),
+            (447, "D"),
+            (452, "1"),
+            (768, "1"),
+            (769, "20260814-09:30:00.123"),
+            (770, "1"),
+        ]
+    )
+    parties, rest = Parties().into_arrow_arrays(source)
+    stamps, rest = TrdRegTimestamps().into_arrow_arrays(rest)
+    assert parties.type == PARTIES and stamps.type == TRD_REG_TIMESTAMPS
+    assert len(parties.to_pylist()[0]) == 1
+    assert len(stamps.to_pylist()[0]) == 1
+    assert _pairs(rest.to_pylist()[0]) == []
+
+
+def test_a_group_that_is_not_there_is_null_rather_than_empty() -> None:
+    source = _tags([(35, "8"), (55, "AAPL")])
+    stamps, residual = TrdRegTimestamps().into_arrow_arrays(source)
+    assert stamps.to_pylist() == [None]
+    assert _pairs(residual.to_pylist()[0]) == [(35, "8"), (55, "AAPL")]

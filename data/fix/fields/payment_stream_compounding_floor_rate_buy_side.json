@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamCompoundingFloorRateBuySide",
+ "tag": 42639,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

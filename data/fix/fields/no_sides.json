@@ -12,7 +12,13 @@
    "value_names": {
     "1": "ONE_SIDE",
     "2": "BOTH_SIDES"
-   }
+   },
+   "components": [
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
@@ -24,7 +30,13 @@
    "value_names": {
     "1": "ONE_SIDE",
     "2": "BOTH_SIDES"
-   }
+   },
+   "components": [
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
@@ -36,7 +48,13 @@
    "value_names": {
     "1": "ONE_SIDE",
     "2": "BOTH_SIDES"
-   }
+   },
+   "components": [
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

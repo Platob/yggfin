@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "PartySubID value within a nested repeating group. Same values as PartySubID <523>"
+   "description": "PartySubID value within a nested repeating group. Same values as PartySubID <523>",
+   "components": [
+    "NstdPtysSubGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "PartySubID value within a nested repeating group. Same values as PartySubID <523>"
+   "description": "PartySubID value within a nested repeating group. Same values as PartySubID <523>",
+   "components": [
+    "NstdPtysSubGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "PartySubID value within a nested repeating group. Same values as PartySubID <523>"
+   "description": "PartySubID value within a nested repeating group. Same values as PartySubID <523>",
+   "components": [
+    "NstdPtysSubGrp"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "PartySubID value within a nested repeating group. Same values as PartySubID <523>"
+   "description": "PartySubID value within a nested repeating group. Same values as PartySubID <523>",
+   "components": [
+    "NestedParties"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "PartySubID value within a nested repeating group. Same values as PartySubID <523>"
+   "description": "PartySubID value within a nested repeating group. Same values as PartySubID <523>",
+   "components": [
+    "NestedParties"
+   ]
   }
  }
 }

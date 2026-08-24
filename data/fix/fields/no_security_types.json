@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of Security Type repeating group instances."
+   "description": "Number of Security Type repeating group instances.",
+   "components": [
+    "SecTypesGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of Security Type repeating group instances."
+   "description": "Number of Security Type repeating group instances.",
+   "components": [
+    "SecTypesGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of Security Type repeating group instances."
+   "description": "Number of Security Type repeating group instances.",
+   "components": [
+    "SecTypesGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

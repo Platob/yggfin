@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and"
+   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and",
+   "components": [
+    "LegStipulations"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and"
+   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and",
+   "components": [
+    "LegStipulations"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and"
+   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and",
+   "components": [
+    "LegStipulations"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and"
+   "description": "For Fixed Income, type of Stipulation for this leg. See StipulationType <233> for description and",
+   "components": [
+    "LegStipulations"
+   ]
   }
  }
 }
