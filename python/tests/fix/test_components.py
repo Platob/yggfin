@@ -358,3 +358,127 @@ def test_a_slice_keeps_group_state_inside_each_message() -> None:
         ["B"],
     ]
     assert [_pairs(row) for row in residual.to_pylist()] == [[(55, "X")], [(55, "Y")]]
+
+
+# -- and whether any of this is about parties --------------------------------
+#
+# The extraction was written for Parties and reads like it. What it actually
+# needs is a component declaration: which tag counts the entries, which tag
+# opens one, which tags may belong to one and which group each sits inside.
+# All four come out of the tree, so naming the component and its group is the
+# whole of what makes it another group's extractor.
+
+TRD_REG_TIMESTAMPS = SpecComponent(
+    "TrdRegTimestamps",
+    (
+        SpecGroup(
+            "NoTrdRegTimestamps",
+            False,
+            768,
+            (
+                SpecFieldRef("TrdRegTimestamp", False, 769),
+                SpecFieldRef("TrdRegTimestampType", False, 770),
+                SpecFieldRef("TrdRegTimestampOrigin", False, 771),
+            ),
+        ),
+    ),
+)
+
+
+def test_the_declaration_a_group_needs_comes_out_of_its_own_tree() -> None:
+    """Nothing here is named `party`: the tags are the component's, not this file's."""
+    extractor = Parties(
+        components=[TRD_REG_TIMESTAMPS],
+        fallback=False,
+        component="TrdRegTimestamps",
+        group="NoTrdRegTimestamps",
+    )
+    counts, members, paths, delimiters = extractor._declaration
+    assert sorted(counts) == [768], "the tag that counts the entries"
+    assert members == {
+        769: "TrdRegTimestamp",
+        770: "TrdRegTimestampType",
+        771: "TrdRegTimestampOrigin",
+    }
+    assert paths == dict.fromkeys(members, ())
+    assert delimiters == {(): {769}}, "the group's first member opens an entry"
+
+
+def test_another_group_splits_exactly_as_parties_does() -> None:
+    """The state machine is the declaration's, so a second group needs no second one."""
+    source = _tags(
+        [
+            (8, "FIX.4.4"),
+            (768, "2"),
+            (769, "20260101-00:00:00"),
+            (770, "1"),
+            (771, "FAKE-ORIGIN"),
+            (769, "20260101-00:00:01"),
+            (770, "2"),
+            (55, "SYM-TEST"),
+        ]
+    )
+    extractor = Parties(
+        components=[TRD_REG_TIMESTAMPS],
+        fallback=False,
+        component="TrdRegTimestamps",
+        group="NoTrdRegTimestamps",
+    )
+    found, rest = extractor.into_arrow_arrays(source)
+    entries = found.to_pylist()[0]
+    assert len(entries) == 2, "the count said two, and two delimiters opened"
+    # The projection is still `Party`, which is the one thing about this that
+    # *is* Parties-specific: the delimiter's value lands in `party_id` and
+    # every other member in the buffer. Another group reaching a column of its
+    # own is a change to the parsed log's schema, not to the extraction.
+    assert [entry["party_id"] for entry in entries] == [
+        "20260101-00:00:00",
+        "20260101-00:00:01",
+    ]
+    assert dict(entries[0]["buffer"]) == {
+        "TrdRegTimestampType": "1",
+        "TrdRegTimestampOrigin": "FAKE-ORIGIN",
+    }
+    assert dict(entries[1]["buffer"]) == {"TrdRegTimestampType": "2"}
+    assert _pairs(rest.to_pylist()[0]) == [
+        (8, "FIX.4.4"),
+        (55, "SYM-TEST"),
+    ], "and nothing else moved"
+
+
+def test_a_group_whose_entries_open_with_something_else_splits_there() -> None:
+    """The delimiter is read off the declaration, not named `PartyID` in code."""
+    reordered = SpecComponent(
+        "TrdRegTimestamps",
+        (
+            SpecGroup(
+                "NoTrdRegTimestamps",
+                False,
+                768,
+                (
+                    SpecFieldRef("TrdRegTimestampType", False, 770),
+                    SpecFieldRef("TrdRegTimestamp", False, 769),
+                ),
+            ),
+        ),
+    )
+    extractor = Parties(
+        components=[reordered],
+        fallback=False,
+        component="TrdRegTimestamps",
+        group="NoTrdRegTimestamps",
+    )
+    assert extractor._declaration[3] == {(): {770}}
+    source = _tags(
+        [(768, "2"), (770, "1"), (769, "20260101-00:00:00"), (770, "2"), (769, "20260101-00:00:01")]
+    )
+    entries = extractor.into_arrow_arrays(source)[0].to_pylist()[0]
+    assert [entry["party_id"] for entry in entries] == ["1", "2"], "it split at 770"
+
+
+def test_naming_a_component_the_registry_does_not_have_extracts_nothing() -> None:
+    extractor = Parties(
+        components=[TRD_REG_TIMESTAMPS], fallback=False, component="NoSuchGroup", group="NoSuch"
+    )
+    assert extractor._declaration == (set(), {}, {}, {})
+    assert extractor.into_arrow_arrays(_tags([(768, "1"), (769, "x")]))[0].to_pylist() == [None]

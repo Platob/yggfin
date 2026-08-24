@@ -176,8 +176,50 @@ Two readings the classification depends on:
 
 Repeating groups remain ordered entries. Known components such as Parties are
 extracted into typed lists; each Party retains an ordered string buffer for
-fields absent from the current model. New registry components can use the same
-generic extraction path.
+fields absent from the current model.
+
+The extraction is driven by the component declaration and by nothing else:
+which tag counts the entries, which tag opens one, which tags may belong to
+one and which group each sits inside all come out of the tree. Naming another
+component and its group is the whole of what makes it another group's
+extractor --
+
+```python
+Parties(
+    components=registry.components("4.4"),
+    component="TrdRegTimestamps",
+    group="NoTrdRegTimestamps",
+)
+```
+
+-- and `NoTrdRegTimestamps`, `NoSecurityAltID` and `NoTradingSessions` split
+exactly as `NoPartyIDs` does. What remains specific to Parties is the *shape*
+it projects into: `Party`, and the parsed log's `parties` column. Another
+group reaching a column of its own is a change to the log's schema, not to the
+extraction.
+
+## Nested payloads
+
+`XmlData <213>` is an XML data stream in the standard and a `key=value`
+message in real bridge traffic. A payload that reads as pairs becomes pairs,
+under `XmlData.<key>`, in the place the tag sat -- so `XmlData.ClOrdID`
+resolves like the rendered `NoPartyIDs.PartyID` already does, and lands in the
+column its name earns. A payload that opens an XML tag, or that carries only
+one pair, stays exactly as it was.
+
+The payload is read under its own separator, detected per row: it sits inside
+a token of the message around it and so cannot be written with that message's
+separator.
+
+## Repeated readings
+
+A rendered line carries two namespaces -- `#Side` as a field arrived and
+`Side` after enrichment -- and on a third to a half of a real capture's lines
+some fields appear in both. A field is lifted into its column when every
+reading of it in that row agrees, and every copy leaves the residual pairs
+with it. Readings that *disagree* are left where they were: two values under
+one key is a repeating group, or an enrichment that rewrote something, and
+picking between them would be a guess.
 
 ## Parsed-log projection
 

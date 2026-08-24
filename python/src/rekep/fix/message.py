@@ -79,6 +79,17 @@ _BEGIN = re.compile(rf"(?:^|(?<=[^\d]))8=FIXT?{_NOT_SEPARATOR}*", re.ASCII)
 #: into the name and the entry index.
 _NAME = r"[A-Za-z][A-Za-z0-9_.\-]*"
 
+#: What a bridge writes between brackets, beside a group's entry index: the
+#: name of a member of the struct in front of it. `INSTRUMENT[EXCHANGE]=XPAR`
+#: and `INSTRUMENT.EXCHANGE=XPAR` are the same field written two ways, and a
+#: parser that read only the digits saw the second and not the first -- which
+#: cost the whole *line*, because a line whose keys do not tokenise is not a
+#: bridge message and every other field on it went with them.
+_SELECTOR = r"[A-Za-z][A-Za-z0-9_.\-]*"
+
+#: One bracketed part of a rendered key: an entry index, or a member name.
+_BRACKET = rf"\[(?:\d+|{_SELECTOR})\]"
+
 #: Whitespace, spelled out. Python's ASCII `\s` holds `\x0b` and RE2's does
 #: not, so a `\s` in a pattern that exists in both engines is a divergence
 #: waiting for a vertical tab; one explicit class reads the same everywhere.
@@ -91,7 +102,12 @@ _STRIPPED = " \t\r\n\f\x0b"
 
 #: One `#NAME=` token, which is how a UL bridge marks a field: the `#` says
 #: "a key starts here", which is the only thing in a rendered line that does.
-_BRIDGE_TOKEN = rf"#{_NAME}(?:\[\d+\])?{_WS}*="
+#:
+#: The bracket and the dotted member are both admitted, because both are how a
+#: real line spells a group member -- `#NoPartyIDs[0].PartyID=` is what this
+#: parser's own canonical key looks like, and a rule that would not recognise
+#: it called such a line no message at all and lost every field on it.
+_BRIDGE_TOKEN = rf"#{_NAME}(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 
 #: What makes a line a **bridge message**: two or more of those tokens.
 #: Public for the same reason `BEGIN_STRING` is -- it is the UL classification
@@ -143,7 +159,7 @@ NAMED_SEPARATOR_VECTOR = (
     rf"(?:8|[Bb][Ee][Gg][Ii][Nn][Ss][Tt][Rr][Ii][Nn][Gg]){_WS}*="
     rf"[Ff][Ii][Xx][Tt]?{_NOT_SEPARATOR}*(?P<sep>\^A|.)"
 )
-_BRIDGE_PAIR_TOKEN = rf"#(?:\d+|{_NAME})(?:\[\d+\])?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
+_BRIDGE_PAIR_TOKEN = rf"#(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_PAIR_TOKEN}.*?(?P<sep>\^A|.){_BRIDGE_PAIR_TOKEN}"
 
 #: One token of a message, in every spelling the logs use. Five shapes come
@@ -168,7 +184,7 @@ BRIDGE_SEPARATOR_VECTOR = rf"(?s){_BRIDGE_PAIR_TOKEN}.*?(?P<sep>\^A|.){_BRIDGE_P
 #: that happens to be spelled with digits, and tag mode has to be able to tell.
 _TOKEN = re.compile(
     rf"^{_WS}*(?P<marker>#)?(?P<key>\d+|{_NAME})"
-    rf"(?:\[(?P<index>\d+)\])?"
+    rf"(?:\[(?:(?P<index>\d+)|(?P<select>{_SELECTOR}))\])?"
     rf"(?:\.(?P<member>[A-Za-z0-9_.\-]+))?"
     rf"{_WS}*=(?P<rest>.*)$",
     re.DOTALL | re.ASCII,
@@ -183,12 +199,12 @@ _MEMBER = re.compile(rf"^{_WS}*(?P<member>\d+|{_NAME}){_WS}*=(?P<value>.*)$", re
 #: `key=value` noise around a wire message. Named mode admits the rendered
 #: spellings above, because there the line *is* the pairs.
 _PAIR_TOKEN = rf"^{_WS}*\d+{_WS}*="
-_PAIR_TOKEN_NAMED = rf"^{_WS}*#?(?:\d+|{_NAME})(?:\[\d+\])?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
+_PAIR_TOKEN_NAMED = rf"^{_WS}*#?(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 
 #: `_TOKEN` and `_MEMBER` for RE2, which has no DOTALL flag argument.
 _TOKEN_VECTOR = (
     rf"(?s)^{_WS}*#?(?P<key>\d+|{_NAME})"
-    rf"(?:\[(?P<index>\d+)\])?"
+    rf"(?:\[(?:(?P<index>\d+)|(?P<select>{_SELECTOR}))\])?"
     rf"(?:\.(?P<member>[A-Za-z0-9_.\-]+))?"
     rf"{_WS}*=(?P<rest>.*)$"
 )
@@ -219,7 +235,7 @@ _MEMBER_NAME = re.compile(_MEMBER_NAME_VECTOR, re.ASCII)
 #: fold below rather than in a flag: `IGNORECASE` on an ASCII class buys
 #: nothing and costs a pass.
 _RENDERED_KEY = re.compile(
-    rf"^{_WS}*(?P<lead>(?:[A-Za-z0-9_\- ]+(?:\[\d+\])?\.)*)"
+    rf"^{_WS}*(?P<lead>(?:[A-Za-z0-9_\- ]+(?:{_BRACKET})?\.)*)"
     rf"(?P<name>[A-Za-z0-9_\- ]+)(?P<index>\[\d+\])?{_WS}*$",
     re.ASCII,
 )
@@ -529,7 +545,7 @@ def message_bodies(column: Any, named: bool) -> tuple[Any, Any]:
 #: writes `Foo` are two different things to count.
 _MARKED_KEY_VECTOR = (
     rf"(?s)^{_WS}*(?P<marker>#?)(?P<key>\d+|{_NAME})"
-    rf"(?P<index>\[\d+\])?"
+    rf"(?:\[(?:\d+|(?P<select>{_SELECTOR}))\])?"
     rf"(?:\.(?P<member>[A-Za-z0-9_.\-]+))?"
     rf"{_WS}*="
 )
@@ -686,8 +702,17 @@ def _named_pairs(token: Any, entry_separator: str | None = None) -> tuple[Any, A
     # real index or member can be empty, so emptiness is the test throughout.
     key = compute.struct_field(token, "key")
     index = compute.fill_null(compute.struct_field(token, "index"), "")
+    select = compute.fill_null(compute.struct_field(token, "select"), "")
     member = compute.fill_null(compute.struct_field(token, "member"), "")
     value = compute.fill_null(compute.struct_field(token, "rest"), "")
+    # `INSTRUMENT[EXCHANGE]` selects a member by name where `[0]` selects an
+    # entry by position, so it joins the key as the dotted path it is another
+    # spelling of -- before anything below reads the key.
+    key = compute.if_else(
+        compute.not_equal(select, empty),
+        compute.binary_join_element_wise(key, select, "."),
+        key,
+    )
     indexed = compute.not_equal(index, empty)
     # Only an indexed token with no canonical `.member` can hide an inner
     # `member=`, so the second regex runs over that subset alone and its
@@ -1116,11 +1141,22 @@ def _parse_token(token: str, named: bool) -> tuple[str, str] | None:
     match = _TOKEN.match(token)
     if match is None:
         return None
-    marker, key, index, member, rest = match.group("marker", "key", "index", "member", "rest")
+    marker, key, index, select, member, rest = match.group(
+        "marker", "key", "index", "select", "member", "rest"
+    )
     if not named and (
-        marker is not None or index is not None or member is not None or not key.isdigit()
+        marker is not None
+        or index is not None
+        or select is not None
+        or member is not None
+        or not key.isdigit()
     ):
         return None
+    if select is not None:
+        # `INSTRUMENT[EXCHANGE]` selects a member by name where `[0]` selects
+        # an entry by position, so it reads as the dotted path it is another
+        # spelling of. One canonical key, whichever way the bridge wrote it.
+        key = f"{key}.{select}"
     if index is None:
         # Only a digit key can capture a member without an index (`54.5=x`;
         # a name eats its dots greedily): the dot was part of the key, so it

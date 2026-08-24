@@ -85,6 +85,17 @@ class Parties:
     #: Retain the standalone extractor's legacy FIX tags when no registry is supplied.
     fallback: bool = True
 
+    #: Which component to read, and which repeating group inside it. Named
+    #: rather than hard-coded because everything below is declaration-driven:
+    #: the count tags, the member names, the paths each member sits under and
+    #: the tag that opens an entry all come out of the component tree, and
+    #: nothing in the state machine knows the word "party". What *is* specific
+    #: to Parties is the shape it projects into -- `Party`, and the parsed
+    #: log's `parties` column -- so another group extracts here and lands in
+    #: its own column only once one is declared for it.
+    component: str = "Parties"
+    group: str = _NO_PARTY_IDS
+
     def __post_init__(self) -> None:
         """Hold stable declaration and name snapshots for repeated batches."""
         declared = self.components
@@ -136,7 +147,7 @@ class Parties:
         )
 
         allowed = compute.is_in(keys, value_set=self._member_array)
-        is_delimiter = compute.is_in(keys, value_set=self._tags_named("PartyID"))
+        is_delimiter = compute.is_in(keys, value_set=self._delimiter_array)
         counted_inside = _contiguous_after(
             positions, parents, count_positions, count_match, allowed
         )
@@ -365,8 +376,10 @@ class Parties:
         dict[tuple[str, ...], set[int]],
     ]:
         """Count tags, member names, and their component paths."""
+        wanted = self.component.lower()
+        grouped = self.group.lower()
         by_name = {component.name.lower(): component for component in self.components}
-        explicit = "parties" in by_name
+        explicit = wanted in by_name
         legacy = not explicit and self.fallback
         counts = set() if not legacy else set(_FALLBACK_COUNTS)
         members = {} if not legacy else dict(_FALLBACK)
@@ -380,9 +393,12 @@ class Parties:
                 if mapped is not None:
                     members.setdefault(mapped, name)
                     paths.setdefault(mapped, paths.get(tag, ()))
-            mapped_count = name_tags.get(_NO_PARTY_IDS.lower())
+            mapped_count = name_tags.get(grouped)
             if mapped_count is not None:
                 counts.add(mapped_count)
+            group_delimiters[()] = {
+                tag for tag, name in members.items() if name == "PartyID" and not paths.get(tag)
+            }
             group_delimiters[("NoPartySubIDs",)] = {
                 tag
                 for tag, name in members.items()
@@ -440,8 +456,13 @@ class Parties:
 
         def find(declared: Sequence[SpecMember], seen: frozenset[str]) -> None:
             for member in declared:
-                if isinstance(member, SpecGroup) and member.name.lower() == _NO_PARTY_IDS.lower():
+                if isinstance(member, SpecGroup) and member.name.lower() == grouped:
                     counts.update(member_tags(member))
+                    # The group's own delimiter, which the standard fixes as
+                    # its first member: read off the declaration rather than
+                    # named here, so a group whose entries open with something
+                    # other than `PartyID` splits at the right tag.
+                    group_delimiters.setdefault((), set()).update(first_tags(member.members, seen))
                     visit(member.members, seen)
                 elif isinstance(member, SpecComponentRef):
                     key = member.name.lower()
@@ -451,17 +472,14 @@ class Parties:
 
         for component in self.components:
             key = component.name.lower()
-            if key == "parties":
+            if key == wanted:
                 find(component.members, frozenset({key}))
                 # Hand-written declarations sometimes omit the outer group.
                 visit(
                     tuple(
                         member
                         for member in component.members
-                        if not (
-                            isinstance(member, SpecGroup)
-                            and member.name.lower() == _NO_PARTY_IDS.lower()
-                        )
+                        if not (isinstance(member, SpecGroup) and member.name.lower() == grouped)
                     ),
                     frozenset({key}),
                 )
@@ -484,6 +502,11 @@ class Parties:
     @cached_property
     def _group_delimiters(self) -> dict[tuple[str, ...], set[int]]:
         return self._declaration[3]
+
+    @cached_property
+    def _delimiter_array(self) -> pyarrow.Array:
+        """The tags that open one entry of the group, off its own declaration."""
+        return pyarrow.array(sorted(self._group_delimiters.get((), ())), pyarrow.int32())
 
     @cached_property
     def _member_array(self) -> pyarrow.Array:

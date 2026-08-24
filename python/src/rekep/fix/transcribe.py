@@ -30,11 +30,35 @@ from rekep.fix.message import (
     NAMED_SEPARATOR_VECTOR,
     SEPARATOR_VECTOR,
     SEPARATORS,
+    SOH,
     parse_arrow_array,
 )
 from rekep.fix.quickfix import SpecComponent
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL, Rules
+
+#: `XmlData <213>` as a rendered key and as a wire tag, which are the two ways
+#: a line writes the field whose payload is another message.
+_XML_DATA_KEY = "XmlData"
+_XML_DATA_NAME = pyarrow.scalar("xmldata")
+_XML_DATA_TAG = pyarrow.scalar("213")
+
+#: What makes a payload a message rather than a document: two `name=` tokens.
+#: The same "two and not one" `BRIDGE` uses, and for the same reason -- one
+#: `a=b` inside prose is a sentence.
+_PAYLOAD_PAIRS = r"[A-Za-z0-9_.\-]+[ \t]*=.*[^A-Za-z0-9_.\-][A-Za-z0-9_.\-]+[ \t]*="
+
+#: And what makes it a document: the standard says XML, and a payload that
+#: opens a tag is taken at its word however rare it turns out to be.
+_LOOKS_XML = r"^[ \t\r\n]*<"
+
+#: What a payload writes between its fields. Neither of the two things
+#: `separators_of` reads -- a BeginString or a `#` -- is inside one, so this
+#: reads the character between the first `name=value` and the next `name=`,
+#: which is the same rule `BRIDGE_SEPARATOR_VECTOR` applies to a marked line.
+#: `\^A` before `.`, or a caret-A payload reads its separator as `^` and every
+#: key after the first comes back with an `A` glued to the front.
+_PAYLOAD_SEPARATOR = r"(?s)[A-Za-z0-9_.\-]+[ \t]*=.*?(?P<sep>\^A|.)[A-Za-z0-9_.\-]+[ \t]*="
 
 #: What a resolved key is: the tag number, as the `int32` every other code
 #: column here is.
@@ -199,7 +223,64 @@ class FixCodec(Convertible):
 
     def into_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
         """One `map<string, string>` per row: the message as the line spells it."""
-        return self.drop_null_values(self.into_raw_pairs(messages, protocol))
+        return self.into_payload_pairs(
+            self.drop_null_values(self.into_raw_pairs(messages, protocol))
+        )
+
+    def into_payload_pairs(self, pairs: Any) -> Any:
+        """`XmlData <213>` read as the message it carries, where it carries one.
+
+        The standard calls tag 213 an XML data stream. Real bridge traffic puts
+        a `key=value` message in it instead -- in every sampled line of a
+        capture, with no counterexample -- and read as one opaque blob its
+        fields are neither resolvable nor queryable. So a payload that reads as
+        pairs becomes pairs, under `XmlData.<key>`, in the place the tag sat;
+        one that reads as XML, or as nothing, stays exactly as it was.
+
+        `XmlData.ClOrdID` then resolves like any other nested key -- a rendered
+        `NoPartyIDs.PartyID` already does -- and a payload contradicting the
+        message around it lifts neither, which is what `_liftable` is for.
+        """
+        if isinstance(pairs, pyarrow.ChunkedArray):
+            parts = [self.into_payload_pairs(chunk) for chunk in pairs.chunks]
+            return pyarrow.chunked_array(parts, type=_RAW_PAIRS)
+        compute = pyarrow.compute
+        if not len(pairs) or pairs.null_count == len(pairs):
+            return pairs
+        lengths, keys, items = _entries_of(pairs)
+        if not len(keys):
+            return pairs
+        carried = compute.or_(
+            compute.equal(compute.utf8_lower(compute.utf8_trim_whitespace(keys)), _XML_DATA_NAME),
+            compute.equal(keys, _XML_DATA_TAG),
+        )
+        readable = compute.and_(
+            carried,
+            compute.and_(
+                compute.fill_null(compute.match_substring_regex(items, _PAYLOAD_PAIRS), False),
+                compute.invert(
+                    compute.fill_null(compute.match_substring_regex(items, _LOOKS_XML), False)
+                ),
+            ),
+        )
+        if not compute.any(readable, min_count=0).as_py():
+            return pairs
+        parsed = _payload_pairs(compute.filter(items, readable))
+        counts, inner = _payload_counts(readable, parsed)
+        if inner is None:
+            return pairs
+        taken, rank = _repeated(counts)
+        expanded = compute.greater(compute.take(counts, taken), 1)
+        starts = compute.take(_payload_starts(readable, parsed), taken)
+        where = compute.add(starts, rank)
+        return _mapped(
+            pairs,
+            _row_totals(pairs, lengths, counts),
+            pyarrow.repeat(True, len(taken)),
+            compute.if_else(expanded, compute.take(inner[0], where), compute.take(keys, taken)),
+            compute.if_else(expanded, compute.take(inner[1], where), compute.take(items, taken)),
+            _RAW_PAIRS,
+        )
 
     def into_raw_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
         """Parsed pairs before configured null spellings are removed."""
@@ -386,14 +467,15 @@ class FixCodec(Convertible):
             resolved,
             compute.fill_null(compute.is_in(tags, value_set=available), False),
         )
-        flat_lift = (
-            compute.and_(flat_candidate, _once(parents, tags))
-            if compute.any(flat_candidate, min_count=0).as_py()
-            else pyarrow.repeat(False, len(tags))
-        )
-        flat_found = compute.filter(tags, flat_lift)
-        flat_where = compute.filter(parents, flat_lift)
-        flat_values = compute.filter(items, flat_lift)
+        if compute.any(flat_candidate, min_count=0).as_py():
+            agreed, chosen = _liftable(parents, tags, items)
+            flat_lift = compute.and_(flat_candidate, agreed)
+            flat_taken = compute.and_(flat_candidate, chosen)
+        else:
+            flat_lift = flat_taken = pyarrow.repeat(False, len(tags))
+        flat_found = compute.filter(tags, flat_taken)
+        flat_where = compute.filter(parents, flat_taken)
+        flat_values = compute.filter(items, flat_taken)
         flat = {name: pyarrow.nulls(rows, FLAT_TYPES[tag]) for tag, name in FLAT_COLUMNS.items()}
         row_ids = sequence(rows)
         for tag in compute.unique(flat_found).to_pylist():
@@ -420,14 +502,14 @@ class FixCodec(Convertible):
             # distinct integer codes, avoiding composite string construction.
             uniqueness_key = compute.fill_null(named_index, pyarrow.scalar(-1, pyarrow.int32()))
             named_candidate = compute.and_(unknown, compute.is_valid(named_index))
-            named_lift = (
-                compute.and_(named_candidate, _once(parents, uniqueness_key))
-                if compute.any(named_candidate, min_count=0).as_py()
-                else named_lift
-            )
-            named_found = compute.filter(named_names, named_lift)
-            named_where = compute.filter(parents, named_lift)
-            named_values = compute.filter(items, named_lift)
+            named_taken = named_lift
+            if compute.any(named_candidate, min_count=0).as_py():
+                agreed, chosen = _liftable(parents, uniqueness_key, items)
+                named_lift = compute.and_(named_candidate, agreed)
+                named_taken = compute.and_(named_candidate, chosen)
+            named_found = compute.filter(named_names, named_taken)
+            named_where = compute.filter(parents, named_taken)
+            named_values = compute.filter(items, named_taken)
             for name in compute.unique(named_found).to_pylist():
                 at = compute.equal(named_found, name)
                 selected = compute.filter(named_values, at)
@@ -494,22 +576,23 @@ class FixCodec(Convertible):
         parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
         entries = compute.list_flatten(listed)
         keys, items = compute.struct_field(entries, 0), compute.struct_field(entries, 1)
+        agreed, chosen = _liftable(parents, keys, items)
         lift = compute.and_(
-            compute.fill_null(compute.is_in(keys, value_set=available), False),
-            _once(parents, keys),
+            compute.fill_null(compute.is_in(keys, value_set=available), False), agreed
         )
         if not compute.any(lift, min_count=0).as_py():
             return columns, tags
-        found = compute.filter(keys, lift)
-        where = compute.filter(parents, lift)
-        values = compute.filter(items, lift)
+        taken = compute.and_(lift, chosen)
+        found = compute.filter(keys, taken)
+        where = compute.filter(parents, taken)
+        values = compute.filter(items, taken)
         row_ids = sequence(rows)
         for tag in compute.unique(found).to_pylist():
             at = compute.equal(found, tag)
             selected = compute.filter(values, at)
             selected_rows = compute.filter(where, at)
-            # Parent indices are row ordered and `_once` admitted at most one
-            # value per row. Covering every row therefore already is the
+            # Parent indices are row ordered and `_liftable` chose at most
+            # one value per row. Covering every row therefore already is the
             # target column; no hash index or take is needed.
             column = (
                 selected
@@ -555,12 +638,14 @@ class FixCodec(Convertible):
             compute.struct_field(compute.extract_regex(keys, _MEMBER_NAME_VECTOR), "name"), keys
         )
         names, index = _named_index(keys, reduced, pyarrow.array(list(declared), pyarrow.string()))
-        lift = compute.and_(compute.is_valid(index), _once(parents, names))
+        agreed, chosen = _liftable(parents, names, items)
+        lift = compute.and_(compute.is_valid(index), agreed)
         if not compute.any(lift, min_count=0).as_py():
             return columns, pairs
-        found = compute.filter(names, lift)
-        where = compute.filter(parents, lift)
-        values = compute.filter(items, lift)
+        taken = compute.and_(compute.is_valid(index), chosen)
+        found = compute.filter(names, taken)
+        where = compute.filter(parents, taken)
+        values = compute.filter(items, taken)
         row_ids = sequence(rows)
         for name in compute.unique(found).to_pylist():
             at = compute.equal(found, name)
@@ -918,13 +1003,30 @@ def _named_index(keys: Any, reduced: Any, declared: Any) -> tuple[Any, Any]:
     )
 
 
-def _once(parents: Any, keys: Any) -> Any:
-    """Which entries are the only one of their key in their row.
+def _liftable(parents: Any, keys: Any, values: Any) -> tuple[Any, Any]:
+    """`(every entry of a liftable key, the one that becomes the column)`.
+
+    Both, because a key is lifted or it is not, and every entry of a lifted key
+    leaves the residual pairs with it -- otherwise a line that wrote the same
+    fact twice keeps a copy of what was already promoted.
+
+    Which entries are the only *reading* of their key in their row.
 
     One composite key per entry -- the row shifted above the tag, so no pair of
     them can collide -- counted in a single `value_counts`. Per entry and not
     per tag, because a batch carries thirty-odd liftable tags and one pass over
     the child array answers for all of them at once.
+
+    The reading and not the entry, because a bridge writes the same fact twice
+    on purpose. A rendered line carries two namespaces -- `#Side` as it arrived
+    and `Side` after enrichment -- and on a third to a half of the lines in a
+    real capture some fields appear in both. Refusing to lift a key that
+    repeats dropped every one of those out of its typed column and into the
+    residual pairs, silently, on lines that agreed with themselves.
+
+    Repeats that *disagree* are still refused: two different values under one
+    key is a group, or an enrichment that rewrote something, and picking
+    between them would be a guess.
     """
     compute = pyarrow.compute
     if pyarrow.types.is_integer(keys.type):
@@ -938,12 +1040,23 @@ def _once(parents: Any, keys: Any) -> Any:
         )
     distinct = compute.unique(composite)
     if len(distinct) == len(composite):
-        return pyarrow.repeat(True, len(composite))
-    counted = compute.value_counts(composite)
+        whole = pyarrow.repeat(True, len(composite))
+        return whole, whole
+    reading = compute.binary_join_element_wise(
+        composite.cast(pyarrow.string()),
+        compute.fill_null(values.cast(pyarrow.string(), safe=False), ""),
+        "\x00",
+    )
+    # `index_in` against the column itself gives each entry the position of the
+    # first entry reading the same way, so an entry is a repeat exactly when
+    # that position is not its own. One hash table, no grouping.
+    first = compute.equal(compute.index_in(reading, value_set=reading), sequence(len(reading)))
+    counted = compute.value_counts(compute.filter(composite, first))
     seen = compute.take(
         counted.field("counts"), compute.index_in(composite, value_set=counted.field("values"))
     )
-    return compute.equal(seen, 1)
+    agreed = compute.equal(seen, 1)
+    return agreed, compute.and_(agreed, first)
 
 
 def _quote_group_structure(parents: Any, keys: Any) -> Any:
@@ -981,6 +1094,111 @@ def _listed(pairs: Any) -> Any:
             )
         )
     )
+
+
+def _payload_pairs(payloads: Any) -> Any:
+    """Each payload read as the message it is, under its own separator.
+
+    Its own, because a payload sits *inside* a token of the message around it
+    and so cannot be written with that message's separator. One parse per
+    distinct separator in the batch, which is how every other reading here
+    handles a column that mixes them.
+    """
+    compute = pyarrow.compute
+    if not len(payloads):
+        return parse_arrow_array(payloads, SOH, named=True)
+    separators = compute.fill_null(
+        compute.struct_field(compute.extract_regex(payloads, _PAYLOAD_SEPARATOR), "sep"), ""
+    )
+    parts, positions = [], []
+    for separator, where in groups_of(separators):
+        spelled = separator.as_py() or SOH
+        parts.append(parse_arrow_array(compute.take(payloads, where), spelled, named=True))
+        positions.append(where)
+    return scattered(parts, positions)
+
+
+def _payload_counts(readable: Any, parsed: Any) -> tuple[Any, tuple[Any, Any] | None]:
+    """How many pairs each entry becomes, and the payload pairs behind them.
+
+    One for an entry that is not a payload or whose payload read as nothing --
+    it stays itself -- and the payload's own pair count otherwise.
+    """
+    compute = pyarrow.compute
+    found = compute.fill_null(compute.list_value_length(_listed(parsed)), 0).cast(pyarrow.int32())
+    counts = compute.if_else(
+        readable,
+        compute.if_else(
+            compute.greater(_scattered_int(readable, found), 1),
+            _scattered_int(readable, found),
+            pyarrow.scalar(1, pyarrow.int32()),
+        ),
+        pyarrow.scalar(1, pyarrow.int32()),
+    )
+    if not compute.any(compute.greater(counts, 1), min_count=0).as_py():
+        return counts, None
+    entries = compute.list_flatten(_listed(parsed))
+    prefix = pyarrow.scalar(f"{_XML_DATA_KEY}.")
+    return counts, (
+        compute.binary_join_element_wise(prefix, compute.struct_field(entries, 0), ""),
+        compute.struct_field(entries, 1),
+    )
+
+
+def _payload_starts(readable: Any, parsed: Any) -> Any:
+    """Where each entry's payload pairs begin in the flattened payload child."""
+    compute = pyarrow.compute
+    found = compute.fill_null(compute.list_value_length(_listed(parsed)), 0).cast(pyarrow.int32())
+    running = compute.subtract(compute.cumulative_sum(found), found)
+    return compute.fill_null(_scattered_int(readable, running), 0)
+
+
+def _scattered_int(mask: Any, values: Any) -> Any:
+    """A value per masked entry, put back where its entry was; zero elsewhere."""
+    compute = pyarrow.compute
+    slots = compute.if_else(
+        mask,
+        compute.subtract(
+            compute.cumulative_sum(mask.cast(pyarrow.int32())),
+            pyarrow.scalar(1, pyarrow.int32()),
+        ),
+        pyarrow.scalar(None, pyarrow.int32()),
+    )
+    return compute.fill_null(compute.take(values, slots), 0).cast(pyarrow.int32())
+
+
+def _repeated(counts: Any) -> tuple[Any, Any]:
+    """`(which entry each slot came from, its rank within that entry)`.
+
+    `repeat` in kernels: a list array whose offsets are the running counts has
+    exactly one slot per output pair, so `list_parent_indices` *is* the repeat.
+    """
+    compute = pyarrow.compute
+    bounds = pyarrow.concat_arrays(
+        [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(counts)]
+    )
+    total = bounds[len(bounds) - 1].as_py()
+    holder = pyarrow.ListArray.from_arrays(bounds, pyarrow.nulls(total, pyarrow.int8()))
+    taken = compute.list_parent_indices(holder)
+    running = compute.subtract(
+        compute.cumulative_sum(pyarrow.repeat(pyarrow.scalar(1, pyarrow.int32()), total)),
+        pyarrow.scalar(1, pyarrow.int32()),
+    )
+    return taken, compute.subtract(running, compute.take(bounds.slice(0, len(bounds) - 1), taken))
+
+
+def _row_totals(pairs: Any, lengths: Any, counts: Any) -> Any:
+    """Each row's length after an entry became several, in the same order."""
+    compute = pyarrow.compute
+    running = pyarrow.concat_arrays(
+        [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(counts)]
+    )
+    bounds = pyarrow.concat_arrays(
+        [pyarrow.array([0], pyarrow.int32()), compute.cumulative_sum(lengths)]
+    )
+    ends = running.take(bounds)
+    del pairs
+    return compute.subtract(ends.slice(1), ends.slice(0, len(ends) - 1)).cast(pyarrow.int32())
 
 
 def _entries_of(pairs: Any) -> tuple[Any, Any, Any]:

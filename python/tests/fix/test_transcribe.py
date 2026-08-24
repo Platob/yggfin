@@ -1087,3 +1087,179 @@ def test_a_registry_that_never_stored_components_says_so_and_keeps_the_legacy_ta
     assert set(extractor._member_names) == {448, 447, 452, 802, 523, 803}
     parties = _party_rows(codec, PARTIES_WIRE, "4.4")
     assert [party["party_id"] for party in parties] == ["PARTY-TEST-A", "PARTY-TEST-B"]
+
+
+# -- the two namespaces a bridge writes --------------------------------------
+
+
+def test_a_fact_written_twice_is_still_lifted_when_both_readings_agree(
+    packaged: FixCodec,
+) -> None:
+    """A third to a half of a real capture's lines carry both namespaces.
+
+    Enrichment writes `#Side` as the field arrived and `Side` as it left, and
+    refusing to lift a key that repeats dropped every such field out of its
+    typed column into the residual pairs -- on lines that agreed with
+    themselves, silently, at that rate.
+    """
+    line = "|".join(
+        [
+            "toBridge #BEGINSTRING=FIX.4.4",
+            "#SIDE=1",
+            "SIDE=1",
+            "#CLORDID=ORD-TEST-01",
+            "CLORDID=ORD-TEST-01",
+            "#ORDERQTY=100",
+        ]
+    )
+    tags, _, _, columns = packaged.into_log_columns(
+        packaged.into_pairs(pyarrow.array([line]), "UL"), "4.4"
+    )
+    lifted = {name: column.to_pylist()[0] for name, column in columns.items()}
+    assert lifted["side"] == "1"
+    assert lifted["cl_ord_id"] == "ORD-TEST-01"
+    assert lifted["order_qty"] == 100.0
+    assert _pairs(tags) == [], "and both copies left with the fact they carried"
+
+
+def test_two_readings_that_disagree_are_still_left_where_they_were(
+    packaged: FixCodec,
+) -> None:
+    """Two values under one key is a group or a rewrite, and picking is a guess."""
+    line = "toBridge #BEGINSTRING=FIX.4.4|#SIDE=1|SIDE=2"
+    tags, _, _, columns = packaged.into_log_columns(
+        packaged.into_pairs(pyarrow.array([line]), "UL"), "4.4"
+    )
+    assert columns["side"].to_pylist() == [None]
+    assert _pairs(tags) == [(54, "1"), (54, "2")]
+
+
+def test_a_repeated_group_member_is_untouched_by_any_of_this(
+    packaged: FixCodec,
+) -> None:
+    """A wire group repeats a tag with different values, which is what it is for."""
+    message = SOH.join(
+        ["8=FIX.4.4", "35=8", "295=2", "299=Q-TEST-1", "132=1.0", "299=Q-TEST-2", "132=2.0"]
+    )
+    tags, _, _, columns = packaged.into_log_columns(
+        packaged.into_pairs(pyarrow.array([message + SOH]), "FIX"), "4.4"
+    )
+    assert columns["quote_entry_id"].to_pylist() == [None]
+    assert columns["bid_px"].to_pylist() == [None]
+    assert [tag for tag, _ in _pairs(tags)] == [295, 299, 132, 299, 132]
+
+
+# -- XmlData as the message it carries ---------------------------------------
+
+
+def _payload(codec: FixCodec, message: str, protocol: str = "FIX") -> list[tuple[object, str]]:
+    return _pairs(codec.into_pairs(pyarrow.array([message]), protocol))
+
+
+def test_xml_data_carrying_a_message_is_read_as_one(packaged: FixCodec) -> None:
+    """The standard calls tag 213 an XML stream; real bridges put pairs in it.
+
+    Read as one opaque blob its fields are neither resolvable nor queryable,
+    so a payload that reads as pairs becomes pairs where the tag sat.
+    """
+    message = (
+        SOH.join(
+            [
+                "8=FIX.4.4",
+                "35=8",
+                "212=44",
+                "213=ClOrdID=ORD-TEST-01|Side=1|Account=ACCT-TEST-01",
+                "10=000",
+            ]
+        )
+        + SOH
+    )
+    assert _payload(packaged, message) == [
+        ("8", "FIX.4.4"),
+        ("35", "8"),
+        ("212", "44"),
+        ("XmlData.ClOrdID", "ORD-TEST-01"),
+        ("XmlData.Side", "1"),
+        ("XmlData.Account", "ACCT-TEST-01"),
+        ("10", "000"),
+    ], "in the place the tag sat, so the message keeps its order"
+
+
+def test_a_payload_is_read_under_its_own_separator(packaged: FixCodec) -> None:
+    """It sits inside a token, so it cannot be written with the outer separator."""
+    for payload, separator in (("^A", "^A"), (";", ";"), ("|", "|")):
+        message = (
+            SOH.join(["8=FIX.4.4", "35=8", f"213=ClOrdID=ORD-TEST-01{payload}Side=1", "10=000"])
+            + SOH
+        )
+        assert ("XmlData.Side", "1") in _payload(packaged, message), separator
+
+
+def test_a_batch_mixing_payload_separators_reads_each_row_its_own_way(
+    packaged: FixCodec,
+) -> None:
+    head = SOH.join(["8=FIX.4.4", "35=8"])
+    messages = pyarrow.array(
+        [
+            f"{head}{SOH}213=ClOrdID=ORD-TEST-01|Side=1{SOH}10=000{SOH}",
+            f"{head}{SOH}213=ClOrdID=ORD-TEST-02;Side=2{SOH}10=000{SOH}",
+        ]
+    )
+    parsed = packaged.into_pairs(messages, "FIX")
+    assert _pairs(parsed, 0)[2:4] == [("XmlData.ClOrdID", "ORD-TEST-01"), ("XmlData.Side", "1")]
+    assert _pairs(parsed, 1)[2:4] == [("XmlData.ClOrdID", "ORD-TEST-02"), ("XmlData.Side", "2")]
+
+
+def test_a_payload_that_really_is_xml_is_left_exactly_as_it_was(
+    packaged: FixCodec,
+) -> None:
+    """The defensive half: the standard's own reading, however rare it turns out."""
+    message = SOH.join(["8=FIX.4.4", "35=8", '213=<FIXML><Ord ID="x"/></FIXML>', "10=000"]) + SOH
+    assert ("213", '<FIXML><Ord ID="x"/></FIXML>') in _payload(packaged, message)
+
+
+def test_a_payload_that_is_not_pairs_at_all_is_left_alone(packaged: FixCodec) -> None:
+    """One `a=b` is a sentence, not a message -- the same rule `BRIDGE` applies."""
+    for payload in ("nothing here at all", "onlyone=value"):
+        message = SOH.join(["8=FIX.4.4", "35=8", f"213={payload}", "10=000"]) + SOH
+        assert ("213", payload) in _payload(packaged, message)
+
+
+def test_a_payload_field_lands_in_the_column_its_name_earns(packaged: FixCodec) -> None:
+    """Which is the point: `XmlData.ClOrdID` resolves like `NoPartyIDs.PartyID` does."""
+    message = (
+        SOH.join(
+            ["8=FIX.4.4", "35=8", "213=ClOrdID=ORD-TEST-01|Side=1|Account=ACCT-TEST-01", "10=000"]
+        )
+        + SOH
+    )
+    tags, keyval, misses, columns = packaged.into_log_columns(
+        packaged.into_pairs(pyarrow.array([message]), "FIX"), "4.4"
+    )
+    assert columns["cl_ord_id"].to_pylist() == ["ORD-TEST-01"]
+    assert columns["side"].to_pylist() == ["1"]
+    assert columns["account"].to_pylist() == ["ACCT-TEST-01"]
+    assert _pairs(tags) == [] and _pairs(keyval) == [] and misses.to_pylist()[0] == []
+
+
+def test_a_rendered_xmldata_is_read_the_same_way(packaged: FixCodec) -> None:
+    """The tag and the rendered name are two spellings of one field."""
+    line = "toBridge #BEGINSTRING=FIX.4.4|#XMLDATA=ClOrdID=ORD-TEST-02;Side=2|#SIDE=2"
+    assert _payload(packaged, line, "UL") == [
+        ("BEGINSTRING", "FIX.4.4"),
+        ("XmlData.ClOrdID", "ORD-TEST-02"),
+        ("XmlData.Side", "2"),
+        ("SIDE", "2"),
+    ]
+
+
+def test_a_row_with_no_payload_costs_nothing_and_changes_nothing(
+    packaged: FixCodec,
+) -> None:
+    message = SOH.join(["8=FIX.4.4", "35=8", "54=1", "10=000"]) + SOH
+    assert _payload(packaged, message) == [
+        ("8", "FIX.4.4"),
+        ("35", "8"),
+        ("54", "1"),
+        ("10", "000"),
+    ]
