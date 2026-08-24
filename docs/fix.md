@@ -64,7 +64,7 @@ than two half-histories nobody diffs. Each version's variant states only what
 it does not share with the identity.
 
 A field FIX never numbered -- a bridge's rendered `ISINCODE`, a vendor's
-`TECH.CLIENTID` -- is the same document with `kind: vendor`, no tag, and a
+`TECH.CLIENTID` -- is the same document with `kind: namespace`, no tag, and a
 `*` variant that holds whichever version the session negotiated. One naming
 `fix:column` is lifted into that column of the parsed log.
 
@@ -79,7 +79,7 @@ that answers:
 
 1. an identity's canonical name;
 2. a name some version spells for it;
-3. a declared alias -- a rendered or vendor spelling, a legacy name, a near
+3. a declared alias -- a rendered or namespaced spelling, a legacy name, a near
    miss confirmed against a capture.
 
 A later tier never takes a name from an earlier one. Two identities claiming
@@ -148,7 +148,7 @@ and says which of four things each one is:
 | `exact` | the dictionary has this name | nothing |
 | `aliased` | a spelling already recorded against a field | nothing |
 | `near` | one or two edits from a known name | record an alias, with its count |
-| `vendor` | a name FIX never numbered | declare the field |
+| `namespace` | a name FIX never numbered | declare the field |
 
 ```bash
 rekep fix classify --source /captures/brk --store data/fix \
@@ -164,9 +164,11 @@ alias it writes carries the capture and the count that earned it.
 
 Two readings the classification depends on:
 
-- A dotted key is a component path when every segment in front of the last one
-  names something the dictionary has, and a vendor namespace otherwise. So
-  `NoPartyIDs.PartyID` is `PartyID` inside a group, and `TECH.CLIENTID` is a
+- A dotted key is a component path when the segment *nearest the name* --
+  subscript dropped -- names something the dictionary has, and a namespace
+  otherwise. That segment is the one saying what the field is a member of;
+  anything further out only says where the container came from. So
+  `NoPartyIDs[0].PartyID` is `PartyID` inside a group, and `TECH.CLIENTID` is a
   vendor's own field rather than `ClientID <109>` with a prefix.
 - `#Foo` and `Foo` are counted apart. The two namespaces a bridge writes are
   asymmetric -- some names only ever marked, some only ever bare, a few both --

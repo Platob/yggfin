@@ -12,7 +12,7 @@ from typing import Any
 
 from rekep.fields import Field, StructField, field_of
 from rekep.fix.classify import KeyReport, apply_report, classify, count_files, report_document
-from rekep.fix.entries import ANY_VERSION, STANDARD, VENDOR, Alias, ComponentEntry, FieldEntry
+from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
 from rekep.fix.registry import FixRegistry
 
 #: Formats a declaration can be written as, and the extensions they are
@@ -123,7 +123,7 @@ def _format_of(target: str | None) -> str:
 
 # -- the FIX registry --------------------------------------------------------
 #
-# Adding a newly observed alias or a newly observed vendor field is a supported
+# Adding a newly observed alias or a newly observed namespaced field is a supported
 # operation, not a hand edit of a JSON file. Every verb here goes through
 # `FixRegistry`, which schema-checks the change, re-runs the alias-collision
 # check against the whole store, and refuses the write rather than leaving it
@@ -237,7 +237,7 @@ def _field_entry(arguments: argparse.Namespace) -> FieldEntry:
     return FieldEntry(
         name=arguments.name,
         tag=arguments.tag,
-        kind=STANDARD if arguments.tag else VENDOR,
+        kind=STANDARD if arguments.tag else NAMESPACE,
         aliases=tuple(Alias(name=alias) for alias in arguments.alias),
         variants={version: dict(variant) for version in (arguments.version or [ANY_VERSION])},
         column=arguments.column or "",
@@ -273,13 +273,13 @@ def apply_keys(arguments: argparse.Namespace) -> int:
         registry,
         report,
         aliases=arguments.aliases,
-        vendor=arguments.vendor,
+        namespace=arguments.namespace,
         minimum=arguments.minimum,
     )
     for line in applied:
         print(line, file=sys.stderr)
     if not applied:
-        print("nothing to apply: name --aliases, --vendor, or both", file=sys.stderr)
+        print("nothing to apply: name --aliases, --namespace, or both", file=sys.stderr)
     return 0
 
 
@@ -411,7 +411,7 @@ def _parser() -> argparse.ArgumentParser:
         "--aliases", action="store_true", help="record each near miss against the field it means"
     )
     applying.add_argument(
-        "--vendor", action="store_true", help="declare each name FIX never numbered"
+        "--namespace", action="store_true", help="declare each name FIX never numbered"
     )
     applying.add_argument(
         "--minimum",

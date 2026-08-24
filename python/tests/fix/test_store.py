@@ -23,7 +23,7 @@ import pyarrow
 import pytest
 
 from rekep.fields import Field
-from rekep.fix.entries import ANY_VERSION, VENDOR, Alias, ComponentEntry, FieldEntry
+from rekep.fix.entries import ANY_VERSION, NAMESPACE, Alias, ComponentEntry, FieldEntry
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
 from rekep.fix.registry import FixRegistry
@@ -236,14 +236,14 @@ def test_aliasing_a_field_nothing_resolves_is_refused(store: Offline) -> None:
 def test_a_field_identity_is_created_updated_and_removed(store: Offline) -> None:
     entry = FieldEntry(
         name="FAKE.VENDOR.CODE",
-        kind=VENDOR,
+        kind=NAMESPACE,
         variants={ANY_VERSION: {"type": "String", "description": "A vendor's own."}},
         column="fake_vendor_code",
     )
     store.add_field(entry)
     assert (Path(store.cache_dir) / "fields" / "fake_vendor_code.json").exists()
     assert store.resolve("FAKE.VENDOR.CODE").column == "fake_vendor_code"
-    assert store.field("FAKE.VENDOR.CODE", "9.1").fix["kind"] == VENDOR
+    assert store.field("FAKE.VENDOR.CODE", "9.1").fix["kind"] == NAMESPACE
 
     store.update_field(dataclasses_replace(entry, column="renamed"))
     assert store.resolve("FAKE.VENDOR.CODE").column == "renamed"
@@ -509,7 +509,7 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     store.add_field(
         FieldEntry(
             name="FAKE.VENDOR.CODE",
-            kind=VENDOR,
+            kind=NAMESPACE,
             aliases=(Alias(name="FAKEVENDORCODE", source="brk", occurrences=5),),
             variants={ANY_VERSION: {"type": "String", "description": "A vendor's own code."}},
             column="fake_vendor_code",
@@ -519,14 +519,14 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     # Declared, so the registry answers for it by every spelling it has.
     assert store.resolve("FAKE.VENDOR.CODE").column == "fake_vendor_code"
     assert store.resolve("fakevendorcode").name == "FAKE.VENDOR.CODE"
-    assert store.field("FAKE.VENDOR.CODE", "9.1").fix["kind"] == VENDOR
+    assert store.field("FAKE.VENDOR.CODE", "9.1").fix["kind"] == NAMESPACE
     assert "FAKE.VENDOR.CODE" not in store.tags(), "it has no tag to be mapped to"
 
     # Stored, as one reviewable file that says what it is.
     stored = json.loads((Path(store.cache_dir) / "fields" / "fake_vendor_code.json").read_text())
     assert stored == {
         "name": "FAKE.VENDOR.CODE",
-        "kind": "vendor",
+        "kind": "namespace",
         "column": "fake_vendor_code",
         "aliases": [{"name": "FAKEVENDORCODE", "source": "brk", "occurrences": 5}],
         "versions": {"*": {"type": "String", "description": "A vendor's own code."}},
@@ -599,7 +599,7 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline, tmp_p
         store.add_field(
             FieldEntry(
                 name=f"{vendor}.CLIENTID",
-                kind=VENDOR,
+                kind=NAMESPACE,
                 variants={ANY_VERSION: {"type": "String"}},
                 column=column,
             )

@@ -157,7 +157,7 @@ class TagIndex:
         Four answers because they are one scan: whether a key sits inside a
         container this version declares decides both whether its tail may be
         resolved and whether what stands in front of it is a component or a
-        vendor namespace, and computing it twice would read the same column
+        namespace, and computing it twice would read the same column
         through the same regex twice.
         """
         compute = pyarrow.compute
@@ -702,7 +702,7 @@ class FixCodec(Convertible):
         """`{rendered spelling: column}` for the fields FIX never numbered.
 
         Read from *this codec's* registry rather than from the packaged one, so
-        declaring a vendor field is a change to a dictionary and never a change
+        declaring a namespaced field is a change to a dictionary and never a change
         here. The parsed log's own contract still decides which of these
         columns it keeps; a codec that lifts one the log does not declare hands
         it to a caller that can, and drops it otherwise.
@@ -911,7 +911,7 @@ def _lead_of(entries: Any) -> Any:
 def _declared_index(keys: Any, lead: Any, declared: Any) -> Any:
     """Where each field sits in `declared`, or null; the whole name first.
 
-    Whole first because a vendor namespace is part of a name -- `TECH.CLIENTID`
+    Whole first because a namespace is part of a name -- `TECH.CLIENTID`
     is not `CLIENTID` -- and the tail second because a dictionary that declares
     only one of the two spellings still answers for the other.
     """

@@ -1,6 +1,6 @@
 {
  "name": "ISINCODE",
- "kind": "vendor",
+ "kind": "namespace",
  "column": "isincode",
  "aliases": [
   {

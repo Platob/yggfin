@@ -569,7 +569,7 @@ class FixRegistry(Convertible):
         1. the canonical name of an identity;
         2. a name some version spells for it (tag 64 is `FutSettDate` through
            4.3 and `SettlDate` after, and both are that identity);
-        3. a declared alias -- a rendered or vendor spelling, a legacy name, a
+        3. a declared alias -- a rendered or namespaced spelling, a legacy name, a
            near miss confirmed against a capture.
 
         A later tier is only consulted when every earlier one missed, so
@@ -641,7 +641,7 @@ class FixRegistry(Convertible):
 
     # -- editing the store ----------------------------------------------------
     #
-    # Registering a newly observed vendor field or a newly confirmed alias is
+    # Registering a newly observed namespaced field or a newly confirmed alias is
     # a supported operation, not a hand edit of a JSON file: every change goes
     # through one of these, is checked against the schema and against what the
     # store already holds, and is refused whole rather than written half.
@@ -1265,7 +1265,7 @@ class FixRegistry(Convertible):
         wanted: set[int] = set()
         # A field FIX never numbered is selected by name, because that is all
         # it has -- and a projection that could only select tags would leave
-        # every rendered vendor field behind.
+        # every rendered namespaced field behind.
         named: set[str] = set()
         missing = []
         for key in keys:

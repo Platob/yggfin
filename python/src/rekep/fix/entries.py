@@ -22,6 +22,7 @@ import dataclasses
 import json
 import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
+from types import MappingProxyType
 from typing import Any, Self
 
 from rekep.convert import Convertible
@@ -38,8 +39,13 @@ ANY_VERSION = "*"
 #: no tag behind it. Stored so a reader never has to infer it from a null tag,
 #: and so a projection or a report can select one kind without guessing.
 STANDARD = "standard"
-VENDOR = "vendor"
-KINDS: frozenset[str] = frozenset({STANDARD, VENDOR})
+NAMESPACE = "namespace"
+KINDS: frozenset[str] = frozenset({STANDARD, NAMESPACE})
+
+#: What `NAMESPACE` used to be called, still read out of a store somebody's
+#: cache already holds. Written back under the current name, so a store
+#: converts itself the first time anything rewrites it.
+_RENAMED_KINDS: Mapping[str, str] = MappingProxyType({"vendor": NAMESPACE})
 
 #: Per-version parts of a field a variant may carry. Everything else about a
 #: field belongs to its identity and cannot differ between versions.
@@ -131,6 +137,12 @@ class Alias(Convertible):
         )
 
 
+def _kind_of(stored: Any) -> str:
+    """One stored `kind`, under whatever name the store spelled it."""
+    kind = str(stored or STANDARD)
+    return _RENAMED_KINDS.get(kind, kind)
+
+
 @dataclasses.dataclass(frozen=True)
 class FieldEntry(Convertible):
     """One field identity, and every version's reading of it."""
@@ -153,8 +165,8 @@ class FieldEntry(Convertible):
             raise ValueError(f"unknown FIX field kind {self.kind!r}; one of {sorted(KINDS)}")
         if self.kind == STANDARD and not self.tag:
             raise ValueError(f"standard FIX field {self.name!r} has no tag")
-        if self.kind == VENDOR and self.tag:
-            raise ValueError(f"vendor FIX field {self.name!r} must not claim tag {self.tag}")
+        if self.kind == NAMESPACE and self.tag:
+            raise ValueError(f"namespaced FIX field {self.name!r} must not claim tag {self.tag}")
         if not self.variants:
             raise ValueError(f"FIX field {self.name!r} is declared for no version")
         for version, variant in self.variants.items():
@@ -185,7 +197,7 @@ class FieldEntry(Convertible):
         }
 
     def tags(self) -> dict[str, int]:
-        """`{version: tag}` for a numbered field; empty for a vendor one."""
+        """`{version: tag}` for a numbered field; empty for a namespaced one."""
         if self.tag is None:
             return {}
         return {
@@ -207,7 +219,7 @@ class FieldEntry(Convertible):
         return tuple(found.values())
 
     def variant(self, version: str) -> Mapping[str, Any] | None:
-        """One version's reading, or the wildcard a vendor field carries."""
+        """One version's reading, or the wildcard a namespaced field carries."""
         found = self.variants.get(version)
         return self.variants.get(ANY_VERSION) if found is None else found
 
@@ -230,10 +242,10 @@ class FieldEntry(Convertible):
             values=found.get("values"),
         )
         if self.tag is None:
-            # A vendor field has no tag, and a `0` where one goes would collide
-            # with every other vendor field in a tag index.
+            # A namespaced field has no tag, and a `0` where one goes would
+            # collide with every other one of them in a tag index.
             del built.fix["tag"]
-            built.fix["kind"] = VENDOR
+            built.fix["kind"] = NAMESPACE
         if self.column:
             built.fix["column"] = self.column
         for key in ("value_names", "used_in"):
@@ -277,7 +289,7 @@ class FieldEntry(Convertible):
         return cls(
             name=str(mapping.get("name") or ""),
             tag=int(tag) if tag is not None else None,
-            kind=str(mapping.get("kind") or STANDARD),
+            kind=_kind_of(mapping.get("kind")),
             aliases=_aliases_of(mapping.get("aliases")),
             variants={str(version): dict(variant) for version, variant in versions.items()},
             column=str(mapping.get("column") or ""),
@@ -297,7 +309,7 @@ class FieldEntry(Convertible):
         return cls(
             name=latest.name,
             tag=int(tag) if tag else None,
-            kind=STANDARD if tag else VENDOR,
+            kind=STANDARD if tag else NAMESPACE,
             column=latest.fix.get("column", ""),
             variants={
                 version: variant_of(member, latest.name, int(tag) if tag else None)

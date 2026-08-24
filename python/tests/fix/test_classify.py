@@ -16,8 +16,8 @@ import pytest
 from rekep.fix.classify import (
     ALIASED,
     EXACT,
+    NAMESPACE,
     NEAR,
-    VENDOR,
     Classified,
     KeyCount,
     KeyCounts,
@@ -223,13 +223,13 @@ def test_a_vendor_namespace_is_not_read_as_the_field_its_tail_names(
     What tells it from `NOPARTYIDS.PARTYID` is whether the segments in front
     name anything the dictionary has -- and `TECH` names nothing.
     """
-    assert _row(report, "TECH.CLIENTID").kind == VENDOR
+    assert _row(report, "TECH.CLIENTID").kind == NAMESPACE
     assert _row(report, "TECH.CLIENTID").resolved == ""
-    assert _row(report, "PICTET.SOURCE").kind == VENDOR
+    assert _row(report, "PICTET.SOURCE").kind == NAMESPACE
 
 
 def test_a_name_nothing_here_has_is_a_vendor_field(report: KeyReport) -> None:
-    vendor = {row.name for row in report.of(VENDOR)}
+    vendor = {row.name for row in report.of(NAMESPACE)}
     assert {"ULFROMSESSIONNAME", "CONVERSATIONID", "UNRESOLVEDROUTING", "BLOOMBERGCODE"} <= vendor
 
 
@@ -290,10 +290,10 @@ def test_a_near_miss_becomes_an_alias_with_the_capture_that_earned_it(
 
 
 def test_a_vendor_name_becomes_a_declared_field(editable: FixRegistry, report: KeyReport) -> None:
-    applied = apply_report(editable, report, vendor=True)
+    applied = apply_report(editable, report, namespace=True)
     assert any("TECH.CLIENTID" in line for line in applied)
     entry = editable.resolve("TECH.CLIENTID")
-    assert entry.kind == VENDOR and entry.tag is None
+    assert entry.kind == NAMESPACE and entry.tag is None
     assert entry.versions == (ANY_VERSION,)
     assert not entry.column, "a column is a change to a published contract, not to a dictionary"
     assert editable.check() == []
@@ -303,16 +303,16 @@ def test_only_what_was_counted_often_enough_is_applied(
     editable: FixRegistry, report: KeyReport
 ) -> None:
     """One occurrence in one capture is a typo; a thousand is a field."""
-    assert apply_report(editable, report, aliases=True, vendor=True, minimum=2) == []
+    assert apply_report(editable, report, aliases=True, namespace=True, minimum=2) == []
     assert editable.resolve("TECH.CLIENTID") is None
 
 
 def test_applying_a_report_twice_over_is_refused_rather_than_duplicated(
     editable: FixRegistry, report: KeyReport
 ) -> None:
-    apply_report(editable, report, vendor=True)
+    apply_report(editable, report, namespace=True)
     with pytest.raises(KeyError, match="already stored"):
-        apply_report(editable, report, vendor=True)
+        apply_report(editable, report, namespace=True)
 
 
 def test_an_applied_alias_makes_the_next_run_call_the_name_known(
@@ -328,9 +328,9 @@ def test_an_applied_alias_makes_the_next_run_call_the_name_known(
 def test_a_declared_vendor_field_leaves_the_vendor_backlog(
     editable: FixRegistry, counts: KeyCounts, report: KeyReport
 ) -> None:
-    apply_report(editable, report, vendor=True)
+    apply_report(editable, report, namespace=True)
     again = classify(counts, editable)
-    assert again.of(VENDOR) == (), "every one of them was declared"
+    assert again.of(NAMESPACE) == (), "every one of them was declared"
     assert _row(again, "TECH.CLIENTID").kind == EXACT
 
 
@@ -349,9 +349,9 @@ def test_a_report_read_back_from_disk_applies_the_same(
 def test_a_counted_name_declares_itself_as_the_entry_it_would_be() -> None:
     """The bridge between a count and a registry verb, on its own."""
     count = KeyCount(name="FAKE.VENDOR.CODE", marked=7, sources=("brk",))
-    row = Classified(count, VENDOR)
+    row = Classified(count, NAMESPACE)
     assert row.into_entry() == FieldEntry(
-        name="FAKE.VENDOR.CODE", kind=VENDOR, variants={ANY_VERSION: {"type": "String"}}
+        name="FAKE.VENDOR.CODE", kind=NAMESPACE, variants={ANY_VERSION: {"type": "String"}}
     )
     assert Classified(count, NEAR, "FakeCode", 1).into_alias() == Alias(
         name="FAKE.VENDOR.CODE", source="brk", occurrences=7

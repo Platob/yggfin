@@ -24,8 +24,8 @@ from rekep.fix.entries import ANY_VERSION, VARIANT_KEYS
 from rekep.fix.publish import (
     LOG_FIELDS,
     MARKET_FIELDS,
+    NAMESPACE_FIELDS,
     PROJECTED,
-    VENDOR_FIELDS,
     latest_fields,
     missing_from,
     publish_builtin,
@@ -136,7 +136,7 @@ def test_a_field_file_holds_one_identity_and_every_version_of_it() -> None:
         assert entry["versions"], slug
         for variant in entry["versions"].values():
             assert set(variant) <= set(VARIANT_KEYS), slug
-        if entry.get("kind") == "vendor":
+        if entry.get("kind") == "namespace":
             # A field FIX never numbered: no tag, and one variant that holds
             # whichever version the session negotiated.
             vendor += 1
@@ -275,7 +275,7 @@ def test_the_builtin_projection_matches_the_published_versions(
         for member in builtin.fields(version)
         if not member.fix.get("tag")
     }
-    assert named == set(VENDOR_FIELDS), "and every field FIX never numbered, by name"
+    assert named == set(NAMESPACE_FIELDS), "and every field FIX never numbered, by name"
     for version in registry.versions:
         expected = [
             member

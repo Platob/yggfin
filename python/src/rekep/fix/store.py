@@ -486,7 +486,7 @@ class ExplodedLayout:
     def spellings(self) -> tuple[str, ...]:
         """Every version any identity is declared for, `sessions.json` included.
 
-        The wildcard a vendor field carries is not a version and never appears
+        The wildcard a namespaced field carries is not a version and never appears
         here: it means "whichever version this store already has".
         """
         found = {

@@ -241,7 +241,7 @@ def test_a_vendor_field_is_registered_updated_and_removed(store: Path) -> None:
         == 0
     )
     entry = reopened(store).resolve("FAKE.VENDOR.CODE")
-    assert entry.kind == "vendor" and entry.tag is None
+    assert entry.kind == "namespace" and entry.tag is None
     assert entry.column == "fake_vendor_code"
     assert reopened(store).resolve("FAKEVENDORCODE").name == "FAKE.VENDOR.CODE"
 

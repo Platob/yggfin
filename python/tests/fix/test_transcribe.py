@@ -206,8 +206,8 @@ def test_every_field_is_one_entry_and_says_what_it_is(codec: FixCodec, pairs) ->
 
 def test_an_unknown_numeric_tag_is_still_a_tag(codec: FixCodec) -> None:
     """A number is a tag whether or not this version wrote it up."""
-    pairs = parse_arrow_array(pyarrow.array(["55=TTF|999999999=vendor|"]))
-    assert _tags(codec.into_kwargs(pairs, "4.4")) == [(55, "TTF"), (999999999, "vendor")]
+    pairs = parse_arrow_array(pyarrow.array(["55=TTF|999999999=FAKE-VALUE|"]))
+    assert _tags(codec.into_kwargs(pairs, "4.4")) == [(55, "TTF"), (999999999, "FAKE-VALUE")]
 
 
 def test_a_value_its_field_enumerates_is_transcribed(codec: FixCodec) -> None:

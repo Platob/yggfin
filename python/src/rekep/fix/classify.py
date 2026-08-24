@@ -9,7 +9,7 @@ being actionable. It is three:
 - a **near miss** of a name the dictionary has -- a case, separator or spelling
   variant -- which is an alias to record against the field it means, with the
   capture and the count that earned it, and never a silent merge;
-- a **vendor** name FIX never numbered, which is an entry to declare.
+- a **namespaced** name FIX never numbered, which is an entry to declare.
 
 So this counts names and says which of the three each is. Names and counts
 only: a value never leaves the batch it was counted in, and nothing here reads
@@ -39,8 +39,8 @@ from rekep.fix.rules import Rules
 EXACT = "exact"
 ALIASED = "aliased"
 NEAR = "near"
-VENDOR = "vendor"
-KINDS: tuple[str, ...] = (VENDOR, NEAR, ALIASED, EXACT)
+NAMESPACE = "namespace"
+KINDS: tuple[str, ...] = (NAMESPACE, NEAR, ALIASED, EXACT)
 
 #: How far a name may be from a known one and still be called a near miss.
 #: A third of its length, capped -- the same shape `FixRegistry.search` uses --
@@ -238,10 +238,10 @@ class Classified(Convertible):
         )
 
     def into_entry(self) -> FieldEntry:
-        """This vendor name as the entry declaring it would be."""
+        """This namespaced name as the entry declaring it would be."""
         return FieldEntry(
             name=self.name,
-            kind="vendor",
+            kind="namespace",
             variants={ANY_VERSION: {"type": "String"}},
         )
 
@@ -301,7 +301,7 @@ class KeyReport(Convertible):
         ]
         for kind in KINDS:
             written.append(f"  {kind:8} {names[kind]:6} names {totals[kind]:12} occurrences")
-        for kind in (VENDOR, NEAR):
+        for kind in (NAMESPACE, NEAR):
             rows = self.of(kind)
             if not rows:
                 continue
@@ -352,7 +352,7 @@ def _classified(
     nearest, distance = _nearest(fold(wanted), known, ceiling)
     if nearest:
         return Classified(count, NEAR, nearest, distance)
-    return Classified(count, VENDOR)
+    return Classified(count, NAMESPACE)
 
 
 def _member_name(name: str, containers: frozenset[str]) -> str:
@@ -360,7 +360,7 @@ def _member_name(name: str, containers: frozenset[str]) -> str:
 
     `NoPartyIDs.PartyID` is `PartyID` sitting inside a group the dictionary
     knows, so the tail is the field. `TECH.CLIENTID` is a vendor's own
-    namespace, and reading its tail as `ClientID <109>` would file a vendor
+    namespace, and reading its tail as `ClientID <109>` would file an enrichment
     enrichment field under a standard tag it has nothing to do with. What
     tells them apart is whether the segments in front name anything -- a
     component, a group, a field -- that this dictionary has.
@@ -415,7 +415,7 @@ def apply_report(
     report: KeyReport,
     *,
     aliases: bool = False,
-    vendor: bool = False,
+    namespace: bool = False,
     minimum: int = 0,
 ) -> list[str]:
     """Register what the report found, through the registry's own verbs.
@@ -432,7 +432,7 @@ def apply_report(
             continue
         registry.alias_field(row.resolved, row.into_alias())
         applied.append(f"alias {row.name} -> {row.resolved} ({row.count.total} occurrences)")
-    for row in report.of(VENDOR) if vendor else ():
+    for row in report.of(NAMESPACE) if namespace else ():
         if row.count.total < minimum:
             continue
         registry.add_field(row.into_entry())

@@ -9,6 +9,6 @@ Pages and captures the FIX tests read instead of the network.
 - `bridge_keys.txt` is a synthetic bridge capture in the parser's target log
   layout. Every value in it is a placeholder (`FAKE-*`, `ORD-TEST-*`,
   `PARTY-TEST-*`): what it exists to carry is *key names* -- exact matches,
-  a recorded spelling, near misses, vendor namespaces, a component path, a
+  a recorded spelling, near misses, namespaces, a component path, a
   narrative-prefixed line, and names written both `#Foo` and `Foo` -- and
   `tests/fix/test_classify.py` derives its counts from it and then pins them.

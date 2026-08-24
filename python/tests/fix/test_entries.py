@@ -19,8 +19,8 @@ import pytest
 from rekep.fields import Field
 from rekep.fix.entries import (
     ANY_VERSION,
+    NAMESPACE,
     STANDARD,
-    VENDOR,
     Alias,
     ComponentEntry,
     FieldEntry,
@@ -96,8 +96,8 @@ def test_an_entry_no_lookup_could_answer_for_is_refused() -> None:
 def test_a_vendor_field_must_not_claim_a_tag() -> None:
     """The two kinds are what a field *is*, and a tagged vendor field is neither."""
     with pytest.raises(ValueError, match="must not claim tag"):
-        _entry(kind=VENDOR)
-    assert _entry(name="FAKE.CODE", tag=None, kind=VENDOR).kind == VENDOR
+        _entry(kind=NAMESPACE)
+    assert _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE).kind == NAMESPACE
 
 
 def test_a_variant_may_only_state_what_a_version_can_differ_on() -> None:
@@ -136,16 +136,16 @@ def test_a_version_the_entry_never_saw_has_no_declaration() -> None:
 
 def test_a_wildcard_variant_answers_for_every_version() -> None:
     """What a field outside the standard has: one reading, whatever was negotiated."""
-    entry = _entry(name="FAKE.CODE", tag=None, kind=VENDOR, variants={ANY_VERSION: {}})
+    entry = _entry(name="FAKE.CODE", tag=None, kind=NAMESPACE, variants={ANY_VERSION: {}})
     assert entry.into_field("4.0") is not None
     assert entry.into_field("5.0.SP2").fix["version"] == "5.0.SP2"
     assert "tag" not in entry.into_field("4.4").fix, "no tag, rather than tag zero"
-    assert entry.into_field("4.4").fix["kind"] == VENDOR
+    assert entry.into_field("4.4").fix["kind"] == NAMESPACE
 
 
 def test_a_declared_column_travels_with_the_field() -> None:
     entry = _entry(
-        name="FAKE.CODE", tag=None, kind=VENDOR, variants={ANY_VERSION: {}}, column="fake"
+        name="FAKE.CODE", tag=None, kind=NAMESPACE, variants={ANY_VERSION: {}}, column="fake"
     )
     assert entry.into_field("4.4").fix["column"] == "fake"
 
@@ -306,4 +306,4 @@ def test_an_entry_needs_at_least_one_reading() -> None:
 def test_a_field_with_no_tag_becomes_a_vendor_entry() -> None:
     member = Field(name="FAKE.CODE", arrow_type=pyarrow.string(), metadata={"fix:type": "String"})
     entry = FieldEntry.from_fields([member], [ANY_VERSION])
-    assert entry.kind == VENDOR and entry.tag is None
+    assert entry.kind == NAMESPACE and entry.tag is None
