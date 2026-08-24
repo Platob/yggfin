@@ -36,7 +36,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 #: The published dictionary, which is what a real run classifies against.
 PUBLISHED = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
-#: Derived from `bridge_keys.log`, then pinned: eight lines, seven of which
+#: Derived from `bridge_keys.txt`, then pinned: eight lines, seven of which
 #: carry a bridge message, spelling twenty-one distinct key names -- distinct
 #: as the capture spells them, so `ORDERQTY`, `ORDER_QTY`, `CLORDID` and
 #: `clordid` are four of them and not two.
@@ -52,7 +52,7 @@ def registry() -> FixRegistry:
 
 @pytest.fixture
 def counts() -> KeyCounts:
-    return count_files(str(FIXTURES), pattern="bridge_keys.log")
+    return count_files(str(FIXTURES), pattern="bridge_keys.txt")
 
 
 @pytest.fixture
@@ -118,7 +118,7 @@ def test_a_name_written_both_ways_is_counted_both_ways(counts: KeyCounts) -> Non
 
 def test_counts_carry_which_capture_they_came_from(counts: KeyCounts) -> None:
     """Provenance, because a name counted in one bridge is not counted in three."""
-    assert {source for count in counts.ordered() for source in count.sources} == {"bridge_keys.log"}
+    assert {source for count in counts.ordered() for source in count.sources} == {"bridge_keys.txt"}
 
 
 def test_two_runs_merge_into_one(counts: KeyCounts) -> None:
@@ -286,7 +286,7 @@ def test_a_near_miss_becomes_an_alias_with_the_capture_that_earned_it(
     entry = editable.resolve("PARTYROLLE")
     assert entry.name == "PartyRole"
     (alias,) = [found for found in entry.aliases if found.name == "PARTYROLLE"]
-    assert alias.source == "bridge_keys.log" and alias.occurrences == 1
+    assert alias.source == "bridge_keys.txt" and alias.occurrences == 1
 
 
 def test_a_vendor_name_becomes_a_declared_field(editable: FixRegistry, report: KeyReport) -> None:
