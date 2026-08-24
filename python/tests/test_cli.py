@@ -111,17 +111,18 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     """The count is taken off the declaration and pinned, so a column that left
     the contract cannot take the printed number quietly with it.
 
-    `fix_tags` is the one line the renderer has to spell out of a nested type,
+    `kwargs` is the one line the renderer has to spell out of a nested type,
     and `check_sum` pins the public naming, so together they cover the shape.
     """
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "log.yaml")) == 0
     printed = capsys.readouterr().out
-    assert len(Log.into_field().names) == 105
-    assert "Log: 105 columns, builds" in printed
+    assert len(Log.into_field().names) == 103
+    assert "Log: 103 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unix_hour: int64  [partition identity]" in printed
     assert (
-        "fix_tags: list<item: struct<key: int32 not null, value: string not null> not null>"
+        "kwargs: list<item: struct<tag: int32 not null, key: string not null, "
+        "value: string, trans: string, namespace: string, comp: string> not null>"
         "  [nullable]"
     ) in printed
     assert "parties: list<item: struct<party_id: string" in printed

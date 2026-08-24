@@ -51,13 +51,21 @@ than being guessed.
 
 ## Lossless protocol residue
 
-- `fix_tags`: ordered repeated numeric tag/value entries.
-- `keyval`: ordered non-FIX key/value entries.
-- `fix_miss_tags`: unresolved raw keys.
+- `kwargs`: every field the message carried and no column took, one entry each:
+  - `tag`: what the dictionary answers for the key, or `0` where nothing does.
+  - `key`: the field's own name, and nothing else.
+  - `value`: what the line wrote for it.
+  - `trans`: what that value means, where the field enumerates its values.
+  - `comp`: the FIX component or repeating-group entry it sat in, where the
+    dictionary declares that container -- `NoPartyIDs[0]`.
+  - `namespace`: whatever stood in front of the name where it does not, which
+    is what a vendor prefix is -- `TECH` in `TECH.CLIENTID`.
 - `parties`: structured FIX Parties entries with a flexible buffer for new
   members.
 
-These are lists, not maps, because repeated keys and wire order are data.
+These are lists, not maps, because repeated keys and wire order are data. At
+most one of `comp` and `namespace` is set, and either one joined to `key` by a
+dot is the key exactly as the line rendered it, so the split loses nothing.
 
 ## Categorization
 

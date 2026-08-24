@@ -462,103 +462,23 @@ class TextFile(Dataset, io.BufferedIOBase):
         )
 
     def _message_columns(self, messages: Any, drivers: Any, count: int) -> dict[str, Any]:
-        """What a message fills: which protocol it is, its two halves, its header."""
-        found = self.codec.categorise(messages, drivers)
-        columns: dict[str, Any] = {"protocol": found}
-        names = sorted(pyarrow.compute.unique(found).to_pylist())
-        if len(names) == 1:
-            (
-                columns["fix_tags"],
-                columns["keyval"],
-                columns["fix_miss_tags"],
-                structured,
-            ) = self._parsed(messages, names[0])
-            columns.update(structured)
-        else:
-            compute = pyarrow.compute
-            positions = _row_indices(count)
-            order, tagged, rest, missed = [], [], [], []
-            structured_parts: dict[str, list[Any]] = {}
-            for name in names:
-                mask = compute.equal(found, name)
-                order.append(compute.filter(positions, mask))
-                one, other, misses, structured = self._parsed(compute.filter(messages, mask), name)
-                tagged.append(one)
-                rest.append(other)
-                missed.append(misses)
-                for column, values in structured.items():
-                    structured_parts.setdefault(column, []).append(values)
-            back = compute.array_sort_indices(pyarrow.concat_arrays(order))
-            columns["fix_tags"] = pyarrow.concat_arrays(tagged).take(back)
-            columns["keyval"] = pyarrow.concat_arrays(rest).take(back)
-            columns["fix_miss_tags"] = pyarrow.concat_arrays(missed).take(back)
-            columns.update(
-                (name, pyarrow.concat_arrays(parts).take(back))
-                for name, parts in structured_parts.items()
-            )
-        into_named = getattr(self.codec, "into_named_columns", None)
-        if into_named is not None and getattr(self.codec, "into_log_columns", None) is None:
-            named, columns["keyval"] = into_named(columns["keyval"])
-            columns.update(named)
-        return columns
+        """What a message fills: which protocol it is, its fields, its columns.
 
-    def _parsed(self, messages: Any, protocol: str) -> tuple[Any, Any, Any, dict[str, Any]]:
-        """One protocol slice, partitioned by dictionary version when mixed."""
-        pairs = self.codec.into_pairs(messages, protocol)
-        versions_of_pairs = getattr(self.codec, "versions_of_pairs", None)
-        versions_of = getattr(self.codec, "versions_of", None)
-        if versions_of_pairs is not None:
-            versions = versions_of_pairs(pairs, protocol)
-        elif versions_of is not None:
-            versions = versions_of(messages, protocol)
-        else:
-            version, _ = self.codec.version_of(_first_text(messages), protocol)
-            return self._parsed_pairs(pairs, version)
-        versions = pyarrow.compute.fill_null(versions, "")
-        groups = list(groups_of(versions))
-        if len(groups) <= 1:
-            version = groups[0][0].as_py() or None if groups else None
-            return self._parsed_pairs(pairs, version)
-
-        tagged, rest, missed, positions = [], [], [], []
-        structured_parts: dict[str, list[Any]] = {}
-        for version, where in groups:
-            one, other, misses, structured = self._parsed_pairs(
-                pyarrow.compute.take(pairs, where), version.as_py() or None
-            )
-            tagged.append(one)
-            rest.append(other)
-            missed.append(misses)
-            positions.append(where)
-            for name, values in structured.items():
-                structured_parts.setdefault(name, []).append(values)
-        return (
-            scattered(tagged, positions),
-            scattered(rest, positions),
-            scattered(missed, positions),
-            {name: scattered(parts, positions) for name, parts in structured_parts.items()},
-        )
-
-    def _parsed_pairs(
-        self, pairs: Any, version: str | None
-    ) -> tuple[Any, Any, Any, dict[str, Any]]:
-        """One version's parsed pairs and structured components."""
-        defaults = {
-            field.name: pyarrow.nulls(len(pairs), field.arrow_type)
-            for field in self.into_row().into_field().fields
-            if "fix:component" in field.metadata
-        }
-        project = getattr(self.codec, "into_log_columns", None)
-        if project is not None:
-            tags, keyval, misses, columns = project(pairs, version)
-            return tags, keyval, misses, {**defaults, **columns}
-        tags, keyval, misses = self.codec.into_fix_pairs(pairs, version)
-        structured = getattr(self.codec, "into_component_columns", None)
-        components = {}
-        if structured is not None:
-            components, tags = structured(tags, version)
-        flat, tags = self.codec.into_flat_columns(tags, version)
-        return tags, keyval, misses, {**defaults, **components, **flat}
+        A batch mixes protocols and dictionary versions, and both are read per
+        row; the codec is handed one homogeneous slice at a time and the slices
+        are scattered back into the batch's own order.
+        """
+        del count
+        compute = pyarrow.compute
+        protocols = self.codec.categorise(messages, drivers)
+        parts = []
+        for name, slice_, where in _grouped(protocols, messages):
+            pairs = self.codec.into_pairs(slice_, name.as_py())
+            versions = compute.fill_null(self.codec.versions_of_pairs(pairs), "")
+            for version, read, inner in _grouped(versions, pairs):
+                rows = where if len(inner) == len(where) else compute.take(where, inner)
+                parts.append((self.codec.into_log_columns(read, version.as_py() or None), rows))
+        return {"protocol": protocols, **_scattered_columns(parts)}
 
     def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
         """Cut newline-delimited lines out of fixed-size reads.
@@ -924,8 +844,8 @@ def _mic_arrow(columns: Mapping[str, Any], messages: Any, rows: int) -> Any:
     """ISO exchange fields, then direction-aware FIX session endpoints."""
     compute = pyarrow.compute
     missing = pyarrow.nulls(rows, pyarrow.string())
-    tagged = columns.get("fix_tags")
-    tags = _fix_tag_arrows(tagged, (30, 100, 275, 1301), rows) if tagged is not None else {}
+    stored = columns.get("kwargs")
+    tags = _stored_tag_arrows(stored, (30, 100, 275, 1301), rows) if stored is not None else {}
     explicit = [
         tags.get(30, missing),
         columns.get("security_exchange", missing),
@@ -967,17 +887,17 @@ def _mic_arrow(columns: Mapping[str, Any], messages: Any, rows: int) -> Any:
     return compute.coalesce(venue, directed, target, sender)
 
 
-def _fix_tag_arrows(tags: Any, wanted: Sequence[int], rows: int) -> dict[int, Any]:
+def _stored_tag_arrows(stored: Any, wanted: Sequence[int], rows: int) -> dict[int, Any]:
     """First value of each wanted residual FIX tag, found in one list scan."""
-    if isinstance(tags, pyarrow.ChunkedArray):
-        tags = tags.combine_chunks()
-    if not rows or tags.null_count == rows:
+    if isinstance(stored, pyarrow.ChunkedArray):
+        stored = stored.combine_chunks()
+    if not rows or stored.null_count == rows:
         return {}
     compute = pyarrow.compute
-    parents = compute.list_parent_indices(tags).cast(pyarrow.int32())
-    entries = compute.list_flatten(tags)
-    keys = compute.struct_field(entries, 0)
-    values = compute.struct_field(entries, 1)
+    parents = compute.list_parent_indices(stored).cast(pyarrow.int32())
+    entries = compute.list_flatten(stored)
+    keys = compute.struct_field(entries, "tag")
+    values = compute.struct_field(entries, "value")
     matches = compute.fill_null(
         compute.is_in(keys, value_set=pyarrow.array(wanted, keys.type)), False
     )
@@ -996,19 +916,41 @@ def _fix_tag_arrows(tags: Any, wanted: Sequence[int], rows: int) -> dict[int, An
     return found
 
 
-def _first_text(messages: pyarrow.Array) -> str | None:
-    """The first line in a column that has anything in it, as text.
+def _grouped(keys: pyarrow.Array, values: Any) -> Iterator[tuple[Any, Any, pyarrow.Array]]:
+    """`(key, the rows carrying it, where in the column they were)`.
 
-    One row read per category per batch, which is what a version resolution
-    costs here. A column of nothing answers None, and a codec reads that as
-    "nobody said", which is an answer.
+    One group takes nothing: its positions are the identity permutation, and a
+    batch of one protocol at one dictionary version -- which is nearly every
+    batch of a real capture -- then pays no `take` at all.
     """
-    for value in messages:
-        if value.is_valid:
-            text = value.as_py()
-            if text:
-                return text
-    return None
+    for key, where in groups_of(keys):
+        yield (
+            key,
+            (values if len(where) == len(keys) else pyarrow.compute.take(values, where)),
+            where,
+        )
+
+
+def _scattered_columns(
+    parts: Sequence[tuple[tuple[Any, Mapping[str, Any]], Any]],
+) -> dict[str, Any]:
+    """Every slice's columns back in the batch's own row order.
+
+    Every slice answers with the same columns -- a projection fills the ones
+    its protocol and version had nothing for with nulls of the right type --
+    so the parts concatenate and one sort puts every row back where it was. A
+    column no slice produced at all is `_batch`'s to fill, like any other the
+    schema declares and a line does not carry.
+    """
+    positions = [where for _, where in parts]
+    lifted = [columns for (_, columns), _ in parts]
+    return {
+        "kwargs": scattered([kwargs for (kwargs, _), _ in parts], positions),
+        **{
+            name: scattered([part[name] for part in lifted], positions)
+            for name in (lifted[0] if lifted else ())
+        },
+    }
 
 
 def _zeros(count: int, arrow_type: pyarrow.DataType) -> pyarrow.Array:

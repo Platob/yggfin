@@ -100,7 +100,7 @@ _QUOTE_FIELDS: tuple[str, ...] = (
     "QuoteEntryID",
 )
 
-# These four delimit quote groups. On grouped rows they remain in `fix_tags`
+# These four delimit quote groups. On grouped rows they remain in `kwargs`
 # even when also lifted, so a later market reader can reconstruct one-entry
 # groups without reparsing the raw message.
 _QUOTE_GROUP_COUNTS: tuple[str, ...] = ("NoQuoteSets", "NoQuoteEntries")
@@ -133,6 +133,45 @@ _STAMP_FIELDS: tuple[str, ...] = (
 # Public analytical names may clarify a protocol term while `fix:name` keeps
 # its exact registry spelling. These overrides are part of the log contract.
 _NAMES: Mapping[str, str] = MappingProxyType({"AvgPx": "vwap"})
+
+
+#: What a resolved key is: the tag number, as the `int32` every other code
+#: column here is.
+TAG: pyarrow.DataType = pyarrow.int32()
+
+#: Every field a message carried, whatever the dictionary made of it.
+#:
+#: One shape, whether the dictionary recognised the field or not. `tag` is what
+#: it answers for the key and `0` where nothing answers, so "the fields this
+#: line carried" is one column to read and one predicate to split, rather than
+#: a set of columns to concatenate. `key` is the field's
+#: own name and nothing else, and whatever stood in front of it goes to one of
+#: two places: `comp` when the dictionary knows that container -- the FIX
+#: component or repeating group the field is a member of, entry index kept --
+#: and `namespace` when it does not, which is what a vendor prefix is. So
+#: `NoPartyIDs[0].PartyID` is `PartyID` in component `NoPartyIDs[0]` and
+#: `TECH.CLIENTID` is `CLIENTID` in namespace `TECH`, and the two are told
+#: apart rather than filed together. `trans` is what the value means where its
+#: field enumerates its values.
+#:
+#: The split is lossless: whichever of the two is set, joined to `key` by a
+#: dot, is the key exactly as the line rendered it.
+KWARGS: pyarrow.DataType = pyarrow.list_(
+    pyarrow.field(
+        "item",
+        pyarrow.struct(
+            [
+                pyarrow.field("tag", TAG, nullable=False),
+                pyarrow.field("key", pyarrow.string(), nullable=False),
+                pyarrow.field("value", pyarrow.string()),
+                pyarrow.field("trans", pyarrow.string()),
+                pyarrow.field("namespace", pyarrow.string()),
+                pyarrow.field("comp", pyarrow.string()),
+            ]
+        ),
+        nullable=False,
+    )
+)
 
 
 def _snake(name: str) -> str:

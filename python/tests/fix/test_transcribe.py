@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import pyarrow
 import pytest
@@ -18,14 +20,21 @@ from rekep.fix import (
     infer_version_from_pairs,
     parse_arrow_array,
 )
-from rekep.fix.columns import COLUMNS, COMMON, FLAT, QUOTE, SESSION, STAMPS, TYPES
+from rekep.fix.columns import (
+    COLUMNS,
+    COMMON,
+    FLAT,
+    KWARGS,
+    NAMED,
+    QUOTE,
+    SESSION,
+    STAMPS,
+    TYPES,
+)
 from rekep.fix.fields import fix_field
 from rekep.fix.transcribe import (
     APPLICATION_VERSION_SOURCE,
     BEGIN_STRING_SOURCE,
-    FIX_MISS_TAGS,
-    FIX_TAGS,
-    KEYVAL,
     NO_SOURCE,
     TagIndex,
     _version_key,
@@ -96,13 +105,12 @@ def pairs() -> pyarrow.Array:
 
 @pytest.fixture
 def wire_tags(codec: FixCodec) -> pyarrow.Array:
-    """`WIRE` as `fix_tags`, which is what `into_flat_columns` is handed."""
-    resolved, _, _ = codec.into_fix_pairs(parse_arrow_array(pyarrow.array([WIRE])), "4.2")
-    return resolved
+    """`WIRE` as `kwargs`, which is what `into_lifted_columns` is handed."""
+    return codec.into_kwargs(parse_arrow_array(pyarrow.array([WIRE])), "4.2")
 
 
 def _pairs(array: pyarrow.Array, row: int = 0) -> list[tuple[object, str]] | None:
-    """One map/list cell in the pair form assertions read."""
+    """One map or pair-list cell in the pair form assertions read."""
     cell = array.to_pylist()[row]
     if cell is None:
         return None
@@ -112,11 +120,45 @@ def _pairs(array: pyarrow.Array, row: int = 0) -> list[tuple[object, str]] | Non
     ]
 
 
+def _kwargs(array: pyarrow.Array, row: int = 0) -> list[tuple[int, str, str]] | None:
+    """One `kwargs` cell as the `(tag, key, value)` an assertion reads."""
+    cell = array.to_pylist()[row]
+    if cell is None:
+        return None
+    return [(entry["tag"], entry["key"], entry["value"]) for entry in cell]
+
+
+def _tags(array: pyarrow.Array, row: int = 0) -> list[tuple[int, str]]:
+    """The fields of one `kwargs` cell that resolved to a tag."""
+    return [(tag, value) for tag, _, value in _kwargs(array, row) or () if tag]
+
+
+def _named(array: pyarrow.Array, row: int = 0) -> list[tuple[str, str]]:
+    """The fields of one `kwargs` cell that resolved to nothing."""
+    return [(key, value) for tag, key, value in _kwargs(array, row) or () if not tag]
+
+
+def _kwargs_array(rows: Sequence[Sequence[tuple[Any, ...]] | None]) -> pyarrow.Array:
+    """A `kwargs` column out of `(tag, key, value)` triples, for a test's input."""
+    return pyarrow.array(
+        [
+            None
+            if row is None
+            else [
+                {"tag": tag, "key": key, "value": value, "trans": None, "namespace": None}
+                for tag, key, value in row
+            ]
+            for row in rows
+        ],
+        type=KWARGS,
+    )
+
+
 def test_the_fixture_is_the_shape_the_tests_assume(
     pairs: pyarrow.Array, wire_tags: pyarrow.Array
 ) -> None:
     assert len(pairs.to_pylist()[0]) == EXPECTED_BRIDGE_PAIRS
-    carried = {tag for tag, _ in _pairs(wire_tags)}
+    carried = {tag for tag, _ in _tags(wire_tags)}
     assert len(carried) == EXPECTED_WIRE_SESSION + EXPECTED_WIRE_COMMON
     assert len(carried & {tag for tag, _ in SESSION}) == EXPECTED_WIRE_SESSION
     assert len(carried & {tag for tag, _ in COMMON}) == EXPECTED_WIRE_COMMON
@@ -124,13 +166,13 @@ def test_the_fixture_is_the_shape_the_tests_assume(
     assert int(SENT_AT.timestamp() * 1_000_000) == 1786699800123000
 
 
-# -- what resolves, and what does not ----------------------------------------
+# -- what the dictionary makes of a field ------------------------------------
 
 
 def test_a_name_the_dictionary_knows_becomes_its_tag(codec: FixCodec, pairs) -> None:
-    resolved, _, _ = codec.into_fix_pairs(pairs, "4.4")
-    assert resolved.type == FIX_TAGS
-    found = dict(_pairs(resolved))
+    resolved = codec.into_kwargs(pairs, "4.4")
+    assert resolved.type == KWARGS
+    found = dict(_tags(resolved))
     assert found[55] == "TTF" and found[54] == "1" and found[38] == "1200"
     assert found[453] == "2"
 
@@ -139,117 +181,174 @@ def test_a_group_keeps_its_meaning_through_order_and_not_through_the_key(
     codec: FixCodec, pairs
 ) -> None:
     """`453` then the entries flattened is what the wire looks like."""
-    resolved, _, _ = codec.into_fix_pairs(pairs, "4.4")
-    tags = [tag for tag, _ in _pairs(resolved)]
+    resolved = codec.into_kwargs(pairs, "4.4")
+    tags = [tag for tag, _ in _tags(resolved)]
     assert tags[tags.index(453) :] == [453, 448, 447, 452, 448, 447, 452]
-    values = [value for tag, value in _pairs(resolved) if tag == 448]
+    values = [value for tag, value in _tags(resolved) if tag == 448]
     assert values == ["BUYSIDE", "XPAR"], "both entries kept, in the order they were sent"
 
 
 def test_a_name_nothing_resolves_is_kept_and_never_guessed(codec: FixCodec, pairs) -> None:
-    _, rest, _ = codec.into_fix_pairs(pairs, "4.4")
-    assert rest.type == KEYVAL
-    assert dict(_pairs(rest)) == {
+    """Tag `0`, and the name exactly as the line spelled it."""
+    resolved = codec.into_kwargs(pairs, "4.4")
+    assert dict(_named(resolved)) == {
         "ISINCODE": "XX0000084733",
         "UNKNOWNVENUEFIELD": "Z9",
     }
 
 
-def test_registry_misses_keep_ul_keys_in_source_order(codec: FixCodec, pairs) -> None:
-    _, _, misses = codec.into_fix_pairs(pairs, "4.4")
-    assert misses.type == FIX_MISS_TAGS
-    assert misses.to_pylist() == [["ISINCODE", "UNKNOWNVENUEFIELD"]]
+def test_every_field_is_one_entry_and_says_what_it_is(codec: FixCodec, pairs) -> None:
+    """One column rather than three: what used to be the split is now `tag`."""
+    resolved = codec.into_kwargs(pairs, "4.4")
+    assert len(_kwargs(resolved)) == EXPECTED_BRIDGE_PAIRS, "nothing dropped, nothing doubled"
+    assert len(_tags(resolved)) + len(_named(resolved)) == EXPECTED_BRIDGE_PAIRS
 
 
-def test_an_unknown_numeric_tag_stays_a_fix_pair_and_is_reported(codec: FixCodec) -> None:
+def test_an_unknown_numeric_tag_is_still_a_tag(codec: FixCodec) -> None:
+    """A number is a tag whether or not this version wrote it up."""
     pairs = parse_arrow_array(pyarrow.array(["55=TTF|999999999=vendor|"]))
-    resolved, rest, misses = codec.into_fix_pairs(pairs, "4.4")
-    assert _pairs(resolved) == [(55, "TTF"), (999999999, "vendor")]
-    assert _pairs(rest) == []
-    assert misses.to_pylist() == [["999999999"]]
+    assert _tags(codec.into_kwargs(pairs, "4.4")) == [(55, "TTF"), (999999999, "vendor")]
+
+
+def test_a_value_its_field_enumerates_is_transcribed(codec: FixCodec) -> None:
+    """What the dictionary adds beyond a tag: what the value means."""
+    pairs = parse_arrow_array(pyarrow.array(["35=D|54=1|55=TTF|"]))
+    found = {
+        entry["tag"]: entry["trans"] for entry in codec.into_kwargs(pairs, "4.4").to_pylist()[0]
+    }
+    assert found[54] == "Buy"
+    assert found[35] == "New Order Single <D>"
+    assert found[55] is None, "Symbol enumerates nothing, so there is nothing to say"
+
+
+def test_a_value_is_transcribed_under_the_version_that_was_read(codec: FixCodec) -> None:
+    """A code a version does not define transcribes to nothing rather than to a guess."""
+    pairs = parse_arrow_array(pyarrow.array(["54=6|"]))
+    read = [entry["trans"] for entry in codec.into_kwargs(pairs, "4.4").to_pylist()[0]]
+    assert read == ["Sell short exempt"]
+    older = parse_arrow_array(pyarrow.array(["54=A|"]))
+    assert [entry["trans"] for entry in codec.into_kwargs(older, "4.0").to_pylist()[0]] == [None], (
+        "a code the version does not define reads as nothing rather than as a guess"
+    )
+
+
+def test_a_key_is_split_into_its_name_and_where_it_stood(codec: FixCodec) -> None:
+    """A vendor prefix and a FIX container are both data, and not the same data."""
+    parsed = parse_arrow_array(
+        pyarrow.array(["#TECH.CLIENTID=ACCT-TEST-01|#NOPARTYIDS[0].PARTYID=PARTY-TEST-A"]),
+        "|",
+        named=True,
+    )
+    found = codec.into_kwargs(parsed, "4.4").to_pylist()[0]
+    assert [(entry["namespace"], entry["comp"], entry["key"]) for entry in found] == [
+        ("TECH", None, "CLIENTID"),
+        (None, "NOPARTYIDS[0]", "PARTYID"),
+    ], "`TECH` names nothing this version declares; `NOPARTYIDS` names a group"
+
+
+def test_the_split_key_still_spells_the_key_the_line_wrote(codec: FixCodec) -> None:
+    """Whichever half was filled, joined back to the name, is the rendered key."""
+    written = ["TECH.CLIENTID", "NOPARTYIDS[0].PARTYID", "SYMBOL"]
+    parsed = parse_arrow_array(
+        pyarrow.array(["|".join(f"#{key}=FAKE-{index}" for index, key in enumerate(written))]),
+        "|",
+        named=True,
+    )
+    found = codec.into_kwargs(parsed, "4.4").to_pylist()[0]
+    rebuilt = [
+        ".".join(part for part in (entry["namespace"] or entry["comp"], entry["key"]) if part)
+        for entry in found
+    ]
+    assert rebuilt == written, "the split loses nothing, so a reader can undo it"
+    assert all(entry["namespace"] is None or entry["comp"] is None for entry in found), (
+        "and a field stood in one place, so at most one of the two is filled"
+    )
+
+
+def test_a_vendor_namespace_does_not_borrow_the_tag_its_tail_names(codec: FixCodec) -> None:
+    """`TECH.CLIENTID` is not `ClientID <109>`; `NoPartyIDs[0].PartyID` is `PartyID`.
+
+    What tells them apart is whether the container in front names something
+    this version declares -- a component, a group, a field -- and `TECH` names
+    nothing.
+    """
+    parsed = parse_arrow_array(
+        pyarrow.array(["#TECH.CLIENTID=ACCT-TEST-01|#NOPARTYIDS[0].PARTYID=PARTY-TEST-A"]),
+        "|",
+        named=True,
+    )
+    assert _kwargs(codec.into_kwargs(parsed, "4.4")) == [
+        (0, "CLIENTID", "ACCT-TEST-01"),
+        (448, "PARTYID", "PARTY-TEST-A"),
+    ]
 
 
 def test_a_promoted_tag_is_only_interpreted_in_a_version_that_declares_it(
     codec: FixCodec,
 ) -> None:
     pairs = parse_arrow_array(pyarrow.array(["461=FXXXSX|"]))
-    tags, _, misses = codec.into_fix_pairs(pairs, "4.2")
-    columns, residual = codec.into_flat_columns(tags, "4.2")
+    columns, residual = codec.into_lifted_columns(codec.into_kwargs(pairs, "4.2"), "4.2")
     assert columns[COLUMNS[461]].to_pylist() == [None]
-    assert _pairs(residual) == [(461, "FXXXSX")]
-    assert misses.to_pylist() == [["461"]]
+    assert _tags(residual) == [(461, "FXXXSX")]
 
-    tags, _, misses = codec.into_fix_pairs(pairs, "4.4")
-    columns, residual = codec.into_flat_columns(tags, "4.4")
+    columns, residual = codec.into_lifted_columns(codec.into_kwargs(pairs, "4.4"), "4.4")
     assert columns[COLUMNS[461]].to_pylist() == ["FXXXSX"]
-    assert _pairs(residual) == []
-    assert misses.to_pylist() == [[]]
+    assert _kwargs(residual) == []
 
 
 def test_an_unknown_key_can_repeat_without_becoming_a_map(codec: FixCodec) -> None:
     parsed = parse_arrow_array(pyarrow.array(["#VENUEFIELD=one|#VENUEFIELD=two"]), "|", named=True)
-    _, rest, misses = codec.into_fix_pairs(parsed, "4.4")
-    assert rest.type == KEYVAL
-    assert _pairs(rest) == [("VENUEFIELD", "one"), ("VENUEFIELD", "two")]
-    assert misses.to_pylist() == [["VENUEFIELD", "VENUEFIELD"]]
+    assert _named(codec.into_kwargs(parsed, "4.4")) == [
+        ("VENUEFIELD", "one"),
+        ("VENUEFIELD", "two"),
+    ]
 
 
 def test_isincode_is_lifted_from_rendered_names_without_losing_repeats(
     codec: FixCodec,
 ) -> None:
-    pairs = pyarrow.array(
+    kwargs = _kwargs_array(
         [
-            [("ISINCODE", "XX0000084733"), ("OTHER", "x")],
-            [("isincode", "A"), ("ISINCODE", "B")],
+            [(0, "ISINCODE", "XX0000084733"), (0, "OTHER", "x")],
+            [(0, "isincode", "A"), (0, "ISINCODE", "B")],
             None,
-        ],
-        type=KEYVAL,
+        ]
     )
-    columns, rest = codec.into_named_columns(pairs, "4.4")
+    columns, rest = codec.into_lifted_columns(kwargs, "4.4")
     assert columns["isincode"].to_pylist() == ["XX0000084733", None, None]
-    assert _pairs(rest, 0) == [("OTHER", "x")]
-    assert _pairs(rest, 1) == [("isincode", "A"), ("ISINCODE", "B")]
-    assert _pairs(rest, 2) is None
+    assert _named(rest, 0) == [("OTHER", "x")]
+    assert _named(rest, 1) == [("isincode", "A"), ("ISINCODE", "B")]
+    assert _kwargs(rest, 2) is None
 
 
-def test_every_pair_lands_in_exactly_one_of_the_two(codec: FixCodec, pairs) -> None:
-    """Nothing is dropped, and nothing is counted twice."""
-    resolved, rest, _ = codec.into_fix_pairs(pairs, "4.4")
-    assert len(resolved.to_pylist()[0]) + len(rest.to_pylist()[0]) == EXPECTED_BRIDGE_PAIRS
-
-
-def test_no_version_keeps_numeric_and_named_pairs_raw(codec: FixCodec) -> None:
+def test_no_version_keeps_every_field_raw(codec: FixCodec) -> None:
+    """Nothing resolves and nothing lifts, but the fields are all still there."""
     parsed = parse_arrow_array(pyarrow.array(["#55=TTF|#ISINCODE=XX0000084733|"]), "|", named=True)
 
-    tags, keyval, misses, columns = codec.into_log_columns(parsed)
+    kwargs, columns = codec.into_log_columns(parsed)
 
-    assert _pairs(tags) == [(55, "TTF")]
-    assert _pairs(keyval) == [("ISINCODE", "XX0000084733")]
-    assert misses.to_pylist() == [["55", "ISINCODE"]]
+    assert _kwargs(kwargs) == [(55, "55", "TTF"), (0, "ISINCODE", "XX0000084733")]
+    assert not any(entry["trans"] for entry in kwargs.to_pylist()[0]), (
+        "a number is a tag with or without a dictionary, but nothing reads it"
+    )
     assert columns["isincode"].to_pylist() == [None]
 
 
 def test_wire_tags_resolve_without_any_dictionary_at_all(codec: FixCodec) -> None:
     """A numeric key is already a tag; the dictionary is for the other kind."""
     wire = parse_arrow_array(pyarrow.array(["8=FIX.4.2|35=D|55=TTF|10=203|"]))
-    resolved, rest, _ = codec.into_fix_pairs(wire)
-    assert [tag for tag, _ in _pairs(resolved)] == [8, 35, 55, 10]
-    assert rest.to_pylist()[0] == []
+    assert [tag for tag, _ in _tags(codec.into_kwargs(wire))] == [8, 35, 55, 10]
 
 
-def test_a_null_row_stays_null_in_both_halves(codec: FixCodec) -> None:
+def test_a_null_row_stays_null(codec: FixCodec) -> None:
     """ "Not a message" and "a message with nothing in it" stay different facts."""
     both = parse_arrow_array(pyarrow.array([BRIDGE, None]))
-    resolved, rest, misses = codec.into_fix_pairs(both, "4.4")
-    assert resolved.to_pylist()[1] is None
-    assert rest.to_pylist()[1] is None
-    assert misses.to_pylist()[1] is None
+    assert codec.into_kwargs(both, "4.4").to_pylist()[1] is None
 
 
-def test_an_empty_pair_column_keeps_all_three_output_types(codec: FixCodec) -> None:
+def test_an_empty_pair_column_keeps_its_type(codec: FixCodec) -> None:
     empty = parse_arrow_array(pyarrow.array([], pyarrow.string()))
-    tags, rest, misses = codec.into_fix_pairs(empty)
-    assert (tags.type, rest.type, misses.type) == (FIX_TAGS, KEYVAL, FIX_MISS_TAGS)
+    assert codec.into_kwargs(empty).type == KWARGS
 
 
 def test_a_chunked_column_is_the_same_answer_as_one_chunk(codec: FixCodec) -> None:
@@ -258,17 +357,17 @@ def test_a_chunked_column_is_the_same_answer_as_one_chunk(codec: FixCodec) -> No
     chunked = pyarrow.chunked_array(
         [parse_arrow_array(pyarrow.array(lines[:1])), parse_arrow_array(pyarrow.array(lines[1:]))]
     )
-    assert codec.into_fix_pairs(whole, "4.4")[0].to_pylist() == (
-        codec.into_fix_pairs(chunked, "4.4")[0].combine_chunks().to_pylist()
+    assert codec.into_kwargs(whole, "4.4").to_pylist() == (
+        codec.into_kwargs(chunked, "4.4").combine_chunks().to_pylist()
     )
 
 
 def test_a_key_too_wide_to_be_a_tag_is_not_read_as_one(codec: FixCodec) -> None:
     """An epoch-millis key is not a FIX tag, and must not overflow into one."""
     pairs = parse_arrow_array(pyarrow.array(["1786665901147=x|55=TTF"]), "|", named=True)
-    resolved, rest, _ = codec.into_fix_pairs(pairs, "4.4")
-    assert dict(_pairs(resolved)) == {55: "TTF"}
-    assert dict(_pairs(rest)) == {"1786665901147": "x"}
+    resolved = codec.into_kwargs(pairs, "4.4")
+    assert dict(_tags(resolved)) == {55: "TTF"}
+    assert dict(_named(resolved)) == {"1786665901147": "x"}
 
 
 # -- which version -----------------------------------------------------------
@@ -450,7 +549,7 @@ def test_named_beginstrings_and_numeric_bridge_keys_detect_each_rows_separator(
 
 def test_versionless_parties_stay_raw(codec: FixCodec) -> None:
     bare = FixCodec(registry=codec.registry)
-    tags = pyarrow.array([[(453, "1"), (448, "BUYSIDE"), (2376, "7")]], type=FIX_TAGS)
+    tags = _kwargs_array([[(453, "453", "1"), (448, "448", "BUYSIDE"), (2376, "2376", "7")]])
 
     columns, residual = bare.into_component_columns(tags)
 
@@ -515,10 +614,9 @@ def test_a_registry_with_no_cached_version_resolves_nothing_and_raises_nothing(
     """A cold cache loses the tags, never the capture."""
     cold = FixCodec(registry=FixRegistry(cache_dir=tmp_path, offline=True))
     pairs = parse_arrow_array(pyarrow.array([BRIDGE]))
-    resolved, rest, misses = cold.into_fix_pairs(pairs)
-    assert resolved.to_pylist()[0] == []
-    assert len(rest.to_pylist()[0]) == EXPECTED_BRIDGE_PAIRS
-    assert len(misses.to_pylist()[0]) == EXPECTED_BRIDGE_PAIRS
+    resolved = cold.into_kwargs(pairs)
+    assert _tags(resolved) == [], "no dictionary, so nothing resolves"
+    assert len(_named(resolved)) == EXPECTED_BRIDGE_PAIRS, "and every field is still there"
     assert cold.version_of("8=FIX.4.2|") == (None, NO_SOURCE)
     assert cold.tag_field(55, "4.4") is None
 
@@ -582,11 +680,11 @@ def test_a_value_that_means_nothing_is_dropped(codec: FixCodec) -> None:
     assert codec.drop_null_values(padded).to_pylist()[0] == [("SYMBOL", "TTF")]
 
 
-def test_an_absent_field_reaches_neither_stored_list(codec: FixCodec) -> None:
+def test_an_absent_field_is_stored_nowhere(codec: FixCodec) -> None:
     parsed = codec.into_pairs(pyarrow.array([ABSENT]), "UL")
-    resolved, rest, _ = codec.into_fix_pairs(parsed, "4.4")
-    assert dict(_pairs(resolved)) == {55: "TTF", 38: "1200"}
-    assert rest.to_pylist()[0] == []
+    resolved = codec.into_kwargs(parsed, "4.4")
+    assert dict(_tags(resolved)) == {55: "TTF", 38: "1200"}
+    assert _named(resolved) == []
 
 
 def test_a_message_whose_every_field_was_absent_is_empty_and_not_null(codec: FixCodec) -> None:
@@ -625,12 +723,20 @@ def test_a_pair_with_no_value_goes_even_when_no_spelling_means_absent(codec: Fix
     assert pyarrow.types.is_map(kept.type), "drop_null_values still serves the parser intermediate"
 
 
-def test_both_stored_pair_lists_make_every_nested_value_required() -> None:
-    for arrow_type in (FIX_TAGS, KEYVAL):
-        assert pyarrow.types.is_list(arrow_type)
-        assert arrow_type.value_field.nullable is False
-        assert arrow_type.value_type.field("key").nullable is False
-        assert arrow_type.value_type.field("value").nullable is False
+def test_a_stored_field_names_itself_and_never_nothing() -> None:
+    """`tag` and `key` are what every consumer addresses a field by."""
+    assert pyarrow.types.is_list(KWARGS)
+    assert KWARGS.value_field.nullable is False
+    assert KWARGS.value_type.field("tag").nullable is False
+    assert KWARGS.value_type.field("key").nullable is False
+    assert [KWARGS.value_type.field(i).name for i in range(KWARGS.value_type.num_fields)] == [
+        "tag",
+        "key",
+        "value",
+        "trans",
+        "namespace",
+        "comp",
+    ]
 
 
 def test_the_set_is_configuration_and_travels_in_a_document(
@@ -764,9 +870,9 @@ def test_the_flat_layer_becomes_columns_and_leaves_the_pair_list(
     tag's value lands in the column the declaration gives it -- not how that
     column is spelled, which the declaration is the authority on.
     """
-    columns, rest = codec.into_flat_columns(wire_tags, "4.2")
+    columns, rest = codec.into_lifted_columns(wire_tags, "4.2")
     assert rest.to_pylist()[0] == [], "an order names nothing the flat layer left behind"
-    assert rest.type == FIX_TAGS
+    assert rest.type == KWARGS
     filled = {name: column[0].as_py() for name, column in columns.items() if column[0].is_valid}
     assert len(filled) == EXPECTED_WIRE_SESSION + EXPECTED_WIRE_COMMON
     assert filled == {
@@ -793,18 +899,20 @@ def test_every_declared_flat_field_comes_back_as_its_own_column(
     codec: FixCodec, wire_tags: pyarrow.Array
 ) -> None:
     """One column per declared tag, typed from the registry declaration."""
-    columns, _ = codec.into_flat_columns(wire_tags, "4.2")
+    columns, _ = codec.into_lifted_columns(wire_tags, "4.2")
     assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 26, 18), (
         "the session layer, shared components, then quote fields"
     )
-    assert len(columns) == len(FLAT) == 77
-    assert set(columns) == set(COLUMNS.values())
+    assert len(FLAT) == 77
+    assert set(columns) == set(COLUMNS.values()) | {field.name for field in NAMED.values()}, (
+        "one pass lifts both kinds, so it answers with both"
+    )
     assert sorted(STAMPS) == [52, 60, 62, 122, 370], (
         "SendingTime, TransactTime, ValidUntilTime, OrigSendingTime, OnBehalfOfSendingTime"
     )
     assert {name: column.type for name, column in columns.items()} == {
         name: TYPES[tag] for tag, name in COLUMNS.items()
-    }
+    } | {field.name: field.arrow_type for field in NAMED.values()}
     assert columns[COLUMNS[57]].to_pylist() == [None], "never sent, so never guessed"
 
 
@@ -814,13 +922,11 @@ def test_a_tag_the_line_sent_once_is_lifted_and_leaves_the_pair_list(codec: FixC
     `LegSymbol <600>` is undeclared here, so it stays
     exactly where the message put it while `55` and `54` go.
     """
-    tags, _, _ = codec.into_fix_pairs(
-        parse_arrow_array(pyarrow.array(["55=TTF|600=LEG1|54=1|"])), "4.4"
-    )
-    columns, rest = codec.into_flat_columns(tags, "4.4")
+    tags = codec.into_kwargs(parse_arrow_array(pyarrow.array(["55=TTF|600=LEG1|54=1|"])), "4.4")
+    columns, rest = codec.into_lifted_columns(tags, "4.4")
     assert columns[COLUMNS[55]].to_pylist() == ["TTF"]
     assert columns[COLUMNS[54]].to_pylist() == ["1"]
-    assert dict(_pairs(rest)) == {600: "LEG1"}, "what was left, and only what was left"
+    assert dict(_tags(rest)) == {600: "LEG1"}, "what was left, and only what was left"
 
 
 def test_a_field_sent_twice_stays_in_the_pair_list_and_fills_no_column(codec: FixCodec) -> None:
@@ -830,10 +936,10 @@ def test_a_field_sent_twice_stays_in_the_pair_list_and_fills_no_column(codec: Fi
     first -- a wrong answer that looks like a right one. Both copies stay
     where a reader can see there are two, and the column says nothing.
     """
-    tags, _, _ = codec.into_fix_pairs(parse_arrow_array(pyarrow.array([DUPLICATED])), "4.4")
-    columns, rest = codec.into_flat_columns(tags, "4.4")
+    tags = codec.into_kwargs(parse_arrow_array(pyarrow.array([DUPLICATED])), "4.4")
+    columns, rest = codec.into_lifted_columns(tags, "4.4")
     assert columns[COLUMNS[49]].to_pylist() == [None]
-    assert _pairs(rest) == [(49, "FIRST"), (49, "SECOND")]
+    assert _tags(rest) == [(49, "FIRST"), (49, "SECOND")]
     assert columns[COLUMNS[56]].to_pylist() == ["XPAR"], "the scalars around it lift as usual"
 
 
@@ -845,9 +951,9 @@ def test_a_symbol_inside_a_leg_is_no_order_symbol_and_every_copy_stays(codec: Fi
     both `555`s with them and in wire order, and the column is null. The tags
     the same line sent once lift from that same row regardless.
     """
-    tags, _, _ = codec.into_fix_pairs(parse_arrow_array(pyarrow.array([LEGS])), "4.4")
-    columns, rest = codec.into_flat_columns(tags, "4.4")
-    assert _pairs(rest) == [
+    tags = codec.into_kwargs(parse_arrow_array(pyarrow.array([LEGS])), "4.4")
+    columns, rest = codec.into_lifted_columns(tags, "4.4")
+    assert _tags(rest) == [
         (555, "2"),
         (600, "TTF"),
         (55, "SPREAD"),
@@ -868,10 +974,10 @@ def test_a_repeat_in_one_row_costs_no_other_row_its_column(codec: FixCodec) -> N
     columns, and the single-leg order's symbol was never in doubt. This is the
     case that tells the two constructions apart.
     """
-    tags, _, _ = codec.into_fix_pairs(parse_arrow_array(pyarrow.array([LEGS, SINGLE])), "4.4")
-    columns, rest = codec.into_flat_columns(tags, "4.4")
+    tags = codec.into_kwargs(parse_arrow_array(pyarrow.array([LEGS, SINGLE])), "4.4")
+    columns, rest = codec.into_lifted_columns(tags, "4.4")
     assert columns[COLUMNS[55]].to_pylist() == [None, "TTF"]
-    assert [tag for tag, _ in _pairs(rest)] == [555, 600, 55, 555, 55]
+    assert [tag for tag, _ in _tags(rest)] == [555, 600, 55, 555, 55]
     assert rest.to_pylist()[1] == [], "the row that repeated nothing held nothing back"
     assert columns[COLUMNS[34]].to_pylist() == [8, 9], "each row's own sequence, both lifted"
 
@@ -882,8 +988,8 @@ def test_the_component_half_has_a_stamp_of_its_own_and_reads_it_the_same_way(
     """`TransactTime <60>` is a microsecond UTC timestamp."""
     assert f"60={HAPPENED_AT:%Y%m%d-%H:%M:%S}.5" in SINGLE
     assert int(HAPPENED_AT.timestamp() * 1_000_000) == 1786699799500000
-    tags, _, _ = codec.into_fix_pairs(parse_arrow_array(pyarrow.array([SINGLE])), "4.4")
-    columns, _ = codec.into_flat_columns(tags, "4.4")
+    tags = codec.into_kwargs(parse_arrow_array(pyarrow.array([SINGLE])), "4.4")
+    columns, _ = codec.into_lifted_columns(tags, "4.4")
     assert columns[COLUMNS[60]].to_pylist() == [HAPPENED_AT]
     assert columns[COLUMNS[60]].type == pyarrow.timestamp("us", tz="UTC")
 
@@ -896,19 +1002,19 @@ def test_the_hop_group_stays_in_the_pair_list_because_one_row_of_it_is_not_one_v
     Its members stay with it and in wire order, which is what a reader that
     knows the group walks. The scalars around it lift as usual.
     """
-    tags, _, _ = codec.into_fix_pairs(parse_arrow_array(pyarrow.array([HOPS])), "4.4")
-    columns, rest = codec.into_flat_columns(tags, "4.4")
+    tags = codec.into_kwargs(parse_arrow_array(pyarrow.array([HOPS])), "4.4")
+    columns, rest = codec.into_lifted_columns(tags, "4.4")
     assert not {627, 628, 629} & set(COLUMNS), "the group is declared nowhere in the flat layer"
-    assert [tag for tag, _ in _pairs(rest)] == [627, 628, 629, 628, 629]
+    assert [tag for tag, _ in _tags(rest)] == [627, 628, 629, 628, 629]
     assert columns[COLUMNS[49]].to_pylist() == ["RELAY"]
     assert columns[COLUMNS[55]].to_pylist() == ["TTF"]
 
 
 def test_a_batch_with_no_flat_field_gets_its_pair_list_back_untouched(codec: FixCodec) -> None:
     """One `is_in` decides for the whole batch, and finding nothing rebuilds nothing."""
-    tags, _, _ = codec.into_fix_pairs(parse_arrow_array(pyarrow.array([UNLIFTABLE])), "4.4")
-    columns, rest = codec.into_flat_columns(tags, "4.4")
-    assert not {tag for tag, _ in _pairs(tags)} & set(COLUMNS)
+    tags = codec.into_kwargs(parse_arrow_array(pyarrow.array([UNLIFTABLE])), "4.4")
+    columns, rest = codec.into_lifted_columns(tags, "4.4")
+    assert not {tag for tag, _ in _tags(tags)} & set(COLUMNS)
     assert rest is tags
     assert {column.null_count for column in columns.values()} == {len(tags)}
 
@@ -917,8 +1023,8 @@ def test_a_line_that_carried_no_message_has_a_null_in_every_flat_column(
     codec: FixCodec,
 ) -> None:
     """`heartbeat emitted` is not a message: nothing to lift, and nothing invented."""
-    nothing = pyarrow.nulls(2, FIX_TAGS)
-    columns, rest = codec.into_flat_columns(nothing, "4.4")
+    nothing = pyarrow.nulls(2, KWARGS)
+    columns, rest = codec.into_lifted_columns(nothing, "4.4")
     assert rest is nothing
     assert columns[COLUMNS[35]].to_pylist() == [None, None]
     assert {column.null_count for column in columns.values()} == {len(nothing)}
@@ -931,40 +1037,38 @@ def test_an_empty_pair_list_stays_empty_and_a_null_one_stays_null(codec: FixCode
     both of the rows that had nothing come through that rebuild -- which is
     where a construction spelling them alike would flatten them together.
     """
-    tags, _, _ = codec.into_fix_pairs(
-        parse_arrow_array(pyarrow.array([SINGLE, "heartbeat", None])), "4.4"
-    )
+    tags = codec.into_kwargs(parse_arrow_array(pyarrow.array([SINGLE, "heartbeat", None])), "4.4")
     assert tags.to_pylist()[1] == [], "a line that parsed, and carried no pair"
-    columns, rest = codec.into_flat_columns(tags, "4.4")
+    columns, rest = codec.into_lifted_columns(tags, "4.4")
     assert rest.to_pylist() == [[], [], None]
     assert columns[COLUMNS[55]].to_pylist() == ["TTF", None, None]
 
 
 def test_the_pair_list_the_lift_leaves_still_refuses_a_missing_value(codec: FixCodec) -> None:
     """The rebuilt list keeps values NOT NULL."""
-    tags, _, _ = codec.into_fix_pairs(parse_arrow_array(pyarrow.array([LEGS])), "4.4")
-    _, rest = codec.into_flat_columns(tags, "4.4")
-    assert rest is not tags, "rebuilt, because this row had tags to give up"
-    assert rest.type == FIX_TAGS
+    tags = codec.into_kwargs(parse_arrow_array(pyarrow.array([LEGS])), "4.4")
+    _, rest = codec.into_lifted_columns(tags, "4.4")
+    assert rest is not tags, "rebuilt, because this row had fields to give up"
+    assert rest.type == KWARGS
     assert rest.type.value_field.nullable is False
-    assert rest.type.value_type.field("value").nullable is False
+    assert rest.type.value_type.field("key").nullable is False
 
 
 def test_a_chunked_pair_list_lifts_the_same_way_one_chunk_does(codec: FixCodec) -> None:
     """A reader hands over chunks, so combining them is the ordinary case."""
     lines = [WIRE, HOPS]
-    whole, _, _ = codec.into_fix_pairs(parse_arrow_array(pyarrow.array(lines)), "4.4")
+    whole = codec.into_kwargs(parse_arrow_array(pyarrow.array(lines)), "4.4")
     halves = pyarrow.chunked_array(
         [
-            codec.into_fix_pairs(parse_arrow_array(pyarrow.array(lines[:1])), "4.4")[0],
-            codec.into_fix_pairs(parse_arrow_array(pyarrow.array(lines[1:])), "4.4")[0],
+            codec.into_kwargs(parse_arrow_array(pyarrow.array(lines[:1])), "4.4"),
+            codec.into_kwargs(parse_arrow_array(pyarrow.array(lines[1:])), "4.4"),
         ]
     )
-    one, first = codec.into_flat_columns(whole, "4.4")
-    two, second = codec.into_flat_columns(halves, "4.4")
+    one, first = codec.into_lifted_columns(whole, "4.4")
+    two, second = codec.into_lifted_columns(halves, "4.4")
     hops = [(627, "2"), (628, "BRIDGE1"), (629, "20260814-09:30:00")]
     assert first.to_pylist() == second.to_pylist()
-    assert _pairs(first, 1)[: len(hops)] == hops, "and what stayed stayed in wire order"
+    assert _tags(first, 1)[: len(hops)] == hops, "and what stayed stayed in wire order"
     senders = one[COLUMNS[49]].to_pylist()
     assert senders == two[COLUMNS[49]].to_pylist() == ["BUYSIDE", "RELAY"]
 
@@ -1015,7 +1119,7 @@ def packaged() -> FixCodec:
 
 
 def _party_rows(codec: FixCodec, message: str, version: str) -> list[dict[str, object]] | None:
-    tags, _, _ = codec.into_fix_pairs(codec.into_pairs(pyarrow.array([message]), "FIX"), version)
+    tags = codec.into_kwargs(codec.into_pairs(pyarrow.array([message]), "FIX"), version)
     columns, _ = codec.into_component_columns(tags, version)
     return columns["parties"].to_pylist()[0]
 
@@ -1049,11 +1153,9 @@ def test_the_packaged_registry_leaves_every_other_tag_where_it_was(
     packaged: FixCodec,
 ) -> None:
     """Extraction removes the group and nothing beside it, in wire order."""
-    tags, _, _ = packaged.into_fix_pairs(
-        packaged.into_pairs(pyarrow.array([PARTIES_WIRE]), "FIX"), "4.4"
-    )
+    tags = packaged.into_kwargs(packaged.into_pairs(pyarrow.array([PARTIES_WIRE]), "FIX"), "4.4")
     _, residual = packaged.into_component_columns(tags, "4.4")
-    assert [tag for tag, _ in _pairs(residual)] == [8, 35, 49, 56, 34, 52, 11, 54, 38, 10]
+    assert [tag for tag, _ in _tags(residual)] == [8, 35, 49, 56, 34, 52, 11, 54, 38, 10]
 
 
 def test_a_version_that_declares_no_parties_component_extracts_nothing_quietly(
@@ -1112,14 +1214,14 @@ def test_a_fact_written_twice_is_still_lifted_when_both_readings_agree(
             "#ORDERQTY=100",
         ]
     )
-    tags, _, _, columns = packaged.into_log_columns(
+    tags, columns = packaged.into_log_columns(
         packaged.into_pairs(pyarrow.array([line]), "UL"), "4.4"
     )
     lifted = {name: column.to_pylist()[0] for name, column in columns.items()}
     assert lifted["side"] == "1"
     assert lifted["cl_ord_id"] == "ORD-TEST-01"
     assert lifted["order_qty"] == 100.0
-    assert _pairs(tags) == [], "and both copies left with the fact they carried"
+    assert _tags(tags) == [], "and both copies left with the fact they carried"
 
 
 def test_two_readings_that_disagree_are_still_left_where_they_were(
@@ -1127,11 +1229,11 @@ def test_two_readings_that_disagree_are_still_left_where_they_were(
 ) -> None:
     """Two values under one key is a group or a rewrite, and picking is a guess."""
     line = "toBridge #BEGINSTRING=FIX.4.4|#SIDE=1|SIDE=2"
-    tags, _, _, columns = packaged.into_log_columns(
+    tags, columns = packaged.into_log_columns(
         packaged.into_pairs(pyarrow.array([line]), "UL"), "4.4"
     )
     assert columns["side"].to_pylist() == [None]
-    assert _pairs(tags) == [(54, "1"), (54, "2")]
+    assert _tags(tags) == [(54, "1"), (54, "2")]
 
 
 def test_a_repeated_group_member_is_untouched_by_any_of_this(
@@ -1141,12 +1243,12 @@ def test_a_repeated_group_member_is_untouched_by_any_of_this(
     message = SOH.join(
         ["8=FIX.4.4", "35=8", "295=2", "299=Q-TEST-1", "132=1.0", "299=Q-TEST-2", "132=2.0"]
     )
-    tags, _, _, columns = packaged.into_log_columns(
+    tags, columns = packaged.into_log_columns(
         packaged.into_pairs(pyarrow.array([message + SOH]), "FIX"), "4.4"
     )
     assert columns["quote_entry_id"].to_pylist() == [None]
     assert columns["bid_px"].to_pylist() == [None]
-    assert [tag for tag, _ in _pairs(tags)] == [295, 299, 132, 299, 132]
+    assert [tag for tag, _ in _tags(tags)] == [295, 299, 132, 299, 132]
 
 
 # -- XmlData as the message it carries ---------------------------------------
@@ -1233,13 +1335,13 @@ def test_a_payload_field_lands_in_the_column_its_name_earns(packaged: FixCodec) 
         )
         + SOH
     )
-    tags, keyval, misses, columns = packaged.into_log_columns(
+    tags, columns = packaged.into_log_columns(
         packaged.into_pairs(pyarrow.array([message]), "FIX"), "4.4"
     )
     assert columns["cl_ord_id"].to_pylist() == ["ORD-TEST-01"]
     assert columns["side"].to_pylist() == ["1"]
     assert columns["account"].to_pylist() == ["ACCT-TEST-01"]
-    assert _pairs(tags) == [] and _pairs(keyval) == [] and misses.to_pylist()[0] == []
+    assert _kwargs(tags) == [], "the payload's fields all found a column"
 
 
 def test_a_rendered_xmldata_is_read_the_same_way(packaged: FixCodec) -> None:

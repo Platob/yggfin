@@ -108,18 +108,18 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
         unix=1,
         begin_string="FIX.4.4",
         msg_type="d",
-        symbol="AAPL",
-        fix_tags=[(969, "0.01"), (561, "100"), (107, "Apple Inc")],
+        symbol="FAKE-SYM",
+        kwargs=[(969, "0.01"), (561, "100"), (107, "FAKE-DESC")],
     )
-    stored = log.into_dict()
-    stored["fix_tags"] = [
-        {"key": 969, "value": "0.01"},
-        {"key": 561, "value": "100"},
-        {"key": 107, "value": "Apple Inc"},
-    ]
-    table = pyarrow.Table.from_pylist([stored], schema=Log.into_field().into_arrow_schema())
+    table = pyarrow.Table.from_pylist(
+        [log.into_dict()], schema=Log.into_field().into_arrow_schema()
+    )
     log = Log.from_dict(table.to_pylist()[0])
-    assert log.fix_tags == [(969, "0.01"), (561, "100"), (107, "Apple Inc")]
+    assert [(entry["tag"], entry["value"]) for entry in log.kwargs] == [
+        (969, "0.01"),
+        (561, "100"),
+        (107, "FAKE-DESC"),
+    ], "an Arrow round trip keeps every stored field, in wire order"
     registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
     transcription = {}
     into_instruments = Log.into_instruments
@@ -136,7 +136,7 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
         snapshot_every=0,
     )
 
-    assert (instrument.tick, instrument.lot, instrument.label) == (0.01, 100.0, "Apple Inc")
+    assert (instrument.tick, instrument.lot, instrument.label) == (0.01, 100.0, "FAKE-DESC")
     assert transcription == {"registry": registry}
 
 

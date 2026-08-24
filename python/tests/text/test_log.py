@@ -43,9 +43,7 @@ LINE = ["url", "thread_name", "driver_name", "message"]
 MESSAGE = [
     "protocol",
     "msg_seq_num",
-    "fix_tags",
-    "fix_miss_tags",
-    "keyval",
+    "kwargs",
     "parties",
     "isincode",
 ]
@@ -63,7 +61,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 105
+EXPECTED_LOG_COLUMNS = 103
 
 
 @pytest.fixture(scope="module")
@@ -108,30 +106,35 @@ def test_a_line_always_says_which_protocol_it_carries() -> None:
 def test_a_line_carrying_no_message_has_no_pairs_at_all() -> None:
     """Null is not an empty list: a bridge that sent an empty payload and a stack
     trace that never was a message have to stay tellable apart."""
-    for name in ("fix_tags", "fix_miss_tags", "keyval"):
-        assert Log.into_field().field(name).nullable, name
-        assert getattr(Log(), name) is None, name
+    assert Log.into_field().field("kwargs").nullable
+    assert Log().kwargs is None
 
 
-def test_a_pair_whose_value_is_missing_is_not_a_pair() -> None:
-    """Both lists declare the value NOT NULL, so a consumer has two states to
-    handle and not three; `FixCodec.drop_null_values` is what keeps it true."""
-    for name in ("fix_tags", "keyval"):
-        member = Log.into_field().field(name)
-        assert pyarrow.types.is_list(member.arrow_type), name
-        assert member.item.nullable is False, name
-        assert member.item.field("key").nullable is False, name
-        assert member.item.field("value").nullable is False, name
+def test_a_stored_field_always_says_what_it_is() -> None:
+    """`tag` and `key` are how a consumer addresses a field, so neither is null:
+    a field the dictionary did not resolve is `tag` `0` and not a missing tag."""
+    member = Log.into_field().field("kwargs")
+    assert pyarrow.types.is_list(member.arrow_type)
+    assert member.item.nullable is False
+    assert member.item.field("tag").nullable is False
+    assert member.item.field("key").nullable is False
+    for name in ("value", "trans", "namespace", "comp"):
+        assert member.item.field(name).nullable is True, name
+        assert member.item.field(name).arrow_type == pyarrow.string(), name
 
 
-def test_pair_lists_keep_repeats_across_python_and_arrow_entry_shapes() -> None:
+def test_stored_fields_keep_repeats_across_python_and_arrow_entry_shapes() -> None:
     reader = Log(
         msg_type="D",
-        fix_tags=[(55, "A"), [55, "B"], {"key": 55, "value": "C"}],
-        keyval=[
+        kwargs=[
+            (55, "A"),
+            [55, "B"],
+            {"tag": 55, "key": "Symbol", "value": "C"},
             ("VenueOwnThing", "x"),
             ["VenueOwnThing", "y"],
-            {"key": "VenueOwnThing", "value": "z"},
+            {"tag": 0, "key": "VenueOwnThing", "value": "z"},
+            {"tag": 0, "key": "CLIENTID", "value": "ACCT-TEST-01", "namespace": "TECH"},
+            {"tag": 448, "key": "PartyID", "value": "PARTY-TEST-A", "comp": "NoPartyIDs[0]"},
         ],
     ).into_fix_events()
 
@@ -143,21 +146,16 @@ def test_pair_lists_keep_repeats_across_python_and_arrow_entry_shapes() -> None:
         ("VenueOwnThing", "x"),
         ("VenueOwnThing", "y"),
         ("VenueOwnThing", "z"),
-    ]
+        ("TECH.CLIENTID", "ACCT-TEST-01"),
+        ("448", "PARTY-TEST-A"),
+    ], "a resolved field is addressed by its tag and an unresolved one by its spelling"
 
 
-def test_malformed_stored_pair_entries_are_not_silently_dropped() -> None:
+def test_malformed_stored_field_entries_are_not_silently_dropped() -> None:
     with pytest.raises(KeyError, match="key"):
-        Log(fix_tags=[{"value": "x"}]).into_fix_events()
+        Log(kwargs=[{"value": "x"}]).into_fix_events()
     with pytest.raises(ValueError, match="not enough values"):
-        Log(keyval=[["OnlyKey"]]).into_fix_events()
-
-
-def test_registry_miss_keys_are_an_ordered_non_null_text_list() -> None:
-    member = Log.into_field().field("fix_miss_tags")
-    assert pyarrow.types.is_list(member.arrow_type)
-    assert member.item.arrow_type == pyarrow.string()
-    assert member.item.nullable is False
+        Log(kwargs=[["OnlyKey"]]).into_fix_events()
 
 
 def test_parties_keep_exact_registry_fields_and_a_flexible_buffer(
@@ -229,6 +227,11 @@ def test_the_schema_says_which_class_it_came_from() -> None:
     assert Field.from_arrow_schema(schema) == Log.into_field()
 
 
+def _stored(tag: int, key: str, value: str) -> dict[str, object]:
+    """One stored field in the whole spelling `Log.into_dict` writes."""
+    return {"tag": tag, "key": key, "value": value, "trans": None, "namespace": None, "comp": None}
+
+
 def test_a_row_round_trips_as_a_document() -> None:
     """The message layer preserves checksums and repeated ordered pairs."""
     row = Log(
@@ -241,9 +244,8 @@ def test_a_row_round_trips_as_a_document() -> None:
         driver_name="d",
         message="m",
         protocol="FIX",
-        fix_tags=[(11, "ORD-1"), (11, "ORD-1-again")],
-        fix_miss_tags=["ISINCODE"],
-        keyval=[("ISINCODE", "XX0000084733"), ("ISINCODE", "XX0000084734")],
+        kwargs=[_stored(11, "ClOrdID", one) for one in ("ORD-1", "ORD-1-again")]
+        + [_stored(0, "ISINCODE", one) for one in ("FAKE-ISIN-0001", "FAKE-ISIN-0002")],
         code="TTF",
         msg_seq_num=7,
         symbol="TTF",

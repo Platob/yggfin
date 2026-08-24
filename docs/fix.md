@@ -223,10 +223,11 @@ picking between them would be a guess.
 
 ## Parsed-log projection
 
-Common fields are promoted once into `Log`. Residual `fix_tags`, `keyval`, and
-`fix_miss_tags` keep everything not promoted. A later market conversion rebuilds
-a `FixEvents` view from those typed columns and residual pairs instead of
-tokenizing the raw message again.
+Common fields are promoted once into `Log`. Residual `kwargs` keeps everything
+not promoted -- resolved or not, in wire order, with the tag, the name, the
+container or namespace it sat in, and what its value means. A later market
+conversion rebuilds a `FixEvents` view from those typed columns and that one
+residual list instead of tokenizing the raw message again.
 
 ## Benchmark
 

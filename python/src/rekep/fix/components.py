@@ -12,7 +12,7 @@ import pyarrow.compute
 
 from rekep.fields import scalar
 from rekep.fields.arrays import build_list, build_map, sequence
-from rekep.fix.columns import DECLARATIONS
+from rekep.fix.columns import DECLARATIONS, KWARGS
 from rekep.fix.quickfix import (
     SpecComponent,
     SpecComponentRef,
@@ -41,20 +41,6 @@ class Party:
 
 PARTIES: pyarrow.DataType = pyarrow.list_(
     pyarrow.field("item", Party.into_field().arrow_type, nullable=False)
-)
-
-_VALUE = pyarrow.field("value", pyarrow.string(), nullable=False)
-_FIX_TAGS: pyarrow.DataType = pyarrow.list_(
-    pyarrow.field(
-        "item",
-        pyarrow.struct(
-            [
-                pyarrow.field("key", pyarrow.int32(), nullable=False),
-                _VALUE,
-            ]
-        ),
-        nullable=False,
-    )
 )
 
 _NO_PARTY_IDS = "NoPartyIDs"
@@ -110,11 +96,11 @@ class Parties:
             parts = [self.into_arrow_arrays(chunk) for chunk in tags.chunks]
             return (
                 pyarrow.chunked_array([found for found, _ in parts], type=PARTIES),
-                pyarrow.chunked_array([rest for _, rest in parts], type=_FIX_TAGS),
+                pyarrow.chunked_array([rest for _, rest in parts], type=KWARGS),
             )
-        if not isinstance(tags, pyarrow.Array) or tags.type != _FIX_TAGS:
+        if not isinstance(tags, pyarrow.Array) or tags.type != KWARGS:
             actual = getattr(tags, "type", type(tags).__name__)
-            raise TypeError(f"Parties needs {_FIX_TAGS}, got {actual}")
+            raise TypeError(f"Parties needs {KWARGS}, got {actual}")
         return self._extract(tags)
 
     def _extract(self, tags: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
@@ -125,13 +111,13 @@ class Parties:
         if not len(entries):
             return pyarrow.nulls(rows, PARTIES), tags
 
-        keys = compute.struct_field(entries, 0)
+        keys = compute.struct_field(entries, "tag")
         relevant = compute.is_in(keys, value_set=self._relevant_array)
         if not compute.any(relevant, min_count=0).as_py():
             return pyarrow.nulls(rows, PARTIES), tags
 
         parents = compute.list_parent_indices(tags).cast(pyarrow.int64())
-        values = compute.struct_field(entries, 1)
+        values = compute.struct_field(entries, "value")
         positions = sequence(len(entries))
         row_ids = sequence(rows)
 
@@ -280,14 +266,10 @@ class Parties:
         )
         keep = compute.invert(remove)
         residual_sizes = _counts(compute.filter(parents, keep), rows)
-        residual_entries = pyarrow.StructArray.from_arrays(
-            [compute.filter(keys, keep), compute.filter(values, keep)],
-            fields=[_FIX_TAGS.value_type.field(0), _FIX_TAGS.value_type.field(1)],
-        )
         residual = build_list(
-            _FIX_TAGS,
+            KWARGS,
             residual_sizes,
-            residual_entries,
+            _kept(entries, keep),
             mask=compute.is_null(tags) if tags.null_count else None,
         )
         return extracted, residual
@@ -526,6 +508,16 @@ class Parties:
             sorted(tag for tag, found in self._member_names.items() if found.lower() == wanted),
             pyarrow.int32(),
         )
+
+
+def _kept(entries: Any, keep: Any) -> pyarrow.StructArray:
+    """The entries a mask keeps, rebuilt with every part they carry."""
+    compute = pyarrow.compute
+    fields = [KWARGS.value_type.field(index) for index in range(KWARGS.value_type.num_fields)]
+    return pyarrow.StructArray.from_arrays(
+        [compute.filter(compute.struct_field(entries, field.name), keep) for field in fields],
+        fields=fields,
+    )
 
 
 def _all(*conditions: Any) -> Any:

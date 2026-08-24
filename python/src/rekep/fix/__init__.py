@@ -9,7 +9,7 @@ from rekep.fix.classify import (
     count_files,
     count_reader,
 )
-from rekep.fix.columns import COMMON, FLAT, NAMED, QUOTE, SESSION, named_columns
+from rekep.fix.columns import COMMON, FLAT, KWARGS, NAMED, QUOTE, SESSION, TAG, named_columns
 from rekep.fix.components import PARTIES, Parties, Party
 from rekep.fix.entries import (
     ANY_VERSION,
@@ -67,9 +67,6 @@ from rekep.fix.rules import (
 )
 from rekep.fix.store import COMPONENTS, EXPLODED, FIELDS, VERSIONED
 from rekep.fix.transcribe import (
-    FIX_MISS_TAGS,
-    FIX_TAGS,
-    KEYVAL,
     NULL_VALUES,
     FixCodec,
     TagIndex,
@@ -90,15 +87,13 @@ __all__ = [
     "ComponentEntry",
     "EXPLODED",
     "FIELDS",
-    "FIX_MISS_TAGS",
     "FIX_SCALARS",
-    "FIX_TAGS",
     "FLAT",
     "FieldEntry",
     "FixCodec",
     "FixMessage",
     "FixRegistry",
-    "KEYVAL",
+    "KWARGS",
     "KeyCount",
     "KeyCounts",
     "KeyReport",
@@ -124,6 +119,7 @@ __all__ = [
     "SpecFieldRef",
     "SpecGroup",
     "SpecMember",
+    "TAG",
     "TagIndex",
     "UNKNOWN_CATEGORY",
     "VERSIONED",

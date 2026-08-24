@@ -5,31 +5,37 @@ from __future__ import annotations
 import pyarrow
 import pytest
 
+from rekep.fix.columns import KWARGS
 from rekep.fix.components import PARTIES, Parties, Party
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
 
-FIX_TAGS = pyarrow.list_(
-    pyarrow.field(
-        "item",
-        pyarrow.struct(
-            [
-                pyarrow.field("key", pyarrow.int32(), nullable=False),
-                pyarrow.field("value", pyarrow.string(), nullable=False),
-            ]
-        ),
-        nullable=False,
-    )
-)
-
 
 def _tags(*rows: object) -> pyarrow.Array:
-    return pyarrow.array(rows, type=FIX_TAGS)
+    """Rows of `(tag, value)` as the `kwargs` column an extractor is handed."""
+    return pyarrow.array(
+        [
+            None
+            if row is None
+            else [
+                {
+                    "tag": tag,
+                    "key": str(tag),
+                    "value": value,
+                    "trans": None,
+                    "namespace": None,
+                }
+                for tag, value in row
+            ]
+            for row in rows
+        ],
+        type=KWARGS,
+    )
 
 
 def _pairs(cell: object) -> list[tuple[object, object]] | None:
     if cell is None:
         return None
-    return [(entry["key"], entry["value"]) for entry in cell]
+    return [(entry["tag"], entry["value"]) for entry in cell]
 
 
 def test_party_is_the_exact_fix_named_shape() -> None:
@@ -334,7 +340,7 @@ def test_chunk_boundaries_do_not_change_the_answer() -> None:
     first = _tags([(453, "1"), (448, "A")])
     second = _tags(None, [(453, "0")])
     whole = pyarrow.concat_arrays([first, second])
-    chunked = pyarrow.chunked_array([first, second], type=FIX_TAGS)
+    chunked = pyarrow.chunked_array([first, second], type=KWARGS)
 
     expected = Parties().into_arrow_arrays(whole)
     actual = Parties().into_arrow_arrays(chunked)
