@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Mapping
 from types import MappingProxyType
@@ -202,16 +203,91 @@ QUOTE_GROUP_STRUCTURE: pyarrow.Array = pyarrow.array(
     [_TAGS_BY_NAME[name] for name in _QUOTE_GROUP_STRUCTURE], pyarrow.int32()
 )
 
-# A bridge-rendered instrument identifier rather than a standard FIX tag. Its
-# source spelling stays in metadata now that the public column is snake_case.
-ISIN_CODE = Field(
-    name="isincode",
-    arrow_type=pyarrow.string(),
-    nullable=True,
-    metadata={
-        "description": "ISIN carried by the rendered ISINCODE field.",
-        "fix:name": "ISINCODE",
-        "fix:type": "String",
-    },
-)
-NAMED: Mapping[str, Field] = MappingProxyType({"isincode": ISIN_CODE})
+# -- fields FIX never numbered ------------------------------------------------
+#
+# A bridge renders names the standard has no tag for -- `ISINCODE` beside the
+# instrument block, a vendor's `TECH.CLIENTID`. They are declared in the same
+# registry as every numbered tag, under `kind: vendor`, and the ones the
+# parsed log gives a column of their own name it in `fix:column`.
+#
+# Derived, not written here: registering a newly observed vendor field or a
+# newly observed spelling of one is then a change to the registry, which has a
+# schema, a collision check and a CLI -- rather than one more Python literal in
+# this file, which had exactly one and could not have had a hundred.
+
+
+def _named(entry: Field) -> tuple[str, ...]:
+    """Every spelling a rendered key may carry for one vendor field, whole."""
+    spellings = [entry.fix["name"], *_json_list(entry.fix.get("aliases"))]
+    return tuple(dict.fromkeys(name.strip().lower() for name in spellings if name.strip()))
+
+
+def _json_list(value: str | None) -> list[str]:
+    """The alias names a merged declaration carries, provenance dropped."""
+    try:
+        decoded = json.loads(value or "[]")
+    except ValueError:  # pragma: no cover - the registry writes these itself
+        return []
+    return [str(alias.get("name", "")) for alias in decoded if alias.get("name")]
+
+
+#: What a lifted vendor field carries into the log contract. Deliberately not
+#: everything the registry knows: the aliases a name answers to and the
+#: versions it was seen in are registry bookkeeping, and putting them here
+#: would make recording one newly observed spelling a change to a published
+#: schema.
+_VENDOR_METADATA: tuple[str, ...] = ("description", "fix:name", "fix:type")
+
+
+def _vendor_column(entry: Field) -> Field:
+    """One vendor field as the log column it is lifted into."""
+    return Field(
+        name=entry.fix["column"],
+        arrow_type=entry.arrow_type,
+        nullable=True,
+        metadata={key: entry.metadata[key] for key in _VENDOR_METADATA if key in entry.metadata},
+    )
+
+
+def vendor_columns(registry: FixRegistry) -> Mapping[str, Field]:
+    """`{canonical name: the log column it is lifted into}` for one dictionary."""
+    return MappingProxyType(
+        {
+            entry.fix["name"]: _vendor_column(entry)
+            for entry in registry.merged_fields().values()
+            if entry.fix.get("column")
+        }
+    )
+
+
+def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
+    """`{rendered spelling: the log column}` for one dictionary's vendor fields.
+
+    Whole names, and their last dotted segment beside them. Whole because a
+    vendor namespace is part of the name -- `TECH.CLIENTID` and a second
+    vendor's `CLIENTID` are two fields, and matching on the tail alone would
+    make them one. The tail as well because the same field is rendered both
+    ways in one estate, and only where exactly one field claims it: a tail two
+    fields would answer to is a guess, and is left out rather than guessed.
+    """
+    merged = registry.merged_fields()
+    columns = vendor_columns(registry)
+    whole = {spelling: name for name, _ in columns.items() for spelling in _named(merged[name])}
+    tails: dict[str, set[str]] = {}
+    for spelling, name in whole.items():
+        tail = spelling.rsplit(".", 1)[-1]
+        if tail != spelling:
+            tails.setdefault(tail, set()).add(name)
+    found = {spelling: columns[name] for spelling, name in whole.items()}
+    for tail, owners in tails.items():
+        if tail not in found and len(owners) == 1:
+            found[tail] = columns[next(iter(owners))]
+    return MappingProxyType(found)
+
+
+VENDOR_FIELDS: Mapping[str, Field] = vendor_columns(_REGISTRY)
+NAMED: Mapping[str, Field] = named_columns(_REGISTRY)
+
+#: The one the parsed log declares by name, kept as a name so `Log.isincode`
+#: can annotate itself with it.
+ISIN_CODE: Field = VENDOR_FIELDS["ISINCODE"]

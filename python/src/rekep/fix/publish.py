@@ -207,8 +207,14 @@ BRIDGE_FIELDS: tuple[str, ...] = (
     "TrdRegTimestampType",
 )
 
+#: Fields FIX never numbered that the parsed log gives a column of its own.
+#: Selected by name, because a name is all such a field has.
+VENDOR_FIELDS: tuple[str, ...] = ("ISINCODE",)
+
 #: Every key the packaged projection selects, in declaration order.
-PROJECTED: tuple[str, ...] = tuple(dict.fromkeys((*LOG_FIELDS, *MARKET_FIELDS, *BRIDGE_FIELDS)))
+PROJECTED: tuple[str, ...] = tuple(
+    dict.fromkeys((*LOG_FIELDS, *MARKET_FIELDS, *BRIDGE_FIELDS, *VENDOR_FIELDS))
+)
 
 
 def latest_fields() -> list[Field]:

@@ -55,6 +55,8 @@ def dictionary() -> dict[str, dict[str, Any]]:
         ]
     for transport in (False, True):
         for entry in entries:
+            if "tag" not in entry:
+                continue  # A field FIX never numbered; nothing here declares one.
             for version, variant in entry["versions"].items():
                 if version.startswith("FIXT") is not transport:
                     continue

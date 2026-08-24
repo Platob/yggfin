@@ -24,7 +24,7 @@ import pyarrow.fs
 from rekep.convert import Convertible
 from rekep.fields import Field
 from rekep.filesystems import local_path, read_bytes, resolve, write_bytes
-from rekep.fix.entries import Alias, ComponentEntry, FieldEntry, fold, merged_field, slug_of
+from rekep.fix.entries import Alias, ComponentEntry, FieldEntry, fold, merged_field
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
@@ -44,6 +44,7 @@ from rekep.fix.store import (
     ExplodedLayout,
     Layout,
     documents_of,
+    entry_identity,
     explode,
     layout_of,
     slug_collisions,
@@ -531,8 +532,16 @@ class FixRegistry(Convertible):
         found: dict[str, Field] = {}
         for entry in self._entries[0].values():
             members = entry.into_fields(order)
-            if members:
-                found[entry.name] = merged_field(members)
+            if not members:
+                continue
+            merged = merged_field(members)
+            # Protocol identity is the entry's, not the newest reading's: the
+            # canonical name and the spellings it also answers to belong to
+            # the identity and would otherwise be lost in the merge.
+            merged.fix["name"] = entry.name
+            if entry.aliases:
+                merged.fix["aliases"] = _json([alias.into_dict() for alias in entry.aliases])
+            found[entry.name] = merged
         return MappingProxyType(found)
 
     def merged_components(self) -> Mapping[str, ComponentEntry]:
@@ -651,8 +660,17 @@ class FixRegistry(Convertible):
         return self._write_field(entry)
 
     def remove_field(self, name: str) -> bool:
-        """Delete one field identity; False when the store did not hold it."""
-        removed = self._editable.remove_field(slug_of(name))
+        """Delete one field identity, by any name it answers to.
+
+        By any name, because every other verb here takes one: a spelling good
+        enough to resolve a rendered key is good enough to name the entry it
+        resolves to.
+        """
+        entry = self.resolve(name)
+        if entry is None:
+            return False
+        slug = self._editable.slugs.get(entry_identity(entry), entry.slug)
+        removed = self._editable.remove_field(slug)
         self._forget()
         return removed
 
@@ -669,8 +687,12 @@ class FixRegistry(Convertible):
         return self._write_component(entry)
 
     def remove_component(self, name: str) -> bool:
-        """Delete one component identity; False when the store did not hold it."""
-        removed = self._editable.remove_component(slug_of(name))
+        """Delete one component identity, by any name it answers to."""
+        try:
+            entry = self.merged_component(name)
+        except KeyError:
+            return False
+        removed = self._editable.remove_component(entry.slug)
         self._forget()
         return removed
 
@@ -1238,6 +1260,10 @@ class FixRegistry(Convertible):
                 raise ValueError(f"projected FIX field {member.name!r} has no fix:version")
             extra_by_version.setdefault(version, []).append(member)
         wanted: set[int] = set()
+        # A field FIX never numbered is selected by name, because that is all
+        # it has -- and a projection that could only select tags would leave
+        # every rendered vendor field behind.
+        named: set[str] = set()
         missing = []
         for key in keys:
             found = self.lookup(key)
@@ -1247,7 +1273,7 @@ class FixRegistry(Convertible):
                     for members in extra_by_version.values()
                     for member in members
                     if (
-                        int(member.fix["tag"]) == int(key)
+                        int(member.fix.get("tag") or 0) == int(key)
                         if _is_tag(key)
                         else member.name.lower() == str(key).strip().lower()
                     )
@@ -1255,7 +1281,12 @@ class FixRegistry(Convertible):
             if not found:
                 missing.append(key)
                 continue
-            wanted.update(int(member.fix["tag"]) for member in found)
+            for member in found:
+                tag = member.fix.get("tag")
+                if tag:
+                    wanted.add(int(tag))
+                else:
+                    named.add(fold(member.name))
         if missing:
             raise KeyError(f"no FIX fields {missing!r} in this registry")
         overlap = set(extra_by_version).intersection(self.versions)
@@ -1275,7 +1306,9 @@ class FixRegistry(Convertible):
                 )
                 continue
             selected = [
-                member for member in self.fields(version) if int(member.fix["tag"]) in wanted
+                member
+                for member in self.fields(version)
+                if (tag := member.fix.get("tag")) and int(tag) in wanted
             ]
             projected[version] = selected
             names = {member.name for member in selected}
@@ -1292,6 +1325,13 @@ class FixRegistry(Convertible):
             if stored is not None:
                 declared[version] = stored
         field_entries, component_entries = explode(versions, projected, declared)
+        # A field FIX never numbered travels as the identity it already is: it
+        # holds for every version rather than for the ones a per-version walk
+        # happened to hand it, and a projection that restated it per version
+        # would say it arrived with 5.0.SP2.
+        for entry in self._entries[0].values():
+            if entry.tag is None and fold(entry.name) in named:
+                field_entries[entry.slug] = entry
         return write_archive(
             target,
             documents_of(versions, field_entries, component_entries, sessions, declared),
@@ -1546,7 +1586,7 @@ def _problems(
     can be checked before it is written and refused whole.
     """
     problems = []
-    claimed: set[str] = set()
+    claimed: dict[str, str] = {}
     for tier in (_CANONICAL, _VERSIONED, _ALIASED):
         names: dict[str, list[str]] = {}
         for entry in held[0].values():
@@ -1554,9 +1594,15 @@ def _problems(
                 names.setdefault(fold(spelled), []).append(entry.name)
         for folded, owners in sorted(names.items()):
             unique = list(dict.fromkeys(owners))
-            if len(unique) > 1 and folded not in claimed:
+            held_by = claimed.get(folded)
+            if held_by is None and len(unique) > 1:
                 problems.append(f"{folded!r} is claimed by {unique}")
-            claimed.add(folded)
+            elif held_by is not None and held_by not in unique:
+                # An earlier tier already answers for this name, so what was
+                # recorded here can never resolve. Precedence is the rule and
+                # not the problem; a spelling nothing will ever reach is.
+                problems.append(f"{folded!r} is {tier} for {unique} and already {held_by}'s")
+            claimed.setdefault(folded, unique[0])
     for slug, shared in sorted(slug_collisions(e.name for e in held[0].values()).items()):
         problems.append(f"FIX fields {shared} are all stored as fields/{slug}.json")
     for slug, shared in sorted(slug_collisions(e.name for e in held[1].values()).items()):

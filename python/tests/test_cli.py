@@ -8,6 +8,9 @@ import pyarrow
 import pytest
 
 from rekep import Field, Log, StructField, cli
+from rekep.fix.entries import Alias, FieldEntry
+from rekep.fix.fields import fix_field
+from rekep.fix.registry import FixRegistry
 
 #: The contracts this repository publishes, which the CLI has to be able to
 #: read -- the same directory `tests/test_schemas.py` pins.
@@ -192,3 +195,272 @@ def test_from_file_is_what_load_reads_with(tmp_path: Path) -> None:
     assert Field.from_file(str(target)) == shape
     with pytest.raises(ValueError, match="not a document this can read"):
         Field.from_file(str(tmp_path / "shape.parquet"))
+
+
+# -- the FIX registry --------------------------------------------------------
+#
+# Registering a newly observed vendor field or a newly confirmed alias is what
+# a classification run produces, and it has to be an operation rather than a
+# hand edit of a JSON file. Every identity here is synthetic.
+
+
+@pytest.fixture
+def store(tmp_path: Path) -> Path:
+    """A registry holding one synthetic field, in the exploded layout."""
+    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    registry._store_versions(("9.1",))
+    registry._store_fields("9.1", [fix_field("FakeRole", 90001, "int", version="9.1")])
+    return Path(registry.cache_dir)
+
+
+def reopened(store: Path) -> FixRegistry:
+    """The store as a fresh registry, so a test reads what was written."""
+    return FixRegistry(cache_dir=store, offline=True)
+
+
+def test_a_vendor_field_is_registered_updated_and_removed(store: Path) -> None:
+    assert (
+        run(
+            "fix",
+            "registry",
+            "add-field",
+            "--store",
+            str(store),
+            "--name",
+            "FAKE.VENDOR.CODE",
+            "--type",
+            "String",
+            "--description",
+            "A vendor's own code.",
+            "--column",
+            "fake_vendor_code",
+            "--alias",
+            "FAKEVENDORCODE",
+        )
+        == 0
+    )
+    entry = reopened(store).resolve("FAKE.VENDOR.CODE")
+    assert entry.kind == "vendor" and entry.tag is None
+    assert entry.column == "fake_vendor_code"
+    assert reopened(store).resolve("FAKEVENDORCODE").name == "FAKE.VENDOR.CODE"
+
+    assert (
+        run(
+            "fix",
+            "registry",
+            "update-field",
+            "--store",
+            str(store),
+            "--name",
+            "FAKE.VENDOR.CODE",
+            "--type",
+            "String",
+            "--column",
+            "renamed",
+        )
+        == 0
+    )
+    updated = reopened(store).resolve("FAKE.VENDOR.CODE")
+    assert updated.column == "renamed"
+    assert [alias.name for alias in updated.aliases] == ["FAKEVENDORCODE"], "kept, not dropped"
+
+    assert (
+        run("fix", "registry", "remove-field", "--store", str(store), "--name", "FAKEVENDORCODE")
+        == 0
+    )
+    assert reopened(store).resolve("FAKE.VENDOR.CODE") is None
+
+
+def test_a_numbered_field_is_registered_for_the_versions_it_names(store: Path) -> None:
+    assert (
+        run(
+            "fix",
+            "registry",
+            "add-field",
+            "--store",
+            str(store),
+            "--name",
+            "FakeCode",
+            "--tag",
+            "90002",
+            "--type",
+            "String",
+            "--version",
+            "9.1",
+        )
+        == 0
+    )
+    entry = reopened(store).resolve("FakeCode")
+    assert entry.tag == 90002 and entry.versions == ("9.1",)
+    assert reopened(store).field(90002, "9.1").name == "FakeCode"
+
+
+def test_removing_a_field_the_store_does_not_have_reports_it(
+    store: Path, capsys: pytest.CaptureFixture
+) -> None:
+    assert (
+        run("fix", "registry", "remove-field", "--store", str(store), "--name", "FakeAbsent") == 1
+    )
+    assert "FakeAbsent" in capsys.readouterr().err
+
+
+def test_an_alias_is_recorded_with_where_it_was_counted(store: Path) -> None:
+    assert (
+        run(
+            "fix",
+            "registry",
+            "alias-field",
+            "--store",
+            str(store),
+            "--name",
+            "FakeRole",
+            "--alias",
+            "FakeRolle",
+            "--source",
+            "brk",
+            "--occurrences",
+            "41",
+        )
+        == 0
+    )
+    (alias,) = reopened(store).resolve("FakeRole").aliases
+    assert (alias.name, alias.source, alias.occurrences) == ("FakeRolle", "brk", 41)
+    assert reopened(store).resolve("fake_rolle").tag == 90001
+
+
+def test_a_change_that_would_break_the_store_is_refused_and_not_written(
+    store: Path, capsys: pytest.CaptureFixture
+) -> None:
+    """The validation is the point of having a verb rather than an editor."""
+    run(
+        "fix",
+        "registry",
+        "alias-field",
+        "--store",
+        str(store),
+        "--name",
+        "FakeRole",
+        "--alias",
+        "FakeSpelling",
+    )
+    assert (
+        run(
+            "fix",
+            "registry",
+            "add-field",
+            "--store",
+            str(store),
+            "--name",
+            "FakeOther",
+            "--tag",
+            "90003",
+            "--version",
+            "9.1",
+            "--alias",
+            "FakeSpelling",
+        )
+        == 1
+    )
+    assert "claimed by" in capsys.readouterr().err
+    assert reopened(store).resolve("FakeOther") is None
+    assert reopened(store).check() == []
+
+
+def test_a_component_is_registered_from_a_declaration_and_removed(
+    store: Path, tmp_path: Path
+) -> None:
+    declaration = tmp_path / "fake_parties.json"
+    declaration.write_text(
+        json.dumps(
+            {
+                "name": "FakeParties",
+                "versions": {
+                    "9.1": {
+                        "order": 0,
+                        "members": [
+                            {
+                                "kind": "group",
+                                "name": "NoFakeParties",
+                                "tag": 90004,
+                                "members": [{"kind": "field", "name": "FakeRole", "tag": 90001}],
+                            }
+                        ],
+                    }
+                },
+            }
+        )
+    )
+    assert (
+        run(
+            "fix",
+            "registry",
+            "add-component",
+            "--store",
+            str(store),
+            "--declaration",
+            str(declaration),
+        )
+        == 0
+    )
+    assert reopened(store).component("FakeParties", "9.1").members[0].tag == 90004
+
+    assert (
+        run(
+            "fix",
+            "registry",
+            "update-component",
+            "--store",
+            str(store),
+            "--declaration",
+            str(declaration),
+        )
+        == 0
+    )
+    assert (
+        run("fix", "registry", "remove-component", "--store", str(store), "--name", "FakeParties")
+        == 0
+    )
+    assert (
+        run("fix", "registry", "remove-component", "--store", str(store), "--name", "FakeParties")
+        == 1
+    )
+
+
+def test_check_reports_an_inconsistent_store_and_says_nothing_about_a_sound_one(
+    store: Path, capsys: pytest.CaptureFixture
+) -> None:
+    assert run("fix", "registry", "check", "--store", str(store)) == 0
+    assert capsys.readouterr().err == ""
+
+    clashing = FieldEntry(
+        name="FakeOther",
+        tag=90003,
+        aliases=(Alias(name="FakeRole"),),
+        variants={"9.1": {"type": "String"}},
+    )
+    reopened(store)._editable.store_field(clashing)
+    assert run("fix", "registry", "check", "--store", str(store)) == 1
+    assert "FakeRole" in capsys.readouterr().err
+
+
+def test_migrate_rewrites_a_versioned_store_one_file_per_identity(tmp_path: Path) -> None:
+    """The command that moves an existing `~/.config/fix` onto the new layout."""
+    old = FixRegistry(cache_dir=tmp_path / "old", offline=True, layout="versioned")
+    old._store_versions(("9.1",))
+    old._store_fields("9.1", [fix_field("FakeRole", 90001, "int", version="9.1")])
+    assert (tmp_path / "old" / "9.1.json").exists()
+
+    assert (
+        run(
+            "fix",
+            "registry",
+            "migrate",
+            "--store",
+            str(tmp_path / "old"),
+            "--target",
+            str(tmp_path / "new"),
+        )
+        == 0
+    )
+    assert (tmp_path / "new" / "fields" / "fake_role.json").exists()
+    assert not old.verify(reopened(tmp_path / "new")), "and answers exactly what it did"

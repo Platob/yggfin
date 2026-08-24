@@ -20,11 +20,12 @@ import pytest
 
 from rekep.fix import FIX_SCALARS, FixRegistry
 from rekep.fix.columns import _ORDER
-from rekep.fix.entries import VARIANT_KEYS
+from rekep.fix.entries import ANY_VERSION, VARIANT_KEYS
 from rekep.fix.publish import (
     LOG_FIELDS,
     MARKET_FIELDS,
     PROJECTED,
+    VENDOR_FIELDS,
     latest_fields,
     missing_from,
     publish_builtin,
@@ -64,7 +65,7 @@ VERSIONS: list[str] = INDEX["versions"]
 #: per component identity, which is what the layout is for. Counts rather than
 #: a bare "more than zero", so a migration that lost half the dictionary and
 #: still produced a readable store fails here.
-EXPECTED_FIELD_FILES = 1495
+EXPECTED_FIELD_FILES = 1496
 EXPECTED_COMPONENT_FILES = 729
 
 #: Pinned so a moved or half-written directory fails here rather than passing
@@ -129,14 +130,25 @@ def test_a_field_file_holds_one_identity_and_every_version_of_it() -> None:
     }, "a variant states what it does not share with the identity, and nothing else"
 
     tags = set()
+    vendor = 0
     for slug, entry in entries.items():
         assert entry["name"], slug
-        assert entry["tag"] not in tags, f"{slug} repeats a tag"
-        tags.add(entry["tag"])
-        assert set(entry["versions"]) <= set(VERSIONS), slug
         assert entry["versions"], slug
         for variant in entry["versions"].values():
             assert set(variant) <= set(VARIANT_KEYS), slug
+        if entry.get("kind") == "vendor":
+            # A field FIX never numbered: no tag, and one variant that holds
+            # whichever version the session negotiated.
+            vendor += 1
+            assert "tag" not in entry, slug
+            assert set(entry["versions"]) == {ANY_VERSION}, slug
+            continue
+        assert entry["tag"] not in tags, f"{slug} repeats a tag"
+        tags.add(entry["tag"])
+        assert set(entry["versions"]) <= set(VERSIONS), slug
+    assert vendor == 1, "ISINCODE, and every other one the log gives a column"
+    assert entries["isincode"]["column"] == "isincode"
+    assert [alias["name"] for alias in entries["isincode"]["aliases"]] == ["AMON.ISINCODE"]
 
 
 def test_a_component_file_holds_one_identity_and_every_version_of_it() -> None:
@@ -245,23 +257,38 @@ def test_the_builtin_projection_matches_the_published_versions(
 ) -> None:
     builtin = FixRegistry.from_builtin()
     assert builtin.versions == ("FIX.Latest", *registry.versions)
-    # Derived from `publish.PROJECTED`, then pinned: 170 keys resolve to 185
-    # distinct names because a version may spell one tag differently, and the
-    # projection selects by tag once a key has resolved.
+    # Derived from `publish.PROJECTED`, then pinned: 171 keys resolve to 185
+    # distinct *numbered* names, because a version may spell one tag
+    # differently and the projection selects by tag once a key has resolved.
+    # `tags()` maps a name to a tag, so the one vendor field is not in it.
     assert len(builtin.tags()) == 185
+    assert builtin.resolve("ISINCODE").tag is None, "and is still resolvable by name"
     selected = {
-        int(member.fix["tag"])
+        int(tag)
         for version in registry.versions
         for member in builtin.fields(version)
+        if (tag := member.fix.get("tag"))
     }
+    named = {
+        member.name
+        for version in registry.versions
+        for member in builtin.fields(version)
+        if not member.fix.get("tag")
+    }
+    assert named == set(VENDOR_FIELDS), "and every field FIX never numbered, by name"
     for version in registry.versions:
         expected = [
-            member for member in registry.fields(version) if int(member.fix["tag"]) in selected
+            member
+            for member in registry.fields(version)
+            if (int(tag) in selected if (tag := member.fix.get("tag")) else member.name in named)
         ]
         assert builtin.fields(version) == expected, version
     assert [member.name for member in builtin.fields("FIX.Latest")] == [
         "ExposureDuration",
         "ExposureDurationUnit",
+        # A field FIX never numbered holds for every version, this one
+        # included, and sorts after the numbered ones.
+        "ISINCODE",
     ]
 
 

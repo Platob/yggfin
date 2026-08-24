@@ -32,8 +32,8 @@ still supply an explicit version.
 ## Registry
 
 The reviewable `data/fix/` directory and `data/fix.zip` archive contain the
-same versioned registry. It combines OnixS field definitions with QuickFIX
-symbols and headers. Resource locations use the project's URL resolver and
+same registry. It combines OnixS field definitions with QuickFIX symbols,
+components and headers. Resource locations use the project's URL resolver and
 `pyarrow.fs`; a remote resource is materialized only when a downstream parser
 requires an OS-local path, then reused from the local cache. Resolution and
 network work happen before the message loop.
@@ -45,13 +45,80 @@ The registry supplies:
 - description, valid values, and component/message usage;
 - explicit-version and inferred-version lookup through cached indexes.
 
+### One file per identity
+
+A store holds one document per field or component *identity*, not one per FIX
+version:
+
+```text
+versions.json          the version list, each version's session layer,
+                       and which versions have had their spec read
+fields/party_role.json one field, and every version's reading of it
+components/parties.json one component, and every version's member tree
+```
+
+A field's identity is its **tag**, never its name. Tag 64 is `FutSettDate`
+through 4.3 and `SettlDate` after, so `fields/settl_date.json` is one file
+saying in passing that four older versions spelled it differently -- rather
+than two half-histories nobody diffs. Each version's variant states only what
+it does not share with the identity.
+
+A field FIX never numbered -- a bridge's rendered `ISINCODE`, a vendor's
+`TECH.CLIENTID` -- is the same document with `kind: vendor`, no tag, and a
+`*` variant that holds whichever version the session negotiated. One naming
+`fix:column` is lifted into that column of the parsed log.
+
+Stores written one file per version keep working: which layout a store is in
+is read off what it holds, and `rekep fix registry migrate` is how one
+changes, checked field by field against what it used to answer.
+
+### Resolving a name
+
+`registry.resolve(name)` walks three tiers, in order, and stops at the first
+that answers:
+
+1. an identity's canonical name;
+2. a name some version spells for it;
+3. a declared alias -- a rendered or vendor spelling, a legacy name, a near
+   miss confirmed against a capture.
+
+A later tier never takes a name from an earlier one. Two identities claiming
+one name inside a tier, or an alias an earlier tier already answers for, are
+defects `registry.check()` reports and the CRUD verbs refuse.
+
+### Editing and refreshing
+
+```bash
+rekep fix registry add-field --store data/fix --name TECH.CLIENTID \
+    --type String --column tech_client_id
+rekep fix registry alias-field --store data/fix --name PartyRole \
+    --alias PARTYROLLE --source brk --occurrences 41
+rekep fix registry check --store data/fix
+```
+
+Each verb schema-checks the change, re-runs the collision check against the
+whole store, and refuses the write rather than leaving it half applied.
+
+`FixRegistry(cache_ttl=seconds)` regenerates a store older than the TTL from
+the QuickFIX spec before serving it. The default, `0`, never refetches. A
+refetch that fails is reported and the local copy served anyway: a dictionary
+a day stale parses every message, and one that raises parses none.
+
+### Merged views
+
+`merged_fields()` and `merged_components()` hand over the whole unified table
+in one call, where `scalar()` answers one key at a time. A merged component is
+an entry rather than one tree: `paths(version)`, `delimiters(version)` and
+`diff()` are the questions worth asking of it.
+
 Protocol-specific code should normalize values, not duplicate registry tables.
 
 ### What the wheel carries
 
 `data/fix.zip` is the whole dictionary and stays beside the repository. The
 wheel ships `rekep/fix/registry.zip`, a projection of it holding the keys
-`rekep.fix.publish.PROJECTED` names -- and every version's component
+`rekep.fix.publish.PROJECTED` names -- numbered tags, the fields FIX never
+numbered that the log gives a column, and every version's component
 declarations, whole. A component says where a repeating group starts and ends,
 so a projection that selected its members alongside the fields would end the
 group somewhere else, and one that dropped them extracts no group at all.

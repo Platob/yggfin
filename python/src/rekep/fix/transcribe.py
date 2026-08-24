@@ -19,7 +19,7 @@ from rekep.fields.arrays import groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
 from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
 from rekep.fix.columns import NAMED as NAMED_COLUMNS
-from rekep.fix.columns import QUOTE_GROUP_COUNTS, QUOTE_GROUP_STRUCTURE
+from rekep.fix.columns import QUOTE_GROUP_COUNTS, QUOTE_GROUP_STRUCTURE, named_columns
 from rekep.fix.columns import TYPES as FLAT_TYPES
 from rekep.fix.components import Parties
 from rekep.fix.fields import cast_arrow_fix
@@ -410,14 +410,12 @@ class FixCodec(Convertible):
                 column = column.cast(FLAT_TYPES[tag], safe=False)
             flat[FLAT_COLUMNS[tag]] = column
 
-        named = {
-            field.name: pyarrow.nulls(rows, field.arrow_type) for field in NAMED_COLUMNS.values()
-        }
+        declared = self.named_fields()
+        named = {field.name: pyarrow.nulls(rows, field.arrow_type) for field in declared.values()}
         named_lift = pyarrow.repeat(False, len(keys))
-        if version is not None:
-            named_names = compute.utf8_lower(reduced)
-            named_keys = pyarrow.array(list(NAMED_COLUMNS), pyarrow.string())
-            named_index = compute.index_in(named_names, value_set=named_keys)
+        if version is not None and declared:
+            named_keys = pyarrow.array(list(declared), pyarrow.string())
+            named_names, named_index = _named_index(keys, reduced, named_keys)
             # Unknown keys share an irrelevant sentinel. Known named fields retain
             # distinct integer codes, avoiding composite string construction.
             uniqueness_key = compute.fill_null(named_index, pyarrow.scalar(-1, pyarrow.int32()))
@@ -439,7 +437,7 @@ class FixCodec(Convertible):
                     if len(selected_rows) == rows
                     else compute.take(selected, compute.index_in(row_ids, value_set=selected_rows))
                 )
-                named[name] = cast_arrow_fix(column, NAMED_COLUMNS[name].arrow_type)
+                named[name] = cast_arrow_fix(column, declared[name].arrow_type)
 
         quote_structure = _quote_group_structure(parents, tags)
         fix_keep = compute.and_(
@@ -539,9 +537,8 @@ class FixCodec(Convertible):
     ) -> tuple[dict[str, Any], Any]:
         """Configured rendered names lifted from the residual ordered pairs."""
         rows = len(pairs)
-        columns = {
-            field.name: pyarrow.nulls(rows, field.arrow_type) for field in NAMED_COLUMNS.values()
-        }
+        declared = self.named_fields()
+        columns = {field.name: pyarrow.nulls(rows, field.arrow_type) for field in declared.values()}
         if version is None:
             return columns, pairs
         if isinstance(pairs, pyarrow.ChunkedArray):
@@ -554,18 +551,11 @@ class FixCodec(Convertible):
         parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
         entries = compute.list_flatten(listed)
         keys, items = compute.struct_field(entries, 0), compute.struct_field(entries, 1)
-        names = compute.utf8_lower(
-            compute.fill_null(
-                compute.struct_field(compute.extract_regex(keys, _MEMBER_NAME_VECTOR), "name"),
-                keys,
-            )
+        reduced = compute.fill_null(
+            compute.struct_field(compute.extract_regex(keys, _MEMBER_NAME_VECTOR), "name"), keys
         )
-        lift = compute.and_(
-            compute.fill_null(
-                compute.is_in(names, value_set=pyarrow.array(list(NAMED_COLUMNS))), False
-            ),
-            _once(parents, names),
-        )
+        names, index = _named_index(keys, reduced, pyarrow.array(list(declared), pyarrow.string()))
+        lift = compute.and_(compute.is_valid(index), _once(parents, names))
         if not compute.any(lift, min_count=0).as_py():
             return columns, pairs
         found = compute.filter(names, lift)
@@ -581,7 +571,7 @@ class FixCodec(Convertible):
                 if len(selected_rows) == rows
                 else compute.take(selected, compute.index_in(row_ids, value_set=selected_rows))
             )
-            field = NAMED_COLUMNS[name]
+            field = declared[name]
             columns[field.name] = cast_arrow_fix(column, field.arrow_type)
         carried = compute.invert(lift)
         rest = _mapped(
@@ -721,6 +711,22 @@ class FixCodec(Convertible):
                 }
         return self._flat_fields[version]
 
+    def named_fields(self) -> Mapping[str, Field]:
+        """`{rendered spelling: column}` for the fields FIX never numbered.
+
+        Read from *this codec's* registry rather than from the packaged one, so
+        declaring a vendor field is a change to a dictionary and never a change
+        here. The parsed log's own contract still decides which of these
+        columns it keeps; a codec that lifts one the log does not declare hands
+        it to a caller that can, and drops it otherwise.
+        """
+        if self._named is None:
+            try:
+                self._named = named_columns(self.registry)
+            except (OSError, ValueError):
+                self._named = NAMED_COLUMNS
+        return self._named
+
     def parties_of(self, version: str | None = None) -> Parties:
         """Version-aware Parties extractor, cached with the tag index."""
         if version not in self._parties:
@@ -777,6 +783,8 @@ class FixCodec(Convertible):
     @cached_property
     def _parties(self) -> dict[str | None, Parties]:
         return {}
+
+    _named: Mapping[str, Field] | None = None
 
     @cached_property
     def _flat_fields(self) -> dict[str | None, dict[int, Field]]:
@@ -890,6 +898,24 @@ def _version_columns(
         )
 
     return first(_BEGIN_KEYS), first(_APPLICATION_KEYS), first(_DEFAULT_APPLICATION_KEYS)
+
+
+def _named_index(keys: Any, reduced: Any, declared: Any) -> tuple[Any, Any]:
+    """`(matched name, its position in `declared`)` for a column of rendered keys.
+
+    The whole key first and its last dotted segment second, because a vendor
+    namespace is part of a name: `TECH.CLIENTID` is not `CLIENTID`, and a
+    dictionary that declares only one of them still answers for the other.
+    """
+    compute = pyarrow.compute
+    whole = compute.utf8_lower(compute.utf8_trim_whitespace(keys))
+    tail = compute.utf8_lower(reduced)
+    found = compute.index_in(whole, value_set=declared)
+    matched = compute.is_valid(found)
+    return (
+        compute.if_else(matched, whole, tail),
+        compute.if_else(matched, found, compute.index_in(tail, value_set=declared)),
+    )
 
 
 def _once(parents: Any, keys: Any) -> Any:

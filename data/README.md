@@ -1,7 +1,15 @@
 # FIX registry data
 
-`data/fix/` is the reviewable versioned FIX registry; `data/fix.zip` is its
-deterministic compressed copy. Runtime jobs can therefore stay offline.
+`data/fix/` is the reviewable FIX registry, one file per field or component
+identity; `data/fix.zip` is its deterministic compressed copy. Runtime jobs
+can therefore stay offline.
+
+```text
+data/fix/versions.json            the version list, session layers, and which
+                                  versions have had their spec read
+data/fix/fields/party_role.json   one field, and every version's reading of it
+data/fix/components/parties.json  one component, and every version's members
+```
 
 ```python
 from rekep.fix import FixRegistry
@@ -10,9 +18,19 @@ registry = FixRegistry(cache_dir="data/fix", offline=True)
 field = registry.field("Side", "4.4")
 ```
 
-Each field stores its Arrow projection, short description, tag, FIX datatype,
-valid values, version, and component/message usage. Both published forms must
-contain identical documents.
+Each field stores its canonical name, tag, the spellings it also answers to,
+and a per-version map of the datatype, description, valid values, symbols and
+message usage that version gives it. Both published forms must contain
+identical documents.
+
+Add a field, record a spelling, or check the whole store:
+
+```bash
+cd python
+uv run rekep fix registry add-field --store ../data/fix \
+    --name TECH.CLIENTID --type String --column tech_client_id
+uv run rekep fix registry check --store ../data/fix
+```
 
 Refresh deliberately, then rebuild the archive:
 
