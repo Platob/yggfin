@@ -10,7 +10,7 @@ import pathlib
 import sys
 from typing import Any
 
-from rekep.fields import Field, StructField, field_of
+from rekep.fields import Field, StructField
 from rekep.fix.classify import KeyReport, apply_report, classify, count_files, report_document
 from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
 from rekep.fix.registry import FixRegistry
@@ -47,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def dump(arguments: argparse.Namespace) -> int:
     """Write a Python class's declaration as a document."""
-    shape = field_of(_imported(arguments.pyclass))
+    shape = Field.from_class(_imported(arguments.pyclass))
     spelling = arguments.format or _format_of(arguments.target)
     payload = getattr(shape, f"into_{spelling}")(arguments.target)
     if payload is None:

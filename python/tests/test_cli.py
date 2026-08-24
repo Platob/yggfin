@@ -69,7 +69,7 @@ def test_only_the_document_reaches_stdout(tmp_path: Path, capsys: pytest.Capture
 
 
 def test_dump_takes_a_plain_dataclass(capsysbinary: pytest.CaptureFixture) -> None:
-    """`field_of` is the one reading of "a shape", so the CLI inherits all of it."""
+    """`Field.from_` is the one reading of "a shape", so the CLI inherits all of it."""
     assert run("fields", "dump", "--pyclass", "tests.test_cli:Venue") == 0
     dumped = Field.from_yaml(capsysbinary.readouterr().out)
     assert dumped.names == ["mic", "country"]

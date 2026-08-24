@@ -15,7 +15,7 @@ from rekep.fields import arrays
 ENTRY = pyarrow.struct([("key", pyarrow.string()), ("value", pyarrow.int64())])
 
 
-def field_of(arrow_type: pyarrow.DataType, name: str = "value") -> Field:
+def _shape(arrow_type: pyarrow.DataType, name: str = "value") -> Field:
     return Field(name=name, arrow_type=arrow_type, nullable=True)
 
 
@@ -39,34 +39,34 @@ def test_every_list_flavour_casts_to_every_other(
     array = (
         pyarrow.array(rows, type=pyarrow.list_(pyarrow.int64())).cast(source, safe=True)
         if not pyarrow.types.is_list_view(source) and not pyarrow.types.is_large_list_view(source)
-        else field_of(source).cast_arrow_array(pyarrow.array(rows))
+        else _shape(source).cast_arrow_array(pyarrow.array(rows))
     )
-    cast = field_of(target).cast_arrow_array(array)
+    cast = _shape(target).cast_arrow_array(array)
     assert cast.type == target
     assert cast.to_pylist() == rows
 
 
 def test_a_list_narrows_its_item() -> None:
     array = pyarrow.array([[1, 2], None], type=pyarrow.list_(pyarrow.int64()))
-    cast = field_of(pyarrow.large_list(pyarrow.int32())).cast_arrow_array(array)
+    cast = _shape(pyarrow.large_list(pyarrow.int32())).cast_arrow_array(array)
     assert cast.type.value_type == pyarrow.int32()
     assert cast.to_pylist() == [[1, 2], None]
 
 
 def test_a_fixed_size_list_is_built_from_a_ragged_source_only_when_it_fits() -> None:
     array = pyarrow.array([[1, 2], [3, 4]], type=pyarrow.list_(pyarrow.int64()))
-    cast = field_of(pyarrow.list_(pyarrow.int64(), 2)).cast_arrow_array(array)
+    cast = _shape(pyarrow.list_(pyarrow.int64(), 2)).cast_arrow_array(array)
     assert cast.type == pyarrow.list_(pyarrow.int64(), 2)
     assert cast.to_pylist() == [[1, 2], [3, 4]]
 
     ragged = pyarrow.array([[1, 2], [3]], type=pyarrow.list_(pyarrow.int64()))
     with pytest.raises(pyarrow.ArrowInvalid):
-        field_of(pyarrow.list_(pyarrow.int64(), 2)).cast_arrow_array(ragged)
+        _shape(pyarrow.list_(pyarrow.int64(), 2)).cast_arrow_array(ragged)
 
 
 def test_a_fixed_size_list_is_a_source_too() -> None:
     array = pyarrow.array([[1, 2], [3, 4]], type=pyarrow.list_(pyarrow.int64(), 2))
-    assert field_of(pyarrow.list_(pyarrow.int64())).cast_arrow_array(array).to_pylist() == [
+    assert _shape(pyarrow.list_(pyarrow.int64())).cast_arrow_array(array).to_pylist() == [
         [1, 2],
         [3, 4],
     ]
@@ -75,7 +75,7 @@ def test_a_fixed_size_list_is_a_source_too() -> None:
 def test_a_sliced_list_keeps_its_own_rows() -> None:
     """Offsets are rebuilt from the sizes, so a slice cannot drag its neighbours."""
     array = pyarrow.array([[1], [2, 3], [4]], type=pyarrow.list_(pyarrow.int64()))[1:]
-    cast = field_of(pyarrow.large_list(pyarrow.int32())).cast_arrow_array(array)
+    cast = _shape(pyarrow.large_list(pyarrow.int32())).cast_arrow_array(array)
     assert cast.to_pylist() == [[2, 3], [4]]
 
 
@@ -103,7 +103,7 @@ def test_a_sliced_source_with_a_null_row_casts_like_arrow_does(flavour) -> None:
     source = pyarrow.array(rows, type=flavour(pyarrow.int64()))
     target = flavour(pyarrow.int32())
     sliced = source.slice(1, 3)
-    cast = field_of(target).cast_arrow_array(sliced)
+    cast = _shape(target).cast_arrow_array(sliced)
     cast.validate(full=True)
     # The values, which narrowing the item does not change -- and, where Arrow
     # can do the same cast at all, its answer too. It cannot for the views.
@@ -131,7 +131,7 @@ def test_a_reordered_list_view_keeps_the_rows_it_shows(kernel) -> None:
         else pyarrow.array([False, True, True])
     )
     moved = kernel(view, selector)
-    cast = field_of(pyarrow.list_(pyarrow.int64())).cast_arrow_array(moved)
+    cast = _shape(pyarrow.list_(pyarrow.int64())).cast_arrow_array(moved)
     cast.validate(full=True)
     assert cast.to_pylist() == moved.to_pylist()
 
@@ -208,7 +208,7 @@ def test_a_map_becomes_a_list_of_entries() -> None:
     array = pyarrow.array(
         [[("a", 1), ("b", 2)], None, []], type=pyarrow.map_(pyarrow.string(), pyarrow.int64())
     )
-    cast = field_of(pyarrow.list_(pyarrow.field("item", ENTRY))).cast_arrow_array(array)
+    cast = _shape(pyarrow.list_(pyarrow.field("item", ENTRY))).cast_arrow_array(array)
     assert cast.to_pylist() == [
         [{"key": "a", "value": 1}, {"key": "b", "value": 2}],
         None,
@@ -220,7 +220,7 @@ def test_a_list_of_entries_becomes_a_map() -> None:
     array = pyarrow.array(
         [[{"key": "a", "value": 1}], None, []], type=pyarrow.list_(pyarrow.field("item", ENTRY))
     )
-    cast = field_of(pyarrow.map_(pyarrow.large_string(), pyarrow.int32())).cast_arrow_array(array)
+    cast = _shape(pyarrow.map_(pyarrow.large_string(), pyarrow.int32())).cast_arrow_array(array)
     assert cast.type == pyarrow.map_(pyarrow.large_string(), pyarrow.int32())
     assert cast.to_pylist() == [[("a", 1)], None, []]
 
@@ -228,12 +228,12 @@ def test_a_list_of_entries_becomes_a_map() -> None:
 def test_a_list_whose_item_is_not_a_pair_is_refused() -> None:
     array = pyarrow.array([[1, 2]], type=pyarrow.list_(pyarrow.int64()))
     with pytest.raises(TypeError, match="key/value struct"):
-        field_of(pyarrow.map_(pyarrow.string(), pyarrow.int64())).cast_arrow_array(array)
+        _shape(pyarrow.map_(pyarrow.string(), pyarrow.int64())).cast_arrow_array(array)
 
 
 def test_a_map_casts_both_halves() -> None:
     array = pyarrow.array([[("a", 1)], None], type=pyarrow.map_(pyarrow.string(), pyarrow.int64()))
-    cast = field_of(pyarrow.map_(pyarrow.large_string(), pyarrow.int32())).cast_arrow_array(array)
+    cast = _shape(pyarrow.map_(pyarrow.large_string(), pyarrow.int32())).cast_arrow_array(array)
     assert cast.to_pylist() == [[("a", 1)], None]
 
 
@@ -245,7 +245,7 @@ def test_a_map_becomes_a_struct_by_looking_its_members_up() -> None:
         [[("mic", "XPAR"), ("desk", "EQ")], [("mic", "XETR")], None],
         type=pyarrow.map_(pyarrow.string(), pyarrow.string()),
     )
-    target = field_of(pyarrow.struct([("mic", pyarrow.string()), ("desk", pyarrow.string())]))
+    target = _shape(pyarrow.struct([("mic", pyarrow.string()), ("desk", pyarrow.string())]))
     cast = target.cast_arrow_array(array)
     assert cast.to_pylist() == [
         {"mic": "XPAR", "desk": "EQ"},
@@ -258,7 +258,7 @@ def test_a_member_no_entry_ever_carries_is_filled_or_refused() -> None:
     array = pyarrow.array(
         [[("mic", "XPAR")]], type=pyarrow.map_(pyarrow.string(), pyarrow.string())
     )
-    filled = field_of(
+    filled = _shape(
         pyarrow.struct([("mic", pyarrow.string()), ("desk", pyarrow.string())])
     ).cast_arrow_array(array)
     assert filled.to_pylist() == [{"mic": "XPAR", "desk": None}]
@@ -267,7 +267,7 @@ def test_a_member_no_entry_ever_carries_is_filled_or_refused() -> None:
         [("mic", pyarrow.string()), pyarrow.field("desk", pyarrow.string(), nullable=False)]
     )
     with pytest.raises(ValueError, match=r"'value\.desk' is missing and not nullable"):
-        field_of(required).cast_arrow_array(array)
+        _shape(required).cast_arrow_array(array)
 
 
 def test_a_struct_becomes_a_map_of_its_members() -> None:
@@ -275,7 +275,7 @@ def test_a_struct_becomes_a_map_of_its_members() -> None:
         [{"mic": "XPAR", "desk": "EQ"}, None],
         type=pyarrow.struct([("mic", pyarrow.string()), ("desk", pyarrow.string())]),
     )
-    cast = field_of(pyarrow.map_(pyarrow.string(), pyarrow.string())).cast_arrow_array(array)
+    cast = _shape(pyarrow.map_(pyarrow.string(), pyarrow.string())).cast_arrow_array(array)
     assert cast.to_pylist() == [[("mic", "XPAR"), ("desk", "EQ")], None]
 
 
@@ -283,9 +283,9 @@ def test_a_struct_map_round_trip_keeps_the_values() -> None:
     struct_type = pyarrow.struct([("a", pyarrow.int64()), ("b", pyarrow.int64())])
     rows = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
     array = pyarrow.array(rows, type=struct_type)
-    as_map = field_of(pyarrow.map_(pyarrow.string(), pyarrow.int64())).cast_arrow_array(array)
+    as_map = _shape(pyarrow.map_(pyarrow.string(), pyarrow.int64())).cast_arrow_array(array)
     assert as_map.to_pylist() == [[("a", 1), ("b", 2)], [("a", 3), ("b", 4)]]
-    assert field_of(struct_type).cast_arrow_array(as_map).to_pylist() == rows
+    assert _shape(struct_type).cast_arrow_array(as_map).to_pylist() == rows
 
 
 def test_the_members_are_transposed_not_concatenated() -> None:
@@ -294,7 +294,7 @@ def test_the_members_are_transposed_not_concatenated() -> None:
         [{"a": 1, "b": 10}, {"a": 2, "b": 20}, {"a": 3, "b": 30}],
         type=pyarrow.struct([("a", pyarrow.int64()), ("b", pyarrow.int64())]),
     )
-    cast = field_of(pyarrow.list_(pyarrow.int64())).cast_arrow_array(array)
+    cast = _shape(pyarrow.list_(pyarrow.int64())).cast_arrow_array(array)
     assert cast.to_pylist() == [[1, 10], [2, 20], [3, 30]]
 
 
@@ -306,13 +306,13 @@ def test_a_struct_becomes_a_list_of_its_members() -> None:
         [{"low": 1, "high": 2}, None],
         type=pyarrow.struct([("low", pyarrow.int64()), ("high", pyarrow.int64())]),
     )
-    cast = field_of(pyarrow.large_list(pyarrow.int32())).cast_arrow_array(array)
+    cast = _shape(pyarrow.large_list(pyarrow.int32())).cast_arrow_array(array)
     assert cast.to_pylist() == [[1, 2], None]
 
 
 def test_a_list_becomes_a_struct_by_position() -> None:
     array = pyarrow.array([[1, 2], [3, 4]], type=pyarrow.list_(pyarrow.int64()))
-    target = field_of(pyarrow.struct([("low", pyarrow.int32()), ("high", pyarrow.int64())]))
+    target = _shape(pyarrow.struct([("low", pyarrow.int32()), ("high", pyarrow.int64())]))
     cast = target.cast_arrow_array(array)
     assert cast.to_pylist() == [{"low": 1, "high": 2}, {"low": 3, "high": 4}]
     assert cast.type.field(0).type == pyarrow.int32()
@@ -320,7 +320,7 @@ def test_a_list_becomes_a_struct_by_position() -> None:
 
 def test_a_list_too_short_for_the_struct_is_refused() -> None:
     array = pyarrow.array([[1, 2], [3]], type=pyarrow.list_(pyarrow.int64()))
-    target = field_of(pyarrow.struct([("low", pyarrow.int64()), ("high", pyarrow.int64())]))
+    target = _shape(pyarrow.struct([("low", pyarrow.int64()), ("high", pyarrow.int64())]))
     with pytest.raises(ValueError, match="only 1"):
         target.cast_arrow_array(array)
 
@@ -333,7 +333,7 @@ def test_a_map_inside_a_list_inside_a_struct_converts_all_the_way_down() -> None
         [("legs", pyarrow.list_(pyarrow.map_(pyarrow.string(), pyarrow.int64())))]
     )
     array = pyarrow.array([{"legs": [[("a", 1)]]}], type=source)
-    target = field_of(
+    target = _shape(
         pyarrow.struct(
             [
                 (
@@ -355,7 +355,7 @@ def test_a_chunked_column_keeps_its_chunks_through_a_shape_change() -> None:
             pyarrow.array([{"a": 2}], type=pyarrow.struct([("a", pyarrow.int64())])),
         ]
     )
-    cast = field_of(pyarrow.map_(pyarrow.string(), pyarrow.int64())).cast_arrow_array(chunked)
+    cast = _shape(pyarrow.map_(pyarrow.string(), pyarrow.int64())).cast_arrow_array(chunked)
     assert cast.num_chunks == 2
     assert cast.to_pylist() == [[("a", 1)], [("a", 2)]]
 

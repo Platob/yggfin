@@ -105,7 +105,7 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
         name=f"market.{shape.__name__.lower()}",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=shape.into_field(),
+        field=shape.into_field(),
     )
     given = batch(shape, 3)
     dataset.write_arrow_table(pyarrow.Table.from_batches([given]))
@@ -125,7 +125,7 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
         name="market.books",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=Book.into_field(),
+        field=Book.into_field(),
     )
     levels = [
         [{"px": 10.0, "qty": 5.0}],

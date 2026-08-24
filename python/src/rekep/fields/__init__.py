@@ -25,7 +25,6 @@ from rekep.fields.field import (
     cast_batch,
     cast_reader,
     cast_table,
-    field_of,
     scalar,
 )
 
@@ -53,7 +52,6 @@ __all__ = [
     "cast_batch",
     "cast_reader",
     "cast_table",
-    "field_of",
     "merge_fields",
     "merge_schemas",
     "scalar",

@@ -15,7 +15,7 @@ logs = IcebergDataset(
         "uri": "sqlite:///catalog.db",
         "warehouse": "file:///warehouse",
     },
-    struct=Log.into_field(),
+    field=Log.into_field(),
 )
 ```
 

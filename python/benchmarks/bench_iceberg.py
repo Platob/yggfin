@@ -135,7 +135,7 @@ def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]
     if not partitioned:
         field = field.into_dataclass("Flat").into_field()
         field.field("unix_hour").is_partition_key = False
-    built = catalog(root).dataset("bench.logs", struct=field, table_properties=properties)
+    built = catalog(root).dataset("bench.logs", field=field, table_properties=properties)
     return built.create_with()
 
 
@@ -195,7 +195,7 @@ def monotonic_insert_case(table: pyarrow.Table, commit_rows: int, *, shortcut: b
     """Insert increasing chunks with or without the exact-upper-bound shortcut."""
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-insert-"))
     try:
-        target = catalog(root).dataset("bench.ticks", struct=Tick.into_field()).create_with()
+        target = catalog(root).dataset("bench.ticks", field=Tick.into_field()).create_with()
         if not shortcut:
             target.__dict__["_insert_span"] = lambda chunk, join, reference: None
 
@@ -331,7 +331,7 @@ def _store_quotes(table: pyarrow.Table) -> tuple[dict[str, int], pyarrow.Table]:
     """Write one converted result and report the storage a reader inherits."""
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-polars-"))
     try:
-        target = catalog(root).dataset("bench.quotes", struct=Quote.into_field()).create_with()
+        target = catalog(root).dataset("bench.quotes", field=Quote.into_field()).create_with()
         target.write_arrow_table(table, commit_row_size=0)
         plan = target.scan_plan("day = '2026-08-14'")
         report = {
@@ -536,7 +536,7 @@ def sweep_fs(rows: int, days: int) -> None:
         }
         catalog = IcebergCatalog(name=f"fs{name}", properties=properties)
         return catalog.dataset(
-            "bench.logs", struct=Log.into_field(), table_properties=OPTIMISED
+            "bench.logs", field=Log.into_field(), table_properties=OPTIMISED
         ).create_with()
 
     def report(label: str, seconds: float) -> None:
@@ -787,7 +787,7 @@ def sweep_update(rows: int, days: int) -> None:
             ),
         )
         for label, shape, stored, join, column in cases:
-            target = catalog(root / label[:8]).dataset("bench.updated", struct=shape).create_with()
+            target = catalog(root / label[:8]).dataset("bench.updated", field=shape).create_with()
             target.write_arrow(stored, commit_row_size=max(stored.num_rows // max(days, 1), 1))
             print(f"\n== updating {label}: {stored.num_rows:,} rows ==")
             header(("rows updated", "seconds", "rows/s", "terms", "files"), (14, 9, 11, 8, 7))
@@ -837,7 +837,7 @@ def sweep_backfill(rows: int, days: int) -> None:
     """
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-backfill-"))
     try:
-        target = catalog(root).dataset("bench.ticks", struct=Tick.into_field()).create_with()
+        target = catalog(root).dataset("bench.ticks", field=Tick.into_field()).create_with()
         per = max(rows // 20, 1_000)
         # The hash is drawn per *row*, not derived from the band: a real line
         # hash spreads over the whole range, so every file's bounds on it span
@@ -914,7 +914,7 @@ def daily(root: pathlib.Path) -> IcebergDataset:
     # `bucket[8]`, because `unix_hour` is an int64 and Iceberg's `day` transform is
     # for dates. The point is unchanged: a transform, not the value itself.
     field.field("unix_hour").is_partition_key = "bucket[8]"
-    built = catalog(root).dataset("bench.daily", struct=field, table_properties=OPTIMISED)
+    built = catalog(root).dataset("bench.daily", field=field, table_properties=OPTIMISED)
     return built.create_with()
 
 

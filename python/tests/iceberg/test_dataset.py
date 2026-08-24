@@ -61,7 +61,7 @@ def dataset(tmp_path: Path) -> IcebergDataset:
         name="trading.quotes",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=Quote.into_field(),
+        field=Quote.into_field(),
     )
 
 
@@ -85,7 +85,7 @@ def logs(tmp_path: Path) -> IcebergDataset:
         name="trading.logs",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=Log.into_field(),
+        field=Log.into_field(),
     )
 
 
@@ -193,7 +193,7 @@ def test_a_declared_property_wins_over_the_metrics_default(tmp_path: Path) -> No
         name="trading.quiet",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=Quote.into_field(),
+        field=Quote.into_field(),
         table_properties={"write.metadata.metrics.column.symbol": "none"},
     )
     dataset.get_or_create_table()
@@ -315,7 +315,7 @@ def test_an_ordered_read_merges_overlapping_commits_before_applying_its_limit(
     tmp_path: Path,
 ) -> None:
     catalog = IcebergCatalog(name="ordered", properties=catalog_properties(tmp_path))
-    ordered = catalog.dataset("trading.timed", struct=Timed.into_field())
+    ordered = catalog.dataset("trading.timed", field=Timed.into_field())
     commits = [(1, 4, 7), (2, 5, 8), (0, 3, 6, 9)]
     for values in commits:
         ordered.write_arrow_table(timed(*values), commit_row_size=0)
@@ -342,7 +342,7 @@ def test_a_read_finishes_each_sorted_partition_before_opening_the_next(
     from rekep.iceberg import dataset as module
 
     catalog = IcebergCatalog(name="partition-order", properties=catalog_properties(tmp_path))
-    ordered = catalog.dataset("trading.partitioned_timed", struct=PartitionedTimed.into_field())
+    ordered = catalog.dataset("trading.partitioned_timed", field=PartitionedTimed.into_field())
     first = datetime.date(2026, 8, 14)
     second = first + datetime.timedelta(days=1)
     for day, values in (
@@ -425,7 +425,7 @@ class NullableSequence(Convertible):
 
 def test_an_ordered_read_preserves_sequence_across_equal_time_commits(tmp_path: Path) -> None:
     catalog = IcebergCatalog(name="sequenced", properties=catalog_properties(tmp_path))
-    ordered = catalog.dataset("trading.sequenced", struct=Sequenced.into_field())
+    ordered = catalog.dataset("trading.sequenced", field=Sequenced.into_field())
     commits = [
         [(10, 2, "cancel"), (11, 1, "next")],
         [(10, 1, "new"), (10, 3, "fill")],
@@ -463,7 +463,7 @@ def test_a_nullable_secondary_key_is_null_last_then_uses_the_stable_fallback(
     catalog = IcebergCatalog(name="nullable-sequence", properties=catalog_properties(tmp_path))
     ordered = catalog.dataset(
         "trading.nullable_sequence",
-        struct=NullableSequence.into_field(),
+        field=NullableSequence.into_field(),
         sort_by=["unix", "seq", "hash"],
     )
     schema = NullableSequence.into_field().into_arrow_schema()
@@ -550,7 +550,7 @@ def test_merging_on_a_key_nothing_declares_is_refused_before_writing(tmp_path: P
         name="trading.loose",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=Loose.into_field(),
+        field=Loose.into_field(),
     )
     with pytest.raises(ValueError, match="no member declares one"):
         keyless.merge_columns(True)
@@ -567,8 +567,8 @@ def test_a_dataset_round_trips_through_yaml(dataset: IcebergDataset) -> None:
         dataset.catalog,
         dataset.properties,
     )
-    assert isinstance(rebuilt.struct, StructField)
-    assert rebuilt.struct.into_arrow_schema().equals(Quote.into_field().into_arrow_schema())
+    assert isinstance(rebuilt.field, StructField)
+    assert rebuilt.field.into_arrow_schema().equals(Quote.into_field().into_arrow_schema())
 
 
 # -- appending (insert-only merges) -----------------------------------------
@@ -653,7 +653,7 @@ def test_monotonic_inserts_plan_only_at_the_equal_boundary(
 ) -> None:
     """A strict new range is known fresh; equality still checks the stored key."""
     catalog = IcebergCatalog(name="monotonic", properties=catalog_properties(tmp_path))
-    target = catalog.dataset("trading.timed", struct=Timed.into_field())
+    target = catalog.dataset("trading.timed", field=Timed.into_field())
     table = target.get_or_create_table()
     scans = 0
     original = table.scan
@@ -688,7 +688,7 @@ def test_monotonic_inserts_plan_only_at_the_equal_boundary(
 def test_a_direct_table_write_invalidates_the_insert_upper_bound(tmp_path: Path) -> None:
     """A same-handle write outside the wrapper must not make a later key look new."""
     catalog = IcebergCatalog(name="mixed", properties=catalog_properties(tmp_path))
-    target = catalog.dataset("trading.timed", struct=Timed.into_field())
+    target = catalog.dataset("trading.timed", field=Timed.into_field())
     target.append_arrow_table(timed(0, 1), merge_by=True, commit_row_size=0)
     target.iceberg_table.append(timed(100))
     target.append_arrow_table(timed(50), merge_by=True, commit_row_size=0)
@@ -705,9 +705,9 @@ def test_a_stale_monotonic_writer_cannot_bypass_an_external_commit(tmp_path: Pat
     from pyiceberg.exceptions import CommitFailedException
 
     catalog = IcebergCatalog(name="concurrent", properties=catalog_properties(tmp_path))
-    writer = catalog.dataset("trading.timed", struct=Timed.into_field())
+    writer = catalog.dataset("trading.timed", field=Timed.into_field())
     writer.append_arrow_table(timed(0), merge_by=True, commit_row_size=0)
-    other = catalog.dataset("trading.timed", struct=Timed.into_field())
+    other = catalog.dataset("trading.timed", field=Timed.into_field())
     other.write_arrow_table(timed(100), commit_row_size=0)
 
     with pytest.raises(CommitFailedException, match="branch main has changed"):
@@ -981,7 +981,7 @@ def test_an_unpartitioned_table_compacts(tmp_path: Path) -> None:
         """Quantity."""
 
     catalog = IcebergCatalog(name="flat", properties=catalog_properties(tmp_path))
-    flat = catalog.dataset("trading.flat", struct=Flat.into_field())
+    flat = catalog.dataset("trading.flat", field=Flat.into_field())
     schema = Flat.into_field().into_arrow_schema()
     for index in range(4):
         flat.write_arrow(
@@ -1018,7 +1018,7 @@ def test_a_transformed_partition_settles(tmp_path: Path) -> None:
         """When it happened."""
 
     catalog = IcebergCatalog(name="daily", properties=catalog_properties(tmp_path))
-    daily = catalog.dataset("trading.daily", struct=Event.into_field())
+    daily = catalog.dataset("trading.daily", field=Event.into_field())
     schema = Event.into_field().into_arrow_schema()
     base = datetime.datetime(2026, 8, 14)
     for index in range(4):
@@ -1069,7 +1069,7 @@ def test_a_partition_value_a_filter_string_cannot_hold(tmp_path: Path, value: st
         """Quantity."""
 
     catalog = IcebergCatalog(name="lit", properties=catalog_properties(tmp_path))
-    parted = catalog.dataset("trading.parts", struct=Part.into_field())
+    parted = catalog.dataset("trading.parts", field=Part.into_field())
     schema = Part.into_field().into_arrow_schema()
 
     def rows(part: str | None, size: int) -> pyarrow.Table:
@@ -1160,7 +1160,7 @@ def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
         )
     )
     catalog = IcebergCatalog(name="nested", properties=catalog_properties(tmp_path))
-    quotes_ = catalog.dataset("trading.nested", struct=Narrow.into_field())
+    quotes_ = catalog.dataset("trading.nested", field=Narrow.into_field())
     narrow_schema = Narrow.into_field().into_arrow_schema()
     quotes_.write_arrow(
         pyarrow.Table.from_pydict(
@@ -1372,7 +1372,7 @@ def test_iceberg_defaults_can_be_kept(tmp_path: Path) -> None:
         name="trading.bare",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=Quote.into_field(),
+        field=Quote.into_field(),
         optimize_commits=False,
     )
     bare.create_with()
@@ -1384,7 +1384,7 @@ def test_declared_table_properties_win_over_the_defaults(tmp_path: Path) -> None
         name="trading.tuned",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=Quote.into_field(),
+        field=Quote.into_field(),
         table_properties={"write.target-file-size-bytes": "1024"},
     )
     tuned.create_with()
@@ -1650,11 +1650,11 @@ def test_an_insert_reaches_a_branch_cut_before_a_key_was_renamed(
     with dataset.iceberg_table.update_schema() as update:
         update.rename_column("symbol", "ticker")
     dataset.refresh()
-    dataset.struct = dataset.table_field
+    dataset.field = dataset.table_field
 
     # Under the *declared* shape, which is what names the column `ticker`:
     # a bare read of that branch hands back the branch's own name for it.
-    replayed = dataset.read_arrow_table(dataset.struct, branch="dev")
+    replayed = dataset.read_arrow_table(dataset.field, branch="dev")
     assert dataset.insert_arrow_table(replayed, ["ticker"], branch="dev") == 0, (
         "every key is stored on that branch already, whatever it calls the column"
     )
@@ -1764,7 +1764,7 @@ def test_a_limited_read_over_a_null_partition_returns_its_rows(tmp_path: Path) -
         """Quantity."""
 
     catalog = IcebergCatalog(name="nullpart", properties=catalog_properties(tmp_path))
-    trades = catalog.dataset("trading.trades", struct=Trade.into_field())
+    trades = catalog.dataset("trading.trades", field=Trade.into_field())
     schema = Trade.into_field().into_arrow_schema()
     trades.write_arrow(
         pyarrow.Table.from_pydict({"venue": ["XNYS"] * 10, "size": list(range(10))}, schema=schema),
@@ -2245,7 +2245,7 @@ def test_a_backfill_plans_the_files_it_lands_in(tmp_path: Path) -> None:
     """The whole point: a replay of two distant bands of keys used to plan 26
     files of 30 to find the two that held them."""
     catalog = IcebergCatalog(name="bands", properties=catalog_properties(tmp_path))
-    ticks = catalog.dataset("trading.ticks", struct=Tick.into_field())
+    ticks = catalog.dataset("trading.ticks", field=Tick.into_field())
     schema = Tick.into_field().into_arrow_schema()
     commits = [
         pyarrow.Table.from_pydict(
@@ -2342,7 +2342,7 @@ def test_a_sweep_finds_the_files_however_the_warehouse_is_spelled(tmp_path: Path
             "warehouse": f"file:{warehouse.as_posix()}" if posix else warehouse.as_posix(),
         },
     )
-    quotes_ = catalog.dataset("trading.quotes", struct=Quote.into_field())
+    quotes_ = catalog.dataset("trading.quotes", field=Quote.into_field())
     for _ in range(3):
         quotes_.write_arrow(quotes(2), commit_row_size=0)
     stored = quotes_.read_arrow_table().num_rows
@@ -2359,7 +2359,7 @@ def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
     catalog = IcebergCatalog(name="relocated", properties=catalog_properties(tmp_path))
     quotes_ = catalog.dataset(
         "trading.quotes",
-        struct=Quote.into_field(),
+        field=Quote.into_field(),
         table_properties={"write.data.path": elsewhere.as_uri()},
     )
     for index in range(4):
@@ -2394,7 +2394,7 @@ def test_a_sweep_survives_a_data_path_that_contains_the_metadata(tmp_path: Path)
     location = (tmp_path / "warehouse" / "trading" / "quotes").as_uri()
     quotes_ = catalog.dataset(
         "trading.quotes",
-        struct=Quote.into_field(),
+        field=Quote.into_field(),
         location=location,
         table_properties={"write.data.path": location},
     )
@@ -2532,16 +2532,16 @@ def test_a_sweep_does_not_delete_another_writers_files(tmp_path: Path) -> None:
     """
     properties = catalog_properties(tmp_path)
     catalog = IcebergCatalog(name="shared", properties=properties)
-    catalog.dataset("trading.quotes", struct=Quote.into_field()).write_arrow(
+    catalog.dataset("trading.quotes", field=Quote.into_field()).write_arrow(
         quotes(2), commit_row_size=0
     )
     sweeper = IcebergCatalog(name="shared", properties=properties).dataset(
-        "trading.quotes", struct=Quote.into_field()
+        "trading.quotes", field=Quote.into_field()
     )
     sweeper.get_or_create_table()  # loads the table, and caches it
 
     other = IcebergCatalog(name="shared", properties=properties).dataset(
-        "trading.quotes", struct=Quote.into_field()
+        "trading.quotes", field=Quote.into_field()
     )
     for index in range(3):
         other.write_arrow(quotes(2, f"v{index}"), commit_row_size=0)
@@ -2621,7 +2621,7 @@ def test_a_filtered_read_is_the_same_either_way(tmp_path: Path) -> None:
             name=f"trading.sorted{index}",
             catalog="test",
             properties=catalog_properties(tmp_path),
-            struct=Quote.into_field(),
+            field=Quote.into_field(),
             sort_by=sort_by,
         )
         target.write_arrow(quotes(50).sort_by([("size", "descending")]), commit_row_size=0)
@@ -2701,7 +2701,7 @@ def test_a_replay_prunes_to_the_partitions_the_keys_fall_in(tmp_path: Path) -> N
     filter reads every hour between them -- while the partition column they are
     a function of names exactly the two."""
     catalog = IcebergCatalog(name="beats", properties=catalog_properties(tmp_path))
-    dataset = catalog.dataset("trading.beats", struct=Beat.into_field())
+    dataset = catalog.dataset("trading.beats", field=Beat.into_field())
     for hour in range(12):
         dataset.insert_arrow_table(beats(hour), True)
     assert dataset.refresh().data_files().num_rows == 12
@@ -2720,7 +2720,7 @@ def test_a_derivation_never_loses_a_row_the_merge_had_to_find(tmp_path: Path) ->
     """Pruning is only ever allowed to be a superset: the same merge, declared
     and not, has to update the same rows."""
     catalog = IcebergCatalog(name="same", properties=catalog_properties(tmp_path))
-    dataset = catalog.dataset("trading.beats", struct=Beat.into_field())
+    dataset = catalog.dataset("trading.beats", field=Beat.into_field())
     for hour in range(6):
         dataset.insert_arrow_table(beats(hour), True)
 
@@ -2735,7 +2735,7 @@ def test_a_derivation_never_loses_a_row_the_merge_had_to_find(tmp_path: Path) ->
     assert dataset.derived_columns() == {"hour": ("at",)}
     assert dataset.merge_arrow_table(repainted("y"), True) == (200, 0), "matched, none inserted"
 
-    bare = catalog.dataset("trading.beats", struct=_undeclared())
+    bare = catalog.dataset("trading.beats", field=_undeclared())
     assert bare.derived_columns() == {}
     assert bare.merge_arrow_table(repainted("z"), True) == (200, 0), "the same rows, the long way"
     held = dataset.refresh().read_arrow_table(row_filter="hour = '2026-08-14T03'")
@@ -2752,7 +2752,7 @@ def _undeclared() -> StructField:
 def test_a_table_read_back_declares_no_derivation(tmp_path: Path) -> None:
     """Iceberg records a partition spec, not why a column holds what it does."""
     catalog = IcebergCatalog(name="read", properties=catalog_properties(tmp_path))
-    dataset = catalog.dataset("trading.beats", struct=Beat.into_field())
+    dataset = catalog.dataset("trading.beats", field=Beat.into_field())
     dataset.insert_arrow_table(beats(0), True)
     reread = catalog.dataset("trading.beats")
     assert reread.into_struct_field().partition_keys() == {"hour": "identity"}
@@ -2789,14 +2789,14 @@ def ticked(pairs: Sequence[tuple[int, int]]) -> pyarrow.Table:
 
 def test_the_columns_sorted_by_are_the_ones_declared(tmp_path: Path) -> None:
     catalog = IcebergCatalog(name="sorted", properties=catalog_properties(tmp_path))
-    assert catalog.dataset("t.a", struct=Ticked.into_field()).sort_columns() == ["at", "seq"]
-    assert catalog.dataset("t.b", struct=Ticked.into_field(), sort_by=["seq"]).sort_columns() == [
+    assert catalog.dataset("t.a", field=Ticked.into_field()).sort_columns() == ["at", "seq"]
+    assert catalog.dataset("t.b", field=Ticked.into_field(), sort_by=["seq"]).sort_columns() == [
         "seq"
     ]
-    assert catalog.dataset("t.c", struct=Ticked.into_field(), sort_by=[]).sort_columns() == []
+    assert catalog.dataset("t.c", field=Ticked.into_field(), sort_by=[]).sort_columns() == []
     assert catalog.dataset("t.d").sort_columns() == [], "nothing declared, nothing to sort by"
 
-    explicit = catalog.dataset("t.explicit", struct=Ticked.into_field(), sort_by=["seq"])
+    explicit = catalog.dataset("t.explicit", field=Ticked.into_field(), sort_by=["seq"])
     table = explicit.get_or_create_table()
     (sorting,) = table.sort_order().fields
     assert table.schema().find_column_name(sorting.source_id) == "seq"
@@ -2806,7 +2806,7 @@ def test_a_chunk_already_in_order_is_not_sorted_again(tmp_path: Path) -> None:
     """The common case on a capture, and the question is 20x cheaper than the
     answer -- so it is asked."""
     catalog = IcebergCatalog(name="sorted", properties=catalog_properties(tmp_path))
-    dataset = catalog.dataset("t.a", struct=Ticked.into_field())
+    dataset = catalog.dataset("t.a", field=Ticked.into_field())
     tidy = ticked([(1, 0), (1, 1), (2, 0), (3, 0)])
     assert dataset.sorted(tidy) is tidy, "handed straight back, not copied"
     assert dataset.sorted(ticked([(2, 0), (1, 0)])) is not tidy
@@ -2864,7 +2864,7 @@ def test_a_shuffled_write_lands_in_the_declared_order(tmp_path: Path) -> None:
     )
 
     def decoded(sort_by: Sequence[str] | None, name: str) -> tuple[int, int]:
-        dataset = catalog.dataset(name, struct=Ticked.into_field(), sort_by=sort_by)
+        dataset = catalog.dataset(name, field=Ticked.into_field(), sort_by=sort_by)
         dataset.get_or_create_table().transaction().set_properties(
             **{"write.parquet.row-group-limit": "8192"}
         ).commit_transaction()

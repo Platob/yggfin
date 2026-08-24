@@ -216,6 +216,35 @@ def test_from_arrow_type_names_a_bare_type() -> None:
 
 
 @pytest.mark.parametrize(
+    "source",
+    [
+        Book.into_field(),
+        Book.into_field().into_arrow_schema(),
+        Book.into_field().into_arrow_field(),
+        Book,
+        Book.into_field().into_dict(),
+    ],
+)
+def test_from_takes_every_spelling_of_one_shape(source: object) -> None:
+    """One reading of "a shape" for every call site that takes one."""
+    assert Field.from_(source) == Book.into_field()
+
+
+def test_from_reads_a_plain_dataclass_and_a_bare_type() -> None:
+    @dataclasses.dataclass
+    class Plain:
+        mic: str
+
+    assert Field.from_(Plain).names == ["mic"]
+    assert Field.from_(pyarrow.int32(), "size").arrow_type == pyarrow.int32()
+
+
+def test_from_refuses_what_names_no_shape() -> None:
+    with pytest.raises(TypeError, match="does not name a shape"):
+        Field.from_class(object())
+
+
+@pytest.mark.parametrize(
     ("requested", "stem"),
     [
         (pyarrow.Schema, "arrow_schema"),
