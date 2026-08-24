@@ -1,0 +1,9 @@
+{
+ "name": "PricePrecision",
+ "tag": 2349,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegManualNoticeBusinessCenter",
+ "tag": 41487,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

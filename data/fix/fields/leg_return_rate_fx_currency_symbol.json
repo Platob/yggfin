@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateFXCurrencySymbol",
+ "tag": 42531,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

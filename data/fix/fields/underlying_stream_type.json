@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamType",
+ "tag": 40541,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

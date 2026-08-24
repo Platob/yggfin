@@ -1,0 +1,14 @@
+{
+ "name": "EventInitiatorType",
+ "tag": 2830,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR",
+   "value_names": {
+    "C": "CUSTOMER_OR_CLIENT",
+    "E": "EXCHANGE_OR_EXECUTION_VENUE",
+    "F": "FIRM_OR_BROKER"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "DiscountFactor",
+ "tag": 1592,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

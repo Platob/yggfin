@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Mapping
 from types import MappingProxyType
 
 import pyarrow
 
 from rekep.fields import Field
+from rekep.fix.entries import snake_of
 from rekep.fix.registry import FixRegistry
 
 # Ordered by the log schema, using the registry's canonical names so no tag is
@@ -121,6 +121,14 @@ _PARTY_FIELDS: tuple[str, ...] = (
     "PartySubIDType",
 )
 
+# Fields materialized inside the structured TrdRegTimestamps component.
+_STAMP_GROUP_FIELDS: tuple[str, ...] = (
+    "TrdRegTimestamp",
+    "TrdRegTimestampType",
+    "TrdRegTimestampOrigin",
+    "NoTrdRegTimestamps",
+)
+
 # FIX's documentation establishes UTC for these four timestamps.
 _STAMP_FIELDS: tuple[str, ...] = (
     "SendingTime",
@@ -174,13 +182,6 @@ KWARGS: pyarrow.DataType = pyarrow.list_(
 )
 
 
-def _snake(name: str) -> str:
-    """FIX's canonical name as a public Python/Arrow name."""
-    name = re.sub(r"IDs$", "Ids", name)
-    words = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", "_", name)
-    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", words).lower()
-
-
 def _physical_type(member: Field) -> pyarrow.DataType:
     """Registry type at Iceberg width, zoned only when FIX documents UTC."""
     arrow_type = member.arrow_type
@@ -199,7 +200,7 @@ def _declaration(member: Field) -> Field:
     metadata = dict(member.metadata)
     metadata["fix:name"] = member.name
     return Field(
-        name=_NAMES.get(member.name, _snake(member.name)),
+        name=_NAMES.get(member.name, snake_of(member.name)),
         arrow_type=_physical_type(member),
         nullable=True,
         metadata=metadata,
@@ -207,7 +208,7 @@ def _declaration(member: Field) -> Field:
 
 
 _REGISTRY = FixRegistry.from_builtin()
-_ORDER = _SESSION_FIELDS + _COMMON_FIELDS + _QUOTE_FIELDS + _PARTY_FIELDS
+_ORDER = _SESSION_FIELDS + _COMMON_FIELDS + _QUOTE_FIELDS + _PARTY_FIELDS + _STAMP_GROUP_FIELDS
 _FIELDS = tuple(_REGISTRY.scalar(name) for name in _ORDER)
 LOG_FIELDS: Mapping[int, Field] = MappingProxyType(
     {int(member.fix["tag"]): member for member in _FIELDS}

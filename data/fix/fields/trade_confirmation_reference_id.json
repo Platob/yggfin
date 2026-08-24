@@ -1,0 +1,9 @@
+{
+ "name": "TradeConfirmationReferenceID",
+ "tag": 2390,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "EncodedUnderlyingProvisionTextLen",
+ "tag": 42171,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

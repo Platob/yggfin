@@ -1,0 +1,9 @@
+{
+ "name": "ExecutionTimestamp",
+ "tag": 2749,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTIMESTAMP"
+  }
+ }
+}

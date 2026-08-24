@@ -1,0 +1,9 @@
+{
+ "name": "PricingDateUnadjusted",
+ "tag": 41232,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

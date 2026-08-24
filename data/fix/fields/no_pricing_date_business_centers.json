@@ -1,0 +1,9 @@
+{
+ "name": "NoPricingDateBusinessCenters",
+ "tag": 41230,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

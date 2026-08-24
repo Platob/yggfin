@@ -4,15 +4,45 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "Refer to values for SettlType <63>"
+   "description": "Refer to values for SettlType <63>",
+   "components": [
+    "InstrmtLegExecGrp",
+    "InstrmtLegSecListGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "SecLstUpdRelSymsLegGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
-   "description": "Refer to values for SettlType <63>"
+   "description": "Refer to values for SettlType <63>",
+   "components": [
+    "InstrmtLegExecGrp",
+    "InstrmtLegSecListGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "SecLstUpdRelSymsLegGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "char",
-   "description": "Refer to values for SettlType <63>"
+   "description": "Refer to values for SettlType <63>",
+   "components": [
+    "InstrmtLegExecGrp",
+    "InstrmtLegSecListGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp",
+    "SecLstUpdRelSymsLegGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "char",

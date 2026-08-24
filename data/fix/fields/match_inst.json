@@ -1,0 +1,13 @@
+{
+ "name": "MatchInst",
+ "tag": 1625,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "MATCH",
+    "2": "DO_NOT_MATCH"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegCashSettlDateAdjusted",
+ "tag": 42305,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

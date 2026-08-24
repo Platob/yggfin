@@ -1,0 +1,9 @@
+{
+ "name": "StandardVariance",
+ "tag": 2588,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

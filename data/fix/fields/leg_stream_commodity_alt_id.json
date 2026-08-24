@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCommodityAltID",
+ "tag": 41675,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "MDStatisticFrequencyPeriod",
+ "tag": 2460,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

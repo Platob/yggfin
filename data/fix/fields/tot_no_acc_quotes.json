@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Specifies the number of accepted quotes"
+   "description": "Specifies the number of accepted quotes",
+   "components": [
+    "QuotSetAckGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Specifies the number of accepted quotes"
+   "description": "Specifies the number of accepted quotes",
+   "components": [
+    "QuotSetAckGrp"
+   ]
   }
  }
 }

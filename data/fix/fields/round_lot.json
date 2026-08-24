@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "The trading lot size of a security"
+   "description": "The trading lot size of a security",
+   "components": [
+    "BaseTradingRules"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "The trading lot size of a security"
+   "description": "The trading lot size of a security",
+   "components": [
+    "BaseTradingRules"
+   ]
   },
   "5.0": {
    "type": "Qty",
@@ -16,6 +22,10 @@
    "used_in": [
     "SecurityDefinitionUpdateReport",
     "SecurityDefinition"
+   ],
+   "components": [
+    "SecListGrp",
+    "SecLstUpdRelSymGrp"
    ]
   },
   "4.4": {

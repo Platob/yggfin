@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "Percentage",
-   "description": "See OriginalNotionalPercentageOutstanding <1452>"
+   "description": "See OriginalNotionalPercentageOutstanding <1452>",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

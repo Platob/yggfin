@@ -40,6 +40,11 @@
     "SettlementInstructionRequest",
     "AllocationInstructionAck",
     "SecurityTypeRequest"
+   ],
+   "components": [
+    "Instrument",
+    "SecTypesGrp",
+    "SettlInstGrp"
    ]
   },
   "5.0.SP1": {
@@ -80,6 +85,11 @@
     "SettlementInstructionRequest",
     "AllocationInstructionAck",
     "SecurityTypeRequest"
+   ],
+   "components": [
+    "Instrument",
+    "SecTypesGrp",
+    "SettlInstGrp"
    ]
   },
   "5.0": {
@@ -120,6 +130,11 @@
     "SettlementInstructionRequest",
     "AllocationInstructionAck",
     "SecurityTypeRequest"
+   ],
+   "components": [
+    "Instrument",
+    "SecTypesGrp",
+    "SettlInstGrp"
    ]
   },
   "4.4": {
@@ -162,6 +177,9 @@
     "Settlement Instructions",
     "Security Type Request",
     "Security Types"
+   ],
+   "components": [
+    "Instrument"
    ]
   },
   "4.3": {
@@ -197,6 +215,9 @@
    },
    "used_in": [
     "Security Types"
+   ],
+   "components": [
+    "Instrument"
    ]
   }
  }

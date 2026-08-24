@@ -1,0 +1,13 @@
+{
+ "name": "PayRequestTransType",
+ "tag": 2811,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NEW",
+    "1": "CANCEL"
+   }
+  }
+ }
+}

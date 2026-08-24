@@ -4,15 +4,36 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Quantity ordered of this leg. See OrderQty <38> for description and"
+   "description": "Quantity ordered of this leg. See OrderQty <38> for description and",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Quantity ordered of this leg. See OrderQty <38> for description and"
+   "description": "Quantity ordered of this leg. See OrderQty <38> for description and",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp"
+   ]
   },
   "5.0": {
    "type": "Qty",
-   "description": "Quantity ordered of this leg. See OrderQty <38> for description and"
+   "description": "Quantity ordered of this leg. See OrderQty <38> for description and",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "LegQuotStatGrp",
+    "QuotReqLegsGrp"
+   ]
   },
   "4.4": {
    "type": "Qty",

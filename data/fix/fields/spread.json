@@ -4,25 +4,40 @@
  "versions": {
   "5.0.SP2": {
    "type": "PriceOffset",
-   "description": "For Fixed Income. Either Swap Spread or Spread to Benchmark depending upon the order type. Spread to Benchmark: Basis points relative to a benchmark. To be expressed as \"count of basis points\" (vs. an absolute value). E.g. High Grade Corporate Bonds may express price as basis points relative to benchmark (the BenchmarkCurveName <221> field). Note: Basis points can be negative. Swap Spread: Target spread for a swap."
+   "description": "For Fixed Income. Either Swap Spread or Spread to Benchmark depending upon the order type. Spread to Benchmark: Basis points relative to a benchmark. To be expressed as \"count of basis points\" (vs. an absolute value). E.g. High Grade Corporate Bonds may express price as basis points relative to benchmark (the BenchmarkCurveName <221> field). Note: Basis points can be negative. Swap Spread: Target spread for a swap.",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "5.0.SP1": {
    "type": "PriceOffset",
-   "description": "For Fixed Income. Either Swap Spread or Spread to Benchmark depending upon the order type. Spread to Benchmark: Basis points relative to a benchmark. To be expressed as \"count of basis points\" (vs. an absolute value). E.g. High Grade Corporate Bonds may express price as basis points relative to benchmark (the BenchmarkCurveName <221> field). Note: Basis points can be negative. Swap Spread: Target spread for a swap."
+   "description": "For Fixed Income. Either Swap Spread or Spread to Benchmark depending upon the order type. Spread to Benchmark: Basis points relative to a benchmark. To be expressed as \"count of basis points\" (vs. an absolute value). E.g. High Grade Corporate Bonds may express price as basis points relative to benchmark (the BenchmarkCurveName <221> field). Note: Basis points can be negative. Swap Spread: Target spread for a swap.",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "5.0": {
    "type": "PriceOffset",
-   "description": "For Fixed Income. Either Swap Spread or Spread to Benchmark depending upon the order type. Spread to Benchmark: Basis points relative to a benchmark. To be expressed as \"count of basis points\" (vs. an absolute value). E.g. High Grade Corporate Bonds may express price as basis points relative to benchmark (the BenchmarkCurveName <221> field). Note: Basis points can be negative. Swap Spread: Target spread for a swap."
+   "description": "For Fixed Income. Either Swap Spread or Spread to Benchmark depending upon the order type. Spread to Benchmark: Basis points relative to a benchmark. To be expressed as \"count of basis points\" (vs. an absolute value). E.g. High Grade Corporate Bonds may express price as basis points relative to benchmark (the BenchmarkCurveName <221> field). Note: Basis points can be negative. Swap Spread: Target spread for a swap.",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "4.4": {
    "type": "PriceOffset",
-   "description": "For Fixed Income. Either Swap Spread or Spread to Benchmark depending upon the order type. Spread to Benchmark: Basis points relative to a benchmark. To be expressed as \"count of basis points\" (vs. an absolute value). E.g. High Grade Corporate Bonds may express price as basis points relative to benchmark (the BenchmarkCurveName <221> field). Note: Basis points can be negative. Swap Spread: Target spread for a swap."
+   "description": "For Fixed Income. Either Swap Spread or Spread to Benchmark depending upon the order type. Spread to Benchmark: Basis points relative to a benchmark. To be expressed as \"count of basis points\" (vs. an absolute value). E.g. High Grade Corporate Bonds may express price as basis points relative to benchmark (the BenchmarkCurveName <221> field). Note: Basis points can be negative. Swap Spread: Target spread for a swap.",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "4.3": {
    "name": "SpreadToBenchmark prior to FIX 4.3)",
    "type": "PriceOffset",
    "note": "formerly named: SpreadToBenchmark prior to FIX 4.3",
-   "description": "For Fixed Income. Either Swap Spread or Spread to Benchmark depending upon the order type. Spread to Benchmark: Basis points relative to a benchmark. To be expressed as \"count of basis points\" (vs. an absolute value). E.g. High Grade Corporate Bonds may express price as basis points relative to benchmark (the Benchmark field). Note: Basis points can be negative. Swap Spread: Target spread for a swap."
+   "description": "For Fixed Income. Either Swap Spread or Spread to Benchmark depending upon the order type. Spread to Benchmark: Basis points relative to a benchmark. To be expressed as \"count of basis points\" (vs. an absolute value). E.g. High Grade Corporate Bonds may express price as basis points relative to benchmark (the Benchmark field). Note: Basis points can be negative. Swap Spread: Target spread for a swap.",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "4.2": {
    "name": "SpreadToBenchmark",

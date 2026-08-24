@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentScheduleFixingTime",
+ "tag": 40405,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTTIME"
+  }
+ }
+}

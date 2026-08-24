@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCommoditySettlDateUnadjusted",
+ "tag": 41665,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnencodedAttachmentLen",
+ "tag": 2110,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

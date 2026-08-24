@@ -19,6 +19,12 @@
    },
    "used_in": [
     "ExecutionReport"
+   ],
+   "components": [
+    "LotTypeRules",
+    "MDFullGrp",
+    "MDIncGrp",
+    "TradeReportOrderDetail"
    ]
   },
   "5.0.SP1": {
@@ -36,6 +42,13 @@
    },
    "used_in": [
     "ExecutionReport"
+   ],
+   "components": [
+    "LotTypeRules",
+    "MDFullGrp",
+    "MDIncGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -53,6 +66,10 @@
    },
    "used_in": [
     "ExecutionReport"
+   ],
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   }
  }

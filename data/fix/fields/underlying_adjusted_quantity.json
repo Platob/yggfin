@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Unit amount of the underlying security (shares) adjusted for pending corporate action not yet allocated."
+   "description": "Unit amount of the underlying security (shares) adjusted for pending corporate action not yet allocated.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Unit amount of the underlying security (shares) adjusted for pending corporate action not yet allocated."
+   "description": "Unit amount of the underlying security (shares) adjusted for pending corporate action not yet allocated.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "Qty",
-   "description": "Unit amount of the underlying security (shares) adjusted for pending corporate action not yet allocated."
+   "description": "Unit amount of the underlying security (shares) adjusted for pending corporate action not yet allocated.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

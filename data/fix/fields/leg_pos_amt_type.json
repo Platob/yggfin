@@ -1,0 +1,9 @@
+{
+ "name": "LegPosAmtType",
+ "tag": 1588,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

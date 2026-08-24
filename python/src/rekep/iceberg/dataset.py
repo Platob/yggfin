@@ -25,7 +25,7 @@ from rekep.dataset import (
     normalised_keys,
     semi_join,
 )
-from rekep.fields import StructField, arrays, field_of
+from rekep.fields import Field, StructField, arrays
 from rekep.filesystems import resolve
 from rekep.iceberg.catalog import IcebergCatalog
 from rekep.iceberg.fields import metrics_for
@@ -171,7 +171,7 @@ class IcebergDataset(Dataset):
     properties: dict[str, str] = dataclasses.field(default_factory=dict)
 
     #: The declared shape. None means "whatever the table says".
-    struct: StructField | None = None
+    field: StructField | None = None
 
     #: Branch reads and writes use unless a call names another; None is `main`.
     branch: str | None = None
@@ -303,12 +303,12 @@ class IcebergDataset(Dataset):
         if "iceberg_table" in self.__dict__:
             return self.iceberg_table
         if not self.exists:
-            if self.struct is None:
+            if self.field is None:
                 raise ValueError(
                     f"{self.name!r} does not exist and this dataset declares no shape; "
-                    "give it `struct=`, or create it with create_with(...)"
+                    "give it `field=`, or create it with create_with(...)"
                 )
-            self.create_with_field(self.struct)
+            self.create_with_field(self.field)
         return self.iceberg_table
 
     def refresh(self) -> IcebergDataset:
@@ -329,7 +329,7 @@ class IcebergDataset(Dataset):
 
     def into_struct_field(self) -> StructField:
         """The declared shape, or the table's own when nothing was declared."""
-        return self.struct if self.struct is not None else self.table_field
+        return self.field if self.field is not None else self.table_field
 
     def derived_columns(self) -> dict[str, tuple[str, ...]]:
         """Columns the declared shape says are a function of other columns.
@@ -339,7 +339,7 @@ class IcebergDataset(Dataset):
         back from a table says nothing here -- and saying nothing costs a merge
         pruning, never correctness.
         """
-        return self.struct.derived_keys() if self.struct is not None else {}
+        return self.field.derived_keys() if self.field is not None else {}
 
     def add_fields(self, source: Any = None, *, dry_run: bool = False) -> list[str]:
         """Add the columns `source` has and the table lacks; skip when there are none."""
@@ -353,10 +353,10 @@ class IcebergDataset(Dataset):
         with table.update_schema() as update:
             update.union_by_name(target.into_iceberg_schema())
         self.refresh()
-        if self.struct is not None:
+        if self.field is not None:
             # The declared shape *is* what writes cast onto, so evolving the
             # table without it would drop the new columns at the next write.
-            self.struct = target
+            self.field = target
         return added
 
     # -- reading ------------------------------------------------------------
@@ -537,7 +537,7 @@ class IcebergDataset(Dataset):
         # what is being written -- a streaming merge reads far fewer rows than
         # it writes.
         chunk = normalised_keys(chunk, join)
-        shape = field_of(chunk.schema)
+        shape = Field.from_(chunk.schema)
         reference = branch or self.branch or MAIN
         derived = self.derived_columns()
         scan = table.scan(row_filter=_key_ranges(chunk, join, derived))
@@ -691,7 +691,7 @@ class IcebergDataset(Dataset):
         # to: naming it raised `Could not find column`, on a branch every other
         # verb here reads and writes happily. `_under_current_names` puts the
         # names back on the way out.
-        keys = field_of(pyarrow.schema([chunk.schema.field(name) for name in join]))
+        keys = Field.from_(pyarrow.schema([chunk.schema.field(name) for name in join]))
         wanted = self._selected(keys, scan)
         if set(wanted.values()) != set(join):
             # That snapshot does not carry every key column -- one added since
@@ -792,7 +792,7 @@ class IcebergDataset(Dataset):
         """Columns a chunk is sorted by: what was asked for, or what is declared."""
         if self.sort_by is not None:
             return list(self.sort_by)
-        shape = self.struct
+        shape = self.field
         return list(shape.sort_keys()) if shape is not None else []
 
     def delete(self, row_filter: Any = None, *, branch: str | None = None) -> None:

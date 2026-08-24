@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingCouponDayCount",
+ "tag": 1993,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -8,6 +8,10 @@
    "used_in": [
     "TradingSessionListRequest",
     "TradingSessionStatusRequest"
+   ],
+   "components": [
+    "Instrument",
+    "TrdSessLstGrp"
    ]
   },
   "5.0.SP1": {
@@ -16,6 +20,10 @@
    "used_in": [
     "TradingSessionListRequest",
     "TradingSessionStatusRequest"
+   ],
+   "components": [
+    "Instrument",
+    "TrdSessLstGrp"
    ]
   },
   "5.0": {
@@ -24,15 +32,25 @@
    "used_in": [
     "TradingSessionListRequest",
     "TradingSessionStatusRequest"
+   ],
+   "components": [
+    "Instrument",
+    "TrdSessLstGrp"
    ]
   },
   "4.4": {
    "type": "Exchange",
-   "description": "Market used to help identify a security."
+   "description": "Market used to help identify a security.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "Exchange",
-   "description": "Market used to help identify a security."
+   "description": "Market used to help identify a security.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.2": {
    "type": "Exchange",

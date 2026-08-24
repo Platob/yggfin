@@ -21,6 +21,9 @@
    },
    "used_in": [
     "StreamAssignmentReportACK"
+   ],
+   "components": [
+    "StrmAsgnRptInstrmtGrp"
    ]
   }
  }

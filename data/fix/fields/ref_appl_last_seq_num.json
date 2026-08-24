@@ -4,11 +4,19 @@
  "versions": {
   "5.0.SP2": {
    "type": "SeqNum",
-   "description": "Application sequence number of last message in transmission."
+   "description": "Application sequence number of last message in transmission.",
+   "components": [
+    "ApplIDReportGrp",
+    "ApplIDRequestAckGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "SeqNum",
-   "description": "Application sequence number of last message in transmission."
+   "description": "Application sequence number of last message in transmission.",
+   "components": [
+    "ApplIDReportGrp",
+    "ApplIDRequestAckGrp"
+   ]
   }
  }
 }

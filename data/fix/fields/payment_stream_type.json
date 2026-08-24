@@ -1,0 +1,21 @@
+{
+ "name": "PaymentStreamType",
+ "tag": 40738,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "PERIODIC",
+    "1": "INITIAL",
+    "2": "SINGLE",
+    "3": "DIVIDEND",
+    "4": "INTEREST",
+    "5": "DIVIDEND_RETURN",
+    "6": "PRICE_RETURN",
+    "7": "TOTAL_RETURN",
+    "8": "VARIANCE",
+    "9": "CORRELATION"
+   }
+  }
+ }
+}

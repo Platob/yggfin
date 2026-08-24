@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Refer to definition of SecurityXMLSchema <1186>"
+   "description": "Refer to definition of SecurityXMLSchema <1186>",
+   "components": [
+    "DerivativeSecurityXML"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Refer to definition of SecurityXMLSchema <1186>"
+   "description": "Refer to definition of SecurityXMLSchema <1186>",
+   "components": [
+    "DerivativeSecurityXML"
+   ]
   }
  }
 }

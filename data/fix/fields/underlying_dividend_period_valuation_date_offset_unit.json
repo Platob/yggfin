@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDividendPeriodValuationDateOffsetUnit",
+ "tag": 42872,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

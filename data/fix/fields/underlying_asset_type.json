@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingAssetType",
+ "tag": 2015,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

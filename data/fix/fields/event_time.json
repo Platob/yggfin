@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "UTCTimestamp",
-   "description": "Specific time of event. To be used in combination with EventDate <866>"
+   "description": "Specific time of event. To be used in combination with EventDate <866>",
+   "components": [
+    "EvntGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "UTCTimestamp",
-   "description": "Specific time of event. To be used in combination with EventDate <866>"
+   "description": "Specific time of event. To be used in combination with EventDate <866>",
+   "components": [
+    "EvntGrp"
+   ]
   }
  }
 }

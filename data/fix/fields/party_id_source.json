@@ -56,7 +56,11 @@
     "S": "FDID",
     "T": "SPSAID",
     "U": "MASTER_SPSAID"
-   }
+   },
+   "components": [
+    "Parties",
+    "PartyDetail"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -100,7 +104,10 @@
     "F": "SETTLEMENT_ENTITY_LOCATION",
     "G": "MIC",
     "H": "CSD_PARTICIPANT"
-   }
+   },
+   "components": [
+    "Parties"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -144,7 +151,10 @@
     "F": "SETTLEMENT_ENTITY_LOCATION",
     "G": "MIC",
     "H": "CSD_PARTICIPANT"
-   }
+   },
+   "components": [
+    "Parties"
+   ]
   },
   "4.4": {
    "type": "char",
@@ -188,7 +198,10 @@
     "9": "AUSTRALIAN_BUSINESS_NUMBER",
     "A": "AUSTRALIAN_TAX_FILE_NUMBER",
     "I": "ISITC_ACRONYM"
-   }
+   },
+   "components": [
+    "Parties"
+   ]
   },
   "4.3": {
    "type": "char",
@@ -226,7 +239,10 @@
     "4": "MALAYSIAN_CENTRAL_DEPOSITORY",
     "6": "UK_NATIONAL_INSURANCE_OR_PENSION_NUMBER",
     "C": "GENERAL_IDENTIFIER"
-   }
+   },
+   "components": [
+    "Parties"
+   ]
   }
  }
 }

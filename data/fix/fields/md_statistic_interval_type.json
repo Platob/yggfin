@@ -1,0 +1,19 @@
+{
+ "name": "MDStatisticIntervalType",
+ "tag": 2464,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "SLIDING_WINDOW",
+    "2": "SLIDING_WINDOW_PEAK",
+    "3": "FIXED_DATE_RANGE",
+    "4": "FIXED_TIME_RANGE",
+    "5": "CURRENT_TIME_UNIT",
+    "6": "PREVIOUS_TIME_UNIT",
+    "7": "MAXIMUM_RANGE",
+    "8": "MAXIMUM_RANGE_UP_TO_PREVIOUS_TIME_UNIT"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCommodityNearbySettlDayPeriod",
+ "tag": 41663,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

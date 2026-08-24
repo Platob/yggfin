@@ -268,7 +268,9 @@ def test_the_market_fallback_stores_the_readable_part_its_scoped_hash_uses() -> 
     assert built.xhash == Book.hash_of(instrument.xhash, built.code, Side.UNKNOWN)
 
 
-def test_the_instrument_xhash_is_not_nullable_because_a_bucket_of_null_is_every_bucket() -> None:
-    partition = Order.into_field().field("instrument_xhash")
-    assert not partition.nullable
-    assert partition.partition_transform == "bucket[16]"
+def test_the_instrument_identity_is_flat_required_and_not_partitioned_on() -> None:
+    """The hour prunes an instrument read already; bucketing a hash only adds files."""
+    identity = Order.into_field().field("instrument_xhash")
+    assert not identity.nullable
+    assert not identity.is_partition_key
+    assert not Order.into_field().field("instrument_code").nullable

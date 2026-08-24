@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexEventStartDate",
+ "tag": 2054,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCDATEONLY"
+  }
+ }
+}

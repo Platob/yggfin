@@ -1,0 +1,14 @@
+{
+ "name": "PaymentSettlStyle",
+ "tag": 40227,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "STANDARD",
+    "1": "NET",
+    "2": "STANDARDF_NET"
+   }
+  }
+ }
+}

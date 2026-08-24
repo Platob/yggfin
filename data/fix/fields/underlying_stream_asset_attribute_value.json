@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamAssetAttributeValue",
+ "tag": 41802,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

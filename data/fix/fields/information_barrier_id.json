@@ -1,0 +1,9 @@
+{
+ "name": "InformationBarrierID",
+ "tag": 1727,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

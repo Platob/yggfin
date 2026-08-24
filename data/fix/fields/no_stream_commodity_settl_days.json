@@ -1,0 +1,9 @@
+{
+ "name": "NoStreamCommoditySettlDays",
+ "tag": 41283,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

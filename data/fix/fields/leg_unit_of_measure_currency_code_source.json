@@ -1,0 +1,9 @@
+{
+ "name": "LegUnitOfMeasureCurrencyCodeSource",
+ "tag": 2909,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

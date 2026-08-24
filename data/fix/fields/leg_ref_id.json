@@ -4,15 +4,36 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Unique indicator for a specific leg."
+   "description": "Unique indicator for a specific leg.",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "QuotReqLegsGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Unique indicator for a specific leg."
+   "description": "Unique indicator for a specific leg.",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "QuotReqLegsGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Unique indicator for a specific leg."
+   "description": "Unique indicator for a specific leg.",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "LegQuotGrp",
+    "QuotReqLegsGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "String",

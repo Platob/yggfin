@@ -1,0 +1,9 @@
+{
+ "name": "NoLegPaymentStubs",
+ "tag": 40418,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

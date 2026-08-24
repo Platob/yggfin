@@ -9,6 +9,9 @@
     "TradeCaptureReportRequest",
     "TradeCaptureReport",
     "TradeCaptureReportAck"
+   ],
+   "components": [
+    "TrdCollGrp"
    ]
   },
   "5.0.SP1": {
@@ -18,6 +21,9 @@
     "TradeCaptureReportRequest",
     "TradeCaptureReport",
     "TradeCaptureReportAck"
+   ],
+   "components": [
+    "TrdCollGrp"
    ]
   },
   "5.0": {
@@ -27,6 +33,9 @@
     "TradeCaptureReportRequest",
     "TradeCaptureReport",
     "TradeCaptureReportAck"
+   ],
+   "components": [
+    "TrdCollGrp"
    ]
   },
   "4.4": {

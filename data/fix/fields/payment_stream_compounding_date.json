@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamCompoundingDate",
+ "tag": 42607,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "ExtraordinaryEventType",
+ "tag": 42297,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

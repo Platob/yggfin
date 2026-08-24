@@ -1,0 +1,9 @@
+{
+ "name": "AssetAttributeLimit",
+ "tag": 2307,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

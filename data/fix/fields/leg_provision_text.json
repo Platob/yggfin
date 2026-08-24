@@ -1,0 +1,9 @@
+{
+ "name": "LegProvisionText",
+ "tag": 40472,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

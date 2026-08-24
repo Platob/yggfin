@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Boolean",
-   "description": "Used to indicate that a message is being sent in response to an Application Message Request <BW> . It is possible for both ApplResendFlag <1352> and PossDupFlag <43> to be set on the same message if the Sender's cache size is greater than zero and the message is being resent due to a session level resend request"
+   "description": "Used to indicate that a message is being sent in response to an Application Message Request <BW> . It is possible for both ApplResendFlag <1352> and PossDupFlag <43> to be set on the same message if the Sender's cache size is greater than zero and the message is being resent due to a session level resend request",
+   "components": [
+    "ApplicationSequenceControl"
+   ]
   },
   "5.0.SP1": {
    "type": "Boolean",
-   "description": "Used to indicate that a message is being sent in response to an Application Message Request <BW> . It is possible for both ApplResendFlag <1352> and PossDupFlag <43> to be set on the same message if the Sender's cache size is greater than zero and the message is being resent due to a session level resend request"
+   "description": "Used to indicate that a message is being sent in response to an Application Message Request <BW> . It is possible for both ApplResendFlag <1352> and PossDupFlag <43> to be set on the same message if the Sender's cache size is greater than zero and the message is being resent due to a session level resend request",
+   "components": [
+    "ApplicationSequenceControl"
+   ]
   }
  }
 }

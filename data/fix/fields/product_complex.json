@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Identifies an entire suite of products for a given market. In Futures this may be \"interest rates\", \"agricultural\", \"equity indexes\", etc."
+   "description": "Identifies an entire suite of products for a given market. In Futures this may be \"interest rates\", \"agricultural\", \"equity indexes\", etc.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Identifies an entire suite of products for a given market. In Futures this may be \"interest rates\", \"agricultural\", \"equity indexes\", etc."
+   "description": "Identifies an entire suite of products for a given market. In Futures this may be \"interest rates\", \"agricultural\", \"equity indexes\", etc.",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

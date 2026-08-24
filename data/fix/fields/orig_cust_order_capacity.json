@@ -16,7 +16,10 @@
     "2": "CLEARING_FIRM_TRADING_FOR_ITS_PROPRIETARY_ACCOUNT",
     "3": "MEMBER_TRADING_FOR_ANOTHER_MEMBER",
     "4": "ALL_OTHER"
-   }
+   },
+   "components": [
+    "TradeReportOrderDetail"
+   ]
   }
  }
 }

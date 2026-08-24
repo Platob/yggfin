@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingAdditionalTermBondCouponFrequencyPeriod",
+ "tag": 42033,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

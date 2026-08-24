@@ -1,0 +1,9 @@
+{
+ "name": "NoThrottles",
+ "tag": 1610,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

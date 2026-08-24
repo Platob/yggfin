@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamPaymentDateType",
+ "tag": 41939,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -524,7 +524,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     path = tmp_path / "rules.yml"
     Rules(
         rules=[
-            Rule(protocol="BRIDGE", driver_pattern="^ULBridge$", codec="ul"),
+            Rule(protocol="BRIDGE", plugin_pattern="^ULBridge$", codec="ul"),
             Rules.into_default().rule(NO_PROTOCOL),
         ]
     ).into_yaml(path)
@@ -532,7 +532,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     with TextFile.from_path(SAMPLE, codec=own) as log:
         table = log.read_arrow_table()
     found = table.column("protocol").to_pylist()
-    assert found[BRIDGE] == "BRIDGE", "the driver decides now, not the message"
+    assert found[BRIDGE] == "BRIDGE", "the plugin decides now, not the message"
     assert found[PIPED] == NO_PROTOCOL, "and the wire messages are nobody's protocol"
     assert found[REJECTED] == "BRIDGE", "including the bridge's own prose line"
     assert table.column("kwargs")[PIPED].as_py() is None
@@ -773,15 +773,15 @@ def _key(entry: dict[str, object]) -> str:
     return f"{lead}.{entry['key']}" if lead else str(entry["key"])
 
 
-def _lines(path: Path, codec: FixCodec, driver: str, messages: list[str]) -> pyarrow.Table:
+def _lines(path: Path, codec: FixCodec, plugin: str, messages: list[str]) -> pyarrow.Table:
     """Synthesised log lines through the whole parser, as the one batch they land as."""
     path.write_text(
-        "".join(f"2026-08-14 00:05:01.147 [t] [{driver}] (INFO) {one}\n" for one in messages)
+        "".join(f"2026-08-14 00:05:01.147 [t] [{plugin}] (INFO) {one}\n" for one in messages)
     )
     with TextFile.from_path(path, codec=codec) as log:
         return log.read_arrow_table()
 
 
-def _one_line(path: Path, codec: FixCodec, driver: str, message: str) -> pyarrow.Table:
+def _one_line(path: Path, codec: FixCodec, plugin: str, message: str) -> pyarrow.Table:
     """One synthesised log line through the whole parser, as the row it lands as."""
-    return _lines(path, codec, driver, [message])
+    return _lines(path, codec, plugin, [message])

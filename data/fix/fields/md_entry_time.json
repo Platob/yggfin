@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "UTCTimeOnly",
-   "description": "Time of Market Data Entry."
+   "description": "Time of Market Data Entry.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "UTCTimeOnly",
-   "description": "Time of Market Data Entry."
+   "description": "Time of Market Data Entry.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "UTCTimeOnly",
-   "description": "Time of Market Data Entry."
+   "description": "Time of Market Data Entry.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "UTCTimeOnly",

@@ -13,6 +13,10 @@
     "SecurityStatus",
     "MarketDataRequest",
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp",
+    "MarketDataFeedTypes"
    ]
   },
   "5.0.SP1": {
@@ -26,6 +30,10 @@
     "SecurityStatus",
     "MarketDataRequest",
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp",
+    "MarketDataFeedTypes"
    ]
   },
   "5.0": {

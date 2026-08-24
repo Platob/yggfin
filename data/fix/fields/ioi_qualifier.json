@@ -61,7 +61,10 @@
     "c": "OUTSIDE_SPREAD",
     "d": "DEFERRED_SPOT",
     "n": "NEGOTIATED_SPOT"
-   }
+   },
+   "components": [
+    "IOIQualGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -105,7 +108,10 @@
     "X": "CROSSING_OPPORTUNITY",
     "Y": "AT_THE_MIDPOINT",
     "Z": "PRE_OPEN"
-   }
+   },
+   "components": [
+    "IOIQualGrp"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -149,7 +155,10 @@
     "X": "CROSSING_OPPORTUNITY",
     "Y": "AT_THE_MIDPOINT",
     "Z": "PRE_OPEN"
-   }
+   },
+   "components": [
+    "IOIQualGrp"
+   ]
   },
   "4.4": {
    "type": "char",

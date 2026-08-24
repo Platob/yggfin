@@ -12,7 +12,10 @@
    "value_names": {
     "CD": "EUCP_WITH_LUMP_SUM_INTEREST",
     "WI": "WHEN_ISSUED"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -24,7 +27,10 @@
    "value_names": {
     "CD": "EUCP_WITH_LUMP_SUM_INTEREST",
     "WI": "WHEN_ISSUED"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -36,7 +42,10 @@
    "value_names": {
     "CD": "EUCP_WITH_LUMP_SUM_INTEREST",
     "WI": "WHEN_ISSUED"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "String",
@@ -44,11 +53,17 @@
    "values": {
     "WI": "\"When Issued\" for a security to be reissued under an old CUSIP or ISIN",
     "CD": "a EUCP with lump-sum interest rather than discount price"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Additional information about the security (e.g. preferred, warrants, etc.). Note also see SecurityType <167> ."
+   "description": "Additional information about the security (e.g. preferred, warrants, etc.). Note also see SecurityType <167> .",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.2": {
    "type": "String",

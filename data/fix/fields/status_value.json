@@ -16,7 +16,10 @@
     "2": "NOT_CONNECTED_UNEXPECTED",
     "3": "NOT_CONNECTED_EXPECTED",
     "4": "IN_PROCESS"
-   }
+   },
+   "components": [
+    "CompIDStatGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -32,7 +35,10 @@
     "2": "NOT_CONNECTED_UNEXPECTED",
     "3": "NOT_CONNECTED_EXPECTED",
     "4": "IN_PROCESS"
-   }
+   },
+   "components": [
+    "CompIDStatGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -48,7 +54,10 @@
     "2": "NOT_CONNECTED_UNEXPECTED",
     "3": "NOT_CONNECTED_EXPECTED",
     "4": "IN_PROCESS"
-   }
+   },
+   "components": [
+    "CompIDStatGrp"
+   ]
   },
   "4.4": {
    "type": "int",

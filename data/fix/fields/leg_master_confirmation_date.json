@@ -1,0 +1,9 @@
+{
+ "name": "LegMasterConfirmationDate",
+ "tag": 2510,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

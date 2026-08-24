@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCalculationFrequencyPeriod",
+ "tag": 40274,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "PartySubID value within a Settlement Parties component. Same values as PartySubID <523>"
+   "description": "PartySubID value within a Settlement Parties component. Same values as PartySubID <523>",
+   "components": [
+    "SettlPtysSubGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "PartySubID value within a Settlement Parties component. Same values as PartySubID <523>"
+   "description": "PartySubID value within a Settlement Parties component. Same values as PartySubID <523>",
+   "components": [
+    "SettlPtysSubGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "PartySubID value within a Settlement Parties component. Same values as PartySubID <523>"
+   "description": "PartySubID value within a Settlement Parties component. Same values as PartySubID <523>",
+   "components": [
+    "SettlPtysSubGrp"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "PartySubID value within a Settlement Parties component. Same values as PartySubID <523>"
+   "description": "PartySubID value within a Settlement Parties component. Same values as PartySubID <523>",
+   "components": [
+    "SettlParties"
+   ]
   }
  }
 }

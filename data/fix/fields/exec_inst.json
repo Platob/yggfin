@@ -135,6 +135,12 @@
     "OrderCancelReplaceRequest",
     "NewOrderCross",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "TradeReportOrderDetail"
    ]
   },
   "5.0.SP1": {
@@ -264,6 +270,13 @@
     "OrderCancelReplaceRequest",
     "NewOrderCross",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -375,6 +388,13 @@
     "OrderCancelReplaceRequest",
     "NewOrderCross",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

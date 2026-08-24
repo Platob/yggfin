@@ -26,8 +26,15 @@ from rekep.fields import Field
 from rekep.fix.entries import ANY_VERSION, NAMESPACE, Alias, ComponentEntry, FieldEntry
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
-from rekep.fix.registry import FixRegistry
-from rekep.fix.store import EXPLODED, VERSIONED, ExplodedLayout, VersionedLayout, layout_of
+from rekep.fix.registry import FixRegistry, _problems
+from rekep.fix.store import (
+    EXPLODED,
+    VERSIONED,
+    ExplodedLayout,
+    VersionedLayout,
+    explode,
+    layout_of,
+)
 from rekep.fix.transcribe import FixCodec
 
 #: The published dictionary, for the migration that has to lose nothing.
@@ -71,7 +78,7 @@ def store(tmp_path: Path) -> Offline:
                 "FakeParties",
                 (
                     SpecGroup(
-                        "NoFakeParties", False, 90003, (SpecFieldRef("FakeRole", False, 90001),)
+                        "NoFakeParties", False, 90003, (SpecFieldRef("FakeRole", True, 90001),)
                     ),
                 ),
             )
@@ -180,7 +187,8 @@ def test_a_name_resolves_canonical_then_per_version_then_alias(store: Offline) -
     assert store.resolve("FakeCode").tag == 90002
     assert store.resolve("FakeRoleCode").tag == 90001, "tier two: what 9.0 calls that tag"
     assert store.resolve("FakeRolle").tag == 90001, "tier three: a spelling somebody recorded"
-    assert store.resolve("fake_rolle").tag == 90001, "and matching folds separators and case"
+    assert store.resolve("FAKEROLLE").tag == 90001, "and matching folds case, and only case"
+    assert store.resolve("fake_rolle") is None, "a separator is part of a name, not noise"
     assert store.resolve("FakeNothing") is None, "and a name nothing here has is unknown"
     assert store.alias_conflicts() == {}
 
@@ -617,3 +625,67 @@ def test_two_vendor_namespaces_of_one_name_stay_two_fields(store: Offline, tmp_p
     assert columns["fake_a_client"].to_pylist() == ["ACCT-TEST-01"]
     assert columns["fake_b_client"].to_pylist() == ["ACCT-TEST-02"]
     assert [key for key, _ in _pairs(rest)] == ["CLIENTID"], "the bare one is nobody's"
+
+
+# -- what a store refuses to be built with -----------------------------------
+
+
+def test_two_identities_claiming_one_name_are_refused_when_a_store_is_built() -> None:
+    """One name is one identity: a store holding two answers whichever it read first.
+
+    Two *tags* cannot reach here -- a tag is what an identity is, so a second
+    reading of one folds into the entry that already owns it -- but two tags
+    spelled alike are two identities, and that is the collision.
+    """
+    with pytest.raises(ValueError, match="FIX field name 'fakerole' is claimed by"):
+        explode(
+            ("9.1",),
+            {"9.1": [_field("FakeRole", 90001, "9.1"), _field("FAKEROLE", 90002, "9.1")]},
+            {},
+        )
+
+
+def test_a_write_that_would_duplicate_a_tag_is_refused_whole(store: Offline) -> None:
+    """Checked against what the store would hold after, and refused before writing."""
+    with pytest.raises(ValueError, match="FIX tag 90001 is claimed by"):
+        store.add_field(
+            FieldEntry(name="FakeOther", tag=90001, variants={"9.1": {"type": "String"}})
+        )
+    assert store.resolve("FakeOther") is None, "and nothing was written"
+
+
+def test_the_refusal_says_how_many_problems_and_what_they_are(store: Offline) -> None:
+    with pytest.raises(ValueError, match="nothing was written"):
+        store.add_field(
+            FieldEntry(name="FakeOther", tag=90001, variants={"9.1": {"type": "String"}})
+        )
+
+
+def test_check_reports_a_duplicate_tag_the_same_way_a_write_refuses_it(
+    store: Offline, tmp_path: Path
+) -> None:
+    """One authority for both, so `check` and a write never disagree."""
+    entry = FieldEntry(name="FakeOther", tag=90001, variants={"9.1": {"type": "String"}})
+    held = dict(store._entries[0])
+    problems = _problems(({**held, entry.slug: entry}, store._entries[1]))
+    assert any("FIX tag 90001 is claimed by" in problem for problem in problems)
+
+
+# -- what a component declaration says a member must carry -------------------
+
+
+def test_a_component_projects_with_the_nullability_its_spec_declares(
+    store: Offline,
+) -> None:
+    """`required` is the whole rule: a member a message must carry is NOT NULL."""
+    field = store.component_field("FakeParties", "9.1")
+    (group,) = field.fields
+    assert group.name == "no_fake_parties"
+    assert group.nullable, "the group itself is optional in this declaration"
+    member = group.item.field("fake_role")
+    assert not member.nullable, "and its one member is required"
+    assert member.arrow_type == pyarrow.int64(), "typed from the dictionary, not guessed"
+
+
+def test_a_component_a_version_does_not_declare_projects_nothing(store: Offline) -> None:
+    assert store.component_field("FakeParties", "9.0") is None

@@ -1,0 +1,9 @@
+{
+ "name": "LegStrikeIndexCurvePoint",
+ "tag": 2604,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

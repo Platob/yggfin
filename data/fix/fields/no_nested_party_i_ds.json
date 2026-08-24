@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of NestedPartyID <524> , NestedPartyIDSource <525> , and NestedPartyRole <538> entries"
+   "description": "Number of NestedPartyID <524> , NestedPartyIDSource <525> , and NestedPartyRole <538> entries",
+   "components": [
+    "NestedParties"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of NestedPartyID <524> , NestedPartyIDSource <525> , and NestedPartyRole <538> entries"
+   "description": "Number of NestedPartyID <524> , NestedPartyIDSource <525> , and NestedPartyRole <538> entries",
+   "components": [
+    "NestedParties"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of NestedPartyID <524> , NestedPartyIDSource <525> , and NestedPartyRole <538> entries"
+   "description": "Number of NestedPartyID <524> , NestedPartyIDSource <525> , and NestedPartyRole <538> entries",
+   "components": [
+    "NestedParties"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",
-   "description": "Number of NestedPartyID <524> , NestedPartyIDSource <525> , and NestedPartyRole <538> entries"
+   "description": "Number of NestedPartyID <524> , NestedPartyIDSource <525> , and NestedPartyRole <538> entries",
+   "components": [
+    "NestedParties"
+   ]
   },
   "4.3": {
    "type": "NumInGroup",
-   "description": "Number of NestedPartyID <524> , NestedPartyIDSource <525> , and NestedPartyRole <538> entries"
+   "description": "Number of NestedPartyID <524> , NestedPartyIDSource <525> , and NestedPartyRole <538> entries",
+   "components": [
+    "NestedParties"
+   ]
   }
  }
 }

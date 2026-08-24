@@ -16,7 +16,10 @@
     "INX": "INDEX",
     "INT": "INTEREST_RATE_INDEX",
     "PCTPAR": "PERCENT_OF_PAR"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -30,7 +33,10 @@
     "STD": "STANDARD",
     "INX": "INDEX",
     "INT": "INTEREST_RATE_INDEX"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

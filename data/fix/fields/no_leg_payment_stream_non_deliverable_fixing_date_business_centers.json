@@ -1,0 +1,9 @@
+{
+ "name": "NoLegPaymentStreamNonDeliverableFixingDateBusinessCenters",
+ "tag": 40929,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

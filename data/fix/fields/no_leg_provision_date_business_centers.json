@@ -1,0 +1,9 @@
+{
+ "name": "NoLegProvisionDateBusinessCenters",
+ "tag": 40939,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

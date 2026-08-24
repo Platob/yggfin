@@ -33,7 +33,10 @@
     "11": "HIGH_VALUE_CLEARING_SYSTEM_HVACS",
     "12": "REINVEST_IN_FUND",
     "999": "OTHER"
-   }
+   },
+   "components": [
+    "RgstDistInstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -65,7 +68,10 @@
     "10": "BPAY",
     "11": "HIGH_VALUE_CLEARING_SYSTEM_HVACS",
     "12": "REINVEST_IN_FUND"
-   }
+   },
+   "components": [
+    "RgstDistInstGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -97,7 +103,10 @@
     "10": "BPAY",
     "11": "HIGH_VALUE_CLEARING_SYSTEM_HVACS",
     "12": "REINVEST_IN_FUND"
-   }
+   },
+   "components": [
+    "RgstDistInstGrp"
+   ]
   },
   "4.4": {
    "type": "int",

@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Length",
-   "description": "Deprecated in FIXT 1.1 Number of bytes in signature field"
+   "description": "Deprecated in FIXT 1.1 Number of bytes in signature field",
+   "components": [
+    "StandardTrailer"
+   ]
   },
   "5.0.SP1": {
    "type": "Length",
-   "description": "Deprecated in FIXT 1.1 Number of bytes in signature field"
+   "description": "Deprecated in FIXT 1.1 Number of bytes in signature field",
+   "components": [
+    "StandardTrailer"
+   ]
   },
   "5.0": {
    "type": "Length",
@@ -36,7 +42,10 @@
   },
   "FIXT1.1": {
    "type": "Length",
-   "description": "Number of bytes in signature field"
+   "description": "Number of bytes in signature field",
+   "components": [
+    "StandardTrailer"
+   ]
   }
  }
 }

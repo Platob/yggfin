@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCommoditySettlBusinessCenter",
+ "tag": 41647,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "DeliveryScheduleSettlCountry",
+ "tag": 41047,
+ "versions": {
+  "5.0.SP2": {
+   "type": "COUNTRY"
+  }
+ }
+}

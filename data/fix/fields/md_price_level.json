@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Integer to convey the level of a bid or offer at a given price level. This is in contrast to MDEntryPositionNo <290> which is used to convey the position of an order within a Price level"
+   "description": "Integer to convey the level of a bid or offer at a given price level. This is in contrast to MDEntryPositionNo <290> which is used to convey the position of an order within a Price level",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Integer to convey the level of a bid or offer at a given price level. This is in contrast to MDEntryPositionNo <290> which is used to convey the position of an order within a Price level"
+   "description": "Integer to convey the level of a bid or offer at a given price level. This is in contrast to MDEntryPositionNo <290> which is used to convey the position of an order within a Price level",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "Integer to convey the level of a bid or offer at a given price level. This is in contrast to MDEntryPositionNo <290> which is used to convey the position of an order within a Price level"
+   "description": "Integer to convey the level of a bid or offer at a given price level. This is in contrast to MDEntryPositionNo <290> which is used to convey the position of an order within a Price level",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   }
  }
 }

@@ -1,0 +1,15 @@
+{
+ "name": "ProvisionCashSettlQuoteType",
+ "tag": 40111,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "BID",
+    "1": "MID",
+    "2": "OFFER",
+    "3": "EXERCISING_PARTY_PAYS"
+   }
+  }
+ }
+}

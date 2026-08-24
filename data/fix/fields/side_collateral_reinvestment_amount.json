@@ -1,0 +1,9 @@
+{
+ "name": "SideCollateralReinvestmentAmount",
+ "tag": 2865,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

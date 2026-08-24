@@ -4,15 +4,30 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Indicates number of orders to be combined for average pricing and allocation."
+   "description": "Indicates number of orders to be combined for average pricing and allocation.",
+   "components": [
+    "ListOrdGrp",
+    "OrdAllocGrp",
+    "OrdListStatGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Indicates number of orders to be combined for average pricing and allocation."
+   "description": "Indicates number of orders to be combined for average pricing and allocation.",
+   "components": [
+    "ListOrdGrp",
+    "OrdAllocGrp",
+    "OrdListStatGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Indicates number of orders to be combined for average pricing and allocation."
+   "description": "Indicates number of orders to be combined for average pricing and allocation.",
+   "components": [
+    "ListOrdGrp",
+    "OrdAllocGrp",
+    "OrdListStatGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

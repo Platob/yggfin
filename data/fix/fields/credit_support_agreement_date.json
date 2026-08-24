@@ -1,0 +1,9 @@
+{
+ "name": "CreditSupportAgreementDate",
+ "tag": 1968,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

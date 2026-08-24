@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Specifies a custom extension to a message being applied at the message level. Enumerated field"
+   "description": "Specifies a custom extension to a message being applied at the message level. Enumerated field",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Specifies a custom extension to a message being applied at the message level. Enumerated field"
+   "description": "Specifies a custom extension to a message being applied at the message level. Enumerated field",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -16,7 +22,10 @@
   },
   "FIXT1.1": {
    "type": "String",
-   "description": "Specifies a custom extension to a message being applied at the message level. Enumerated field."
+   "description": "Specifies a custom extension to a message being applied at the message level. Enumerated field.",
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

@@ -7,6 +7,13 @@
    "description": "Quantity to be allocated to specific sub-account (Prior to FIX 4.2 this field was of type int)",
    "used_in": [
     "Confirmation"
+   ],
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
    ]
   },
   "5.0.SP1": {
@@ -14,6 +21,13 @@
    "description": "Quantity to be allocated to specific sub-account (Prior to FIX 4.2 this field was of type int)",
    "used_in": [
     "Confirmation"
+   ],
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
    ]
   },
   "5.0": {
@@ -21,6 +35,13 @@
    "description": "Quantity to be allocated to specific sub-account (Prior to FIX 4.2 this field was of type int)",
    "used_in": [
     "Confirmation"
+   ],
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
    ]
   },
   "4.4": {

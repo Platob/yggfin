@@ -5,17 +5,29 @@
   "5.0.SP2": {
    "type": "String",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Originator of a Market Data Entry"
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Originator of a Market Data Entry",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Originator of a Market Data Entry"
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Originator of a Market Data Entry",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "String",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Originator of a Market Data Entry"
+   "description": "Deprecated in FIX 5.0 See Appendix 6-E: 15.Deprecated MDEntryOriginator (282), MDMkt (275) [deprecated in FIX 5.0] Originator of a Market Data Entry",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "String",

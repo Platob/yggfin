@@ -1,0 +1,15 @@
+{
+ "name": "MarketDisruptionProvision",
+ "tag": 41087,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NOT_APPLICABLE",
+    "1": "APPLICABLE",
+    "2": "AS_IN_MASTER_AGREEMENT",
+    "3": "AS_IN_CONFIRMATION"
+   }
+  }
+ }
+}

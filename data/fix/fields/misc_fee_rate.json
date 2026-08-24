@@ -1,0 +1,9 @@
+{
+ "name": "MiscFeeRate",
+ "tag": 2216,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

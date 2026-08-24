@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Used to express the UOM of the price if different from the contract. In futures, this can be different for cross-rate products in which the price is quoted in units differently from the contract Same values as UnitOfMeasure <996>"
+   "description": "Used to express the UOM of the price if different from the contract. In futures, this can be different for cross-rate products in which the price is quoted in units differently from the contract Same values as UnitOfMeasure <996>",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Used to express the UOM of the price if different from the contract. In futures, this can be different for cross-rate products in which the price is quoted in units differently from the contract Same values as UnitOfMeasure <996>"
+   "description": "Used to express the UOM of the price if different from the contract. In futures, this can be different for cross-rate products in which the price is quoted in units differently from the contract Same values as UnitOfMeasure <996>",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

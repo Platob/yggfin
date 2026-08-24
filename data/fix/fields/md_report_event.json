@@ -1,0 +1,25 @@
+{
+ "name": "MDReportEvent",
+ "tag": 2535,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "START_INSTRUMENT_REF_DATA",
+    "2": "END_INSTRUMENT_REF_DATA",
+    "3": "START_OFF_MARKET_TRADES",
+    "4": "END_OFF_MARKET_TRADES",
+    "5": "START_ORDER_BOOK_TRADES",
+    "6": "END_ORDER_BOOK_TRADES",
+    "7": "START_OPEN_INTEREST",
+    "8": "END_OPEN_INTEREST",
+    "9": "START_SETTLEMENT_PRICES",
+    "10": "END_SETTLEMENT_PRICES",
+    "11": "START_STATS_REF_DATA",
+    "12": "END_STATS_REF_DATA",
+    "13": "START_STATISTICS",
+    "14": "END_STATISTICS"
+   }
+  }
+ }
+}

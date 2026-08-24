@@ -1,0 +1,9 @@
+{
+ "name": "ComplexEventForwardPoints",
+ "tag": 2408,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICEOFFSET"
+  }
+ }
+}

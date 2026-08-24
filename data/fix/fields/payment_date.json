@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "LocalMktDate",
-   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system."
+   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system.",
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
-   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system."
+   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system.",
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
-   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system."
+   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system.",
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",

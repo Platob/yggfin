@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of repeating EventType <865> entries."
+   "description": "Number of repeating EventType <865> entries.",
+   "components": [
+    "EvntGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of repeating EventType <865> entries."
+   "description": "Number of repeating EventType <865> entries.",
+   "components": [
+    "EvntGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of repeating EventType <865> entries."
+   "description": "Number of repeating EventType <865> entries.",
+   "components": [
+    "EvntGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",
-   "description": "Number of repeating EventType <865> entries."
+   "description": "Number of repeating EventType <865> entries.",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

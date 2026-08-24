@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleFixingDayDistribution",
+ "tag": 41891,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

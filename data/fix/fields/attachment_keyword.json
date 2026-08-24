@@ -1,0 +1,9 @@
+{
+ "name": "AttachmentKeyword",
+ "tag": 2114,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

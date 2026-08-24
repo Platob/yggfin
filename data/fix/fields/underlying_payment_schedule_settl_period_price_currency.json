@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleSettlPeriodPriceCurrency",
+ "tag": 41888,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

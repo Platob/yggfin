@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Refer to definition for PutOrCall <201>"
+   "description": "Refer to definition for PutOrCall <201>",
+   "components": [
+    "UnderlyingLegInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Refer to definition for PutOrCall <201>"
+   "description": "Refer to definition for PutOrCall <201>",
+   "components": [
+    "UnderlyingLegInstrument"
+   ]
   }
  }
 }

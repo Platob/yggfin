@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Starting price range for specified tick increment"
+   "description": "Starting price range for specified tick increment",
+   "components": [
+    "TickRules"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Starting price range for specified tick increment"
+   "description": "Starting price range for specified tick increment",
+   "components": [
+    "TickRules"
+   ]
   }
  }
 }

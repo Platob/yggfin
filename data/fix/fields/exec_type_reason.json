@@ -1,0 +1,26 @@
+{
+ "name": "ExecTypeReason",
+ "tag": 2431,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "ORD_ADDED_ON_REQUEST",
+    "2": "ORD_REPLACED_ON_REQUEST",
+    "3": "ORD_CXLD_ON_REQUEST",
+    "4": "UNSOLICITED_ORD_CXL",
+    "5": "NON_RESTING_ORD_ADDED_ON_REQUEST",
+    "6": "ORD_REPLACED_WITH_NON_RESTING_ORD_ON_REQUEST",
+    "7": "TRIGGER_ORD_REPLACED_ON_REQUEST",
+    "8": "SUSPENDED_ORD_REPLACED_ON_REQUEST",
+    "9": "SUSPENDED_ORD_CXLD_ON_REQUEST",
+    "10": "ORD_CXL_PENDING",
+    "11": "PENDING_CXL_EXECUTED",
+    "12": "RESTING_ORD_TRIGGERED",
+    "13": "SUSPENDED_ORD_ACTIVATED",
+    "14": "ACTIVE_ORD_SUSPENDED",
+    "15": "ORD_EXPIRED"
+   }
+  }
+ }
+}

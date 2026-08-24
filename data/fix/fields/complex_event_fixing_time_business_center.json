@@ -1,0 +1,9 @@
+{
+ "name": "ComplexEventFixingTimeBusinessCenter",
+ "tag": 41028,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

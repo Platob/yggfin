@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Refer to definition for PartySubID <523>"
+   "description": "Refer to definition for PartySubID <523>",
+   "components": [
+    "DerivativeInstrumentPartySubIDsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Refer to definition for PartySubID <523>"
+   "description": "Refer to definition for PartySubID <523>",
+   "components": [
+    "DerivativeInstrumentPartySubIDsGrp"
+   ]
   }
  }
 }

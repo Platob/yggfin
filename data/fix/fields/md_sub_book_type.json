@@ -7,6 +7,9 @@
    "description": "Describes a class of sub book, e.g. for the separation of various lot types. The Sub Book Type indicates that the following Market Data Entries belong to a non-integrated Sub Book. Whenever provided the Sub Book must be used together with MDPriceLevel <1023> and MDEntryPositionNo <290> in order to sort the order properly. Values are bilaterally agreed.",
    "used_in": [
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp"
    ]
   },
   "5.0.SP1": {
@@ -14,6 +17,9 @@
    "description": "Describes a class of sub book, e.g. for the separation of various lot types. The Sub Book Type indicates that the following Market Data Entries belong to a non-integrated Sub Book. Whenever provided the Sub Book must be used together with MDPriceLevel <1023> and MDEntryPositionNo <290> in order to sort the order properly. Values are bilaterally agreed.",
    "used_in": [
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp"
    ]
   }
  }

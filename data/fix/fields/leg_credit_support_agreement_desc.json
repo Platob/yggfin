@@ -1,0 +1,9 @@
+{
+ "name": "LegCreditSupportAgreementDesc",
+ "tag": 2502,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

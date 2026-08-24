@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingCashSettlNumOfValuationDates",
+ "tag": 42045,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

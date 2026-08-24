@@ -1,0 +1,9 @@
+{
+ "name": "LegMarketDisruptionFallbackBasketDivisor",
+ "tag": 41480,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

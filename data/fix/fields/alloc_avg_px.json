@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "AvgPx <6> for a specific AllocAccount <79> For Fixed Income this is always expressed as \" percent of par \" price type."
+   "description": "AvgPx <6> for a specific AllocAccount <79> For Fixed Income this is always expressed as \" percent of par \" price type.",
+   "components": [
+    "AllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "AvgPx <6> for a specific AllocAccount <79> For Fixed Income this is always expressed as \" percent of par \" price type."
+   "description": "AvgPx <6> for a specific AllocAccount <79> For Fixed Income this is always expressed as \" percent of par \" price type.",
+   "components": [
+    "AllocGrp"
+   ]
   },
   "5.0": {
    "type": "Price",
-   "description": "AvgPx <6> for a specific AllocAccount <79> For Fixed Income this is always expressed as \" percent of par \" price type."
+   "description": "AvgPx <6> for a specific AllocAccount <79> For Fixed Income this is always expressed as \" percent of par \" price type.",
+   "components": [
+    "AllocGrp"
+   ]
   },
   "4.4": {
    "type": "Price",

@@ -577,18 +577,21 @@ class MarketEvent(Event):
     # not a member: market events persist only the flat identity.
     __instrument: Instrument | None = None
 
-    # Flat, first, and partitioned on. An event stream is read one instrument
-    # at a time far more often than it is read whole, and `instrument.xhash`
-    # cannot do this job: Doris pushes a predicate down only for a top-level
-    # scalar, and no engine here partitions on a nested member at all.
+    # Flat and first. An event stream is read one instrument at a time far more
+    # often than it is read whole, and `instrument.xhash` cannot serve that: an
+    # engine pushes a predicate down only for a top-level scalar.
     #
-    # `bucket[16]` rather than the value itself, because the value is a hash:
-    # partitioning on it directly is one partition per instrument per hour,
-    # which is a hundred thousand partitions a day and a file in each. Sixteen
-    # buckets is sixteen files an hour, and a single-instrument read still
-    # touches one of them. The count is a deployment choice, not a law.
-    instrument_xhash: Annotated[int, Field.partition_key("bucket[16]")] = NIL
-    """Instrument lifecycle identity used to join and partition market rows."""
+    # Not a partition, deliberately. The value is a hash, so bucketing it split
+    # every hour into as many files as buckets while the hour itself already
+    # prunes the read -- more small files for a filter that was already exact.
+    instrument_xhash: int = NIL
+    """Instrument lifecycle identity used to join market rows."""
+
+    # Beside the hash rather than only inside `codes`: a hash joins, and a
+    # person reads. Every filter, group and error message about an instrument
+    # was reaching into a map for the one key this package writes itself.
+    instrument_code: str = ""
+    """Readable spelling of the instrument `instrument_xhash` names; empty when unstated."""
 
     kind: MarketKind = MarketKind.UNKNOWN
     """Standard market semantic, independent of its protocol spelling."""
@@ -645,6 +648,7 @@ class MarketEvent(Event):
         """Use reference data while building without adding it to the event schema."""
         self.__instrument = instrument
         self.instrument_xhash = self.instrument_xhash or instrument.xhash
+        self.instrument_code = self.instrument_code or instrument.code or instrument.symbol
         self.name_code(SYMBOL_CODE, instrument.symbol)
         if self.ccy is None:
             self.ccy = instrument.currency
@@ -658,12 +662,10 @@ class MarketEvent(Event):
     def symbol(self) -> str:
         """The instrument symbol the source spelled, where it spelled one.
 
-        In `codes` and not a column of its own: `instrument_xhash` is what a
-        reader joins and partitions on, and the symbol is the readable spelling
-        beside it -- one of several identifiers a venue may send, and no more
-        entitled to a column than the ISIN next to it.
+        `instrument_code` first: it is the spelling this package settled on for
+        the lifecycle, and `codes` still carries whatever the venue sent.
         """
-        return self.codes.get(SYMBOL_CODE, "")
+        return self.instrument_code or self.codes.get(SYMBOL_CODE, "")
 
     def complete_from(self, previous: Event) -> None:
         """The four market slots, carried forward where this version was silent.
@@ -681,6 +683,8 @@ class MarketEvent(Event):
                 self.__instrument = known
         if not self.instrument_xhash:
             self.instrument_xhash = previous.instrument_xhash
+        if not self.instrument_code:
+            self.instrument_code = previous.instrument_code
         if self.side is Side.UNKNOWN:
             self.side = previous.side
         # `px` and `qty` are the abstract slots, and what they hold is the

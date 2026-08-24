@@ -1,0 +1,9 @@
+{
+ "name": "PayCollectCurrencyCodeSource",
+ "tag": 2955,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

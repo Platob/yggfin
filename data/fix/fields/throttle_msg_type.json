@@ -1,0 +1,9 @@
+{
+ "name": "ThrottleMsgType",
+ "tag": 1619,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

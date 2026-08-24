@@ -13,7 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.fields import Field, StructField, field_of
+from rekep.fields import Field, StructField
 
 #: Marker columns the key joins below carry, named like pyiceberg's reserved
 #: pair so a merge key of either name is refused with the library's own
@@ -121,7 +121,7 @@ class Dataset(Convertible, abc.ABC):
         same by it -- a field, an Arrow schema, field or type, a `@scalar`
         class, or nothing at all -- so none of them decides that for itself.
         """
-        return self.into_struct_field() if schema is None else field_of(schema)
+        return self.into_struct_field() if schema is None else Field.from_(schema)
 
     def merge_columns(self, merge_by: bool | Sequence[str] | None) -> list[str]:
         """Columns a write merges on: the primary key for True, else what is named.
@@ -177,11 +177,11 @@ class Dataset(Convertible, abc.ABC):
 
     def create_with_arrow_schema(self, schema: pyarrow.Schema, **kwargs: Any) -> Self:
         """`create_with_field`, from an Arrow schema."""
-        return self.create_with_field(field_of(schema), **kwargs)
+        return self.create_with_field(Field.from_(schema), **kwargs)
 
     def create_with_arrow_field(self, field: pyarrow.Field, **kwargs: Any) -> Self:
         """`create_with_field`, from an Arrow field."""
-        return self.create_with_field(field_of(field), **kwargs)
+        return self.create_with_field(Field.from_(field), **kwargs)
 
     def get_or_create(self, source: Any = None, **kwargs: Any) -> Self:
         """This dataset, created with that shape when it is not there yet.

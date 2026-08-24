@@ -20,7 +20,10 @@
     "7": "PROGRAM3A7",
     "8": "PROGRAM3C7",
     "99": "OTHER"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -34,7 +37,10 @@
     "1": "PROGRAM3A3",
     "2": "PROGRAM42",
     "99": "OTHER"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -48,7 +54,10 @@
     "1": "PROGRAM3A3",
     "2": "PROGRAM42",
     "99": "OTHER"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "int",
@@ -62,7 +71,10 @@
     "1": "PROGRAM3A3",
     "2": "PROGRAM42",
     "99": "OTHER"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

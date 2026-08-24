@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "A two-character state or province abbreviation."
+   "description": "A two-character state or province abbreviation.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "A two-character state or province abbreviation."
+   "description": "A two-character state or province abbreviation.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "A two-character state or province abbreviation."
+   "description": "A two-character state or province abbreviation.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "A two-character state or province abbreviation."
+   "description": "A two-character state or province abbreviation.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "A two-character state or province abbreviation."
+   "description": "A two-character state or province abbreviation.",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

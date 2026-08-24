@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamCompoundingRateSpreadPositionType",
+ "tag": 42633,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

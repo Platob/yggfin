@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamBoundsFirstDateUnadjusted",
+ "tag": 42913,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

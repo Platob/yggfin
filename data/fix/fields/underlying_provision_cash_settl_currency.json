@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingProvisionCashSettlCurrency",
+ "tag": 42167,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

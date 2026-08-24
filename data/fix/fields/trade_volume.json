@@ -3,16 +3,23 @@
  "tag": 1020,
  "versions": {
   "5.0.SP2": {
-   "type": "Qty",
-   "description": "Used to report volume with a trade"
+   "type": "QTY"
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Used to report volume with a trade"
+   "description": "Used to report volume with a trade",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "Qty",
-   "description": "Used to report volume with a trade"
+   "description": "Used to report volume with a trade",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   }
  }
 }

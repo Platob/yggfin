@@ -1,0 +1,9 @@
+{
+ "name": "StreamVersionEffectiveDate",
+ "tag": 42785,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

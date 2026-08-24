@@ -1,0 +1,9 @@
+{
+ "name": "AdditionalTermBondDayCount",
+ "tag": 40018,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

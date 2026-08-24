@@ -15,7 +15,10 @@
     "1": "OTHER_LANGUAGE",
     "2": "COMPLIMENTARY",
     "3": "WITHDRAWAL"
-   }
+   },
+   "components": [
+    "NewsRefGrp"
+   ]
   }
  }
 }

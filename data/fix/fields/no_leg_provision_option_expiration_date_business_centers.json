@@ -1,0 +1,9 @@
+{
+ "name": "NoLegProvisionOptionExpirationDateBusinessCenters",
+ "tag": 40937,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

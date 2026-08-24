@@ -17,6 +17,9 @@
    },
    "used_in": [
     "SecurityDefinitionRequest"
+   ],
+   "components": [
+    "BaseTradingRules"
    ]
   },
   "5.0.SP1": {
@@ -34,6 +37,9 @@
    },
    "used_in": [
     "SecurityDefinitionRequest"
+   ],
+   "components": [
+    "BaseTradingRules"
    ]
   },
   "5.0": {
@@ -51,6 +57,11 @@
     "SecurityDefinitionUpdateReport",
     "SecurityDefinitionRequest",
     "SecurityDefinition"
+   ],
+   "components": [
+    "RelSymDerivSecGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp"
    ]
   },
   "4.4": {

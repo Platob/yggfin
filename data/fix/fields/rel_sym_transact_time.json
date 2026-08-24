@@ -4,7 +4,13 @@
  "versions": {
   "5.0.SP2": {
    "type": "UTCTimestamp",
-   "description": "See TransactTime <60>"
+   "description": "See TransactTime <60>",
+   "components": [
+    "RelSymDerivSecGrp",
+    "RelSymDerivSecUpdGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp"
+   ]
   }
  }
 }

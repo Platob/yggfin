@@ -1,0 +1,13 @@
+{
+ "name": "ComplexEventPVFinalPriceElectionFallback",
+ "tag": 2599,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "CLOSE",
+    "1": "HEDGE_ELECTION"
+   }
+  }
+ }
+}

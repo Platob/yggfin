@@ -1,0 +1,14 @@
+{
+ "name": "MDValueTier",
+ "tag": 2711,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "RANGE1",
+    "2": "RANGE2",
+    "3": "RANGE3"
+   }
+  }
+ }
+}

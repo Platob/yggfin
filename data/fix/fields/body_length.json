@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Length",
-   "description": "Message length, in bytes, forward to the CheckSum <10> field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)"
+   "description": "Message length, in bytes, forward to the CheckSum <10> field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "Length",
-   "description": "Message length, in bytes, forward to the CheckSum <10> field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)"
+   "description": "Message length, in bytes, forward to the CheckSum <10> field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "Length",
@@ -36,7 +42,10 @@
   },
   "FIXT1.1": {
    "type": "Length",
-   "description": "Message length, in bytes, forward to the CheckSum field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)"
+   "description": "Message length, in bytes, forward to the CheckSum field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)",
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

@@ -1,0 +1,42 @@
+{
+ "name": "PartyDetailRoleQualifier",
+ "tag": 1674,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "23": "FIRM_OR_LEGAL_ENTITY",
+    "18": "CURRENT",
+    "19": "NEW",
+    "24": "NATURAL_PERSON",
+    "0": "AGENCY",
+    "1": "PRINCIPAL",
+    "2": "RISKLESS_PRINCIPAL",
+    "30": "EXCHANGE_ORDER_SUBMITTER",
+    "9": "PRIMARY_TRD_REPOSITORY",
+    "10": "ORIG_TRD_REPOSITORY",
+    "11": "ADDTNL_INTL_TRD_REPOSITORY",
+    "12": "ADDTNL_DOMESTIC_TRD_REPOSITORY",
+    "25": "REGULAR_TRADER",
+    "26": "HEAD_TRADER",
+    "27": "SUPERVISOR",
+    "22": "ALGORITHM",
+    "13": "RELATED_EXCHANGE",
+    "14": "OPTIONS_EXCHANGE",
+    "15": "SPECIFIED_EXCHANGE",
+    "16": "CONSTITUENT_EXCHANGE",
+    "7": "BANK",
+    "8": "HUB",
+    "28": "TRI_PARTY",
+    "29": "LENDER",
+    "3": "GENERAL_CLEARING_MEMBER",
+    "4": "INDIVIDUAL_CLEARING_MEMBER",
+    "5": "PREFERRED_MARKET_MAKER",
+    "6": "DIRECTED_MARKET_MAKER",
+    "20": "DESIGNATED_SPONSOR",
+    "21": "SPECIALIST",
+    "17": "EXEMPT_FROM_TRADE_REPORTING"
+   }
+  }
+ }
+}

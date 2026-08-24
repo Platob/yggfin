@@ -1,0 +1,12 @@
+{
+ "name": "StreamCommoditySettlDateRollUnit",
+ "tag": 41273,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING",
+   "value_names": {
+    "D": "DAY"
+   }
+  }
+ }
+}

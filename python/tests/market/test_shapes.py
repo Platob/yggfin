@@ -46,6 +46,7 @@ ENVELOPE = [
 #: declaration order is a physical order everywhere the schema travels.
 PRICED = [
     "instrument_xhash",
+    "instrument_code",
     "kind",
     "side",
     "px",
@@ -76,10 +77,7 @@ def test_every_event_carries_the_priced_slots_next(shape: type) -> None:
 def test_every_event_is_keyed_by_time_and_content(shape: type) -> None:
     """`hash` identifies the version; leading with time is what an engine prunes on."""
     assert shape.into_field().primary_keys() == ["unix", "hash"]
-    assert shape.into_field().partition_keys() == {
-        "unix_hour": "identity",
-        "instrument_xhash": "bucket[16]",
-    }
+    assert shape.into_field().partition_keys() == {"unix_hour": "identity"}
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
@@ -89,11 +87,10 @@ def test_every_event_is_laid_out_in_time_inside_its_partition(shape: type) -> No
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
-def test_a_market_event_lands_in_the_bucket_of_its_instrument(shape: type) -> None:
-    """One instrument's stream has to be one partition, or a book cannot be built."""
-    partition = shape.into_field().field("instrument_xhash")
-    assert partition.partition_transform == "bucket[16]"
-    assert not partition.nullable, "a bucket transform on a null reads every bucket"
+def test_the_hour_is_the_only_partition_a_market_event_declares(shape: type) -> None:
+    """A hash bucket splits every hour into as many files and prunes nothing extra."""
+    assert list(shape.into_field().partition_keys()) == ["unix_hour"]
+    assert not shape.into_field().field("instrument_xhash").nullable
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)

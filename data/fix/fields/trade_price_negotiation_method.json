@@ -1,0 +1,18 @@
+{
+ "name": "TradePriceNegotiationMethod",
+ "tag": 1740,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "PERCENT_PAR",
+    "1": "DEAL_SPREAD",
+    "2": "UPFRONT_PNTS",
+    "3": "UPFRONT_AMT",
+    "4": "PAR_UPFRONT_AMT",
+    "5": "SPREAD_UPFRONT_AMT",
+    "6": "UPFRONT_PNTS_AMT"
+   }
+  }
+ }
+}

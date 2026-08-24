@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Allows trading rules to be expressed by trading session"
+   "description": "Allows trading rules to be expressed by trading session",
+   "components": [
+    "TradingSessionRulesGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Allows trading rules to be expressed by trading session"
+   "description": "Allows trading rules to be expressed by trading session",
+   "components": [
+    "TradingSessionRulesGrp"
+   ]
   }
  }
 }

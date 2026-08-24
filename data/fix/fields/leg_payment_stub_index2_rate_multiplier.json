@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStubIndex2RateMultiplier",
+ "tag": 40442,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

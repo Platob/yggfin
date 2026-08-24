@@ -125,8 +125,12 @@ def iceberg_sort_order(
     )
 
 
-def struct_field_of(schema: Any, name: str = "", spec: Any = None) -> StructField:
-    """A `pyiceberg` schema as a struct field: types, docs and keys."""
+def iceberg_struct_field(schema: Any, name: str = "", spec: Any = None) -> StructField:
+    """A `pyiceberg` schema as a struct field: types, docs and keys.
+
+    Reached through `StructField.from_iceberg_schema`, which is the entry every
+    caller uses; this side of it only keeps the pyiceberg import lazy.
+    """
     require("pyiceberg", "iceberg")
     from pyiceberg.io.pyarrow import schema_to_pyarrow
 

@@ -1,0 +1,12 @@
+{
+ "name": "MarketSegmentSubType",
+ "tag": 2544,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "INTER_PRODUCT_SPREAD"
+   }
+  }
+ }
+}

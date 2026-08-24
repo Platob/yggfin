@@ -37,7 +37,10 @@
     "T": "TRADING_DESK_SYSTEM",
     "TR": "TREASURY",
     "FB": "FLOOR_BROKER"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -67,7 +70,10 @@
     "PT": "PROGRAM_TRADING",
     "S": "SALES",
     "T": "TRADING"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -97,7 +103,10 @@
     "PT": "PROGRAM_TRADING",
     "S": "SALES",
     "T": "TRADING"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   }
  }
 }

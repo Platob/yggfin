@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingOptionExerciseEarliestDateOffsetDayType",
+ "tag": 41823,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

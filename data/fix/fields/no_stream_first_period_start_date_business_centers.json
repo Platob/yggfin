@@ -1,0 +1,9 @@
+{
+ "name": "NoStreamFirstPeriodStartDateBusinessCenters",
+ "tag": 40959,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegValuationMethod",
+ "tag": 2196,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "Nested2PartyRoleQualifier",
+ "tag": 2381,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

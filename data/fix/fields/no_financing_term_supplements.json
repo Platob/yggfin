@@ -1,0 +1,9 @@
+{
+ "name": "NoFinancingTermSupplements",
+ "tag": 40046,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

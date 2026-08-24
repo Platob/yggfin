@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Quantity traded with the ContraBroker <375> ."
+   "description": "Quantity traded with the ContraBroker <375> .",
+   "components": [
+    "ContraGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Quantity traded with the ContraBroker <375> ."
+   "description": "Quantity traded with the ContraBroker <375> .",
+   "components": [
+    "ContraGrp"
+   ]
   },
   "5.0": {
    "type": "Qty",
-   "description": "Quantity traded with the ContraBroker <375> ."
+   "description": "Quantity traded with the ContraBroker <375> .",
+   "components": [
+    "ContraGrp"
+   ]
   },
   "4.4": {
    "type": "Qty",

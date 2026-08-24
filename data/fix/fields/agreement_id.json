@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "A common reference to the applicable standing agreement between the counterparties to a financing transaction."
+   "description": "A common reference to the applicable standing agreement between the counterparties to a financing transaction.",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "A common reference to the applicable standing agreement between the counterparties to a financing transaction."
+   "description": "A common reference to the applicable standing agreement between the counterparties to a financing transaction.",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "A common reference to the applicable standing agreement between the counterparties to a financing transaction."
+   "description": "A common reference to the applicable standing agreement between the counterparties to a financing transaction.",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "A common reference to the applicable standing agreement between the counterparties to a financing transaction."
+   "description": "A common reference to the applicable standing agreement between the counterparties to a financing transaction.",
+   "components": [
+    "FinancingDetails"
+   ]
   }
  }
 }

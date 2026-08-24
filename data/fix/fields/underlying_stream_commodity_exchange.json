@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamCommodityExchange",
+ "tag": 41973,
+ "versions": {
+  "5.0.SP2": {
+   "type": "EXCHANGE"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamDiscountRate",
+ "tag": 40286,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "name": "TradeReportingIndicator",
+ "tag": 2524,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NOT_REPORTED",
+    "1": "ON_BOOK",
+    "2": "SI_SELLER",
+    "3": "SI_BUYER",
+    "4": "NON_SI_SELLER",
+    "5": "SUB_DELEGATION_BY_FIRM",
+    "6": "REPORTABLE",
+    "7": "NON_SI_BUYER",
+    "8": "OFF_BOOK",
+    "9": "NOT_REPORTABLE"
+   }
+  }
+ }
+}

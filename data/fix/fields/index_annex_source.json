@@ -1,0 +1,9 @@
+{
+ "name": "IndexAnnexSource",
+ "tag": 1960,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

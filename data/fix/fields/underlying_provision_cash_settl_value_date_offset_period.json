@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingProvisionCashSettlValueDateOffsetPeriod",
+ "tag": 42108,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

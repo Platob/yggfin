@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingComplexEventPeriods",
+ "tag": 41729,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

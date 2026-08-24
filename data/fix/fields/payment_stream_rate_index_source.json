@@ -1,0 +1,15 @@
+{
+ "name": "PaymentStreamRateIndexSource",
+ "tag": 40790,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "BLOOMBERG",
+    "1": "REUTERS",
+    "2": "TELERATE",
+    "99": "OTHER"
+   }
+  }
+ }
+}

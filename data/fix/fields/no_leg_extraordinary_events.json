@@ -1,0 +1,9 @@
+{
+ "name": "NoLegExtraordinaryEvents",
+ "tag": 42388,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

@@ -15,7 +15,10 @@
     "2": "FORWARD",
     "3": "FORWARD_AND_MATCH",
     "4": "AUTO_CLAIM_GIVE_UP"
-   }
+   },
+   "components": [
+    "AllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -29,7 +32,10 @@
     "1": "MATCH",
     "2": "FORWARD",
     "3": "FORWARD_AND_MATCH"
-   }
+   },
+   "components": [
+    "AllocGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -43,7 +49,10 @@
     "1": "MATCH",
     "2": "FORWARD",
     "3": "FORWARD_AND_MATCH"
-   }
+   },
+   "components": [
+    "AllocGrp"
+   ]
   },
   "4.4": {
    "type": "int",

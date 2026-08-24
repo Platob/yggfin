@@ -1,0 +1,13 @@
+{
+ "name": "RemunerationIndicator",
+ "tag": 2356,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NO_REMUNERATION_PAID",
+    "1": "REMUNERATION_PAID"
+   }
+  }
+ }
+}

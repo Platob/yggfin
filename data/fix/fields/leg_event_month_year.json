@@ -1,0 +1,9 @@
+{
+ "name": "LegEventMonthYear",
+ "tag": 2341,
+ "versions": {
+  "5.0.SP2": {
+   "type": "MONTHYEAR"
+  }
+ }
+}

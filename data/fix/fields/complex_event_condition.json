@@ -12,7 +12,10 @@
    "value_names": {
     "1": "AND",
     "2": "OR"
-   }
+   },
+   "components": [
+    "ComplexEvents"
+   ]
   }
  }
 }

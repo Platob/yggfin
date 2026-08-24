@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamFinalPricePaymentDateOffsetDayType",
+ "tag": 42658,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

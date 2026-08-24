@@ -1,0 +1,16 @@
+{
+ "name": "OrderEntryAction",
+ "tag": 2429,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR",
+   "value_names": {
+    "1": "ADD",
+    "2": "MODIFY",
+    "3": "DELETE",
+    "4": "SUSPEND",
+    "5": "RELEASE"
+   }
+  }
+ }
+}

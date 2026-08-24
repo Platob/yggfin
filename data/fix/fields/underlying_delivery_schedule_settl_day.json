@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDeliveryScheduleSettlDay",
+ "tag": 41771,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

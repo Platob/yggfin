@@ -1,0 +1,9 @@
+{
+ "name": "InstrumentScopeEncodedSecurityDesc",
+ "tag": 1621,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDividendCompoundingMethod",
+ "tag": 42835,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

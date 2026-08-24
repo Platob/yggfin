@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventPriceBoundaryPrecision",
+ "tag": 2230,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

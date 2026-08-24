@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of trades in repeating group."
+   "description": "Number of trades in repeating group.",
+   "components": [
+    "TrdCollGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of trades in repeating group."
+   "description": "Number of trades in repeating group.",
+   "components": [
+    "TrdCollGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of trades in repeating group."
+   "description": "Number of trades in repeating group.",
+   "components": [
+    "TrdCollGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

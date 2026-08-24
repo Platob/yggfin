@@ -217,7 +217,11 @@
     "125": "ISSUER",
     "126": "CONTRA_CUSTOMER_ACCOUNT",
     "127": "CONTRA_INVESTMENT_DECISION_MAKER"
-   }
+   },
+   "components": [
+    "Parties",
+    "PartyDetail"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -385,7 +389,10 @@
     "79": "PRIME_BROKER",
     "80": "STEP_OUT_FIRM",
     "81": "BROKER_CLEARING_ID"
-   }
+   },
+   "components": [
+    "Parties"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -547,7 +554,10 @@
     "76": "DESK_ID",
     "77": "MARKET_DATA_MARKET",
     "78": "ALLOCATION_ENTITY"
-   }
+   },
+   "components": [
+    "Parties"
+   ]
   },
   "4.4": {
    "type": "int",
@@ -629,7 +639,10 @@
     "36": "ENTERING_TRADER",
     "37": "CONTRA_TRADER",
     "38": "POSITION_ACCOUNT"
-   }
+   },
+   "components": [
+    "Parties"
+   ]
   },
   "4.3": {
    "type": "int",
@@ -677,7 +690,10 @@
     "12": "EXECUTING_TRADER",
     "13": "ORDER_ORIGINATION_FIRM",
     "4": "CLEARING_FIRM"
-   }
+   },
+   "components": [
+    "Parties"
+   ]
   }
  }
 }

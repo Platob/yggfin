@@ -1,0 +1,17 @@
+{
+ "name": "RiskLimitCheckRequestResult",
+ "tag": 2326,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "SUCCESSFUL",
+    "1": "INVALID_PARTY",
+    "2": "REQ_EXCEEDS_CREDIT_LIMIT",
+    "3": "REQ_EXCEEDS_CLIP_SIZE_LIMIT",
+    "4": "REQ_EXCEEDS_MAX_NOTIONAL",
+    "99": "OTHER"
+   }
+  }
+ }
+}

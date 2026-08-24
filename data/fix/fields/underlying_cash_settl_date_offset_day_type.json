@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingCashSettlDateOffsetDayType",
+ "tag": 42795,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

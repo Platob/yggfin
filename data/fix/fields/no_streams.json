@@ -1,0 +1,9 @@
+{
+ "name": "NoStreams",
+ "tag": 40049,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

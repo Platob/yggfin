@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamCapRateBuySide",
+ "tag": 40340,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

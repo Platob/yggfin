@@ -1,0 +1,9 @@
+{
+ "name": "BidQuoteID",
+ "tag": 1747,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

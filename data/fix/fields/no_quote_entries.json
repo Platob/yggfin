@@ -4,15 +4,30 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "The number of quote entries for a QuoteSet."
+   "description": "The number of quote entries for a QuoteSet.",
+   "components": [
+    "QuotCxlEntriesGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "The number of quote entries for a QuoteSet."
+   "description": "The number of quote entries for a QuoteSet.",
+   "components": [
+    "QuotCxlEntriesGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "The number of quote entries for a QuoteSet."
+   "description": "The number of quote entries for a QuoteSet.",
+   "components": [
+    "QuotCxlEntriesGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

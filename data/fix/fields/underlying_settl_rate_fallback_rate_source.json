@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingSettlRateFallbackRateSource",
+ "tag": 40904,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

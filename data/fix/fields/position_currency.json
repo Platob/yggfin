@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "The Currency in which the position Amount is denominated"
+   "description": "The Currency in which the position Amount is denominated",
+   "components": [
+    "PositionAmountData"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "The Currency in which the position Amount is denominated"
+   "description": "The Currency in which the position Amount is denominated",
+   "components": [
+    "PositionAmountData"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "The Currency in which the position Amount is denominated"
+   "description": "The Currency in which the position Amount is denominated",
+   "components": [
+    "PositionAmountData"
+   ]
   }
  }
 }

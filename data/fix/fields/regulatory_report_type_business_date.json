@@ -1,0 +1,9 @@
+{
+ "name": "RegulatoryReportTypeBusinessDate",
+ "tag": 2869,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

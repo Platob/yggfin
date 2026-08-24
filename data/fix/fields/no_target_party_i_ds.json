@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Identifies the number of target parties identified in a mass action."
+   "description": "Identifies the number of target parties identified in a mass action.",
+   "components": [
+    "TargetParties"
+   ]
   }
  }
 }

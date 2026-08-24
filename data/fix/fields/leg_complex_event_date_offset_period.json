@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventDateOffsetPeriod",
+ "tag": 41391,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

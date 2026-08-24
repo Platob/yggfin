@@ -1,0 +1,9 @@
+{
+ "name": "CommonPricingIndicator",
+ "tag": 2142,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

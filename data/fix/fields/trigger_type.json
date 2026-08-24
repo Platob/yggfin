@@ -17,7 +17,10 @@
     "3": "NEXT_AUCTION",
     "4": "PRICE_MOVEMENT",
     "5": "ON_ORDER_ENTRY_OR_MODIFICATION"
-   }
+   },
+   "components": [
+    "TriggeringInstruction"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -33,7 +36,10 @@
     "2": "SPECIFIED_TRADING_SESSION",
     "3": "NEXT_AUCTION",
     "4": "PRICE_MOVEMENT"
-   }
+   },
+   "components": [
+    "TriggeringInstruction"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -49,7 +55,10 @@
     "2": "SPECIFIED_TRADING_SESSION",
     "3": "NEXT_AUCTION",
     "4": "PRICE_MOVEMENT"
-   }
+   },
+   "components": [
+    "TriggeringInstruction"
+   ]
   }
  }
 }

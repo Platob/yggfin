@@ -1,0 +1,9 @@
+{
+ "name": "LegDeliveryScheduleNotionalCommodityFrequency",
+ "tag": 41413,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

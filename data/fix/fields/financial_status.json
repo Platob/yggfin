@@ -20,6 +20,9 @@
     "CollateralReport",
     "SecurityStatus",
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp"
    ]
   },
   "5.0.SP1": {
@@ -40,6 +43,9 @@
     "CollateralReport",
     "SecurityStatus",
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp"
    ]
   },
   "5.0": {
@@ -60,6 +66,9 @@
     "CollateralReport",
     "SecurityStatus",
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "MDIncGrp"
    ]
   },
   "4.4": {

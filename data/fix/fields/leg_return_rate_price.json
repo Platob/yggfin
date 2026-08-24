@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRatePrice",
+ "tag": 42566,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

@@ -80,7 +80,10 @@
     "40": "AVERAGE_DAILY_NOTIONAL_AMOUNT",
     "41": "AVERAGE_DAILY_NUMBER_TRADES",
     "99": "TEXT"
-   }
+   },
+   "components": [
+    "AttrbGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -148,7 +151,10 @@
     "28": "INSTRUMENT_STRIKE_PRICE",
     "29": "TRADEABLE_INDICATOR",
     "99": "TEXT"
-   }
+   },
+   "components": [
+    "AttrbGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -202,7 +208,10 @@
     "21": "CALLABLE_BELOW_MATURITY_VALUE",
     "22": "CALLABLE_WITHOUT_NOTICE",
     "99": "TEXT"
-   }
+   },
+   "components": [
+    "AttrbGrp"
+   ]
   },
   "4.4": {
    "type": "int",
@@ -256,7 +265,10 @@
     "21": "CALLABLE_BELOW_MATURITY_VALUE",
     "22": "CALLABLE_WITHOUT_NOTICE",
     "99": "TEXT"
-   }
+   },
+   "components": [
+    "InstrumentExtension"
+   ]
   }
  }
 }

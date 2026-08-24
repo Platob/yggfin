@@ -1,0 +1,13 @@
+{
+ "name": "PartyRiskLimitStatus",
+ "tag": 2355,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "DISABLED",
+    "1": "ENABLED"
+   }
+  }
+ }
+}

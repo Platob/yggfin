@@ -1,0 +1,17 @@
+{
+ "name": "CollRptRejectReason",
+ "tag": 2487,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "UNKNOWN_TRADE",
+    "1": "UNKNOWN_INSTRUMENT",
+    "2": "UNKNOWN_COUNTERPARTY",
+    "3": "UNKNOWN_POSITION",
+    "4": "UNACCEPTABLE_COLLATERAL",
+    "99": "OTHER"
+   }
+  }
+ }
+}

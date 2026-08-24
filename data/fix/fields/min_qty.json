@@ -16,6 +16,12 @@
     "NewOrderCross",
     "Quote",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotReqGrp"
    ]
   },
   "5.0.SP1": {
@@ -32,6 +38,12 @@
     "NewOrderCross",
     "Quote",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotReqGrp"
    ]
   },
   "5.0": {
@@ -45,6 +57,11 @@
     "OrderCancelReplaceRequest",
     "NewOrderCross",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp"
    ]
   },
   "4.4": {

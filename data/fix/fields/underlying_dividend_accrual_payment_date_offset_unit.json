@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDividendAccrualPaymentDateOffsetUnit",
+ "tag": 42821,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -16,6 +16,13 @@
     "OrderCancelReplaceRequest",
     "AllocationInstruction",
     "ListCancelRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp"
    ]
   },
   "5.0.SP1": {
@@ -32,6 +39,13 @@
     "OrderCancelReplaceRequest",
     "AllocationInstruction",
     "ListCancelRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp"
    ]
   },
   "5.0": {
@@ -48,6 +62,13 @@
     "OrderCancelReplaceRequest",
     "AllocationInstruction",
     "ListCancelRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SideCrossOrdCxlGrp",
+    "SideCrossOrdModGrp"
    ]
   },
   "4.4": {

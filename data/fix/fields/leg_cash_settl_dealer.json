@@ -1,0 +1,9 @@
+{
+ "name": "LegCashSettlDealer",
+ "tag": 41343,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

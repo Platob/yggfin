@@ -1,0 +1,9 @@
+{
+ "name": "AggressorTime",
+ "tag": 2445,
+ "versions": {
+  "5.0.SP2": {
+   "type": "UTCTIMESTAMP"
+  }
+ }
+}

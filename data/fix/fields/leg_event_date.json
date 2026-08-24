@@ -1,0 +1,9 @@
+{
+ "name": "LegEventDate",
+ "tag": 2061,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

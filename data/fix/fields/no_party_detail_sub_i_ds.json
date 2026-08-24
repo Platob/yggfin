@@ -1,0 +1,9 @@
+{
+ "name": "NoPartyDetailSubIDs",
+ "tag": 1694,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

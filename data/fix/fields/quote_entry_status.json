@@ -26,7 +26,10 @@
     "14": "CANCELED_DUE_TO_LOCK_MARKET",
     "15": "CANCELED_DUE_TO_CROSS_MARKET",
     "16": "ACTIVE"
-   }
+   },
+   "components": [
+    "QuotEntryAckGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -52,7 +55,10 @@
     "14": "CANCELED_DUE_TO_LOCK_MARKET",
     "15": "CANCELED_DUE_TO_CROSS_MARKET",
     "16": "ACTIVE"
-   }
+   },
+   "components": [
+    "QuotEntryAckGrp"
+   ]
   }
  }
 }

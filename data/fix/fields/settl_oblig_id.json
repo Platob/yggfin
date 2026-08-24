@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Unique ID for this settlement instruction."
+   "description": "Unique ID for this settlement instruction.",
+   "components": [
+    "SettlObligationInstructions"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Unique ID for this settlement instruction."
+   "description": "Unique ID for this settlement instruction.",
+   "components": [
+    "SettlObligationInstructions"
+   ]
   }
  }
 }

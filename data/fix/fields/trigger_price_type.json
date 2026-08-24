@@ -20,7 +20,10 @@
     "4": "BEST_BID_OR_LAST_TRADE",
     "5": "BEST_OFFER_OR_LAST_TRADE",
     "6": "BEST_MID"
-   }
+   },
+   "components": [
+    "TriggeringInstruction"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -40,7 +43,10 @@
     "4": "BEST_BID_OR_LAST_TRADE",
     "5": "BEST_OFFER_OR_LAST_TRADE",
     "6": "BEST_MID"
-   }
+   },
+   "components": [
+    "TriggeringInstruction"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -60,7 +66,10 @@
     "4": "BEST_BID_OR_LAST_TRADE",
     "5": "BEST_OFFER_OR_LAST_TRADE",
     "6": "BEST_MID"
-   }
+   },
+   "components": [
+    "TriggeringInstruction"
+   ]
   }
  }
 }

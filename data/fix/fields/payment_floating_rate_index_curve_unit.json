@@ -1,0 +1,9 @@
+{
+ "name": "PaymentFloatingRateIndexCurveUnit",
+ "tag": 43100,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

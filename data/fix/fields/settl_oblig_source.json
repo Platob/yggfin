@@ -16,7 +16,10 @@
     "3": "INVESTOR",
     "4": "BUYERS_SETTLEMENT_INSTRUCTIONS",
     "5": "SELLERS_SETTLEMENT_INSTRUCTIONS"
-   }
+   },
+   "components": [
+    "SettlDetails"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -30,7 +33,10 @@
     "1": "INSTRUCTIONS_OF_BROKER",
     "2": "INSTRUCTIONS_FOR_INSTITUTION",
     "3": "INVESTOR"
-   }
+   },
+   "components": [
+    "SettlDetails"
+   ]
   }
  }
 }

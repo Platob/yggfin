@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "LocalMktDate",
-   "description": "The effective date of a new securities issue determined by its underwriters. Often but not always the same as the IssueDate <225> and the InterestAccrualDate <874>"
+   "description": "The effective date of a new securities issue determined by its underwriters. Often but not always the same as the IssueDate <225> and the InterestAccrualDate <874>",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
-   "description": "The effective date of a new securities issue determined by its underwriters. Often but not always the same as the IssueDate <225> and the InterestAccrualDate <874>"
+   "description": "The effective date of a new securities issue determined by its underwriters. Often but not always the same as the IssueDate <225> and the InterestAccrualDate <874>",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
-   "description": "The effective date of a new securities issue determined by its underwriters. Often but not always the same as the IssueDate <225> and the InterestAccrualDate <874>"
+   "description": "The effective date of a new securities issue determined by its underwriters. Often but not always the same as the IssueDate <225> and the InterestAccrualDate <874>",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",
-   "description": "The effective date of a new securities issue determined by its underwriters. Often but not always the same as the IssueDate <225> and the InterestAccrualDate <874>"
+   "description": "The effective date of a new securities issue determined by its underwriters. Often but not always the same as the IssueDate <225> and the InterestAccrualDate <874>",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

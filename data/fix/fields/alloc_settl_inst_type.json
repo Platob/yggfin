@@ -18,7 +18,10 @@
     "2": "FULL_DETAILS_PROVIDED",
     "3": "SSIDBI_DS_PROVIDED",
     "4": "PHONE_FOR_INSTRUCTIONS"
-   }
+   },
+   "components": [
+    "AllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -36,7 +39,10 @@
     "2": "FULL_DETAILS_PROVIDED",
     "3": "SSIDBI_DS_PROVIDED",
     "4": "PHONE_FOR_INSTRUCTIONS"
-   }
+   },
+   "components": [
+    "AllocGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -54,7 +60,10 @@
     "2": "FULL_DETAILS_PROVIDED",
     "3": "SSIDBI_DS_PROVIDED",
     "4": "PHONE_FOR_INSTRUCTIONS"
-   }
+   },
+   "components": [
+    "AllocGrp"
+   ]
   },
   "4.4": {
    "type": "int",

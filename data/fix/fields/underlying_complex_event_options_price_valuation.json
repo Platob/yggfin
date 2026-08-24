@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexEventOptionsPriceValuation",
+ "tag": 2612,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

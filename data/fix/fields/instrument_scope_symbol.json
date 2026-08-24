@@ -1,0 +1,9 @@
+{
+ "name": "InstrumentScopeSymbol",
+ "tag": 1536,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

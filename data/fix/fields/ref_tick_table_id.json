@@ -1,0 +1,9 @@
+{
+ "name": "RefTickTableID",
+ "tag": 1787,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

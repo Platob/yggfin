@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexOptPayoutPaySide",
+ "tag": 2261,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

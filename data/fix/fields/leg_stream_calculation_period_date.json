@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCalculationPeriodDate",
+ "tag": 41639,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

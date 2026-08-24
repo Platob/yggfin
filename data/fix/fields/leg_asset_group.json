@@ -1,0 +1,9 @@
+{
+ "name": "LegAssetGroup",
+ "tag": 2348,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

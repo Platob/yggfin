@@ -1,0 +1,9 @@
+{
+ "name": "LegProvisionOptionExerciseEarliestDateOffsetUnit",
+ "tag": 40479,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

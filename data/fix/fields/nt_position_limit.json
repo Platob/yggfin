@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Position Limit in the near-term contract for a given exchange-traded product."
+   "description": "Position Limit in the near-term contract for a given exchange-traded product.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Position Limit in the near-term contract for a given exchange-traded product."
+   "description": "Position Limit in the near-term contract for a given exchange-traded product.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "Position Limit in the near-term contract for a given exchange-traded product."
+   "description": "Position Limit in the near-term contract for a given exchange-traded product.",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

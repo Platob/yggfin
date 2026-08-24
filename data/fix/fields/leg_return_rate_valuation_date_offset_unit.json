@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateValuationDateOffsetUnit",
+ "tag": 42512,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "EntitlementRefID",
+ "tag": 1885,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

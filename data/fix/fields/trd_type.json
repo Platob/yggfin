@@ -137,6 +137,10 @@
     "AllocationReport",
     "AllocationInstructionAlert",
     "AllocationInstruction"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
    ]
   },
   "5.0.SP1": {
@@ -263,6 +267,9 @@
     "AllocationReport",
     "AllocationInstructionAlert",
     "AllocationInstruction"
+   ],
+   "components": [
+    "MDIncGrp"
    ]
   },
   "5.0": {

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingFlexibleIndicator",
+ "tag": 2035,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

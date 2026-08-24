@@ -42,7 +42,11 @@
     "23": "UP_FRONT_POINTS",
     "24": "INTEREST_RATE",
     "25": "PERCENTAGE_OF_NOTIONAL"
-   }
+   },
+   "components": [
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -70,7 +74,11 @@
     "8": "TED_YIELD",
     "9": "YIELD_SPREAD",
     "10": "YIELD"
-   }
+   },
+   "components": [
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -98,7 +106,11 @@
     "8": "TED_YIELD",
     "9": "YIELD_SPREAD",
     "10": "YIELD"
-   }
+   },
+   "components": [
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
+   ]
   },
   "4.4": {
    "type": "int",

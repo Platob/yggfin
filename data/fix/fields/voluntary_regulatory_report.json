@@ -1,0 +1,9 @@
+{
+ "name": "VoluntaryRegulatoryReport",
+ "tag": 1935,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

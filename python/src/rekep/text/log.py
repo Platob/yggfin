@@ -17,14 +17,14 @@ from rekep.convert import Convertible
 from rekep.enums import EventType
 from rekep.fields import Field, scalar
 from rekep.fix.columns import DECLARATIONS, ISIN_CODE, KWARGS
-from rekep.fix.components import PARTIES, Party
+from rekep.fix.components import PARTIES, TRD_REG_TIMESTAMPS, Party, TrdRegTimestamp
 from rekep.fix.rules import NO_PROTOCOL
 from rekep.market.event import Event
 from rekep.market.identity import NIL
 
 _EVENT_CODE = pyarrow.int32()
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
-_INSTRUMENT_DRIVER = "rekep.instrument"
+_INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 _INSTRUMENT_KIND = "rekep.kind"
 _INSTRUMENT_XHASH = "rekep.xhash"
@@ -42,9 +42,9 @@ class Log(Event):
 
     @classmethod
     @functools.cache
-    def into_instrument_driver(cls) -> str:
-        """Driver marker for normalized instrument lifecycle rows."""
-        return _INSTRUMENT_DRIVER
+    def into_instrument_plugin(cls) -> str:
+        """Plugin marker for normalized instrument lifecycle rows."""
+        return _INSTRUMENT_PLUGIN
 
     @classmethod
     @functools.cache
@@ -87,13 +87,20 @@ class Log(Event):
         """Instrument identifiers used when FIX omits `Symbol <55>`."""
         return ("symbol", "security_id", "isincode")
 
-    url: str = ""
+    source_url: str = ""
     """Path of the log the line came from, as its filesystem addresses it."""
+
+    # Where in that file, so a parsed row points back at the text it was read
+    # from: `sed -n '<source_rownum>p' <source_url>` is the line. Counted over
+    # physical lines rather than parsed rows, so a folded continuation does not
+    # shift every row after it.
+    source_rownum: int = 0
+    """1-based line number of this row's header line in `source_url`; 0 when unread."""
 
     thread_name: str = ""
     """Contents of the first bracketed field."""
 
-    driver_name: str = ""
+    plugin_code: str = ""
     """Contents of the second bracketed field -- the emitting module."""
 
     message: str = ""
@@ -118,6 +125,15 @@ class Log(Event):
         ),
     ] = None
     """FIX Parties entries; null when the component is absent."""
+
+    trd_reg_timestamps: Annotated[
+        list[TrdRegTimestamp] | None,
+        Field(
+            arrow_type=TRD_REG_TIMESTAMPS,
+            metadata={"fix:component": "TrdRegTimestamps"},
+        ),
+    ] = None
+    """FIX TrdRegTimestamps entries; null when the component is absent."""
 
     isincode: Annotated[str | None, ISIN_CODE] = None
     """ISIN carried by a rendered `ISINCODE` field."""
@@ -398,9 +414,10 @@ class Log(Event):
         values.update(
             {
                 "etype": EventType.INSTRUMENT,
-                "url": "",
+                "source_url": "",
+                "source_rownum": 0,
                 "thread_name": "",
-                "driver_name": cls.into_instrument_driver(),
+                "plugin_code": cls.into_instrument_plugin(),
                 "message": "",
                 "protocol": cls.into_instrument_protocol(),
                 "msg_type": "d",
@@ -429,7 +446,7 @@ class Log(Event):
         """Whether this row is a normalized instrument lifecycle version."""
         return (
             self.etype is EventType.INSTRUMENT
-            and self.driver_name == type(self).into_instrument_driver()
+            and self.plugin_code == type(self).into_instrument_plugin()
         )
 
     @classmethod
@@ -628,7 +645,7 @@ class Log(Event):
 class MessageCodec(Protocol):
     """What a source calls to turn a message column into the columns a row carries."""
 
-    def categorise(self, messages: Any, drivers: Any = None) -> Any:
+    def categorise(self, messages: Any, plugins: Any = None) -> Any:
         """One `protocol` name per row."""
         ...
 

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingOptionExerciseExpirationFrequencyUnit",
+ "tag": 41851,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

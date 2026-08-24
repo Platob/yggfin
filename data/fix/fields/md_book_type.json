@@ -19,6 +19,9 @@
     "SecurityStatus",
     "MarketDataSnapshotFullRefresh",
     "MarketDataIncrementalRefresh"
+   ],
+   "components": [
+    "MarketDataFeedTypes"
    ]
   },
   "5.0.SP1": {
@@ -38,6 +41,9 @@
     "SecurityStatus",
     "MarketDataSnapshotFullRefresh",
     "MarketDataIncrementalRefresh"
+   ],
+   "components": [
+    "MarketDataFeedTypes"
    ]
   },
   "5.0": {

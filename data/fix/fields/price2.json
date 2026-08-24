@@ -8,6 +8,11 @@
    "used_in": [
     "NewOrderSingle",
     "OrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
    ]
   },
   "5.0.SP1": {
@@ -16,6 +21,11 @@
    "used_in": [
     "NewOrderSingle",
     "OrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
    ]
   },
   "5.0": {
@@ -24,6 +34,11 @@
    "used_in": [
     "NewOrderSingle",
     "OrderCancelReplaceRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
    ]
   },
   "4.4": {

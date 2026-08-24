@@ -76,7 +76,10 @@
     "TIIE": "TIIE",
     "THBFIX": "THBFIX",
     "TONAR": "TONAR"
-   }
+   },
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -108,7 +111,10 @@
     "SONIA": "SONIA",
     "SWAP": "SWAP",
     "Treasury": "TREASURY"
-   }
+   },
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -140,11 +146,17 @@
     "SONIA": "SONIA",
     "SWAP": "SWAP",
     "Treasury": "TREASURY"
-   }
+   },
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Name of benchmark curve."
+   "description": "Name of benchmark curve.",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "4.3": {
    "type": "String",
@@ -159,7 +171,10 @@
     "FutureSWAP": "FUTURE_SWAP",
     "MuniAAA": "MUNI_AAA",
     "LIBOR": "LIBOR"
-   }
+   },
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   }
  }
 }

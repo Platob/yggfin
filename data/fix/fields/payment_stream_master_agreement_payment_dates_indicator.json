@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamMasterAgreementPaymentDatesIndicator",
+ "tag": 41223,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegStrikeCurrencyCodeSource",
+ "tag": 2908,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

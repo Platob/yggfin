@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamFirstObservationDateOffsetUnit",
+ "tag": 41212,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

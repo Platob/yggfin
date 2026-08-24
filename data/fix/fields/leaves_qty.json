@@ -7,6 +7,10 @@
    "description": "Quantity open for further execution. If the OrdStatus <39> is 'Canceled', 'DoneForTheDay', 'Expired', 'Calculated', or 'Rejected' (in which case the order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151> = OrderQty <38> \u2013 CumQty <14> . (Prior to FIX 4.2 this field was of type int)",
    "used_in": [
     "ExecutionReport"
+   ],
+   "components": [
+    "OrdListStatGrp",
+    "TradeReportOrderDetail"
    ]
   },
   "5.0.SP1": {
@@ -14,6 +18,9 @@
    "description": "Quantity open for further execution. If the OrdStatus <39> is 'Canceled', 'DoneForTheDay', 'Expired', 'Calculated', or 'Rejected' (in which case the order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151> = OrderQty <38> \u2013 CumQty <14> . (Prior to FIX 4.2 this field was of type int)",
    "used_in": [
     "ExecutionReport"
+   ],
+   "components": [
+    "OrdListStatGrp"
    ]
   },
   "5.0": {
@@ -21,6 +28,9 @@
    "description": "Quantity open for further execution. If the OrdStatus <39> is 'Canceled', 'DoneForTheDay', 'Expired', 'Calculated', or 'Rejected' (in which case the order is no longer active) then LeavesQty <151> could be 0, otherwise LeavesQty <151> = OrderQty <38> \u2013 CumQty <14> . (Prior to FIX 4.2 this field was of type int)",
    "used_in": [
     "ExecutionReport"
+   ],
+   "components": [
+    "OrdListStatGrp"
    ]
   },
   "4.4": {

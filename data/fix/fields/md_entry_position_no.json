@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Display position of a bid or offer, numbered from most competitive to least competitive, per market side, beginning with 1."
+   "description": "Display position of a bid or offer, numbered from most competitive to least competitive, per market side, beginning with 1.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Display position of a bid or offer, numbered from most competitive to least competitive, per market side, beginning with 1."
+   "description": "Display position of a bid or offer, numbered from most competitive to least competitive, per market side, beginning with 1.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "Display position of a bid or offer, numbered from most competitive to least competitive, per market side, beginning with 1."
+   "description": "Display position of a bid or offer, numbered from most competitive to least competitive, per market side, beginning with 1.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "int",

@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description"
+   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description"
+   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "Price",
-   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description"
+   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.4": {
    "type": "Price",
-   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description"
+   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.3": {
    "type": "Price",
-   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description"
+   "description": "Multileg instrument's individual security's StrikePrice. See StrikePrice <202> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

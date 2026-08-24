@@ -1,0 +1,9 @@
+{
+ "name": "IndexAnnexVersion",
+ "tag": 1958,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

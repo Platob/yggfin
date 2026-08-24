@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "data",
-   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
+   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters.",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "data",
-   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
+   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters.",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "data",
@@ -28,7 +34,10 @@
   },
   "FIXT1.1": {
    "type": "data",
-   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
+   "description": "Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters.",
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

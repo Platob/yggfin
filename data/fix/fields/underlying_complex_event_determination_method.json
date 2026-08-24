@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexEventDeterminationMethod",
+ "tag": 2272,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

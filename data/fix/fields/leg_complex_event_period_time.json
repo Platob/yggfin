@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventPeriodTime",
+ "tag": 41378,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTTIME"
+  }
+ }
+}

@@ -58,6 +58,17 @@
     "SettlementInstructions",
     "CrossOrderCancelRequest",
     "SecurityList"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SecTypesGrp",
+    "TrdCapDtGrp",
+    "TrdSessLstGrp"
    ]
   },
   "5.0.SP1": {
@@ -110,6 +121,15 @@
     "CrossOrderCancelReplaceRequest",
     "SettlementInstructions",
     "CrossOrderCancelRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "TrdCapDtGrp"
    ]
   },
   "5.0": {
@@ -157,6 +177,14 @@
     "CrossOrderCancelReplaceRequest",
     "SettlementInstructions",
     "CrossOrderCancelRequest"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "TrdCapDtGrp"
    ]
   },
   "4.4": {

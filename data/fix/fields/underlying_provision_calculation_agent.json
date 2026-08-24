@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingProvisionCalculationAgent",
+ "tag": 42156,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

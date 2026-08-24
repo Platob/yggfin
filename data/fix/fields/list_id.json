@@ -16,6 +16,12 @@
     "ListStrikePrice",
     "ListStatusRequest",
     "ListStatus"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "OrdAllocGrp",
+    "TradeReportOrderDetail"
    ]
   },
   "5.0.SP1": {
@@ -32,6 +38,13 @@
     "ListStrikePrice",
     "ListStatusRequest",
     "ListStatus"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "OrdAllocGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -48,6 +61,13 @@
     "ListStrikePrice",
     "ListStatusRequest",
     "ListStatus"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "OrdAllocGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

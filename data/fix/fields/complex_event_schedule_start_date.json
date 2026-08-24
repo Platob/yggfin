@@ -1,0 +1,9 @@
+{
+ "name": "ComplexEventScheduleStartDate",
+ "tag": 41032,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

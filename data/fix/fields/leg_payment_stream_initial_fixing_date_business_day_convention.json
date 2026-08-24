@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamInitialFixingDateBusinessDayConvention",
+ "tag": 40310,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

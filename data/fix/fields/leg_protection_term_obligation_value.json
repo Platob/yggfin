@@ -1,0 +1,9 @@
+{
+ "name": "LegProtectionTermObligationValue",
+ "tag": 41637,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

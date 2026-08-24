@@ -1,0 +1,9 @@
+{
+ "name": "PaymentDateUnadjusted",
+ "tag": 40219,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

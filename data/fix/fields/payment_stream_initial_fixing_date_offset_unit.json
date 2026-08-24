@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamInitialFixingDateOffsetUnit",
+ "tag": 40771,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "CashSettlAccruedInterestIndicator",
+ "tag": 40037,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

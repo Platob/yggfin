@@ -51,11 +51,17 @@ A store holds one document per field or component *identity*, not one per FIX
 version:
 
 ```text
-versions.json          the version list, each version's session layer,
-                       and which versions have had their spec read
-fields/party_role.json one field, and every version's reading of it
+versions.json           the version list, each version's session layer,
+                        and which versions have had their spec read
+fields/party_role.json  one field, and every version's reading of it
 components/parties.json one component, and every version's member tree
 ```
+
+JSON, and measured: the dictionary is seven thousand documents and every
+process importing this package parses a projection of it, where pure-Python
+YAML costs 25 seconds to read against a tenth of one for JSON. A store
+somebody wrote in YAML still reads, and converts itself the first time
+anything rewrites it.
 
 A field's identity is its **tag**, never its name. Tag 64 is `FutSettDate`
 through 4.3 and `SettlDate` after, so `fields/settl_date.json` is one file
@@ -82,9 +88,18 @@ that answers:
 3. a declared alias -- a rendered or namespaced spelling, a legacy name, a near
    miss confirmed against a capture.
 
+Matching folds **case and nothing else**. A separator is part of a name, so
+`party_role` is a spelling of its own rather than a second way of writing
+`PartyRole` -- dropping separators merged identities a store deliberately
+holds apart, and a match a registry cannot tell from a real collision is worse
+than a miss. A real renderer spelling is recorded as an alias, which is what
+`rekep fix classify --report` finds and `rekep fix apply --aliases` writes.
+
 A later tier never takes a name from an earlier one. Two identities claiming
-one name inside a tier, or an alias an earlier tier already answers for, are
-defects `registry.check()` reports and the CRUD verbs refuse.
+one name inside a tier, an alias an earlier tier already answers for, two
+identities claiming one **tag**, and two claiming one canonical name are all
+defects `registry.check()` reports and every write refuses -- with the
+conflicting names in the message.
 
 ### Editing and refreshing
 
@@ -98,6 +113,19 @@ rekep fix registry check --store data/fix
 
 Each verb schema-checks the change, re-runs the collision check against the
 whole store, and refuses the write rather than leaving it half applied.
+
+The same verbs run at a prompt, which is what a person editing more than one
+field wants:
+
+```bash
+rekep fix shell --store data/fix
+```
+
+`find`, `show`, `component` and `check` read; `add`, `edit`, `alias` and
+`remove` write. A change is built one answered question at a time, offers the
+stored value as each default, shows the whole entry back, and is written only
+after a yes -- through the same `FixRegistry` verbs, never a second
+implementation of them.
 
 `FixRegistry(cache_ttl=seconds)` regenerates a store older than the TTL from
 the QuickFIX spec before serving it. The default, `0`, never refetches. A
@@ -152,7 +180,7 @@ and says which of four things each one is:
 
 ```bash
 rekep fix classify --source /captures/brk --store data/fix \
-    --drivers '^UL' --report brk.json
+    --plugins '^UL' --report brk.json
 rekep fix apply --store data/fix --report brk.json --aliases --minimum 50
 ```
 
@@ -176,29 +204,58 @@ Two readings the classification depends on:
 
 ## Groups and components
 
-Repeating groups remain ordered entries. Known components such as Parties are
-extracted into typed lists; each Party retains an ordered string buffer for
-fields absent from the current model.
+Repeating groups remain ordered entries. Structured components are extracted
+into typed lists; each entry retains an ordered string buffer for members
+absent from the projected shape.
 
 The extraction is driven by the component declaration and by nothing else:
 which tag counts the entries, which tag opens one, which tags may belong to
-one and which group each sits inside all come out of the tree. Naming another
-component and its group is the whole of what makes it another group's
-extractor --
+one and which group each sits inside all come out of the tree. A
+`ComponentGroup` subclass adds only the shape:
 
 ```python
-Parties(
-    components=registry.components("4.4"),
-    component="TrdRegTimestamps",
-    group="NoTrdRegTimestamps",
-)
+@dataclasses.dataclass(eq=False)
+class TrdRegTimestamps(ComponentGroup):
+    component: str = "TrdRegTimestamps"
+    group: str = "NoTrdRegTimestamps"
+
+    @classmethod
+    @cache
+    def into_row(cls) -> type:
+        return TrdRegTimestamp
+
+    @classmethod
+    @cache
+    def into_projection(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("trd_reg_timestamp", "TrdRegTimestamp"),
+            ("trd_reg_timestamp_type", "TrdRegTimestampType"),
+            ("trd_reg_timestamp_origin", "TrdRegTimestampOrigin"),
+        )
 ```
 
--- and `NoTrdRegTimestamps`, `NoSecurityAltID` and `NoTradingSessions` split
-exactly as `NoPartyIDs` does. What remains specific to Parties is the *shape*
-it projects into: `Party`, and the parsed log's `parties` column. Another
-group reaching a column of its own is a change to the log's schema, not to the
-extraction.
+The parsed log carries two of them, `parties` and `trd_reg_timestamps`.
+`FixCodec.into_components()` maps each column to its extractor and applies them
+in order against what the last one left, so a member lifted into one
+component's entries cannot also be lifted into another's. `into_fallback()` is
+the standard tags each reads when a store predates component declarations.
+
+The delimiter leads the projection because it is what opens an entry. Every
+member is lifted only where its value is one the column's type can hold, and
+falls to `buffer` where it is not -- so a malformed `UTCTimestamp` is kept as
+the text that arrived rather than becoming a null nobody can explain.
+
+`NoSecurityAltID` and `NoTradingSessions` split exactly as `NoPartyIDs` does;
+reaching a column of their own is a change to the log's schema and a
+twenty-line subclass, not a change to the extraction.
+
+### What a component requires
+
+The spec states `required` for every member, and
+`FixRegistry.component_field(name, version)` reads it: a member a message must
+carry is a non-nullable column, one it may omit is nullable, a repeating group
+is a list whose entries are never null, and a referenced component is inlined
+where it sits. That is the declaration a projected shape is checked against.
 
 ## Nested payloads
 

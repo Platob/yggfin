@@ -20,9 +20,11 @@ reader = source.read_arrow_reader(
 )
 ```
 
-Header parsing extracts the timestamp, thread, driver, level, and message.
+Header parsing extracts the timestamp, thread, plugin, level, and message.
 Continuation lines may be folded into the prior event. Compression is inferred
-from the filename by Arrow.
+from the filename by Arrow. Every row keeps where it was read from:
+`source_url` names the file and `source_rownum` the 1-based physical line its
+header sat on, so a folded continuation does not shift the rows after it.
 
 ## Parsed record
 
@@ -65,6 +67,10 @@ than being guessed.
     is what a vendor prefix is -- `TECH` in `TECH.CLIENTID`.
 - `parties`: structured FIX Parties entries with a flexible buffer for new
   members.
+- `trd_reg_timestamps`: structured FIX TrdRegTimestamps entries -- the
+  regulatory clock, with the same buffer. Both columns are filled by a
+  `ComponentGroup` reading its component's own declaration; see
+  [FIX](fix.md#groups-and-components).
 
 These are lists, not maps, because repeated keys and wire order are data. At
 most one of `comp` and `namespace` is set, and either one joined to `key` by a

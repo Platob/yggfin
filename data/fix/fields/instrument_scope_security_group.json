@@ -1,0 +1,9 @@
+{
+ "name": "InstrumentScopeSecurityGroup",
+ "tag": 1545,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

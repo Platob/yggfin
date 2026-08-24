@@ -1,0 +1,9 @@
+{
+ "name": "CollateralReinvestmentCurrencyCodeSource",
+ "tag": 2931,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

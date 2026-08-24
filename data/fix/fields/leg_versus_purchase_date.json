@@ -1,0 +1,9 @@
+{
+ "name": "LegVersusPurchaseDate",
+ "tag": 1757,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

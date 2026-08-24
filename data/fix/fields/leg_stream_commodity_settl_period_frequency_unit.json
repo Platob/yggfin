@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCommoditySettlPeriodFrequencyUnit",
+ "tag": 41693,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

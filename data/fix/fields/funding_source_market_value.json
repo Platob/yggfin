@@ -1,0 +1,9 @@
+{
+ "name": "FundingSourceMarketValue",
+ "tag": 2848,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

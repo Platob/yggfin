@@ -18,7 +18,10 @@
     "FUTDA": "FUTURES_STYLE_WITH_AN_ATTACHED_CASH_ADJUSTMENT",
     "CDS": "CDS_STYLE_COLLATERALIZATION",
     "CDSD": "CDS_IN_DELIVERY_USE_RECOVERY_RATE_TO_CALCULATE"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "name": "FuturesValuationMethod",
@@ -33,7 +36,10 @@
     "EQTY": "PREMIUM_STYLE",
     "FUT": "FUTURES_STYLE_MARK_TO_MARKET",
     "FUTDA": "FUTURES_STYLE_WITH_AN_ATTACHED_CASH_ADJUSTMENT"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

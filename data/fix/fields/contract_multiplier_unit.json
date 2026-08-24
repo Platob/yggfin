@@ -14,7 +14,10 @@
     "0": "SHARES",
     "1": "HOURS",
     "2": "DAYS"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

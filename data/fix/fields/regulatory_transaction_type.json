@@ -1,0 +1,14 @@
+{
+ "name": "RegulatoryTransactionType",
+ "tag": 2347,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NONE",
+    "1": "SEF_REQUIRED_TRANSACTION",
+    "2": "SEF_PERMITTED_TRANSACTION"
+   }
+  }
+ }
+}

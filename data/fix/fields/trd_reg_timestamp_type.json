@@ -49,7 +49,10 @@
     "32": "TRADE_CANCELLATION_TIME",
     "33": "TRADE_MODIFICATION_TIME",
     "34": "REFERENCE_TIME_FOR_NBBO"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -69,7 +72,10 @@
     "4": "BROKER_RECEIPT",
     "5": "BROKER_EXECUTION",
     "6": "DESK_RECEIPT"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -89,7 +95,10 @@
     "4": "BROKER_RECEIPT",
     "5": "BROKER_EXECUTION",
     "6": "DESK_RECEIPT"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   },
   "4.4": {
    "type": "int",
@@ -107,7 +116,10 @@
     "3": "TIME_OUT",
     "4": "BROKER_RECEIPT",
     "5": "BROKER_EXECUTION"
-   }
+   },
+   "components": [
+    "TrdRegTimestamps"
+   ]
   }
  }
 }

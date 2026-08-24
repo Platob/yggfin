@@ -1,0 +1,9 @@
+{
+ "name": "ProvisionCashSettlPaymentDateRangeFirst",
+ "tag": 40169,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

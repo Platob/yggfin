@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamCompoundingFinalRateRoundingDirection",
+ "tag": 42441,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR"
+  }
+ }
+}

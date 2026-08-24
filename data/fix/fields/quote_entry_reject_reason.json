@@ -20,7 +20,10 @@
     "12": "Invalid or unknown Security Issuer",
     "13": "Invalid or unknown Issuer of Underlying",
     "99": "Other"
-   }
+   },
+   "components": [
+    "QuotEntryAckGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -38,7 +41,10 @@
     "10": "Price exceeds current price band",
     "11": "Quote Locked - Unable to Update/Cancel",
     "99": "Other"
-   }
+   },
+   "components": [
+    "QuotEntryAckGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -54,7 +60,10 @@
     "8": "Invalid price",
     "9": "Not authorized to quote security",
     "99": "Other"
-   }
+   },
+   "components": [
+    "QuotEntryAckGrp"
+   ]
   },
   "4.4": {
    "type": "int",

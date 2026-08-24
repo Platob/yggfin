@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamDiscountRateDayCount",
+ "tag": 40746,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

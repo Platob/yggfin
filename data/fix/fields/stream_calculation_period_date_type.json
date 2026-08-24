@@ -1,0 +1,9 @@
+{
+ "name": "StreamCalculationPeriodDateType",
+ "tag": 41243,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

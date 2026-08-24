@@ -14,7 +14,10 @@
     "2": "T_PLUS1",
     "4": "T_PLUS3",
     "5": "T_PLUS4"
-   }
+   },
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -28,7 +31,10 @@
     "2": "T_PLUS1",
     "4": "T_PLUS3",
     "5": "T_PLUS4"
-   }
+   },
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -42,7 +48,10 @@
     "2": "T_PLUS1",
     "4": "T_PLUS3",
     "5": "T_PLUS4"
-   }
+   },
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

@@ -1,0 +1,14 @@
+{
+ "name": "DeliveryScheduleType",
+ "tag": 41038,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NOTIONAL",
+    "1": "DELIVERY",
+    "2": "PHYSICAL_SETTL_PERIODS"
+   }
+  }
+ }
+}

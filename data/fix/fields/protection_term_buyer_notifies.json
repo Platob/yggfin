@@ -1,0 +1,9 @@
+{
+ "name": "ProtectionTermBuyerNotifies",
+ "tag": 40185,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

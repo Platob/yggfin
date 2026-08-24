@@ -1,0 +1,9 @@
+{
+ "name": "LegInstrumentRoundingDirection",
+ "tag": 2214,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR"
+  }
+ }
+}

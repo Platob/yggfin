@@ -1,0 +1,23 @@
+{
+ "name": "MDStatisticRatioType",
+ "tag": 2472,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "BUYERS_TO_SELLERS",
+    "2": "UPTICKS_TO_DOWNTICKS",
+    "3": "MARKET_MAKER_TO_NON_MARKET_MAKER",
+    "4": "AUTOMATED_TO_NON_AUTOMATED",
+    "5": "ORDERS_TO_TRADES",
+    "6": "QUOTES_TO_TRADES",
+    "7": "ORDERS_AND_QUOTES_TO_TRADES",
+    "8": "FAILED_TO_TOTAL_TRADED_VALUE",
+    "9": "BENEFITS_TO_TOTAL_TRADED_VALUE",
+    "10": "FEES_TO_TOTAL_TRADED_VALUE",
+    "11": "TRADE_VOLUME_TO_TOTAL_TRADED_VOLUME",
+    "12": "ORDERS_TO_TOTAL_NUMBER_ORDERS"
+   }
+  }
+ }
+}

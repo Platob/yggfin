@@ -1,0 +1,9 @@
+{
+ "name": "NoLegOptionExerciseDates",
+ "tag": 41512,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

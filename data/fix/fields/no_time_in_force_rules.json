@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of time in force techniques"
+   "description": "Number of time in force techniques",
+   "components": [
+    "TimeInForceRules"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of time in force techniques"
+   "description": "Number of time in force techniques",
+   "components": [
+    "TimeInForceRules"
+   ]
   }
  }
 }

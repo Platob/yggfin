@@ -1,0 +1,9 @@
+{
+ "name": "PaymentScheduleRateSourceType",
+ "tag": 40870,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

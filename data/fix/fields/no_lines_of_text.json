@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Identifies number of lines of text body"
+   "description": "Identifies number of lines of text body",
+   "components": [
+    "LinesOfTextGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Identifies number of lines of text body"
+   "description": "Identifies number of lines of text body",
+   "components": [
+    "LinesOfTextGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Identifies number of lines of text body"
+   "description": "Identifies number of lines of text body",
+   "components": [
+    "LinesOfTextGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

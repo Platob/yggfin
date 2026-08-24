@@ -1,0 +1,9 @@
+{
+ "name": "TradeQty",
+ "tag": 1843,
+ "versions": {
+  "5.0.SP2": {
+   "type": "QTY"
+  }
+ }
+}

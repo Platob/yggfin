@@ -21,7 +21,11 @@
     "4": "ALLOCATION_FROM_EXECUTOR",
     "5": "ALLOCATION_TO_CLAIM_ACCOUNT",
     "6": "TRADE_SPLIT"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -41,7 +45,11 @@
     "3": "ALLOCATION_GIVE_UP_EXECUTOR",
     "4": "ALLOCATION_FROM_EXECUTOR",
     "5": "ALLOCATION_TO_CLAIM_ACCOUNT"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -61,7 +69,11 @@
     "3": "ALLOCATION_GIVE_UP_EXECUTOR",
     "4": "ALLOCATION_FROM_EXECUTOR",
     "5": "ALLOCATION_TO_CLAIM_ACCOUNT"
-   }
+   },
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "4.4": {
    "type": "int",

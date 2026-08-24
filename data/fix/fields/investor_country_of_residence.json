@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Country",
-   "description": "The ISO 3166 Country code (2 character) identifying which country the beneficial investor is resident for tax purposes. (e.g https://en.wikipedia.org/wiki/ISO_3166-1 )"
+   "description": "The ISO 3166 Country code (2 character) identifying which country the beneficial investor is resident for tax purposes. (e.g https://en.wikipedia.org/wiki/ISO_3166-1 )",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Country",
-   "description": "The ISO 3166 Country code (2 character) identifying which country the beneficial investor is resident for tax purposes. (e.g https://en.wikipedia.org/wiki/ISO_3166-1 )"
+   "description": "The ISO 3166 Country code (2 character) identifying which country the beneficial investor is resident for tax purposes. (e.g https://en.wikipedia.org/wiki/ISO_3166-1 )",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "5.0": {
    "type": "Country",
-   "description": "The ISO 3166 Country code (2 character) identifying which country the beneficial investor is resident for tax purposes. (e.g https://en.wikipedia.org/wiki/ISO_3166-1 )"
+   "description": "The ISO 3166 Country code (2 character) identifying which country the beneficial investor is resident for tax purposes. (e.g https://en.wikipedia.org/wiki/ISO_3166-1 )",
+   "components": [
+    "RgstDtlsGrp"
+   ]
   },
   "4.4": {
    "type": "Country",

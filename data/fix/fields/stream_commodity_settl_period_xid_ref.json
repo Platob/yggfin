@@ -1,0 +1,9 @@
+{
+ "name": "StreamCommoditySettlPeriodXIDRef",
+ "tag": 41302,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XIDREF"
+  }
+ }
+}

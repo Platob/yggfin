@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of CompID entries in a repeating group."
+   "description": "Number of CompID entries in a repeating group.",
+   "components": [
+    "CompIDReqGrp",
+    "CompIDStatGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of CompID entries in a repeating group."
+   "description": "Number of CompID entries in a repeating group.",
+   "components": [
+    "CompIDReqGrp",
+    "CompIDStatGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of CompID entries in a repeating group."
+   "description": "Number of CompID entries in a repeating group.",
+   "components": [
+    "CompIDReqGrp",
+    "CompIDStatGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

@@ -1,0 +1,9 @@
+{
+ "name": "ProvisionCashSettlValueDateBusinessDayConvention",
+ "tag": 40116,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

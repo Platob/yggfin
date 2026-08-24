@@ -9,6 +9,13 @@
     "Confirmation",
     "SettlementInstructionRequest",
     "ConfirmationRequest"
+   ],
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
    ]
   },
   "5.0.SP1": {
@@ -18,6 +25,13 @@
     "Confirmation",
     "SettlementInstructionRequest",
     "ConfirmationRequest"
+   ],
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
    ]
   },
   "5.0": {
@@ -27,6 +41,13 @@
     "Confirmation",
     "SettlementInstructionRequest",
     "ConfirmationRequest"
+   ],
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
    ]
   },
   "4.4": {

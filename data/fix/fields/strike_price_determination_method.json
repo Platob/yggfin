@@ -16,7 +16,10 @@
     "2": "STRIKE_SET_AT_EXPIRATION",
     "3": "STRIKE_SET_TO_AVERAGE_ACROSS_LIFE",
     "4": "STRIKE_SET_TO_OPTIMAL_VALUE"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

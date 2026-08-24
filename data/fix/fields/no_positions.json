@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of position entries."
+   "description": "Number of position entries.",
+   "components": [
+    "PositionQty"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of position entries."
+   "description": "Number of position entries.",
+   "components": [
+    "PositionQty"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of position entries."
+   "description": "Number of position entries.",
+   "components": [
+    "PositionQty"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",
-   "description": "Number of position entries."
+   "description": "Number of position entries.",
+   "components": [
+    "PositionQty"
+   ]
   }
  }
 }

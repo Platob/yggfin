@@ -1,0 +1,9 @@
+{
+ "name": "NoAllocCommissions",
+ "tag": 2653,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

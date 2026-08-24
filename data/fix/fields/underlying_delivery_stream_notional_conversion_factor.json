@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDeliveryStreamNotionalConversionFactor",
+ "tag": 41797,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

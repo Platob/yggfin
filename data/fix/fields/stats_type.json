@@ -16,7 +16,10 @@
     "2": "HIGH",
     "3": "AVERAGE_PRICE",
     "4": "TURNOVER"
-   }
+   },
+   "components": [
+    "StatsIndGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -32,7 +35,10 @@
     "2": "HIGH",
     "3": "AVERAGE_PRICE",
     "4": "TURNOVER"
-   }
+   },
+   "components": [
+    "StatsIndGrp"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "LegGoverningLaw",
+ "tag": 2507,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

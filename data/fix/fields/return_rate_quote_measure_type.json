@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRateQuoteMeasureType",
+ "tag": 42743,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

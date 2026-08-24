@@ -90,7 +90,9 @@ class Instrument(Event):
         """Instrument-state rows share one event kind."""
         return EventType.INSTRUMENT
 
-    xhash: Annotated[int, Field.partition_key("bucket[16]")] = NIL
+    # Not a partition: bucketing a hash splits every hour into as many files as
+    # buckets, and the hour already prunes the read this would prune.
+    xhash: int = NIL
     """Digest of the exact `symbol`; zero when the symbol is empty."""
 
     symbol: Annotated[str, fix_tag("Symbol")] = ""

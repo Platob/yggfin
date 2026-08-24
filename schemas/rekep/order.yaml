@@ -129,9 +129,11 @@ fields:
   description: Why this event was rejected or could not be interpreted, when known.
 - name: instrument_xhash
   type: int64
-  description: Instrument lifecycle identity used to join and partition market rows.
-  metadata:
-    iceberg:partition_key: bucket[16]
+  description: Instrument lifecycle identity used to join market rows.
+- name: instrument_code
+  type: string
+  description: Readable spelling of the instrument `instrument_xhash` names; empty
+    when unstated.
 - name: kind
   type: int32
   description: Standard market semantic, independent of its protocol spelling.
@@ -170,6 +172,7 @@ fields:
       Order Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
       Order - Cross","Indication of Interest","Quote Status Request","Security Definition
       Request","Security Definition"]'
+    fix:components: '["BidCompReqGrp","BidCompRspGrp","InstrmtStrkPxGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","SettlInstGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
     fix:name: Side
@@ -199,6 +202,7 @@ fields:
       Request","Indications of Interest","New Order - Multileg","Multileg Order Cancel/Replace
       Request","New Order - Single","New Order - List","New Order - Cross","Indication
       of Interest"]'
+    fix:components: '["BidCompRspGrp","InstrmtStrkPxGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","TradeReportOrderDetail","UndInstrmtStrkPxGrp"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
     fix:name: Price
@@ -236,6 +240,7 @@ fields:
       List Request","Indications of Interest","New Order - Multileg","Multileg Order
       Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
       Order - Cross","Indication of Interest"]'
+    fix:components: '["InstrmtMDReqGrp","InstrmtStrkPxGrp","ListOrdGrp","MDFullGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","RelSymDerivSecGrp","RelSymDerivSecUpdGrp","SecListGrp","SecLstUpdRelSymGrp","SettlObligationInstructions","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency","4.2":"Currency","4.1":"char","4.0":"char"}'
     fix:name: Currency
@@ -297,6 +302,7 @@ fields:
       Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental Refresh","New
       Order - Multileg","Multileg Order Cancel/Replace Request","New Order - Single","New
       Order - List","New Order - Cross"]'
+    fix:components: '["ListOrdGrp","MDFullGrp","MDIncGrp","TimeInForceRules","TradeReportOrderDetail"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
     fix:name: TimeInForce
@@ -322,6 +328,7 @@ fields:
       Order List","Order Cancel/Replace Request","New Order Cross","Cross Order Cancel/Replace
       Request","New Order - Multileg","Multileg Order Cancel/Replace Request","New
       Order - Single","New Order - List","New Order - Cross"]'
+    fix:components: '["ListOrdGrp","TradeReportOrderDetail"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
     fix:name: StopPx
@@ -343,6 +350,7 @@ fields:
     fix:used_in: '["ExecutionReport","TradeCaptureReport","Confirmation","ExecutionAcknowledgement","TradeCaptureReportAck","AllocationReport","AllocationInstructionAlert","AllocationInstruction","Execution
       Report","Trade Capture Report","Allocation Report","Allocation Instruction","List
       Status","Allocation"]'
+    fix:components: '["OrdListStatGrp"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
     fix:name: AvgPx
@@ -369,6 +377,7 @@ fields:
       Know Trade","Order Mass Cancel Report","Cross Order Cancel/Replace Request","Cross
       Order Cancel Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental
       Refresh","Multileg Order Cancel/Replace Request","Allocation"]'
+    fix:components: '["MDFullGrp","MDIncGrp","OrdAllocGrp","OrdListStatGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: OrderID
@@ -397,6 +406,7 @@ fields:
       Order Cancel/Replace Request","Settlement Instructions","Cross Order Cancel
       Request","New Order - Multileg","Multileg Order Cancel/Replace Request","New
       Order - Single","New Order - List","Allocation","New Order - Cross"]'
+    fix:components: '["InstrmtStrkPxGrp","ListOrdGrp","OrdAllocGrp","OrdListStatGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: ClOrdID
@@ -414,6 +424,7 @@ fields:
       Report","Order Cancel Reject","Multileg Order Cancel/Replace","Order Cancel
       Request","Order Cancel/Replace Request","Order Mass Cancel Report","Cross Order
       Cancel/Replace Request","Cross Order Cancel Request"]'
+    fix:components: '["AffectedOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]'
     fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
     fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: OrigClOrdID

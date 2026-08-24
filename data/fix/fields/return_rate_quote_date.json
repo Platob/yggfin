@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRateQuoteDate",
+ "tag": 42750,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

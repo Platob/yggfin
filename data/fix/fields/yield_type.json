@@ -76,7 +76,10 @@
     "TRUE": "TRUE_YIELD",
     "VALUE1_32": "YIELD_VALUE_OF32NDS",
     "WORST": "YIELD_TO_WORST"
-   }
+   },
+   "components": [
+    "YieldData"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -152,7 +155,10 @@
     "TRUE": "TRUE_YIELD",
     "VALUE1_32": "YIELD_VALUE_OF32NDS",
     "WORST": "YIELD_TO_WORST"
-   }
+   },
+   "components": [
+    "YieldData"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -228,7 +234,10 @@
     "TRUE": "TRUE_YIELD",
     "VALUE1_32": "YIELD_VALUE_OF32NDS",
     "WORST": "YIELD_TO_WORST"
-   }
+   },
+   "components": [
+    "YieldData"
+   ]
   },
   "4.4": {
    "type": "String",
@@ -304,7 +313,10 @@
     "TRUE": "TRUE_YIELD",
     "VALUE1/32": "YIELD_VALUE_OF132",
     "WORST": "YIELD_TO_WORST"
-   }
+   },
+   "components": [
+    "YieldData"
+   ]
   },
   "4.3": {
    "type": "String",
@@ -386,7 +398,10 @@
     "LASTCLOSE": "MOST_RECENT_CLOSING_YIELD",
     "LASTMONTH": "CLOSING_YIELD_MOST_RECENT_MONTH",
     "CLOSE": "CLOSING_YIELD"
-   }
+   },
+   "components": [
+    "YieldData"
+   ]
   }
  }
 }

@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of Match Rules"
+   "description": "Number of Match Rules",
+   "components": [
+    "MatchRules"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of Match Rules"
+   "description": "Number of Match Rules",
+   "components": [
+    "MatchRules"
+   ]
   }
  }
 }

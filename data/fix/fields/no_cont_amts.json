@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "The number of Contract Amount details on an Execution Report <8> message"
+   "description": "The number of Contract Amount details on an Execution Report <8> message",
+   "components": [
+    "ContAmtGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "The number of Contract Amount details on an Execution Report <8> message"
+   "description": "The number of Contract Amount details on an Execution Report <8> message",
+   "components": [
+    "ContAmtGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "The number of Contract Amount details on an ExecutionReport <8> message"
+   "description": "The number of Contract Amount details on an ExecutionReport <8> message",
+   "components": [
+    "ContAmtGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

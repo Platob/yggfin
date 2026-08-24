@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamRateCutoffDateOffsetUnit",
+ "tag": 40782,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamReferenceLevelEqualsZeroIndicator",
+ "tag": 41571,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

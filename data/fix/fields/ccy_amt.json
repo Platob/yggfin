@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Amt",
-   "description": "Net flow of Currency 1"
+   "description": "Net flow of Currency 1",
+   "components": [
+    "SettlObligationInstructions"
+   ]
   },
   "5.0.SP1": {
    "type": "Amt",
-   "description": "Net flow of Currency 1"
+   "description": "Net flow of Currency 1",
+   "components": [
+    "SettlObligationInstructions"
+   ]
   }
  }
 }

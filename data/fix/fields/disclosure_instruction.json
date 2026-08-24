@@ -1,0 +1,14 @@
+{
+ "name": "DisclosureInstruction",
+ "tag": 1814,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NO",
+    "1": "YES",
+    "2": "USE_DEFAULT_SETTING"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "NoLegStreamEffectiveDateBusinessCenters",
+ "tag": 40942,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

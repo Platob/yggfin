@@ -1,0 +1,9 @@
+{
+ "name": "LegMakeWholeBenchmarkQuote",
+ "tag": 42397,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

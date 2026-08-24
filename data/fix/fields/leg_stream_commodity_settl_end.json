@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCommoditySettlEnd",
+ "tag": 41685,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

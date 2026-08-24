@@ -1,0 +1,12 @@
+{
+ "name": "RegulatoryTradeIDSource",
+ "tag": 1905,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING",
+   "value_names": {
+    "1": "UNIQUE_TRANSACTION_IDENTIFIER"
+   }
+  }
+ }
+}

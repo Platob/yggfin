@@ -10,7 +10,15 @@ from rekep.fix.classify import (
     count_reader,
 )
 from rekep.fix.columns import COMMON, FLAT, KWARGS, NAMED, QUOTE, SESSION, TAG, named_columns
-from rekep.fix.components import PARTIES, Parties, Party
+from rekep.fix.components import (
+    PARTIES,
+    TRD_REG_TIMESTAMPS,
+    ComponentGroup,
+    Parties,
+    Party,
+    TrdRegTimestamp,
+    TrdRegTimestamps,
+)
 from rekep.fix.entries import (
     ANY_VERSION,
     Alias,
@@ -104,8 +112,12 @@ __all__ = [
     "NO_PROTOCOL",
     "NULL_VALUES",
     "PARTIES",
+    "TRD_REG_TIMESTAMPS",
+    "ComponentGroup",
     "Parties",
     "Party",
+    "TrdRegTimestamp",
+    "TrdRegTimestamps",
     "QUICKFIX_URL",
     "QUOTE",
     "Rule",

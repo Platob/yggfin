@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingCashSettlPriceDefault",
+ "tag": 42798,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

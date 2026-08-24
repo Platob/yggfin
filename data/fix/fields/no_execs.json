@@ -4,15 +4,28 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "No of execution repeating group entries to follow."
+   "description": "No of execution repeating group entries to follow.",
+   "components": [
+    "ExecAllocGrp",
+    "ExecCollGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "No of execution repeating group entries to follow."
+   "description": "No of execution repeating group entries to follow.",
+   "components": [
+    "ExecAllocGrp",
+    "ExecCollGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "No of execution repeating group entries to follow."
+   "description": "No of execution repeating group entries to follow.",
+   "components": [
+    "ExecAllocGrp",
+    "ExecCollGrp",
+    "ExecsGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

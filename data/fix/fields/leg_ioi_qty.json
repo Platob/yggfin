@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Leg-specific IOI <6> quantity. See IOIQty <27> for description and"
+   "description": "Leg-specific IOI <6> quantity. See IOIQty <27> for description and",
+   "components": [
+    "InstrmtLegIOIGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Leg-specific IOI <6> quantity. See IOIQty <27> for description and"
+   "description": "Leg-specific IOI <6> quantity. See IOIQty <27> for description and",
+   "components": [
+    "InstrmtLegIOIGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Leg-specific IOI <6> quantity. See IOIQty <27> for description and"
+   "description": "Leg-specific IOI <6> quantity. See IOIQty <27> for description and",
+   "components": [
+    "InstrmtLegIOIGrp"
+   ]
   },
   "4.4": {
    "type": "String",

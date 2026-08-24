@@ -4,11 +4,21 @@
  "versions": {
   "5.0.SP2": {
    "type": "float",
-   "description": "Specifies the currency ratio between the currency used for a multileg price and the currency used by the outright book defined by the leg. Example: Multileg quoted in EUR, outright leg in USD and 1 EUR = 0,7 USD then LegCurrencyRatio = 0.7"
+   "description": "Specifies the currency ratio between the currency used for a multileg price and the currency used by the outright book defined by the leg. Example: Multileg quoted in EUR, outright leg in USD and 1 EUR = 0,7 USD then LegCurrencyRatio = 0.7",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "float",
-   "description": "Specifies the currency ratio between the currency used for a multileg price and the currency used by the outright book defined by the leg. Example: Multileg quoted in EUR, outright leg in USD and 1 EUR = 0,7 USD then LegCurrencyRatio = 0.7"
+   "description": "Specifies the currency ratio between the currency used for a multileg price and the currency used by the outright book defined by the leg. Example: Multileg quoted in EUR, outright leg in USD and 1 EUR = 0,7 USD then LegCurrencyRatio = 0.7",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   }
  }
 }

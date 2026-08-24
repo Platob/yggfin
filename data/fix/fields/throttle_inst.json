@@ -1,0 +1,13 @@
+{
+ "name": "ThrottleInst",
+ "tag": 1685,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "REJECT_IF_THROTTLE_LIMIT_EXCEEDED",
+    "1": "QUEUE_IF_THROTTLE_LIMIT_EXCEEDED"
+   }
+  }
+ }
+}

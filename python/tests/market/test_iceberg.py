@@ -71,16 +71,14 @@ def test_a_nested_key_is_not_an_identifier_field(shape: type) -> None:
         assert "." not in (schema.find_column_name(field_id) or "")
 
 
-def test_the_partition_is_the_hour_then_the_instrument() -> None:
-    """The hour is an identity every engine reads alike; the instrument is bucketed,
-    because an identity on a 64-bit hash is one directory per instrument."""
+def test_the_partition_is_the_hour_and_only_the_hour() -> None:
+    """An identity every engine reads alike. The instrument is not one: bucketing a
+    64-bit hash multiplies the files in each hour without pruning anything more."""
     schema = Order.into_field().into_iceberg_schema()
     spec = Order.into_field().into_iceberg_partition_spec(schema)
-    assert [partition.name for partition in spec.fields] == ["unix_hour", "instrument_xhash_bucket"]
+    assert [partition.name for partition in spec.fields] == ["unix_hour"]
     assert str(spec.fields[0].transform) == "identity"
-    assert str(spec.fields[1].transform) == "bucket[16]"
     assert schema.find_column_name(spec.fields[0].source_id) == "unix_hour"
-    assert schema.find_column_name(spec.fields[1].source_id) == "instrument_xhash"
     for partition in spec.fields:
         assert "[" not in partition.name, "a partition name becomes a directory name"
 
@@ -105,7 +103,7 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
         name=f"market.{shape.__name__.lower()}",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=shape.into_field(),
+        field=shape.into_field(),
     )
     given = batch(shape, 3)
     dataset.write_arrow_table(pyarrow.Table.from_batches([given]))
@@ -125,7 +123,7 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
         name="market.books",
         catalog="test",
         properties=catalog_properties(tmp_path),
-        struct=Book.into_field(),
+        field=Book.into_field(),
     )
     levels = [
         [{"px": 10.0, "qty": 5.0}],

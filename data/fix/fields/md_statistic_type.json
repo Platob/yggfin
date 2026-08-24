@@ -1,0 +1,41 @@
+{
+ "name": "MDStatisticType",
+ "tag": 2456,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "COUNT",
+    "2": "AVERAGE_VOLUME",
+    "3": "TOTAL_VOLUME",
+    "4": "DISTRIBUTION",
+    "5": "RATIO",
+    "6": "LIQUIDITY",
+    "7": "VWAP",
+    "8": "VOLATILITY",
+    "9": "DURATION",
+    "10": "TICK",
+    "11": "AVERAGE_VALUE",
+    "12": "TOTAL_VALUE",
+    "13": "HIGH",
+    "14": "LOW",
+    "15": "MIDPOINT",
+    "16": "FIRST",
+    "17": "LAST",
+    "18": "FINAL",
+    "19": "EXCHANGE_BEST",
+    "20": "EXCHANGE_BEST_WITH_VOLUME",
+    "21": "CONSOLIDATED_BEST",
+    "22": "CONSOLIDATED_BEST_WITH_VOLUME",
+    "23": "TWAP",
+    "24": "AVERAGE_DURATION",
+    "25": "AVERAGE_PRICE",
+    "26": "TOTAL_FEES",
+    "27": "TOTAL_BENEFITS",
+    "28": "MEDIAN_VALUE",
+    "29": "AVERAGE_LIQUIDITY",
+    "30": "MEDIAN_DURATION"
+   }
+  }
+ }
+}

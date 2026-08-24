@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexOptPayoutPercentage",
+ "tag": 2264,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

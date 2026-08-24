@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleFixingTimeBusinessCenter",
+ "tag": 40696,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

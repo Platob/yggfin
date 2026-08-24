@@ -18,6 +18,9 @@
     "Quote",
     "CrossOrderCancelReplaceRequest",
     "QuoteCancel"
+   ],
+   "components": [
+    "ListOrdGrp"
    ]
   },
   "5.0.SP1": {
@@ -36,6 +39,9 @@
     "Quote",
     "CrossOrderCancelReplaceRequest",
     "QuoteCancel"
+   ],
+   "components": [
+    "ListOrdGrp"
    ]
   },
   "5.0": {
@@ -54,6 +60,9 @@
     "Quote",
     "CrossOrderCancelReplaceRequest",
     "QuoteCancel"
+   ],
+   "components": [
+    "ListOrdGrp"
    ]
   },
   "4.4": {

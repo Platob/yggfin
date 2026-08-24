@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "float",
-   "description": "The maximum price variation of an execution from one event to the next for a given security."
+   "description": "The maximum price variation of an execution from one event to the next for a given security.",
+   "components": [
+    "BaseTradingRules"
+   ]
   },
   "5.0.SP1": {
    "type": "float",
-   "description": "The maximum price variation of an execution from one event to the next for a given security."
+   "description": "The maximum price variation of an execution from one event to the next for a given security.",
+   "components": [
+    "BaseTradingRules"
+   ]
   }
  }
 }

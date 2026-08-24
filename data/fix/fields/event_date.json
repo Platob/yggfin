@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "LocalMktDate",
-   "description": "Date of event"
+   "description": "Date of event",
+   "components": [
+    "EvntGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
-   "description": "Date of event"
+   "description": "Date of event",
+   "components": [
+    "EvntGrp"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
-   "description": "Date of event"
+   "description": "Date of event",
+   "components": [
+    "EvntGrp"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",
-   "description": "Date of event"
+   "description": "Date of event",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

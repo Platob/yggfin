@@ -1,0 +1,9 @@
+{
+ "name": "AffectedOrigClOrdID",
+ "tag": 1824,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

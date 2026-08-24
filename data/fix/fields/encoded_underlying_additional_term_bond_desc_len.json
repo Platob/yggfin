@@ -1,0 +1,9 @@
+{
+ "name": "EncodedUnderlyingAdditionalTermBondDescLen",
+ "tag": 41710,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "DeliveryStreamDeliveryContingentPartySide",
+ "tag": 41065,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

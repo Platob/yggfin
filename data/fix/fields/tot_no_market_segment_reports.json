@@ -1,0 +1,9 @@
+{
+ "name": "TotNoMarketSegmentReports",
+ "tag": 2537,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

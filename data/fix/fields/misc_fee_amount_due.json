@@ -1,0 +1,9 @@
+{
+ "name": "MiscFeeAmountDue",
+ "tag": 2217,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "PaymentSettlAmount",
+ "tag": 40231,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

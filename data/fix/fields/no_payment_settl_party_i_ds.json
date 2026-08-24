@@ -1,0 +1,9 @@
+{
+ "name": "NoPaymentSettlPartyIDs",
+ "tag": 40233,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

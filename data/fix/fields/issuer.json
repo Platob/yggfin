@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Name of security issuer (e.g. International Business Machines, GNMA). See also Volume 7: \"PRODUCT: FIXED INCOME - Euro Issuer Values\""
+   "description": "Name of security issuer (e.g. International Business Machines, GNMA). See also Volume 7: \"PRODUCT: FIXED INCOME - Euro Issuer Values\"",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Name of security issuer (e.g. International Business Machines, GNMA). See also Volume 7: \"PRODUCT: FIXED INCOME - Euro Issuer Values\""
+   "description": "Name of security issuer (e.g. International Business Machines, GNMA). See also Volume 7: \"PRODUCT: FIXED INCOME - Euro Issuer Values\"",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Name of security issuer (e.g. International Business Machines, GNMA). See also Volume 7: \"PRODUCT: FIXED INCOME - Euro Issuer Values\""
+   "description": "Name of security issuer (e.g. International Business Machines, GNMA). See also Volume 7: \"PRODUCT: FIXED INCOME - Euro Issuer Values\"",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Name of security issuer (e.g. International Business Machines, GNMA). see also Volume 7: \"PRODUCT: FIXED INCOME - Euro Issuer Values\""
+   "description": "Name of security issuer (e.g. International Business Machines, GNMA). see also Volume 7: \"PRODUCT: FIXED INCOME - Euro Issuer Values\"",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Company name of security issuer (e.g. International Business Machines) see also Volume 7: \"PRODUCT: FIXED INCOME - Euro Soverign Issuer Codes\""
+   "description": "Company name of security issuer (e.g. International Business Machines) see also Volume 7: \"PRODUCT: FIXED INCOME - Euro Soverign Issuer Codes\"",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.2": {
    "type": "String",

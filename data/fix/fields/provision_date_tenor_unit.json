@@ -1,0 +1,15 @@
+{
+ "name": "ProvisionDateTenorUnit",
+ "tag": 40097,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING",
+   "value_names": {
+    "D": "DAY",
+    "Wk": "WEEK",
+    "Mo": "MONTH",
+    "Yr": "YEAR"
+   }
+  }
+ }
+}

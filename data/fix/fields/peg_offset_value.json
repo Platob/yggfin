@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "float",
-   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )"
+   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )",
+   "components": [
+    "PegInstructions"
+   ]
   },
   "5.0.SP1": {
    "type": "float",
-   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )"
+   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )",
+   "components": [
+    "PegInstructions"
+   ]
   },
   "5.0": {
    "type": "float",
-   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )"
+   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )",
+   "components": [
+    "PegInstructions"
+   ]
   },
   "4.4": {
    "type": "float",
-   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )"
+   "description": "Amount (signed) added to the peg for a pegged order in the context of the PegOffsetType <836> (Prior to FIX 4.4 this field was of type PriceOffset )",
+   "components": [
+    "PegInstructions"
+   ]
   },
   "4.3": {
    "name": "PegDifference",

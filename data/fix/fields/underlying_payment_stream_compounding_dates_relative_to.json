@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamCompoundingDatesRelativeTo",
+ "tag": 42905,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

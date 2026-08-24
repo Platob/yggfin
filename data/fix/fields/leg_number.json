@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Allow sequencing of Legs for a Strategy to be captured"
+   "description": "Allow sequencing of Legs for a Strategy to be captured",
+   "components": [
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Allow sequencing of Legs for a Strategy to be captured"
+   "description": "Allow sequencing of Legs for a Strategy to be captured",
+   "components": [
+    "TrdInstrmtLegGrp"
+   ]
   }
  }
 }

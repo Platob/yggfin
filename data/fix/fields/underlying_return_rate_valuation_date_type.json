@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingReturnRateValuationDateType",
+ "tag": 43073,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,26 @@
+{
+ "name": "OrderAttributeType",
+ "tag": 2594,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "AGGREGATED_ORDER",
+    "1": "PENDING_ALLOCATION",
+    "2": "LIQUIDITY_PROVISION_ACTIVITY_ORDER",
+    "3": "RISK_REDUCTION_ORDER",
+    "4": "ALGORITHMIC_ORDER",
+    "5": "SYSTEMATIC_INTERNALISER_ORDER",
+    "6": "ALL_EXECUTIONS_SUBMITTED_TO_APA",
+    "7": "ORDER_EXECUTION_INSTRUCTED_BY_CLIENT",
+    "8": "LARGE_IN_SCALE",
+    "9": "HIDDEN",
+    "10": "SUBJECT_TO_EUSTO",
+    "11": "SUBJECT_TO_UKSTO",
+    "12": "REPRESENTATIVE_ORDER",
+    "13": "LINKAGE_TYPE",
+    "14": "EXEMPT_FROM_STO"
+   }
+  }
+ }
+}

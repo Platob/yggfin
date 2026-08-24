@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStubIndexCapRateBuySide",
+ "tag": 40887,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

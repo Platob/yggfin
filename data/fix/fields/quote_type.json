@@ -25,6 +25,12 @@
     "MassQuote",
     "Quote",
     "QuoteCancel"
+   ],
+   "components": [
+    "InstrmtMDReqGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp"
    ]
   },
   "5.0.SP1": {
@@ -48,6 +54,12 @@
     "MassQuoteAcknowledgement",
     "MassQuote",
     "Quote"
+   ],
+   "components": [
+    "InstrmtMDReqGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp"
    ]
   },
   "5.0": {
@@ -71,6 +83,12 @@
     "MassQuoteAcknowledgement",
     "MassQuote",
     "Quote"
+   ],
+   "components": [
+    "InstrmtMDReqGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp"
    ]
   },
   "4.4": {

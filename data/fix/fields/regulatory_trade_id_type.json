@@ -1,0 +1,17 @@
+{
+ "name": "RegulatoryTradeIDType",
+ "tag": 1906,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "CURRENT",
+    "1": "PREVIOUS",
+    "2": "BLOCK",
+    "3": "RELATED",
+    "4": "CLEARED_BLOCK_TRADE",
+    "5": "TRADING_VENUE_TRANSACTION_IDENTIFIER"
+   }
+  }
+ }
+}

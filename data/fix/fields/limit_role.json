@@ -1,0 +1,9 @@
+{
+ "name": "LimitRole",
+ "tag": 2396,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

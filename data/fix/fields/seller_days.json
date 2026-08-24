@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Specifies the number of days that may elapse before delivery of the security"
+   "description": "Specifies the number of days that may elapse before delivery of the security",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Specifies the number of days that may elapse before delivery of the security"
+   "description": "Specifies the number of days that may elapse before delivery of the security",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "Specifies the number of days that may elapse before delivery of the security"
+   "description": "Specifies the number of days that may elapse before delivery of the security",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "int",

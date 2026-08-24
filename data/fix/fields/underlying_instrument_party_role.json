@@ -4,17 +4,26 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "PartyRole value within an underlying instrument partyepeating group. Same values as PartyRole <452>"
+   "description": "PartyRole value within an underlying instrument partyepeating group. Same values as PartyRole <452>",
+   "components": [
+    "UndlyInstrumentParties"
+   ]
   },
   "5.0.SP1": {
    "name": "UndlyInstrumentPartyRole",
    "type": "int",
-   "description": "PartyRole value within an underlying instrument partyepeating group. Same values as PartyRole <452>"
+   "description": "PartyRole value within an underlying instrument partyepeating group. Same values as PartyRole <452>",
+   "components": [
+    "UndlyInstrumentParties"
+   ]
   },
   "5.0": {
    "name": "UndlyInstrumentPartyRole",
    "type": "int",
-   "description": "PartyRole value within an underlying instrument partyepeating group. Same values as PartyRole <452>"
+   "description": "PartyRole value within an underlying instrument partyepeating group. Same values as PartyRole <452>",
+   "components": [
+    "UndlyInstrumentParties"
+   ]
   }
  }
 }

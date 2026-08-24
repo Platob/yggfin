@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of complex event date occurrences for a given complex event."
+   "description": "Number of complex event date occurrences for a given complex event.",
+   "components": [
+    "ComplexEventDates"
+   ]
   }
  }
 }

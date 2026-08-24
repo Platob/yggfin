@@ -1,0 +1,251 @@
+"""`rekep fix shell`: what each verb does, and what it refuses to write.
+
+Driven through `reader`, which is where a prompt's answers come from -- so
+every branch is reachable without a terminal, and the assertions are about the
+store the session left behind rather than about the escapes it printed.
+"""
+
+from __future__ import annotations
+
+import io
+from collections.abc import Callable
+from pathlib import Path
+
+import pytest
+
+from rekep.console import Console
+from rekep.fields import Field
+from rekep.fix.fields import fix_field
+from rekep.fix.quickfix import SpecComponent, SpecFieldRef, SpecGroup
+from rekep.fix.registry import FixRegistry
+from rekep.fix.shell import Shell
+
+
+class Offline(FixRegistry):
+    """A registry that must answer from the store alone."""
+
+    def _fetch(self, url: str) -> str:
+        raise OSError(f"offline: {url}")
+
+
+def _field(name: str, tag: int, version: str, datatype: str = "String") -> Field:
+    return fix_field(name, tag, datatype, version=version)
+
+
+@pytest.fixture
+def store(tmp_path: Path) -> Offline:
+    """A store holding two synthetic fields and one synthetic component."""
+    registry = Offline(cache_dir=tmp_path / "fix", offline=True)
+    registry._store_versions(("9.1",))
+    registry._store_fields(
+        "9.1",
+        [_field("FakeRole", 90001, "9.1", "int"), _field("FakeCode", 90002, "9.1")],
+        components=[
+            SpecComponent(
+                "FakeParties",
+                (
+                    SpecGroup(
+                        "NoFakeParties", False, 90003, (SpecFieldRef("FakeRole", True, 90001),)
+                    ),
+                ),
+            )
+        ],
+    )
+    return registry
+
+
+def _session(store: Offline, *answers: str) -> tuple[Shell, io.StringIO]:
+    """One shell whose answers are `answers`, and where its output went."""
+    written = io.StringIO()
+    replies = iter(answers)
+
+    def reader(prompt: str) -> str:
+        """What `input` does when there is nothing left: raise, not return."""
+        del prompt
+        try:
+            return next(replies)
+        except StopIteration:
+            raise EOFError from None
+
+    return (
+        Shell(registry=store, console=Console(stream=written, colour=False), reader=reader),
+        written,
+    )
+
+
+def _run(store: Offline, *answers: str) -> str:
+    shell, written = _session(store, *answers)
+    assert shell.run() == 0
+    return written.getvalue()
+
+
+# -- reading it --------------------------------------------------------------
+
+
+def test_a_session_ends_on_quit_and_on_the_end_of_input(store: Offline) -> None:
+    assert "bye" in _run(store, "quit")
+    shell, _ = _session(store)
+    assert shell.run() == 0, "and on nothing at all, rather than raising"
+
+
+def test_help_lists_every_verb_the_loop_dispatches(store: Offline) -> None:
+    """So a verb added without a line of help is visible as a gap."""
+    printed = _run(store, "help", "quit")
+    verbs = {verb.split()[0] for verb, _ in Shell.into_help()}
+    dispatched = set(Shell.into_commands()) - {"exit"}
+    assert verbs == dispatched
+    for verb in verbs:
+        assert verb in printed
+
+
+def test_versions_says_what_the_store_holds(store: Offline) -> None:
+    printed = _run(store, "versions", "quit")
+    assert "9.1" in printed and "2" in printed
+
+
+def test_find_searches_by_name_and_by_tag(store: Offline) -> None:
+    assert "FakeRole" in _run(store, "find FakeRole", "quit")
+    assert "FakeCode" in _run(store, "find 90002", "quit")
+
+
+def test_show_prints_one_identity_and_every_version_of_it(store: Offline) -> None:
+    printed = _run(store, "show FakeRole", "quit")
+    assert "FakeRole" in printed and "90001" in printed and "9.1" in printed
+
+
+def test_a_name_nothing_resolves_says_what_it_could_have_meant(store: Offline) -> None:
+    printed = _run(store, "show FakeRolle", "quit")
+    assert "no field 'FakeRolle'" in printed
+    assert "did you mean" in printed and "FakeRole" in printed
+
+
+def test_an_unknown_verb_is_reported_rather_than_ignored(store: Offline) -> None:
+    assert "no command 'wat'" in _run(store, "wat", "quit")
+
+
+def test_components_and_component_read_the_declaration(store: Offline) -> None:
+    assert "FakeParties" in _run(store, "components", "quit")
+    printed = _run(store, "component FakeParties", "quit")
+    assert "NoFakeParties" in printed
+    assert "required" in printed, "the spec's own rule, which is what nullability reads"
+
+
+# -- changing it -------------------------------------------------------------
+
+
+def test_add_builds_one_identity_from_answered_questions(store: Offline) -> None:
+    printed = _run(
+        store,
+        "add",
+        "FakeVenue",  # name
+        "90004",  # tag
+        "9.1",  # version
+        "String",  # type
+        "A venue of ours.",  # description
+        "fake_venue",  # column
+        "y",  # write it
+        "quit",
+    )
+    assert "added FakeVenue" in printed
+    entry = store.resolve("FakeVenue")
+    assert (entry.tag, entry.column) == (90004, "fake_venue")
+    assert entry.variant("9.1")["description"] == "A venue of ours."
+
+
+def test_a_field_fix_never_numbered_is_added_by_leaving_the_tag_blank(store: Offline) -> None:
+    _run(store, "add", "TECH.CLIENTID", "", "*", "String", "", "tech_client_id", "y", "quit")
+    entry = store.resolve("TECH.CLIENTID")
+    assert entry.tag is None and entry.kind == "namespace"
+
+
+def test_nothing_is_written_until_the_whole_entry_has_been_shown_back(store: Offline) -> None:
+    printed = _run(store, "add", "FakeVenue", "90004", "9.1", "String", "", "", "n", "quit")
+    assert "nothing was written" in printed
+    assert store.resolve("FakeVenue") is None
+
+
+def test_edit_keeps_every_part_left_unanswered(store: Offline) -> None:
+    """A bare Enter is "as it was", which is what makes editing one field one answer."""
+    _run(store, "edit FakeRole", "", "", "", "", "", "renamed_column", "y", "quit")
+    entry = store.resolve("FakeRole")
+    assert (entry.name, entry.tag, entry.column) == ("FakeRole", 90001, "renamed_column")
+    assert entry.variant("9.1")["type"] == "int", "and the type it already had"
+
+
+def test_a_tag_that_is_not_a_number_is_refused_before_anything_is_written(
+    store: Offline,
+) -> None:
+    printed = _run(store, "add", "FakeVenue", "nine", "9.1", "String", "", "", "quit")
+    assert "'nine' is not a tag" in printed
+    assert store.resolve("FakeVenue") is None
+
+
+def test_a_duplicate_tag_is_refused_with_the_reason(store: Offline) -> None:
+    """The registry's own check, reported here rather than raised as a traceback."""
+    printed = _run(store, "add", "FakeOther", "90001", "9.1", "String", "", "", "y", "quit")
+    assert "FIX tag 90001 is claimed by" in printed
+    assert store.resolve("FakeOther") is None
+
+
+def test_alias_records_a_spelling_with_where_it_was_counted(store: Offline) -> None:
+    printed = _run(store, "alias FakeRole", "FAKEROLLE", "brk", "41", "quit")
+    assert "answers to" in printed
+    (alias,) = store.resolve("FakeRole").aliases
+    assert (alias.name, alias.source, alias.occurrences) == ("FAKEROLLE", "brk", 41)
+
+
+def test_remove_asks_first_and_keeps_it_when_the_answer_is_no(store: Offline) -> None:
+    assert "kept" in _run(store, "remove FakeCode", "n", "quit")
+    assert store.resolve("FakeCode") is not None
+    assert "removed FakeCode" in _run(store, "remove FakeCode", "y", "quit")
+    assert store.resolve("FakeCode") is None
+
+
+def test_check_reports_a_sound_store_as_sound(store: Offline) -> None:
+    assert "this store is sound" in _run(store, "check", "quit")
+
+
+def test_dump_writes_the_store_where_it_is_told(store: Offline, tmp_path: Path) -> None:
+    target = tmp_path / "dumped.zip"
+    assert "wrote" in _run(store, f"dump {target}", "quit")
+    assert target.exists()
+    assert FixRegistry(cache_dir=target, offline=True).field("FakeRole", "9.1").name == "FakeRole"
+
+
+def test_load_opens_another_store_in_the_same_session(store: Offline, tmp_path: Path) -> None:
+    target = tmp_path / "other"
+    store.migrate(target)
+    printed = _run(store, f"load {target}", "versions", "quit")
+    assert "1 versions" in printed
+
+
+def test_a_verb_that_needs_an_argument_says_so_rather_than_failing(store: Offline) -> None:
+    for line in ("find", "show", "component", "load", "dump"):
+        assert "say " in _run(store, line, "quit") or "name " in _run(store, line, "quit")
+
+
+def test_an_interrupt_mid_question_cancels_without_writing(store: Offline) -> None:
+    """Ctrl-C halfway through building a field must not leave half of one behind."""
+    replies: Callable[[str], str] = _interrupting(["add", "FakeVenue"])
+    written = io.StringIO()
+    shell = Shell(registry=store, console=Console(stream=written, colour=False), reader=replies)
+    assert shell.run() == 0
+    assert "cancelled" in written.getvalue()
+    assert store.resolve("FakeVenue") is None
+
+
+def _interrupting(answers: list[str]) -> Callable[[str], str]:
+    """A reader that hands back `answers` and then interrupts, once, then ends."""
+    remaining = list(answers)
+    state = {"interrupted": False}
+
+    def reader(prompt: str) -> str:
+        del prompt
+        if remaining:
+            return remaining.pop(0)
+        if not state["interrupted"]:
+            state["interrupted"] = True
+            raise KeyboardInterrupt
+        raise EOFError
+
+    return reader

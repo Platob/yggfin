@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Reference identifier for the SettlInstID <162> with 'Cancel' and 'Replace' SettlInstTransType <163> transaction types."
+   "description": "Reference identifier for the SettlInstID <162> with 'Cancel' and 'Replace' SettlInstTransType <163> transaction types.",
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Reference identifier for the SettlInstID <162> with 'Cancel' and 'Replace' SettlInstTransType <163> transaction types."
+   "description": "Reference identifier for the SettlInstID <162> with 'Cancel' and 'Replace' SettlInstTransType <163> transaction types.",
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Reference identifier for the SettlInstID <162> with 'Cancel' and 'Replace' SettlInstTransType <163> transaction types."
+   "description": "Reference identifier for the SettlInstID <162> with 'Cancel' and 'Replace' SettlInstTransType <163> transaction types.",
+   "components": [
+    "SettlInstGrp"
+   ]
   },
   "4.4": {
    "type": "String",

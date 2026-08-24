@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDividendPeriodStrikePrice",
+ "tag": 42867,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

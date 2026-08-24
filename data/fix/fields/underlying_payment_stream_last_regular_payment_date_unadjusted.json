@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamLastRegularPaymentDateUnadjusted",
+ "tag": 40587,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

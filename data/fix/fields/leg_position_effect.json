@@ -4,15 +4,30 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description"
+   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
-   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description"
+   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "char",
-   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description"
+   "description": "PositionEffect for leg of a multileg See PositionEffect <77> field for description",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "char",

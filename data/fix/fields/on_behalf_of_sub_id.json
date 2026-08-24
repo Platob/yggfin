@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party."
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party.",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party."
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party.",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -36,7 +42,10 @@
   },
   "FIXT1.1": {
    "type": "String",
-   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party"
+   "description": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party",
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

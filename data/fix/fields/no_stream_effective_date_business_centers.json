@@ -1,0 +1,9 @@
+{
+ "name": "NoStreamEffectiveDateBusinessCenters",
+ "tag": 40960,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

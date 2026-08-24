@@ -4,15 +4,33 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Unique identifier for a quote. The QuoteEntryID stays with the quote as a static identifier even if the quote is updated."
+   "description": "Unique identifier for a quote. The QuoteEntryID stays with the quote as a static identifier even if the quote is updated.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Unique identifier for a quote. The QuoteEntryID stays with the quote as a static identifier even if the quote is updated."
+   "description": "Unique identifier for a quote. The QuoteEntryID stays with the quote as a static identifier even if the quote is updated.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Uniquely identifies the quote as part of a QuoteSet."
+   "description": "Uniquely identifies the quote as part of a QuoteSet.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp"
+   ]
   },
   "4.4": {
    "type": "String",

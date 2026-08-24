@@ -1,0 +1,9 @@
+{
+ "name": "LegProvisionBreakFeeRate",
+ "tag": 42507,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

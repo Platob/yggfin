@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Same values as Product <460>"
+   "description": "Same values as Product <460>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Same values as Product <460>"
+   "description": "Same values as Product <460>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

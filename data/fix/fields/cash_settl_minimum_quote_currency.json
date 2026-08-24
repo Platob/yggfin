@@ -1,0 +1,9 @@
+{
+ "name": "CashSettlMinimumQuoteCurrency",
+ "tag": 40031,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

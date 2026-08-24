@@ -1,0 +1,9 @@
+{
+ "name": "LegDividendFXTriggerDateRelativeTo",
+ "tag": 42357,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

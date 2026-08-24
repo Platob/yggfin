@@ -8,6 +8,9 @@
    "used_in": [
     "Reject",
     "BusinessMessageReject"
+   ],
+   "components": [
+    "MsgTypeGrp"
    ]
   },
   "5.0.SP1": {
@@ -16,6 +19,9 @@
    "used_in": [
     "Reject",
     "BusinessMessageReject"
+   ],
+   "components": [
+    "MsgTypeGrp"
    ]
   },
   "FIXT1.1": {
@@ -23,6 +29,9 @@
    "description": "The extension pack number associated with an application message.",
    "used_in": [
     "Reject"
+   ],
+   "components": [
+    "MsgTypeGrp"
    ]
   }
  }

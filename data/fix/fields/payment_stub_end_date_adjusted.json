@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStubEndDateAdjusted",
+ "tag": 42695,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "name": "PaymentStreamInflationInterpolationMethod",
+ "tag": 40811,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NONE",
+    "1": "LINEAR_ZERO_YIELD"
+   }
+  }
+ }
+}

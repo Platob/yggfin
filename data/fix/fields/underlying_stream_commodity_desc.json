@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamCommodityDesc",
+ "tag": 41968,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

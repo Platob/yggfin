@@ -1,0 +1,13 @@
+{
+ "name": "DeliveryScheduleToleranceType",
+ "tag": 41046,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "ABSOLUTE",
+    "1": "PERCENTAGE"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "PaymentBusinessCenter",
+ "tag": 40221,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

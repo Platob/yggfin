@@ -1,0 +1,9 @@
+{
+ "name": "LegCashSettlDateOffsetUnit",
+ "tag": 42303,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

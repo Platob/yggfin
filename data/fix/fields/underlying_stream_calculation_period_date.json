@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamCalculationPeriodDate",
+ "tag": 41955,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

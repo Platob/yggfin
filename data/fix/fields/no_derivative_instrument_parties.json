@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Refer to definition of NoParties <453>"
+   "description": "Refer to definition of NoParties <453>",
+   "components": [
+    "DerivativeInstrumentParties"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Refer to definition of NoParties <453>"
+   "description": "Refer to definition of NoParties <453>",
+   "components": [
+    "DerivativeInstrumentParties"
+   ]
   }
  }
 }

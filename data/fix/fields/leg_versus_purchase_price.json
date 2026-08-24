@@ -1,0 +1,9 @@
+{
+ "name": "LegVersusPurchasePrice",
+ "tag": 1758,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

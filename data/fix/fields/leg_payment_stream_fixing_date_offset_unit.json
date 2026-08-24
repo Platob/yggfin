@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamFixingDateOffsetUnit",
+ "tag": 40320,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

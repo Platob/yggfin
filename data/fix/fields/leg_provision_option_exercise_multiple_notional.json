@@ -1,0 +1,9 @@
+{
+ "name": "LegProvisionOptionExerciseMultipleNotional",
+ "tag": 40460,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

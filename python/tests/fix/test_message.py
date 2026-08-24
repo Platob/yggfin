@@ -284,7 +284,7 @@ def test_a_marked_key_is_log_noise_in_tag_mode() -> None:
     assert FixMessage.from_text("8=FIX.4.2|#54=1|55=TTF|", named=False).get(55) == "TTF"
 
 
-def test_the_driver_s_own_prefix_never_glues_onto_the_first_key() -> None:
+def test_the_plugin_s_own_prefix_never_glues_onto_the_first_key() -> None:
     """The same rule `8=FIX` gets, for the same reason."""
     parsed = FixMessage.from_text(BRIDGE_LINE)
     assert parsed.pairs[0] == ("ISINCODE", "XX0000084733")
@@ -460,7 +460,7 @@ def test_the_checksum_ends_each_row_in_the_vectorised_parser_too() -> None:
         assert row == FixMessage.from_text(line).pairs
 
 
-@pytest.mark.parametrize("checksum", ["CheckSum", "check_sum", "Trailer.CheckSum", "Trailer.10"])
+@pytest.mark.parametrize("checksum", ["CheckSum", "CHECKSUM", "Trailer.CheckSum", "Trailer.10"])
 def test_a_named_checksum_ends_scalar_and_vector_messages(checksum: str) -> None:
     line = f"#BeginString=FIXT.1.1|#{checksum}=000|#ApplVerID=9|#Symbol=X"
     expected = [("BeginString", "FIXT.1.1"), (checksum, "000")]

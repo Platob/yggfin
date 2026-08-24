@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamAccrualDays",
+ "tag": 40573,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

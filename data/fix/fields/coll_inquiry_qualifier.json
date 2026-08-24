@@ -24,7 +24,10 @@
     "5": "PARTIALLY_ASSIGNED",
     "6": "FULLY_ASSIGNED",
     "7": "OUTSTANDING_TRADES"
-   }
+   },
+   "components": [
+    "CollInqQualGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -48,7 +51,10 @@
     "5": "PARTIALLY_ASSIGNED",
     "6": "FULLY_ASSIGNED",
     "7": "OUTSTANDING_TRADES"
-   }
+   },
+   "components": [
+    "CollInqQualGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -72,7 +78,10 @@
     "5": "PARTIALLY_ASSIGNED",
     "6": "FULLY_ASSIGNED",
     "7": "OUTSTANDING_TRADES"
-   }
+   },
+   "components": [
+    "CollInqQualGrp"
+   ]
   },
   "4.4": {
    "type": "int",

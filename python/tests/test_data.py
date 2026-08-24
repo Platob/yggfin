@@ -26,7 +26,6 @@ from rekep.fix.publish import (
     MARKET_FIELDS,
     NAMESPACE_FIELDS,
     PROJECTED,
-    latest_fields,
     missing_from,
     publish_builtin,
 )
@@ -65,7 +64,7 @@ VERSIONS: list[str] = INDEX["versions"]
 #: per component identity, which is what the layout is for. Counts rather than
 #: a bare "more than zero", so a migration that lost half the dictionary and
 #: still produced a readable store fails here.
-EXPECTED_FIELD_FILES = 1496
+EXPECTED_FIELD_FILES = 6072
 EXPECTED_COMPONENT_FILES = 729
 
 #: Pinned so a moved or half-written directory fails here rather than passing
@@ -162,21 +161,39 @@ def test_a_component_file_holds_one_identity_and_every_version_of_it() -> None:
     assert isinstance(declared["order"], int), "spec order is a fact about the version"
 
 
+#: The prose the site wrote up, per version, derived then pinned as a floor.
+#: A floor and not a ratio, because the two sources cover different amounts:
+#: the site writes up the standard's own tags, and the QuickFIX spec numbers
+#: every field an extension pack added -- five thousand of them in 5.0.SP2,
+#: arriving typed and undocumented. A ratio over that set would say the
+#: dictionary got worse for having grown.
+EXPECTED_DESCRIBED: dict[str, int] = {
+    "4.0": 140,
+    "4.1": 211,
+    "4.2": 406,
+    "4.3": 658,
+    "4.4": 954,
+    "5.0": 1131,
+    "5.0.SP1": 1379,
+    "5.0.SP2": 1457,
+    "FIXT1.1": 74,
+}
+
+
 @pytest.mark.parametrize("version", VERSIONS)
 def test_a_version_carries_what_its_pages_say(version: str, registry: FixRegistry) -> None:
     """Typed, described, and enumerated where the field is an enumeration.
 
-    Ratios rather than counts, because the site does edit its dictionary --
-    but ratios far above what a throttled scrape reaches (it scored 0.78
-    typed) and far below what a clean one does (1.00 typed, 0.97 described).
+    Every field carries a type -- both sources state one -- so that is a ratio.
+    Prose is a floor per version: see `EXPECTED_DESCRIBED`.
     """
     fields = registry.fields(version)
     typed = sum(1 for member in fields if member.fix.get("type"))
     described = sum(1 for member in fields if member.description)
     enumerated = sum(1 for member in fields if member.fix.get("values"))
     assert typed / len(fields) > 0.95
-    assert described / len(fields) > 0.90
-    assert enumerated > len(fields) // 10, "a tenth of FIX is enumerations, at least"
+    assert described >= EXPECTED_DESCRIBED[version]
+    assert enumerated > EXPECTED_DESCRIBED[version] // 10, "a tenth of FIX is enumerations"
 
 
 def test_the_dump_answers_a_lookup_offline(registry: FixRegistry) -> None:
@@ -256,7 +273,7 @@ def test_the_builtin_projection_matches_the_published_versions(
     registry: FixRegistry,
 ) -> None:
     builtin = FixRegistry.from_builtin()
-    assert builtin.versions == ("FIX.Latest", *registry.versions)
+    assert builtin.versions == registry.versions
     # Derived from `publish.PROJECTED`, then pinned: 171 keys resolve to 185
     # distinct *numbered* names, because a version may spell one tag
     # differently and the projection selects by tag once a key has resolved.
@@ -283,13 +300,9 @@ def test_the_builtin_projection_matches_the_published_versions(
             if (int(tag) in selected if (tag := member.fix.get("tag")) else member.name in named)
         ]
         assert builtin.fields(version) == expected, version
-    assert [member.name for member in builtin.fields("FIX.Latest")] == [
-        "ExposureDuration",
-        "ExposureDurationUnit",
-        # A field FIX never numbered holds for every version, this one
-        # included, and sorts after the numbered ones.
-        "ISINCODE",
-    ]
+    # A field FIX never numbered holds for every version and sorts after the
+    # numbered ones, so it is the tail of the newest version too.
+    assert builtin.fields("5.0.SP2")[-1].name == "ISINCODE"
 
 
 def test_the_builtin_projection_is_what_publishing_it_produces(tmp_path: Path) -> None:
@@ -313,9 +326,7 @@ def test_the_builtin_projection_answers_every_key_the_package_looks_up(
     list would ship a registry that cannot answer for it -- which is the same
     silence as a name nobody has ever seen, and reads as one downstream.
     """
-    assert missing_from(registry, PROJECTED) == [member.name for member in latest_fields()], (
-        "the two the dictionary's per-version pages predate, and nothing else"
-    )
+    assert not missing_from(registry, PROJECTED), "the dictionary answers for every key"
     assert set(LOG_FIELDS) == set(_ORDER)
     assert set(PROJECTED) >= set(CARRIED_FIELDS)
     assert set(MARKET_FIELDS).isdisjoint(LOG_FIELDS), "each name declared once"
@@ -365,11 +376,18 @@ def test_the_archive_says_it_came_from_nowhere_in_particular() -> None:
 
 
 def test_the_archive_is_worth_being_an_archive() -> None:
-    """Derived, then pinned: the dictionary compresses to about a sixth."""
+    """Derived, then pinned: the dictionary compresses to under two thirds.
+
+    Under two thirds and not under a sixth: one member per identity is seven
+    thousand members, each a few hundred bytes, so deflate has little per
+    member to work with and the zip's own directory is a quarter of the file.
+    That is what a store a person can diff one field at a time costs, and the
+    bound is here to catch a *stored* archive, not to chase the last percent.
+    """
     with zipfile.ZipFile(DATA) as archive:
         stored = sum(entry.file_size for entry in archive.infolist())
     assert stored > 2_500_000, "the JSON inside is the whole dictionary"
-    assert DATA.stat().st_size < stored // 4
+    assert DATA.stat().st_size < stored * 2 // 3
 
 
 def test_the_dictionary_is_ascii_where_it_matters(registry: FixRegistry) -> None:
@@ -445,7 +463,7 @@ def test_every_version_published_here_has_its_symbols(registry: OfflineRegistry)
         "4.4": 245,
         "5.0": 290,
         "5.0.SP1": 327,
-        "5.0.SP2": 355,
+        "5.0.SP2": 668,
         "FIXT1.1": 9,
     }
 

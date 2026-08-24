@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStubStartDateUnadjusted",
+ "tag": 42993,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

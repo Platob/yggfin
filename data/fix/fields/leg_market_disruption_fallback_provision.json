@@ -1,0 +1,9 @@
+{
+ "name": "LegMarketDisruptionFallbackProvision",
+ "tag": 41463,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

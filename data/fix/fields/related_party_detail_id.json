@@ -1,0 +1,9 @@
+{
+ "name": "RelatedPartyDetailID",
+ "tag": 1563,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

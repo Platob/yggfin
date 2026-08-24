@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Short Quantity"
+   "description": "Short Quantity",
+   "components": [
+    "PositionQty"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Short Quantity"
+   "description": "Short Quantity",
+   "components": [
+    "PositionQty"
+   ]
   },
   "5.0": {
    "type": "Qty",
-   "description": "Short Quantity"
+   "description": "Short Quantity",
+   "components": [
+    "PositionQty"
+   ]
   },
   "4.4": {
    "type": "Qty",
-   "description": "Short Quantity"
+   "description": "Short Quantity",
+   "components": [
+    "PositionQty"
+   ]
   }
  }
 }

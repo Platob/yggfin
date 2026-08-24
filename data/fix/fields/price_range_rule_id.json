@@ -1,0 +1,9 @@
+{
+ "name": "PriceRangeRuleID",
+ "tag": 2556,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

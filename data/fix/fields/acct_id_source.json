@@ -46,6 +46,15 @@
     "RegistrationInstructionsResponse",
     "Quote",
     "QuoteCancel"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0.SP1": {
@@ -91,6 +100,15 @@
     "RegistrationInstructionsResponse",
     "Quote",
     "QuoteCancel"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0": {
@@ -136,6 +154,15 @@
     "RegistrationInstructionsResponse",
     "Quote",
     "QuoteCancel"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "ListOrdGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "SideCrossOrdModGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "4.4": {

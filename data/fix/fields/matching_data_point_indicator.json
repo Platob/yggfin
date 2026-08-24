@@ -1,0 +1,13 @@
+{
+ "name": "MatchingDataPointIndicator",
+ "tag": 2782,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "MANDATORY",
+    "2": "OPTIONAL"
+   }
+  }
+ }
+}

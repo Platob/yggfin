@@ -1,0 +1,9 @@
+{
+ "name": "ManualNoticeBusinessCenter",
+ "tag": 41112,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingProvisionOptionExerciseStartDateOffsetDayType",
+ "tag": 42124,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegRestructuringType",
+ "tag": 2149,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

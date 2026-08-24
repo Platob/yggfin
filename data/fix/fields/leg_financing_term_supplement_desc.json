@@ -1,0 +1,9 @@
+{
+ "name": "LegFinancingTermSupplementDesc",
+ "tag": 42201,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

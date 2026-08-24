@@ -5,7 +5,7 @@ reads sorted `logs.market` rows and writes `market.instruments`.
 
 `parse_logs` already created, enriched, versioned, and snapshotted every
 normalized Instrument lifecycle row. This notebook filters those rows by
-`etype` and the internal driver marker, converts each `Log` back to its exact
+`etype` and the internal plugin marker, converts each `Log` back to its exact
 `Instrument`, and appends the flat audit table. It does not parse FIX or
 version the lifecycle a second time.
 

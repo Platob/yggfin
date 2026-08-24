@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingProtectionTermEventUnit",
+ "tag": 42082,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

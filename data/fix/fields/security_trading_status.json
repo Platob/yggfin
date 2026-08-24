@@ -63,6 +63,10 @@
    },
    "used_in": [
     "SecurityStatus"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
    ]
   },
   "5.0.SP1": {
@@ -123,6 +127,10 @@
    },
    "used_in": [
     "SecurityStatus"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
    ]
   },
   "5.0": {

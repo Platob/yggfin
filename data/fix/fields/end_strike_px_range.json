@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Ending price of the range to which the StrikeIncrement <1204> applies. Price refers to the price of the underlying"
+   "description": "Ending price of the range to which the StrikeIncrement <1204> applies. Price refers to the price of the underlying",
+   "components": [
+    "StrikeRules"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Ending price of the range to which the StrikeIncrement <1204> applies. Price refers to the price of the underlying"
+   "description": "Ending price of the range to which the StrikeIncrement <1204> applies. Price refers to the price of the underlying",
+   "components": [
+    "StrikeRules"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "StreamCommodityAltIDSource",
+ "tag": 41279,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

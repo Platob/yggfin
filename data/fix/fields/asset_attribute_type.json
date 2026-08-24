@@ -1,0 +1,9 @@
+{
+ "name": "AssetAttributeType",
+ "tag": 2305,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

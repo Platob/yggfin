@@ -1,0 +1,9 @@
+{
+ "name": "FillYield",
+ "tag": 1623,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

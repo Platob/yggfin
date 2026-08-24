@@ -1,0 +1,9 @@
+{
+ "name": "NoSideRegulatoryTradeIDs",
+ "tag": 1971,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

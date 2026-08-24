@@ -1,0 +1,13 @@
+{
+ "name": "PriceMovementType",
+ "tag": 1923,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "AMOUNT",
+    "1": "PERCENTAGE"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamInflationPublicationSource",
+ "tag": 40813,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

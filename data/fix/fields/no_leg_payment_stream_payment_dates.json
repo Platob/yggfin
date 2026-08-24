@@ -1,0 +1,9 @@
+{
+ "name": "NoLegPaymentStreamPaymentDates",
+ "tag": 41589,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

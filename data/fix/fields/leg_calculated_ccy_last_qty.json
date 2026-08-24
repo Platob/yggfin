@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Used for the calculated quantity of the other side of the currency for this leg. Can be derived from LegQty <687> and LegLastPx <637> ."
+   "description": "Used for the calculated quantity of the other side of the currency for this leg. Can be derived from LegQty <687> and LegLastPx <637> .",
+   "components": [
+    "InstrmtLegExecGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Used for the calculated quantity of the other side of the currency for this leg. Can be derived from LegQty <687> and LegLastPx <637> ."
+   "description": "Used for the calculated quantity of the other side of the currency for this leg. Can be derived from LegQty <687> and LegLastPx <637> .",
+   "components": [
+    "InstrmtLegExecGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "Qty",
-   "description": "Used for the calculated quantity of the other side of the currency for this leg. Can be derived from LegQty <687> and LegLastPx <637> ."
+   "description": "Used for the calculated quantity of the other side of the currency for this leg. Can be derived from LegQty <687> and LegLastPx <637> .",
+   "components": [
+    "InstrmtLegExecGrp",
+    "TrdInstrmtLegGrp"
+   ]
   }
  }
 }

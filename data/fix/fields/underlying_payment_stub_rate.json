@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStubRate",
+ "tag": 40711,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamFormula",
+ "tag": 42486,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XMLDATA"
+  }
+ }
+}

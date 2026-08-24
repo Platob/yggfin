@@ -1,0 +1,9 @@
+{
+ "name": "DeliveryScheduleNotional",
+ "tag": 41040,
+ "versions": {
+  "5.0.SP2": {
+   "type": "QTY"
+  }
+ }
+}

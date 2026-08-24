@@ -1,0 +1,9 @@
+{
+ "name": "EncodedLegFinancialInstrumentFullNameLen",
+ "tag": 2718,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

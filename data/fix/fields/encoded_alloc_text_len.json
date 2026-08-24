@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "Length",
-   "description": "Byte length of encoded (non-ASCII characters) EncodedAllocText <361> field."
+   "description": "Byte length of encoded (non-ASCII characters) EncodedAllocText <361> field.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Length",
-   "description": "Byte length of encoded (non-ASCII characters) EncodedAllocText <361> field."
+   "description": "Byte length of encoded (non-ASCII characters) EncodedAllocText <361> field.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "5.0": {
    "type": "Length",
-   "description": "Byte length of encoded (non-ASCII characters) EncodedAllocText <361> field."
+   "description": "Byte length of encoded (non-ASCII characters) EncodedAllocText <361> field.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "4.4": {
    "type": "Length",

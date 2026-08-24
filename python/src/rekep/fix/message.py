@@ -118,7 +118,7 @@ BRIDGE = rf"(?s){_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}"
 
 #: `BRIDGE` with the message after it captured: where a bridge message starts
 #: inside a log line, exactly as `_BEGIN_VECTOR` says where a wire message
-#: does. `toBridge #ISINCODE=x|#SIDE=1` carries the driver's own prefix, and
+#: does. `toBridge #ISINCODE=x|#SIDE=1` carries the plugin's own prefix, and
 #: without a start marker the first key would be `toBridge #ISINCODE`.
 _BRIDGE_VECTOR = rf"(?s)(?P<msg>{_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}.*)"
 
@@ -239,12 +239,6 @@ _RENDERED_KEY = re.compile(
     rf"(?P<name>[A-Za-z0-9_\- ]+)(?P<index>\[\d+\])?{_WS}*$",
     re.ASCII,
 )
-
-#: What a fold drops from a name before it is looked up: the separators that
-#: only ever come from a renderer's casing convention (`msg_type`,
-#: `msg-type`, `Msg Type` are all `MsgType`). Nothing else is dropped -- a
-#: name is otherwise matched as it is spelled, lowercased.
-_UNFOLDED = re.compile(r"[ _\-]+", re.ASCII)
 
 #: BodyLength and CheckSum, the two fields whose *position* the standard
 #: fixes: 8, 9 lead and 10 ends the message.
@@ -844,9 +838,7 @@ def _until_checksum(
         encoded = compute.dictionary_encode(tags)
         distinct = encoded.dictionary
         terminal = compute.replace_substring_regex(distinct, r"^.*\.", "")
-        folded = compute.utf8_lower(
-            compute.replace_substring_regex(terminal, _UNFOLDED.pattern, "")
-        )
+        folded = compute.utf8_lower(terminal)
         rendered = compute.and_(
             compute.invert(compute.match_substring(distinct, "[")),
             compute.or_(compute.equal(terminal, CHECKSUM), compute.equal(folded, _CHECKSUM_NAME)),
@@ -887,7 +879,7 @@ def _is_checksum(key: str) -> bool:
     if "[" in key:
         return False
     terminal = key.rsplit(".", 1)[-1]
-    return terminal == CHECKSUM or _fold(terminal) == _CHECKSUM_NAME
+    return terminal == CHECKSUM or terminal.lower() == _CHECKSUM_NAME
 
 
 def _column_style(column: Any, named: bool | None = None) -> tuple[str, bool, str | None]:
@@ -1053,15 +1045,10 @@ def _folded(names: Mapping[str, int | str] | None) -> dict[str, str]:
     for source, size, built in _FOLDED:
         if source is names and size == len(names):
             return built
-    built = {_fold(str(name)): str(tag) for name, tag in names.items()}
+    built = {str(name).lower(): str(tag) for name, tag in names.items()}
     _FOLDED.insert(0, (names, len(names), built))
     del _FOLDED[_FOLDED_KEPT:]
     return built
-
-
-def _fold(name: str) -> str:
-    """One name in the spelling both sides of the lookup agree on."""
-    return _UNFOLDED.sub("", name).lower()
 
 
 def _resolved_key(key: Any, folded: Mapping[str, str]) -> str | None:
@@ -1076,15 +1063,13 @@ def _resolved_key(key: Any, folded: Mapping[str, str]) -> str | None:
     if text.isascii() and text.isdigit():
         return text
     tag = folded.get(text.lower())
-    if tag is None:
-        tag = folded.get(_fold(text))
     if tag is not None:
         return tag
     match = _RENDERED_KEY.match(text)
     if match is None:
         return text
     lead, name, index = match.group("lead", "name", "index")
-    tag = folded.get(name.lower()) or folded.get(_fold(name))
+    tag = folded.get(name.lower())
     if tag is None:
         return text
     return f"{lead}{tag}{index or ''}"

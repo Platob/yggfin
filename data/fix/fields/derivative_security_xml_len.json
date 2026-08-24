@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Length",
-   "description": "Refer to definition of SecurityXMLLen <1184>"
+   "description": "Refer to definition of SecurityXMLLen <1184>",
+   "components": [
+    "DerivativeSecurityXML"
+   ]
   },
   "5.0.SP1": {
    "type": "Length",
-   "description": "Refer to definition of SecurityXMLLen <1184>"
+   "description": "Refer to definition of SecurityXMLLen <1184>",
+   "components": [
+    "DerivativeSecurityXML"
+   ]
   }
  }
 }

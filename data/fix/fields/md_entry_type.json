@@ -88,7 +88,12 @@
     "h": "DAILY_FINANCING_VALUE",
     "i": "ACCRUED_FINANCING_VALUE",
     "t": "TWAP"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "MDReqGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -158,7 +163,12 @@
     "T": "CUMULATIVE_VALUE_ADJUSTMENT_FOR_LONG_POSITIONS",
     "U": "DAILY_VALUE_ADJUSTMENT_FOR_SHORT_POSITIONS",
     "V": "CUMULATIVE_VALUE_ADJUSTMENT_FOR_SHORT_POSITIONS"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "MDReqGrp"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -218,7 +228,12 @@
     "O": "SESSION_LOW_OFFER",
     "P": "EARLY_PRICES",
     "Q": "AUCTION_CLEARING_PRICE"
-   }
+   },
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp",
+    "MDReqGrp"
+   ]
   },
   "4.4": {
    "type": "char",

@@ -1,0 +1,9 @@
+{
+ "name": "MarginReqmtInqID",
+ "tag": 1635,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

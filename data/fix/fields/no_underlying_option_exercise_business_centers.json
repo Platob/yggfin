@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingOptionExerciseBusinessCenters",
+ "tag": 41820,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

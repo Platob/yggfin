@@ -1,0 +1,13 @@
+{
+ "name": "RelatedPriceSource",
+ "tag": 1821,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "NB_BID",
+    "2": "NB_OFFER"
+   }
+  }
+ }
+}

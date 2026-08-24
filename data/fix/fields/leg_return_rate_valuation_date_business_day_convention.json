@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateValuationDateBusinessDayConvention",
+ "tag": 42529,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -12,7 +12,11 @@
    "value_names": {
     "1": "SUB_ALLOCATE",
     "2": "THIRD_PARTY_ALLOCATION"
-   }
+   },
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -24,7 +28,11 @@
    "value_names": {
     "1": "SUB_ALLOCATE",
     "2": "THIRD_PARTY_ALLOCATION"
-   }
+   },
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -36,7 +44,11 @@
    "value_names": {
     "1": "SUB_ALLOCATE",
     "2": "THIRD_PARTY_ALLOCATION"
-   }
+   },
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   }
  }
 }

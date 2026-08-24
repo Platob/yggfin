@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "Refer to definition of PartyIDSource <447>"
+   "description": "Refer to definition of PartyIDSource <447>",
+   "components": [
+    "NestedParties4"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
-   "description": "Refer to definition of PartyIDSource <447>"
+   "description": "Refer to definition of PartyIDSource <447>",
+   "components": [
+    "NestedParties4"
+   ]
   }
  }
 }

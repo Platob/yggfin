@@ -163,7 +163,7 @@ def test_namespace_properties_round_trip(catalog: IcebergCatalog) -> None:
 
 def test_a_namespace_hands_out_its_own_datasets(catalog: IcebergCatalog) -> None:
     space = catalog.create_namespace("trading")
-    dataset = space.dataset("quotes", struct=Quote.into_field())
+    dataset = space.dataset("quotes", field=Quote.into_field())
     assert isinstance(dataset, IcebergDataset)
     assert dataset.name == "trading.quotes"
 
@@ -174,8 +174,8 @@ def test_a_namespace_hands_out_its_own_datasets(catalog: IcebergCatalog) -> None
 def test_tables_are_listed_per_namespace_and_across_them(catalog: IcebergCatalog) -> None:
     catalog.create_namespace("trading")
     catalog.create_namespace("risk")
-    catalog.dataset("trading.quotes", struct=Quote.into_field()).create_with()
-    catalog.dataset("risk.limits", struct=Quote.into_field()).create_with()
+    catalog.dataset("trading.quotes", field=Quote.into_field()).create_with()
+    catalog.dataset("risk.limits", field=Quote.into_field()).create_with()
     assert catalog.tables("trading") == ["trading.quotes"]
     assert sorted(catalog.tables()) == ["risk.limits", "trading.quotes"]
 
@@ -187,7 +187,7 @@ def test_tables_reach_nested_namespaces(catalog: IcebergCatalog) -> None:
     `trading.eu.paris.quotes`, and reported no skip.
     """
     for name in ("ops.quotes", "trading.quotes", "trading.eu.quotes", "trading.eu.paris.quotes"):
-        catalog.dataset(name, struct=Quote.into_field()).create_with()
+        catalog.dataset(name, field=Quote.into_field()).create_with()
     assert sorted(catalog.tables()) == [
         "ops.quotes",
         "trading.eu.paris.quotes",
@@ -209,7 +209,7 @@ def test_a_sweep_loads_one_catalog(catalog: IcebergCatalog) -> None:
     import pyiceberg.catalog
 
     for index in range(6):
-        catalog.dataset(f"trading.q{index}", struct=Quote.into_field()).create_with()
+        catalog.dataset(f"trading.q{index}", field=Quote.into_field()).create_with()
     loaded = 0
     original = pyiceberg.catalog.load_catalog
 
@@ -228,7 +228,7 @@ def test_a_sweep_loads_one_catalog(catalog: IcebergCatalog) -> None:
 
 
 def test_a_table_is_dropped_and_purged(catalog: IcebergCatalog) -> None:
-    dataset = catalog.dataset("trading.quotes", struct=Quote.into_field())
+    dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
     dataset.create_with()
     assert catalog.table_exists("trading.quotes")
     catalog.drop_table("trading.quotes")
@@ -237,14 +237,14 @@ def test_a_table_is_dropped_and_purged(catalog: IcebergCatalog) -> None:
 
 
 def test_a_table_is_renamed(catalog: IcebergCatalog) -> None:
-    catalog.dataset("trading.quotes", struct=Quote.into_field()).create_with()
+    catalog.dataset("trading.quotes", field=Quote.into_field()).create_with()
     catalog.rename_table("trading.quotes", "trading.ticks")
     assert catalog.tables("trading") == ["trading.ticks"]
 
 
 def test_every_table_comes_back_as_a_dataset(catalog: IcebergCatalog) -> None:
-    catalog.dataset("trading.quotes", struct=Quote.into_field()).create_with()
-    catalog.dataset("trading.ticks", struct=Quote.into_field()).create_with()
+    catalog.dataset("trading.quotes", field=Quote.into_field()).create_with()
+    catalog.dataset("trading.ticks", field=Quote.into_field()).create_with()
     found = {dataset.name for dataset in catalog.datasets("trading")}
     assert found == {"trading.quotes", "trading.ticks"}
     for dataset in catalog.datasets("trading"):

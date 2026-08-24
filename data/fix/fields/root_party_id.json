@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "PartyID value within a root parties component. Same values as PartyID <448>"
+   "description": "PartyID value within a root parties component. Same values as PartyID <448>",
+   "components": [
+    "RootParties"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "PartyID value within a root parties component. Same values as PartyID <448>"
+   "description": "PartyID value within a root parties component. Same values as PartyID <448>",
+   "components": [
+    "RootParties"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "PartyID value within a root parties component. Same values as PartyID <448>"
+   "description": "PartyID value within a root parties component. Same values as PartyID <448>",
+   "components": [
+    "RootParties"
+   ]
   }
  }
 }

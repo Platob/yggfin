@@ -1,0 +1,9 @@
+{
+ "name": "TotalTradingBusinessDays",
+ "tag": 2585,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -1187,7 +1187,10 @@ def test_a_registry_that_never_stored_components_says_so_and_keeps_the_legacy_ta
         extractor = codec.parties_of("4.4")
     assert extractor.fallback
     assert set(extractor._member_names) == {448, 447, 452, 802, 523, 803}
-    parties = _party_rows(codec, PARTIES_WIRE, "4.4")
+    # Every structured component says so for itself: one warning names one
+    # extraction, so a reader knows which of them fell back.
+    with pytest.warns(RuntimeWarning, match="TrdRegTimestamps extraction falls back"):
+        parties = _party_rows(codec, PARTIES_WIRE, "4.4")
     assert [party["party_id"] for party in parties] == ["PARTY-TEST-A", "PARTY-TEST-B"]
 
 

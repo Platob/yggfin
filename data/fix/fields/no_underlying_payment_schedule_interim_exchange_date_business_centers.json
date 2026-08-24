@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingPaymentScheduleInterimExchangeDateBusinessCenters",
+ "tag": 40967,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

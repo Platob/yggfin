@@ -1,0 +1,9 @@
+{
+ "name": "LegProvisionOptionExerciseBoundsFirstDateUnadjusted",
+ "tag": 40489,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

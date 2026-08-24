@@ -1,0 +1,19 @@
+{
+ "name": "ReturnRateQuoteTimeType",
+ "tag": 42748,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "OPEN",
+    "1": "OFFICIAL_SETTL_PX",
+    "2": "XETRA",
+    "3": "CLOSE",
+    "4": "DERIVATIVES_CLOSE",
+    "5": "HIGH",
+    "6": "LOW",
+    "7": "AS_SPECIFIED_IN_MASTER_CONFIRMATION"
+   }
+  }
+ }
+}

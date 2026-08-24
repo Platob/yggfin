@@ -1,0 +1,13 @@
+{
+ "name": "ApplLevelRecoveryIndicator",
+ "tag": 1744,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NO_APPL_RECOVERY_NEEDED",
+    "1": "APPL_RECOVERY_NEEDED"
+   }
+  }
+ }
+}

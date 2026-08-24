@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamCapRate",
+ "tag": 40339,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingReturnRateCashFlowType",
+ "tag": 43054,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

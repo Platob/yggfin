@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStubIndex2CurveUnit",
+ "tag": 40441,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

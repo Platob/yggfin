@@ -4,15 +4,25 @@
  "versions": {
   "5.0.SP2": {
    "type": "UTCTimestamp",
-   "description": "Indicates expiration time of this particular QuoteSet (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+   "description": "Indicates expiration time of this particular QuoteSet (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "components": [
+    "QuotSetAckGrp",
+    "QuotSetGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "UTCTimestamp",
-   "description": "Indicates expiration time of this particular QuoteSet (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+   "description": "Indicates expiration time of this particular QuoteSet (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "components": [
+    "QuotSetGrp"
+   ]
   },
   "5.0": {
    "type": "UTCTimestamp",
-   "description": "Indicates expiration time of this particular QuoteSet (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
+   "description": "Indicates expiration time of this particular QuoteSet (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
+   "components": [
+    "QuotSetGrp"
+   ]
   },
   "4.4": {
    "type": "UTCTimestamp",

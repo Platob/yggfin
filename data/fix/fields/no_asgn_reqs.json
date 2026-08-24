@@ -4,7 +4,11 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of assignment requests."
+   "description": "Number of assignment requests.",
+   "components": [
+    "StrmAsgnReqGrp",
+    "StrmAsgnRptGrp"
+   ]
   }
  }
 }

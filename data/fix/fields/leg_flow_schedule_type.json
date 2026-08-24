@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "The industry standard flow schedule by which electricity or natural gas is traded. Schedules exist by regions and on-peak and off-peak status, such as \"Western Peak\". Same values as FlowScheduleType <1439>"
+   "description": "The industry standard flow schedule by which electricity or natural gas is traded. Schedules exist by regions and on-peak and off-peak status, such as \"Western Peak\". Same values as FlowScheduleType <1439>",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

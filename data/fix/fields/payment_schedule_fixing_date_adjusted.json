@@ -1,0 +1,9 @@
+{
+ "name": "PaymentScheduleFixingDateAdjusted",
+ "tag": 40858,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

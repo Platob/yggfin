@@ -1,0 +1,9 @@
+{
+ "name": "StreamNotionalXIDRef",
+ "tag": 41305,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XIDREF"
+  }
+ }
+}

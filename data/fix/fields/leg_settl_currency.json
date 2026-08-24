@@ -4,15 +4,30 @@
  "versions": {
   "5.0.SP2": {
    "type": "Currency",
-   "description": "Identifies settlement currency for the Leg. See SettlCurrency <120> for description and"
+   "description": "Identifies settlement currency for the Leg. See SettlCurrency <120> for description and",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Currency",
-   "description": "Identifies settlement currency for the Leg. See SettlCurrency <120> for description and"
+   "description": "Identifies settlement currency for the Leg. See SettlCurrency <120> for description and",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegOrdGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "5.0": {
    "type": "Currency",
-   "description": "Identifies settlement currency for the Leg. See SettlCurrency <120> for description and"
+   "description": "Identifies settlement currency for the Leg. See SettlCurrency <120> for description and",
+   "components": [
+    "InstrmtLegExecGrp",
+    "LegPreAllocGrp",
+    "TrdInstrmtLegGrp"
+   ]
   },
   "4.4": {
    "type": "Currency",

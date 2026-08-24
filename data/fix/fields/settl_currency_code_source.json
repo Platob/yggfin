@@ -1,0 +1,9 @@
+{
+ "name": "SettlCurrencyCodeSource",
+ "tag": 2899,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

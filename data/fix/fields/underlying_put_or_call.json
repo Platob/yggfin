@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Put or call indicator of the underlying security. See PutOrCall <201> field for description See Appendix 6-F: 5.Replaced Field: PutOrCall (tag 201) and UnderlyingPutOrCall (tag 315) with CFICode (tag 461) [Replaced in FIX 4.3]"
+   "description": "Put or call indicator of the underlying security. See PutOrCall <201> field for description See Appendix 6-F: 5.Replaced Field: PutOrCall (tag 201) and UnderlyingPutOrCall (tag 315) with CFICode (tag 461) [Replaced in FIX 4.3]",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Put or call indicator of the underlying security. See PutOrCall <201> field for description See Appendix 6-F: 5.Replaced Field: PutOrCall (tag 201) and UnderlyingPutOrCall (tag 315) with CFICode (tag 461) [Replaced in FIX 4.3]"
+   "description": "Put or call indicator of the underlying security. See PutOrCall <201> field for description See Appendix 6-F: 5.Replaced Field: PutOrCall (tag 201) and UnderlyingPutOrCall (tag 315) with CFICode (tag 461) [Replaced in FIX 4.3]",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "int",

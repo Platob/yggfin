@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStubIndexSource",
+ "tag": 40425,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

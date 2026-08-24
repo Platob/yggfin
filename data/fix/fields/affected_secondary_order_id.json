@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> ."
+   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> .",
+   "components": [
+    "AffectedOrdGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> ."
+   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> .",
+   "components": [
+    "AffectedOrdGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> ."
+   "description": "SecondaryOrderID <198> of an order affected by a Mass Cancel Request <q> .",
+   "components": [
+    "AffectedOrdGrp"
+   ]
   },
   "4.4": {
    "type": "String",

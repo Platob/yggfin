@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingCashSettlTerms",
+ "tag": 42041,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

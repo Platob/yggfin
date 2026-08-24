@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventCreditEventsXIDRef",
+ "tag": 2242,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XIDREF"
+  }
+ }
+}

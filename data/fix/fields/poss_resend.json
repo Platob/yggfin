@@ -12,7 +12,10 @@
    "value_names": {
     "N": "NO",
     "Y": "YES"
-   }
+   },
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "Boolean",
@@ -24,7 +27,10 @@
    "value_names": {
     "N": "NO",
     "Y": "YES"
-   }
+   },
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "Boolean",
@@ -100,7 +106,10 @@
    "value_names": {
     "N": "NO",
     "Y": "YES"
-   }
+   },
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRateValuationDateOffsetPeriod",
+ "tag": 42712,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

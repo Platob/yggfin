@@ -1,0 +1,9 @@
+{
+ "name": "EncodedProvisionText",
+ "tag": 40987,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

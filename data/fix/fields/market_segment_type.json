@@ -1,0 +1,14 @@
+{
+ "name": "MarketSegmentType",
+ "tag": 2543,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "POOL",
+    "2": "RETAIL",
+    "3": "WHOLESALE"
+   }
+  }
+ }
+}

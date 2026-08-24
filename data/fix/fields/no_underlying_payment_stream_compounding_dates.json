@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingPaymentStreamCompoundingDates",
+ "tag": 42901,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

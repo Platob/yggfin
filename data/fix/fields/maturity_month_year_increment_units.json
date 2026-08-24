@@ -16,7 +16,10 @@
     "1": "DAYS",
     "2": "WEEKS",
     "3": "YEARS"
-   }
+   },
+   "components": [
+    "MaturityRules"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -32,7 +35,10 @@
     "1": "DAYS",
     "2": "WEEKS",
     "3": "YEARS"
-   }
+   },
+   "components": [
+    "MaturityRules"
+   ]
   }
  }
 }

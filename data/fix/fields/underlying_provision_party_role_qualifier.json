@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingProvisionPartyRoleQualifier",
+ "tag": 40918,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

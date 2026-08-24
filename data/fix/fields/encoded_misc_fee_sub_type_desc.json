@@ -1,0 +1,9 @@
+{
+ "name": "EncodedMiscFeeSubTypeDesc",
+ "tag": 2638,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

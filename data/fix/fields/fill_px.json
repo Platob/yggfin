@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Price of Fill. Refer to LastPx <31> ."
+   "description": "Price of Fill. Refer to LastPx <31> .",
+   "components": [
+    "FillsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Price of Fill. Refer to LastPx <31> ."
+   "description": "Price of Fill. Refer to LastPx <31> .",
+   "components": [
+    "FillsGrp"
+   ]
   }
  }
 }

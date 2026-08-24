@@ -1,0 +1,13 @@
+{
+ "name": "NonDeliverableFixingDateType",
+ "tag": 40827,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "UNADJUSTED",
+    "1": "ADJUSTED"
+   }
+  }
+ }
+}

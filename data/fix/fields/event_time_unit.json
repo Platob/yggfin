@@ -1,0 +1,18 @@
+{
+ "name": "EventTimeUnit",
+ "tag": 1827,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING",
+   "value_names": {
+    "H": "HOUR",
+    "Min": "MINUTE",
+    "S": "SECOND",
+    "D": "DAY",
+    "Wk": "WEEK",
+    "Mo": "MONTH",
+    "Yr": "YEAR"
+   }
+  }
+ }
+}

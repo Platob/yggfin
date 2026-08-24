@@ -1,0 +1,9 @@
+{
+ "name": "OptionExerciseDate",
+ "tag": 41138,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

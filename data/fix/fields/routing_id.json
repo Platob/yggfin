@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Assigned value used to identify a specific routing destination."
+   "description": "Assigned value used to identify a specific routing destination.",
+   "components": [
+    "RoutingGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Assigned value used to identify a specific routing destination."
+   "description": "Assigned value used to identify a specific routing destination.",
+   "components": [
+    "RoutingGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Assigned value used to identify a specific routing destination."
+   "description": "Assigned value used to identify a specific routing destination.",
+   "components": [
+    "RoutingGrp"
+   ]
   },
   "4.4": {
    "type": "String",

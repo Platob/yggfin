@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "char",
-   "description": "Refer to definition of OptAttribute <206>"
+   "description": "Refer to definition of OptAttribute <206>",
+   "components": [
+    "UnderlyingLegInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
-   "description": "Refer to definition of OptAttribute <206>"
+   "description": "Refer to definition of OptAttribute <206>",
+   "components": [
+    "UnderlyingLegInstrument"
+   ]
   }
  }
 }

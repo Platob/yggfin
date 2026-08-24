@@ -1,0 +1,14 @@
+{
+ "name": "TradeMatchAckStatus",
+ "tag": 1896,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "RECEIVED_NOT_PROCESSED",
+    "1": "ACCEPTED",
+    "2": "REJECTED"
+   }
+  }
+ }
+}

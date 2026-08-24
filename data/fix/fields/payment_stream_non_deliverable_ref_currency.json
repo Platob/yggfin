@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamNonDeliverableRefCurrency",
+ "tag": 40817,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

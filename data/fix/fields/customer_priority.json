@@ -1,0 +1,13 @@
+{
+ "name": "CustomerPriority",
+ "tag": 2570,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NO_PRIORITY",
+    "1": "UNCONDITIONAL_PRIORITY"
+   }
+  }
+ }
+}

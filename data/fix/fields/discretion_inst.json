@@ -24,7 +24,10 @@
     "5": "RELATED_TO_LAST_TRADE_PRICE",
     "6": "RELATED_TO_VWAP",
     "7": "AVERAGE_PRICE_GUARANTEE"
-   }
+   },
+   "components": [
+    "DiscretionInstructions"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -48,7 +51,10 @@
     "5": "RELATED_TO_LAST_TRADE_PRICE",
     "6": "RELATED_TO_VWAP",
     "7": "AVERAGE_PRICE_GUARANTEE"
-   }
+   },
+   "components": [
+    "DiscretionInstructions"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -72,7 +78,10 @@
     "5": "RELATED_TO_LAST_TRADE_PRICE",
     "6": "RELATED_TO_VWAP",
     "7": "AVERAGE_PRICE_GUARANTEE"
-   }
+   },
+   "components": [
+    "DiscretionInstructions"
+   ]
   },
   "4.4": {
    "type": "char",
@@ -94,7 +103,10 @@
     "4": "RELATED_TO_MIDPOINT_PRICE",
     "5": "RELATED_TO_LAST_TRADE_PRICE",
     "6": "RELATED_TO_VWAP"
-   }
+   },
+   "components": [
+    "DiscretionInstructions"
+   ]
   },
   "4.3": {
    "type": "char",

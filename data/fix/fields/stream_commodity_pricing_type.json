@@ -1,0 +1,9 @@
+{
+ "name": "StreamCommodityPricingType",
+ "tag": 41265,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

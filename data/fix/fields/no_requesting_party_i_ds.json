@@ -1,0 +1,9 @@
+{
+ "name": "NoRequestingPartyIDs",
+ "tag": 1657,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

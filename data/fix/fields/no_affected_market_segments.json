@@ -1,0 +1,9 @@
+{
+ "name": "NoAffectedMarketSegments",
+ "tag": 1791,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

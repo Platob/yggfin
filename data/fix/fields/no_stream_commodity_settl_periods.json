@@ -1,0 +1,9 @@
+{
+ "name": "NoStreamCommoditySettlPeriods",
+ "tag": 41289,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

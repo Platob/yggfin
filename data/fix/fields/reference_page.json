@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Identifies the reference \"page\" from the rate source. For FX, the reference page to the spot rate to be used for the reference FX spot rate."
+   "description": "Identifies the reference \"page\" from the rate source. For FX, the reference page to the spot rate to be used for the reference FX spot rate.",
+   "components": [
+    "RateSource"
+   ]
   }
  }
 }

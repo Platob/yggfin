@@ -1,0 +1,9 @@
+{
+ "name": "LegComplexEventCreditEventCurrency",
+ "tag": 41369,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

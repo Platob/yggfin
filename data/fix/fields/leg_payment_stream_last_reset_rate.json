@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamLastResetRate",
+ "tag": 41576,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

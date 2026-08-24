@@ -288,7 +288,10 @@
     "EB": "PAY_MANAGEMENT_REPORT_ACK",
     "DY": "PAY_MANAGEMENT_REQUEST",
     "DZ": "PAY_MANAGEMENT_REQUEST_ACK"
-   }
+   },
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
@@ -522,7 +525,10 @@
     "x": "SECURITY_LIST_REQUEST",
     "y": "SECURITY_LIST",
     "z": "DERIVATIVE_SECURITY_LIST_REQUEST"
-   }
+   },
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -1420,7 +1426,10 @@
     "x": "SecurityListRequest",
     "y": "SecurityList",
     "z": "DerivativeSecurityListRequest"
-   }
+   },
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

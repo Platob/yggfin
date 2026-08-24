@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of Underlyings, Identifies the Underlying of the Leg"
+   "description": "Number of Underlyings, Identifies the Underlying of the Leg",
+   "components": [
+    "TradeCapLegUnderlyingsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of Underlyings, Identifies the Underlying of the Leg"
+   "description": "Number of Underlyings, Identifies the Underlying of the Leg",
+   "components": [
+    "TradeCapLegUnderlyingsGrp"
+   ]
   }
  }
 }

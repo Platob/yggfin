@@ -1,0 +1,15 @@
+{
+ "name": "ExerciseConfirmationMethod",
+ "tag": 41111,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NOT_REQUIRED",
+    "1": "NON_ELECTRONIC",
+    "2": "ELECTRONIC",
+    "3": "UNKNOWN"
+   }
+  }
+ }
+}

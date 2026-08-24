@@ -1,0 +1,14 @@
+{
+ "name": "PartyActionResponse",
+ "tag": 2332,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "ACCEPTED",
+    "1": "COMPLETED",
+    "2": "REJECTED"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingOptionExerciseNominationDeadline",
+ "tag": 41835,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

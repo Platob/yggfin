@@ -1,0 +1,9 @@
+{
+ "name": "LegDeliveryScheduleNotionalUnitOfMeasure",
+ "tag": 41412,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

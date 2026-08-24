@@ -1,0 +1,14 @@
+{
+ "name": "MarketCondition",
+ "tag": 2705,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NORMAL",
+    "1": "STRESSED",
+    "2": "EXCEPTIONAL"
+   }
+  }
+ }
+}

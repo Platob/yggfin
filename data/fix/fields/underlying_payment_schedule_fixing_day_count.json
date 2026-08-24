@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleFixingDayCount",
+ "tag": 41892,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

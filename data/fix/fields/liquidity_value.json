@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Amt",
-   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>"
+   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>",
+   "components": [
+    "BidDescReqGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Amt",
-   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>"
+   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>",
+   "components": [
+    "BidDescReqGrp"
+   ]
   },
   "5.0": {
    "type": "Amt",
-   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>"
+   "description": "Value between LiquidityPctLow <402> and LiquidityPctHigh <403> in Currency <15>",
+   "components": [
+    "BidDescReqGrp"
+   ]
   },
   "4.4": {
    "type": "Amt",

@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamCalculationPeriodDatesXIDRef",
+ "tag": 41642,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XIDREF"
+  }
+ }
+}

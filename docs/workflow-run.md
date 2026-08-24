@@ -151,11 +151,15 @@ and orders.
 
 | Contract | Fields | Primary key | Partitions | Nested payloads |
 | --- | ---: | --- | --- | --- |
-| `Log` | 103 | `unix, hash` | `unix_hour` | `kwargs`, `parties`, `codes` |
-| `Instrument` | 36 | `unix, hash` | `unix_hour`, `xhash` | `alt_ids`, `legs`, `codes` |
-| `Book` | 52 | `unix, hash` | `unix_hour`, `instrument_xhash` | levels, deltas, executions, live snapshot orders, `codes` |
-| `Order` | 39 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage, `codes` and metadata |
-| `Execution` | 41 | `unix, hash` | `unix_hour`, `instrument_xhash` | standard event lineage, `codes` and metadata |
+| `Log` | 105 | `unix, hash` | `unix_hour` | `kwargs`, `parties`, `trd_reg_timestamps`, `codes` |
+| `Instrument` | 36 | `unix, hash` | `unix_hour` | `alt_ids`, `legs`, `codes` |
+| `Book` | 53 | `unix, hash` | `unix_hour` | levels, deltas, executions, live snapshot orders, `codes` |
+| `Order` | 40 | `unix, hash` | `unix_hour` | standard event lineage, `codes` and metadata |
+| `Execution` | 42 | `unix, hash` | `unix_hour` | standard event lineage, `codes` and metadata |
+
+The hour is the only partition. An instrument identity is a 64-bit hash, so
+bucketing it multiplies the files inside each hour without pruning a read the
+hour and the sort order do not already prune.
 
 The YAML contracts under `schemas/rekep/` are the portable source. Arrow owns
 types and metadata between stages, Iceberg owns table ids and snapshots, and

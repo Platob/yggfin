@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateValuationTime",
+ "tag": 42556,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTTIME"
+  }
+ }
+}

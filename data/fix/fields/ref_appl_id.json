@@ -4,11 +4,21 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Reference to the unique application identifier which corresponds to ApplID <1180> from the Application Sequence Group component"
+   "description": "Reference to the unique application identifier which corresponds to ApplID <1180> from the Application Sequence Group component",
+   "components": [
+    "ApplIDReportGrp",
+    "ApplIDRequestAckGrp",
+    "ApplIDRequestGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Reference to the unique application identifier which corresponds to ApplID <1180> from the Application Sequence Group component"
+   "description": "Reference to the unique application identifier which corresponds to ApplID <1180> from the Application Sequence Group component",
+   "components": [
+    "ApplIDReportGrp",
+    "ApplIDRequestAckGrp",
+    "ApplIDRequestGrp"
+   ]
   }
  }
 }

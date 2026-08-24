@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingComplexEventPeriodType",
+ "tag": 41730,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

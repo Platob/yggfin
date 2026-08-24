@@ -1,0 +1,9 @@
+{
+ "name": "InternationalSwapIndicator",
+ "tag": 2526,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

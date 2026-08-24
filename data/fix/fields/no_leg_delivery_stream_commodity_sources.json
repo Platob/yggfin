@@ -1,0 +1,9 @@
+{
+ "name": "NoLegDeliveryStreamCommoditySources",
+ "tag": 41460,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

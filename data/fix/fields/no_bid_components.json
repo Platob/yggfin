@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Indicates the number of list entries."
+   "description": "Indicates the number of list entries.",
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Indicates the number of list entries."
+   "description": "Indicates the number of list entries.",
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Indicates the number of list entries."
+   "description": "Indicates the number of list entries.",
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

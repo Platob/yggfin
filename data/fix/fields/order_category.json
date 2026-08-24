@@ -30,6 +30,10 @@
    },
    "used_in": [
     "ExecutionReport"
+   ],
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
    ]
   },
   "5.0.SP1": {

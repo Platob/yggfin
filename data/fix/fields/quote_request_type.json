@@ -13,7 +13,12 @@
     "1": "MANUAL",
     "2": "AUTOMATIC",
     "3": "CONFIRM_QUOTE"
-   }
+   },
+   "components": [
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -25,7 +30,12 @@
    "value_names": {
     "1": "MANUAL",
     "2": "AUTOMATIC"
-   }
+   },
+   "components": [
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -37,7 +47,12 @@
    "value_names": {
     "1": "MANUAL",
     "2": "AUTOMATIC"
-   }
+   },
+   "components": [
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp"
+   ]
   },
   "4.4": {
    "type": "int",

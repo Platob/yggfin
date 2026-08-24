@@ -1,0 +1,9 @@
+{
+ "name": "PriceRangeValue",
+ "tag": 2553,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

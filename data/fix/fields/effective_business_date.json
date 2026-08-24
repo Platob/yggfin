@@ -1,0 +1,9 @@
+{
+ "name": "EffectiveBusinessDate",
+ "tag": 2400,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

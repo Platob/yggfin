@@ -4,23 +4,39 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block"
+   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block",
+   "components": [
+    "Parties",
+    "PartyDetail"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block"
+   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block",
+   "components": [
+    "Parties"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block"
+   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block",
+   "components": [
+    "Parties"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block"
+   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block",
+   "components": [
+    "Parties"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block"
+   "description": "Party identifier/code. See PartyIDSource <447> and PartyRole <452> . See Appendix 6-G: Use of <Parties> Component Block",
+   "components": [
+    "Parties"
+   ]
   }
  }
 }

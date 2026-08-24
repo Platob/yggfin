@@ -1,0 +1,9 @@
+{
+ "name": "LegAgreementDesc",
+ "tag": 2497,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

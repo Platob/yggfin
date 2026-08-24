@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentScheduleInterimExchangeDatesBusinessDayConvention",
+ "tag": 40408,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

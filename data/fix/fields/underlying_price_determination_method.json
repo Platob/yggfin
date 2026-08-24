@@ -16,7 +16,10 @@
     "2": "SPECIAL_REFERENCE",
     "3": "OPTIMAL_VALUE",
     "4": "AVERAGE_VALUE"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "UpfrontPrice",
+ "tag": 1742,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PRICE"
+  }
+ }
+}

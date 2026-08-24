@@ -1,0 +1,13 @@
+{
+ "name": "SideClearingTradePriceType",
+ "tag": 1598,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "TRADE_CLEARING_AT_EXECUTION_PRICE",
+    "1": "TRADE_CLEARING_AT_ALTERNATE_CLEARING_PRICE"
+   }
+  }
+ }
+}

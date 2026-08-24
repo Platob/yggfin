@@ -10,6 +10,9 @@
     "TradeCaptureReport",
     "TradeCaptureReportRequestAck",
     "TradeCaptureReportAck"
+   ],
+   "components": [
+    "ExecAllocGrp"
    ]
   },
   "5.0.SP1": {
@@ -20,6 +23,9 @@
     "TradeCaptureReport",
     "TradeCaptureReportRequestAck",
     "TradeCaptureReportAck"
+   ],
+   "components": [
+    "ExecAllocGrp"
    ]
   },
   "5.0": {
@@ -30,6 +36,9 @@
     "TradeCaptureReport",
     "TradeCaptureReportRequestAck",
     "TradeCaptureReportAck"
+   ],
+   "components": [
+    "ExecAllocGrp"
    ]
   }
  }

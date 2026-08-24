@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of leg stipulation entries"
+   "description": "Number of leg stipulation entries",
+   "components": [
+    "LegStipulations"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of leg stipulation entries"
+   "description": "Number of leg stipulation entries",
+   "components": [
+    "LegStipulations"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of leg stipulation entries"
+   "description": "Number of leg stipulation entries",
+   "components": [
+    "LegStipulations"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",
-   "description": "Number of leg stipulation entries"
+   "description": "Number of leg stipulation entries",
+   "components": [
+    "LegStipulations"
+   ]
   }
  }
 }

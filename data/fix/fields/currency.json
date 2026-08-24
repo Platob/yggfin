@@ -46,6 +46,22 @@
     "CrossOrderCancelReplaceRequest",
     "SecurityListRequest",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "InstrmtMDReqGrp",
+    "InstrmtStrkPxGrp",
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RelSymDerivSecGrp",
+    "RelSymDerivSecUpdGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp",
+    "SettlObligationInstructions"
    ]
   },
   "5.0.SP1": {
@@ -92,6 +108,22 @@
     "Quote",
     "SecurityListRequest",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "InstrmtMDReqGrp",
+    "InstrmtStrkPxGrp",
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RelSymDerivSecGrp",
+    "RelSymDerivSecUpdGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp",
+    "SettlObligationInstructions"
    ]
   },
   "5.0": {
@@ -134,6 +166,22 @@
     "CrossOrderCancelReplaceRequest",
     "SecurityListRequest",
     "DerivativeSecurityListRequest"
+   ],
+   "components": [
+    "InstrmtMDReqGrp",
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RelSymDerivSecGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp",
+    "UndInstrmtStrkPxGrp"
    ]
   },
   "4.4": {

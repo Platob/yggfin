@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamMaximumTransactionCurrency",
+ "tag": 41186,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CURRENCY"
+  }
+ }
+}

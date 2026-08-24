@@ -705,6 +705,15 @@ class _Side:
         """Whether the earliest indexed deadline is observable by `unix`."""
         return bool(self._deadlines and self._deadlines[0][0] <= unix)
 
+    def purge(self, unix: int, reason: str) -> list[Order]:
+        """Expire every order still resting, best first, and return them.
+
+        The list is built before the first expiry, because expiring one takes
+        it off its level and can drop the level the walk is standing in.
+        """
+        resting = list(self.sorted_orders)
+        return [self._expire_order(order, unix, reason, unix) for order in resting]
+
     def bound(self, max_alive: int, unix: int) -> list[Order]:
         """Keep the best `max_alive` orders and return auditable evictions."""
         if max_alive < 0:
@@ -1203,6 +1212,15 @@ class BookIterator:
     max_side_alive: int | None = None
     """Keep at most this many live orders per side; None keeps every order."""
 
+    # Not a bound like the two above but a decision about the end of the
+    # stream, which neither of them can express: a window that ends is not the
+    # same as an order that aged out, and a reader of the last book cannot tell
+    # a still-resting order from one nobody ever cancelled. False -- the
+    # default -- leaves them resting, which is what a run that will be resumed
+    # from its snapshots wants.
+    purge_alive: bool = False
+    """Expire whatever is still resting when the stream ends, as auditable versions."""
+
     folding: dict[int, _Folding] = dataclasses.field(default_factory=dict)
     """Mutable fold state keyed by the instrument's symbol-derived identity."""
 
@@ -1533,7 +1551,21 @@ class BookIterator:
                 until = state.unix + 1
                 if self.snapshot_until is not None:
                     until = max(until, self.snapshot_until)
+                if self.purge_alive and self._purge(state, state.unix):
+                    # At `state.unix` and not at `until`: the orders were alive
+                    # up to the last event, so the version that ends them
+                    # belongs to that instant and not to a boundary past it.
+                    state.moved = True
                 self._settle(state, until)
+
+    def _purge(self, state: _Folding, unix: int) -> bool:
+        """End every order still resting on both sides, as `purge_alive` asks."""
+        reason = "order was still resting when the stream ended"
+        expired = [*state.bid.purge(unix, reason), *state.ask.purge(unix, reason)]
+        state.deltas.extend(expired)
+        for event in expired:
+            self._remember_pending(state, event)
+        return bool(expired)
 
     def _state_of(self, event: MarketEvent) -> _Folding:
         """The fold this event belongs to, by its symbol-derived identity."""

@@ -126,9 +126,13 @@ class Field(Convertible):
         return MappingProxyType(
             {
                 **super().into_redirects(),
+                Field: "field",
                 pyarrow.Schema: "arrow_schema",
                 pyarrow.Field: "arrow_field",
                 pyarrow.DataType: "arrow_type",
+                # Last, so every narrower key wins: a class declares its own
+                # shape, and anything else lands in `from_class`'s refusal.
+                object: "class",
             }
         )
 
@@ -347,7 +351,7 @@ class Field(Convertible):
 
     def merge_with(self, other: Any) -> Field:
         """This field widened with whatever `other` has and it does not."""
-        return self.merge_with_arrow_field(field_of(other).into_arrow_field())
+        return self.merge_with_arrow_field(Field.from_(other).into_arrow_field())
 
     def merge_with_arrow_field(self, other: pyarrow.Field) -> Field:
         """`merge_with`, for an Arrow field already in hand."""
@@ -431,6 +435,30 @@ class Field(Convertible):
         builder_of = getattr(target, "into_field_builder", None)
         builder: type[FieldBuilder] = builder_of() if callable(builder_of) else FieldBuilder
         return builder().dataclass_field(target, name)
+
+    @classmethod
+    def from_field(cls, source: Field, name: str = "") -> Field:
+        """A field is already one; `name` renames a copy of it."""
+        return dataclasses.replace(source, name=name) if name else source
+
+    @classmethod
+    def from_class(cls, source: Any, name: str = "") -> Field:
+        """Whatever declares a shape by identity: a field, or a class.
+
+        The terminal redirect, so it is also where anything that names no shape
+        at all is refused.
+        """
+        if isinstance(source, Field):
+            return cls.from_field(source, name)
+        declared = getattr(source, "into_field", None)
+        built = declared() if callable(declared) else None
+        if isinstance(built, Field):
+            return built
+        if isinstance(source, type) and dataclasses.is_dataclass(source):
+            return cls.from_dataclass(source, name or None)
+        raise TypeError(
+            f"{source!r} does not name a shape: pass a Field, an Arrow schema or a class"
+        )
 
     @classmethod
     def from_arrow_field(cls, source: pyarrow.Field) -> Field:
@@ -1021,9 +1049,9 @@ class StructField(Field):
     @classmethod
     def from_iceberg_schema(cls, source: Any, name: str = "", spec: Any = None) -> StructField:
         """A `pyiceberg` schema as a struct field: docs, keys and partitions."""
-        from rekep.iceberg.fields import struct_field_of
+        from rekep.iceberg.fields import iceberg_struct_field
 
-        return struct_field_of(source, name, spec)
+        return iceberg_struct_field(source, name, spec)
 
     def into_dataclass(self, name: str | None = None) -> type:
         """Rebuild a `@scalar` class whose projection is exactly this field.
@@ -1362,30 +1390,6 @@ def _is_list_like(arrow_type: pyarrow.DataType) -> bool:
         or kinds.is_fixed_size_list(arrow_type)
         or kinds.is_map(arrow_type)
     )
-
-
-def field_of(source: Any, name: str = "") -> Field:
-    """Whatever names a shape, as a `Field`.
-
-    A field is itself, an Arrow schema is a struct field, an Arrow field or
-    type is what it says, and a `@scalar` class supplies `into_field()`. One reading of
-    "the shape" for every call site that takes one.
-    """
-    if isinstance(source, Field):
-        return source
-    if isinstance(source, pyarrow.Schema):
-        return Field.from_arrow_schema(source, name or None)
-    if isinstance(source, pyarrow.Field):
-        return Field.from_arrow_field(source)
-    if isinstance(source, pyarrow.DataType):
-        return Field.from_arrow_type(source, name)
-    into_field = getattr(source, "into_field", None)
-    declared = into_field() if callable(into_field) else None
-    if isinstance(declared, Field):
-        return declared
-    if isinstance(source, type) and dataclasses.is_dataclass(source):
-        return Field.from_dataclass(source, name or None)
-    raise TypeError(f"{source!r} does not name a shape: pass a Field, an Arrow schema or a class")
 
 
 def _column_of(batch: pyarrow.RecordBatch) -> Callable[[str], Any]:

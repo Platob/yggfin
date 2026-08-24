@@ -1,0 +1,9 @@
+{
+ "name": "OptionExerciseExpirationTimeBusinessCenter",
+ "tag": 41151,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

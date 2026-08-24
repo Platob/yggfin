@@ -1,0 +1,9 @@
+{
+ "name": "CommRate",
+ "tag": 1233,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

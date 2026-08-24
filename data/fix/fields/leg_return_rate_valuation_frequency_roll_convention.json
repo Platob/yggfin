@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateValuationFrequencyRollConvention",
+ "tag": 42528,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

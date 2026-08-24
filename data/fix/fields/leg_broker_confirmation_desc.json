@@ -1,0 +1,9 @@
+{
+ "name": "LegBrokerConfirmationDesc",
+ "tag": 2500,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

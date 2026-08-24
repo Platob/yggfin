@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "Number of orders in the market."
+   "description": "Number of orders in the market.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "Number of orders in the market."
+   "description": "Number of orders in the market.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "Number of orders in the market."
+   "description": "Number of orders in the market.",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "int",

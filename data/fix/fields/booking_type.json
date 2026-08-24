@@ -27,6 +27,13 @@
     "AllocationInstruction",
     "QuoteRequest",
     "Quote"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "QuotEntryAckGrp",
+    "QuotEntryGrp",
+    "SideCrossOrdModGrp",
+    "TradeReportOrderDetail"
    ]
   },
   "5.0.SP1": {
@@ -51,6 +58,10 @@
     "NewOrderSingle",
     "OrderCancelReplaceRequest",
     "AllocationInstruction"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdModGrp"
    ]
   },
   "5.0": {
@@ -75,6 +86,10 @@
     "NewOrderSingle",
     "OrderCancelReplaceRequest",
     "AllocationInstruction"
+   ],
+   "components": [
+    "ListOrdGrp",
+    "SideCrossOrdModGrp"
    ]
   },
   "4.4": {

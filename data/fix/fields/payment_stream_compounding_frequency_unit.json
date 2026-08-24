@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamCompoundingFrequencyUnit",
+ "tag": 42616,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "PaymentSettlPartyRole",
+ "tag": 40236,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

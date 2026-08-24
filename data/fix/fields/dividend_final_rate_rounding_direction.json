@@ -1,0 +1,9 @@
+{
+ "name": "DividendFinalRateRoundingDirection",
+ "tag": 42232,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR"
+  }
+ }
+}

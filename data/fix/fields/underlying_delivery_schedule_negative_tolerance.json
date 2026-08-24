@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDeliveryScheduleNegativeTolerance",
+ "tag": 41762,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

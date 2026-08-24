@@ -1,0 +1,13 @@
+{
+ "name": "NonCashDividendTreatment",
+ "tag": 42258,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "POTENTIAL_ADJUSTMENT",
+    "1": "CASH_EQUIVALENT"
+   }
+  }
+ }
+}

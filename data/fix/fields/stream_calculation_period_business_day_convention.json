@@ -1,0 +1,9 @@
+{
+ "name": "StreamCalculationPeriodBusinessDayConvention",
+ "tag": 40073,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

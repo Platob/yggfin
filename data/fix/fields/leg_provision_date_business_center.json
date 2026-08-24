@@ -1,0 +1,9 @@
+{
+ "name": "LegProvisionDateBusinessCenter",
+ "tag": 40452,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

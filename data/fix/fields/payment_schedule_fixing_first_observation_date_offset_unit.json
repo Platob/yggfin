@@ -1,0 +1,9 @@
+{
+ "name": "PaymentScheduleFixingFirstObservationDateOffsetUnit",
+ "tag": 41179,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

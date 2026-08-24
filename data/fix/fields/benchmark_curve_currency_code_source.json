@@ -1,0 +1,9 @@
+{
+ "name": "BenchmarkCurveCurrencyCodeSource",
+ "tag": 2950,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

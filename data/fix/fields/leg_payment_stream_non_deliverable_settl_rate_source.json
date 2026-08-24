@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamNonDeliverableSettlRateSource",
+ "tag": 40087,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

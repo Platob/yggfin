@@ -28,6 +28,7 @@ from rekep.market import (
 )
 from rekep.tasks import Task
 from rekep.text import Log, TextFile, TextFiles
+from rekep.times import datetime_of, unix_of
 from rekep.urls import Url
 
 __version__ = "0.1.0"
@@ -63,5 +64,7 @@ __all__ = [
     "TextFiles",
     "Url",
     "__version__",
+    "datetime_of",
     "scalar",
+    "unix_of",
 ]

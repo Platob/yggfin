@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Free format Payment reference to assist with reconciliation of distributions."
+   "description": "Free format Payment reference to assist with reconciliation of distributions.",
+   "components": [
+    "RgstDistInstGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Free format Payment reference to assist with reconciliation of distributions."
+   "description": "Free format Payment reference to assist with reconciliation of distributions.",
+   "components": [
+    "RgstDistInstGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Free format Payment reference to assist with reconciliation of distributions."
+   "description": "Free format Payment reference to assist with reconciliation of distributions.",
+   "components": [
+    "RgstDistInstGrp"
+   ]
   },
   "4.4": {
    "type": "String",

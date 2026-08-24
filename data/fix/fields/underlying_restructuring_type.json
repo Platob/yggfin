@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "See RestructuringType <1449>"
+   "description": "See RestructuringType <1449>",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

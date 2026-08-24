@@ -4,15 +4,49 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Specifies the number of repeating symbols specified."
+   "description": "Specifies the number of repeating symbols specified.",
+   "components": [
+    "InstrmtGrp",
+    "InstrmtMDReqGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp",
+    "RelSymDerivSecGrp",
+    "RelSymDerivSecUpdGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp",
+    "StrmAsgnReqInstrmtGrp",
+    "StrmAsgnRptInstrmtGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Specifies the number of repeating symbols specified."
+   "description": "Specifies the number of repeating symbols specified.",
+   "components": [
+    "InstrmtGrp",
+    "InstrmtMDReqGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp",
+    "RelSymDerivSecGrp",
+    "RelSymDerivSecUpdGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Specifies the number of repeating symbols specified."
+   "description": "Specifies the number of repeating symbols specified.",
+   "components": [
+    "InstrmtGrp",
+    "InstrmtMDReqGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "RFQReqGrp",
+    "RelSymDerivSecGrp",
+    "SecListGrp",
+    "SecLstUpdRelSymGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

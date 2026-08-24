@@ -1,0 +1,9 @@
+{
+ "name": "FloatingRateIndexIDSource",
+ "tag": 2732,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

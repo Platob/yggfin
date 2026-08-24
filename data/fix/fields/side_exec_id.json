@@ -4,7 +4,11 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "When reporting trades, used to reference the identifier of the execution ( ExecID <17> ) being reported if different ExecIDs were assigned to each side of the trade."
+   "description": "When reporting trades, used to reference the identifier of the execution ( ExecID <17> ) being reported if different ExecIDs were assigned to each side of the trade.",
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   }
  }
 }

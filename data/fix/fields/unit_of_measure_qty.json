@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Qty",
-   "description": "Used to indicate the quantity of the underlying commodity unit of measure on which the contract is based, such as, 2500 lbs of lean cattle, 1000 barrels of crude oil, 1000 bushels of corn, etc. UnitOfMeasureQty is required for UnitOfMeasure <996> Variable Quantity UOMs enumerations. Refer to the definition of UnitOfMeasure <996> for more information on the use of UnitOfMeasureQty."
+   "description": "Used to indicate the quantity of the underlying commodity unit of measure on which the contract is based, such as, 2500 lbs of lean cattle, 1000 barrels of crude oil, 1000 bushels of corn, etc. UnitOfMeasureQty is required for UnitOfMeasure <996> Variable Quantity UOMs enumerations. Refer to the definition of UnitOfMeasure <996> for more information on the use of UnitOfMeasureQty.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Qty",
-   "description": "Used to indicate the quantity of the underlying commodity unit of measure on which the contract is based, such as, 2500 lbs of lean cattle, 1000 barrels of crude oil, 1000 bushels of corn, etc. UnitOfMeasureQty is required for UnitOfMeasure <996> Variable Quantity UOMs enumerations. Refer to the definition of UnitOfMeasure <996> for more information on the use of UnitOfMeasureQty."
+   "description": "Used to indicate the quantity of the underlying commodity unit of measure on which the contract is based, such as, 2500 lbs of lean cattle, 1000 barrels of crude oil, 1000 bushels of corn, etc. UnitOfMeasureQty is required for UnitOfMeasure <996> Variable Quantity UOMs enumerations. Refer to the definition of UnitOfMeasure <996> for more information on the use of UnitOfMeasureQty.",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

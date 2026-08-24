@@ -1,0 +1,9 @@
+{
+ "name": "DividendPeriodXID",
+ "tag": 42293,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XID"
+  }
+ }
+}

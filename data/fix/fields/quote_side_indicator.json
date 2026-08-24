@@ -1,0 +1,13 @@
+{
+ "name": "QuoteSideIndicator",
+ "tag": 2559,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN",
+   "value_names": {
+    "N": "NO",
+    "Y": "YES"
+   }
+  }
+ }
+}

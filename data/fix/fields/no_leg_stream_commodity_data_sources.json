@@ -1,0 +1,9 @@
+{
+ "name": "NoLegStreamCommodityDataSources",
+ "tag": 41677,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

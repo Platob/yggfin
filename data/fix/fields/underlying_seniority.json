@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "See Seniority <1450>"
+   "description": "See Seniority <1450>",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

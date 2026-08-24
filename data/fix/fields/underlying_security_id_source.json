@@ -4,25 +4,40 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Underlying security\u2019s SecurityIDSource."
+   "description": "Underlying security\u2019s SecurityIDSource.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Underlying security\u2019s SecurityIDSource."
+   "description": "Underlying security\u2019s SecurityIDSource.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Underlying security\u2019s SecurityIDSource."
+   "description": "Underlying security\u2019s SecurityIDSource.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Underlying security's SecurityIDSource."
+   "description": "Underlying security's SecurityIDSource.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.3": {
    "name": "UnderlyingIDSource prior to FIX 4.3)",
    "type": "String",
    "note": "formerly named: UnderlyingIDSource prior to FIX 4.3",
-   "description": "Underlying security's SecurityIDSource."
+   "description": "Underlying security's SecurityIDSource.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "4.2": {
    "name": "UnderlyingIDSource",

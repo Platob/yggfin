@@ -7,7 +7,7 @@ import datetime
 import pytest
 
 from rekep.fix import FixMessage
-from rekep.fix.message import _fold
+from rekep.fix.entries import fold
 
 #: A small dictionary, so the tests say which names they rely on.
 TAGS = {
@@ -35,10 +35,10 @@ def test_a_name_resolves_however_it_is_cased(spelled: str) -> None:
     assert FixMessage.from_pairs([(spelled, "1")], TAGS).pairs == [("54", "1")]
 
 
-@pytest.mark.parametrize("spelled", ["MsgType", "msg_type", "msg-type", "MSG_TYPE", "Msg Type"])
-def test_a_renderer_s_separators_do_not_change_the_field(spelled: str) -> None:
-    """One entry in the dictionary answers for every convention that spells it."""
-    assert FixMessage.from_pairs([(spelled, "D")], TAGS).pairs == [("35", "D")]
+@pytest.mark.parametrize("spelled", ["msg_type", "msg-type", "MSG_TYPE", "Msg Type"])
+def test_a_renderer_s_separators_are_a_spelling_of_their_own(spelled: str) -> None:
+    """A separator is part of the name, so an unknown spelling is kept, not guessed at."""
+    assert FixMessage.from_pairs([(spelled, "D")], TAGS).pairs == [(spelled, "D")]
 
 
 def test_a_component_path_names_the_field_at_the_end_of_it() -> None:
@@ -160,7 +160,8 @@ def test_what_from_pairs_builds_reads_back_the_same_through_from_text() -> None:
     assert FixMessage.from_text(built.into_text("|"), named=True).pairs == built.pairs
 
 
-def test_the_fold_is_what_makes_the_lookup_case_insensitive() -> None:
+def test_the_fold_is_case_and_nothing_else() -> None:
     """Pinned directly, because every name rule above rests on it."""
-    assert _fold("MsgType") == _fold("msg_type") == _fold("MSG-TYPE") == "msgtype"
-    assert _fold("Side") != _fold("Sides"), "it folds spelling, not meaning"
+    assert fold("MsgType") == fold("MSGTYPE") == "msgtype"
+    assert fold("msg_type") != fold("MsgType"), "a separator is part of a name"
+    assert fold("Side") != fold("Sides"), "it folds spelling, not meaning"

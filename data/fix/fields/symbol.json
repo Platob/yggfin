@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use \"[N/A]\" for products which do not have a symbol."
+   "description": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use \"[N/A]\" for products which do not have a symbol.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use \"[N/A]\" for products which do not have a symbol."
+   "description": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use \"[N/A]\" for products which do not have a symbol.",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use \"[N/A]\" for products which do not have a symbol."
+   "description": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use \"[N/A]\" for products which do not have a symbol.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use \"[N/A]\" for products which do not have a symbol."
+   "description": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use \"[N/A]\" for products which do not have a symbol.",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles)"
+   "description": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID <48> value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles)",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.2": {
    "type": "String",

@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateValuationEndDateUnadjusted",
+ "tag": 42520,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

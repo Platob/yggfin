@@ -50,6 +50,18 @@
     "NewOrderCross",
     "Quote",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "InstrmtMDReqGrp",
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp",
+    "StrmAsgnReqInstrmtGrp",
+    "StrmAsgnRptInstrmtGrp"
    ]
   },
   "5.0.SP1": {
@@ -100,6 +112,16 @@
     "NewOrderCross",
     "Quote",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "InstrmtMDReqGrp",
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
    ]
   },
   "5.0": {
@@ -150,6 +172,16 @@
     "NewOrderCross",
     "Quote",
     "CrossOrderCancelReplaceRequest"
+   ],
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "InstrmtMDReqGrp",
+    "ListOrdGrp",
+    "MDFullGrp",
+    "MDIncGrp",
+    "QuotReqGrp",
+    "QuotReqRjctGrp"
    ]
   },
   "4.4": {

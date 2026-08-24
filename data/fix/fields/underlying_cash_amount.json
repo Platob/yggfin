@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Amt",
-   "description": "Cash amount associated with the underlying component."
+   "description": "Cash amount associated with the underlying component.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Amt",
-   "description": "Cash amount associated with the underlying component."
+   "description": "Cash amount associated with the underlying component.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "type": "Amt",
-   "description": "Cash amount associated with the underlying component."
+   "description": "Cash amount associated with the underlying component.",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

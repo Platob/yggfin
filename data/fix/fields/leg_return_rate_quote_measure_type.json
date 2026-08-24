@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateQuoteMeasureType",
+ "tag": 42542,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

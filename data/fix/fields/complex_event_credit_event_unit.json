@@ -1,0 +1,9 @@
+{
+ "name": "ComplexEventCreditEventUnit",
+ "tag": 41002,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

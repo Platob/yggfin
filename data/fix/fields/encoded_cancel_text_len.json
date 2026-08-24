@@ -1,0 +1,9 @@
+{
+ "name": "EncodedCancelTextLen",
+ "tag": 2809,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

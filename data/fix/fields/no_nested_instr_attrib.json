@@ -3,10 +3,16 @@
  "tag": 1312,
  "versions": {
   "5.0.SP2": {
-   "type": "NumInGroup"
+   "type": "NumInGroup",
+   "components": [
+    "NestedInstrumentAttribute"
+   ]
   },
   "5.0.SP1": {
-   "type": "NumInGroup"
+   "type": "NumInGroup",
+   "components": [
+    "NestedInstrumentAttribute"
+   ]
   }
  }
 }

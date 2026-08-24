@@ -1,0 +1,9 @@
+{
+ "name": "LegAccount",
+ "tag": 2680,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -3,10 +3,16 @@
  "tag": 1270,
  "versions": {
   "5.0.SP2": {
-   "type": "Qty"
+   "type": "Qty",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
-   "type": "Qty"
+   "type": "Qty",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

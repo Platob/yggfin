@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingFlexProductEligibilityIndicator",
+ "tag": 2036,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

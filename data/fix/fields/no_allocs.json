@@ -4,15 +4,36 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries."
+   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries."
+   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries."
+   "description": "Number of repeating AllocAccount <79> / AllocPrice <366> entries.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp",
+    "PreAllocGrp",
+    "PreAllocMlegGrp",
+    "TrdAllocGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",

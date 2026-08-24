@@ -1,0 +1,9 @@
+{
+ "name": "SettlMethodElectionDateAdjusted",
+ "tag": 42783,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

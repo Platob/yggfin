@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingDividendAccrualFixedRate",
+ "tag": 42834,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

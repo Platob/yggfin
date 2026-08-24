@@ -1,0 +1,9 @@
+{
+ "name": "ApplicationSystemName",
+ "tag": 1603,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

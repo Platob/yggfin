@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Description of a leg of a multileg instrument. See SecurityDesc <107>"
+   "description": "Description of a leg of a multileg instrument. See SecurityDesc <107>",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Multileg instrument's individual security's SecurityDesc. See SecurityDesc <107> field for description"
+   "description": "Multileg instrument's individual security's SecurityDesc. See SecurityDesc <107> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Multileg instrument's individual security's SecurityDesc. See SecurityDesc <107> field for description"
+   "description": "Multileg instrument's individual security's SecurityDesc. See SecurityDesc <107> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "Multileg instrument's individual security's SecurityDesc. See SecurityDesc <107> field for description"
+   "description": "Multileg instrument's individual security's SecurityDesc. See SecurityDesc <107> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.3": {
    "type": "String",
-   "description": "Multileg instrument's individual security's SecurityDesc. See SecurityDesc <107> field for description"
+   "description": "Multileg instrument's individual security's SecurityDesc. See SecurityDesc <107> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

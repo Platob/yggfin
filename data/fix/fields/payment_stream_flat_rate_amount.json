@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamFlatRateAmount",
+ "tag": 41181,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "NonDeliverableFixingDate",
+ "tag": 40826,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

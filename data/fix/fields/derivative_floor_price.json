@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Refer to definition of FloorPrice <1200>"
+   "description": "Refer to definition of FloorPrice <1200>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Refer to definition of FloorPrice <1200>"
+   "description": "Refer to definition of FloorPrice <1200>",
+   "components": [
+    "DerivativeInstrument"
+   ]
   }
  }
 }

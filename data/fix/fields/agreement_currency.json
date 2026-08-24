@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "Currency",
-   "description": "Contractual currency forming the basis of a financing agreement and associated transactions. Usually, but not always, the same as the trade currency."
+   "description": "Contractual currency forming the basis of a financing agreement and associated transactions. Usually, but not always, the same as the trade currency.",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "5.0.SP1": {
    "type": "Currency",
-   "description": "Contractual currency forming the basis of a financing agreement and associated transactions. Usually, but not always, the same as the trade currency."
+   "description": "Contractual currency forming the basis of a financing agreement and associated transactions. Usually, but not always, the same as the trade currency.",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "5.0": {
    "type": "Currency",
-   "description": "Contractual currency forming the basis of a financing agreement and associated transactions. Usually, but not always, the same as the trade currency."
+   "description": "Contractual currency forming the basis of a financing agreement and associated transactions. Usually, but not always, the same as the trade currency.",
+   "components": [
+    "FinancingDetails"
+   ]
   },
   "4.4": {
    "type": "Currency",
-   "description": "Contractual currency forming the basis of a financing agreement and associated transactions. Usually, but not always, the same as the trade currency."
+   "description": "Contractual currency forming the basis of a financing agreement and associated transactions. Usually, but not always, the same as the trade currency.",
+   "components": [
+    "FinancingDetails"
+   ]
   }
  }
 }

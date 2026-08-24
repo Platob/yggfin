@@ -5,26 +5,41 @@
   "5.0.SP2": {
    "type": "int",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Number of business days before repurchase of a repo. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Number of business days before repurchase of a repo. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Number of business days before repurchase of a repo. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Number of business days before repurchase of a repo. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "Instrument"
+   ]
   },
   "5.0": {
    "type": "int",
    "note": "Deprecated",
-   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Number of business days before repurchase of a repo. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Deprecated in FIX 4.4 See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] Number of business days before repurchase of a repo. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.4": {
    "type": "int",
    "note": "Deprecated",
-   "description": "*** DEPRECATED FIELD - See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] *** Number of business days before repurchase of a repo. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "*** DEPRECATED FIELD - See Appendix 6-E: 5.Deprecated various FIX 4.3-introduced \"Repo\" Fields [deprecated in FIX 4.4] *** Number of business days before repurchase of a repo. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "Instrument"
+   ]
   },
   "4.3": {
    "type": "int",
-   "description": "Number of business days before repurchase of a repo. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)"
+   "description": "Number of business days before repurchase of a repo. (Note tag # was reserved in FIX 4.1, added in FIX 4.3)",
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

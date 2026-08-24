@@ -12,6 +12,11 @@
     "ExecutionAcknowledgement",
     "SecurityStatus",
     "DontKnowTradeDK"
+   ],
+   "components": [
+    "ExecAllocGrp",
+    "MDFullGrp",
+    "MDIncGrp"
    ]
   },
   "5.0.SP1": {
@@ -24,6 +29,9 @@
     "ExecutionAcknowledgement",
     "SecurityStatus",
     "DontKnowTradeDK"
+   ],
+   "components": [
+    "ExecAllocGrp"
    ]
   },
   "5.0": {
@@ -36,6 +44,9 @@
     "ExecutionAcknowledgement",
     "SecurityStatus",
     "DontKnowTradeDK"
+   ],
+   "components": [
+    "ExecAllocGrp"
    ]
   },
   "4.4": {

@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Refer to ExecID <17> . Used when multiple partial fills are reported in single Execution Report <8> . ExecID and FillExecID should not overlap"
+   "description": "Refer to ExecID <17> . Used when multiple partial fills are reported in single Execution Report <8> . ExecID and FillExecID should not overlap",
+   "components": [
+    "FillsGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Refer to ExecID <17> . Used when multiple partial fills are reported in single Execution Report <8> . ExecID and FillExecID should not overlap"
+   "description": "Refer to ExecID <17> . Used when multiple partial fills are reported in single Execution Report <8> . ExecID and FillExecID should not overlap",
+   "components": [
+    "FillsGrp"
+   ]
   }
  }
 }

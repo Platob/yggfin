@@ -12,7 +12,14 @@
    "value_names": {
     "1": "NET",
     "2": "GROSS"
-   }
+   },
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "SettlObligationInstructions",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -24,7 +31,14 @@
    "value_names": {
     "1": "NET",
     "2": "GROSS"
-   }
+   },
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp",
+    "SettlObligationInstructions",
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -36,7 +50,11 @@
    "value_names": {
     "1": "NET",
     "2": "GROSS"
-   }
+   },
+   "components": [
+    "BidCompReqGrp",
+    "BidCompRspGrp"
+   ]
   },
   "4.4": {
    "type": "int",

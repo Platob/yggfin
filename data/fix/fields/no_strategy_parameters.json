@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Indicates number of strategy parameters"
+   "description": "Indicates number of strategy parameters",
+   "components": [
+    "StrategyParametersGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Indicates number of strategy parameters"
+   "description": "Indicates number of strategy parameters",
+   "components": [
+    "StrategyParametersGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Indicates number of strategy parameters"
+   "description": "Indicates number of strategy parameters",
+   "components": [
+    "StrategyParametersGrp"
+   ]
   }
  }
 }

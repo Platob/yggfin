@@ -1,0 +1,9 @@
+{
+ "name": "TerminatedIndicator",
+ "tag": 2101,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

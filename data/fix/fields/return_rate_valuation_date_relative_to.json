@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRateValuationDateRelativeTo",
+ "tag": 42711,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

@@ -4,16 +4,25 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Refer to defintion of UnitofMeasure <996>"
+   "description": "Refer to defintion of UnitofMeasure <996>",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Refer to defintion of UnitofMeasure <996>"
+   "description": "Refer to defintion of UnitofMeasure <996>",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   },
   "5.0": {
    "name": "UnderlyingUnitofMeasure",
    "type": "String",
-   "description": "Same as UnitofMeasure <996> ."
+   "description": "Same as UnitofMeasure <996> .",
+   "components": [
+    "UnderlyingInstrument"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "LegCouponFrequencyUnit",
+ "tag": 2164,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

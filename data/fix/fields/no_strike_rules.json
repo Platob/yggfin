@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of strike rule entries. This block specifies the rules for determining how new strikes should be listed within the stated price range of the underlying instrument"
+   "description": "Number of strike rule entries. This block specifies the rules for determining how new strikes should be listed within the stated price range of the underlying instrument",
+   "components": [
+    "StrikeRules"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of strike rule entries. This block specifies the rules for determining how new strikes should be listed within the stated price range of the underlying instrument"
+   "description": "Number of strike rule entries. This block specifies the rules for determining how new strikes should be listed within the stated price range of the underlying instrument",
+   "components": [
+    "StrikeRules"
+   ]
   }
  }
 }

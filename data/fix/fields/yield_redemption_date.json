@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "LocalMktDate",
-   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date)."
+   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date).",
+   "components": [
+    "YieldData"
+   ]
   },
   "5.0.SP1": {
    "type": "LocalMktDate",
-   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date)."
+   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date).",
+   "components": [
+    "YieldData"
+   ]
   },
   "5.0": {
    "type": "LocalMktDate",
-   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date)."
+   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date).",
+   "components": [
+    "YieldData"
+   ]
   },
   "4.4": {
    "type": "LocalMktDate",
-   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date)."
+   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date).",
+   "components": [
+    "YieldData"
+   ]
   }
  }
 }

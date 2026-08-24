@@ -1,0 +1,16 @@
+{
+ "name": "CollateralReinvestmentType",
+ "tag": 2844,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "MONEY_MARKET_FUND",
+    "1": "OTHER_COMINGLED_POOL",
+    "2": "REPO_MARKET",
+    "3": "DIRECT_PURCHASE_OF_SECURITIES",
+    "4": "OTHER_INVESTMENTS"
+   }
+  }
+ }
+}

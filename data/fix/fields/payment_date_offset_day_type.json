@@ -1,0 +1,17 @@
+{
+ "name": "PaymentDateOffsetDayType",
+ "tag": 41159,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "BUSINESS",
+    "1": "CALENDAR",
+    "2": "COMMODITY",
+    "3": "CURRENCY",
+    "4": "EXCHANGE",
+    "5": "SCHEDULED"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "CashSettlBusinessCenter",
+ "tag": 40026,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

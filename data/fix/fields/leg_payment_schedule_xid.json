@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentScheduleXID",
+ "tag": 41533,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XID"
+  }
+ }
+}

@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "ClearingFeeIndicator for Allocation. See ClearingFeeIndicator <635> for permitted values."
+   "description": "ClearingFeeIndicator for Allocation. See ClearingFeeIndicator <635> for permitted values.",
+   "components": [
+    "TrdAllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "ClearingFeeIndicator for Allocation. See ClearingFeeIndicator <635> for permitted values."
+   "description": "ClearingFeeIndicator for Allocation. See ClearingFeeIndicator <635> for permitted values.",
+   "components": [
+    "TrdAllocGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "ClearingFeeIndicator for Allocation. See ClearingFeeIndicator <635> for permitted values."
+   "description": "ClearingFeeIndicator for Allocation. See ClearingFeeIndicator <635> for permitted values.",
+   "components": [
+    "TrdAllocGrp"
+   ]
   }
  }
 }

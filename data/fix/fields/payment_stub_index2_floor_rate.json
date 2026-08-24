@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStubIndex2FloorRate",
+ "tag": 40901,
+ "versions": {
+  "5.0.SP2": {
+   "type": "PERCENTAGE"
+  }
+ }
+}

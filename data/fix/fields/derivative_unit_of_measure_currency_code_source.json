@@ -1,0 +1,9 @@
+{
+ "name": "DerivativeUnitOfMeasureCurrencyCodeSource",
+ "tag": 2913,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

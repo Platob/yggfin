@@ -1,0 +1,9 @@
+{
+ "name": "PaymentScheduleEndDateUnadjusted",
+ "tag": 40832,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "name": "ComplexEventQuoteBasis",
+ "tag": 2126,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "CURRENCY1_PER_CURRENCY2",
+    "1": "CURRENCY2_PER_CURRENCY1"
+   }
+  }
+ }
+}

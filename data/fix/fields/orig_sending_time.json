@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "UTCTimestamp",
-   "description": "Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") when transmitting orders as the result of a resend request."
+   "description": "Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") when transmitting orders as the result of a resend request.",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "UTCTimestamp",
-   "description": "Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") when transmitting orders as the result of a resend request."
+   "description": "Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") when transmitting orders as the result of a resend request.",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "UTCTimestamp",
@@ -36,7 +42,10 @@
   },
   "FIXT1.1": {
    "type": "UTCTimestamp",
-   "description": "Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") when transmitting orders as the result of a resend request."
+   "description": "Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") when transmitting orders as the result of a resend request.",
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

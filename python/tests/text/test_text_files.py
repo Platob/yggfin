@@ -313,7 +313,7 @@ def test_every_record_of_every_file_is_parsed(capture: Path) -> None:
 def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
     walked = list(TextFiles.from_folder(capture, pattern="*.txt*").into_urls())
-    read = files.into_arrow_table().column("url").to_pylist()
+    read = files.into_arrow_table().column("source_url").to_pylist()
     assert read[::EXPECTED_RECORDS] == walked
 
     # Every file's rows are contiguous: a set never interleaves two logs. Cut

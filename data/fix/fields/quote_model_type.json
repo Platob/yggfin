@@ -1,0 +1,13 @@
+{
+ "name": "QuoteModelType",
+ "tag": 2403,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "QUOTE_ENTRY",
+    "2": "QUOTE_MODIFICATION"
+   }
+  }
+ }
+}

@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description"
+   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description"
+   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description"
+   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.4": {
    "type": "String",
-   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description"
+   "description": "SecuritySubType of the leg instrument. See SecuritySubType <762> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

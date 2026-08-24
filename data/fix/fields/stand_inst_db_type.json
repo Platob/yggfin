@@ -21,6 +21,9 @@
    },
    "used_in": [
     "SettlementInstructionRequest"
+   ],
+   "components": [
+    "SettlInstructionsData"
    ]
   },
   "5.0.SP1": {
@@ -42,6 +45,9 @@
    },
    "used_in": [
     "SettlementInstructionRequest"
+   ],
+   "components": [
+    "SettlInstructionsData"
    ]
   },
   "5.0": {
@@ -63,6 +69,9 @@
    },
    "used_in": [
     "SettlementInstructionRequest"
+   ],
+   "components": [
+    "SettlInstructionsData"
    ]
   },
   "4.4": {
@@ -84,6 +93,9 @@
    },
    "used_in": [
     "Settlement Instruction Request"
+   ],
+   "components": [
+    "SettlInstructionsData"
    ]
   },
   "4.3": {

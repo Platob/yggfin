@@ -1,0 +1,9 @@
+{
+ "name": "LegDividendFloatingRateMultiplier",
+ "tag": 42315,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

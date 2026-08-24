@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetPeriod",
+ "tag": 40700,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

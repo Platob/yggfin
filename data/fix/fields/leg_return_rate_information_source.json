@@ -1,0 +1,9 @@
+{
+ "name": "LegReturnRateInformationSource",
+ "tag": 42561,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

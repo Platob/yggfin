@@ -1,0 +1,9 @@
+{
+ "name": "EncodedReplaceTextLen",
+ "tag": 2802,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

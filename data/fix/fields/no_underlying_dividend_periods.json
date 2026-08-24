@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingDividendPeriods",
+ "tag": 42862,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

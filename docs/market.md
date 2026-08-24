@@ -6,7 +6,8 @@ xhash)` relations between order, execution, and book lifecycles. Links are
 deduplicated and never point to the event's own lifecycle. Parsed logs retain
 FIX wire order as `msg_seq_num`; normalized market events do not repeat it.
 
-`MarketEvent` adds `instrument_xhash`, kind, side, price, quantity, notional,
+`MarketEvent` adds `instrument_xhash` and its readable `instrument_code`,
+kind, side, price, quantity, notional,
 currency, and their previous values. Protocol spelling stays in metadata while
 the stored fields use common semantics.
 
@@ -61,6 +62,16 @@ Missing or non-finite price/quantity cannot mutate the book.
 FIX fields, indexes normalized Instrument rows by event type, restores prior
 Book snapshots, and emits only `Book` rows. It is deliberately single-threaded
 because order state is sequential.
+
+Three settings bound what stays alive, and they answer different questions.
+`max_order_age_ns` expires an order nothing has touched for that long;
+`max_side_alive` evicts past that many per side by price-time priority; and
+`purge_alive` decides what happens to whatever is still resting when the
+*stream* ends. A window ending is not an order ageing out, and a reader of the
+last book cannot otherwise tell a resting order from one nobody cancelled --
+so `purge_alive=True` ends each of them as its own `INTERNAL_EXPIRED` version,
+linked to the book that closed it. It is off by default, which is what a run
+that will be resumed from its snapshots wants.
 
 A compact level contains only price and quantity. `bid_levels` and `ask_levels`
 keep best-price order. On normal rows, `deltas` and `executions` say what

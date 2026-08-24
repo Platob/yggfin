@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "Percentage",
-   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description"
+   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0.SP1": {
    "type": "Percentage",
-   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description"
+   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "5.0": {
    "type": "Percentage",
-   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description"
+   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.4": {
    "type": "Percentage",
-   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description"
+   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   },
   "4.3": {
    "type": "Percentage",
-   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description"
+   "description": "Multileg instrument's individual security's CouponRate. See CouponRate <223> field for description",
+   "components": [
+    "InstrumentLeg"
+   ]
   }
  }
 }

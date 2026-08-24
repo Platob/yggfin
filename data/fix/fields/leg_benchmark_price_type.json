@@ -4,19 +4,31 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "The price type of the LegBenchmarkPrice <679> . See BenchmarkPriceType <663> for description and"
+   "description": "The price type of the LegBenchmarkPrice <679> . See BenchmarkPriceType <663> for description and",
+   "components": [
+    "LegBenchmarkCurveData"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
-   "description": "The price type of the LegBenchmarkPrice <679> . See BenchmarkPriceType <663> for description and"
+   "description": "The price type of the LegBenchmarkPrice <679> . See BenchmarkPriceType <663> for description and",
+   "components": [
+    "LegBenchmarkCurveData"
+   ]
   },
   "5.0": {
    "type": "int",
-   "description": "The price type of the LegBenchmarkPrice <679> . See BenchmarkPriceType <663> for description and"
+   "description": "The price type of the LegBenchmarkPrice <679> . See BenchmarkPriceType <663> for description and",
+   "components": [
+    "LegBenchmarkCurveData"
+   ]
   },
   "4.4": {
    "type": "int",
-   "description": "The price type of the LegBenchmarkPrice <679> . See BenchmarkPriceType <663> for description and"
+   "description": "The price type of the LegBenchmarkPrice <679> . See BenchmarkPriceType <663> for description and",
+   "components": [
+    "LegBenchmarkCurveData"
+   ]
   }
  }
 }

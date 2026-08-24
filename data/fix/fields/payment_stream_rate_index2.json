@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamRateIndex2",
+ "tag": 43112,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

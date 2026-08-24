@@ -1,0 +1,9 @@
+{
+ "name": "LegDividendFXTriggerDateUnadjusted",
+ "tag": 42361,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

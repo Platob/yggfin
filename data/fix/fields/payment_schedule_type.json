@@ -1,0 +1,35 @@
+{
+ "name": "PaymentScheduleType",
+ "tag": 40829,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NOTIONAL",
+    "1": "CASH_FLOW",
+    "2": "FX_LINKED_NOTIONAL",
+    "3": "FIXED_RATE",
+    "4": "FUTURE_VALUE_NOTIONAL",
+    "5": "KNOWN_AMOUNT",
+    "6": "FLOATING_RATE_MULTIPLIER",
+    "7": "SPREAD",
+    "8": "CAP_RATE",
+    "9": "FLOOR_RATE",
+    "10": "NON_DELIVERABLE_SETTL_PAYMENT_DATES",
+    "11": "NON_DELIVERABLE_SETTL_CALCULATION_DATES",
+    "12": "NON_DELIVERABLE_FX_FIXING_DATES",
+    "13": "SETTL_PERIOD_NOTNL",
+    "14": "SETTL_PERIOD_PX",
+    "15": "CALC_PERIOD",
+    "16": "DIVIDEND_ACCRUAL_RATE_MULTIPLIER",
+    "17": "DIVIDEND_ACCRUAL_RATE_SPREAD",
+    "18": "DIVIDEND_ACCRUAL_CAP_RATE",
+    "19": "DIVIDEND_ACCRUAL_FLOOR_RATE",
+    "20": "COMPOUNDING_RATE_MULTIPLIER",
+    "21": "COMPOUNDING_RATE_SPREAD",
+    "22": "COMPOUNDING_CAP_RATE",
+    "23": "COMPOUNDING_FLOOR_RATE"
+   }
+  }
+ }
+}

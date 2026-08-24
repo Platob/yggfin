@@ -1,0 +1,22 @@
+{
+ "name": "RiskLimitAction",
+ "tag": 1767,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "QUEUE_INBOUND",
+    "1": "QUEUE_OUTBOUND",
+    "2": "REJECT",
+    "3": "DISCONNECT",
+    "4": "WARNING",
+    "5": "PING_CREDIT_CHECK_WITH_REVALIDATION",
+    "6": "PING_CREDIT_CHECK_NO_REVALIDATION",
+    "7": "PUSH_CREDIT_CHECK_WITH_REVALIDATION",
+    "8": "PUSH_CREDIT_CHECK_NO_REVALIDATION",
+    "9": "SUSPEND",
+    "10": "HALT_TRADING"
+   }
+  }
+ }
+}

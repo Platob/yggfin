@@ -16,7 +16,10 @@
     "MR": "MODIFIED_RESTRUCTURING",
     "MM": "MODIFIED_MOD_RESTRUCTURING",
     "XR": "NO_RESTRUCTURING_SPECIFIED"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

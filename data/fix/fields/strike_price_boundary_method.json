@@ -18,7 +18,10 @@
     "3": "EQUAL",
     "4": "GREATER_THAN_OR_EQUAL",
     "5": "GREATER_THAN"
-   }
+   },
+   "components": [
+    "Instrument"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "DeliveryStreamToleranceUnitOfMeasure",
+ "tag": 41073,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

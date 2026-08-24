@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentScheduleType",
+ "tag": 40665,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

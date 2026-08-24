@@ -1,0 +1,9 @@
+{
+ "name": "AllocCommissionCurrencyCodeSource",
+ "tag": 2925,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

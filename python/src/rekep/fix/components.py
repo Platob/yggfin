@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime
 from collections.abc import Mapping, Sequence
-from functools import cached_property
+from functools import cache, cached_property
 from typing import Annotated, Any
 
 import pyarrow
@@ -13,6 +14,7 @@ import pyarrow.compute
 from rekep.fields import scalar
 from rekep.fields.arrays import build_list, build_map, sequence
 from rekep.fix.columns import DECLARATIONS, KWARGS
+from rekep.fix.fields import STAMP_PATTERN, cast_arrow_fix
 from rekep.fix.quickfix import (
     SpecComponent,
     SpecComponentRef,
@@ -39,48 +41,96 @@ class Party:
     """Unprojected party members under unique FIX names."""
 
 
-PARTIES: pyarrow.DataType = pyarrow.list_(
-    pyarrow.field("item", Party.into_field().arrow_type, nullable=False)
-)
+@scalar
+class TrdRegTimestamp:
+    """One entry of FIX's TrdRegTimestamps component."""
+
+    trd_reg_timestamp: Annotated[datetime.datetime | None, DECLARATIONS[769]] = None
+    """The regulatory instant itself."""
+
+    trd_reg_timestamp_type: Annotated[int | None, DECLARATIONS[770]] = None
+    """Which regulatory instant it is."""
+
+    trd_reg_timestamp_origin: Annotated[str | None, DECLARATIONS[771]] = None
+    """Who or what stamped it."""
+
+    buffer: dict[str, str] | None = None
+    """Unprojected members of this entry under unique FIX names."""
+
+
+def _entries_type(row: type) -> pyarrow.DataType:
+    """The list one component's entries land in: never a null entry, ever."""
+    return pyarrow.list_(pyarrow.field("item", row.into_field().arrow_type, nullable=False))
+
+
+PARTIES: pyarrow.DataType = _entries_type(Party)
+TRD_REG_TIMESTAMPS: pyarrow.DataType = _entries_type(TrdRegTimestamp)
 
 _NO_PARTY_IDS = "NoPartyIDs"
-_FALLBACK: dict[int, str] = {
-    448: "PartyID",
-    447: "PartyIDSource",
-    452: "PartyRole",
-    802: "NoPartySubIDs",
-    523: "PartySubID",
-    803: "PartySubIDType",
-}
-_FALLBACK_COUNTS = {453}
-_FALLBACK_PATHS = {
-    523: ("NoPartySubIDs",),
-    803: ("NoPartySubIDs",),
-}
+_NO_TRD_REG_TIMESTAMPS = "NoTrdRegTimestamps"
 _UNSIGNED = r"^[0-9]{1,18}$"
 _SIGNED = r"^[+-]?[0-9]{1,18}$"
+_DECIMAL = r"^[+-]?(?:[0-9]{1,17}(?:\.[0-9]*)?|\.[0-9]+)$"
 _GROUP_STRIDE = 2**32
 
 
 @dataclasses.dataclass(eq=False)
-class Parties:
-    """Extract FIX Parties groups without interpreting whole messages."""
+class ComponentGroup:
+    """Extract one FIX repeating group without interpreting whole messages.
+
+    Everything below is declaration-driven: the count tags, the member names,
+    the paths each member sits under and the tag that opens an entry all come
+    out of the component tree, and nothing in the state machine knows the word
+    "party". What a subclass adds is the shape the group projects into --
+    which component, which group inside it, and which members earn a column of
+    their own rather than a place in `buffer`.
+    """
 
     components: Mapping[str, SpecComponent] | Sequence[SpecComponent] | None = None
     names: Mapping[str, int] | None = None
     #: Retain the standalone extractor's legacy FIX tags when no registry is supplied.
     fallback: bool = True
 
-    #: Which component to read, and which repeating group inside it. Named
-    #: rather than hard-coded because everything below is declaration-driven:
-    #: the count tags, the member names, the paths each member sits under and
-    #: the tag that opens an entry all come out of the component tree, and
-    #: nothing in the state machine knows the word "party". What *is* specific
-    #: to Parties is the shape it projects into -- `Party`, and the parsed
-    #: log's `parties` column -- so another group extracts here and lands in
-    #: its own column only once one is declared for it.
-    component: str = "Parties"
-    group: str = _NO_PARTY_IDS
+    #: Which component to read, and which repeating group inside it.
+    component: str = ""
+    group: str = ""
+
+    @classmethod
+    @cache
+    def into_row(cls) -> type:
+        """The `@scalar` class one entry of this group is."""
+        raise NotImplementedError
+
+    @classmethod
+    @cache
+    def into_entries_type(cls) -> pyarrow.DataType:
+        """The Arrow list a whole row's entries land in."""
+        return _entries_type(cls.into_row())
+
+    @classmethod
+    @cache
+    def into_projection(cls) -> tuple[tuple[str, str], ...]:
+        """`((column, FIX member name), ...)`, the group's delimiter first.
+
+        The delimiter leads because it is what opens an entry, so its column is
+        the one every entry has. Every other member named here is lifted where
+        its value is one the column's type can hold, and falls to `buffer`
+        where it is not -- so a malformed stamp is kept as the text that
+        arrived rather than becoming a null nobody can explain.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    @cache
+    def into_fallback(cls) -> tuple[frozenset[int], Mapping[int, str], Mapping[int, tuple]]:
+        """`(count tags, {tag: member}, {tag: path})` when no declaration is had.
+
+        What a store written before component declarations were kept leaves
+        behind: without this the extractor answers nothing at all, silently,
+        for every version the wire named. Standard tags only, because a
+        fallback that guessed would be worse than one that is absent.
+        """
+        return frozenset(), {}, {}
 
     def __post_init__(self) -> None:
         """Hold stable declaration and name snapshots for repeated batches."""
@@ -91,30 +141,32 @@ class Parties:
         self.names = dict(self.names or {})
 
     def into_arrow_arrays(self, tags: Any) -> tuple[Any, Any]:
-        """Return `(parties, residual_tags)`, preserving row validity and order."""
+        """Return `(entries, residual_tags)`, preserving row validity and order."""
+        entries_type = self.into_entries_type()
         if isinstance(tags, pyarrow.ChunkedArray):
             parts = [self.into_arrow_arrays(chunk) for chunk in tags.chunks]
             return (
-                pyarrow.chunked_array([found for found, _ in parts], type=PARTIES),
+                pyarrow.chunked_array([found for found, _ in parts], type=entries_type),
                 pyarrow.chunked_array([rest for _, rest in parts], type=KWARGS),
             )
         if not isinstance(tags, pyarrow.Array) or tags.type != KWARGS:
             actual = getattr(tags, "type", type(tags).__name__)
-            raise TypeError(f"Parties needs {KWARGS}, got {actual}")
+            raise TypeError(f"{type(self).__name__} needs {KWARGS}, got {actual}")
         return self._extract(tags)
 
     def _extract(self, tags: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
         """One physical Arrow chunk through the component state machine."""
         compute = pyarrow.compute
+        entries_type = self.into_entries_type()
         rows = len(tags)
         entries = compute.list_flatten(tags)
         if not len(entries):
-            return pyarrow.nulls(rows, PARTIES), tags
+            return pyarrow.nulls(rows, entries_type), tags
 
         keys = compute.struct_field(entries, "tag")
         relevant = compute.is_in(keys, value_set=self._relevant_array)
         if not compute.any(relevant, min_count=0).as_py():
-            return pyarrow.nulls(rows, PARTIES), tags
+            return pyarrow.nulls(rows, entries_type), tags
 
         parents = compute.list_parent_indices(tags).cast(pyarrow.int64())
         values = compute.struct_field(entries, "value")
@@ -196,43 +248,36 @@ class Parties:
         party_groups = compute.filter(party_group, delimiters)
         party_positions = compute.filter(positions, delimiters)
         party_index = compute.index_in(party_group, value_set=party_groups)
-        party_ids = compute.filter(values, delimiters)
+        row_field = self.into_row().into_field()
+        lifted: list[Any] = []
+        # Nothing is projected until a column can hold it, the delimiter
+        # included: an entry is opened by the delimiter's *position*, which
+        # `party_sizes` already counted, not by its value being readable.
+        projected = pyarrow.repeat(pyarrow.scalar(False), len(keys))
+        for index, (column, member) in enumerate(self.into_projection()):
+            # The delimiter is the member that opens an entry, so its own
+            # occurrences already are the per-entry firsts.
+            matched = (
+                delimiters
+                if index == 0
+                else compute.and_(members, compute.is_in(keys, value_set=self._tags_named(member)))
+            )
+            text, at = _first_for_party(values, positions, party_group, matched, party_groups)
+            target = row_field.field(column).arrow_type
+            readable = _readable(text, target)
+            lifted.append(
+                cast_arrow_fix(
+                    compute.if_else(readable, text, pyarrow.scalar(None, pyarrow.string())),
+                    target,
+                )
+            )
+            # A value the column cannot hold stays a member, so it lands in
+            # `buffer` as the text that arrived rather than as a null nobody
+            # can explain. The delimiter still opens its entry either way.
+            projected = compute.or_(
+                projected, _positions_are(positions, compute.filter(at, readable))
+            )
 
-        sources, source_positions = _first_for_party(
-            values,
-            positions,
-            party_group,
-            compute.and_(
-                members,
-                compute.is_in(keys, value_set=self._tags_named("PartyIDSource")),
-            ),
-            party_groups,
-        )
-        role_text, role_positions = _first_for_party(
-            values,
-            positions,
-            party_group,
-            compute.and_(
-                members,
-                compute.is_in(keys, value_set=self._tags_named("PartyRole")),
-            ),
-            party_groups,
-        )
-        role_valid = compute.fill_null(compute.match_substring_regex(role_text, _SIGNED), False)
-        role_readable = compute.replace_substring_regex(role_text, r"^\+", "")
-        roles = compute.if_else(
-            role_valid,
-            compute.if_else(role_valid, role_readable, pyarrow.scalar("0")).cast(pyarrow.int64()),
-            pyarrow.scalar(None, pyarrow.int64()),
-        )
-
-        projected = compute.or_(
-            delimiters,
-            compute.or_(
-                _positions_are(positions, source_positions),
-                _positions_are(positions, compute.filter(role_positions, role_valid)),
-            ),
-        )
         buffered = compute.and_(members, compute.invert(projected))
         buffer_keys, bufferable = self._buffer_keys(
             keys, members, party_index, party_positions, buffered
@@ -240,7 +285,7 @@ class Parties:
         buffered = compute.and_(buffered, bufferable)
         buffered_party = compute.filter(party_index, buffered).cast(pyarrow.int64())
         buffer_sizes = _counts(buffered_party, len(party_groups))
-        buffer_type = Party.into_field().field("buffer").arrow_type
+        buffer_type = row_field.field("buffer").arrow_type
         assert buffer_type is not None
         buffers = build_map(
             buffer_type,
@@ -250,13 +295,13 @@ class Parties:
             mask=compute.equal(buffer_sizes, 0),
         )
 
-        party_struct = pyarrow.StructArray.from_arrays(
-            [party_ids, sources, roles, buffers], fields=Party.into_field().arrow_fields
+        entry_struct = pyarrow.StructArray.from_arrays(
+            [*lifted, buffers], fields=row_field.arrow_fields
         )
         extracted = build_list(
-            PARTIES,
+            entries_type,
             party_sizes,
-            party_struct,
+            entry_struct,
             mask=compute.invert(valid_rows),
         )
 
@@ -345,7 +390,7 @@ class Parties:
             found = compute.if_else(accepted, rendered, found)
             bufferable = compute.or_(bufferable, accepted)
         if compute.any(_all(buffered, bufferable, compute.is_null(found)), min_count=0).as_py():
-            raise ValueError("a declared Parties member has no stable FIX name")
+            raise ValueError(f"a declared {self.component} member has no stable FIX name")
         return found, bufferable
 
     @cached_property
@@ -363,9 +408,10 @@ class Parties:
         by_name = {component.name.lower(): component for component in self.components}
         explicit = wanted in by_name
         legacy = not explicit and self.fallback
-        counts = set() if not legacy else set(_FALLBACK_COUNTS)
-        members = {} if not legacy else dict(_FALLBACK)
-        paths = {} if not legacy else dict(_FALLBACK_PATHS)
+        fallback_counts, fallback_members, fallback_paths = self.into_fallback()
+        counts = set() if not legacy else set(fallback_counts)
+        members = {} if not legacy else dict(fallback_members)
+        paths = {} if not legacy else dict(fallback_paths)
         group_delimiters: dict[tuple[str, ...], set[int]] = {}
         name_tags = {str(name).lower(): int(tag) for name, tag in self.names.items()}
 
@@ -378,14 +424,24 @@ class Parties:
             mapped_count = name_tags.get(grouped)
             if mapped_count is not None:
                 counts.add(mapped_count)
+            # The delimiter is the projection's first member, here as it is in
+            # a declared tree; a nested group opens at the first member
+            # declared under its own path.
+            opener = self.into_projection()[0][1]
             group_delimiters[()] = {
-                tag for tag, name in members.items() if name == "PartyID" and not paths.get(tag)
+                tag for tag, name in members.items() if name == opener and not paths.get(tag)
             }
-            group_delimiters[("NoPartySubIDs",)] = {
-                tag
-                for tag, name in members.items()
-                if name == "PartySubID" and paths.get(tag) == ("NoPartySubIDs",)
-            }
+            for path in {found for found in fallback_paths.values() if found}:
+                first = next(
+                    (tag for tag, found in paths.items() if found == path),
+                    None,
+                )
+                if first is not None:
+                    group_delimiters[path] = {
+                        tag
+                        for tag, name in members.items()
+                        if paths.get(tag) == path and name == members[first]
+                    }
 
         def member_tags(member: SpecMember) -> tuple[int, ...]:
             found: list[int] = []
@@ -496,7 +552,7 @@ class Parties:
 
     @cached_property
     def _relevant_array(self) -> pyarrow.Array:
-        """Tags that can start or belong to Parties."""
+        """Tags that can start or belong to this group."""
         return pyarrow.array(
             sorted(self._declaration[0] | set(self._member_names)), pyarrow.int32()
         )
@@ -507,6 +563,112 @@ class Parties:
         return pyarrow.array(
             sorted(tag for tag, found in self._member_names.items() if found.lower() == wanted),
             pyarrow.int32(),
+        )
+
+
+def _readable(text: Any, arrow_type: pyarrow.DataType) -> Any:
+    """Which values a column of this type can hold, as a mask over `text`.
+
+    The mask and not the cast: `cast_arrow_fix` already nulls what it cannot
+    read, and what a caller here needs is the *other* half of that answer --
+    which values were not read, so they can be kept as the text that arrived.
+    """
+    compute = pyarrow.compute
+    kinds = pyarrow.types
+    if kinds.is_integer(arrow_type):
+        pattern = _SIGNED
+    elif kinds.is_floating(arrow_type) or kinds.is_decimal(arrow_type):
+        pattern = _DECIMAL
+    elif kinds.is_temporal(arrow_type):
+        pattern = STAMP_PATTERN
+    else:
+        return compute.is_valid(text)
+    return compute.fill_null(compute.match_substring_regex(text, pattern), False)
+
+
+@dataclasses.dataclass(eq=False)
+class Parties(ComponentGroup):
+    """FIX's Parties component, entry by entry."""
+
+    component: str = "Parties"
+    group: str = _NO_PARTY_IDS
+
+    @classmethod
+    @cache
+    def into_row(cls) -> type:
+        """The `@scalar` class one party is."""
+        return Party
+
+    @classmethod
+    @cache
+    def into_projection(cls) -> tuple[tuple[str, str], ...]:
+        """`PartyID` opens an entry; the scheme and the role earn columns too."""
+        return (
+            ("party_id", "PartyID"),
+            ("party_id_source", "PartyIDSource"),
+            ("party_role", "PartyRole"),
+        )
+
+    @classmethod
+    @cache
+    def into_fallback(cls) -> tuple[frozenset[int], Mapping[int, str], Mapping[int, tuple]]:
+        """Parties as every FIX version numbers it, sub-IDs included."""
+        return (
+            frozenset({453}),
+            {
+                448: "PartyID",
+                447: "PartyIDSource",
+                452: "PartyRole",
+                802: "NoPartySubIDs",
+                523: "PartySubID",
+                803: "PartySubIDType",
+            },
+            {523: ("NoPartySubIDs",), 803: ("NoPartySubIDs",)},
+        )
+
+
+@dataclasses.dataclass(eq=False)
+class TrdRegTimestamps(ComponentGroup):
+    """FIX's TrdRegTimestamps component, entry by entry.
+
+    The regulatory clock: when a venue, a gateway or a desk stamped an order,
+    and which of those each stamp was. Structured for the same reason parties
+    are -- the three members always arrive together and mean nothing apart, so
+    a reader wanting "the venue's own stamp" should not be reassembling them
+    out of a flat pair list by index.
+    """
+
+    component: str = "TrdRegTimestamps"
+    group: str = _NO_TRD_REG_TIMESTAMPS
+
+    @classmethod
+    @cache
+    def into_row(cls) -> type:
+        """The `@scalar` class one regulatory stamp is."""
+        return TrdRegTimestamp
+
+    @classmethod
+    @cache
+    def into_projection(cls) -> tuple[tuple[str, str], ...]:
+        """`TrdRegTimestamp` opens an entry; its type and origin qualify it."""
+        return (
+            ("trd_reg_timestamp", "TrdRegTimestamp"),
+            ("trd_reg_timestamp_type", "TrdRegTimestampType"),
+            ("trd_reg_timestamp_origin", "TrdRegTimestampOrigin"),
+        )
+
+    @classmethod
+    @cache
+    def into_fallback(cls) -> tuple[frozenset[int], Mapping[int, str], Mapping[int, tuple]]:
+        """The three tags every version that has this component numbers alike."""
+        return (
+            frozenset({768}),
+            {
+                769: "TrdRegTimestamp",
+                770: "TrdRegTimestampType",
+                771: "TrdRegTimestampOrigin",
+            },
+            {},
         )
 
 
@@ -612,10 +774,18 @@ def _positions_are(positions: Any, selected: Any) -> Any:
 
 
 def _occurrences(matches: Any, party_index: Any, party_positions: Any) -> pyarrow.Array:
-    """One-based occurrence of a member tag inside each party."""
+    """One-based occurrence of a member tag inside each entry.
+
+    The baseline is taken *before* the delimiter's own position rather than
+    after it, so the member that opens an entry is its first occurrence and not
+    its zeroth: an unreadable delimiter buffered as `Name[-1]` is a key nothing
+    can look up.
+    """
     compute = pyarrow.compute
-    running = compute.cumulative_sum(matches.cast(pyarrow.int64()))
-    baseline = compute.take(running, party_positions)
+    counted = matches.cast(pyarrow.int64())
+    running = compute.cumulative_sum(counted)
+    before = compute.subtract(running, counted)
+    baseline = compute.take(before, party_positions)
     return compute.subtract(running, compute.take(baseline, party_index))
 
 

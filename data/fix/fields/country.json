@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Country",
-   "description": "ISO Country Code in field"
+   "description": "ISO Country Code in field",
+   "components": [
+    "BidCompRspGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Country",
-   "description": "ISO Country Code in field"
+   "description": "ISO Country Code in field",
+   "components": [
+    "BidCompRspGrp"
+   ]
   },
   "5.0": {
    "type": "Country",
-   "description": "ISO Country Code in field"
+   "description": "ISO Country Code in field",
+   "components": [
+    "BidCompRspGrp"
+   ]
   },
   "4.4": {
    "type": "Country",

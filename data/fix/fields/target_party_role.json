@@ -4,7 +4,10 @@
  "versions": {
   "5.0.SP2": {
    "type": "int",
-   "description": "PartyRole value within an target party repeating group. Same values as PartyRole <452>"
+   "description": "PartyRole value within an target party repeating group. Same values as PartyRole <452>",
+   "components": [
+    "TargetParties"
+   ]
   }
  }
 }

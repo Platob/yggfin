@@ -1,0 +1,9 @@
+{
+ "name": "TradeAllocAmt",
+ "tag": 1846,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

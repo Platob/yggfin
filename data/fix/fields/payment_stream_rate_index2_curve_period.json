@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamRateIndex2CurvePeriod",
+ "tag": 41194,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

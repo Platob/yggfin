@@ -1,0 +1,9 @@
+{
+ "name": "EncodedLegEventText",
+ "tag": 2075,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

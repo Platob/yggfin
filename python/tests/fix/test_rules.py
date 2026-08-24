@@ -33,7 +33,7 @@ LINES = {
     "sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|": "UL",
     "8=FIX.4.4|35=8|58=quoting #A=1 and #B=2|10=1|": "FIX",
     "Message rejected because : ignoring OMSSales expiry message": "OTHER",
-    "no level printed by this driver": "OTHER",
+    "no level printed by this plugin": "OTHER",
     "heartbeat emitted seq=7": "MISC",
 }
 
@@ -140,17 +140,17 @@ def test_dot_does_not_cross_a_newline_unless_the_pattern_requests_it() -> None:
 
 
 def test_the_legacy_positional_rule_signature_keeps_its_bindings() -> None:
-    rule = Rule("OWN", "message", "^Driver$", "|", ";", "ul", ["fallback"])
+    rule = Rule("OWN", "message", "^Plugin$", "|", ";", "ul", ["fallback"])
     assert (
         rule.protocol,
         rule.pattern,
-        rule.driver_pattern,
+        rule.plugin_pattern,
         rule.separator,
         rule.entry_separator,
         rule.codec,
         rule.patterns,
-    ) == ("OWN", "message", "^Driver$", "|", ";", "ul", ["fallback"])
-    assert rule.matches("message", "Driver")
+    ) == ("OWN", "message", "^Plugin$", "|", ";", "ul", ["fallback"])
+    assert rule.matches("message", "Plugin")
 
 
 def test_a_plural_pattern_passed_as_one_string_stays_one_pattern() -> None:
@@ -236,23 +236,23 @@ def test_the_first_rule_that_matches_wins() -> None:
     assert rules.into_arrow_protocol_array(pyarrow.array([line])).to_pylist() == ["SESSION"]
 
 
-def test_a_rule_may_be_told_apart_by_its_driver() -> None:
-    rules = Rules(rules=[Rule(protocol="BRIDGE", driver_pattern="^ULBridge$")])
+def test_a_rule_may_be_told_apart_by_its_plugin() -> None:
+    rules = Rules(rules=[Rule(protocol="BRIDGE", plugin_pattern="^ULBridge$")])
     assert rules.categorise("anything", "ULBridge").protocol == "BRIDGE"
     assert rules.categorise("anything", "FixSession_XPAR").protocol == NO_PROTOCOL
     messages = pyarrow.array([None, "a", "b"])
-    drivers = pyarrow.array(["ULBridge", "ULBridge", "other"])
-    protocols = rules.into_arrow_protocol_array(messages, drivers)
+    plugins = pyarrow.array(["ULBridge", "ULBridge", "other"])
+    protocols = rules.into_arrow_protocol_array(messages, plugins)
     scalar = [
-        rules.categorise(message, driver).protocol
-        for message, driver in zip(messages.to_pylist(), drivers.to_pylist(), strict=True)
+        rules.categorise(message, plugin).protocol
+        for message, plugin in zip(messages.to_pylist(), plugins.to_pylist(), strict=True)
     ]
     assert protocols.to_pylist() == scalar == [NO_PROTOCOL, "BRIDGE", NO_PROTOCOL]
 
 
-def test_a_rule_naming_a_driver_with_no_driver_column_does_not_match() -> None:
+def test_a_rule_naming_a_plugin_with_no_plugin_column_does_not_match() -> None:
     """A rule that cannot be evaluated is not a rule that matched."""
-    rules = Rules(rules=[Rule(protocol="BRIDGE", driver_pattern="^ULBridge$")])
+    rules = Rules(rules=[Rule(protocol="BRIDGE", plugin_pattern="^ULBridge$")])
     assert rules.into_arrow_protocol_array(pyarrow.array(["a"])).to_pylist() == [NO_PROTOCOL]
     assert rules.categorise("a").protocol == NO_PROTOCOL
 
@@ -295,5 +295,5 @@ def test_a_rule_is_a_field_class_like_every_other_declaration() -> None:
     """Which is what puts a rule set beside the schema contracts."""
     assert Rule.into_field().name == "Rule"
     assert Rule.into_field().names[:2] == ["protocol", "pattern"]
-    assert Rule.into_field().field("driver_pattern").nullable
+    assert Rule.into_field().field("plugin_pattern").nullable
     assert not Rule.into_field().field("protocol").nullable

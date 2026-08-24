@@ -1,0 +1,15 @@
+{
+ "name": "ShortSaleRestriction",
+ "tag": 1687,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "NO_RESTRICTIONS",
+    "1": "SECURITY_NOT_SHORTABLE",
+    "2": "SECURITY_NOT_SHORTABLE_AT_OR_BELOW_BEST_BID",
+    "3": "SECURITY_NOT_SHORTABLE_WITHOUT_PRE_BORROW"
+   }
+  }
+ }
+}

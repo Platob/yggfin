@@ -1,0 +1,9 @@
+{
+ "name": "LegProvisionCashSettlValueDateBusinessCenter",
+ "tag": 40527,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

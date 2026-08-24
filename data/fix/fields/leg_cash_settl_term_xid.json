@@ -1,0 +1,9 @@
+{
+ "name": "LegCashSettlTermXID",
+ "tag": 41362,
+ "versions": {
+  "5.0.SP2": {
+   "type": "XID"
+  }
+ }
+}

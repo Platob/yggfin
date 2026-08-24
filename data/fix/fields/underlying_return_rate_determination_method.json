@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingReturnRateDeterminationMethod",
+ "tag": 43040,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

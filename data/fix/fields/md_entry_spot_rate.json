@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "float",
-   "description": "The spot rate for an FX entry"
+   "description": "The spot rate for an FX entry",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "float",
-   "description": "The spot rate for an FX entry"
+   "description": "The spot rate for an FX entry",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "float",
-   "description": "The spot rate for an FX entry"
+   "description": "The spot rate for an FX entry",
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   }
  }
 }

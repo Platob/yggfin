@@ -1,0 +1,21 @@
+{
+ "name": "ReturnTrigger",
+ "tag": 2753,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "1": "DIVIDEND",
+    "2": "VARIANCE",
+    "3": "VOLATILITY",
+    "4": "TOTAL_RETURN",
+    "5": "CONTRACT_FOR_DIFFERENCE",
+    "6": "CREDIT_DEFAULT",
+    "7": "SPREAD_BET",
+    "8": "PRICE",
+    "9": "FORWARD_PRICE_UNDERLYING_INSTRUMENT",
+    "99": "OTHER"
+   }
+  }
+ }
+}

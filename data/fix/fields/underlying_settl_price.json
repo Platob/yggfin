@@ -7,6 +7,9 @@
    "description": "Underlying security's SettlPrice. See SettlPrice <730> field for description",
    "used_in": [
     "AssignmentReport"
+   ],
+   "components": [
+    "PosUndInstrmtGrp"
    ]
   },
   "5.0.SP1": {
@@ -14,6 +17,9 @@
    "description": "Underlying security's SettlPrice. See SettlPrice <730> field for description",
    "used_in": [
     "AssignmentReport"
+   ],
+   "components": [
+    "PosUndInstrmtGrp"
    ]
   },
   "5.0": {
@@ -21,6 +27,9 @@
    "description": "Underlying security's SettlPrice. See SettlPrice <730> field for description",
    "used_in": [
     "AssignmentReport"
+   ],
+   "components": [
+    "PosUndInstrmtGrp"
    ]
   },
   "4.4": {

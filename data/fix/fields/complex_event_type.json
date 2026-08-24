@@ -40,7 +40,10 @@
     "21": "STRK_SCHED",
     "22": "EQUITY_VALUATION",
     "23": "DIVIDEND_VALUATION"
-   }
+   },
+   "components": [
+    "ComplexEvents"
+   ]
   }
  }
 }

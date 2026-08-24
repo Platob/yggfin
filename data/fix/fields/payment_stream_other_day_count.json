@@ -1,0 +1,9 @@
+{
+ "name": "PaymentStreamOtherDayCount",
+ "tag": 43106,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

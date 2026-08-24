@@ -30,19 +30,19 @@ class Quote(Convertible):
 class MemoryDataset(Dataset):
     """A dataset that keeps its commits in a list -- everything, nothing more."""
 
-    struct: StructField
+    field: StructField
     commits: list[pyarrow.Table] = dataclasses.field(default_factory=list)
     created: bool = False
 
     def into_struct_field(self) -> StructField:
-        return self.struct
+        return self.field
 
     @property
     def exists(self) -> bool:
         return self.created
 
     def create_with_field(self, field: StructField, **kwargs: Any) -> "MemoryDataset":
-        self.struct = field
+        self.field = field
         self.created = True
         return self
 
@@ -51,7 +51,7 @@ class MemoryDataset(Dataset):
         for commit in self.commits:
             batches.extend(commit.to_batches())
         reader = pyarrow.RecordBatchReader.from_batches(
-            self.struct.into_arrow_schema(), iter(batches)
+            self.field.into_arrow_schema(), iter(batches)
         )
         return reader if schema is None else self.target_field(schema).cast_arrow_reader(reader)
 
@@ -70,7 +70,7 @@ class MemoryDataset(Dataset):
 
 @pytest.fixture
 def dataset() -> MemoryDataset:
-    return MemoryDataset(struct=Quote.into_field())
+    return MemoryDataset(field=Quote.into_field())
 
 
 def batch_of(**columns: list) -> pyarrow.RecordBatch:
@@ -120,7 +120,7 @@ def test_merge_by_true_means_the_declared_primary_key() -> None:
         size: int
         """Quantity."""
 
-    assert MemoryDataset(struct=Keyed.into_field()).merge_columns(True) == ["symbol"]
+    assert MemoryDataset(field=Keyed.into_field()).merge_columns(True) == ["symbol"]
 
 
 def test_merge_by_a_list_means_those_columns(dataset: MemoryDataset) -> None:
@@ -321,7 +321,7 @@ class Keyed(Convertible):
 
 @pytest.fixture
 def keyed() -> MemoryDataset:
-    return MemoryDataset(struct=Keyed.into_field())
+    return MemoryDataset(field=Keyed.into_field())
 
 
 def keyed_batch(symbols: list[str], sizes: list[int]) -> pyarrow.RecordBatch:

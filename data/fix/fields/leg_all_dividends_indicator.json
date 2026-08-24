@@ -1,0 +1,9 @@
+{
+ "name": "LegAllDividendsIndicator",
+ "tag": 42356,
+ "versions": {
+  "5.0.SP2": {
+   "type": "BOOLEAN"
+  }
+ }
+}

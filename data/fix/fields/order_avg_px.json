@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Price",
-   "description": "Average price for a specific order"
+   "description": "Average price for a specific order",
+   "components": [
+    "OrdAllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Price",
-   "description": "Average price for a specific order"
+   "description": "Average price for a specific order",
+   "components": [
+    "OrdAllocGrp"
+   ]
   },
   "5.0": {
    "type": "Price",
-   "description": "Average price for a specific order"
+   "description": "Average price for a specific order",
+   "components": [
+    "OrdAllocGrp"
+   ]
   },
   "4.4": {
    "type": "Price",

@@ -4,15 +4,27 @@
  "versions": {
   "5.0.SP2": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the AllocText <161> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the AllocText field."
+   "description": "Encoded (non-ASCII characters) representation of the AllocText <161> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the AllocText field.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the AllocText <161> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the AllocText field."
+   "description": "Encoded (non-ASCII characters) representation of the AllocText <161> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the AllocText field.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "5.0": {
    "type": "data",
-   "description": "Encoded (non-ASCII characters) representation of the AllocText <161> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the AllocText field."
+   "description": "Encoded (non-ASCII characters) representation of the AllocText <161> field in the encoded format specified via the MessageEncoding <347> field. If used, the ASCII (English) representation should also be specified in the AllocText field.",
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "4.4": {
    "type": "data",

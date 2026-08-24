@@ -1,0 +1,9 @@
+{
+ "name": "PaymentScheduleNotional",
+ "tag": 40835,
+ "versions": {
+  "5.0.SP2": {
+   "type": "AMT"
+  }
+ }
+}

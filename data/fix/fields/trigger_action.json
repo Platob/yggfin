@@ -14,7 +14,10 @@
     "1": "ACTIVATE",
     "2": "MODIFY",
     "3": "CANCEL"
-   }
+   },
+   "components": [
+    "TriggeringInstruction"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -28,7 +31,10 @@
     "1": "ACTIVATE",
     "2": "MODIFY",
     "3": "CANCEL"
-   }
+   },
+   "components": [
+    "TriggeringInstruction"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -42,7 +48,10 @@
     "1": "ACTIVATE",
     "2": "MODIFY",
     "3": "CANCEL"
-   }
+   },
+   "components": [
+    "TriggeringInstruction"
+   ]
   }
  }
 }

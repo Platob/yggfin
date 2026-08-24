@@ -7,6 +7,12 @@
    "description": "The identifier or name of the price stream.",
    "used_in": [
     "MarketDataSnapshotFullRefresh"
+   ],
+   "components": [
+    "InstrmtMDReqGrp",
+    "MDIncGrp",
+    "StrmAsgnReqInstrmtGrp",
+    "StrmAsgnRptInstrmtGrp"
    ]
   }
  }

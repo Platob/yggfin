@@ -1,0 +1,9 @@
+{
+ "name": "DeliveryStreamCommoditySource",
+ "tag": 41086,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamRateMultiplier",
+ "tag": 40624,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

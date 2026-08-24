@@ -1,0 +1,9 @@
+{
+ "name": "ProvisionOptionExerciseFixedDate",
+ "tag": 40143,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

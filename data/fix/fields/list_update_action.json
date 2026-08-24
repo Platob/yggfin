@@ -15,7 +15,11 @@
     "D": "DELETE",
     "M": "MODIFY",
     "S": "SNAPSHOT"
-   }
+   },
+   "components": [
+    "RelSymDerivSecUpdGrp",
+    "SecLstUpdRelSymGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -24,7 +28,11 @@
     "A": "Add",
     "D": "Delete",
     "M": "Modify"
-   }
+   },
+   "components": [
+    "RelSymDerivSecUpdGrp",
+    "SecLstUpdRelSymGrp"
+   ]
   }
  }
 }

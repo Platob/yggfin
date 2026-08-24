@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingPaymentStreamPricingDays",
+ "tag": 41944,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

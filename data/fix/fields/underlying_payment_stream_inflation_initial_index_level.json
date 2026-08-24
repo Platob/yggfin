@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingPaymentStreamInflationInitialIndexLevel",
+ "tag": 40645,
+ "versions": {
+  "5.0.SP2": {
+   "type": "FLOAT"
+  }
+ }
+}

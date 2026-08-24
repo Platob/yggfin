@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamPaySide",
+ "tag": 40543,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

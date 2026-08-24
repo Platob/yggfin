@@ -4,15 +4,33 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Identification of a Market Maker\u2019s location"
+   "description": "Identification of a Market Maker\u2019s location",
+   "components": [
+    "CompIDReqGrp",
+    "CompIDStatGrp",
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Identification of a Market Maker\u2019s location"
+   "description": "Identification of a Market Maker\u2019s location",
+   "components": [
+    "CompIDReqGrp",
+    "CompIDStatGrp",
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "5.0": {
    "type": "String",
-   "description": "Identification of a Market Maker\u2019s location"
+   "description": "Identification of a Market Maker\u2019s location",
+   "components": [
+    "CompIDReqGrp",
+    "CompIDStatGrp",
+    "MDFullGrp",
+    "MDIncGrp"
+   ]
   },
   "4.4": {
    "type": "String",

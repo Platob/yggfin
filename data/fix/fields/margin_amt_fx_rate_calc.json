@@ -1,0 +1,9 @@
+{
+ "name": "MarginAmtFXRateCalc",
+ "tag": 2089,
+ "versions": {
+  "5.0.SP2": {
+   "type": "CHAR"
+  }
+ }
+}

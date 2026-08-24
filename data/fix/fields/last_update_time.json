@@ -9,6 +9,11 @@
     "TradeCaptureReport",
     "TradeCaptureReportAck",
     "SettlementInstructionRequest"
+   ],
+   "components": [
+    "SettlInstGrp",
+    "SettlObligationInstructions",
+    "TrdCapDtGrp"
    ]
   },
   "5.0.SP1": {
@@ -18,6 +23,11 @@
     "TradeCaptureReport",
     "TradeCaptureReportAck",
     "SettlementInstructionRequest"
+   ],
+   "components": [
+    "SettlInstGrp",
+    "SettlObligationInstructions",
+    "TrdCapDtGrp"
    ]
   },
   "5.0": {
@@ -27,6 +37,10 @@
     "TradeCaptureReport",
     "TradeCaptureReportAck",
     "SettlementInstructionRequest"
+   ],
+   "components": [
+    "SettlInstGrp",
+    "TrdCapDtGrp"
    ]
   },
   "4.4": {

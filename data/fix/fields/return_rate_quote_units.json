@@ -1,0 +1,9 @@
+{
+ "name": "ReturnRateQuoteUnits",
+ "tag": 42744,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

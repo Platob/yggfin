@@ -4,11 +4,17 @@
  "versions": {
   "5.0.SP2": {
    "type": "String",
-   "description": "Type of message encoding (non-ASCII (non-English) characters) used in a message\u2019s \"Encoded\" fields."
+   "description": "Type of message encoding (non-ASCII (non-English) characters) used in a message\u2019s \"Encoded\" fields.",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0.SP1": {
    "type": "String",
-   "description": "Type of message encoding (non-ASCII (non-English) characters) used in a message\u2019s \"Encoded\" fields."
+   "description": "Type of message encoding (non-ASCII (non-English) characters) used in a message\u2019s \"Encoded\" fields.",
+   "components": [
+    "StandardHeader"
+   ]
   },
   "5.0": {
    "type": "String",
@@ -46,7 +52,10 @@
   },
   "FIXT1.1": {
    "type": "String",
-   "description": "Type of message encoding (non-ASCII (non-English) characters) used in a message's \"Encoded\" fields."
+   "description": "Type of message encoding (non-ASCII (non-English) characters) used in a message's \"Encoded\" fields.",
+   "components": [
+    "StandardHeader"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "EncodedMDStatisticDescLen",
+ "tag": 2481,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LENGTH"
+  }
+ }
+}

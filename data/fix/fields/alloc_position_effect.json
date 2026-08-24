@@ -16,7 +16,11 @@
     "C": "CLOSE",
     "R": "ROLLED",
     "F": "FIFO"
-   }
+   },
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "char",
@@ -32,7 +36,11 @@
     "C": "CLOSE",
     "R": "ROLLED",
     "F": "FIFO"
-   }
+   },
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   },
   "5.0": {
    "type": "char",
@@ -48,7 +56,11 @@
     "C": "CLOSE",
     "R": "ROLLED",
     "F": "FIFO"
-   }
+   },
+   "components": [
+    "AllocAckGrp",
+    "AllocGrp"
+   ]
   }
  }
 }

@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingPhysicalSettlDeliverableObligations",
+ "tag": 42065,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

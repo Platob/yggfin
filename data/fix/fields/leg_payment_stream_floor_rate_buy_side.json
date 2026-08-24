@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStreamFloorRateBuySide",
+ "tag": 40343,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT"
+  }
+ }
+}

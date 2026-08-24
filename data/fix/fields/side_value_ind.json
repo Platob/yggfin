@@ -12,7 +12,11 @@
    "value_names": {
     "1": "SIDE_VALUE1",
     "2": "SIDE_VALUE2"
-   }
+   },
+   "components": [
+    "BidDescReqGrp",
+    "ListOrdGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "int",
@@ -24,7 +28,11 @@
    "value_names": {
     "1": "SIDE_VALUE1",
     "2": "SIDE_VALUE2"
-   }
+   },
+   "components": [
+    "BidDescReqGrp",
+    "ListOrdGrp"
+   ]
   },
   "5.0": {
    "type": "int",
@@ -36,7 +44,11 @@
    "value_names": {
     "1": "SIDE_VALUE1",
     "2": "SIDE_VALUE2"
-   }
+   },
+   "components": [
+    "BidDescReqGrp",
+    "ListOrdGrp"
+   ]
   },
   "4.4": {
    "type": "int",

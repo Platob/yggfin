@@ -1,0 +1,9 @@
+{
+ "name": "LegDividendFloatingRateIndex",
+ "tag": 42312,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

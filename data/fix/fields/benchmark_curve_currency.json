@@ -4,23 +4,38 @@
  "versions": {
   "5.0.SP2": {
    "type": "Currency",
-   "description": "Identifies currency used for benchmark curve. See Appendix 6-A: Valid Currency Codes for information on obtaining"
+   "description": "Identifies currency used for benchmark curve. See Appendix 6-A: Valid Currency Codes for information on obtaining",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "5.0.SP1": {
    "type": "Currency",
-   "description": "Identifies currency used for benchmark curve. See Appendix 6-A: Valid Currency Codes for information on obtaining"
+   "description": "Identifies currency used for benchmark curve. See Appendix 6-A: Valid Currency Codes for information on obtaining",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "5.0": {
    "type": "Currency",
-   "description": "Identifies currency used for benchmark curve. See Appendix 6-A: Valid Currency Codes for information on obtaining"
+   "description": "Identifies currency used for benchmark curve. See Appendix 6-A: Valid Currency Codes for information on obtaining",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "4.4": {
    "type": "Currency",
-   "description": "Identifies currency used for benchmark curve. See \" Appendix 6-A: Valid Currency Codes \" for information on obtaining"
+   "description": "Identifies currency used for benchmark curve. See \" Appendix 6-A: Valid Currency Codes \" for information on obtaining",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   },
   "4.3": {
    "type": "Currency",
-   "description": "Identifies currency used for benchmark curve. See \" Appendix 6-A: Valid Currency Codes \" for information on obtaining"
+   "description": "Identifies currency used for benchmark curve. See \" Appendix 6-A: Valid Currency Codes \" for information on obtaining",
+   "components": [
+    "SpreadOrBenchmarkCurveData"
+   ]
   }
  }
 }

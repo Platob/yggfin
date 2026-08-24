@@ -1,0 +1,16 @@
+{
+ "name": "ThrottleAction",
+ "tag": 1611,
+ "versions": {
+  "5.0.SP2": {
+   "type": "INT",
+   "value_names": {
+    "0": "QUEUE_INBOUND",
+    "1": "QUEUE_OUTBOUND",
+    "2": "REJECT",
+    "3": "DISCONNECT",
+    "4": "WARNING"
+   }
+  }
+ }
+}

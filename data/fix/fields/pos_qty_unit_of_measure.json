@@ -1,0 +1,9 @@
+{
+ "name": "PosQtyUnitOfMeasure",
+ "tag": 1836,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "name": "LegPaymentStubStartDateUnadjusted",
+ "tag": 42497,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

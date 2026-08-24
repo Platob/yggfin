@@ -1,0 +1,9 @@
+{
+ "name": "NoUnderlyingComplexEventRateSources",
+ "tag": 41732,
+ "versions": {
+  "5.0.SP2": {
+   "type": "NUMINGROUP"
+  }
+ }
+}

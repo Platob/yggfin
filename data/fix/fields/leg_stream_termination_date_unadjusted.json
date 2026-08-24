@@ -1,0 +1,9 @@
+{
+ "name": "LegStreamTerminationDateUnadjusted",
+ "tag": 40257,
+ "versions": {
+  "5.0.SP2": {
+   "type": "LOCALMKTDATE"
+  }
+ }
+}

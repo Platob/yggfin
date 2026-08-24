@@ -1,0 +1,9 @@
+{
+ "name": "UnderlyingStreamCommoditySettlCountry",
+ "tag": 42003,
+ "versions": {
+  "5.0.SP2": {
+   "type": "COUNTRY"
+  }
+ }
+}

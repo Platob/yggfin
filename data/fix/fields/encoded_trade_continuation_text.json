@@ -1,0 +1,9 @@
+{
+ "name": "EncodedTradeContinuationText",
+ "tag": 2371,
+ "versions": {
+  "5.0.SP2": {
+   "type": "DATA"
+  }
+ }
+}

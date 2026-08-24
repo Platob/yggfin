@@ -1,0 +1,9 @@
+{
+ "name": "DeliveryScheduleToleranceUnitOfMeasure",
+ "tag": 41045,
+ "versions": {
+  "5.0.SP2": {
+   "type": "STRING"
+  }
+ }
+}

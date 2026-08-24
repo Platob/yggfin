@@ -12,6 +12,10 @@
     "TradeCaptureReportAck",
     "ExecutionAcknowledgement",
     "DontKnowTradeDK"
+   ],
+   "components": [
+    "ExecAllocGrp",
+    "ExecCollGrp"
    ]
   },
   "5.0.SP1": {
@@ -24,6 +28,10 @@
     "TradeCaptureReportAck",
     "ExecutionAcknowledgement",
     "DontKnowTradeDK"
+   ],
+   "components": [
+    "ExecAllocGrp",
+    "ExecCollGrp"
    ]
   },
   "5.0": {
@@ -36,6 +44,11 @@
     "TradeCaptureReportAck",
     "ExecutionAcknowledgement",
     "DontKnowTradeDK"
+   ],
+   "components": [
+    "ExecAllocGrp",
+    "ExecCollGrp",
+    "ExecsGrp"
    ]
   },
   "4.4": {

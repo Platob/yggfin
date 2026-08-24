@@ -4,11 +4,19 @@
  "versions": {
   "5.0.SP2": {
    "type": "Currency",
-   "description": "Used to identify the trading currency on the Trade Capture Report Side"
+   "description": "Used to identify the trading currency on the Trade Capture Report Side",
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Currency",
-   "description": "Used to identify the trading currency on the Trade Capture Report Side"
+   "description": "Used to identify the trading currency on the Trade Capture Report Side",
+   "components": [
+    "TrdCapRptAckSideGrp",
+    "TrdCapRptSideGrp"
+   ]
   }
  }
 }

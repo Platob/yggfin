@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "Percentage",
-   "description": "Upper liquidity indicator if TotNoRelatedSym <393> > 1. Represented as a percentage."
+   "description": "Upper liquidity indicator if TotNoRelatedSym <393> > 1. Represented as a percentage.",
+   "components": [
+    "BidDescReqGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "Percentage",
-   "description": "Upper liquidity indicator if TotNoRelatedSym <393> > 1. Represented as a percentage."
+   "description": "Upper liquidity indicator if TotNoRelatedSym <393> > 1. Represented as a percentage.",
+   "components": [
+    "BidDescReqGrp"
+   ]
   },
   "5.0": {
    "type": "Percentage",
-   "description": "Upper liquidity indicator if TotNoRelatedSym <393> > 1. Represented as a percentage."
+   "description": "Upper liquidity indicator if TotNoRelatedSym <393> > 1. Represented as a percentage.",
+   "components": [
+    "BidDescReqGrp"
+   ]
   },
   "4.4": {
    "type": "Percentage",

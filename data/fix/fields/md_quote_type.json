@@ -21,6 +21,10 @@
    },
    "used_in": [
     "MarketDataRequest"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
    ]
   },
   "5.0.SP1": {
@@ -42,6 +46,10 @@
    },
    "used_in": [
     "MarketDataRequest"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
    ]
   },
   "5.0": {
@@ -63,6 +71,10 @@
    },
    "used_in": [
     "MarketDataRequest"
+   ],
+   "components": [
+    "MDFullGrp",
+    "MDIncGrp"
    ]
   }
  }

@@ -4,15 +4,24 @@
  "versions": {
   "5.0.SP2": {
    "type": "NumInGroup",
-   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing"
+   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing",
+   "components": [
+    "RoutingGrp"
+   ]
   },
   "5.0.SP1": {
    "type": "NumInGroup",
-   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing"
+   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing",
+   "components": [
+    "RoutingGrp"
+   ]
   },
   "5.0": {
    "type": "NumInGroup",
-   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing"
+   "description": "Number of repeating groups of RoutingID <217> and RoutingType <216> values. See Appendix 3-A: Pre-Trade Message Targeting/Routing",
+   "components": [
+    "RoutingGrp"
+   ]
   },
   "4.4": {
    "type": "NumInGroup",
