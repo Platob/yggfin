@@ -91,6 +91,28 @@ the digest is taken over the parsed values, plus `source_url` and
 `source_rownum`. Those two are what keep two byte-identical lines in two
 captures two rows rather than one.
 
+## What the pipeline produced, twice
+
+Two consecutive hourly intervals of a 20,011-line capture, then the first
+interval again. The third run read the same rows and wrote nothing anywhere;
+rows, file counts and the digest of every table's sorted hashes came back
+unchanged.
+
+| table | rows | files |
+| --- | ---: | ---: |
+| `fixmessage.market` | 3,607 | 4 |
+| `fixmessage.misc` | 1,028 | 2 |
+| `fixmessage.unknown` | 514 | 2 |
+| `market.books` | 3,072 | 2 |
+| `market.executions` | 1,545 | 2 |
+| `market.instruments` | 6 | 2 |
+| `market.orders` | 3,602 | 2 |
+| `text.messages` | 5,143 | 2 |
+
+`parse_market` is the one stage that costs more on the second interval --
+11.6s against 19.9s -- because it seeds from the previous hour's books,
+which is the incremental path doing its job.
+
 ## Retained, not transient
 
 `text.messages` is kept. It is what a re-parse reads, so deleting it would
