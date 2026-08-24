@@ -20,6 +20,7 @@ from rekep import Convertible, Field, Log, StructField, scalar
 from rekep.fix import Party
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.dataset import MERGE_IN_LIMIT
+from rekep.iceberg.fields import INFERRED_METRICS
 from rekep.market import EventType
 
 from ..conftest import catalog_properties
@@ -782,12 +783,21 @@ def test_the_pair_lists_keep_required_members(logs: IcebergDataset, tmp_path: Pa
 def test_the_flattened_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> None:
     """Iceberg bounds the first `write.metadata.metrics.max-inferred-column
     -defaults` leaves in pre-order, 100 by default, and flattening the message
-    took this shape to 96 of them. `text` is the last, so anything that fell
-    past the cutoff takes that one with it -- and an unbounded column prunes
-    nothing while looking exactly like a column that does.
+    took this shape past that. So the budget stopped being one the table can
+    inherit: `metrics_for` declares one wide enough for every leaf, because a
+    column past the cutoff is written with no bounds at all -- and an unbounded
+    column prunes nothing while looking exactly like a column that does.
+
+    The count is pinned against the declaration rather than derived from it, so
+    that a shape growing past the `MAX_INFERRED` ceiling is caught here, where
+    the budget is reasoned about, and not as a tail of columns that quietly
+    stopped pruning. `text` is the last leaf this row fills, and a bound is
+    recorded only for a column that carries a value.
     """
     logs.write_arrow_table(log_table(FIX_LINE))
-    assert len(Log.into_field().leaf_names()) == 96
+    leaves = Log.into_field().leaf_names()
+    assert len(leaves) == 112
+    assert int(logs.iceberg_table.properties[INFERRED_METRICS]) >= len(leaves)
     last = logs.iceberg_table.schema().find_field("text").field_id
     written = [task.file for task in logs.iceberg_table.scan().plan_files()]
     assert written, "a write landed a file"

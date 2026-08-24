@@ -92,9 +92,7 @@ def local_path(
     if not target.exists():
         try:
             payload = (
-                read_bytes(path, filesystem)
-                if filesystem is not None
-                else read_bytes(location)
+                read_bytes(path, filesystem) if filesystem is not None else read_bytes(location)
             )
         except FileNotFoundError:
             if missing_ok:

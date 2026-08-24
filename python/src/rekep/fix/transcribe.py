@@ -817,23 +817,17 @@ def _version_from_evidence(
         return None, NO_SOURCE
     if not _version_key(begin).startswith("FIXT"):
         resolved = spellings.get(_version_key(begin))
-        return (
-            (resolved, BEGIN_STRING_SOURCE) if resolved is not None else (None, NO_SOURCE)
-        )
+        return (resolved, BEGIN_STRING_SOURCE) if resolved is not None else (None, NO_SOURCE)
     if application is not None:
         resolved = _APPL_VERSIONS.get(str(application).strip()) or spellings.get(
             _version_key(application)
         )
-        return (
-            (resolved, APPLICATION_VERSION_SOURCE) if resolved is not None else (None, NO_SOURCE)
-        )
+        return (resolved, APPLICATION_VERSION_SOURCE) if resolved is not None else (None, NO_SOURCE)
     if default_application is not None:
         resolved = _APPL_VERSIONS.get(str(default_application).strip()) or spellings.get(
             _version_key(default_application)
         )
-        return (
-            (resolved, APPLICATION_VERSION_SOURCE) if resolved is not None else (None, NO_SOURCE)
-        )
+        return (resolved, APPLICATION_VERSION_SOURCE) if resolved is not None else (None, NO_SOURCE)
     return None, NO_SOURCE
 
 

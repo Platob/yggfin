@@ -360,9 +360,7 @@ def test_a_scrape_is_cached_in_an_arrow_filesystem_directory() -> None:
 
     assert registry.field("Side", "4.4").fix["tag"] == "54"
 
-    offline = OfflineRegistry(
-        cache_dir="registry", filesystem=filesystem, offline=True
-    )
+    offline = OfflineRegistry(cache_dir="registry", filesystem=filesystem, offline=True)
     assert offline.field("Side", "4.4").fix["tag"] == "54"
 
 
@@ -378,9 +376,7 @@ def test_a_remote_archive_is_materialized_once_and_reused() -> None:
     filesystem.create_dir("registry")
     with filesystem.open_output_stream("registry/fix.zip") as stream:
         stream.write((PUBLISHED / "fix.zip").read_bytes())
-    registry = FixRegistry(
-        cache_dir="registry/fix.zip", filesystem=filesystem, offline=True
-    )
+    registry = FixRegistry(cache_dir="registry/fix.zip", filesystem=filesystem, offline=True)
 
     first = registry._cache_path
     assert registry.field("Side", "4.4").fix["tag"] == "54"
