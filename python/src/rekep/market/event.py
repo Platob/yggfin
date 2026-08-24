@@ -591,6 +591,18 @@ class MarketEvent(Event):
     # Beside the hash rather than only inside `codes`: a hash joins, and a
     # person reads. Every filter, group and error message about an instrument
     # was reaching into a map for the one key this package writes itself.
+    #
+    # Not a partition either, and this one is measured rather than argued. The
+    # case for bucketing it is real -- `unix_hour` prunes time and not
+    # instrument, so a scan for one instrument across a week opens every
+    # hour's files. But bucketing does not fix that: the bucket prunes files
+    # *inside* an hour, and a scan across N hours still opens at least one
+    # file per hour, which is what the query actually pays for. Over 144,000
+    # rows across 72 hours and 40 instruments, one instrument's week cost
+    # 632 ms on `unix_hour` alone, 650 ms at bucket[8] and 671 ms at
+    # bucket[16] -- slower, not faster -- while the file count went 72 to 576
+    # to 1,152, the mean file fell from 76 KiB to 25, and the hourly read
+    # every consumer writes went 24 ms to 165 to 320. See docs/market.md.
     instrument_code: str = ""
     """Readable spelling of the instrument `instrument_xhash` names; empty when unstated."""
 

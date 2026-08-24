@@ -107,6 +107,34 @@ regulatory stamp lands behind rows already read -- so:
 - `hash` changes for every row whose `unix` moved, since `unix` is part of a
   version's identity. Existing tables cannot be appended to and are rebuilt.
 
+## How market rows are laid out
+
+`unix_hour` is the only partition, and `instrument_code` is deliberately not a
+second one. The case for bucketing it is real -- the hour prunes time and not
+instrument, so a scan for one instrument across a week opens every hour's
+files -- so it was measured rather than argued.
+
+144,000 rows across 72 hours and 40 instruments, one instrument's whole week
+against one hour, best of five:
+
+| layout | files | mean file | one instrument, one week | one hour |
+| --- | ---: | ---: | ---: | ---: |
+| `unix_hour` alone | 72 | 76.0 KiB | 632 ms | 24 ms |
+| `unix_hour` + `bucket[8]` | 576 | 28.5 KiB | 650 ms | 165 ms |
+| `unix_hour` + `bucket[16]` | 1,152 | 25.0 KiB | 671 ms | 320 ms |
+
+Bucketing loses on the query it was meant to win. The reason is that a bucket
+prunes files *inside* an hour, and a scan across N hours still opens at least
+one file per hour -- so the work does not fall, while the file count
+multiplies by the bucket width and the hourly read every consumer writes gets
+seven to thirteen times slower.
+
+A narrower bucket, or a `truncate` transform on the code's prefix, moves the
+numbers but not the shape of the argument: the cost being paid is per file
+per hour, and no transform on the instrument reduces the number of hours. If
+one-instrument scans ever do need to be fast, the answer is a sort order or a
+secondary table keyed on the instrument, not a partition on it.
+
 ## Orders and executions
 
 `Order.qty` is the remaining live quantity after that event. New orders carry
