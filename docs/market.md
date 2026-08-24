@@ -6,7 +6,8 @@ xhash)` relations between order, execution, and book lifecycles. Links are
 deduplicated and never point to the event's own lifecycle. Parsed logs retain
 FIX wire order as `msg_seq_num`; normalized market events do not repeat it.
 
-`MarketEvent` adds `instrument_xhash`, kind, side, price, quantity, notional,
+`MarketEvent` adds `instrument_xhash` and its readable `instrument_code`,
+kind, side, price, quantity, notional,
 currency, and their previous values. Protocol spelling stays in metadata while
 the stored fields use common semantics.
 

@@ -54,7 +54,7 @@ class Tick(Convertible):
     """Payload."""
 
 
-DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
+PLUGINS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
 LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
 TRACE = b"java.lang.IllegalStateException: synthetic\n\tat com.example.A.b(A.java:1)\n"
 
@@ -90,7 +90,7 @@ def generate(path: pathlib.Path, rows: int, days: int) -> int:
                     micro // 1000,
                     micro % 1000,
                     72500 + i % 8,
-                    DRIVERS[i % len(DRIVERS)],
+                    PLUGINS[i % len(PLUGINS)],
                     LEVELS[i % len(LEVELS)],
                 )
             )
@@ -439,12 +439,12 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
             (
                 "partition, 3 columns",
                 f"unix_hour = {hour}",
-                ["unix", "driver_name", "message"],
+                ["unix", "plugin_code", "message"],
                 None,
             ),
-            ("3 columns, no filter", None, ["unix", "driver_name", "message"], None),
+            ("3 columns, no filter", None, ["unix", "plugin_code", "message"], None),
             ("correlated column", f"unix < {third_day}", None, None),
-            ("no stats to prune on", "driver_name = 'ULBridge'", None, None),
+            ("no stats to prune on", "plugin_code = 'ULBridge'", None, None),
             ("narrow shape (pushdown)", None, None, narrow_field()),
             ("narrow shape, store widths", None, None, "stored"),
         ]
@@ -929,7 +929,7 @@ def stored_narrow(target: IcebergDataset) -> Any:
 
     schema = target.table_field.into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema([schema.field(name) for name in ("unix", "driver_name", "message")]),
+        pyarrow.schema([schema.field(name) for name in ("unix", "plugin_code", "message")]),
         "Narrow",
     )
 
@@ -940,7 +940,7 @@ def narrow_field() -> Any:
 
     schema = Log.into_field().into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema([schema.field(name) for name in ("unix", "driver_name", "message")]),
+        pyarrow.schema([schema.field(name) for name in ("unix", "plugin_code", "message")]),
         "Narrow",
     )
 

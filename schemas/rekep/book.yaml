@@ -128,9 +128,11 @@ fields:
   description: Why this event was rejected or could not be interpreted, when known.
 - name: instrument_xhash
   type: int64
-  description: Instrument lifecycle identity used to join and partition market rows.
-  metadata:
-    iceberg:partition_key: bucket[16]
+  description: Instrument lifecycle identity used to join market rows.
+- name: instrument_code
+  type: string
+  description: Readable spelling of the instrument `instrument_xhash` names; empty
+    when unstated.
 - name: kind
   type: int32
   description: Standard market semantic, independent of its protocol spelling.
@@ -514,8 +516,11 @@ fields:
       description: Why this event was rejected or could not be interpreted, when known.
     - name: instrument_xhash
       type: int64
-      description: Instrument lifecycle identity used to join and partition market
-        rows.
+      description: Instrument lifecycle identity used to join market rows.
+    - name: instrument_code
+      type: string
+      description: Readable spelling of the instrument `instrument_xhash` names; empty
+        when unstated.
     - name: kind
       type: int32
       description: Standard market semantic, independent of its protocol spelling.
@@ -938,8 +943,11 @@ fields:
       description: Why this event was rejected or could not be interpreted, when known.
     - name: instrument_xhash
       type: int64
-      description: Instrument lifecycle identity used to join and partition market
-        rows.
+      description: Instrument lifecycle identity used to join market rows.
+    - name: instrument_code
+      type: string
+      description: Readable spelling of the instrument `instrument_xhash` names; empty
+        when unstated.
     - name: kind
       type: int32
       description: Standard market semantic, independent of its protocol spelling.
@@ -1407,8 +1415,11 @@ fields:
       description: Why this event was rejected or could not be interpreted, when known.
     - name: instrument_xhash
       type: int64
-      description: Instrument lifecycle identity used to join and partition market
-        rows.
+      description: Instrument lifecycle identity used to join market rows.
+    - name: instrument_code
+      type: string
+      description: Readable spelling of the instrument `instrument_xhash` names; empty
+        when unstated.
     - name: kind
       type: int32
       description: Standard market semantic, independent of its protocol spelling.
@@ -1831,8 +1842,11 @@ fields:
       description: Why this event was rejected or could not be interpreted, when known.
     - name: instrument_xhash
       type: int64
-      description: Instrument lifecycle identity used to join and partition market
-        rows.
+      description: Instrument lifecycle identity used to join market rows.
+    - name: instrument_code
+      type: string
+      description: Readable spelling of the instrument `instrument_xhash` names; empty
+        when unstated.
     - name: kind
       type: int32
       description: Standard market semantic, independent of its protocol spelling.

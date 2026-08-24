@@ -109,10 +109,7 @@ def test_every_market_code_column_of_every_shape_is_int32() -> None:
 
 def test_the_instrument_is_one_flat_event_contract() -> None:
     assert Instrument.into_field().primary_keys() == ["unix", "hash"]
-    assert Instrument.into_field().partition_keys() == {
-        "unix_hour": "identity",
-        "xhash": "bucket[16]",
-    }
+    assert Instrument.into_field().partition_keys() == {"unix_hour": "identity"}
     for shape in (Book, Order, MarketEvent):
         assert "instrument" not in shape.into_field().names
 
@@ -122,10 +119,7 @@ def test_the_shape_that_owns_the_table_keeps_its_own_keys() -> None:
     for shape in SHAPES:
         assert shape.into_field().primary_keys(), shape.__name__
     assert Book.into_field().primary_keys() == ["unix", "hash"]
-    assert Book.into_field().partition_keys() == {
-        "unix_hour": "identity",
-        "instrument_xhash": "bucket[16]",
-    }
+    assert Book.into_field().partition_keys() == {"unix_hour": "identity"}
     assert Book.into_field().sort_keys() == {"unix": "asc"}
 
 

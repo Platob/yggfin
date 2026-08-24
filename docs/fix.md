@@ -152,7 +152,7 @@ and says which of four things each one is:
 
 ```bash
 rekep fix classify --source /captures/brk --store data/fix \
-    --drivers '^UL' --report brk.json
+    --plugins '^UL' --report brk.json
 rekep fix apply --store data/fix --report brk.json --aliases --minimum 50
 ```
 

@@ -93,14 +93,14 @@ def logs(tmp_path: Path) -> IcebergDataset:
 #: the message carries once flattened into columns of their own, and the party
 #: repeating party group extracted as a list of structured entries.
 FIX_LINE = Log(
-    url="a.txt",
+    source_url="a.txt",
     unix=1_786_665_901_167_520_000,
     hash=3,
     xhash=3,
     code="ORD-1",
     etype=EventType.ORDER,
     thread_name="t",
-    driver_name="d",
+    plugin_code="d",
     message="sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|11=ORD-1|55=TTF|10=203|",
     protocol="FIX",
     kwargs=[],

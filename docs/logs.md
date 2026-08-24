@@ -20,9 +20,11 @@ reader = source.read_arrow_reader(
 )
 ```
 
-Header parsing extracts the timestamp, thread, driver, level, and message.
+Header parsing extracts the timestamp, thread, plugin, level, and message.
 Continuation lines may be folded into the prior event. Compression is inferred
-from the filename by Arrow.
+from the filename by Arrow. Every row keeps where it was read from:
+`source_url` names the file and `source_rownum` the 1-based physical line its
+header sat on, so a folded continuation does not shift the rows after it.
 
 ## Parsed record
 

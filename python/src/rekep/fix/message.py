@@ -118,7 +118,7 @@ BRIDGE = rf"(?s){_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}"
 
 #: `BRIDGE` with the message after it captured: where a bridge message starts
 #: inside a log line, exactly as `_BEGIN_VECTOR` says where a wire message
-#: does. `toBridge #ISINCODE=x|#SIDE=1` carries the driver's own prefix, and
+#: does. `toBridge #ISINCODE=x|#SIDE=1` carries the plugin's own prefix, and
 #: without a start marker the first key would be `toBridge #ISINCODE`.
 _BRIDGE_VECTOR = rf"(?s)(?P<msg>{_BRIDGE_TOKEN}.*{_BRIDGE_TOKEN}.*)"
 

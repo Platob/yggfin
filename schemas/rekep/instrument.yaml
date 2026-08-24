@@ -65,8 +65,6 @@ fields:
 - name: xhash
   type: int64
   description: Digest of the exact `symbol`; zero when the symbol is empty.
-  metadata:
-    iceberg:partition_key: bucket[16]
 - name: linked_events
   type: list
   description: Related event times and lifecycle identities, primary match first.

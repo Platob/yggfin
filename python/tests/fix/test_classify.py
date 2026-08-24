@@ -150,16 +150,16 @@ def test_a_reader_of_batches_is_counted_one_batch_at_a_time() -> None:
     batch = pyarrow.record_batch(
         {
             "message": pyarrow.array(["toBridge #CLORDID=ORD-TEST-01|#SIDE=1"] * 3),
-            "driver_name": pyarrow.array(["ULBridge", "ULFilter", "OMSSales"]),
+            "plugin_code": pyarrow.array(["ULBridge", "ULFilter", "OMSSales"]),
         }
     )
     assert count_reader(batch).lines == 3
-    filtered = count_reader(batch, drivers="^UL")
-    assert filtered.lines == 2, "the driver filter is applied before anything is parsed"
+    filtered = count_reader(batch, plugins="^UL")
+    assert filtered.lines == 2, "the plugin filter is applied before anything is parsed"
 
 
 def test_a_batch_with_no_message_column_is_refused() -> None:
-    batch = pyarrow.record_batch({"driver_name": pyarrow.array(["ULBridge"])})
+    batch = pyarrow.record_batch({"plugin_code": pyarrow.array(["ULBridge"])})
     with pytest.raises(ValueError, match="needs a 'message' column"):
         count_reader(batch)
 

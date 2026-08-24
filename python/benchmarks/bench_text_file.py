@@ -45,7 +45,7 @@ from rekep.fix.message import (  # noqa: E402
 from rekep.text import TextFile, TextFiles  # noqa: E402
 from rekep.text.text_file import DEFAULT_BATCH_ROW_SIZE  # noqa: E402
 
-DRIVERS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
+PLUGINS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
 LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
 TRACE = b"java.lang.IllegalStateException: synthetic\n\tat com.example.A.b(A.java:1)\n"
 
@@ -75,7 +75,7 @@ def generate(path: pathlib.Path, rows: int, trace_every: int = 200, start: int =
                     micro // 1000,
                     micro % 1000,
                     72500 + i % 8,
-                    DRIVERS[i % len(DRIVERS)],
+                    PLUGINS[i % len(PLUGINS)],
                     LEVELS[i % len(LEVELS)],
                 )
             )
@@ -415,7 +415,7 @@ def capture(path: pathlib.Path, rows: int, seed: int = 5) -> tuple[int, list[str
                     micro // 1000,
                     micro % 1000,
                     72500 + i % 8,
-                    DRIVERS[i % len(DRIVERS)],
+                    PLUGINS[i % len(PLUGINS)],
                     LEVELS[i % len(LEVELS)],
                 )
             )

@@ -41,8 +41,8 @@ class Rule(Convertible):
     pattern: str = ""
     """First message regex; empty with no `patterns` matches every line."""
 
-    driver_pattern: str | None = None
-    """Matched against `driver_name` as well, when the driver is what tells them apart."""
+    plugin_pattern: str | None = None
+    """Matched against `plugin_code` as well, when the plugin is what tells them apart."""
 
     separator: str | None = None
     """What the message writes between fields; null detects it per column."""
@@ -66,15 +66,15 @@ class Rule(Convertible):
         """What `parse_arrow_array`'s `named` is for this rule; None is "no message"."""
         return NAMED.get(self.codec)
 
-    def matches(self, message: str | None, driver: str | None = None) -> bool:
-        """Whether one line matches; unavailable message or driver data does not."""
+    def matches(self, message: str | None, plugin: str | None = None) -> bool:
+        """Whether one line matches; unavailable message or plugin data does not."""
         if message is None:
             return False
         patterns = self.message_patterns
         if patterns and not any(_compiled(pattern).search(message) for pattern in patterns):
             return False
-        if self.driver_pattern:
-            if driver is None or _compiled(self.driver_pattern).search(driver) is None:
+        if self.plugin_pattern:
+            if plugin is None or _compiled(self.plugin_pattern).search(plugin) is None:
                 return False
         return True
 
@@ -130,10 +130,10 @@ class Rules(Convertible):
     #: Rules in the order they are tried.
     rules: list[Rule] = dataclasses.field(default_factory=_default_rules)
 
-    def categorise(self, message: str | None, driver: str | None = None) -> Rule:
+    def categorise(self, message: str | None, plugin: str | None = None) -> Rule:
         """The first rule `message` matches, or `OTHER`."""
         for rule in self.rules:
-            if rule.matches(message, driver):
+            if rule.matches(message, plugin):
                 return rule
         return OTHER
 
@@ -162,7 +162,7 @@ class Rules(Convertible):
         """Recognised protocol names, excluding the fall-through value."""
         return frozenset(rule.protocol for rule in self.rules if rule.protocol != NO_PROTOCOL)
 
-    def into_arrow_protocol_array(self, messages: Any, drivers: Any = None) -> pyarrow.Array:
+    def into_arrow_protocol_array(self, messages: Any, plugins: Any = None) -> pyarrow.Array:
         """What each row carries, in kernels: one `protocol` name per line."""
         compute = pyarrow.compute
         rows = len(messages)
@@ -170,9 +170,9 @@ class Rules(Convertible):
         if not rows:
             return found
         text = messages.cast(pyarrow.string(), safe=False)
-        driver_text = None if drivers is None else drivers.cast(pyarrow.string(), safe=False)
+        plugin_text = None if plugins is None else plugins.cast(pyarrow.string(), safe=False)
         for rule in reversed(self.rules):
-            hit = _hit(rule, text, driver_text)
+            hit = _hit(rule, text, plugin_text)
             if hit is None:
                 continue
             found = compute.if_else(hit, pyarrow.scalar(rule.protocol, pyarrow.string()), found)
@@ -206,7 +206,7 @@ class Rules(Convertible):
         )
 
 
-def _hit(rule: Rule, text: Any, drivers: Any) -> Any:
+def _hit(rule: Rule, text: Any, plugins: Any) -> Any:
     """One rule's mask over a whole column."""
     compute = pyarrow.compute
     message_mask = None
@@ -216,11 +216,11 @@ def _hit(rule: Rule, text: Any, drivers: Any) -> Any:
     mask = compute.is_valid(text)
     if message_mask is not None:
         mask = compute.and_(mask, message_mask)
-    if rule.driver_pattern:
-        if drivers is None:
+    if rule.plugin_pattern:
+        if plugins is None:
             return pyarrow.repeat(False, len(text))
         matched = compute.fill_null(
-            compute.match_substring_regex(drivers, rule.driver_pattern), False
+            compute.match_substring_regex(plugins, rule.plugin_pattern), False
         )
         mask = compute.and_(mask, matched)
     return mask

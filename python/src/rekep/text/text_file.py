@@ -33,10 +33,10 @@ from rekep.urls import Url
 #: payload to `message`::
 #:
 #:     2026-08-14 00:05:01.167_520 [77-e72:9ef:72503] [ModuleFoo] (DEBUG) Found code
-#:     ^timestamp                  ^thread_name       ^driver_name ^level ^message
+#:     ^timestamp                  ^thread_name       ^plugin_code ^level ^message
 #:
-#: `level` is optional -- some drivers print none -- and the fractional second
-#: is **millis, and micros after them when the driver prints any**: the same
+#: `level` is optional -- some plugins print none -- and the fractional second
+#: is **millis, and micros after them when the plugin prints any**: the same
 #: capture writes `01.147`, `01,147`, `01.147250` and `01.147_250`, because one
 #: capture is written by several loggers and they do not agree. Matching is
 #: done on bytes so lines never have to be decoded just to be classified; a
@@ -45,7 +45,7 @@ HEADER_PATTERN = re.compile(
     rb"^[ \t]*"
     rb"(?P<timestamp>\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[.,]\d{3}(?:[._,]?\d{3})?)[ \t]+"
     rb"\[(?P<thread_name>[^\]]*)\][ \t]+"
-    rb"\[(?P<driver_name>[^\]]*)\][ \t]*"
+    rb"\[(?P<plugin_code>[^\]]*)\][ \t]*"
     rb"(?:\((?P<level>[A-Za-z]{1,12})\)[ \t]*)?"
     rb"(?P<message>.*)$",
     re.DOTALL,
@@ -80,7 +80,7 @@ DEFAULT_BATCH_ROW_SIZE = 65_536
 DEFAULT_READ_BYTE_SIZE = 1 << 22
 
 # Columns a line physically carries; the rest of the parsed row is derived.
-_RENDERED = ("unix", "thread_name", "driver_name", "message")
+_RENDERED = ("unix", "thread_name", "plugin_code", "message")
 
 
 @dataclass(eq=False)
@@ -339,35 +339,45 @@ class TextFile(Dataset, io.BufferedIOBase):
         """
         groups = self.header_pattern.groupindex
         indices = tuple(
-            groups[name] for name in ("timestamp", "thread_name", "driver_name", "message")
+            groups[name] for name in ("timestamp", "thread_name", "plugin_code", "message")
         )
         rows: list[tuple[bytes, bytes | None, bytes | None, bytes | None]] = []
         hashes: list[int] = []
+        # Physical lines, not parsed rows: a folded continuation must not shift
+        # the number every row after it reports.
+        rownums: list[int] = []
+        rownum = 0
         match_header = self.header_pattern.match
 
         for line in self._iter_lines(read_byte_size):
+            rownum += 1
             match = match_header(line)
             if match is None:
                 if fold_continuations and rows:
-                    timestamp, thread, driver, message = rows[-1]
-                    rows[-1] = (timestamp, thread, driver, (message or b"") + b"\n" + line)
+                    timestamp, thread, plugin, message = rows[-1]
+                    rows[-1] = (timestamp, thread, plugin, (message or b"") + b"\n" + line)
                 continue
             rows.append(match.group(*indices))
             # A fallback digest here differed between environments, so one row
             # could be stored twice under two keys. `xxhash` is a hard dependency.
             hashes.append(hash_bytes(line))
+            rownums.append(rownum)
             # One row past the size, not at it: a continuation belongs to the
             # row above it, and cutting the batch the moment that row is
             # complete puts it out of reach of the next line. A stack trace
             # that happens to land on the boundary would be dropped, silently,
             # at any batch size -- including the default one.
             if len(rows) > batch_row_size:
-                yield self._batch(rows[:batch_row_size], hashes[:batch_row_size])
-                del rows[:batch_row_size], hashes[:batch_row_size]
+                yield self._batch(
+                    rows[:batch_row_size], hashes[:batch_row_size], rownums[:batch_row_size]
+                )
+                del rows[:batch_row_size], hashes[:batch_row_size], rownums[:batch_row_size]
         if rows:
-            yield self._batch(rows, hashes)
+            yield self._batch(rows, hashes, rownums)
 
-    def _batch(self, rows: list[tuple], hashes: list[int]) -> pyarrow.RecordBatch:
+    def _batch(
+        self, rows: list[tuple], hashes: list[int], rownums: list[int]
+    ) -> pyarrow.RecordBatch:
         """One batch of parsed lines, as the `Event` columns a `Log` is.
 
         Assembled **by name** and then ordered by the schema, rather than as a
@@ -376,7 +386,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         one. The dict costs twenty-odd entries per batch against sixty-five
         thousand rows.
         """
-        timestamps, threads, drivers, messages = zip(*rows, strict=True)
+        timestamps, threads, plugins, messages = zip(*rows, strict=True)
         count = len(rows)
         local = _local_micros(timestamps)
         unix = _unix_nanos(local, self.timezone)
@@ -406,12 +416,13 @@ class TextFile(Dataset, io.BufferedIOBase):
             "parent_hash": pyarrow.nulls(count, PARENTS),
             "mic": pyarrow.nulls(count, pyarrow.int32()),
             "reason": pyarrow.nulls(count, pyarrow.string()),
-            "url": pyarrow.repeat(self.url, count),
+            "source_url": pyarrow.repeat(self.url, count),
+            "source_rownum": pyarrow.array(rownums, type=pyarrow.int64()),
             "thread_name": _utf8(threads),
-            "driver_name": _utf8(drivers),
+            "plugin_code": _utf8(plugins),
             "message": message,
         }
-        for name, column in self._message_columns(message, columns["driver_name"], count).items():
+        for name, column in self._message_columns(message, columns["plugin_code"], count).items():
             if name in columns:
                 column = pyarrow.compute.coalesce(
                     cast_arrow_fix(column, columns[name].type), columns[name]
@@ -460,7 +471,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             schema=schema,
         )
 
-    def _message_columns(self, messages: Any, drivers: Any, count: int) -> dict[str, Any]:
+    def _message_columns(self, messages: Any, plugins: Any, count: int) -> dict[str, Any]:
         """What a message fills: which protocol it is, its fields, its columns.
 
         A batch mixes protocols and dictionary versions, and both are read per
@@ -469,7 +480,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         """
         del count
         compute = pyarrow.compute
-        protocols = self.codec.categorise(messages, drivers)
+        protocols = self.codec.categorise(messages, plugins)
         parts = []
         for name, slice_, where in _grouped(protocols, messages):
             pairs = self.codec.into_pairs(slice_, name.as_py())
@@ -589,7 +600,7 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
         " [",
         rows.column("thread_name").cast(pyarrow.string()),
         "] [",
-        rows.column("driver_name").cast(pyarrow.string()),
+        rows.column("plugin_code").cast(pyarrow.string()),
         "] ",
         rows.column("message").cast(pyarrow.string()),
         "",

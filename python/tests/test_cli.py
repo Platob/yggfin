@@ -116,8 +116,8 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     """
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "log.yaml")) == 0
     printed = capsys.readouterr().out
-    assert len(Log.into_field().names) == 103
-    assert "Log: 103 columns, builds" in printed
+    assert len(Log.into_field().names) == 104
+    assert "Log: 104 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unix_hour: int64  [partition identity]" in printed
     assert (

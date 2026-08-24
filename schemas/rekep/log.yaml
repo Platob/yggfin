@@ -127,13 +127,17 @@ fields:
   type: string
   nullable: true
   description: Why this event was rejected or could not be interpreted, when known.
-- name: url
+- name: source_url
   type: string
   description: Path of the log the line came from, as its filesystem addresses it.
+- name: source_rownum
+  type: int64
+  description: 1-based line number of this row's header line in `source_url`; 0 when
+    unread.
 - name: thread_name
   type: string
   description: Contents of the first bracketed field.
-- name: driver_name
+- name: plugin_code
   type: string
   description: Contents of the second bracketed field -- the emitting module.
 - name: message

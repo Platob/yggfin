@@ -105,7 +105,7 @@ def test_header_pattern_splits_a_row() -> None:
     assert match is not None
     assert match["timestamp"] == b"2026-08-14 00:05:01.147_250"
     assert match["thread_name"] == b"250-e7256476:9effef3e6a:72505"
-    assert match["driver_name"] == b"OMSSales_Enrichment"
+    assert match["plugin_code"] == b"OMSSales_Enrichment"
     assert match["level"] == b"DEBUG"
     assert match["message"].startswith(b"-> [5] {trade")
 
@@ -303,9 +303,10 @@ def test_reads_whole_log_whatever_the_encoding(
 #: tail is what a reader selects by name and a column that was renamed, moved
 #: or quietly dropped is invisible to a count.
 LINE_COLUMNS = [
-    "url",
+    "source_url",
+    "source_rownum",
     "thread_name",
-    "driver_name",
+    "plugin_code",
     "message",
     "protocol",
     "msg_seq_num",
@@ -391,8 +392,8 @@ LINE_COLUMNS = [
 ]
 
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LINE_COLUMNS = 85
-EXPECTED_LOG_COLUMNS = 103
+EXPECTED_LINE_COLUMNS = 86
+EXPECTED_LOG_COLUMNS = 104
 
 
 def test_schema(plain: Path) -> None:
@@ -647,10 +648,10 @@ def test_first_row(plain: Path) -> None:
         url = log.url
 
     first = table.slice(0, 1).to_pylist()[0]
-    assert first["url"] == url
+    assert first["source_url"] == url
     assert first["unix"] == FIRST_UNIX
     assert first["thread_name"] == "250-e7256476:9effef3e6a:72505"
-    assert first["driver_name"] == "OMSSales_Enrichment"
+    assert first["plugin_code"] == "OMSSales_Enrichment"
     assert first["message"].startswith("-> [5] {trade")
 
 
@@ -680,7 +681,41 @@ def test_unix_is_total_nanos_since_epoch(plain: Path) -> None:
 def test_url_column_identifies_the_source(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_table()
-        assert set(table.column("url").to_pylist()) == {log.url}
+        assert set(table.column("source_url").to_pylist()) == {log.url}
+
+
+def test_source_rownum_counts_physical_lines_so_a_fold_shifts_nothing() -> None:
+    """The number has to address the file: `sed -n '<n>p' <source_url>` is the row."""
+    lines = SAMPLE_BYTES.split(b"\n")
+    expected = [
+        index for index, line in enumerate(lines, start=1) if HEADER_PATTERN.match(line)
+    ]
+    assert len(expected) == EXPECTED_RECORDS
+
+
+def test_source_rownum_points_back_at_the_line_that_was_parsed(tmp_path: Path) -> None:
+    path = tmp_path / "folded.txt"
+    path.write_text(
+        "2026-08-14 00:05:01.147 [t] [d] (INFO) first\n"
+        "\tat com.example.Wrapped.evaluate(Wrapped.java:1)\n"
+        "\tat com.example.Wrapped.evaluate(Wrapped.java:2)\n"
+        "2026-08-14 00:05:02.147 [t] [d] (INFO) second\n"
+    )
+    with TextFile.from_path(path) as log:
+        table = log.read_arrow_table()
+    assert table.column("source_rownum").to_pylist() == [1, 4]
+    assert set(table.column("source_url").to_pylist()) == {log.url}
+
+
+def test_a_batch_boundary_keeps_every_rownum_with_its_own_row(tmp_path: Path) -> None:
+    """The counter runs over the whole file, not over one batch of it."""
+    path = tmp_path / "many.txt"
+    path.write_text(
+        "".join(f"2026-08-14 00:05:{i // 60:02d}.147 [t] [d] (INFO) {i}\n" for i in range(10))
+    )
+    with TextFile.from_path(path) as log:
+        table = log.read_arrow_table(batch_row_size=3)
+    assert table.column("source_rownum").to_pylist() == list(range(1, 11))
 
 
 def test_the_digest_is_per_line_and_a_signed_int64(plain: Path) -> None:
@@ -780,7 +815,7 @@ def test_custom_header_pattern(tmp_path: Path) -> None:
     bundled offsets.
     """
     pattern = re.compile(
-        rb"^(?P<timestamp>\S+)\|(?P<thread_name>[^|]*)\|(?P<driver_name>[^|]*)\|(?P<message>.*)$",
+        rb"^(?P<timestamp>\S+)\|(?P<thread_name>[^|]*)\|(?P<plugin_code>[^|]*)\|(?P<message>.*)$",
         re.DOTALL,
     )
     path = tmp_path / "custom.txt"
@@ -979,7 +1014,7 @@ def test_a_crlf_log_parses_identically(plain: Path, tmp_path: Path) -> None:
     crlf.write_bytes(SAMPLE_BYTES.replace(b"\n", b"\r\n"))
     with TextFile(url=plain.as_uri()) as a, TextFile(url=crlf.as_uri()) as b:
         left, right = a.into_arrow_table(), b.into_arrow_table()
-    assert left.drop_columns("url").equals(right.drop_columns("url"))
+    assert left.drop_columns("source_url").equals(right.drop_columns("source_url"))
 
 
 # -- timezone: the wall clock is local, the instant is not ----------------
@@ -1193,7 +1228,7 @@ def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> N
 
     again = TextFile.from_path(tmp_path / "written.txt").read_arrow_table()
     assert again.num_rows == source.num_rows
-    for column in ("unix", "unix_hour", "thread_name", "driver_name", "message"):
+    for column in ("unix", "unix_hour", "thread_name", "plugin_code", "message"):
         assert again.column(column).to_pylist() == source.column(column).to_pylist(), column
 
 
@@ -1226,7 +1261,7 @@ def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
             "unix": pyarrow.array([1_786_665_901_147_250_000], pyarrow.int64()),
             "message": ["hello"],
             "thread_name": ["t"],
-            "driver_name": ["d"],
+            "plugin_code": ["d"],
             "noise": ["dropped"],
         }
     )
@@ -1234,7 +1269,7 @@ def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
     target.write_arrow(batch)
     parsed = target.read_arrow_table()
     assert parsed.column("message").to_pylist() == ["hello"]
-    assert parsed.column("driver_name").to_pylist() == ["d"]
+    assert parsed.column("plugin_code").to_pylist() == ["d"]
 
 
 def test_a_text_file_cannot_merge(tmp_path: Path) -> None:

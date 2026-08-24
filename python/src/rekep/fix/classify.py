@@ -120,17 +120,17 @@ class KeyCounts(Convertible):
     lines: int = 0
     messages: int = 0
 
-    def add_messages(self, messages: Any, drivers: Any = None, source: str = "") -> KeyCounts:
+    def add_messages(self, messages: Any, plugins: Any = None, source: str = "") -> KeyCounts:
         """Count one batch of raw log lines, and keep only what it spelled."""
         compute = pyarrow.compute
         if isinstance(messages, pyarrow.ChunkedArray):
             messages = messages.combine_chunks()
-        if isinstance(drivers, pyarrow.ChunkedArray):
-            drivers = drivers.combine_chunks()
+        if isinstance(plugins, pyarrow.ChunkedArray):
+            plugins = plugins.combine_chunks()
         self.lines += len(messages)
         if not len(messages):
             return self
-        protocols = self.rules.into_arrow_protocol_array(messages, drivers)
+        protocols = self.rules.into_arrow_protocol_array(messages, plugins)
         for category, where in groups_of(protocols):
             protocol = category.as_py()
             if self.rules.rule(protocol).named is None:
@@ -448,19 +448,19 @@ def count_reader(
     counts: KeyCounts | None = None,
     *,
     source: str = "",
-    drivers: str | None = None,
+    plugins: str | None = None,
 ) -> KeyCounts:
     """Count every key name a `RecordBatchReader` of parsed lines spelled.
 
     One batch at a time, and only the counts are kept: the batch that carried
     a value is released before the next one is read.
 
-    `drivers` is a regular expression the line's `driver_name` must match --
-    `^UL` for a bridge's own traffic -- so a report can be about the drivers
+    `plugins` is a regular expression the line's `plugin_code` must match --
+    `^UL` for a bridge's own traffic -- so a report can be about the plugins
     that matter rather than about a whole estate.
     """
     counted = counts if counts is not None else KeyCounts()
-    pattern = re.compile(drivers, re.ASCII) if drivers else None
+    pattern = re.compile(plugins, re.ASCII) if plugins else None
     for batch in _batches(reader):
         messages, named = _columns(batch)
         if pattern is not None and named is not None:
@@ -492,12 +492,12 @@ def _batches(reader: Any) -> Iterator[pyarrow.RecordBatch]:
 
 
 def _columns(batch: pyarrow.RecordBatch) -> tuple[Any, Any]:
-    """The message column and the driver column, by the names a `Log` uses."""
+    """The message column and the plugin column, by the names a `Log` uses."""
     names = batch.schema.names
     if "message" not in names:
         raise ValueError(f"a batch of log lines needs a 'message' column; got {names}")
     return batch.column("message"), (
-        batch.column("driver_name") if "driver_name" in names else None
+        batch.column("plugin_code") if "plugin_code" in names else None
     )
 
 
@@ -507,7 +507,7 @@ def count_files(
     *,
     pattern: str = "*",
     recursive: bool = True,
-    drivers: str | None = None,
+    plugins: str | None = None,
     batch_row_size: int = 65536,
     limit: int | None = None,
 ) -> KeyCounts:
@@ -518,7 +518,7 @@ def count_files(
     counted = counts if counts is not None else KeyCounts()
     for opened in files.into_files():
         for batch in opened.into_arrow_batches(batch_row_size=batch_row_size):
-            counted = count_reader(batch, counted, source=_source_of(opened.url), drivers=drivers)
+            counted = count_reader(batch, counted, source=_source_of(opened.url), plugins=plugins)
             if limit is not None and counted.lines >= limit:
                 return counted
     return counted

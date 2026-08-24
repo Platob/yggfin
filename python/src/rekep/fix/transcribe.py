@@ -243,9 +243,9 @@ class FixCodec(Convertible):
 
     # -- the seam -----------------------------------------------------------
 
-    def categorise(self, messages: Any, drivers: Any = None) -> Any:
+    def categorise(self, messages: Any, plugins: Any = None) -> Any:
         """One `protocol` name per row, in kernels."""
-        return self.rules.into_arrow_protocol_array(messages, drivers)
+        return self.rules.into_arrow_protocol_array(messages, plugins)
 
     def into_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
         """One `map<string, string>` per row: the message as the line spells it."""

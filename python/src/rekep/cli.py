@@ -254,7 +254,7 @@ def classify_keys(arguments: argparse.Namespace) -> int:
         arguments.source,
         pattern=arguments.pattern,
         recursive=not arguments.flat,
-        drivers=arguments.drivers,
+        plugins=arguments.plugins,
         limit=arguments.limit,
     )
     report = classify(counts, registry)
@@ -394,9 +394,9 @@ def _parser() -> argparse.ArgumentParser:
         "--flat", action="store_true", help="read only --source itself, not what is under it"
     )
     counting.add_argument(
-        "--drivers",
+        "--plugins",
         default=None,
-        help="a regular expression a line's driver_name must match, for instance ^UL",
+        help="a regular expression a line's plugin_code must match, for instance ^UL",
     )
     counting.add_argument(
         "--limit", type=int, default=None, help="stop after this many lines, for a sample"

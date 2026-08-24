@@ -39,7 +39,7 @@ ENVELOPE = [
     "reason",
 ]
 SOURCE: list[str] = []
-LINE = ["url", "thread_name", "driver_name", "message"]
+LINE = ["source_url", "source_rownum", "thread_name", "plugin_code", "message"]
 MESSAGE = [
     "protocol",
     "msg_seq_num",
@@ -61,7 +61,7 @@ ADDED_COLUMNS = [
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 26
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LOG_COLUMNS = 103
+EXPECTED_LOG_COLUMNS = 104
 
 
 @pytest.fixture(scope="module")
@@ -90,7 +90,7 @@ def test_the_envelope_is_the_same_one_every_other_event_carries() -> None:
 
 
 def test_every_column_a_line_adds_is_required() -> None:
-    """A line always has a file, a thread, a driver and a payload, even an empty one."""
+    """A line always has a file, a thread, a plugin and a payload, even an empty one."""
     for name in LINE:
         assert not Log.into_field().field(name).nullable, name
 
@@ -235,13 +235,13 @@ def _stored(tag: int, key: str, value: str) -> dict[str, object]:
 def test_a_row_round_trips_as_a_document() -> None:
     """The message layer preserves checksums and repeated ordered pairs."""
     row = Log(
-        url="a.txt",
+        source_url="a.txt",
         unix=2,
         hash=3,
         xhash=3,
         etype=EventType.ORDER,
         thread_name="t",
-        driver_name="d",
+        plugin_code="d",
         message="m",
         protocol="FIX",
         kwargs=[_stored(11, "ClOrdID", one) for one in ("ORD-1", "ORD-1-again")]
