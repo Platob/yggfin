@@ -93,8 +93,9 @@ def test_a_panel_is_measured_on_the_text_and_not_on_the_escapes() -> None:
     assert len(widths) > 1, "the coloured row is longer in bytes than the borders"
     plain = io.StringIO()
     Console(stream=plain, colour=False).panel("title", ["row"])
-    borders = plain.getvalue().splitlines()
-    assert len(borders[0]) == len(borders[-1]), "and the box itself is square"
+    lines = plain.getvalue().splitlines()
+    assert len({len(line) for line in lines}) == 1, "and every line of the box is one width"
+    assert all(line[0] and line[-1] not in " " for line in lines), "closed on both sides"
 
 
 def test_a_spinner_writes_nothing_a_pipe_would_have_to_read() -> None:

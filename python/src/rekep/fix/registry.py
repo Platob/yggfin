@@ -794,9 +794,10 @@ class FixRegistry(Convertible):
         held = (fields or self._entries[0], components or self._entries[1])
         problems = _problems(held)
         if problems:
+            counted = f"{len(problems)} inconsistenc{'y' if len(problems) == 1 else 'ies'}"
             raise ValueError(
-                f"this change would leave {len(problems)} inconsistencies in the registry, "
-                "so nothing was written: " + "; ".join(problems)
+                f"this change would leave {counted} in the registry, so nothing was written: "
+                + "; ".join(problems)
             )
 
     # -- changing the layout --------------------------------------------------

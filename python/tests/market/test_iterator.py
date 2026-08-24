@@ -1309,6 +1309,15 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
     assert latest.executions[0].qty == 400.0
 
 
+def test_a_book_says_which_instrument_it_is_of_readably_and_by_hash() -> None:
+    """A hash joins and a person reads, so a book row carries both."""
+    events = _resting_stream()
+    assert [one.instrument_code for one in events] == [BTC.symbol, BTC.symbol]
+    books = list(BookIterator.from_events(events, snapshot_every=0))
+    assert {one.instrument_code for one in books} == {BTC.symbol}
+    assert {one.instrument_xhash for one in books} == {BTC.xhash}
+
+
 # -- what happens to what is still resting when the stream ends ---------------
 
 

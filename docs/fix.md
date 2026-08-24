@@ -214,16 +214,19 @@ one and which group each sits inside all come out of the tree. A
 `ComponentGroup` subclass adds only the shape:
 
 ```python
+@dataclasses.dataclass(eq=False)
 class TrdRegTimestamps(ComponentGroup):
-    component = "TrdRegTimestamps"
-    group = "NoTrdRegTimestamps"
+    component: str = "TrdRegTimestamps"
+    group: str = "NoTrdRegTimestamps"
 
     @classmethod
-    def into_row(cls):
+    @cache
+    def into_row(cls) -> type:
         return TrdRegTimestamp
 
     @classmethod
-    def into_projection(cls):
+    @cache
+    def into_projection(cls) -> tuple[tuple[str, str], ...]:
         return (
             ("trd_reg_timestamp", "TrdRegTimestamp"),
             ("trd_reg_timestamp_type", "TrdRegTimestampType"),
@@ -232,9 +235,10 @@ class TrdRegTimestamps(ComponentGroup):
 ```
 
 The parsed log carries two of them, `parties` and `trd_reg_timestamps`.
-`FixCodec.COMPONENTS` maps each column to its extractor and applies them in
-order against what the last one left, so a member lifted into one component's
-entries cannot also be lifted into another's.
+`FixCodec.into_components()` maps each column to its extractor and applies them
+in order against what the last one left, so a member lifted into one
+component's entries cannot also be lifted into another's. `into_fallback()` is
+the standard tags each reads when a store predates component declarations.
 
 The delimiter leads the projection because it is what opens an entry. Every
 member is lifted only where its value is one the column's type can hold, and

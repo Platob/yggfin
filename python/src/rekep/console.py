@@ -180,7 +180,13 @@ class Console:
         )
 
     def panel(self, title: str, rows: Sequence[str]) -> None:
-        """A titled box around `rows`, sized to the widest of them."""
+        """A titled box around `rows`, sized to the widest of them.
+
+        Every line is `inner + 4` wide -- two borders and the two spaces
+        inside them -- so the box closes on both sides. Widths are measured on
+        `_plain`, because a coloured row is longer in bytes than on screen and
+        measuring the bytes makes its own box three times too wide.
+        """
         glyph = self.glyph
         inner = max([len(_plain(row)) for row in rows] + [len(title) + 2, 8])
         inner = min(inner, max(self.width - 4, 8))
@@ -190,16 +196,14 @@ class Console:
             + " "
             + self.style(title, "bold", "bright_cyan")
             + " "
-            + self.style(bar * max(0, inner - len(title) - 2) + glyph("top_right"), "grey")
+            + self.style(bar * max(0, inner - len(title) - 1) + glyph("top_right"), "grey")
         )
         for row in rows:
             pad = " " * max(0, inner - len(_plain(row)))
-            self.line(self.style(glyph("vertical"), "grey") + " " + row + pad + " ")
-        # `inner + 1`: a row is a border, a space, `inner` characters and a
-        # space, and the title line spends the same on its two spaces. A box
-        # whose bottom is a character short is a box every reader notices.
+            edge = self.style(glyph("vertical"), "grey")
+            self.line(f"{edge} {row}{pad} {edge}")
         self.line(
-            self.style(glyph("bottom_left") + bar * (inner + 1) + glyph("bottom_right"), "grey")
+            self.style(glyph("bottom_left") + bar * (inner + 2) + glyph("bottom_right"), "grey")
         )
 
     def table(self, headers: Sequence[str], rows: Sequence[Sequence[str]]) -> None:
