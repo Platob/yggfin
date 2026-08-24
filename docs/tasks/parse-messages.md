@@ -70,6 +70,27 @@ is gone, and it is the tokenising and structuring half. The `parse_fix`
 figure is over rows already in memory, so a real re-parse adds the cost of
 reading `text.messages` back.
 
+End to end through the tasks, one hour out of a capture, the saving is what
+the text scan costs -- and that grows with the archive while `parse_fix` stays
+proportional to the interval:
+
+| archive | full re-parse | `parse_fix` alone | saved |
+| --- | ---: | ---: | ---: |
+| 1 file, 20,011 lines, 4.9 MiB | 15.1 s | 11.8 s | 22% |
+| 8 files, 170,784 lines, 40 MiB | 62.4 s | 55.4 s | 11% |
+
+Each figure includes about 2.9 s of interpreter and kernel start-up, which is
+what a task costs before it reads anything.
+
+## One identity, whichever route the capture took
+
+`hash` is what every merge upserts on, so it is not the parser's to invent.
+Both routes end on `FixMessage.identified` over the same columns -- the parser
+reading a capture whole, and `parse_fix` reading stored message rows -- and
+the digest is taken over the parsed values, plus `source_url` and
+`source_rownum`. Those two are what keep two byte-identical lines in two
+captures two rows rather than one.
+
 ## Retained, not transient
 
 `text.messages` is kept. It is what a re-parse reads, so deleting it would

@@ -940,6 +940,45 @@ def resolved(staged: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
     )
 
 
+@pytest.fixture
+def whole(tmp_path: Path, codec: FixCodec) -> pyarrow.Table:
+    """What reading the very same capture in one pass produces instead.
+
+    The same path as `staged`, because where a line was read is part of its
+    identity: two fixtures over two paths would differ for a good reason and
+    hide the bad one.
+    """
+    path = tmp_path / "staged.txt"
+    path.write_text(STAGED_LINES)
+    with TextFile.from_path(path, codec=codec, resolved=True) as log:
+        return log.read_arrow_table()
+
+
+def test_one_pass_and_two_stages_agree_on_every_stored_column(
+    whole: pyarrow.Table, resolved: pyarrow.Table
+) -> None:
+    """The route a capture took must not change the row it becomes.
+
+    `hash` is what every merge upserts on, so two routes disagreeing about it
+    write one line twice or collapse two lines into one.
+    """
+    assert whole.schema.equals(resolved.schema)
+    for name in whole.schema.names:
+        assert whole.column(name).to_pylist() == resolved.column(name).to_pylist(), name
+
+
+def test_two_identical_lines_in_two_captures_stay_two_rows(tmp_path: Path, codec: FixCodec) -> None:
+    """Where a line was read is part of its identity, so a copy is not the same row."""
+    digests = []
+    for name in ("first.txt", "second.txt"):
+        path = tmp_path / name
+        path.write_text(STAGED_LINES)
+        with TextFile.from_path(path, codec=codec, resolved=False) as log:
+            digests.append(log.read_arrow_table().column("hash").to_pylist())
+    assert len(digests[0]) == len(STAGED_LINES.splitlines())
+    assert not set(digests[0]) & set(digests[1]), "one capture copied is not one capture"
+
+
 def test_the_message_stage_structures_without_resolving(staged: pyarrow.Table) -> None:
     """`tag == 0` is what says an entry is unresolved, and it is NOT NULL."""
     assert staged.column("protocol_code").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]

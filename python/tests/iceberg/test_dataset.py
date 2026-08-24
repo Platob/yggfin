@@ -14,6 +14,7 @@ import pyarrow.fs
 import pyarrow.parquet
 import pytest
 from pyiceberg.conversions import from_bytes
+from pyiceberg.exceptions import NoSuchTableError
 from pyiceberg.expressions import EqualTo
 
 from rekep import Convertible, Field, FixMessage, StructField, scalar
@@ -234,6 +235,27 @@ def test_the_tables_own_shape_is_read_back(dataset: IcebergDataset, tmp_path: Pa
 
 
 # -- reading and writing --------------------------------------------------
+
+
+def test_a_table_that_was_never_written_reads_as_no_rows(dataset: IcebergDataset) -> None:
+    """The first interval of a pipeline reads upstreams that do not exist yet."""
+    assert not dataset.exists
+    assert dataset.read_arrow_table().num_rows == 0
+    assert dataset.read_arrow_table().schema.names == Quote.into_field().leaf_names()
+    filtered = dataset.read_arrow_reader(Quote.into_field(), row_filter=EqualTo("symbol", "X"))
+    assert not list(filtered), "a filter on an absent table is answered, not refused"
+    assert not dataset.exists, "reading does not create it"
+
+
+def test_an_absent_table_reads_under_the_schema_it_was_asked_for(tmp_path: Path) -> None:
+    bare = IcebergDataset(
+        name="trading.absent", catalog="test", properties=catalog_properties(tmp_path)
+    )
+    reader = bare.read_arrow_reader(Quote.into_field(), columns=["symbol", "size"])
+    assert reader.schema.names == ["symbol", "size"]
+    assert reader.read_all().num_rows == 0
+    with pytest.raises(NoSuchTableError):
+        bare.read_arrow_table()
 
 
 def test_rows_go_in_and_come_back(dataset: IcebergDataset) -> None:
@@ -726,7 +748,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     hold fails at the write and nowhere earlier: the pair lists, a boolean, a
     double, a binary block, and a UTC microsecond timestamp.
     """
-    assert len(FixMessage.into_field().names) == 105
+    assert len(FixMessage.into_field().names) == 109
     logs.write_arrow_table(log_table(FIX_LINE), merge_by=True)
     logs.write_arrow_table(log_table(FIX_LINE), merge_by=True)
 
@@ -794,7 +816,7 @@ def test_the_flattened_columns_are_inside_the_bounds_budget(logs: IcebergDataset
     """
     logs.write_arrow_table(log_table(FIX_LINE))
     leaves = FixMessage.into_field().leaf_names()
-    assert len(leaves) == 112
+    assert len(leaves) == 127
     assert int(logs.iceberg_table.properties[INFERRED_METRICS]) >= len(leaves)
     last = logs.iceberg_table.schema().find_field("text").field_id
     written = [task.file for task in logs.iceberg_table.scan().plan_files()]

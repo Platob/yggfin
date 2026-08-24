@@ -26,8 +26,7 @@ from rekep.fix.access import first_arrow_tags
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.transcribe import FixCodec
 from rekep.market.event import CODES_TYPE, hour_arrow
-from rekep.market.identity import HASH, hash_bytes
-from rekep.market.transacted import resolve_arrow
+from rekep.market.identity import HASH
 from rekep.text.fixmessage import FixMessage, FixMessageRules, MessageCodec
 from rekep.times import COMPACT, SHAPES, Stamp
 from rekep.urls import Url
@@ -380,7 +379,6 @@ class TextFile(Dataset, io.BufferedIOBase):
             groups[name] for name in ("timestamp", "thread_name", "plugin_code", "message")
         )
         rows: list[tuple[bytes, bytes | None, bytes | None, bytes | None]] = []
-        hashes: list[int] = []
         # Physical lines, not parsed rows: a folded continuation must not shift
         # the number every row after it reports.
         rownums: list[int] = []
@@ -396,9 +394,6 @@ class TextFile(Dataset, io.BufferedIOBase):
                     rows[-1] = (timestamp, thread, plugin, (message or b"") + b"\n" + line)
                 continue
             rows.append(match.group(*indices))
-            # A fallback digest here differed between environments, so one row
-            # could be stored twice under two keys. `xxhash` is a hard dependency.
-            hashes.append(hash_bytes(line))
             rownums.append(rownum)
             # One row past the size, not at it: a continuation belongs to the
             # row above it, and cutting the batch the moment that row is
@@ -406,16 +401,12 @@ class TextFile(Dataset, io.BufferedIOBase):
             # that happens to land on the boundary would be dropped, silently,
             # at any batch size -- including the default one.
             if len(rows) > batch_row_size:
-                yield self._batch(
-                    rows[:batch_row_size], hashes[:batch_row_size], rownums[:batch_row_size]
-                )
-                del rows[:batch_row_size], hashes[:batch_row_size], rownums[:batch_row_size]
+                yield self._batch(rows[:batch_row_size], rownums[:batch_row_size])
+                del rows[:batch_row_size], rownums[:batch_row_size]
         if rows:
-            yield self._batch(rows, hashes, rownums)
+            yield self._batch(rows, rownums)
 
-    def _batch(
-        self, rows: list[tuple], hashes: list[int], rownums: list[int]
-    ) -> pyarrow.RecordBatch:
+    def _batch(self, rows: list[tuple], rownums: list[int]) -> pyarrow.RecordBatch:
         """One batch of parsed lines, as the `Event` columns a `FixMessage` is.
 
         Assembled **by name** and then ordered by the schema, rather than as a
@@ -429,9 +420,6 @@ class TextFile(Dataset, io.BufferedIOBase):
         local = _local_micros(timestamps)
         unix = _unix_nanos(local, self.timezone)
         message = _utf8(messages)
-        # `hash` identifies the raw line. `xhash` starts there too, then moves
-        # to the parsed lifecycle when the message supplies a readable key.
-        digest = pyarrow.array(hashes, type=HASH)
         columns: dict[str, Any] = {
             # Filled below, once the message columns are read: `unix` is the
             # transaction time the message states, and the header clock is
@@ -449,8 +437,6 @@ class TextFile(Dataset, io.BufferedIOBase):
             "runix": unix,
             "eunix": pyarrow.nulls(count, pyarrow.int64()),
             "sunix": pyarrow.nulls(count, pyarrow.int64()),
-            "hash": digest,
-            "xhash": digest,
             "version": _zeros(count, pyarrow.int64()),
             "state": _zeros(count, pyarrow.int32()),
             "code": pyarrow.repeat("", count),
@@ -472,16 +458,15 @@ class TextFile(Dataset, io.BufferedIOBase):
                 )
             columns[name] = column
         columns["mic"] = _mic_arrow(columns, message, count)
-        columns["reason"] = columns.get("text", columns["reason"])
-        # After the message columns, because that is what it reads: the
-        # regulatory groups and the clocks a line carried are columns by now.
-        columns["unix"], columns["unix_source"] = resolve_arrow(columns, unix, count)
-        columns["unix_hour"] = hour_arrow(columns["unix"])
-        columns["cunix"] = columns["unix"]
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )
         schema = self.schema
+        # `FixMessage.identified` fills these once every other column is here.
+        # Seeded so the check below reads what the *parser* owes the schema,
+        # which is none of them.
+        for name in ("hash", "xhash", "unix_source"):
+            columns.setdefault(name, pyarrow.nulls(count, schema.field(name).type))
         linked_events = schema.field("linked_events")
         columns.setdefault(
             "linked_events", pyarrow.repeat(pyarrow.scalar([], type=linked_events.type), count)
@@ -494,30 +479,11 @@ class TextFile(Dataset, io.BufferedIOBase):
         for field in schema:
             if field.name not in columns:
                 columns[field.name] = pyarrow.nulls(count, field.type)
-        row = self.into_row()
-        columns["symbol"] = row.symbol_arrow(columns, count)
-        columns["code"] = row.code_arrow(columns, count)
-        linked = pyarrow.compute.not_equal(columns["code"], "")
-        linked_count = int(pyarrow.compute.sum(linked).as_py() or 0)
-        if linked_count:
-            selected = (
-                columns["code"]
-                if linked_count == count
-                else pyarrow.compute.filter(columns["code"], linked)
-            )
-            hashes = row.hash_arrow(selected)
-            columns["xhash"] = (
-                hashes
-                if linked_count == count
-                else pyarrow.compute.replace_with_mask(digest, linked, hashes)
-            )
-        # `cast_arrow_fix` and not a plain cast, because the session columns
-        # arrive as the text the wire carried: `20260814-09:30:00.123` is an
-        # instant and `Y` is a boolean, and Arrow's own cast raises on both.
-        return pyarrow.RecordBatch.from_arrays(
-            [cast_arrow_fix(columns[name], schema.field(name).type) for name in schema.names],
-            schema=schema,
-        )
+        # The instrument, the transaction time and the digest are the stored
+        # row's to decide, and `parse_fix` lands on the very same call over the
+        # very same columns -- so a capture read in one pass and a capture read
+        # in two agree on `hash`, which is what every merge upserts on.
+        return self.into_row().identified(columns, schema, count)
 
     def _message_columns(self, messages: Any, plugins: Any, count: int) -> dict[str, Any]:
         """What a message fills: which protocol it is, its fields, its columns.

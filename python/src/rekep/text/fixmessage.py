@@ -575,7 +575,7 @@ class FixMessage(Event):
             return batch
         columns = {name: batch.column(name) for name in batch.schema.names}
         columns.update(cls.resolved_columns(columns, codec, rows))
-        return cls._identified(columns, batch.schema, rows)
+        return cls.identified(columns, batch.schema, rows)
 
     @classmethod
     def resolved_columns(cls, columns: Mapping[str, Any], codec: Any, rows: int) -> dict[str, Any]:
@@ -620,10 +620,16 @@ class FixMessage(Event):
         return found
 
     @classmethod
-    def _identified(
+    def identified(
         cls, columns: dict[str, Any], schema: pyarrow.Schema, rows: int
     ) -> pyarrow.RecordBatch:
-        """The envelope a resolved row earns: its instrument, its time, its identity."""
+        """The envelope a row earns: its instrument, its time, its identity.
+
+        Both parse paths end here -- the parser reading a capture whole and
+        `parse_fix` reading stored message rows -- because `hash` is what a
+        merge upserts on, and two routes that disagree about it write the same
+        line twice or collapse two lines into one.
+        """
         from rekep.market.transacted import resolve_arrow
 
         compute = pyarrow.compute
@@ -636,6 +642,9 @@ class FixMessage(Event):
         columns["hash"] = cls.version_hash_arrow(columns, rows)
         linked = compute.not_equal(columns["code"], "")
         columns["xhash"] = compute.if_else(linked, cls.hash_arrow(columns["code"]), columns["hash"])
+        # `cast_arrow_fix` and not a plain cast, because the session columns
+        # arrive as the text the wire carried: `20260814-09:30:00.123` is an
+        # instant and `Y` is a boolean, and Arrow's own cast raises on both.
         return pyarrow.RecordBatch.from_arrays(
             [cast_arrow_fix(columns[name], schema.field(name).type) for name in schema.names],
             schema=schema,

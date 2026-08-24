@@ -37,6 +37,11 @@ the declared in-file sort order. This bounds merge state and preserves event
 order without materializing the table. Unordered reads remain the store's
 native stream.
 
+A table that was never written reads as no rows under the shape asked for,
+rather than raising: on the first interval of a fresh catalog every stage
+reads an upstream its own upstream has not created yet. With neither a schema
+nor a declared shape there is nothing to answer with, and the read raises.
+
 ## Write
 
 ```python

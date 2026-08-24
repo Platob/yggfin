@@ -372,10 +372,20 @@ class IcebergDataset(Dataset):
         branch: str | None = None,
         order_by: str | Sequence[str] | None = None,
     ) -> pyarrow.RecordBatchReader:
-        """Stream the table, optionally merging files on lexicographic sort keys."""
+        """Stream the table, optionally merging files on lexicographic sort keys.
+
+        A table that was never written reads as no rows, not as a failure: on
+        the first interval of a fresh catalog every stage reads an upstream
+        that its own upstream has not created yet, and "nothing there" is the
+        true answer to that -- so it is answered once here rather than by an
+        `exists` guard at each call site. A source root under `TextFiles`
+        refuses instead, because nothing in the pipeline creates one.
+        """
         ordering = (order_by,) if isinstance(order_by, str) else tuple(order_by or ())
         reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
+        if not self.exists:
+            return self._empty_reader(target, columns)
         table = self.iceberg_table
         # Pinned *before* the projection is chosen: a scan on a ref or a
         # snapshot id projects under that snapshot's schema, so which names it
@@ -412,6 +422,21 @@ class IcebergDataset(Dataset):
         if target is None:
             return reader
         return target.cast_arrow_reader(_renamed(reader, found))
+
+    def _empty_reader(
+        self, target: StructField | None, columns: Sequence[str] | None
+    ) -> pyarrow.RecordBatchReader:
+        """No rows, under the shape the caller asked to read.
+
+        With neither a schema nor a declared shape there is nothing to answer
+        with, and loading the absent table raises what that deserves.
+        """
+        if target is None:
+            target = self.target_field()
+        arrow = target.into_arrow_schema()
+        if columns:
+            arrow = pyarrow.schema([arrow.field(name) for name in columns])
+        return pyarrow.RecordBatchReader.from_batches(arrow, iter(()))
 
     def _reference(self, branch: str | None, snapshot_id: int | None) -> str | None:
         """The branch a read follows, or None when a snapshot id decides instead."""

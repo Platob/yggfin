@@ -1086,7 +1086,10 @@ def test_a_crlf_log_parses_identically(plain: Path, tmp_path: Path) -> None:
     crlf.write_bytes(SAMPLE_BYTES.replace(b"\n", b"\r\n"))
     with TextFile(url=plain.as_uri()) as a, TextFile(url=crlf.as_uri()) as b:
         left, right = a.into_arrow_table(), b.into_arrow_table()
-    assert left.drop_columns("source_url").equals(right.drop_columns("source_url"))
+    # `hash` and `xhash` name where the line was read, so two paths give two
+    # digests on purpose -- what this pins is that nothing else moved.
+    told = ["source_url", "hash", "xhash"]
+    assert left.drop_columns(told).equals(right.drop_columns(told))
 
 
 # -- timezone: the wall clock is local, the instant is not ----------------

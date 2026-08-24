@@ -9,11 +9,11 @@ import pytest
 
 from rekep.fix import BEGIN_STRING, BRIDGE, BRIDGE_WIRE, NO_PROTOCOL, Rule, Rules
 from rekep.fix.rules import (
+    CODEC_KEYS,
     DEFAULT_RULES,
     MARKET_CATEGORY,
     MISC,
     MISC_CATEGORY,
-    CODEC_KEYS,
     OTHER,
     UL,
     UL_WIRE,
