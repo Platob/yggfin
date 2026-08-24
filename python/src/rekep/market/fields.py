@@ -12,7 +12,7 @@ import pyarrow
 
 from rekep.convert import Convertible
 from rekep.enums import Ranged
-from rekep.enums._ascii import _AsciiInt32
+from rekep.enums.ranged import _AsciiInt32
 from rekep.fields import PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
 from rekep.fix.registry import FixRegistry
 
