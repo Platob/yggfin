@@ -217,9 +217,7 @@ def test_every_pair_lands_in_exactly_one_of_the_two(codec: FixCodec, pairs) -> N
 
 
 def test_no_version_keeps_numeric_and_named_pairs_raw(codec: FixCodec) -> None:
-    parsed = parse_arrow_array(
-        pyarrow.array(["#55=TTF|#ISINCODE=XX0000084733|"]), "|", named=True
-    )
+    parsed = parse_arrow_array(pyarrow.array(["#55=TTF|#ISINCODE=XX0000084733|"]), "|", named=True)
 
     tags, keyval, misses, columns = codec.into_log_columns(parsed)
 
@@ -868,9 +866,7 @@ def test_a_repeat_in_one_row_costs_no_other_row_its_column(codec: FixCodec) -> N
     columns, and the single-leg order's symbol was never in doubt. This is the
     case that tells the two constructions apart.
     """
-    tags, _, _ = codec.into_fix_pairs(
-        parse_arrow_array(pyarrow.array([LEGS, SINGLE])), "4.4"
-    )
+    tags, _, _ = codec.into_fix_pairs(parse_arrow_array(pyarrow.array([LEGS, SINGLE])), "4.4")
     columns, rest = codec.into_flat_columns(tags, "4.4")
     assert columns[COLUMNS[55]].to_pylist() == [None, "TTF"]
     assert [tag for tag, _ in _pairs(rest)] == [555, 600, 55, 555, 55]

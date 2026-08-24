@@ -58,9 +58,11 @@ def zstandard(tmp_path: Path) -> Path:
 
 
 #: Two wire messages and a line that is not one. The sample above carries no
-#: FIX, and every tag here is spelled as a number, so what these three lines
-#: pin is the seam itself and not the dictionary behind it: which tags lift,
-#: which stay, and where the lifted ones land.
+#: FIX, and every tag here is spelled as a number, so no name has to be looked
+#: up to read one: what these three lines pin is the seam itself -- which tags
+#: lift, which stay, and where the lifted ones land. A dictionary is still what
+#: says a tag *may* lift, so these are read under `codec` like every other
+#: parse below, and never under whatever `~/.config/fix` happens to hold.
 #:
 #: The second message is a multi-leg quote -- `55` names two legs and `555`
 #: counts them twice -- which is the row that must keep everything it said.
@@ -80,6 +82,19 @@ def wire(tmp_path: Path) -> Path:
     path = tmp_path / "wire.txt"
     path.write_text(WIRE)
     return path
+
+
+@pytest.fixture(scope="module")
+def codec() -> FixCodec:
+    """The dictionary this repository publishes, which is the one a test may read.
+
+    `FixCodec()` would default to the *user's* cache (`~/.config/fix`), so a
+    test that took it would assert against whatever the machine running it had
+    scraped before -- passing where that cache is warm and failing on a fresh
+    checkout, which is every machine CI ever parses on. Every test below that
+    expects a tag to reach its column names this dictionary instead.
+    """
+    return FixCodec(registry=FixRegistry(cache_dir=DICTIONARY, offline=True))
 
 
 # -- header pattern ---------------------------------------------------------
@@ -488,9 +503,9 @@ def test_the_pair_lists_are_nullable_and_their_members_are_not(plain: Path) -> N
 # -- what a message fills ---------------------------------------------------
 
 
-def test_exact_fix_columns_also_fill_the_generic_envelope(wire: Path) -> None:
+def test_exact_fix_columns_also_fill_the_generic_envelope(wire: Path, codec: FixCodec) -> None:
     """Snake columns keep FIX identity while generic identifiers are derived."""
-    table = TextFile.from_path(wire).read_arrow_table()
+    table = TextFile.from_path(wire, codec=codec).read_arrow_table()
     assert table.column("symbol").to_pylist() == ["TTF", None, None]
     assert table.column("msg_seq_num").to_pylist() == [7, 8, None]
     assert table.column("code").to_pylist() == ["ORD-1", "", ""]
@@ -502,25 +517,27 @@ def test_exact_fix_columns_also_fill_the_generic_envelope(wire: Path) -> None:
 
 
 def test_session_direction_selects_the_venue_side_when_both_ids_look_like_mics(
-    tmp_path: Path,
+    tmp_path: Path, codec: FixCodec
 ) -> None:
     path = tmp_path / "direction.txt"
     path.write_text(
         "2026-08-14 00:05:01.147 [t] [d] sending 8=FIX.4.4|35=D|49=BUY1|56=XPAR|\n"
         "2026-08-14 00:05:02.147 [t] [d] received 8=FIX.4.4|35=8|49=XPAR|56=BUY1|\n"
     )
-    rows = TextFile.from_path(path).read_arrow_table()
+    rows = TextFile.from_path(path, codec=codec).read_arrow_table()
     assert rows.column("mic").to_pylist() == [int(MIC.from_str("XPAR"))] * 2
 
 
-def test_explicit_market_ids_keep_precedence_and_wire_order(tmp_path: Path) -> None:
+def test_explicit_market_ids_keep_precedence_and_wire_order(
+    tmp_path: Path, codec: FixCodec
+) -> None:
     path = tmp_path / "markets.txt"
     path.write_text(
         "2026-08-14 00:05:01.147 [t] [d] "
         "8=FIX.4.4|35=D|30=XAMS|100=XPAR|275=XEUR|1301=XNAS|30=XLON|10=1|\n"
         "2026-08-14 00:05:02.147 [t] [d] 8=FIX.4.4|35=D|100=XPAR|10=2|\n"
     )
-    rows = TextFile.from_path(path).read_arrow_table()
+    rows = TextFile.from_path(path, codec=codec).read_arrow_table()
 
     assert rows.column("mic").to_pylist() == [
         int(MIC.from_str("XAMS")),
@@ -535,7 +552,9 @@ def test_explicit_market_ids_keep_precedence_and_wire_order(tmp_path: Path) -> N
     ]
 
 
-def test_generic_codes_follow_the_parsed_identifier_fallbacks(tmp_path: Path) -> None:
+def test_generic_codes_follow_the_parsed_identifier_fallbacks(
+    tmp_path: Path, codec: FixCodec
+) -> None:
     path = tmp_path / "keys.txt"
     messages = [
         "8=FIX.4.4|35=8|37=VENUE|11=CURRENT|41=ORIGINAL|17=EXEC|"
@@ -553,7 +572,6 @@ def test_generic_codes_follow_the_parsed_identifier_fallbacks(tmp_path: Path) ->
         )
     )
 
-    codec = FixCodec(registry=FixRegistry(cache_dir=DICTIONARY, offline=True))
     table = TextFile.from_path(path, codec=codec).read_arrow_table()
 
     assert table.column("code").to_pylist() == [
@@ -587,7 +605,7 @@ def test_generic_codes_follow_the_parsed_identifier_fallbacks(tmp_path: Path) ->
     assert table.column("xhash")[-1].as_py() == table.column("hash")[-1].as_py()
 
 
-def test_a_tag_that_repeats_in_a_line_stays_in_the_pair_list(wire: Path) -> None:
+def test_a_tag_that_repeats_in_a_line_stays_in_the_pair_list(wire: Path, codec: FixCodec) -> None:
     """Lifting the first `55` of a multi-leg quote would answer "the symbol"
     with whichever leg came first -- a wrong answer that looks like a right one.
 
@@ -597,7 +615,7 @@ def test_a_tag_that_repeats_in_a_line_stays_in_the_pair_list(wire: Path) -> None
     one. The last line carries no message at all, so its pair list is null and not
     empty.
     """
-    table = TextFile.from_path(wire).read_arrow_table()
+    table = TextFile.from_path(wire, codec=codec).read_arrow_table()
     assert table.column("fix_tags").to_pylist() == [
         [],
         [
@@ -613,13 +631,15 @@ def test_a_tag_that_repeats_in_a_line_stays_in_the_pair_list(wire: Path) -> None
     assert table.column("sender_comp_id").to_pylist() == ["BUY", "BUY", None], "49 lifted on both"
 
 
-def test_a_lifted_field_arrives_decoded_and_not_as_the_text_the_wire_carried(wire: Path) -> None:
+def test_a_lifted_field_arrives_decoded_and_not_as_the_text_the_wire_carried(
+    wire: Path, codec: FixCodec
+) -> None:
     """`43=Y` is a boolean and `44=41.25` is a number, so a reader filters on
     the value rather than on the spelling the wire happened to use. Which type
     each decodes to is `Log`'s declaration, pinned against the published
     dictionary in `tests/text/test_log.py`.
     """
-    table = TextFile.from_path(wire).read_arrow_table()
+    table = TextFile.from_path(wire, codec=codec).read_arrow_table()
     assert table.column("poss_dup_flag").to_pylist() == [True, None, None]
     assert table.column("order_qty").to_pylist() == [1200.0, None, None]
     assert table.column("price").to_pylist() == [41.25, None, None]
@@ -627,12 +647,14 @@ def test_a_lifted_field_arrives_decoded_and_not_as_the_text_the_wire_carried(wir
     assert table.column("text").to_pylist() == ["ok", None, None]
 
 
-def test_a_stamp_a_message_carries_lands_on_the_instant_it_spells(wire: Path) -> None:
+def test_a_stamp_a_message_carries_lands_on_the_instant_it_spells(
+    wire: Path, codec: FixCodec
+) -> None:
     """Nanosecond wire fractions truncate to the declared microsecond width."""
     sent = datetime.datetime(2026, 8, 14, 9, 30, 0, 123456, tzinfo=datetime.UTC)
     traded = datetime.datetime(2026, 8, 14, 9, 29, 59, 500_000, tzinfo=datetime.UTC)
 
-    table = TextFile.from_path(wire).read_arrow_table()
+    table = TextFile.from_path(wire, codec=codec).read_arrow_table()
     assert table.column("sending_time").to_pylist() == [sent, None, None]
     assert table.column("transact_time").to_pylist() == [traded, None, None]
 
