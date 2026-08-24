@@ -937,13 +937,58 @@ def _mib(peak: int) -> str:
     return f"{peak / 2**20:.1f}" if peak > 0 else "n/a"
 
 
+def stamps(rows: int, repeat: int) -> None:
+    """Reading a column of header timestamps, per shape a capture may write.
+
+    The one stage the accepted-spelling set decides. Every shape is sliced
+    from the offsets its declaration gives, so what this measures is whether
+    admitting three shapes rather than one costs the common case anything --
+    and what a batch mixing them costs, which is the case that used to be read
+    a row at a time.
+    """
+    from rekep.text.text_file import _local_micros
+    from rekep.times import unix_of
+
+    shaped = {
+        "iso millis": "2026-08-14 00:05:01.147",
+        "iso micros": "2026-08-14 00:05:01.147250",
+        "iso split": "2026-08-14 00:05:01.147_250",
+        "iso nanos": "2026-08-14 00:05:01.147250123",
+        "iso seconds": "2026-08-14 00:05:01",
+        "fix millis": "20260814-00:05:01.147",
+        "compact millis": "20260814000501147",
+        "compact seconds": "20260814000501",
+    }
+    print(f"\n{rows:,} header stamps, best of {repeat}")
+    columns = ("shape", "seconds", "stamps/s")
+    print(" ".join(f"{c:>{w}}" for c, w in zip(columns, (16, 9, 12), strict=True)))
+    for name, spelled in shaped.items():
+        column = [spelled.encode()] * rows
+        # Verified before it is timed: a fast path that answers wrongly is not
+        # a fast path. The scalar reader is the reference.
+        expected = unix_of(spelled)
+        found = _local_micros(column[:1])[0].as_py()
+        assert unix_of(found) == expected, f"{name} reads {found}, not {spelled}"
+        seconds, _ = _best_of(lambda column=column: (_local_micros(column), rows)[1], repeat)
+        print(f"{name:>16} {seconds:>9.3f} {rows / seconds:>12,.0f}")
+    mixed = [spelled.encode() for spelled in shaped.values()] * (rows // len(shaped))
+    found = _local_micros(mixed)
+    assert [unix_of(one.as_py()) for one in found[: len(shaped)]] == [
+        unix_of(spelled) for spelled in shaped.values()
+    ], "a mixed column reads every shape as itself"
+    seconds, _ = _best_of(lambda: (_local_micros(mixed), len(mixed))[1], repeat)
+    print(f"{'all eight mixed':>16} {seconds:>9.3f} {len(mixed) / seconds:>12,.0f}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rows", type=int, default=200_000)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument(
-        "--only", choices=("sweep", "variants", "folders", "messages"), default=None
+        "--only",
+        choices=("sweep", "variants", "folders", "messages", "stamps"),
+        default=None,
     )
     arguments = parser.parse_args()
     rows = 50_000 if arguments.quick else arguments.rows
@@ -954,6 +999,8 @@ def main() -> int:
         variants(rows, repeat)
     if arguments.only in (None, "folders"):
         folders(rows, repeat)
+    if arguments.only in (None, "stamps"):
+        stamps(rows, repeat)
     if arguments.only in (None, "messages"):
         messages(rows, repeat, arguments.quick)
     return 0

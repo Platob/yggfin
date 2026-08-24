@@ -28,7 +28,14 @@ from rekep.fix.transcribe import FixCodec
 from rekep.market.event import CODES_TYPE, HOUR
 from rekep.market.identity import HASH, hash_bytes
 from rekep.text.fixmessage import FixMessage, FixMessageRules, MessageCodec
+from rekep.times import COMPACT, SHAPES, Stamp
 from rekep.urls import Url
+
+#: Every spelling of an instant a header may open with, as one alternation.
+#: Derived from `rekep.times.SHAPES` rather than restated: the set of accepted
+#: spellings is one behavior, and a shape this reader admitted and `times` did
+#: not would be a stamp a window could not name.
+_TIMESTAMP = "|".join(f"(?:{stamp.pattern})" for stamp in SHAPES)
 
 #: Matches the fixed header every log row opens with, leaving the free-form
 #: payload to `message`::
@@ -36,15 +43,17 @@ from rekep.urls import Url
 #:     2026-08-14 00:05:01.167_520 [77-e72:9ef:72503] [ModuleFoo] (DEBUG) Found code
 #:     ^timestamp                  ^thread_name       ^plugin_code ^level ^message
 #:
-#: `level` is optional -- some plugins print none -- and the fractional second
-#: is **millis, and micros after them when the plugin prints any**: the same
-#: capture writes `01.147`, `01,147`, `01.147250` and `01.147_250`, because one
-#: capture is written by several loggers and they do not agree. Matching is
-#: done on bytes so lines never have to be decoded just to be classified; a
-#: line that does not match is a wrapped continuation of the row above it.
+#: `level` is optional -- some plugins print none -- and the fraction is one
+#: to nine digits or absent: the same capture writes `01.147`, `01,147`,
+#: `01.147250` and `01.147_250`, because one capture is written by several
+#: loggers and they do not agree. Beside that ISO spelling a header may open
+#: with FIX's own `20260824-10:00:01.123` or with a compact
+#: `20260824100001123`. Matching is done on bytes so lines never have to be
+#: decoded just to be classified; a line that does not match is a wrapped
+#: continuation of the row above it.
 HEADER_PATTERN = re.compile(
     rb"^[ \t]*"
-    rb"(?P<timestamp>\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[.,]\d{3}(?:[._,]?\d{3})?)[ \t]+"
+    rb"(?P<timestamp>" + _TIMESTAMP.encode() + rb")[ \t]+"
     rb"\[(?P<thread_name>[^\]]*)\][ \t]+"
     rb"\[(?P<plugin_code>[^\]]*)\][ \t]*"
     rb"(?:\((?P<level>[A-Za-z]{1,12})\)[ \t]*)?"
@@ -52,19 +61,38 @@ HEADER_PATTERN = re.compile(
     re.DOTALL,
 )
 
-#: Every width `HEADER_PATTERN` pins a timestamp to: seconds and millis (23),
-#: and those plus micros with or without a separator between them (26 or 27).
+#: Which shape a column of stamps is, by the characters only that shape writes
+#: at those offsets: ISO writes a `-` at 4 where the other two write a digit,
+#: and FIX writes one at 8 where compact writes a digit. Compact is told by
+#: both absences rather than by nothing at all -- a column holding a FIX stamp
+#: and a compact one of the same width matches neither shape whole, and has to
+#: be grouped rather than sliced as whichever was tried last.
 #:
-#: The slicing path reads every component from a fixed offset, so it is sound
-#: at these widths and at no other: a stamp one character shorter slices into
-#: valid ISO holding *other digits* and casts happily to the wrong instant.
-#: Anything else is read rather than sliced.
-STAMP_WIDTHS = (23, 26, 27)
+#: A width alone never decides, because three of them are shared: 17 is a FIX
+#: stamp and a compact one with millis, 23 an ISO stamp with millis and a
+#: compact one with nanos, 27 an ISO stamp with a split fraction and a FIX one
+#: with nanos. The slicing path reads every component from a fixed offset, so
+#: a stamp read as the wrong shape slices into valid ISO holding *other
+#: digits* and casts happily to the wrong instant.
+_SHAPE_MARKS: Mapping[str, tuple[tuple[int, str, bool], ...]] = MappingProxyType(
+    {
+        "iso": ((4, "-", True),),
+        "fix": ((4, "-", False), (8, "-", True)),
+        "compact": ((4, "-", False), (8, "-", False)),
+    }
+)
 
-#: A timestamp split into "up to the seconds" and "everything after the first
-#: separator", so a fraction written `167_520` or `167,520` can be put back
-#: together as digits instead of as more separators.
-_FRACTION = re.compile(r"^([^.,]*)([.,])?(.*)$")
+#: One integer per shape, so a `(shape, width)` pair packs into one key a
+#: single grouping pass can take.
+_SHAPE_CODES: Mapping[str, int] = MappingProxyType(
+    {stamp.name: code for code, stamp in enumerate(SHAPES)}
+)
+_SHAPES_BY_CODE: Mapping[int, Stamp] = MappingProxyType(dict(enumerate(SHAPES)))
+
+#: Every width the declared shapes can be sliced at -- which a stamp of a width
+#: not here still reads correctly through, because a shape's offsets hold
+#: whatever its fraction is.
+STAMP_WIDTHS: tuple[int, ...] = tuple(sorted({width for stamp in SHAPES for width in stamp.widths}))
 
 #: The Arrow type a line's digest is, and the list of them a lineage would be.
 #: Named here so the parser builds the empty ones without re-deriving the type.
@@ -678,45 +706,115 @@ def _utf8(values: Sequence[bytes | None]) -> pyarrow.Array:
 
 
 def _local_micros(timestamps: Sequence[bytes]) -> pyarrow.Array:
-    """One batch of raw header timestamps to a naive `timestamp("us")` column."""
-    compute = pyarrow.compute
-    raw = pyarrow.array(timestamps, type=pyarrow.binary()).cast(pyarrow.string())
-    lengths = compute.utf8_length(raw)
-    for width in STAMP_WIDTHS:
-        if not compute.all(compute.equal(lengths, width), min_count=0).as_py():
-            continue
-        try:
-            return _sliced_micros(raw, width).cast(pyarrow.timestamp("us"))
-        except pyarrow.ArrowInvalid:
-            break
-    micros = [_epoch_nanos(stamp) // 1000 for stamp in timestamps]
-    return pyarrow.array(micros, type=pyarrow.int64()).cast(pyarrow.timestamp("us"))
+    """One batch of raw header timestamps to a naive `timestamp("us")` column.
 
-
-def _sliced_micros(raw: pyarrow.Array, width: int) -> pyarrow.Array:
-    """A column of fixed-width stamps as canonical ISO microseconds.
-
-    One canonical spelling out of all of them, so the cast that follows has
-    one shape to parse: `YYYY-MM-DD HH:MM:SS.ffffff`. Where the stamp carries
-    no micros the field is filled with the literal zeros that make millis
-    micros; where it carries them with a separator the separator is at 23 and
-    the digits after it, and where it carries them without one they are at 23
-    already.
+    Sliced, never read a row at a time. A batch of one shape at one width --
+    which is nearly every batch, because a file is written by one logger --
+    is decided by two character comparisons and sliced whole; only a batch
+    that actually mixes shapes or widths pays to be grouped.
     """
     compute = pyarrow.compute
-    fraction = (
-        pyarrow.scalar("000")
-        if width == 23
-        else compute.utf8_slice_codeunits(raw, width - 3, width)
+    raw = pyarrow.array(timestamps, type=pyarrow.binary()).cast(pyarrow.string())
+    if not len(raw):
+        return raw.cast(pyarrow.timestamp("us"), safe=False)
+    lengths = compute.utf8_length(raw)
+    bounds = compute.min_max(lengths).as_py()
+    if bounds["min"] == bounds["max"]:
+        width = int(bounds["min"])
+        for stamp in SHAPES:
+            if _is_shape(raw, stamp):
+                return _sliced_micros(raw, stamp, width).cast(pyarrow.timestamp("us"), safe=False)
+    parts, positions = [], []
+    for key, where in groups_of(_stamp_keys(raw, lengths)):
+        stamp, width = _stamp_shape(key.as_py())
+        sliced = _sliced_micros(compute.take(raw, where), stamp, width)
+        parts.append(sliced.cast(pyarrow.timestamp("us"), safe=False))
+        positions.append(where)
+    return scattered(parts, positions)
+
+
+def _is_shape(raw: pyarrow.Array, stamp: Stamp) -> bool:
+    """Whether *every* row of a column is this shape rather than another of its width.
+
+    A mark the shape writes has to hold on every row, and one it never writes
+    on none of them -- `all` for the first and `any` for the second, because
+    "not every row has a dash here" is not "no row does". A column holding a
+    FIX stamp and a compact one, which share three widths, satisfies neither
+    shape whole and is grouped instead.
+    """
+    compute = pyarrow.compute
+    for at, character, wanted in _SHAPE_MARKS[stamp.name]:
+        found = compute.fill_null(
+            compute.equal(compute.utf8_slice_codeunits(raw, at, at + 1), character), False
+        )
+        settled = compute.all if wanted else compute.any
+        if bool(settled(found, min_count=0).as_py()) is not wanted:
+            return False
+    return True
+
+
+def _stamp_keys(raw: pyarrow.Array, lengths: pyarrow.Array) -> pyarrow.Array:
+    """One `(shape, width)` key per row, in kernels.
+
+    The same two comparisons `_is_shape` makes over a whole column, made per
+    row instead, and packed with the width into one integer -- which is what a
+    single grouping pass takes.
+    """
+    compute = pyarrow.compute
+    found = pyarrow.repeat(pyarrow.scalar(_SHAPE_CODES[COMPACT.name], pyarrow.int32()), len(raw))
+    for name in ("fix", "iso"):
+        at, character, _ = _SHAPE_MARKS[name][-1]
+        marked = compute.equal(compute.utf8_slice_codeunits(raw, at, at + 1), character)
+        found = compute.if_else(
+            compute.fill_null(marked, False),
+            pyarrow.scalar(_SHAPE_CODES[name], pyarrow.int32()),
+            found,
+        )
+    return compute.add(
+        compute.multiply(found, pyarrow.scalar(1 << 8, pyarrow.int32())),
+        lengths.cast(pyarrow.int32()),
     )
+
+
+def _stamp_shape(key: int) -> tuple[Stamp, int]:
+    """The shape and width one packed key names."""
+    return _SHAPES_BY_CODE[key >> 8], key & 0xFF
+
+
+def _sliced_micros(raw: pyarrow.Array, stamp: Stamp, width: int) -> pyarrow.Array:
+    """A column of one shape at one width as canonical ISO microseconds.
+
+    One canonical spelling out of all of them, so the cast that follows has
+    one shape to parse: `YYYY-MM-DD HH:MM:SS.ffffff`. Assembled in a single
+    join, with the literal separators passed as elements of it -- a shape that
+    already writes the date or the clock that way hands over the run whole,
+    and only one that spells it differently pays to have it taken apart.
+    """
+    compute = pyarrow.compute
+    parts: list[Any] = [_run(raw, stamp.date_at, stamp.offsets[:3], "-"), " "]
+    parts += [_run(raw, stamp.clock_at, stamp.offsets[3:], ":"), "."]
+    slices, pad = stamp.micro_slices(width)
+    parts += [compute.utf8_slice_codeunits(raw, start, stop) for start, stop in slices]
+    if pad:
+        parts.append("0" * pad)
+    # The last argument is the separator, and it is empty because the
+    # separators are already in `parts`: one kernel for the whole stamp.
+    return compute.binary_join_element_wise(*parts, "")
+
+
+def _run(
+    raw: pyarrow.Array,
+    whole: tuple[int, int] | None,
+    offsets: Sequence[tuple[int, int]],
+    separator: str,
+) -> Any:
+    """One canonical run: copied where the shape writes it, rebuilt where not."""
+    compute = pyarrow.compute
+    if whole is not None:
+        return compute.utf8_slice_codeunits(raw, *whole)
     return compute.binary_join_element_wise(
-        compute.utf8_slice_codeunits(raw, 0, 10),
-        " ",
-        compute.utf8_slice_codeunits(raw, 11, 19),
-        ".",
-        compute.utf8_slice_codeunits(raw, 20, 23),
-        fraction,
-        "",
+        *(compute.utf8_slice_codeunits(raw, start, stop) for start, stop in offsets),
+        separator,
     )
 
 
@@ -937,16 +1035,3 @@ def _zeros(count: int, arrow_type: pyarrow.DataType) -> pyarrow.Array:
     and a value repeated down a whole file encodes away to nothing on disk.
     """
     return pyarrow.repeat(pyarrow.scalar(0, arrow_type), count)
-
-
-_EPOCH_DATETIME = datetime.datetime(1970, 1, 1)  # noqa: DTZ001 - log timestamps are naive UTC
-
-
-def _epoch_nanos(timestamp: bytes) -> int:
-    """`2026-08-14 00:05:01.167_520` -> nanoseconds since the epoch, naive UTC."""
-    text = timestamp.decode("utf-8", "replace")
-    head, separator, fraction = _FRACTION.match(text).groups()
-    if separator:
-        text = f"{head}.{re.sub(r'[._,]', '', fraction)}"
-    delta = datetime.datetime.fromisoformat(text) - _EPOCH_DATETIME
-    return (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000

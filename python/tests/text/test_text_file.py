@@ -13,6 +13,8 @@ from rekep.fix.columns import COLUMNS, COMMON, FLAT, KWARGS, QUOTE, SESSION, STA
 from rekep.market import MIC, Event
 from rekep.market.event import HOUR
 from rekep.text import HEADER_PATTERN, TextFile
+from rekep.text.text_file import _local_micros
+from rekep.times import unix_of
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()
@@ -187,9 +189,78 @@ def test_a_written_batch_reparses_to_the_same_instants(tmp_path: Path) -> None:
     }, "micros, with the separator, whichever spelling came in"
 
 
-def test_a_fraction_the_pattern_does_not_admit_is_a_continuation(tmp_path: Path) -> None:
-    """Nanoseconds are not a spelling here, and a line that is not a record folds."""
-    assert HEADER_PATTERN.match(b"2026-08-14 00:05:01.147250123 [t] [d] (INFO) x") is None
+def test_a_fraction_is_one_to_nine_digits_or_none_at_all() -> None:
+    """The fraction is one group of up to nine digits, in every shape.
+
+    Nanoseconds are a spelling: a logger that prints them is not writing a
+    continuation line. What is still not a header is a fraction wider than the
+    finest instant there is.
+    """
+    for stamp in (
+        b"2026-08-14 00:05:01.1",
+        b"2026-08-14 00:05:01.147",
+        b"2026-08-14 00:05:01.147250",
+        b"2026-08-14 00:05:01.147_250",
+        b"2026-08-14 00:05:01.147250123",
+        b"2026-08-14 00:05:01",
+    ):
+        assert HEADER_PATTERN.match(stamp + b" [t] [d] (INFO) x") is not None, stamp
+    assert HEADER_PATTERN.match(b"2026-08-14 00:05:01.1472501234 [t] [d] (INFO) x") is None
+
+
+def test_the_other_two_shapes_open_a_header_too() -> None:
+    """FIX's own spelling and a compact one, beside the rendered ISO."""
+    for stamp in (
+        b"20260824-10:00:01.123",
+        b"20260824-10:00:01",
+        b"20260824100001123",
+        b"20260824100001",
+        b"20260824100001123456789",
+    ):
+        found = HEADER_PATTERN.match(stamp + b" [t] [d] (INFO) x")
+        assert found is not None, stamp
+        assert found.group("timestamp") == stamp
+        assert found.group("message") == b"x"
+
+
+def test_two_shapes_of_one_width_in_one_batch_read_as_themselves() -> None:
+    """Three widths are shared by two shapes, and a width alone must not decide.
+
+    `20260824-10:00:01` is a FIX stamp and `20260824100001123` a compact one,
+    and both are seventeen characters. Sliced as the wrong shape either reads
+    into a *plausible* instant off by hours -- so a batch carrying both is
+    grouped rather than sliced as whichever shape was tried last.
+    """
+    shared = (
+        (b"20260824-10:00:01", b"20260824100001123"),
+        (b"2026-08-14 00:05:01.147", b"20260814000501147250123"),
+        (b"2026-08-14 00:05:01.147_250", b"20260814-00:05:01.147250123"),
+    )
+    for pair in shared:
+        assert len(pair[0]) == len(pair[1]), pair
+        found = _local_micros(list(pair)).to_pylist()
+        for spelled, got in zip(pair, found, strict=True):
+            assert unix_of(got) == unix_of(spelled.decode()), (spelled, got)
+
+
+def test_the_reader_and_the_window_accept_the_same_spellings() -> None:
+    """One declaration, two executions: `times` reads a window, this reads a column.
+
+    A shape one accepted and the other did not would be a stamp a window
+    could not name -- or a header the parser folded into the line above it.
+    """
+    for stamp in (
+        b"2026-08-14 00:05:01.147",
+        b"2026-08-14 00:05:01.147_250",
+        b"2026-08-14 00:05:01",
+        b"20260824-10:00:01.123",
+        b"20260824100001123",
+        b"20260824100001",
+    ):
+        text = stamp.decode()
+        assert HEADER_PATTERN.match(stamp + b" [t] [d] x") is not None, text
+        found = _local_micros([stamp])[0].as_py()
+        assert unix_of(found) == unix_of(text), text
 
 
 # -- construction -----------------------------------------------------------
@@ -846,8 +917,6 @@ def test_a_timestamp_is_read_not_sliced_at_another_width(stamp: bytes, microseco
     One character short, the same slices land on other digits and cast
     happily: `.167520` came back as `.167200`, silently.
     """
-    from rekep.text.text_file import _local_micros
-
     assert _local_micros([stamp])[0].as_py().microsecond == microsecond
 
 
