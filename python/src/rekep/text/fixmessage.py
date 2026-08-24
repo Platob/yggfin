@@ -16,8 +16,10 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.enums import EventType
 from rekep.fields import Field, scalar
+from rekep.fix.access import Entry, FieldAccess, Reading
 from rekep.fix.columns import DECLARATIONS, ISIN_CODE, KWARGS
 from rekep.fix.components import PARTIES, TRD_REG_TIMESTAMPS, Party, TrdRegTimestamp
+from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL
 from rekep.market.event import Event
 from rekep.market.identity import NIL
@@ -28,6 +30,12 @@ _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 _INSTRUMENT_KIND = "rekep.kind"
 _INSTRUMENT_XHASH = "rekep.xhash"
+
+
+@functools.cache
+def _row_access() -> FieldAccess:
+    """The accessor a stored row reads through: the cross-version dictionary."""
+    return FieldAccess.of(FixRegistry.from_builtin(), None)
 
 
 @scalar(slots=True)
@@ -441,6 +449,42 @@ class FixMessage(Event):
         encoded["kwargs"] = _stored_entries(self.kwargs)
         return encoded
 
+    def get(self, field: int | str) -> Reading:
+        """One field off this row, whichever of the four ways it is named.
+
+        The one accessor (fix/access.py) reads the promoted columns first and
+        the stored `kwargs` after them, so a lifted fact and a residual one
+        answer through one call. The `Reading` carries the stored value and
+        the typed reading together.
+        """
+        return _row_access().reading(self._field_entries(), field)
+
+    def readings(self, field: int | str) -> list[Reading]:
+        """Every value of `field` on this row, in stored order."""
+        return _row_access().readings(self._field_entries(), field)
+
+    def _field_entries(self) -> Iterator[Any]:
+        """What the accessor scans: lifted columns in schema order, then `kwargs`."""
+        for name, tag in type(self).into_tagged_columns():
+            value = getattr(self, name, None)
+            if value is not None:
+                yield Entry(tag=int(tag), name=name, value=value)
+        for name, spelled in type(self).into_named_columns():
+            value = getattr(self, name, None)
+            if value is not None:
+                yield Entry(name=spelled, value=value)
+        yield from self.kwargs or ()
+
+    @classmethod
+    @functools.cache
+    def into_named_columns(cls) -> tuple[tuple[str, str], ...]:
+        """`(attribute, registry spelling)` for lifted columns FIX never numbered."""
+        return tuple(
+            (member.name, spelled)
+            for member in cls.into_field().fields
+            if not member.fix.get("tag") and (spelled := member.fix.get("name"))
+        )
+
     @property
     def is_instrument_version(self) -> bool:
         """Whether this row is a normalized instrument lifecycle version."""
@@ -506,9 +550,8 @@ class FixMessage(Event):
 
     def into_instruments(self, **declared: Any) -> Iterator[Any]:
         """Yield distinct instrument facts, synthesizing a symbol-only row when needed."""
-        normalized = dict(_stored_pairs(self.kwargs)) if self.is_instrument_version else None
-        if normalized is not None and _INSTRUMENT_KIND in normalized:
-            yield self._instrument_version(self._normalized_instrument(normalized))
+        if self.is_instrument_version and self.get(_INSTRUMENT_KIND):
+            yield self._instrument_version(self._normalized_instrument())
             return
         translated = tuple(self.into_fix_events(**declared).into_instruments())
         if not translated:
@@ -541,16 +584,24 @@ class FixMessage(Event):
             currency=self.currency,
         )
 
-    def _normalized_instrument(self, pairs: Mapping[str, str]) -> Any:
-        """Decode one package-authored instrument row without rebuilding FIX state."""
+    def _normalized_instrument(self) -> Any:
+        """Decode one package-authored instrument row without rebuilding FIX state.
+
+        Every field reads through `get` -- the one accessor -- by the same
+        component path or namespace-qualified key `from_instrument` wrote it
+        under.
+        """
         from rekep.enums import AssetKind, IdSource, OptionKind, Side
         from rekep.market.instrument import Instrument, Leg
 
+        def read(spelling: str) -> str | None:
+            return self.get(spelling).raw
+
         alternatives: dict[str, str] = {}
-        for index in range(_pair_count(pairs, "NoSecurityAltID")):
+        for index in range(max(_pair_int(read("NoSecurityAltID")), 0)):
             root = f"NoSecurityAltID[{index}]"
-            value = pairs.get(f"{root}.SecurityAltID")
-            source = pairs.get(f"{root}.SecurityAltIDSource")
+            value = read(f"{root}.SecurityAltID")
+            source = read(f"{root}.SecurityAltIDSource")
             if not value:
                 continue
             scheme = IdSource.from_fix(source, IdSource.UNKNOWN)
@@ -564,11 +615,11 @@ class FixMessage(Event):
             )
 
         legs = []
-        for index in range(_pair_count(pairs, "NoLegs")):
+        for index in range(max(_pair_int(read("NoLegs")), 0)):
             root = f"NoLegs[{index}]"
 
             def get(name: str, prefix: str = f"{root}.") -> str | None:
-                return pairs.get(f"{prefix}{name}")
+                return read(f"{prefix}{name}")
 
             cfi, security_type = get("LegCFICode"), get("LegSecurityType")
             fallback_kind = AssetKind.from_fix(cfi[:1], AssetKind.UNKNOWN) if cfi else None
@@ -597,7 +648,7 @@ class FixMessage(Event):
         )
         return Instrument(
             symbol=self.symbol or "",
-            kind=AssetKind.from_code(pairs.get(_INSTRUMENT_KIND), fallback_kind),
+            kind=AssetKind.from_code(read(_INSTRUMENT_KIND), fallback_kind),
             security_id=self.security_id,
             security_id_source=self.security_id_source,
             isin_code=self.isincode,
@@ -606,13 +657,13 @@ class FixMessage(Event):
             cfi=self.cfi_code,
             exchange=self.security_exchange,
             currency=self.currency,
-            multiplier=_pair_float(pairs.get("ContractMultiplier")),
-            tick=_pair_float(pairs.get("MinPriceIncrement")),
-            lot=_pair_float(pairs.get("RoundLot")),
-            maturity=_pair_date(pairs.get("MaturityDate")),
-            strike=_pair_float(pairs.get("StrikePrice")),
-            option_kind=OptionKind.from_fix(pairs.get("PutOrCall"), OptionKind.UNKNOWN),
-            label=pairs.get("SecurityDesc"),
+            multiplier=_pair_float(read("ContractMultiplier")),
+            tick=_pair_float(read("MinPriceIncrement")),
+            lot=_pair_float(read("RoundLot")),
+            maturity=_pair_date(read("MaturityDate")),
+            strike=_pair_float(read("StrikePrice")),
+            option_kind=OptionKind.from_fix(read("PutOrCall"), OptionKind.UNKNOWN),
+            label=read("SecurityDesc"),
             legs=legs or None,
         )
 
@@ -869,10 +920,6 @@ def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
                 if (rendered := _fix_text(value))
             )
     return pairs or None
-
-
-def _pair_count(pairs: Mapping[str, str], name: str) -> int:
-    return max(_pair_int(pairs.get(name)), 0)
 
 
 def _pair_int(value: Any) -> int:

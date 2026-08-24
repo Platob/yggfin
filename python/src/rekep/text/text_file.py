@@ -22,6 +22,7 @@ from rekep.enums import MIC
 from rekep.fields import Field, StructField
 from rekep.fields.arrays import groups_of, scattered
 from rekep.filesystems import resolve
+from rekep.fix.access import first_arrow_tags
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.transcribe import FixCodec
 from rekep.market.event import CODES_TYPE, HOUR
@@ -844,20 +845,12 @@ def _hour_nanos(unix: pyarrow.Array) -> pyarrow.Array:
     )
 
 
-def _row_indices(count: int) -> pyarrow.Array:
-    """`0..count-1`, built in kernels -- where a scatter puts each row back."""
-    ones = pyarrow.repeat(pyarrow.scalar(1, pyarrow.int32()), count)
-    return pyarrow.compute.subtract(
-        pyarrow.compute.cumulative_sum(ones), pyarrow.scalar(1, pyarrow.int32())
-    )
-
-
 def _mic_arrow(columns: Mapping[str, Any], messages: Any, rows: int) -> Any:
     """ISO exchange fields, then direction-aware FIX session endpoints."""
     compute = pyarrow.compute
     missing = pyarrow.nulls(rows, pyarrow.string())
     stored = columns.get("kwargs")
-    tags = _stored_tag_arrows(stored, (30, 100, 275, 1301), rows) if stored is not None else {}
+    tags = first_arrow_tags(stored, (30, 100, 275, 1301), rows) if stored is not None else {}
     explicit = [
         tags.get(30, missing),
         columns.get("security_exchange", missing),
@@ -897,35 +890,6 @@ def _mic_arrow(columns: Mapping[str, Any], messages: Any, rows: int) -> Any:
         compute.if_else(inbound, sender, pyarrow.nulls(rows, pyarrow.int32())),
     )
     return compute.coalesce(venue, directed, target, sender)
-
-
-def _stored_tag_arrows(stored: Any, wanted: Sequence[int], rows: int) -> dict[int, Any]:
-    """First value of each wanted residual FIX tag, found in one list scan."""
-    if isinstance(stored, pyarrow.ChunkedArray):
-        stored = stored.combine_chunks()
-    if not rows or stored.null_count == rows:
-        return {}
-    compute = pyarrow.compute
-    parents = compute.list_parent_indices(stored).cast(pyarrow.int32())
-    entries = compute.list_flatten(stored)
-    keys = compute.struct_field(entries, "tag")
-    values = compute.struct_field(entries, "value")
-    matches = compute.fill_null(
-        compute.is_in(keys, value_set=pyarrow.array(wanted, keys.type)), False
-    )
-    if not compute.any(matches, min_count=0).as_py():
-        return {}
-    matched_keys = compute.filter(keys, matches)
-    matched_parents = compute.filter(parents, matches)
-    matched_values = compute.filter(values, matches)
-    row_ids = _row_indices(rows)
-    found = {}
-    for tag in compute.unique(matched_keys).to_pylist():
-        at = compute.equal(matched_keys, tag)
-        where = compute.filter(matched_parents, at)
-        values = compute.filter(matched_values, at)
-        found[tag] = compute.take(values, compute.index_in(row_ids, value_set=where))
-    return found
 
 
 def _grouped(keys: pyarrow.Array, values: Any) -> Iterator[tuple[Any, Any, pyarrow.Array]]:

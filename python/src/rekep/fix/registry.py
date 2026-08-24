@@ -568,6 +568,14 @@ class FixRegistry(Convertible):
             return self._layout.record(int(key))
         return self.resolve(str(key))
 
+    def entry(self, key: int | str) -> FieldEntry | None:
+        """The stored record one tag or name resolves to, or None.
+
+        The record, not a projected `Field`: `FieldEntry.translate` and the
+        alias spellings live on it, and `FieldAccess` reads both.
+        """
+        return self._record(key)
+
     def field(self, key: int | str, version: str | None = None) -> Field:
         """The newest definition of one field; `KeyError` when no version has it."""
         found = self.lookup(key, version)

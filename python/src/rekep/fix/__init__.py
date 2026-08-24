@@ -1,5 +1,6 @@
 """FIX: messages out of log lines, and the dictionary that says what they mean."""
 
+from rekep.fix.access import Entry, FieldAccess, Reading
 from rekep.fix.classify import (
     KeyCount,
     KeyCounts,
@@ -101,10 +102,12 @@ __all__ = [
     "COMMON",
     "COMPONENTS",
     "ComponentEntry",
+    "Entry",
     "ConflictReport",
     "FIELDS",
     "FIX_SCALARS",
     "FLAT",
+    "FieldAccess",
     "FieldEntry",
     "FixCodec",
     "FixPairs",
@@ -128,6 +131,7 @@ __all__ = [
     "TrdRegTimestamp",
     "TrdRegTimestamps",
     "QUICKFIX_URL",
+    "Reading",
     "QUOTE",
     "Rule",
     "Rules",

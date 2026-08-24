@@ -84,6 +84,13 @@ _NAMESPACED_KEY = r"(?s)^(?:(?P<namespace>.*)\.)?(?P<key>[^.]*)$"
 #: turn a resolution into an Arrow overflow long after the decision was made.
 _IS_TAG = r"^[0-9]{1,9}$"
 
+#: The scalar compilations of the vectorized key rules, from the same source
+#: strings, so `TagIndex.resolve_key` and `TagIndex.resolve_with_match` cannot
+#: disagree on what a key means. `re.ASCII` because RE2's classes are.
+_IS_TAG_SCALAR = re.compile(_IS_TAG, re.ASCII)
+_CONTAINED_KEY_SCALAR = re.compile(_CONTAINED_KEY, re.ASCII)
+_MEMBER_NAME_SCALAR = re.compile(_MEMBER_NAME_VECTOR, re.ASCII)
+
 #: Value spellings that mean **there is no value**. A bridge that has nothing
 #: to say for a field says it in whichever of these its renderer prefers, and
 #: they are not values: `ACCOUNT=<null>` is an absent account, and storing the
@@ -146,6 +153,54 @@ class TagIndex:
             tags=pyarrow.array(list(tags.values()), TAG),
             containers=pyarrow.array(list(inside), pyarrow.string()),
         )
+
+    # -- the same rules, one key at a time ------------------------------------
+    #
+    # `resolve_with_match` is the rule table; these read it scalar-wise off the
+    # same data and the same pattern sources, so the two executions cannot
+    # drift. `FieldAccess` (fix/access.py) is the caller.
+
+    @functools.cached_property
+    def _tags_by_lower_name(self) -> Mapping[str, int]:
+        """The vectorized value sets as one scalar lookup, built once."""
+        return MappingProxyType(
+            {
+                name.lower(): tag
+                for name, tag in zip(self.names.to_pylist(), self.tags.to_pylist(), strict=True)
+            }
+        )
+
+    @functools.cached_property
+    def _tag_set(self) -> frozenset[int]:
+        return frozenset(self.tags.to_pylist())
+
+    @functools.cached_property
+    def _container_set(self) -> frozenset[str]:
+        return frozenset(self.containers.to_pylist())
+
+    def resolve_key(self, key: str) -> tuple[int | None, bool, str, bool]:
+        """One key under `resolve_with_match`'s rules: (tag, hit, name, contained)."""
+        if _IS_TAG_SCALAR.match(key) is not None:
+            tag = int(key)
+            return tag, tag in self._tag_set, key, True
+        member = _MEMBER_NAME_SCALAR.search(key)
+        reduced = member.group("name") if member is not None else ""
+        contained = self._contained_key(key)
+        if not contained:
+            reduced = key
+        if _IS_TAG_SCALAR.match(reduced) is not None:
+            tag = int(reduced)
+            return tag, tag in self._tag_set, reduced, contained
+        tag = self._tags_by_lower_name.get(reduced.lower())
+        return tag, tag is not None, reduced, contained
+
+    def _contained_key(self, key: str) -> bool:
+        """`_contained`, one key at a time: the immediate container decides."""
+        found = _CONTAINED_KEY_SCALAR.match(key)
+        inner = found.group("inner") if found is not None else None
+        if not inner:
+            return True
+        return inner.lower() in self._container_set
 
     def resolve(self, keys: Any) -> pyarrow.Array:
         """A key column as tag numbers, null where no reading finds one."""

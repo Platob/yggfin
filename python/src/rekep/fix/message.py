@@ -384,33 +384,33 @@ class FixPairs(Convertible):
     def get(self, tag: int | str, default: str | None = None) -> str | None:
         """The first value of `tag`, or `default`.
 
-        Exact key first -- the fast path every tag lookup takes -- and then
-        the rendered spellings of the same field: `Side` also answers for
-        `side`, `Side[0]` and `NoPartyIDs[0].Side`, because the index and the
-        group are *where* the field sits, not what it is.
+        One rule set, `FieldAccess` (fix/access.py): the exact key answers
+        first, and then the rendered spellings of the same field -- `Side`
+        also answers for `side`, `Side[0]` and `NoPartyIDs[0].Side`, because
+        the index and the group are *where* the field sits, not what it is.
         """
-        wanted = str(tag)
-        for name, value in self.pairs:
-            if name == wanted:
-                return value
-        rendered = _member_pattern(wanted)
-        for name, value in self.pairs:
-            if rendered.match(name):
-                return value
-        return default
+        found = self._access().reading(self.pairs, tag)
+        return found.raw if found else default
 
     def values(self, tag: int | str) -> list[str]:
         """Every value of `tag`, in wire order -- what a repeating tag is.
 
-        Falls back to the rendered spellings the way `get` does, so
-        `values("PartyID")` collects one value per printed group entry.
+        The same rules as `get`, so `values("PartyID")` collects one value per
+        printed group entry.
         """
-        wanted = str(tag)
-        found = [value for name, value in self.pairs if name == wanted]
-        if found:
-            return found
-        rendered = _member_pattern(wanted)
-        return [value for name, value in self.pairs if rendered.match(name)]
+        return [found.raw for found in self._access().readings(self.pairs, tag)]
+
+    @staticmethod
+    def _access() -> Any:
+        """The dictionary-less accessor: a bare wire model resolves by spelling.
+
+        Imported at the call because `fix.access` composes this module's own
+        key rules with the transcription's -- the one place the import runs
+        the other way.
+        """
+        from rekep.fix.access import FieldAccess
+
+        return FieldAccess.spelling_only()
 
     @property
     def begin_string(self) -> str | None:
@@ -1174,24 +1174,7 @@ def _entry_members(key: str, value: str, entry_separator: str) -> list[tuple[str
 def _indexed_pattern(wanted: str) -> re.Pattern[str]:
     """`wanted[i]` and `wanted[i].member`, for `indexed_group`.
 
-    Cached for the same reason `_member_pattern` is: a stream asks for the
-    same few group names on every message, and building the pattern is more
-    work than running it.
+    Cached because a stream asks for the same few group names on every
+    message, and building the pattern is more work than running it.
     """
     return re.compile(rf"^{re.escape(wanted)}\[(\d+)\](?:\.(.+))?$", re.IGNORECASE)
-
-
-@functools.lru_cache(maxsize=1024)
-def _member_pattern(wanted: str) -> re.Pattern[str]:
-    """`wanted` as any rendered spelling of one field, case-insensitive.
-
-    The fallback `get`/`values` read with: the plain name, the name with an
-    entry index (`Side[0]`), or the member of any indexed group
-    (`NoPartyIDs[0].Side`). Cached because a caller polling one field over a
-    stream of messages would otherwise compile the same pattern per message.
-    """
-    name = re.escape(wanted)
-    return re.compile(
-        rf"^(?:{name}|{name}\[\d+\]|{_NAME}\[\d+\]\.{name})$",
-        re.IGNORECASE,
-    )

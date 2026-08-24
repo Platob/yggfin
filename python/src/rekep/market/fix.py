@@ -24,6 +24,8 @@ from rekep.enums import (
 )
 from rekep.fields import StructField
 from rekep.fix import infer_version_from_pairs
+from rekep.fix.access import FieldAccess
+from rekep.fix.entries import translation_key
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import FixPairs
 from rekep.fix.quickfix import (
@@ -347,32 +349,6 @@ def _standard_market_tags() -> Mapping[str, int]:
 
 
 @functools.cache
-def market_tags_by_name(
-    registry: FixRegistry | None = None, version: str | None = None
-) -> Mapping[str, int]:
-    """`market_tags` under folded spellings, built once per dictionary version.
-
-    Per version and not per message: a dictionary has a couple of thousand
-    names, and folding all of them again for every line a capture carries was
-    most of what reading one line by name cost.
-    """
-    return types.MappingProxyType(
-        {_field_key(name): tag for name, tag in market_tags(registry, version).items()}
-    )
-
-
-@functools.cache
-def wire_tags(registry: FixRegistry | None = None, version: str | None = None) -> dict[str, str]:
-    """The wire tag each field spelling resolves to, filled in as it is asked.
-
-    Shared by every message read under one dictionary version, because that is
-    what the answer depends on: a feed asks for the same few dozen fields on
-    every line, and resolving one is two lookups and a fold.
-    """
-    return {}
-
-
-@functools.cache
 def market_tags(
     registry: FixRegistry | None = None, version: str | None = None
 ) -> Mapping[str, int]:
@@ -403,31 +379,6 @@ def _declared_tags(struct: StructField, into: dict[str, int]) -> None:
             into.setdefault(str(name), int(tag))
         if member.fields:
             _declared_tags(member, into)
-
-
-@functools.lru_cache(maxsize=8192)
-def _folded_key(text: str) -> str:
-    """One already-string name folded, remembered because the names recur.
-
-    A translation reads the same few dozen field names off every message it
-    converts, and folding one costs a pass over its characters -- so the pass
-    is paid once per distinct spelling for the life of the process rather than
-    once per message per key.
-    """
-    return "".join(character.lower() for character in text if character.isalnum())
-
-
-def _field_key(value: Any) -> str:
-    """A FIX name in the spelling used by registry and rendered keys."""
-    return _folded_key(value if type(value) is str else str(value))
-
-
-def _version_key(value: Any) -> str:
-    """A BeginString or registry version in one comparison spelling."""
-    text = str(value).strip().upper()
-    if text.startswith("FIX."):
-        text = text[4:]
-    return "".join(character for character in text if character.isalnum())
 
 
 @dataclasses.dataclass
@@ -498,12 +449,9 @@ class FixEvents(Convertible):
         return market_tags(self.registry, self.version)
 
     @functools.cached_property
-    def _tags_by_name(self) -> Mapping[str, int]:
-        return market_tags_by_name(self.registry, self.version)
-
-    @functools.cached_property
-    def _wire_tags(self) -> dict[str, str]:
-        return wire_tags(self.registry, self.version)
+    def access(self) -> FieldAccess:
+        """The one field accessor (fix/access.py), scoped to this message's dictionary."""
+        return FieldAccess.of(self.registry or FixRegistry.from_builtin(), self.version)
 
     @functools.cached_property
     def _names_by_tag(self) -> Mapping[str, str]:
@@ -516,31 +464,30 @@ class FixEvents(Convertible):
         )
 
     def tag_of(self, field: int | str) -> str:
-        """A canonical field name or numeric tag as the selected wire tag."""
+        """A canonical field name or numeric tag as the selected wire tag.
+
+        Resolution is the accessor's; this only spells the answer the way a
+        wire message keys it.
+        """
         text = field if type(field) is str else str(field)
-        resolved = self._wire_tags
-        found = resolved.get(text)
-        if found is not None:
-            return found
         if text.isascii() and text.isdigit():
-            resolved[text] = text
             return text
-        tag = self.tags.get(text)
-        if tag is None:
-            tag = self._tags_by_name.get(_field_key(text))
-        found = resolved[text] = str(tag) if tag is not None else text
-        return found
+        return self.access.tag_text(text)
 
     @functools.cached_property
     def by_tag(self) -> dict[str, Any]:
-        """The message as one value per key, first occurrence winning."""
+        """The message as one value per key, first occurrence winning.
+
+        The accessor's prepared execution: each named key resolves once
+        through the shared rule table, and every later read is a dict probe.
+        """
         pairs = self.message.pairs
         if any(not (key.isascii() and key.isdigit()) for key, _ in pairs):
             # Only a message that actually spells a key as a name pays for the
             # resolution. A wire message is already all tags, which is most of
             # a feed, and running the pass over it re-resolved eighteen keys
             # to themselves -- 29% of the conversion, for nothing.
-            pairs = FixPairs.from_pairs(pairs, self.tags).pairs
+            pairs = self.access.tagged_pairs(pairs)
         found: dict[str, Any] = {}
         for key, value in pairs:
             found.setdefault(key, value)
@@ -552,11 +499,12 @@ class FixEvents(Convertible):
 
         Built once per message rather than walked per miss: a translation asks
         for several dozen fields a message does not carry, and each of those
-        used to re-fold every key the message did.
+        used to re-fold every key the message did. The fold is
+        `translation_key`, the same last-tier rule the accessor matches by.
         """
         found: dict[str, Any] = {}
         for key, value in self.by_tag.items():
-            found.setdefault(_field_key(key), value)
+            found.setdefault(translation_key(key), value)
         return found
 
     def get(self, field: int | str) -> Any:
@@ -565,7 +513,7 @@ class FixEvents(Convertible):
         found = self.by_tag.get(wanted)
         if found is not None or wanted in self.by_tag:
             return found
-        return self.by_folded_tag.get(_field_key(field))
+        return self.by_folded_tag.get(translation_key(str(field)))
 
     def state_of(self, field: str, default: State = State.UNKNOWN) -> State:
         """Standard state for one field-specific FIX code."""
@@ -679,6 +627,7 @@ class FixEvents(Convertible):
         )
         inside.__dict__["version"] = self.version
         inside.__dict__["tags"] = self.tags
+        inside.__dict__["access"] = self.access
         own = inside.by_tag
         if all(inside.get(field) is None for field in INSTRUMENT_FIELDS):
             inside.__dict__["instrument"] = self.instrument
@@ -1041,7 +990,7 @@ class FixEvents(Convertible):
         found = []
         for entry in self._group_entries(name):
             resolved: dict[str, str] = {}
-            for key, value in FixPairs.from_pairs(entry, self.tags).pairs:
+            for key, value in self.access.tagged_pairs(entry):
                 resolved.setdefault(self._names_by_tag.get(key, key), value)
             found.append(resolved)
         return found
