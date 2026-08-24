@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import struct
 import sys
 import uuid
@@ -55,13 +56,37 @@ def hash_bytes(raw: bytes) -> int:
 #: Cached prefixes cover nearly every market identity part.
 _PREFIXES = tuple(LENGTH.pack(size) for size in range(256))
 
+#: What every `int64` part frames to: eight bytes of length, then eight of
+#: value. Fixed, which is what makes a run of them one `struct.pack`.
+_INT_LENGTH = 8
+
+
+@functools.cache
+def _int_run(pairs: int) -> struct.Struct:
+    """The layout of `pairs` framed `int64` parts, compiled once per width."""
+    return struct.Struct(f"<{pairs}q")
+
 
 def frame(parts: tuple[Any, ...]) -> bytes:
     """Convert and length-prefix `parts` into the v1 identity frame."""
     if not parts:
         raise TypeError("an identifier needs at least one part to frame")
-    out = []
+    out: list[bytes] = []
+    # A long identity is mostly one long run of plain integers -- a book's live
+    # order hashes, an event's parent digests -- and every one of them frames
+    # to the same sixteen bytes: the constant length, then the value. Packing a
+    # whole run at once writes the exact same frame as one part at a time, in
+    # one call rather than four per part. The run is built already interleaved,
+    # which measured faster than interleaving a constant into it afterwards.
+    run: list[int] = []
     for part in parts:
+        if type(part) is int:
+            run.append(_INT_LENGTH)
+            run.append(part)
+            continue
+        if run:
+            out.append(_packed(run))
+            run = []
         raw = part_bytes(part)
         if raw is None:
             out.append(ABSENT_FRAME)
@@ -69,7 +94,22 @@ def frame(parts: tuple[Any, ...]) -> bytes:
         size = len(raw)
         out.append(_PREFIXES[size] if size < 256 else LENGTH.pack(size))
         out.append(raw)
+    if run:
+        out.append(_packed(run))
     return b"".join(out)
+
+
+def _packed(run: list[int]) -> bytes:
+    """One already-interleaved run of framed `int64` parts.
+
+    Refusing, as one part at a time does, whatever Rust cannot hold as an
+    `i64` -- and re-framing the run singly when that happens, so the error
+    names the value rather than the run it was in.
+    """
+    try:
+        return _int_run(len(run)).pack(*run)
+    except struct.error:
+        return b"".join(_PREFIXES[_INT_LENGTH] + _int64_bytes(value) for value in run[1::2])
 
 
 def part_bytes(part: Any) -> bytes | None:

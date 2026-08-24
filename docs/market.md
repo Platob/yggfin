@@ -86,16 +86,32 @@ flat summary before deriving cross-side values. `prev_bid_px`, `prev_bid_qty`,
 deltas and clear on snapshots. There is no separate `BookSide` schema.
 
 Live orders, names, expiry deadlines, and level quantities stay indexed.
-Mutation therefore probes dictionaries and a lazy deadline heap; Book identity
-still walks the ordered live Order hashes required by its contract, while full
-Order copying belongs only to requested snapshots. Fully repeated orders stop
-before completion and emit no Book, same-price amendments update their existing
-level, expiry scans start only when the heap's first deadline is due, and
+Mutation therefore probes dictionaries and a lazy deadline heap; full Order
+copying belongs only to requested snapshots. Fully repeated orders stop before
+completion and emit no Book, same-price amendments update their existing level,
+expiry scans start only when the heap's first deadline is due, and
 single-instrument streams skip cross-book sweeps.
+
+Book identity still reads the ordered live Order hashes its contract requires,
+but reads them per level and not per book: each level caches the order its
+members settled into and their hashes, and forgets both whenever anything about
+them moves -- a member joining or leaving, a quantity revised, or a new version
+of an order that stands exactly where the old one did. A book with a hundred
+live levels therefore pays for the one an event touched, and the frame those
+hashes go into is written a run of integers at a time rather than one at a
+time. Both leave the identity bytes exactly as they were; together they are
+most of a 3.7x fold on a thousand-order book.
+
+Translating a parsed row back into market events is the other half of the
+generator, and on a real feed the larger half. Which columns carry a FIX tag,
+which names a dictionary version resolves to which wire tag, and a message's
+values under folded keys are each read once and kept -- per class, per version,
+and per message -- rather than recomputed for every line.
 
 ## Benchmark
 
 `python/benchmarks/bench_market.py --quick` verifies identity, FIX translation,
-book derivations, focused state transitions, and a small replay-shape matrix
-before timing them. The full run expands the event and live-order matrix and
-reports operation counters beside throughput.
+book derivations, focused state transitions, the whole parsed-row-to-books
+generator, and a small replay-shape matrix before timing them. The full run
+expands the event and live-order matrix and reports operation counters beside
+throughput.

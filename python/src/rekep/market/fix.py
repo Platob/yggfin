@@ -347,6 +347,32 @@ def _standard_market_tags() -> Mapping[str, int]:
 
 
 @functools.cache
+def market_tags_by_name(
+    registry: FixRegistry | None = None, version: str | None = None
+) -> Mapping[str, int]:
+    """`market_tags` under folded spellings, built once per dictionary version.
+
+    Per version and not per message: a dictionary has a couple of thousand
+    names, and folding all of them again for every line a capture carries was
+    most of what reading one line by name cost.
+    """
+    return types.MappingProxyType(
+        {_field_key(name): tag for name, tag in market_tags(registry, version).items()}
+    )
+
+
+@functools.cache
+def wire_tags(registry: FixRegistry | None = None, version: str | None = None) -> dict[str, str]:
+    """The wire tag each field spelling resolves to, filled in as it is asked.
+
+    Shared by every message read under one dictionary version, because that is
+    what the answer depends on: a feed asks for the same few dozen fields on
+    every line, and resolving one is two lookups and a fold.
+    """
+    return {}
+
+
+@functools.cache
 def market_tags(
     registry: FixRegistry | None = None, version: str | None = None
 ) -> Mapping[str, int]:
@@ -385,9 +411,21 @@ def _declared_tags(struct: StructField, into: dict[str, int]) -> None:
             _declared_tags(member, into)
 
 
+@functools.lru_cache(maxsize=8192)
+def _folded_key(text: str) -> str:
+    """One already-string name folded, remembered because the names recur.
+
+    A translation reads the same few dozen field names off every message it
+    converts, and folding one costs a pass over its characters -- so the pass
+    is paid once per distinct spelling for the life of the process rather than
+    once per message per key.
+    """
+    return "".join(character.lower() for character in text if character.isalnum())
+
+
 def _field_key(value: Any) -> str:
     """A FIX name in the spelling used by registry and rendered keys."""
-    return "".join(character.lower() for character in str(value) if character.isalnum())
+    return _folded_key(value if type(value) is str else str(value))
 
 
 def _version_key(value: Any) -> str:
@@ -467,7 +505,11 @@ class FixEvents(Convertible):
 
     @functools.cached_property
     def _tags_by_name(self) -> Mapping[str, int]:
-        return types.MappingProxyType({_field_key(name): tag for name, tag in self.tags.items()})
+        return market_tags_by_name(self.registry, self.version)
+
+    @functools.cached_property
+    def _wire_tags(self) -> dict[str, str]:
+        return wire_tags(self.registry, self.version)
 
     @functools.cached_property
     def _names_by_tag(self) -> Mapping[str, str]:
@@ -481,13 +523,19 @@ class FixEvents(Convertible):
 
     def tag_of(self, field: int | str) -> str:
         """A canonical field name or numeric tag as the selected wire tag."""
-        text = str(field)
+        text = field if type(field) is str else str(field)
+        resolved = self._wire_tags
+        found = resolved.get(text)
+        if found is not None:
+            return found
         if text.isascii() and text.isdigit():
+            resolved[text] = text
             return text
         tag = self.tags.get(text)
         if tag is None:
             tag = self._tags_by_name.get(_field_key(text))
-        return str(tag) if tag is not None else text
+        found = resolved[text] = str(tag) if tag is not None else text
+        return found
 
     @functools.cached_property
     def by_tag(self) -> dict[str, Any]:
@@ -504,16 +552,26 @@ class FixEvents(Convertible):
             found.setdefault(key, value)
         return found
 
+    @functools.cached_property
+    def by_folded_tag(self) -> dict[str, Any]:
+        """The same values under folded keys, so a name miss is still a lookup.
+
+        Built once per message rather than walked per miss: a translation asks
+        for several dozen fields a message does not carry, and each of those
+        used to re-fold every key the message did.
+        """
+        found: dict[str, Any] = {}
+        for key, value in self.by_tag.items():
+            found.setdefault(_field_key(key), value)
+        return found
+
     def get(self, field: int | str) -> Any:
         """The message's first value for one canonical name or numeric tag."""
         wanted = self.tag_of(field)
         found = self.by_tag.get(wanted)
         if found is not None or wanted in self.by_tag:
             return found
-        folded = _field_key(str(field))
-        return next(
-            (value for key, value in self.by_tag.items() if _field_key(key) == folded), None
-        )
+        return self.by_folded_tag.get(_field_key(field))
 
     def state_of(self, field: str, default: State = State.UNKNOWN) -> State:
         """Standard state for one field-specific FIX code."""

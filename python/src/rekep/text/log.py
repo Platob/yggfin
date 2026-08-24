@@ -445,17 +445,32 @@ class Log(Event):
             pyarrow.compute.equal(found, ""), pyarrow.nulls(rows, pyarrow.string()), found
         )
 
+    @classmethod
+    @functools.cache
+    def into_tagged_columns(cls) -> tuple[tuple[str, str], ...]:
+        """`(attribute, wire tag)` for every declared column FIX numbers.
+
+        Read off the declaration once per class rather than per row: which
+        columns carry a tag is a fact about the shape, and asking each of a
+        hundred fields for its metadata again on every line was the largest
+        single cost of turning a parsed log back into FIX.
+        """
+        return tuple(
+            (member.name, tag)
+            for member in cls.into_field().fields
+            if (tag := member.fix.get("tag")) is not None
+        )
+
     def into_fix_events(self, **declared: Any) -> Any:
         """Rebuild the FIX market reader from promoted columns and residual pairs."""
         from rekep.market.fix import FixEvents
 
         carried = {"runix": self.unix, "mic": self.mic, **declared}
-        pairs: list[tuple[Any, Any]] = []
-        for member in type(self).into_field().fields:
-            tag = member.fix.get("tag")
-            value = getattr(self, member.name, None)
-            if tag is not None and value is not None:
-                pairs.append((tag, value))
+        pairs: list[tuple[Any, Any]] = [
+            (tag, value)
+            for name, tag in type(self).into_tagged_columns()
+            if (value := getattr(self, name, None)) is not None
+        ]
         pairs.extend(_stored_pairs(self.kwargs))
         if pairs:
             return FixEvents.from_pairs(pairs, **carried)

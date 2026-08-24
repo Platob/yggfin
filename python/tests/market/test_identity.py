@@ -143,6 +143,31 @@ def test_an_absent_part_is_framed_as_a_length_of_minus_one() -> None:
     assert frame((None,)) != frame(("",))
 
 
+def test_a_run_of_integers_frames_exactly_as_one_at_a_time() -> None:
+    """A long identity is packed in runs; the bytes are the same either way.
+
+    Which is the whole licence for packing them: a book with a thousand live
+    orders is a thousand integers, and another language reading this frame
+    knows nothing about how many `struct` calls wrote it.
+    """
+    one_at_a_time = b"".join(struct.pack("<q", 8) + struct.pack("<q", value) for value in range(64))
+    assert frame(tuple(range(64))) == one_at_a_time
+    mixed = ("X", 1, 2, None, 3.5, 3, 4, b"z", 5)
+    assert frame(mixed) == b"".join(
+        ABSENT_FRAME
+        if part is None
+        else struct.pack("<q", len(part_bytes(part))) + part_bytes(part)
+        for part in mixed
+    )
+    assert frame((True, 1)) != frame((1, 1)), "a bool is not an integer part"
+
+
+def test_an_integer_a_run_cannot_hold_is_still_named_by_its_error() -> None:
+    """Packed together, refused one by one: the message has to name the value."""
+    with pytest.raises(OverflowError, match=str(2**63)):
+        frame((1, 2**63, 3))
+
+
 def test_a_number_is_framed_as_its_own_bytes() -> None:
     """No formatter, so there is nothing for two implementations to disagree about."""
     assert part_bytes(42) == struct.pack("<q", 42)
