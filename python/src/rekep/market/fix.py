@@ -394,12 +394,6 @@ def market_tags(
     return types.MappingProxyType(found)
 
 
-@functools.cache
-def market_fields() -> frozenset[str]:
-    """Canonical fields market translation reads from promoted log columns."""
-    return frozenset({"BeginString", *_standard_market_tags()})
-
-
 def _declared_tags(struct: StructField, into: dict[str, int]) -> None:
     """Every `fix:` tag under `struct`, nested members included."""
     for member in struct.fields:

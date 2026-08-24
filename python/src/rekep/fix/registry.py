@@ -50,7 +50,7 @@ from rekep.fix.store import (
     slug_collisions,
     write_archive,
 )
-from rekep.urls import HTTP, LOCAL, Url
+from rekep.urls import HTTP, Url
 
 #: The dictionary that is scraped: OnixS publishes every FIX version as one
 #: page per version listing the tags, and one page per field carrying the
@@ -1373,12 +1373,6 @@ def _resource_identity(
     if filesystem is not None:
         return f"{id(filesystem)}:{location}"
     return Url.from_string(location).into_string()
-
-
-def _written_target(target: str | os.PathLike[str]) -> pathlib.Path | str:
-    """A local output as a `Path`, and a remote one as its canonical URI."""
-    parsed = Url.from_string(os.fspath(target))
-    return pathlib.Path(parsed.store_path) if parsed.scheme in LOCAL else parsed.into_string()
 
 
 # -- the wire ----------------------------------------------------------------

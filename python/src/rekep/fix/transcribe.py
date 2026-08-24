@@ -1259,19 +1259,6 @@ def _mapped(
     return pyarrow.ListArray.from_arrays(offsets, entries, type=arrow_type)
 
 
-def _selected_list(
-    source: Any,
-    lengths: Any,
-    mask: Any,
-    values: Any,
-    arrow_type: pyarrow.DataType,
-) -> pyarrow.Array:
-    """Selected child values rebuilt under their source rows and nulls."""
-    return pyarrow.ListArray.from_arrays(
-        _selected_offsets(source, lengths, mask), values, type=arrow_type
-    )
-
-
 def _selected_offsets(source: Any, lengths: Any, mask: Any) -> pyarrow.Array:
     """List offsets after a flattened child mask, preserving null rows."""
     compute = pyarrow.compute
