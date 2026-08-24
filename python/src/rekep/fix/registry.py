@@ -298,6 +298,19 @@ class FixRegistry(Convertible):
         refreshed = self._stored_components(version)
         return refreshed if refreshed is not None else (stored or [])
 
+    def components_available(self, version: str) -> bool:
+        """Whether this store holds component declarations for `version` at all.
+
+        `components()` answers `[]` twice over: for a version whose spec
+        declares none -- 4.0 through 4.2 predate them -- and for a store
+        written before this package kept any. The first is the standard, the
+        second is a stale artifact, and only this tells them apart.
+        """
+        try:
+            return self._stored_components(self._spelling(version)) is not None
+        except (KeyError, OSError, ValueError):
+            return False
+
     def component(self, name: str, version: str | None = None) -> SpecComponent:
         """The newest declaration of one component, matched case-insensitively."""
         wanted = str(name).strip().lower()
@@ -334,7 +347,14 @@ class FixRegistry(Convertible):
                     enriched += 1
             session = parse_session(document) or self.session(version)
             components = list(parse_components(document).values())
-            if not components:
+            if not components and not spec:
+                # A spec that could not be read says nothing about components,
+                # so what is stored stands. One that *was* read and declares
+                # none -- 4.0 through 4.2 ship an empty `<components/>` -- is
+                # answering the question, and storing that empty answer is what
+                # separates "this version has none" from "this store never had
+                # any". `components()` is `[]` either way; only the store knows
+                # which, and a caller that cannot tell degrades silently.
                 components = self._stored_components(version)
             self._store_fields(version, stored, session, components)
             self._indexes.pop(version, None)
@@ -832,9 +852,18 @@ class FixRegistry(Convertible):
                 session = self.session(version)
                 if session:
                     names = {member.name for member in selected}
-                    selected = [[name, required] for name, required in session if name in names]
-                    if selected:
-                        payload["session"] = selected
+                    carried = [[name, required] for name, required in session if name in names]
+                    if carried:
+                        payload["session"] = carried
+                # Whole, never projected: a component declares where a group
+                # starts and ends, and a tree missing the members whose tags
+                # this projection did not select would split the group
+                # somewhere else. Dropping them entirely is worse still --
+                # `components()` then answers `[]` for every version and the
+                # Parties extractor silently produces nothing.
+                components = self._stored_components(version)
+                if components is not None:
+                    payload["components"] = [member.into_dict() for member in components]
                 archive.writestr(_member(f"{version}.json"), _document(payload))
         write_bytes(output.getvalue(), target)
         return _written_target(target)

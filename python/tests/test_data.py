@@ -12,6 +12,7 @@ tags are its own, and the parts the pages carry are carried through.
 import json
 import urllib.request
 import zipfile
+from importlib.resources import files
 from pathlib import Path
 
 import pyarrow
@@ -19,6 +20,16 @@ import pytest
 
 from rekep import Field
 from rekep.fix import FIX_SCALARS, FixRegistry
+from rekep.fix.columns import _ORDER
+from rekep.fix.publish import (
+    LOG_FIELDS,
+    MARKET_FIELDS,
+    PROJECTED,
+    latest_fields,
+    missing_from,
+    publish_builtin,
+)
+from rekep.market.fix import CARRIED_FIELDS, market_tags
 
 #: The dictionary is at the repo root, beside `python/` -- published data,
 #: not something shipped in the wheel. One archive: a registry pointed at it
@@ -148,7 +159,13 @@ def test_a_projection_is_a_small_exact_offline_registry(
             member for member in registry.fields(version) if member.name in {"Side", "QuoteID"}
         ]
         assert projected.fields(version) == expected
-    assert target.stat().st_size < 20_000
+    # A seventh of the published dictionary, and every byte of the remainder
+    # is component declarations: those travel whole rather than being selected
+    # with the fields, because a component says where a repeating group starts
+    # and ends and a tree missing members would end it somewhere else.
+    assert target.stat().st_size < DATA.stat().st_size // 5
+    for version in projected.versions:
+        assert projected.components(version) == registry.components(version)
 
     again = registry.into_projection(tmp_path / "again.zip", ["Side", "QuoteID"])
     assert again.read_bytes() == target.read_bytes()
@@ -168,7 +185,10 @@ def test_the_builtin_projection_matches_the_published_versions(
 ) -> None:
     builtin = FixRegistry.from_builtin()
     assert builtin.versions == ("FIX.Latest", *registry.versions)
-    assert len(builtin.tags()) == 158
+    # Derived from `publish.PROJECTED`, then pinned: 170 keys resolve to 185
+    # distinct names because a version may spell one tag differently, and the
+    # projection selects by tag once a key has resolved.
+    assert len(builtin.tags()) == 185
     selected = {
         int(member.fix["tag"])
         for version in registry.versions
@@ -183,6 +203,62 @@ def test_the_builtin_projection_matches_the_published_versions(
         "ExposureDuration",
         "ExposureDurationUnit",
     ]
+
+
+def test_the_builtin_projection_is_what_publishing_it_produces(tmp_path: Path) -> None:
+    """Byte for byte, from the published dictionary and the declared key list.
+
+    The wheel's registry is generated, and a generated artifact nobody can
+    regenerate is a hand-edited one. This is the command in `data/README.md`,
+    run against the archive that ships beside it.
+    """
+    rebuilt = publish_builtin(DATA, tmp_path / "registry.zip")
+    packaged = Path(str(files("rekep.fix").joinpath("registry.zip")))
+    assert rebuilt.read_bytes() == packaged.read_bytes()
+
+
+def test_the_builtin_projection_answers_every_key_the_package_looks_up(
+    registry: FixRegistry,
+) -> None:
+    """`publish.PROJECTED` is a hand-written list, and these are its authorities.
+
+    A field added to the log schema or to market translation but not to the
+    list would ship a registry that cannot answer for it -- which is the same
+    silence as a name nobody has ever seen, and reads as one downstream.
+    """
+    assert missing_from(registry, PROJECTED) == [member.name for member in latest_fields()], (
+        "the two the dictionary's per-version pages predate, and nothing else"
+    )
+    assert set(LOG_FIELDS) == set(_ORDER)
+    assert set(PROJECTED) >= set(CARRIED_FIELDS)
+    assert set(MARKET_FIELDS).isdisjoint(LOG_FIELDS), "each name declared once"
+    builtin = FixRegistry.from_builtin()
+    assert not missing_from(builtin, PROJECTED)
+    assert not missing_from(builtin, tuple(market_tags())), "every tag translation reads"
+
+
+def test_the_builtin_projection_carries_the_component_declarations(
+    registry: FixRegistry,
+) -> None:
+    """The regression: a projection that drops these extracts no party at all.
+
+    `components()` answers `[]` for a version whose spec declares none *and*
+    for a store that never held any, so the assertion has to be both -- the
+    declarations for the versions that have them, and the stored-and-empty
+    answer for 4.0 through 4.2, which is what tells a reader the store was
+    asked rather than never written.
+    """
+    builtin = FixRegistry.from_builtin()
+    parties = builtin.component("Parties", "4.4")
+    assert parties.name == "Parties"
+    assert [member.name for member in parties.members] == ["NoPartyIDs"]
+    assert parties.members[0].tag == 453
+    for version in registry.versions:
+        assert builtin.components_available(version), version
+        assert builtin.components(version) == registry.components(version), version
+    declared = {version for version in registry.versions if builtin.components(version)}
+    assert declared == {"4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2", "FIXT1.1"}
+    assert {"4.0", "4.1", "4.2"}.isdisjoint(declared), "no component existed before 4.3"
 
 
 def test_the_archive_says_it_came_from_nowhere_in_particular() -> None:

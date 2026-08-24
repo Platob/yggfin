@@ -21,5 +21,14 @@ cd python
 uv run python -c "from rekep.fix import FixRegistry; r=FixRegistry(cache_dir='../data/fix'); r.load(refresh=True); r.into_zip('../data/fix.zip')"
 ```
 
-`python/tests/test_data.py` checks completeness and byte-stable archive
-rebuilding.
+Then rebuild the projection the wheel ships, which selects the keys
+`rekep.fix.publish.PROJECTED` names and carries every component declaration:
+
+```bash
+cd python
+uv run python -c "from rekep.fix.publish import publish_builtin; \
+publish_builtin('../data/fix.zip', 'src/rekep/fix/registry.zip')"
+```
+
+`python/tests/test_data.py` checks completeness, byte-stable archive
+rebuilding, and that the published projection is what publishing produces.

@@ -47,6 +47,28 @@ The registry supplies:
 
 Protocol-specific code should normalize values, not duplicate registry tables.
 
+### What the wheel carries
+
+`data/fix.zip` is the whole dictionary and stays beside the repository. The
+wheel ships `rekep/fix/registry.zip`, a projection of it holding the keys
+`rekep.fix.publish.PROJECTED` names -- and every version's component
+declarations, whole. A component says where a repeating group starts and ends,
+so a projection that selected its members alongside the fields would end the
+group somewhere else, and one that dropped them extracts no group at all.
+
+`components()` answers `[]` twice over: for a version whose spec declares none
+-- nothing before 4.3 has a component -- and for a store written before any
+were kept. `components_available()` is what tells them apart, and the second
+case warns rather than quietly extracting nothing.
+
+Rebuild the projection after refreshing the dictionary:
+
+```bash
+cd python
+uv run python -c "from rekep.fix.publish import publish_builtin; \
+publish_builtin('../data/fix.zip', 'src/rekep/fix/registry.zip')"
+```
+
 ## Groups and components
 
 Repeating groups remain ordered entries. Known components such as Parties are

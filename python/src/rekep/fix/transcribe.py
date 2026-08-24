@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import re
+import warnings
 from collections.abc import Iterable, Mapping
 from functools import cached_property
 from typing import Any
@@ -31,6 +32,7 @@ from rekep.fix.message import (
     SEPARATORS,
     parse_arrow_array,
 )
+from rekep.fix.quickfix import SpecComponent
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL, Rules
 
@@ -722,20 +724,49 @@ class FixCodec(Convertible):
     def parties_of(self, version: str | None = None) -> Parties:
         """Version-aware Parties extractor, cached with the tag index."""
         if version not in self._parties:
-            components = []
-            if version is not None:
-                try:
-                    declared = self.registry.components(version)
-                    if any(component.name.lower() == "parties" for component in declared):
-                        components.extend(declared)
-                except (KeyError, OSError, ValueError):
-                    components = []
+            components, fallback = self._party_declaration(version)
             self._parties[version] = Parties(
                 components=components,
                 names=self._tags(version),
-                fallback=False,
+                fallback=fallback,
             )
         return self._parties[version]
+
+    def _party_declaration(self, version: str | None) -> tuple[list[SpecComponent], bool]:
+        """One version's Parties declaration, and whether to keep the legacy tags.
+
+        Three answers, and the middle one is why this is not two lines. A
+        registry that *declares* the component answers it. A registry that
+        declares components and has no Parties among them answers nothing, and
+        is right to: 4.0 through 4.2 have no such component. A registry that
+        declares no components at all for a version it otherwise knows is
+        neither -- it is a store written before component declarations were
+        kept, or a projection that dropped them -- and answering nothing there
+        extracted no party from any message at all, silently, for every version
+        the wire named. That one says so and keeps the legacy tags.
+        """
+        if version is None:
+            return [], False
+        try:
+            declared = self.registry.components(version)
+        except (KeyError, OSError, ValueError):
+            declared = []
+        if any(component.name.lower() == "parties" for component in declared):
+            return list(declared), False
+        try:
+            available = self.registry.components_available(version)
+        except (KeyError, OSError, ValueError):
+            available = False
+        if available:
+            return [], False
+        warnings.warn(
+            f"the FIX registry holds no component declarations for {version!r}: "
+            "party extraction falls back to the legacy tags. Rebuild the registry "
+            "so its components travel with its fields.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        return [], True
 
     # -- held state ---------------------------------------------------------
 

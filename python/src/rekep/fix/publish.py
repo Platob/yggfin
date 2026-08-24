@@ -1,0 +1,244 @@
+"""What the wheel's own FIX registry holds, and the one call that rebuilds it.
+
+The published dictionary (`data/fix.zip`) is the whole standard and is far too
+large to ship in a wheel; `rekep/fix/registry.zip` is a projection of it. A
+projection is only as good as its key list, so the list lives here as data --
+reviewable, diffable, and checked by a test against what the package actually
+looks up, rather than being retyped into a shell command each time the artifact
+is rebuilt.
+"""
+
+from __future__ import annotations
+
+import os
+import pathlib
+from collections.abc import Sequence
+
+from rekep.fields import Field
+from rekep.fix.fields import fix_field
+from rekep.fix.registry import FixRegistry
+
+#: Session and application fields the parsed log lifts into its own columns.
+#: `rekep.fix.columns` is the authority; a test holds this list to it.
+LOG_FIELDS: tuple[str, ...] = (
+    "BeginString",
+    "BodyLength",
+    "MsgType",
+    "CheckSum",
+    "SenderCompID",
+    "SenderSubID",
+    "SenderLocationID",
+    "TargetCompID",
+    "TargetSubID",
+    "TargetLocationID",
+    "OnBehalfOfCompID",
+    "OnBehalfOfSubID",
+    "OnBehalfOfLocationID",
+    "DeliverToCompID",
+    "DeliverToSubID",
+    "DeliverToLocationID",
+    "MsgSeqNum",
+    "LastMsgSeqNumProcessed",
+    "PossDupFlag",
+    "PossResend",
+    "SendingTime",
+    "OrigSendingTime",
+    "OnBehalfOfSendingTime",
+    "ApplVerID",
+    "CstmApplVerID",
+    "ApplExtID",
+    "MessageEncoding",
+    "XmlDataLen",
+    "XmlData",
+    "SecureDataLen",
+    "SecureData",
+    "SignatureLength",
+    "Signature",
+    "Symbol",
+    "SecurityID",
+    "SecurityIDSource",
+    "SecurityType",
+    "CFICode",
+    "SecurityExchange",
+    "Currency",
+    "Account",
+    "ClOrdID",
+    "OrigClOrdID",
+    "OrderID",
+    "ExecID",
+    "Side",
+    "OrdType",
+    "TimeInForce",
+    "OrdStatus",
+    "ExecType",
+    "OrderQty",
+    "Price",
+    "AvgPx",
+    "CumQty",
+    "LeavesQty",
+    "LastPx",
+    "LastQty",
+    "TransactTime",
+    "Text",
+    "QuoteID",
+    "QuoteReqID",
+    "QuoteType",
+    "QuoteStatus",
+    "QuoteRejectReason",
+    "QuoteRespType",
+    "QuoteCancelType",
+    "BidPx",
+    "OfferPx",
+    "BidSize",
+    "OfferSize",
+    "DefBidSize",
+    "DefOfferSize",
+    "ValidUntilTime",
+    "NoQuoteSets",
+    "NoQuoteEntries",
+    "QuoteSetID",
+    "QuoteEntryID",
+    "PartyID",
+    "PartyIDSource",
+    "PartyRole",
+    "NoPartyIDs",
+    "NoPartySubIDs",
+    "PartySubID",
+    "PartySubIDType",
+)
+
+#: Fields the market translation reads, whether or not it stores each as its
+#: own column. `rekep.market.fix.market_tags` is the authority; the same test
+#: holds this list to it. Kept here rather than imported because `fix` is
+#: underneath `market` and must not depend on it.
+MARKET_FIELDS: tuple[str, ...] = (
+    "OrigTime",
+    "TradeDate",
+    "ExpireTime",
+    "ExpireDate",
+    "ExposureDuration",
+    "ExposureDurationUnit",
+    "ExecTransType",
+    "CxlRejReason",
+    "NoMDEntries",
+    "MDEntryType",
+    "MDEntryPx",
+    "MDEntrySize",
+    "MDEntryDate",
+    "MDEntryTime",
+    "MDEntryID",
+    "MDUpdateAction",
+    "NumberOfOrders",
+    "TrdMatchID",
+    "ExDestination",
+    "NoSecurityAltID",
+    "SecurityAltID",
+    "SecurityAltIDSource",
+    "NoLegs",
+    "MaturityMonthYear",
+    "LegMaturityMonthYear",
+    "StopPx",
+    "ExecRefID",
+    "TradeID",
+    "AggressorIndicator",
+    "ContractMultiplier",
+    "MinPriceIncrement",
+    "RoundLot",
+    "MaturityDate",
+    "StrikePrice",
+    "PutOrCall",
+    "SecurityDesc",
+    "LegSymbol",
+    "LegSide",
+    "LegRatioQty",
+    "LegSecurityID",
+    "LegSecurityIDSource",
+    "LegCFICode",
+    "LegSecurityType",
+    "LegSecurityExchange",
+    "LegCurrency",
+    "LegContractMultiplier",
+    "LegMaturityDate",
+    "LegStrikePrice",
+    "LegPutOrCall",
+)
+
+#: Fields no declaration here names but real bridge traffic carries, so a key
+#: that resolves to one of them is a known field rather than an unknown name.
+#: Each earns its place by having been counted in a capture, and a projection
+#: that dropped one would move those counts back into "unknown".
+BRIDGE_FIELDS: tuple[str, ...] = (
+    "AdvId",
+    "AdvRefID",
+    "AdvSide",
+    "AdvTransType",
+    "BeginSeqNo",
+    "ClientID",
+    "Commission",
+    "CommType",
+    "ContraBroker",
+    "EndSeqNo",
+    "EventType",
+    "ExecBroker",
+    "ExecInst",
+    "ExecRestatementReason",
+    "FutSettDate",
+    "HandlInst",
+    "IOIID",
+    "LastCapacity",
+    "LastMkt",
+    "MaxFloor",
+    "MultiLegReportingType",
+    "NoTradingSessions",
+    "NoTrdRegTimestamps",
+    "OrdRejReason",
+    "OrderCapacity",
+    "Rule80A",
+    "SecondaryClOrdID",
+    "SecondaryExecID",
+    "SecondaryOrderID",
+    "SettlCurrency",
+    "SettlDate",
+    "SettlType",
+    "TradingSessionID",
+    "TradingSessionSubID",
+    "TrdRegTimestamp",
+    "TrdRegTimestampOrigin",
+    "TrdRegTimestampType",
+)
+
+#: Every key the packaged projection selects, in declaration order.
+PROJECTED: tuple[str, ...] = tuple(dict.fromkeys((*LOG_FIELDS, *MARKET_FIELDS, *BRIDGE_FIELDS)))
+
+
+def latest_fields() -> list[Field]:
+    """Fields no published version carries, declared here as `FIX.Latest`.
+
+    The dictionary's per-version pages stop where each version's standard
+    does, and these two arrived with an extension pack after `5.0.SP2` was
+    written. A projection cannot select what its source has never held, so
+    they travel as their own version rather than being wished into an older
+    one.
+    """
+    return [
+        _latest("ExposureDuration", 1629, "Duration for which an order remains exposed."),
+        _latest("ExposureDurationUnit", 1916, "Time unit in which ExposureDuration is expressed."),
+    ]
+
+
+def _latest(name: str, tag: int, description: str) -> Field:
+    return fix_field(name, tag, "int", description=description, version="FIX.Latest")
+
+
+def publish_builtin(
+    source: str | os.PathLike[str],
+    target: str | os.PathLike[str],
+) -> pathlib.Path | str:
+    """Rebuild the wheel's registry from the published dictionary, and name it."""
+    registry = FixRegistry(cache_dir=source, offline=True)
+    return registry.into_projection(target, PROJECTED, latest_fields())
+
+
+def missing_from(registry: FixRegistry, keys: Sequence[str] = PROJECTED) -> list[str]:
+    """Which `keys` a registry cannot answer, so a short artifact fails loudly."""
+    return [key for key in keys if not registry.lookup(key)]

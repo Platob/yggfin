@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from rekep.fix import (
     parse_arrow_array,
 )
 from rekep.fix.columns import COLUMNS, COMMON, FLAT, QUOTE, SESSION, STAMPS, TYPES
+from rekep.fix.fields import fix_field
 from rekep.fix.transcribe import (
     APPLICATION_VERSION_SOURCE,
     BEGIN_STRING_SOURCE,
@@ -965,3 +967,123 @@ def test_a_chunked_pair_list_lifts_the_same_way_one_chunk_does(codec: FixCodec) 
     assert _pairs(first, 1)[: len(hops)] == hops, "and what stayed stayed in wire order"
     senders = one[COLUMNS[49]].to_pylist()
     assert senders == two[COLUMNS[49]].to_pylist() == ["BUYSIDE", "RELAY"]
+
+
+# -- the registry the wheel actually ships -----------------------------------
+#
+# Everything above reads `data/fix.zip`, which is the whole published
+# dictionary. What a deployment loads is `FixRegistry.from_builtin()`, a
+# projection of it -- and a projection that dropped the component declarations
+# extracted no party from any message at all, for every version the wire named,
+# with nothing anywhere to say so. These read the shipped artifact.
+
+#: A counted Parties group with one sub-party, in the wire form a bridge sends.
+#: Synthetic identifiers throughout: what is under test is the shape.
+PARTIES_WIRE = (
+    SOH.join(
+        [
+            "8=FIX.4.4",
+            "35=8",
+            "49=SENDER-TEST",
+            "56=TARGET-TEST",
+            "34=1",
+            "52=20260101-00:00:00",
+            "11=ORD-TEST-01",
+            "453=2",
+            "448=PARTY-TEST-A",
+            "447=D",
+            "452=1",
+            "802=1",
+            "523=SUB-TEST-A",
+            "803=26",
+            "448=PARTY-TEST-B",
+            "447=D",
+            "452=11",
+            "54=1",
+            "38=100",
+            "10=000",
+        ]
+    )
+    + SOH
+)
+
+
+@pytest.fixture
+def packaged() -> FixCodec:
+    """A codec over the registry the wheel carries, and nothing else."""
+    return FixCodec(registry=FixRegistry.from_builtin())
+
+
+def _party_rows(codec: FixCodec, message: str, version: str) -> list[dict[str, object]] | None:
+    tags, _, _ = codec.into_fix_pairs(codec.into_pairs(pyarrow.array([message]), "FIX"), version)
+    columns, _ = codec.into_component_columns(tags, version)
+    return columns["parties"].to_pylist()[0]
+
+
+def test_the_packaged_registry_declares_the_components_it_needs(packaged: FixCodec) -> None:
+    """The regression, at the registry: `components()` was empty for every version."""
+    registry = packaged.registry
+    declared = [version for version in registry.versions if registry.components(version)]
+    assert declared == ["5.0.SP2", "5.0.SP1", "5.0", "4.4", "4.3", "FIXT1.1"]
+    assert registry.component("Parties", "4.4").members[0].tag == 453
+
+
+def test_the_packaged_registry_extracts_parties_from_a_wire_message(
+    packaged: FixCodec,
+) -> None:
+    """The consequence, end to end: this answered `[None]` before the fix."""
+    parties = _party_rows(packaged, PARTIES_WIRE, "4.4")
+    assert parties is not None, "a version was named, so the group must be read"
+    assert [party["party_id"] for party in parties] == ["PARTY-TEST-A", "PARTY-TEST-B"]
+    assert [party["party_role"] for party in parties] == [1, 11]
+    assert [party["party_id_source"] for party in parties] == ["D", "D"]
+    assert dict(parties[0]["buffer"]) == {
+        "NoPartySubIDs": "1",
+        "NoPartySubIDs[0].PartySubID": "SUB-TEST-A",
+        "NoPartySubIDs[0].PartySubIDType": "26",
+    }, "the sub-party group is read through the component tree, not guessed"
+    assert parties[1]["buffer"] is None
+
+
+def test_the_packaged_registry_leaves_every_other_tag_where_it_was(
+    packaged: FixCodec,
+) -> None:
+    """Extraction removes the group and nothing beside it, in wire order."""
+    tags, _, _ = packaged.into_fix_pairs(
+        packaged.into_pairs(pyarrow.array([PARTIES_WIRE]), "FIX"), "4.4"
+    )
+    _, residual = packaged.into_component_columns(tags, "4.4")
+    assert [tag for tag, _ in _pairs(residual)] == [8, 35, 49, 56, 34, 52, 11, 54, 38, 10]
+
+
+def test_a_version_that_declares_no_parties_component_extracts_nothing_quietly(
+    packaged: FixCodec,
+) -> None:
+    """4.0 through 4.2 predate the component, and the store says so rather than
+    being silent about it -- so this is an answer, not a degraded one."""
+    registry = packaged.registry
+    assert registry.components_available("4.2") and not registry.components("4.2")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert packaged.parties_of("4.2")._member_names == {}
+
+
+def test_a_registry_that_never_stored_components_says_so_and_keeps_the_legacy_tags(
+    tmp_path: Path,
+) -> None:
+    """The failure mode that shipped, made loud.
+
+    A store written before component declarations were kept cannot tell a
+    reader that 4.4 has a Parties component -- so it must not answer as though
+    4.4 has none. It warns once and extracts through the legacy tags, which is
+    less than the declaration gives and far more than nothing.
+    """
+    stale = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    stale._store_fields("4.4", [fix_field("PartyID", 448, "String", version="4.4")])
+    codec = FixCodec(registry=stale)
+    with pytest.warns(RuntimeWarning, match="no component declarations for '4.4'"):
+        extractor = codec.parties_of("4.4")
+    assert extractor.fallback
+    assert set(extractor._member_names) == {448, 447, 452, 802, 523, 803}
+    parties = _party_rows(codec, PARTIES_WIRE, "4.4")
+    assert [party["party_id"] for party in parties] == ["PARTY-TEST-A", "PARTY-TEST-B"]
