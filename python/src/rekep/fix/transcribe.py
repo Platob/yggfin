@@ -28,7 +28,12 @@ from rekep.fix.columns import (
 )
 from rekep.fix.columns import NAMED as NAMED_COLUMNS
 from rekep.fix.columns import TYPES as FLAT_TYPES
-from rekep.fix.components import ComponentGroup, Parties, TrdRegTimestamps
+from rekep.fix.components import (
+    ComponentGroup,
+    Parties,
+    SideTrdRegTimestamps,
+    TrdRegTimestamps,
+)
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.message import (
     _MEMBER_NAME_VECTOR,
@@ -609,7 +614,13 @@ class FixCodec(Convertible):
         In order and against what the last one left: a member lifted into one
         component's entries cannot also be lifted into another's.
         """
-        return MappingProxyType({"parties": Parties, "trd_reg_timestamps": TrdRegTimestamps})
+        return MappingProxyType(
+            {
+                "parties": Parties,
+                "trd_reg_timestamps": TrdRegTimestamps,
+                "side_trd_reg_timestamps": SideTrdRegTimestamps,
+            }
+        )
 
     def into_component_columns(
         self, kwargs: Any, version: str | None = None

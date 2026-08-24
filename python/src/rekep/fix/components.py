@@ -58,6 +58,30 @@ class TrdRegTimestamp:
     """Unprojected members of this entry under unique FIX names."""
 
 
+@scalar
+class SideTrdRegTimestamp:
+    """One entry of FIX's SideTrdRegTS component.
+
+    The per-side variant of `TrdRegTimestamp`: a message that reports both
+    sides of a trade stamps each of them, and the two are different instants.
+    The type codes are `TrdRegTimestampType <770>`'s own vocabulary -- FIX
+    gives `SideTrdRegTimestampType <1013>` the same meanings -- so one
+    preference table reads both.
+    """
+
+    side_trd_reg_timestamp: Annotated[datetime.datetime | None, DECLARATIONS[1012]] = None
+    """The regulatory instant for this side."""
+
+    side_trd_reg_timestamp_type: Annotated[int | None, DECLARATIONS[1013]] = None
+    """Which regulatory instant it is, in `TrdRegTimestampType`'s codes."""
+
+    side_trd_reg_timestamp_src: Annotated[str | None, DECLARATIONS[1014]] = None
+    """Who or what stamped it."""
+
+    buffer: dict[str, str] | None = None
+    """Unprojected members of this entry under unique FIX names."""
+
+
 def _entries_type(row: type) -> pyarrow.DataType:
     """The list one component's entries land in: never a null entry, ever."""
     return pyarrow.list_(pyarrow.field("item", row.into_field().arrow_type, nullable=False))
@@ -65,9 +89,11 @@ def _entries_type(row: type) -> pyarrow.DataType:
 
 PARTIES: pyarrow.DataType = _entries_type(Party)
 TRD_REG_TIMESTAMPS: pyarrow.DataType = _entries_type(TrdRegTimestamp)
+SIDE_TRD_REG_TIMESTAMPS: pyarrow.DataType = _entries_type(SideTrdRegTimestamp)
 
 _NO_PARTY_IDS = "NoPartyIDs"
 _NO_TRD_REG_TIMESTAMPS = "NoTrdRegTimestamps"
+_NO_SIDE_TRD_REG_TS = "NoSideTrdRegTS"
 _UNSIGNED = r"^[0-9]{1,18}$"
 _SIGNED = r"^[+-]?[0-9]{1,18}$"
 _DECIMAL = r"^[+-]?(?:[0-9]{1,17}(?:\.[0-9]*)?|\.[0-9]+)$"
@@ -599,6 +625,36 @@ class TrdRegTimestamps(ComponentGroup):
             ("trd_reg_timestamp", "TrdRegTimestamp"),
             ("trd_reg_timestamp_type", "TrdRegTimestampType"),
             ("trd_reg_timestamp_origin", "TrdRegTimestampOrigin"),
+        )
+
+
+@dataclasses.dataclass(eq=False)
+class SideTrdRegTimestamps(ComponentGroup):
+    """FIX's SideTrdRegTS component, entry by entry.
+
+    Structured for the same reason `TrdRegTimestamps` is: the three members
+    arrive together and mean nothing apart. A reader wanting "when this side
+    was executed" should not be reassembling them out of a flat pair list by
+    index.
+    """
+
+    component: str = "SideTrdRegTS"
+    group: str = _NO_SIDE_TRD_REG_TS
+
+    @classmethod
+    @cache
+    def into_row(cls) -> type:
+        """The `@scalar` class one per-side regulatory stamp is."""
+        return SideTrdRegTimestamp
+
+    @classmethod
+    @cache
+    def into_projection(cls) -> tuple[tuple[str, str], ...]:
+        """`SideTrdRegTimestamp` opens an entry; its type and source qualify it."""
+        return (
+            ("side_trd_reg_timestamp", "SideTrdRegTimestamp"),
+            ("side_trd_reg_timestamp_type", "SideTrdRegTimestampType"),
+            ("side_trd_reg_timestamp_src", "SideTrdRegTimestampSrc"),
         )
 
 

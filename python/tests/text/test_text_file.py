@@ -380,10 +380,12 @@ LINE_COLUMNS = [
     "plugin_code",
     "message",
     "protocol_code",
+    "unix_source",
     "msg_seq_num",
     "kwargs",
     "parties",
     "trd_reg_timestamps",
+    "side_trd_reg_timestamps",
     "isincode",
     "begin_string",
     "body_length",
@@ -464,8 +466,8 @@ LINE_COLUMNS = [
 ]
 
 EXPECTED_FLAT_COLUMNS = 77
-EXPECTED_LINE_COLUMNS = 87
-EXPECTED_LOG_COLUMNS = 105
+EXPECTED_LINE_COLUMNS = 89
+EXPECTED_LOG_COLUMNS = 107
 
 
 def test_schema(plain: Path) -> None:

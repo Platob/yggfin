@@ -127,6 +127,10 @@ FIXMESSAGE_FIELDS: tuple[str, ...] = (
     "TrdRegTimestampType",
     "TrdRegTimestampOrigin",
     "NoTrdRegTimestamps",
+    "SideTrdRegTimestamp",
+    "SideTrdRegTimestampType",
+    "SideTrdRegTimestampSrc",
+    "NoSideTrdRegTS",
 )
 
 #: Fields the market translation reads, whether or not it stores each as its

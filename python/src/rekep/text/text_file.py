@@ -27,6 +27,7 @@ from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.transcribe import FixCodec
 from rekep.market.event import CODES_TYPE, HOUR
 from rekep.market.identity import HASH, hash_bytes
+from rekep.market.transacted import resolve_arrow
 from rekep.text.fixmessage import FixMessage, FixMessageRules, MessageCodec
 from rekep.times import COMPACT, SHAPES, Stamp
 from rekep.urls import Url
@@ -424,15 +425,20 @@ class TextFile(Dataset, io.BufferedIOBase):
         # to the parsed lifecycle when the message supplies a readable key.
         digest = pyarrow.array(hashes, type=HASH)
         columns: dict[str, Any] = {
+            # Filled below, once the message columns are read: `unix` is the
+            # transaction time the message states, and the header clock is
+            # what *recorded* it. Seeded with the header clock so a row whose
+            # message says nothing about time still sorts where it was read.
             "unix": unix,
             "unix_hour": _hour_nanos(unix),
             "etype": self.rules.etype_arrow(message),
             # A line is created when it is stamped. `runix` is when somebody
-            # wrote it down *here*, which the parser does not know and must not
-            # invent: a clock read at parse time would make the same file parse
+            # wrote it down *here*, which for a captured log is exactly what
+            # the header stamped -- so it is the header clock, and never a
+            # clock read at parse time, which would make the same file parse
             # into different rows every run.
             "cunix": unix,
-            "runix": _zeros(count, pyarrow.int64()),
+            "runix": unix,
             "eunix": pyarrow.nulls(count, pyarrow.int64()),
             "sunix": pyarrow.nulls(count, pyarrow.int64()),
             "hash": digest,
@@ -459,6 +465,11 @@ class TextFile(Dataset, io.BufferedIOBase):
             columns[name] = column
         columns["mic"] = _mic_arrow(columns, message, count)
         columns["reason"] = columns.get("text", columns["reason"])
+        # After the message columns, because that is what it reads: the
+        # regulatory groups and the clocks a line carried are columns by now.
+        columns["unix"], columns["unix_source"] = resolve_arrow(columns, unix, count)
+        columns["unix_hour"] = _hour_nanos(columns["unix"])
+        columns["cunix"] = columns["unix"]
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )

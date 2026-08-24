@@ -15,6 +15,7 @@ from rekep.enums import (
     MIC,
     AssetKind,
     Currency,
+    EventType,
     IdSource,
     MarketKind,
     OptionKind,
@@ -39,6 +40,7 @@ from rekep.fix.registry import FixRegistry
 from rekep.market.event import SYMBOL_CODE, MarketEvent
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
+from rekep.market.transacted import TRANSACTED, Transacted, resolve
 
 TMarketEvent = TypeVar("TMarketEvent", bound=MarketEvent)
 
@@ -112,29 +114,14 @@ CARRIED_FIELDS: tuple[str, ...] = (
 #: Encoding fields, omitted from market metadata; BeginString remains evidence.
 FRAMING_FIELDS = frozenset({"BodyLength", "CheckSum"})
 
-#: Where `MarketEvent.unix` comes from, **best first**, and why each is where
-#: it is. Every one is a real FIX field, and the order is the standard's own
-#: definitions rather than a preference:
-#:
-#: 1. `TransactTime <60>` -- "timestamp when the business transaction
-#:    represented by the message occurred". The thing being asked for.
-#: 2. `MDEntryDate <272>` + `MDEntryTime <273>` -- a market-data entry's own
-#:    instant, split across two fields because that is how FIX carries it.
-#:    Read per *entry*, so two entries of one refresh keep their own times.
-#: 3. `OrigTime <42>` -- "time of message origination", which for a relayed
-#:    or republished message is nearer the transaction than the relay's own
-#:    transmission.
-#: 4. `OrigSendingTime <122>` -- on a `PossDupFlag <43>` resend, when the
-#:    message *first* went out. Still transmission, but the original one.
-#: 5. `SendingTime <52>` -- transmission. Last, and only because a row with
-#:    no time at all sorts nowhere: it is the recording clock, and it is what
-#:    `runix` holds regardless.
-TRANSACTED: tuple[Any, ...] = (
-    "TransactTime",
-    ("MDEntryDate", "MDEntryTime"),
-    "OrigTime",
-    "OrigSendingTime",
-    "SendingTime",
+#: Which repeating group each structured regulatory column is read out of,
+#: for the translation layer -- which holds a message rather than the typed
+#: columns the parse layer has.
+_REGULATORY_GROUPS: Mapping[str, str] = types.MappingProxyType(
+    {
+        "trd_reg_timestamps": "NoTrdRegTimestamps",
+        "side_trd_reg_timestamps": "NoSideTrdRegTS",
+    }
 )
 
 #: MsgType <35> values that carry an order, and the state each *asserts* when
@@ -197,11 +184,21 @@ INSTRUMENT_MESSAGE_FIELDS: frozenset[str] = INSTRUMENT_FIELDS | frozenset(
         "NoQuoteEntries",
         "QuoteSetID",
         "QuoteEntryID",
-        *(
-            field
-            for source in TRANSACTED
-            for field in (source if isinstance(source, tuple) else (source,))
-        ),
+        *(field for rung in TRANSACTED for field in rung.fields),
+    }
+)
+
+#: What kind of event each MsgType <35> is about to become. Read before an
+#: event exists, because it is what ranks the regulatory stamps that decide
+#: the event's own `unix` -- so it cannot be asked of the built event.
+MESSAGE_EVENTS: Mapping[str, EventType] = types.MappingProxyType(
+    {
+        **{kind: EventType.BOOK for kind in ENTRIED},
+        **{kind: EventType.QUOTE for kind in QUOTED},
+        "i": EventType.QUOTE,
+        "8": EventType.EXECUTION,
+        "AE": EventType.EXECUTION,
+        **{kind: EventType.ORDER for kind in ORDERED},
     }
 )
 
@@ -799,7 +796,7 @@ class FixEvents(Convertible):
                 unix=unix,
                 cunix=unix,
                 runix=self.runix or unix,
-                eunix=_unix_value(get("ValidUntilTime")),
+                eunix=unix_value(get("ValidUntilTime")),
                 state=state,
                 side=side,
                 px=px,
@@ -999,25 +996,61 @@ class FixEvents(Convertible):
 
     @property
     def unix(self) -> int:
-        """When the transaction happened, by `TRANSACTED` -- not when it was sent.
+        """When the transaction happened, by `TRANSACTED` -- not when it was sent."""
+        return self.transacted.unix
 
-        Falls back to the log's `runix` when the message carries no FIX clock.
+    @functools.cached_property
+    def transacted(self) -> Transacted:
+        """The resolved transaction time and the rung of the chain that gave it.
+
+        The chain itself is `rekep.market.transacted`, called from here and
+        from the parse layer alike: which clock a row happened at is one
+        answer, and two copies of it would be two answers that agreed until
+        they did not.
         """
-        get = self.get
-        recorded = _unix_value(get("SendingTime"))
-        if recorded is None:
-            recorded = self.runix or None
-        for source in TRANSACTED:
-            if isinstance(source, tuple):
-                date, time = source
-                found = _unix_value(get(date))
-                clock = _unix_value(get(time), day=found if found is not None else recorded)
-                found = clock if clock is not None else found
-            else:
-                found = _unix_value(get(source))
-            if found is not None:
-                return found
-        return recorded or 0
+        recorded = unix_value(self.get("SendingTime")) or self.runix or None
+        return resolve(
+            self._clock,
+            self._stamps,
+            etype=self._event_type,
+            recorded=recorded,
+            member=self._stamp_member,
+        )
+
+    def _clock(self, name: str, day: int | None = None) -> int | None:
+        """One FIX clock this message carries, in epoch nanoseconds."""
+        return unix_value(self.get(name), day=day)
+
+    def _stamps(self, column: str) -> Sequence[Any]:
+        """One regulatory group's entries, out of the message's own pairs.
+
+        The translation layer holds a message rather than typed columns, so
+        the entries are read back out of the group the wire carried -- under
+        the count tag the dictionary gives it, which is what `_group` does for
+        every other component here.
+        """
+        group = _REGULATORY_GROUPS.get(column)
+        return self._group_entries(group) if group else []
+
+    def _stamp_member(self, entry: Any, name: str) -> Any:
+        """One member of a regulatory entry, however the wire keyed it.
+
+        Through the one accessor, because that is the whole of what it is
+        for: a group's members arrive keyed by tag on a wire message and by
+        name on a rendered one, and the rung declares neither spelling in
+        particular -- it declares the field.
+        """
+        return self.access.reading(entry, name).raw
+
+    @property
+    def _event_type(self) -> EventType | None:
+        """What kind of event this reader is about to build, for the ranking.
+
+        Read off `MsgType <35>` rather than from a built event, because the
+        ranking decides the event's own `unix` and so must be settled before
+        one exists.
+        """
+        return MESSAGE_EVENTS.get(self._message_kind)
 
     def _expires(self, tif: TimeInForce, unix: int, duration: int | None) -> int | None:
         """Exact expiry, from UTC time first and a fixed GFT duration second."""
@@ -1274,7 +1307,7 @@ def _month_year(text: str | None) -> datetime.date | None:
         return None
 
 
-def _unix_value(value: Any, day: int | None = None) -> int | None:
+def unix_value(value: Any, day: int | None = None) -> int | None:
     """FIX text or a typed parsed-log clock as epoch nanoseconds."""
     if isinstance(value, datetime.datetime):
         if value.tzinfo is not None:

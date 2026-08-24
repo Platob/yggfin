@@ -20,7 +20,7 @@ from rekep.market.book import (
 )
 from rekep.market.event import DAY, EPOCH, UNIX, Event, MarketEvent
 from rekep.market.fields import MarketConvertible, MarketFieldBuilder, fix_tag, unkeyed
-from rekep.market.fix import TRANSACTED, FixEvents, market_tags, unix_of
+from rekep.market.fix import FixEvents, market_tags, unix_of
 from rekep.market.identity import (
     HASH,
     IDENTITY_PROTOCOL,
@@ -34,6 +34,7 @@ from rekep.market.identity import (
 )
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order
+from rekep.market.transacted import PREFERRED, TRANSACTED, Stamped, Transacted
 
 __all__ = [
     "DAY",
@@ -41,7 +42,10 @@ __all__ = [
     "HASH",
     "IDENTITY_PROTOCOL",
     "NIL",
+    "PREFERRED",
     "TRANSACTED",
+    "Stamped",
+    "Transacted",
     "UNIX",
     "AssetKind",
     "Book",

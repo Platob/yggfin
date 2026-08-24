@@ -121,12 +121,18 @@ _PARTY_FIELDS: tuple[str, ...] = (
     "PartySubIDType",
 )
 
-# Fields materialized inside the structured TrdRegTimestamps component.
+# Fields materialized inside the two structured regulatory-clock components.
+# Declared here so each has a `DECLARATIONS` entry to annotate its column with;
+# none of them is a flat column of its own, because each belongs to an entry.
 _STAMP_GROUP_FIELDS: tuple[str, ...] = (
     "TrdRegTimestamp",
     "TrdRegTimestampType",
     "TrdRegTimestampOrigin",
     "NoTrdRegTimestamps",
+    "SideTrdRegTimestamp",
+    "SideTrdRegTimestampType",
+    "SideTrdRegTimestampSrc",
+    "NoSideTrdRegTS",
 )
 
 # FIX's documentation establishes UTC for these four timestamps.

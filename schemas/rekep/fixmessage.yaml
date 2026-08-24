@@ -147,6 +147,10 @@ fields:
 - name: protocol_code
   type: string
   description: Which protocol the line carries; OTHER is a line that carries none.
+- name: unix_source
+  type: string
+  description: Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own
+    clock.
 - name: msg_seq_num
   type: int64
   nullable: true
@@ -333,6 +337,61 @@ fields:
         fix:components: '["TrdRegTimestamps"]'
         fix:name: TrdRegTimestampOrigin
         fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
+    - name: buffer
+      type: map
+      nullable: true
+      description: Unprojected members of this entry under unique FIX names.
+      key:
+        type: string
+      value:
+        type: string
+- name: side_trd_reg_timestamps
+  type: list
+  nullable: true
+  description: FIX SideTrdRegTS entries -- the per-side regulatory clock; null when
+    absent.
+  metadata:
+    fix:component: SideTrdRegTS
+  item:
+    type: struct
+    fields:
+    - name: side_trd_reg_timestamp
+      type: timestamp[us, tz=UTC]
+      nullable: true
+      description: Will be used in a multi-sided message. Traded Regulatory timestamp
+        value Use to store time information required by government regulators or self
+        regulatory organizations such as an exchange or clearing house
+      metadata:
+        fix:tag: '1012'
+        fix:type: UTCTimestamp
+        fix:version: 5.0.SP2
+        fix:components: '["SideTrdRegTS"]'
+        fix:name: SideTrdRegTimestamp
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
+    - name: side_trd_reg_timestamp_type
+      type: int64
+      nullable: true
+      description: Same as TrdRegTimeStampType <770>
+      metadata:
+        fix:tag: '1013'
+        fix:type: int
+        fix:version: 5.0.SP2
+        fix:components: '["SideTrdRegTS"]'
+        fix:name: SideTrdRegTimestampType
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
+    - name: side_trd_reg_timestamp_src
+      type: string
+      nullable: true
+      description: Same as TrdRegTimestampOrigin <771> Text which identifies the origin
+        i.e. system which was used to generate the time stamp for the Traded Regulatory
+        timestamp value
+      metadata:
+        fix:tag: '1014'
+        fix:type: String
+        fix:version: 5.0.SP2
+        fix:components: '["SideTrdRegTS"]'
+        fix:name: SideTrdRegTimestampSrc
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0"]'
     - name: buffer
       type: map
       nullable: true

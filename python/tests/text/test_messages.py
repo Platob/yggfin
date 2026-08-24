@@ -10,7 +10,9 @@ import pytest
 
 from rekep.fix import NO_PROTOCOL, FixCodec, FixRegistry, Rule, Rules
 from rekep.fix.columns import COLUMNS
-from rekep.text import HEADER_PATTERN, TextFile, TextFiles
+from rekep.market.event import HOUR
+from rekep.text import HEADER_PATTERN, FixMessage, TextFile, TextFiles
+from rekep.times import unix_of
 
 SAMPLE = Path(__file__).parent.parent / "data" / "app_messages_sample.txt"
 SAMPLE_BYTES = SAMPLE.read_bytes()
@@ -378,7 +380,12 @@ def test_a_stamp_lands_as_the_microsecond_utc_instant_it_spells(table: pyarrow.T
     sending = table.column("sending_time")[PIPED].as_py()
     assert sending == datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC)
     sending_ns = int(sending.timestamp()) * 1_000_000_000 + sending.microsecond * 1000
-    assert table.column("unix")[PIPED].as_py() - sending_ns == 1_000_000
+    # `unix` is when the transaction happened, and this line's only FIX clock
+    # is its `SendingTime <52>` -- so that is the rung that answered, and the
+    # header's own stamp is a millisecond later in `runix`.
+    assert table.column("unix")[PIPED].as_py() == sending_ns
+    assert table.column("unix_source")[PIPED].as_py() == "SendingTime"
+    assert table.column("runix")[PIPED].as_py() - sending_ns == 1_000_000
 
 
 def test_a_field_the_message_never_sent_is_null_and_never_a_default(table: pyarrow.Table) -> None:
@@ -500,11 +507,12 @@ def test_versionless_bridge_names_remain_raw_even_when_the_dictionary_knows_them
 
 
 def test_both_stamp_widths_read_as_the_instants_they_spell(table: pyarrow.Table) -> None:
-    unix = table.column("unix").to_pylist()
-    assert unix[0] == 1_786_665_901_147_250_000, "micros, with a separator"
-    assert unix[1] == 1_786_665_901_147_000_000, "millis only"
-    assert unix[PIPED] == 1_786_665_901_148_000_000, "millis, comma-separated"
-    assert unix[0] > unix[1], "a padded 147 is 147 ms, not 147 us -- and so is earlier"
+    """The header's own clock, which is `runix` now that `unix` is the transaction."""
+    recorded = table.column("runix").to_pylist()
+    assert recorded[0] == 1_786_665_901_147_250_000, "micros, with a separator"
+    assert recorded[1] == 1_786_665_901_147_000_000, "millis only"
+    assert recorded[PIPED] == 1_786_665_901_148_000_000, "millis, comma-separated"
+    assert recorded[0] > recorded[1], "a padded 147 is 147 ms, not 147 us -- and so is earlier"
 
 
 def test_the_capture_reparses_to_the_same_instants(
@@ -793,3 +801,98 @@ def _lines(path: Path, codec: FixCodec, plugin: str, messages: list[str]) -> pya
 def _one_line(path: Path, codec: FixCodec, plugin: str, message: str) -> pyarrow.Table:
     """One synthesised log line through the whole parser, as the row it lands as."""
     return _lines(path, codec, plugin, [message])
+
+
+# -- when the transaction happened -------------------------------------------
+
+#: One capture where every rung of the chain answers for a different row, and
+#: where the regulatory group and the message's own claim *disagree* -- which
+#: is the case the ranking exists for.
+TRANSACTED_LINES = (
+    # An execution whose group says it executed at 09:29 and whose
+    # TransactTime claims 09:30. The group wins, and takes EXECUTION_TIME <1>
+    # rather than the BROKER_RECEIPT <4> beside it.
+    "2026-08-14 00:05:01.147 [t] [d] (INFO) 8=FIX.4.4|35=8|17=E1|54=1|150=F|32=10|31=9.5|"
+    "55=IBM|60=20260814-09:30:00.000|768=2|769=20260814-09:29:00.000|770=1|"
+    "769=20260814-09:28:00.000|770=4|10=000\n"
+    # The same group shape on an *order*, which prefers TIME_IN <2>: one group,
+    # two kinds of row, two answers.
+    "2026-08-14 00:05:02.147 [t] [d] (INFO) 8=FIX.4.4|35=D|11=C1|54=1|55=IBM|"
+    "60=20260814-09:30:00.000|768=2|769=20260814-09:29:00.000|770=1|"
+    "769=20260814-09:27:00.000|770=2|10=000\n"
+    # No group, so the message's own claim answers.
+    "2026-08-14 00:05:03.147 [t] [d] (INFO) 8=FIX.4.4|35=D|11=C2|54=1|55=IBM|"
+    "60=20260814-09:26:00.000|10=000\n"
+    # No claim either, so the last FIX clock there is.
+    "2026-08-14 00:05:04.147 [t] [d] (INFO) 8=FIX.4.4|35=D|11=C3|54=1|55=IBM|"
+    "52=20260814-09:31:00.000|10=000\n"
+    # Not a message at all: only the clock that recorded it.
+    "2026-08-14 00:05:05.147 [t] [d] (INFO) heartbeat\n"
+)
+
+TRANSACTED_SOURCES = [
+    "TrdRegTimestamps=1",
+    "TrdRegTimestamps=2",
+    "TransactTime",
+    "SendingTime",
+    "recorded",
+]
+
+
+@pytest.fixture
+def transacted(tmp_path: Path, codec: FixCodec) -> pyarrow.Table:
+    path = tmp_path / "transacted.txt"
+    path.write_text(TRANSACTED_LINES)
+    with TextFile.from_path(path, codec=codec) as log:
+        return log.read_arrow_table()
+
+
+def test_unix_is_the_transaction_time_and_runix_is_when_it_was_recorded(
+    transacted: pyarrow.Table,
+) -> None:
+    """The whole point: a row's `unix` is when it happened, not when it printed."""
+    assert transacted.column("unix_source").to_pylist() == TRANSACTED_SOURCES
+    unix = transacted.column("unix").to_pylist()
+    assert unix[0] == unix_of("20260814-09:29:00.000"), "the group, not TransactTime"
+    assert unix[1] == unix_of("20260814-09:27:00.000"), "an order takes TIME_IN"
+    assert unix[2] == unix_of("20260814-09:26:00.000")
+    assert unix[3] == unix_of("20260814-09:31:00.000")
+    recorded = transacted.column("runix").to_pylist()
+    assert recorded == [
+        unix_of(f"2026-08-14 00:05:0{index + 1}.147") for index in range(len(recorded))
+    ], "the header clock is preserved, row for row"
+    assert unix[4] == recorded[4], "a line carrying no message happened when it was written"
+
+
+def test_the_group_and_transact_time_disagreeing_is_decided_by_the_chain(
+    transacted: pyarrow.Table,
+) -> None:
+    """Both rows carry `TransactTime <60>` at 09:30 and neither is stamped with it."""
+    claimed = transacted.column("transact_time").to_pylist()[:2]
+    assert all(one is not None for one in claimed), "the claim is still stored"
+    unix = transacted.column("unix").to_pylist()[:2]
+    assert all(one != unix_of("20260814-09:30:00.000") for one in unix)
+
+
+def test_unix_hour_follows_the_resolved_time_and_not_the_header(
+    transacted: pyarrow.Table,
+) -> None:
+    """A row moves partition with its transaction time, or a sorted read breaks."""
+    for unix, hour in zip(
+        transacted.column("unix").to_pylist(),
+        transacted.column("unix_hour").to_pylist(),
+        strict=True,
+    ):
+        assert hour == unix - unix % HOUR
+
+
+def test_the_parse_and_the_translation_resolve_one_row_alike(
+    transacted: pyarrow.Table,
+) -> None:
+    """One resolver, two executions: a column of rows and one message at a time."""
+    rows = [FixMessage.from_dict(row) for row in transacted.to_pylist()]
+    for row in rows:
+        found = row.into_fix_events().transacted
+        if not row.message or "8=FIX" not in row.message:
+            continue
+        assert (found.unix, found.source) == (row.unix, row.unix_source), row.message

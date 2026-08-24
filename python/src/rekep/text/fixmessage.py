@@ -18,7 +18,14 @@ from rekep.enums import EventType
 from rekep.fields import Field, scalar
 from rekep.fix.access import Entry, FieldAccess, Reading
 from rekep.fix.columns import DECLARATIONS, ISIN_CODE, KWARG_PARTS, KWARGS
-from rekep.fix.components import PARTIES, TRD_REG_TIMESTAMPS, Party, TrdRegTimestamp
+from rekep.fix.components import (
+    PARTIES,
+    SIDE_TRD_REG_TIMESTAMPS,
+    TRD_REG_TIMESTAMPS,
+    Party,
+    SideTrdRegTimestamp,
+    TrdRegTimestamp,
+)
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rules import NO_PROTOCOL
 from rekep.market.event import Event
@@ -117,6 +124,12 @@ class FixMessage(Event):
     protocol_code: str = NO_PROTOCOL
     """Which protocol the line carries; OTHER is a line that carries none."""
 
+    # Without it nothing downstream can tell a real transaction time from a
+    # print time, and that distinction is the whole point of resolving one.
+    # Empty means no clock answered at all, which is a row with no time.
+    unix_source: str = ""
+    """Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock."""
+
     msg_seq_num: Annotated[int | None, DECLARATIONS[34]] = None
     """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
 
@@ -142,6 +155,15 @@ class FixMessage(Event):
         ),
     ] = None
     """FIX TrdRegTimestamps entries; null when the component is absent."""
+
+    side_trd_reg_timestamps: Annotated[
+        list[SideTrdRegTimestamp] | None,
+        Field(
+            arrow_type=SIDE_TRD_REG_TIMESTAMPS,
+            metadata={"fix:component": "SideTrdRegTS"},
+        ),
+    ] = None
+    """FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent."""
 
     isincode: Annotated[str | None, ISIN_CODE] = None
     """ISIN carried by a rendered `ISINCODE` field."""
@@ -526,7 +548,7 @@ class FixMessage(Event):
         """Rebuild the FIX market reader from promoted columns and residual pairs."""
         from rekep.market.fix import FixEvents
 
-        carried = {"runix": self.unix, "mic": self.mic, **declared}
+        carried = {"runix": self.runix or self.unix, "mic": self.mic, **declared}
         pairs: list[tuple[Any, Any]] = [
             (tag, value)
             for name, tag in type(self).into_tagged_columns()
@@ -534,10 +556,27 @@ class FixMessage(Event):
         ]
         pairs.extend(_stored_pairs(self.kwargs))
         if pairs:
-            return FixEvents.from_pairs(pairs, **carried)
-        return (
-            FixEvents.from_text(self.message, **carried) if self.message else FixEvents(**carried)
-        )
+            built = FixEvents.from_pairs(pairs, **carried)
+        elif self.message:
+            built = FixEvents.from_text(self.message, **carried)
+        else:
+            built = FixEvents(**carried)
+        return self._transacted(built)
+
+    def _transacted(self, built: Any) -> Any:
+        """Hand the reader the transaction time this row already resolved.
+
+        Not re-derived, and it could not be: the regulatory groups the chain
+        reads first are lifted into typed columns of their own, so a reader
+        rebuilt from the residual pairs alone has lost them and would fall
+        down the chain to a weaker clock. The parse stage resolved it once and
+        stored which rung answered; this is that answer being consumed.
+        """
+        from rekep.market.transacted import Transacted
+
+        if self.unix_source:
+            built.__dict__["transacted"] = Transacted(self.unix, self.unix_source)
+        return built
 
     def into_market_events(self, **declared: Any) -> Iterator[Any]:
         """Translate this parsed row into its ordered market events."""
