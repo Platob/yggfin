@@ -1,9 +1,0 @@
-{
- "name": "LegOptionExerciseStartDateUnadjusted",
- "tag": 41499,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

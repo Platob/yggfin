@@ -1,24 +1,22 @@
 {
  "name": "PaymentStubEndDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 677,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPaymentStubEndDateBusinessCenters",
+   "required": false,
+   "tag": 42696,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPaymentStubEndDateBusinessCenters",
+     "kind": "field",
+     "name": "PaymentStubEndDateBusinessCenter",
      "required": false,
-     "tag": 42696,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PaymentStubEndDateBusinessCenter",
-       "required": false,
-       "tag": 42697
-      }
-     ]
+     "tag": 42697
     }
    ]
   }
- }
+ ]
 }

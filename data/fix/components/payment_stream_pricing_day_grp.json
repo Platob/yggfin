@@ -1,30 +1,28 @@
 {
  "name": "PaymentStreamPricingDayGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 507,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPaymentStreamPricingDays",
+   "required": false,
+   "tag": 41227,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPaymentStreamPricingDays",
+     "kind": "field",
+     "name": "PaymentStreamPricingDayOfWeek",
      "required": false,
-     "tag": 41227,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PaymentStreamPricingDayOfWeek",
-       "required": false,
-       "tag": 41228
-      },
-      {
-       "kind": "field",
-       "name": "PaymentStreamPricingDayNumber",
-       "required": false,
-       "tag": 41229
-      }
-     ]
+     "tag": 41228
+    },
+    {
+     "kind": "field",
+     "name": "PaymentStreamPricingDayNumber",
+     "required": false,
+     "tag": 41229
     }
    ]
   }
- }
+ ]
 }

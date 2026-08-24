@@ -1,9 +1,0 @@
-{
- "name": "LegOptionExerciseExpirationDateRelativeTo",
- "tag": 41518,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

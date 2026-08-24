@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamTotalNotionalUnitOfMeasure",
- "tag": 42024,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

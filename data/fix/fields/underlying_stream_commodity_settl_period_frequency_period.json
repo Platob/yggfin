@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamCommoditySettlPeriodFrequencyPeriod",
- "tag": 42008,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

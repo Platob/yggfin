@@ -1,9 +1,0 @@
-{
- "name": "OptionExerciseExpirationDateOffsetUnit",
- "tag": 41145,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

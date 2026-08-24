@@ -149,7 +149,7 @@ def test_add_builds_one_identity_from_answered_questions(store: Offline) -> None
     assert "added FakeVenue" in printed
     entry = store.resolve("FakeVenue")
     assert (entry.tag, entry.column) == (90004, "fake_venue")
-    assert entry.variant("9.1")["description"] == "A venue of ours."
+    assert entry.description == "A venue of ours." and entry.versions == ("9.1",)
 
 
 def test_a_field_fix_never_numbered_is_added_by_leaving_the_tag_blank(store: Offline) -> None:
@@ -169,7 +169,7 @@ def test_edit_keeps_every_part_left_unanswered(store: Offline) -> None:
     _run(store, "edit FakeRole", "", "", "", "", "", "renamed_column", "y", "quit")
     entry = store.resolve("FakeRole")
     assert (entry.name, entry.tag, entry.column) == ("FakeRole", 90001, "renamed_column")
-    assert entry.variant("9.1")["type"] == "int", "and the type it already had"
+    assert entry.type == "int", "and the type it already had"
 
 
 def test_a_tag_that_is_not_a_number_is_refused_before_anything_is_written(
@@ -183,7 +183,7 @@ def test_a_tag_that_is_not_a_number_is_refused_before_anything_is_written(
 def test_a_duplicate_tag_is_refused_with_the_reason(store: Offline) -> None:
     """The registry's own check, reported here rather than raised as a traceback."""
     printed = _run(store, "add", "FakeOther", "90001", "9.1", "String", "", "", "y", "quit")
-    assert "FIX tag 90001 is claimed by" in printed
+    assert "tag 90001 is already claimed by 'FakeRole'" in printed
     assert store.resolve("FakeOther") is None
 
 
@@ -213,8 +213,7 @@ def test_dump_writes_the_store_where_it_is_told(store: Offline, tmp_path: Path) 
 
 
 def test_load_opens_another_store_in_the_same_session(store: Offline, tmp_path: Path) -> None:
-    target = tmp_path / "other"
-    store.migrate(target)
+    target = store.into_zip(tmp_path / "other.zip")
     printed = _run(store, f"load {target}", "versions", "quit")
     assert "1 versions" in printed
 

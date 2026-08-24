@@ -1,35 +1,33 @@
 {
  "name": "DeliveryScheduleSettlDayGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 492,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoDeliveryScheduleSettlDays",
+   "required": false,
+   "tag": 41051,
    "members": [
     {
-     "kind": "group",
-     "name": "NoDeliveryScheduleSettlDays",
+     "kind": "field",
+     "name": "DeliveryScheduleSettlDay",
      "required": false,
-     "tag": 41051,
-     "members": [
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleSettlDay",
-       "required": false,
-       "tag": 41052
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleSettlTotalHours",
-       "required": false,
-       "tag": 41053
-      },
-      {
-       "kind": "component",
-       "name": "DeliveryScheduleSettlTimeGrp",
-       "required": false
-      }
-     ]
+     "tag": 41052
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleSettlTotalHours",
+     "required": false,
+     "tag": 41053
+    },
+    {
+     "kind": "component",
+     "name": "DeliveryScheduleSettlTimeGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

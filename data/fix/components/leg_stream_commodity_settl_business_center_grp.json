@@ -1,24 +1,22 @@
 {
  "name": "LegStreamCommoditySettlBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 564,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegStreamCommoditySettlBusinessCenters",
+   "required": false,
+   "tag": 41646,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegStreamCommoditySettlBusinessCenters",
+     "kind": "field",
+     "name": "LegStreamCommoditySettlBusinessCenter",
      "required": false,
-     "tag": 41646,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegStreamCommoditySettlBusinessCenter",
-       "required": false,
-       "tag": 41647
-      }
-     ]
+     "tag": 41647
     }
    ]
   }
- }
+ ]
 }

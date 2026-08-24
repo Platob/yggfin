@@ -1,9 +1,0 @@
-{
- "name": "PaymentFixedRate",
- "tag": 43097,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

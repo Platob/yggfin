@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStubIndex2FloorRate",
- "tag": 40737,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

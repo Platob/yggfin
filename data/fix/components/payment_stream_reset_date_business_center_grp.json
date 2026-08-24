@@ -1,24 +1,22 @@
 {
  "name": "PaymentStreamResetDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 453,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPaymentStreamResetDateBusinessCenters",
+   "required": false,
+   "tag": 40948,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPaymentStreamResetDateBusinessCenters",
+     "kind": "field",
+     "name": "PaymentStreamResetDateBusinessCenter",
      "required": false,
-     "tag": 40948,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PaymentStreamResetDateBusinessCenter",
-       "required": false,
-       "tag": 40763
-      }
-     ]
+     "tag": 40763
     }
    ]
   }
- }
+ ]
 }

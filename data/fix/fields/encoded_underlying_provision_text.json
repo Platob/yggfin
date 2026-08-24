@@ -1,9 +1,0 @@
-{
- "name": "EncodedUnderlyingProvisionText",
- "tag": 42172,
- "versions": {
-  "5.0.SP2": {
-   "type": "DATA"
-  }
- }
-}

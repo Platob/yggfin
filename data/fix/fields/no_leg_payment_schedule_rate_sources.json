@@ -1,9 +1,0 @@
-{
- "name": "NoLegPaymentScheduleRateSources",
- "tag": 40414,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

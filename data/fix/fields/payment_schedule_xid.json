@@ -1,9 +1,0 @@
-{
- "name": "PaymentScheduleXID",
- "tag": 41164,
- "versions": {
-  "5.0.SP2": {
-   "type": "XID"
-  }
- }
-}

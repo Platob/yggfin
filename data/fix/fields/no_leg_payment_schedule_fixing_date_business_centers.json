@@ -1,9 +1,0 @@
-{
- "name": "NoLegPaymentScheduleFixingDateBusinessCenters",
- "tag": 40927,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

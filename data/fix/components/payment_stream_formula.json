@@ -1,38 +1,36 @@
 {
  "name": "PaymentStreamFormula",
- "versions": {
-  "5.0.SP2": {
-   "order": 139,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PaymentStreamFormulaCurrency",
-     "required": false,
-     "tag": 42686
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamFormulaCurrencyDeterminationMethod",
-     "required": false,
-     "tag": 42687
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamFormulaReferenceAmount",
-     "required": false,
-     "tag": 42688
-    },
-    {
-     "kind": "component",
-     "name": "PaymentStreamFormulaMathGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PaymentStreamFormulaImage",
-     "required": false
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "PaymentStreamFormulaCurrency",
+   "required": false,
+   "tag": 42686
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamFormulaCurrencyDeterminationMethod",
+   "required": false,
+   "tag": 42687
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamFormulaReferenceAmount",
+   "required": false,
+   "tag": 42688
+  },
+  {
+   "kind": "component",
+   "name": "PaymentStreamFormulaMathGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "PaymentStreamFormulaImage",
+   "required": false
   }
- }
+ ]
 }

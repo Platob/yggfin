@@ -1,72 +1,70 @@
 {
  "name": "MarketDisruptionFallbackReferencePriceGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 498,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoMarketDisruptionFallbackReferencePrices",
+   "required": false,
+   "tag": 41096,
    "members": [
     {
-     "kind": "group",
-     "name": "NoMarketDisruptionFallbackReferencePrices",
+     "kind": "field",
+     "name": "MarketDisruptionFallbackUnderlierType",
      "required": false,
-     "tag": 41096,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MarketDisruptionFallbackUnderlierType",
-       "required": false,
-       "tag": 41097
-      },
-      {
-       "kind": "field",
-       "name": "MarketDisruptionFallbackUnderlierSecurityID",
-       "required": false,
-       "tag": 41098
-      },
-      {
-       "kind": "field",
-       "name": "MarketDisruptionFallbackUnderlierSecurityIDSource",
-       "required": false,
-       "tag": 41099
-      },
-      {
-       "kind": "field",
-       "name": "MarketDisruptionFallbackUnderlierSecurityDesc",
-       "required": false,
-       "tag": 41100
-      },
-      {
-       "kind": "field",
-       "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDescLen",
-       "required": false,
-       "tag": 41101
-      },
-      {
-       "kind": "field",
-       "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDesc",
-       "required": false,
-       "tag": 41102
-      },
-      {
-       "kind": "field",
-       "name": "MarketDisruptionFallbackOpenUnits",
-       "required": false,
-       "tag": 41103
-      },
-      {
-       "kind": "field",
-       "name": "MarketDisruptionFallbackBasketCurrency",
-       "required": false,
-       "tag": 41104
-      },
-      {
-       "kind": "field",
-       "name": "MarketDisruptionFallbackBasketDivisor",
-       "required": false,
-       "tag": 41105
-      }
-     ]
+     "tag": 41097
+    },
+    {
+     "kind": "field",
+     "name": "MarketDisruptionFallbackUnderlierSecurityID",
+     "required": false,
+     "tag": 41098
+    },
+    {
+     "kind": "field",
+     "name": "MarketDisruptionFallbackUnderlierSecurityIDSource",
+     "required": false,
+     "tag": 41099
+    },
+    {
+     "kind": "field",
+     "name": "MarketDisruptionFallbackUnderlierSecurityDesc",
+     "required": false,
+     "tag": 41100
+    },
+    {
+     "kind": "field",
+     "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDescLen",
+     "required": false,
+     "tag": 41101
+    },
+    {
+     "kind": "field",
+     "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDesc",
+     "required": false,
+     "tag": 41102
+    },
+    {
+     "kind": "field",
+     "name": "MarketDisruptionFallbackOpenUnits",
+     "required": false,
+     "tag": 41103
+    },
+    {
+     "kind": "field",
+     "name": "MarketDisruptionFallbackBasketCurrency",
+     "required": false,
+     "tag": 41104
+    },
+    {
+     "kind": "field",
+     "name": "MarketDisruptionFallbackBasketDivisor",
+     "required": false,
+     "tag": 41105
     }
    ]
   }
- }
+ ]
 }

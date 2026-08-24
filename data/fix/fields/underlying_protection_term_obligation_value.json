@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProtectionTermObligationValue",
- "tag": 42089,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

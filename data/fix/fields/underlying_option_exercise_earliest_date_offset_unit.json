@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingOptionExerciseEarliestDateOffsetUnit",
- "tag": 41825,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

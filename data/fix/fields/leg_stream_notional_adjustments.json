@@ -1,9 +1,0 @@
-{
- "name": "LegStreamNotionalAdjustments",
- "tag": 42586,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

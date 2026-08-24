@@ -1,9 +1,0 @@
-{
- "name": "LegDividendPeriodXID",
- "tag": 42385,
- "versions": {
-  "5.0.SP2": {
-   "type": "XID"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "ConvertibleBondEquityID",
- "tag": 1951,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

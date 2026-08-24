@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamNearestExchangeContractRefID",
- "tag": 42976,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

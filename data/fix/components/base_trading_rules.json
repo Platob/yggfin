@@ -1,199 +1,118 @@
 {
  "name": "BaseTradingRules",
- "versions": {
-  "5.0.SP2": {
-   "order": 20,
-   "members": [
-    {
-     "kind": "component",
-     "name": "TickRules",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LotTypeRules",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PriceLimits",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PriceRangeRuleGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "QuoteSizeRuleGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ExpirationCycle",
-     "required": false,
-     "tag": 827
-    },
-    {
-     "kind": "field",
-     "name": "TradeVolType",
-     "required": false,
-     "tag": 1786
-    },
-    {
-     "kind": "field",
-     "name": "MinTradeVol",
-     "required": false,
-     "tag": 562
-    },
-    {
-     "kind": "field",
-     "name": "MaxTradeVol",
-     "required": false,
-     "tag": 1140
-    },
-    {
-     "kind": "field",
-     "name": "MaxPriceVariation",
-     "required": false,
-     "tag": 1143
-    },
-    {
-     "kind": "field",
-     "name": "ImpliedMarketIndicator",
-     "required": false,
-     "tag": 1144
-    },
-    {
-     "kind": "field",
-     "name": "TradingCurrency",
-     "required": false,
-     "tag": 1245
-    },
-    {
-     "kind": "field",
-     "name": "TradingCurrencyCodeSource",
-     "required": false,
-     "tag": 2934
-    },
-    {
-     "kind": "field",
-     "name": "RoundLot",
-     "required": false,
-     "tag": 561
-    },
-    {
-     "kind": "field",
-     "name": "MultilegModel",
-     "required": false,
-     "tag": 1377
-    },
-    {
-     "kind": "field",
-     "name": "MultilegPriceMethod",
-     "required": false,
-     "tag": 1378
-    },
-    {
-     "kind": "field",
-     "name": "PriceType",
-     "required": false,
-     "tag": 423
-    },
-    {
-     "kind": "field",
-     "name": "FastMarketPercentage",
-     "required": false,
-     "tag": 2557
-    },
-    {
-     "kind": "field",
-     "name": "QuoteSideIndicator",
-     "required": false,
-     "tag": 2559
-    }
-   ]
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "component",
+   "name": "TickRules",
+   "required": false
   },
-  "5.0.SP1": {
-   "order": 138,
-   "members": [
-    {
-     "kind": "component",
-     "name": "TickRules",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LotTypeRules",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PriceLimits",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ExpirationCycle",
-     "required": false,
-     "tag": 827
-    },
-    {
-     "kind": "field",
-     "name": "MinTradeVol",
-     "required": false,
-     "tag": 562
-    },
-    {
-     "kind": "field",
-     "name": "MaxTradeVol",
-     "required": false,
-     "tag": 1140
-    },
-    {
-     "kind": "field",
-     "name": "MaxPriceVariation",
-     "required": false,
-     "tag": 1143
-    },
-    {
-     "kind": "field",
-     "name": "ImpliedMarketIndicator",
-     "required": false,
-     "tag": 1144
-    },
-    {
-     "kind": "field",
-     "name": "TradingCurrency",
-     "required": false,
-     "tag": 1245
-    },
-    {
-     "kind": "field",
-     "name": "RoundLot",
-     "required": false,
-     "tag": 561
-    },
-    {
-     "kind": "field",
-     "name": "MultilegModel",
-     "required": false,
-     "tag": 1377
-    },
-    {
-     "kind": "field",
-     "name": "MultilegPriceMethod",
-     "required": false,
-     "tag": 1378
-    },
-    {
-     "kind": "field",
-     "name": "PriceType",
-     "required": false,
-     "tag": 423
-    }
-   ]
+  {
+   "kind": "component",
+   "name": "LotTypeRules",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "PriceLimits",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "PriceRangeRuleGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "QuoteSizeRuleGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "ExpirationCycle",
+   "required": false,
+   "tag": 827
+  },
+  {
+   "kind": "field",
+   "name": "TradeVolType",
+   "required": false,
+   "tag": 1786
+  },
+  {
+   "kind": "field",
+   "name": "MinTradeVol",
+   "required": false,
+   "tag": 562
+  },
+  {
+   "kind": "field",
+   "name": "MaxTradeVol",
+   "required": false,
+   "tag": 1140
+  },
+  {
+   "kind": "field",
+   "name": "MaxPriceVariation",
+   "required": false,
+   "tag": 1143
+  },
+  {
+   "kind": "field",
+   "name": "ImpliedMarketIndicator",
+   "required": false,
+   "tag": 1144
+  },
+  {
+   "kind": "field",
+   "name": "TradingCurrency",
+   "required": false,
+   "tag": 1245
+  },
+  {
+   "kind": "field",
+   "name": "TradingCurrencyCodeSource",
+   "required": false,
+   "tag": 2934
+  },
+  {
+   "kind": "field",
+   "name": "RoundLot",
+   "required": false,
+   "tag": 561
+  },
+  {
+   "kind": "field",
+   "name": "MultilegModel",
+   "required": false,
+   "tag": 1377
+  },
+  {
+   "kind": "field",
+   "name": "MultilegPriceMethod",
+   "required": false,
+   "tag": 1378
+  },
+  {
+   "kind": "field",
+   "name": "PriceType",
+   "required": false,
+   "tag": 423
+  },
+  {
+   "kind": "field",
+   "name": "FastMarketPercentage",
+   "required": false,
+   "tag": 2557
+  },
+  {
+   "kind": "field",
+   "name": "QuoteSideIndicator",
+   "required": false,
+   "tag": 2559
   }
- }
+ ]
 }

@@ -1,72 +1,70 @@
 {
  "name": "PayCollectGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 344,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPayCollects",
+   "required": false,
+   "tag": 1707,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPayCollects",
+     "kind": "field",
+     "name": "PayCollectType",
      "required": false,
-     "tag": 1707,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PayCollectType",
-       "required": false,
-       "tag": 1708
-      },
-      {
-       "kind": "field",
-       "name": "PayCollectCurrency",
-       "required": false,
-       "tag": 1709
-      },
-      {
-       "kind": "field",
-       "name": "PayCollectCurrencyCodeSource",
-       "required": false,
-       "tag": 2955
-      },
-      {
-       "kind": "field",
-       "name": "PayCollectFXRate",
-       "required": false,
-       "tag": 2094
-      },
-      {
-       "kind": "field",
-       "name": "PayCollectFXRateCalc",
-       "required": false,
-       "tag": 2095
-      },
-      {
-       "kind": "field",
-       "name": "PayAmount",
-       "required": false,
-       "tag": 1710
-      },
-      {
-       "kind": "field",
-       "name": "CollectAmount",
-       "required": false,
-       "tag": 1711
-      },
-      {
-       "kind": "field",
-       "name": "PayCollectMarketSegmentID",
-       "required": false,
-       "tag": 1712
-      },
-      {
-       "kind": "field",
-       "name": "PayCollectMarketID",
-       "required": false,
-       "tag": 1713
-      }
-     ]
+     "tag": 1708
+    },
+    {
+     "kind": "field",
+     "name": "PayCollectCurrency",
+     "required": false,
+     "tag": 1709
+    },
+    {
+     "kind": "field",
+     "name": "PayCollectCurrencyCodeSource",
+     "required": false,
+     "tag": 2955
+    },
+    {
+     "kind": "field",
+     "name": "PayCollectFXRate",
+     "required": false,
+     "tag": 2094
+    },
+    {
+     "kind": "field",
+     "name": "PayCollectFXRateCalc",
+     "required": false,
+     "tag": 2095
+    },
+    {
+     "kind": "field",
+     "name": "PayAmount",
+     "required": false,
+     "tag": 1710
+    },
+    {
+     "kind": "field",
+     "name": "CollectAmount",
+     "required": false,
+     "tag": 1711
+    },
+    {
+     "kind": "field",
+     "name": "PayCollectMarketSegmentID",
+     "required": false,
+     "tag": 1712
+    },
+    {
+     "kind": "field",
+     "name": "PayCollectMarketID",
+     "required": false,
+     "tag": 1713
     }
    ]
   }
- }
+ ]
 }

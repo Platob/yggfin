@@ -1,126 +1,124 @@
 {
  "name": "AdditionalTermBondRefGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 373,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoAdditionalTermBondRefs",
+   "required": false,
+   "tag": 40000,
    "members": [
     {
-     "kind": "group",
-     "name": "NoAdditionalTermBondRefs",
+     "kind": "field",
+     "name": "AdditionalTermBondSecurityID",
      "required": false,
-     "tag": 40000,
-     "members": [
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondSecurityID",
-       "required": false,
-       "tag": 40001
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondSecurityIDSource",
-       "required": false,
-       "tag": 40002
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondDesc",
-       "required": false,
-       "tag": 40003
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAdditionalTermBondDescLen",
-       "required": false,
-       "tag": 40004
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAdditionalTermBondDesc",
-       "required": false,
-       "tag": 40005
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondCurrency",
-       "required": false,
-       "tag": 40006
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondIssuer",
-       "required": false,
-       "tag": 40007
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAdditionalTermBondIssuerLen",
-       "required": false,
-       "tag": 40008
-      },
-      {
-       "kind": "field",
-       "name": "EncodedAdditionalTermBondIssuer",
-       "required": false,
-       "tag": 40009
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondSeniority",
-       "required": false,
-       "tag": 40010
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondCouponType",
-       "required": false,
-       "tag": 40011
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondCouponRate",
-       "required": false,
-       "tag": 40012
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondMaturityDate",
-       "required": false,
-       "tag": 40013
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondParValue",
-       "required": false,
-       "tag": 40014
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondCurrentTotalIssuedAmount",
-       "required": false,
-       "tag": 40015
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondCouponFrequencyPeriod",
-       "required": false,
-       "tag": 40016
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondCouponFrequencyUnit",
-       "required": false,
-       "tag": 40017
-      },
-      {
-       "kind": "field",
-       "name": "AdditionalTermBondDayCount",
-       "required": false,
-       "tag": 40018
-      }
-     ]
+     "tag": 40001
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondSecurityIDSource",
+     "required": false,
+     "tag": 40002
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondDesc",
+     "required": false,
+     "tag": 40003
+    },
+    {
+     "kind": "field",
+     "name": "EncodedAdditionalTermBondDescLen",
+     "required": false,
+     "tag": 40004
+    },
+    {
+     "kind": "field",
+     "name": "EncodedAdditionalTermBondDesc",
+     "required": false,
+     "tag": 40005
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondCurrency",
+     "required": false,
+     "tag": 40006
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondIssuer",
+     "required": false,
+     "tag": 40007
+    },
+    {
+     "kind": "field",
+     "name": "EncodedAdditionalTermBondIssuerLen",
+     "required": false,
+     "tag": 40008
+    },
+    {
+     "kind": "field",
+     "name": "EncodedAdditionalTermBondIssuer",
+     "required": false,
+     "tag": 40009
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondSeniority",
+     "required": false,
+     "tag": 40010
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondCouponType",
+     "required": false,
+     "tag": 40011
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondCouponRate",
+     "required": false,
+     "tag": 40012
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondMaturityDate",
+     "required": false,
+     "tag": 40013
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondParValue",
+     "required": false,
+     "tag": 40014
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondCurrentTotalIssuedAmount",
+     "required": false,
+     "tag": 40015
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondCouponFrequencyPeriod",
+     "required": false,
+     "tag": 40016
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondCouponFrequencyUnit",
+     "required": false,
+     "tag": 40017
+    },
+    {
+     "kind": "field",
+     "name": "AdditionalTermBondDayCount",
+     "required": false,
+     "tag": 40018
     }
    ]
   }
- }
+ ]
 }

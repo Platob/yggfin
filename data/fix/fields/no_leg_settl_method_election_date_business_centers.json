@@ -1,9 +1,0 @@
-{
- "name": "NoLegSettlMethodElectionDateBusinessCenters",
- "tag": 42581,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

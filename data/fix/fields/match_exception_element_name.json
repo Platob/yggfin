@@ -1,9 +1,0 @@
-{
- "name": "MatchExceptionElementName",
- "tag": 2775,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

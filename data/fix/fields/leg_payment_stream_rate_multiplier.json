@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamRateMultiplier",
- "tag": 40335,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

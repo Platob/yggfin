@@ -1,9 +1,0 @@
-{
- "name": "LegDifferentialPrice",
- "tag": 2492,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICEOFFSET"
-  }
- }
-}

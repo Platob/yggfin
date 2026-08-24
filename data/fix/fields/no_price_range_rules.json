@@ -1,9 +1,0 @@
-{
- "name": "NoPriceRangeRules",
- "tag": 2550,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

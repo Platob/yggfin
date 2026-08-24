@@ -1,9 +1,0 @@
-{
- "name": "ReturnRateValuationTime",
- "tag": 42757,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTTIME"
-  }
- }
-}

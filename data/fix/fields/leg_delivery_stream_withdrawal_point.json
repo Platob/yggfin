@@ -1,9 +1,0 @@
-{
- "name": "LegDeliveryStreamWithdrawalPoint",
- "tag": 41432,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,105 +1,31 @@
 {
  "name": "UnderlyingStipulations",
- "versions": {
-  "5.0.SP2": {
-   "order": 172,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingStips",
+   "required": false,
+   "tag": 887,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingStips",
+     "kind": "field",
+     "name": "UnderlyingStipType",
      "required": false,
-     "tag": 887,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStipType",
-       "required": false,
-       "tag": 888
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStipValue",
-       "required": false,
-       "tag": 889
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 21,
-   "members": [
+     "tag": 888
+    },
     {
-     "kind": "group",
-     "name": "NoUnderlyingStips",
+     "kind": "field",
+     "name": "UnderlyingStipValue",
      "required": false,
-     "tag": 887,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStipType",
-       "required": false,
-       "tag": 888
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStipValue",
-       "required": false,
-       "tag": 889
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 21,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoUnderlyingStips",
-     "required": false,
-     "tag": 887,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStipType",
-       "required": false,
-       "tag": 888
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStipValue",
-       "required": false,
-       "tag": 889
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 21,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoUnderlyingStips",
-     "required": false,
-     "tag": 887,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStipType",
-       "required": false,
-       "tag": 888
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStipValue",
-       "required": false,
-       "tag": 889
-      }
-     ]
+     "tag": 889
     }
    ]
   }
- }
+ ]
 }

@@ -1,36 +1,34 @@
 {
  "name": "PriceMovementValueGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 371,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPriceMovementValues",
+   "required": false,
+   "tag": 1920,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPriceMovementValues",
+     "kind": "field",
+     "name": "PriceMovementValue",
      "required": false,
-     "tag": 1920,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PriceMovementValue",
-       "required": false,
-       "tag": 1921
-      },
-      {
-       "kind": "field",
-       "name": "PriceMovementPoint",
-       "required": false,
-       "tag": 1922
-      },
-      {
-       "kind": "field",
-       "name": "PriceMovementType",
-       "required": false,
-       "tag": 1923
-      }
-     ]
+     "tag": 1921
+    },
+    {
+     "kind": "field",
+     "name": "PriceMovementPoint",
+     "required": false,
+     "tag": 1922
+    },
+    {
+     "kind": "field",
+     "name": "PriceMovementType",
+     "required": false,
+     "tag": 1923
     }
    ]
   }
- }
+ ]
 }

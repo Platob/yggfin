@@ -1,101 +1,99 @@
 {
  "name": "LegDeliveryScheduleGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 535,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegDeliverySchedules",
+   "required": false,
+   "tag": 41408,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegDeliverySchedules",
+     "kind": "field",
+     "name": "LegDeliveryScheduleType",
      "required": false,
-     "tag": 41408,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleType",
-       "required": false,
-       "tag": 41409
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleXID",
-       "required": false,
-       "tag": 41410
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleNotional",
-       "required": false,
-       "tag": 41411
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleNotionalUnitOfMeasure",
-       "required": false,
-       "tag": 41412
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleNotionalCommodityFrequency",
-       "required": false,
-       "tag": 41413
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleNegativeTolerance",
-       "required": false,
-       "tag": 41414
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliverySchedulePositiveTolerance",
-       "required": false,
-       "tag": 41415
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleToleranceUnitOfMeasure",
-       "required": false,
-       "tag": 41416
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleToleranceType",
-       "required": false,
-       "tag": 41417
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleSettlCountry",
-       "required": false,
-       "tag": 41418
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleSettlTimeZone",
-       "required": false,
-       "tag": 41419
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleSettlFlowType",
-       "required": false,
-       "tag": 41420
-      },
-      {
-       "kind": "field",
-       "name": "LegDeliveryScheduleSettlHolidaysProcessingInstruction",
-       "required": false,
-       "tag": 41421
-      },
-      {
-       "kind": "component",
-       "name": "LegDeliveryScheduleSettlDayGrp",
-       "required": false
-      }
-     ]
+     "tag": 41409
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleXID",
+     "required": false,
+     "tag": 41410
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleNotional",
+     "required": false,
+     "tag": 41411
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleNotionalUnitOfMeasure",
+     "required": false,
+     "tag": 41412
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleNotionalCommodityFrequency",
+     "required": false,
+     "tag": 41413
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleNegativeTolerance",
+     "required": false,
+     "tag": 41414
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliverySchedulePositiveTolerance",
+     "required": false,
+     "tag": 41415
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleToleranceUnitOfMeasure",
+     "required": false,
+     "tag": 41416
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleToleranceType",
+     "required": false,
+     "tag": 41417
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleSettlCountry",
+     "required": false,
+     "tag": 41418
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleSettlTimeZone",
+     "required": false,
+     "tag": 41419
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleSettlFlowType",
+     "required": false,
+     "tag": 41420
+    },
+    {
+     "kind": "field",
+     "name": "LegDeliveryScheduleSettlHolidaysProcessingInstruction",
+     "required": false,
+     "tag": 41421
+    },
+    {
+     "kind": "component",
+     "name": "LegDeliveryScheduleSettlDayGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "PostTradePaymentValueDate",
- "tag": 2826,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

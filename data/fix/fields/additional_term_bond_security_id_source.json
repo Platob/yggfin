@@ -1,9 +1,0 @@
-{
- "name": "AdditionalTermBondSecurityIDSource",
- "tag": 40002,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

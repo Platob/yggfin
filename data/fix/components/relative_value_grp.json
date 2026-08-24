@@ -1,36 +1,34 @@
 {
  "name": "RelativeValueGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 637,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRelativeValues",
+   "required": false,
+   "tag": 2529,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRelativeValues",
+     "kind": "field",
+     "name": "RelativeValueType",
      "required": false,
-     "tag": 2529,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RelativeValueType",
-       "required": false,
-       "tag": 2530
-      },
-      {
-       "kind": "field",
-       "name": "RelativeValue",
-       "required": false,
-       "tag": 2531
-      },
-      {
-       "kind": "field",
-       "name": "RelativeValueSide",
-       "required": false,
-       "tag": 2532
-      }
-     ]
+     "tag": 2530
+    },
+    {
+     "kind": "field",
+     "name": "RelativeValue",
+     "required": false,
+     "tag": 2531
+    },
+    {
+     "kind": "field",
+     "name": "RelativeValueSide",
+     "required": false,
+     "tag": 2532
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "PostTradePaymentType",
- "tag": 2824,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

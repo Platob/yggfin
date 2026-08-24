@@ -1,30 +1,28 @@
 {
  "name": "FlexProductEligibilityGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 639,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoFlexProductEligibilities",
+   "required": false,
+   "tag": 2560,
    "members": [
     {
-     "kind": "group",
-     "name": "NoFlexProductEligibilities",
+     "kind": "field",
+     "name": "FlexProductEligibilityIndicator",
      "required": false,
-     "tag": 2560,
-     "members": [
-      {
-       "kind": "field",
-       "name": "FlexProductEligibilityIndicator",
-       "required": false,
-       "tag": 1242
-      },
-      {
-       "kind": "field",
-       "name": "FlexProductEligibilityComplex",
-       "required": false,
-       "tag": 2561
-      }
-     ]
+     "tag": 1242
+    },
+    {
+     "kind": "field",
+     "name": "FlexProductEligibilityComplex",
+     "required": false,
+     "tag": 2561
     }
    ]
   }
- }
+ ]
 }

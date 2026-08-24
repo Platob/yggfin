@@ -1,9 +1,0 @@
-{
- "name": "NoLegEvents",
- "tag": 2059,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

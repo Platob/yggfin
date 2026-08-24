@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamPricingDayOfWeek",
- "tag": 41597,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

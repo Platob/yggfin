@@ -1,36 +1,34 @@
 {
  "name": "UnderlyingAssetAttributeGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 570,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingAssetAttributes",
+   "required": false,
+   "tag": 2312,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingAssetAttributes",
+     "kind": "field",
+     "name": "UnderlyingAssetAttributeType",
      "required": false,
-     "tag": 2312,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingAssetAttributeType",
-       "required": false,
-       "tag": 2313
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingAssetAttributeValue",
-       "required": false,
-       "tag": 2314
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingAssetAttributeLimit",
-       "required": false,
-       "tag": 2315
-      }
-     ]
+     "tag": 2313
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingAssetAttributeValue",
+     "required": false,
+     "tag": 2314
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingAssetAttributeLimit",
+     "required": false,
+     "tag": 2315
     }
    ]
   }
- }
+ ]
 }

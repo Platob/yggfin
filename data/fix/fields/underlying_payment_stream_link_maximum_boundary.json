@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamLinkMaximumBoundary",
- "tag": 42970,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

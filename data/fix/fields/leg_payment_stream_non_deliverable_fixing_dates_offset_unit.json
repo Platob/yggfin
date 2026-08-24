@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetUnit",
- "tag": 40364,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

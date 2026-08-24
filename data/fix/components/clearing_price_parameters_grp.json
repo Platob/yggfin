@@ -1,114 +1,112 @@
 {
  "name": "ClearingPriceParametersGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 643,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoClearingPriceParameters",
+   "required": false,
+   "tag": 2580,
    "members": [
     {
-     "kind": "group",
-     "name": "NoClearingPriceParameters",
+     "kind": "field",
+     "name": "BusinessDayType",
      "required": false,
-     "tag": 2580,
-     "members": [
-      {
-       "kind": "field",
-       "name": "BusinessDayType",
-       "required": false,
-       "tag": 2581
-      },
-      {
-       "kind": "field",
-       "name": "ClearingPriceOffset",
-       "required": false,
-       "tag": 2582
-      },
-      {
-       "kind": "field",
-       "name": "VegaMultiplier",
-       "required": false,
-       "tag": 2583
-      },
-      {
-       "kind": "field",
-       "name": "AnnualTradingBusinessDays",
-       "required": false,
-       "tag": 2584
-      },
-      {
-       "kind": "field",
-       "name": "TotalTradingBusinessDays",
-       "required": false,
-       "tag": 2585
-      },
-      {
-       "kind": "field",
-       "name": "TradingBusinessDays",
-       "required": false,
-       "tag": 2586
-      },
-      {
-       "kind": "field",
-       "name": "StandardVariance",
-       "required": false,
-       "tag": 2588
-      },
-      {
-       "kind": "field",
-       "name": "RealizedVariance",
-       "required": false,
-       "tag": 2587
-      },
-      {
-       "kind": "field",
-       "name": "RelatedClosePrice",
-       "required": false,
-       "tag": 2589
-      },
-      {
-       "kind": "field",
-       "name": "RiskFreeRate",
-       "required": false,
-       "tag": 1190
-      },
-      {
-       "kind": "field",
-       "name": "OvernightInterestRate",
-       "required": false,
-       "tag": 2590
-      },
-      {
-       "kind": "field",
-       "name": "AccumulatedReturnModifiedVariationMargin",
-       "required": false,
-       "tag": 2591
-      },
-      {
-       "kind": "field",
-       "name": "DiscountFactor",
-       "required": false,
-       "tag": 1592
-      },
-      {
-       "kind": "field",
-       "name": "Volatility",
-       "required": false,
-       "tag": 1188
-      },
-      {
-       "kind": "field",
-       "name": "ClearingSettlPrice",
-       "required": false,
-       "tag": 2528
-      },
-      {
-       "kind": "field",
-       "name": "CalculationMethod",
-       "required": false,
-       "tag": 2592
-      }
-     ]
+     "tag": 2581
+    },
+    {
+     "kind": "field",
+     "name": "ClearingPriceOffset",
+     "required": false,
+     "tag": 2582
+    },
+    {
+     "kind": "field",
+     "name": "VegaMultiplier",
+     "required": false,
+     "tag": 2583
+    },
+    {
+     "kind": "field",
+     "name": "AnnualTradingBusinessDays",
+     "required": false,
+     "tag": 2584
+    },
+    {
+     "kind": "field",
+     "name": "TotalTradingBusinessDays",
+     "required": false,
+     "tag": 2585
+    },
+    {
+     "kind": "field",
+     "name": "TradingBusinessDays",
+     "required": false,
+     "tag": 2586
+    },
+    {
+     "kind": "field",
+     "name": "StandardVariance",
+     "required": false,
+     "tag": 2588
+    },
+    {
+     "kind": "field",
+     "name": "RealizedVariance",
+     "required": false,
+     "tag": 2587
+    },
+    {
+     "kind": "field",
+     "name": "RelatedClosePrice",
+     "required": false,
+     "tag": 2589
+    },
+    {
+     "kind": "field",
+     "name": "RiskFreeRate",
+     "required": false,
+     "tag": 1190
+    },
+    {
+     "kind": "field",
+     "name": "OvernightInterestRate",
+     "required": false,
+     "tag": 2590
+    },
+    {
+     "kind": "field",
+     "name": "AccumulatedReturnModifiedVariationMargin",
+     "required": false,
+     "tag": 2591
+    },
+    {
+     "kind": "field",
+     "name": "DiscountFactor",
+     "required": false,
+     "tag": 1592
+    },
+    {
+     "kind": "field",
+     "name": "Volatility",
+     "required": false,
+     "tag": 1188
+    },
+    {
+     "kind": "field",
+     "name": "ClearingSettlPrice",
+     "required": false,
+     "tag": 2528
+    },
+    {
+     "kind": "field",
+     "name": "CalculationMethod",
+     "required": false,
+     "tag": 2592
     }
    ]
   }
- }
+ ]
 }

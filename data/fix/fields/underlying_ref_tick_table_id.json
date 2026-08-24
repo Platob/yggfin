@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingRefTickTableID",
- "tag": 2044,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

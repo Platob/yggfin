@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingComplexEventScheduleEndDate",
- "tag": 41752,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

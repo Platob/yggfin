@@ -1,9 +1,0 @@
-{
- "name": "PricingDateBusinessDayConvention",
- "tag": 41233,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,129 +1,37 @@
 {
  "name": "AffectedOrdGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 175,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoAffectedOrders",
+   "required": false,
+   "tag": 534,
    "members": [
     {
-     "kind": "group",
-     "name": "NoAffectedOrders",
+     "kind": "field",
+     "name": "AffectedOrigClOrdID",
      "required": false,
-     "tag": 534,
-     "members": [
-      {
-       "kind": "field",
-       "name": "AffectedOrigClOrdID",
-       "required": false,
-       "tag": 1824
-      },
-      {
-       "kind": "field",
-       "name": "AffectedOrderID",
-       "required": false,
-       "tag": 535
-      },
-      {
-       "kind": "field",
-       "name": "AffectedSecondaryOrderID",
-       "required": false,
-       "tag": 536
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 24,
-   "members": [
+     "tag": 1824
+    },
     {
-     "kind": "group",
-     "name": "NoAffectedOrders",
+     "kind": "field",
+     "name": "AffectedOrderID",
      "required": false,
-     "tag": 534,
-     "members": [
-      {
-       "kind": "field",
-       "name": "OrigClOrdID",
-       "required": false,
-       "tag": 41
-      },
-      {
-       "kind": "field",
-       "name": "AffectedOrderID",
-       "required": false,
-       "tag": 535
-      },
-      {
-       "kind": "field",
-       "name": "AffectedSecondaryOrderID",
-       "required": false,
-       "tag": 536
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 24,
-   "members": [
+     "tag": 535
+    },
     {
-     "kind": "group",
-     "name": "NoAffectedOrders",
+     "kind": "field",
+     "name": "AffectedSecondaryOrderID",
      "required": false,
-     "tag": 534,
-     "members": [
-      {
-       "kind": "field",
-       "name": "OrigClOrdID",
-       "required": false,
-       "tag": 41
-      },
-      {
-       "kind": "field",
-       "name": "AffectedOrderID",
-       "required": false,
-       "tag": 535
-      },
-      {
-       "kind": "field",
-       "name": "AffectedSecondaryOrderID",
-       "required": false,
-       "tag": 536
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 24,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoAffectedOrders",
-     "required": false,
-     "tag": 534,
-     "members": [
-      {
-       "kind": "field",
-       "name": "OrigClOrdID",
-       "required": false,
-       "tag": 41
-      },
-      {
-       "kind": "field",
-       "name": "AffectedOrderID",
-       "required": false,
-       "tag": 535
-      },
-      {
-       "kind": "field",
-       "name": "AffectedSecondaryOrderID",
-       "required": false,
-       "tag": 536
-      }
-     ]
+     "tag": 536
     }
    ]
   }
- }
+ ]
 }

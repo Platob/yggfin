@@ -1,57 +1,55 @@
 {
  "name": "LegPaymentStubStartDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 130,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStubStartDateUnadjusted",
-     "required": false,
-     "tag": 42497
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubStartDateBusinessDayConvention",
-     "required": false,
-     "tag": 42498
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStubStartDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubStartDateRelativeTo",
-     "required": false,
-     "tag": 42499
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubStartDateOffsetPeriod",
-     "required": false,
-     "tag": 42500
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubStartDateOffsetUnit",
-     "required": false,
-     "tag": 42501
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubStartDateOffsetDayType",
-     "required": false,
-     "tag": 42502
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStubStartDateAdjusted",
-     "required": false,
-     "tag": 42503
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegPaymentStubStartDateUnadjusted",
+   "required": false,
+   "tag": 42497
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubStartDateBusinessDayConvention",
+   "required": false,
+   "tag": 42498
+  },
+  {
+   "kind": "component",
+   "name": "LegPaymentStubStartDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubStartDateRelativeTo",
+   "required": false,
+   "tag": 42499
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubStartDateOffsetPeriod",
+   "required": false,
+   "tag": 42500
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubStartDateOffsetUnit",
+   "required": false,
+   "tag": 42501
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubStartDateOffsetDayType",
+   "required": false,
+   "tag": 42502
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStubStartDateAdjusted",
+   "required": false,
+   "tag": 42503
   }
- }
+ ]
 }

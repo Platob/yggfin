@@ -1,9 +1,0 @@
-{
- "name": "MDStatisticEndDate",
- "tag": 2469,
- "versions": {
-  "5.0.SP2": {
-   "type": "UTCTIMESTAMP"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "EntitlementStartDate",
- "tag": 1782,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

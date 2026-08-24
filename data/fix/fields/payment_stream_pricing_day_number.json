@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamPricingDayNumber",
- "tag": 41229,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

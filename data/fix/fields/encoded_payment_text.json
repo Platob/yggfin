@@ -1,9 +1,0 @@
-{
- "name": "EncodedPaymentText",
- "tag": 40985,
- "versions": {
-  "5.0.SP2": {
-   "type": "DATA"
-  }
- }
-}

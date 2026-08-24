@@ -1,9 +1,0 @@
-{
- "name": "AdditionalTermBondMaturityDate",
- "tag": 40013,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

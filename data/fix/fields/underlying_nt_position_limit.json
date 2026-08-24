@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingNTPositionLimit",
- "tag": 2038,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

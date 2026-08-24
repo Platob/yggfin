@@ -1,42 +1,40 @@
 {
  "name": "OrderAggregationGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 718,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoOrders",
+   "required": false,
+   "tag": 73,
    "members": [
     {
-     "kind": "group",
-     "name": "NoOrders",
+     "kind": "field",
+     "name": "ClOrdID",
      "required": false,
-     "tag": 73,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ClOrdID",
-       "required": false,
-       "tag": 11
-      },
-      {
-       "kind": "field",
-       "name": "OrderID",
-       "required": false,
-       "tag": 37
-      },
-      {
-       "kind": "field",
-       "name": "OrderQty",
-       "required": false,
-       "tag": 38
-      },
-      {
-       "kind": "field",
-       "name": "OrderAvgPx",
-       "required": false,
-       "tag": 799
-      }
-     ]
+     "tag": 11
+    },
+    {
+     "kind": "field",
+     "name": "OrderID",
+     "required": false,
+     "tag": 37
+    },
+    {
+     "kind": "field",
+     "name": "OrderQty",
+     "required": false,
+     "tag": 38
+    },
+    {
+     "kind": "field",
+     "name": "OrderAvgPx",
+     "required": false,
+     "tag": 799
     }
    ]
   }
- }
+ ]
 }

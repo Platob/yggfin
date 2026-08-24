@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProtectionTermCurrency",
- "tag": 42070,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

@@ -1,30 +1,28 @@
 {
  "name": "PaymentSettlPtysSubGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 398,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPaymentSettlPartySubIDs",
+   "required": false,
+   "tag": 40238,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPaymentSettlPartySubIDs",
+     "kind": "field",
+     "name": "PaymentSettlPartySubID",
      "required": false,
-     "tag": 40238,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PaymentSettlPartySubID",
-       "required": false,
-       "tag": 40239
-      },
-      {
-       "kind": "field",
-       "name": "PaymentSettlPartySubIDType",
-       "required": false,
-       "tag": 40240
-      }
-     ]
+     "tag": 40239
+    },
+    {
+     "kind": "field",
+     "name": "PaymentSettlPartySubIDType",
+     "required": false,
+     "tag": 40240
     }
    ]
   }
- }
+ ]
 }

@@ -1,42 +1,40 @@
 {
  "name": "UnderlyingDividendPaymentGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 690,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingDividendPayments",
+   "required": false,
+   "tag": 42855,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingDividendPayments",
+     "kind": "field",
+     "name": "UnderlyingDividendPaymentDate",
      "required": false,
-     "tag": 42855,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingDividendPaymentDate",
-       "required": false,
-       "tag": 42856
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingDividendPaymentAmount",
-       "required": false,
-       "tag": 42857
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingDividendPaymentCurrency",
-       "required": false,
-       "tag": 42858
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingDividendAccruedInterest",
-       "required": false,
-       "tag": 42859
-      }
-     ]
+     "tag": 42856
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDividendPaymentAmount",
+     "required": false,
+     "tag": 42857
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDividendPaymentCurrency",
+     "required": false,
+     "tag": 42858
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingDividendAccruedInterest",
+     "required": false,
+     "tag": 42859
     }
    ]
   }
- }
+ ]
 }

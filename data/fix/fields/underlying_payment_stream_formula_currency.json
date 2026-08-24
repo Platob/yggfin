@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamFormulaCurrency",
- "tag": 42978,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

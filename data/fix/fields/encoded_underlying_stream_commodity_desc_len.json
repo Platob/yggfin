@@ -1,9 +1,0 @@
-{
- "name": "EncodedUnderlyingStreamCommodityDescLen",
- "tag": 41969,
- "versions": {
-  "5.0.SP2": {
-   "type": "LENGTH"
-  }
- }
-}

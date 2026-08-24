@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingMinPriceIncrement",
- "tag": 2026,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

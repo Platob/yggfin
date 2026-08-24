@@ -1,46 +1,44 @@
 {
  "name": "UnderlyingPaymentStreamCompoundingEndDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 151,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamCompoundingEndDateUnadjusted",
-     "required": false,
-     "tag": 42917
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamCompoundingEndDateRelativeTo",
-     "required": false,
-     "tag": 42918
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamCompoundingEndDateOffsetPeriod",
-     "required": false,
-     "tag": 42919
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamCompoundingEndDateOffsetUnit",
-     "required": false,
-     "tag": 42920
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamCompoundingEndDateOffsetDayType",
-     "required": false,
-     "tag": 42921
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPaymentStreamCompoundingEndDateAdjusted",
-     "required": false,
-     "tag": 42922
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamCompoundingEndDateUnadjusted",
+   "required": false,
+   "tag": 42917
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamCompoundingEndDateRelativeTo",
+   "required": false,
+   "tag": 42918
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamCompoundingEndDateOffsetPeriod",
+   "required": false,
+   "tag": 42919
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamCompoundingEndDateOffsetUnit",
+   "required": false,
+   "tag": 42920
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamCompoundingEndDateOffsetDayType",
+   "required": false,
+   "tag": 42921
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPaymentStreamCompoundingEndDateAdjusted",
+   "required": false,
+   "tag": 42922
   }
- }
+ ]
 }

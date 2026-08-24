@@ -1,101 +1,52 @@
 {
  "name": "StrikeRules",
- "versions": {
-  "5.0.SP2": {
-   "order": 273,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoStrikeRules",
+   "required": false,
+   "tag": 1201,
    "members": [
     {
-     "kind": "group",
-     "name": "NoStrikeRules",
+     "kind": "field",
+     "name": "StrikeRuleID",
      "required": false,
-     "tag": 1201,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StrikeRuleID",
-       "required": false,
-       "tag": 1223
-      },
-      {
-       "kind": "field",
-       "name": "StartStrikePxRange",
-       "required": false,
-       "tag": 1202
-      },
-      {
-       "kind": "field",
-       "name": "EndStrikePxRange",
-       "required": false,
-       "tag": 1203
-      },
-      {
-       "kind": "field",
-       "name": "StrikeIncrement",
-       "required": false,
-       "tag": 1204
-      },
-      {
-       "kind": "field",
-       "name": "StrikeExerciseStyle",
-       "required": false,
-       "tag": 1304
-      },
-      {
-       "kind": "component",
-       "name": "MaturityRules",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 126,
-   "members": [
+     "tag": 1223
+    },
     {
-     "kind": "group",
-     "name": "NoStrikeRules",
+     "kind": "field",
+     "name": "StartStrikePxRange",
      "required": false,
-     "tag": 1201,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StrikeRuleID",
-       "required": false,
-       "tag": 1223
-      },
-      {
-       "kind": "field",
-       "name": "StartStrikePxRange",
-       "required": false,
-       "tag": 1202
-      },
-      {
-       "kind": "field",
-       "name": "EndStrikePxRange",
-       "required": false,
-       "tag": 1203
-      },
-      {
-       "kind": "field",
-       "name": "StrikeIncrement",
-       "required": false,
-       "tag": 1204
-      },
-      {
-       "kind": "field",
-       "name": "StrikeExerciseStyle",
-       "required": false,
-       "tag": 1304
-      },
-      {
-       "kind": "component",
-       "name": "MaturityRules",
-       "required": false
-      }
-     ]
+     "tag": 1202
+    },
+    {
+     "kind": "field",
+     "name": "EndStrikePxRange",
+     "required": false,
+     "tag": 1203
+    },
+    {
+     "kind": "field",
+     "name": "StrikeIncrement",
+     "required": false,
+     "tag": 1204
+    },
+    {
+     "kind": "field",
+     "name": "StrikeExerciseStyle",
+     "required": false,
+     "tag": 1304
+    },
+    {
+     "kind": "component",
+     "name": "MaturityRules",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

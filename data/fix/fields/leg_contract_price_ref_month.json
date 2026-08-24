@@ -1,9 +1,0 @@
-{
- "name": "LegContractPriceRefMonth",
- "tag": 2168,
- "versions": {
-  "5.0.SP2": {
-   "type": "MONTHYEAR"
-  }
- }
-}

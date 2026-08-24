@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamPricingDate",
- "tag": 41594,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

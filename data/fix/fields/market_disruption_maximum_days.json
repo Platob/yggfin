@@ -1,9 +1,0 @@
-{
- "name": "MarketDisruptionMaximumDays",
- "tag": 41089,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

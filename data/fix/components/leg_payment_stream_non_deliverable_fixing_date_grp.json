@@ -1,30 +1,28 @@
 {
  "name": "LegPaymentStreamNonDeliverableFixingDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 383,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegNonDeliverableFixingDates",
+   "required": false,
+   "tag": 40367,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegNonDeliverableFixingDates",
+     "kind": "field",
+     "name": "LegNonDeliverableFixingDate",
      "required": false,
-     "tag": 40367,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegNonDeliverableFixingDate",
-       "required": false,
-       "tag": 40368
-      },
-      {
-       "kind": "field",
-       "name": "LegNonDeliverableFixingDateType",
-       "required": false,
-       "tag": 40369
-      }
-     ]
+     "tag": 40368
+    },
+    {
+     "kind": "field",
+     "name": "LegNonDeliverableFixingDateType",
+     "required": false,
+     "tag": 40369
     }
    ]
   }
- }
+ ]
 }

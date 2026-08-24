@@ -1,9 +1,0 @@
-{
- "name": "ProvisionText",
- "tag": 40113,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,27 +1,25 @@
 {
  "name": "UnderlyingDividendPayout",
- "versions": {
-  "5.0.SP2": {
-   "order": 148,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingDividendPayoutRatio",
-     "required": false,
-     "tag": 42860
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingDividendPayoutConditions",
-     "required": false,
-     "tag": 42861
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingDividendPaymentGrp",
-     "required": false
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingDividendPayoutRatio",
+   "required": false,
+   "tag": 42860
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingDividendPayoutConditions",
+   "required": false,
+   "tag": 42861
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingDividendPaymentGrp",
+   "required": false
   }
- }
+ ]
 }

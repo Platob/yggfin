@@ -1,35 +1,33 @@
 {
  "name": "LegAdditionalTermGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 519,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegAdditionalTerms",
+   "required": false,
+   "tag": 41335,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegAdditionalTerms",
+     "kind": "field",
+     "name": "LegAdditionalTermConditionPrecedentBondIndicator",
      "required": false,
-     "tag": 41335,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegAdditionalTermConditionPrecedentBondIndicator",
-       "required": false,
-       "tag": 41336
-      },
-      {
-       "kind": "field",
-       "name": "LegAdditionalTermDiscrepancyClauseIndicator",
-       "required": false,
-       "tag": 41337
-      },
-      {
-       "kind": "component",
-       "name": "LegAdditionalTermBondRefGrp",
-       "required": false
-      }
-     ]
+     "tag": 41336
+    },
+    {
+     "kind": "field",
+     "name": "LegAdditionalTermDiscrepancyClauseIndicator",
+     "required": false,
+     "tag": 41337
+    },
+    {
+     "kind": "component",
+     "name": "LegAdditionalTermBondRefGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

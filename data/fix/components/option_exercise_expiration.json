@@ -1,80 +1,78 @@
 {
  "name": "OptionExerciseExpiration",
- "versions": {
-  "5.0.SP2": {
-   "order": 84,
-   "members": [
-    {
-     "kind": "field",
-     "name": "OptionExerciseExpirationDateBusinessDayConvention",
-     "required": false,
-     "tag": 41142
-    },
-    {
-     "kind": "component",
-     "name": "OptionExerciseExpirationDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "OptionExerciseExpirationDateGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "OptionExerciseExpirationDateRelativeTo",
-     "required": false,
-     "tag": 41143
-    },
-    {
-     "kind": "field",
-     "name": "OptionExerciseExpirationDateOffsetPeriod",
-     "required": false,
-     "tag": 41144
-    },
-    {
-     "kind": "field",
-     "name": "OptionExerciseExpirationDateOffsetUnit",
-     "required": false,
-     "tag": 41145
-    },
-    {
-     "kind": "field",
-     "name": "OptionExerciseExpirationFrequencyPeriod",
-     "required": false,
-     "tag": 41146
-    },
-    {
-     "kind": "field",
-     "name": "OptionExerciseExpirationFrequencyUnit",
-     "required": false,
-     "tag": 41147
-    },
-    {
-     "kind": "field",
-     "name": "OptionExerciseExpirationRollConvention",
-     "required": false,
-     "tag": 41148
-    },
-    {
-     "kind": "field",
-     "name": "OptionExerciseExpirationDateOffsetDayType",
-     "required": false,
-     "tag": 41149
-    },
-    {
-     "kind": "field",
-     "name": "OptionExerciseExpirationTime",
-     "required": false,
-     "tag": 41150
-    },
-    {
-     "kind": "field",
-     "name": "OptionExerciseExpirationTimeBusinessCenter",
-     "required": false,
-     "tag": 41151
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "OptionExerciseExpirationDateBusinessDayConvention",
+   "required": false,
+   "tag": 41142
+  },
+  {
+   "kind": "component",
+   "name": "OptionExerciseExpirationDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "OptionExerciseExpirationDateGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "OptionExerciseExpirationDateRelativeTo",
+   "required": false,
+   "tag": 41143
+  },
+  {
+   "kind": "field",
+   "name": "OptionExerciseExpirationDateOffsetPeriod",
+   "required": false,
+   "tag": 41144
+  },
+  {
+   "kind": "field",
+   "name": "OptionExerciseExpirationDateOffsetUnit",
+   "required": false,
+   "tag": 41145
+  },
+  {
+   "kind": "field",
+   "name": "OptionExerciseExpirationFrequencyPeriod",
+   "required": false,
+   "tag": 41146
+  },
+  {
+   "kind": "field",
+   "name": "OptionExerciseExpirationFrequencyUnit",
+   "required": false,
+   "tag": 41147
+  },
+  {
+   "kind": "field",
+   "name": "OptionExerciseExpirationRollConvention",
+   "required": false,
+   "tag": 41148
+  },
+  {
+   "kind": "field",
+   "name": "OptionExerciseExpirationDateOffsetDayType",
+   "required": false,
+   "tag": 41149
+  },
+  {
+   "kind": "field",
+   "name": "OptionExerciseExpirationTime",
+   "required": false,
+   "tag": 41150
+  },
+  {
+   "kind": "field",
+   "name": "OptionExerciseExpirationTimeBusinessCenter",
+   "required": false,
+   "tag": 41151
   }
- }
+ ]
 }

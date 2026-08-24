@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingStreamCommoditySettlPeriods",
- "tag": 42002,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

@@ -1,24 +1,22 @@
 {
  "name": "ReturnRateValuationDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 684,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoReturnRateValuationDateBusinessCenters",
+   "required": false,
+   "tag": 42770,
    "members": [
     {
-     "kind": "group",
-     "name": "NoReturnRateValuationDateBusinessCenters",
+     "kind": "field",
+     "name": "ReturnRateValuationDateBusinessCenter",
      "required": false,
-     "tag": 42770,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationDateBusinessCenter",
-       "required": false,
-       "tag": 42771
-      }
-     ]
+     "tag": 42771
     }
    ]
   }
- }
+ ]
 }

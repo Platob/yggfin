@@ -1,9 +1,0 @@
-{
- "name": "BlockTradeEligibilityIndicator",
- "tag": 2575,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "MDReportCount",
- "tag": 2536,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

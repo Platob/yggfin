@@ -1,9 +1,0 @@
-{
- "name": "ComplexEventCreditEventCurrency",
- "tag": 41000,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "NoPartyRiskLimits",
- "tag": 1677,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

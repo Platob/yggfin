@@ -1,9 +1,0 @@
-{
- "name": "NoLegProvisionCashSettlPaymentDates",
- "tag": 40473,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

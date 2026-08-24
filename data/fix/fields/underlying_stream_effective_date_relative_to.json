@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamEffectiveDateRelativeTo",
- "tag": 40060,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

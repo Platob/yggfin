@@ -1,9 +1,0 @@
-{
- "name": "LegCashSettlFixedTermIndicator",
- "tag": 41359,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

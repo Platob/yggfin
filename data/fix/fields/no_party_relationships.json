@@ -1,9 +1,0 @@
-{
- "name": "NoPartyRelationships",
- "tag": 1514,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

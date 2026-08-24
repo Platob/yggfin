@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStrikeIndexCurvePoint",
- "tag": 2622,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegStreamNotionalXIDRef",
- "tag": 41702,
- "versions": {
-  "5.0.SP2": {
-   "type": "XIDREF"
-  }
- }
-}

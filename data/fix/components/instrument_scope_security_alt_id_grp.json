@@ -1,30 +1,28 @@
 {
  "name": "InstrumentScopeSecurityAltIDGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 322,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoInstrumentScopeSecurityAltID",
+   "required": false,
+   "tag": 1540,
    "members": [
     {
-     "kind": "group",
-     "name": "NoInstrumentScopeSecurityAltID",
+     "kind": "field",
+     "name": "InstrumentScopeSecurityAltID",
      "required": false,
-     "tag": 1540,
-     "members": [
-      {
-       "kind": "field",
-       "name": "InstrumentScopeSecurityAltID",
-       "required": false,
-       "tag": 1541
-      },
-      {
-       "kind": "field",
-       "name": "InstrumentScopeSecurityAltIDSource",
-       "required": false,
-       "tag": 1542
-      }
-     ]
+     "tag": 1541
+    },
+    {
+     "kind": "field",
+     "name": "InstrumentScopeSecurityAltIDSource",
+     "required": false,
+     "tag": 1542
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "ComplexEventDeterminationMethod",
- "tag": 2128,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,69 +1,67 @@
 {
  "name": "LegProvisionOptionExpirationDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 40,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExpirationDateUnadjusted",
-     "required": false,
-     "tag": 40498
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExpirationDateBusinessDayConvention",
-     "required": false,
-     "tag": 40499
-    },
-    {
-     "kind": "component",
-     "name": "LegProvisionOptionExpirationDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExpirationDateRelativeTo",
-     "required": false,
-     "tag": 40501
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExpirationDateOffsetPeriod",
-     "required": false,
-     "tag": 40502
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExpirationDateOffsetUnit",
-     "required": false,
-     "tag": 40503
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExpirationDateOffsetDayType",
-     "required": false,
-     "tag": 40504
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExpirationDateAdjusted",
-     "required": false,
-     "tag": 40505
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExpirationTime",
-     "required": false,
-     "tag": 40506
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionOptionExpirationTimeBusinessCenter",
-     "required": false,
-     "tag": 40507
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegProvisionOptionExpirationDateUnadjusted",
+   "required": false,
+   "tag": 40498
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionOptionExpirationDateBusinessDayConvention",
+   "required": false,
+   "tag": 40499
+  },
+  {
+   "kind": "component",
+   "name": "LegProvisionOptionExpirationDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionOptionExpirationDateRelativeTo",
+   "required": false,
+   "tag": 40501
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionOptionExpirationDateOffsetPeriod",
+   "required": false,
+   "tag": 40502
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionOptionExpirationDateOffsetUnit",
+   "required": false,
+   "tag": 40503
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionOptionExpirationDateOffsetDayType",
+   "required": false,
+   "tag": 40504
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionOptionExpirationDateAdjusted",
+   "required": false,
+   "tag": 40505
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionOptionExpirationTime",
+   "required": false,
+   "tag": 40506
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionOptionExpirationTimeBusinessCenter",
+   "required": false,
+   "tag": 40507
   }
- }
+ ]
 }

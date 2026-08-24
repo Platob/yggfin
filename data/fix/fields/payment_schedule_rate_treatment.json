@@ -1,9 +1,0 @@
-{
- "name": "PaymentScheduleRateTreatment",
- "tag": 40841,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

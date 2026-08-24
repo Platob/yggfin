@@ -1,9 +1,0 @@
-{
- "name": "PaymentScheduleFixingDayOfWeek",
- "tag": 41162,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

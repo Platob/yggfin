@@ -1,182 +1,72 @@
 {
  "name": "MiscFeesGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 208,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoMiscFees",
+   "required": false,
+   "tag": 136,
    "members": [
     {
-     "kind": "group",
-     "name": "NoMiscFees",
+     "kind": "field",
+     "name": "MiscFeeAmt",
      "required": false,
-     "tag": 136,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MiscFeeAmt",
-       "required": false,
-       "tag": 137
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeCurr",
-       "required": false,
-       "tag": 138
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeType",
-       "required": false,
-       "tag": 139
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeQualifier",
-       "required": false,
-       "tag": 2712
-      },
-      {
-       "kind": "component",
-       "name": "MiscFeesSubGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeBasis",
-       "required": false,
-       "tag": 891
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeRate",
-       "required": false,
-       "tag": 2216
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeAmountDue",
-       "required": false,
-       "tag": 2217
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeDesc",
-       "required": false,
-       "tag": 2713
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 57,
-   "members": [
+     "tag": 137
+    },
     {
-     "kind": "group",
-     "name": "NoMiscFees",
+     "kind": "field",
+     "name": "MiscFeeCurr",
      "required": false,
-     "tag": 136,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MiscFeeAmt",
-       "required": false,
-       "tag": 137
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeCurr",
-       "required": false,
-       "tag": 138
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeType",
-       "required": false,
-       "tag": 139
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeBasis",
-       "required": false,
-       "tag": 891
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 58,
-   "members": [
+     "tag": 138
+    },
     {
-     "kind": "group",
-     "name": "NoMiscFees",
+     "kind": "field",
+     "name": "MiscFeeType",
      "required": false,
-     "tag": 136,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MiscFeeAmt",
-       "required": false,
-       "tag": 137
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeCurr",
-       "required": false,
-       "tag": 138
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeType",
-       "required": false,
-       "tag": 139
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeBasis",
-       "required": false,
-       "tag": 891
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 58,
-   "members": [
+     "tag": 139
+    },
     {
-     "kind": "group",
-     "name": "NoMiscFees",
+     "kind": "field",
+     "name": "MiscFeeQualifier",
      "required": false,
-     "tag": 136,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MiscFeeAmt",
-       "required": false,
-       "tag": 137
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeCurr",
-       "required": false,
-       "tag": 138
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeType",
-       "required": false,
-       "tag": 139
-      },
-      {
-       "kind": "field",
-       "name": "MiscFeeBasis",
-       "required": false,
-       "tag": 891
-      }
-     ]
+     "tag": 2712
+    },
+    {
+     "kind": "component",
+     "name": "MiscFeesSubGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "MiscFeeBasis",
+     "required": false,
+     "tag": 891
+    },
+    {
+     "kind": "field",
+     "name": "MiscFeeRate",
+     "required": false,
+     "tag": 2216
+    },
+    {
+     "kind": "field",
+     "name": "MiscFeeAmountDue",
+     "required": false,
+     "tag": 2217
+    },
+    {
+     "kind": "field",
+     "name": "MiscFeeDesc",
+     "required": false,
+     "tag": 2713
     }
    ]
   }
- }
+ ]
 }

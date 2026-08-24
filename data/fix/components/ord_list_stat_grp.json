@@ -1,357 +1,97 @@
 {
  "name": "OrdListStatGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 210,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoOrders",
+   "required": false,
+   "tag": 73,
    "members": [
     {
-     "kind": "group",
-     "name": "NoOrders",
+     "kind": "field",
+     "name": "ClOrdID",
      "required": false,
-     "tag": 73,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ClOrdID",
-       "required": false,
-       "tag": 11
-      },
-      {
-       "kind": "field",
-       "name": "OrderID",
-       "required": false,
-       "tag": 37
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryClOrdID",
-       "required": false,
-       "tag": 526
-      },
-      {
-       "kind": "field",
-       "name": "CumQty",
-       "required": true,
-       "tag": 14
-      },
-      {
-       "kind": "field",
-       "name": "OrdStatus",
-       "required": true,
-       "tag": 39
-      },
-      {
-       "kind": "field",
-       "name": "WorkingIndicator",
-       "required": false,
-       "tag": 636
-      },
-      {
-       "kind": "field",
-       "name": "LeavesQty",
-       "required": true,
-       "tag": 151
-      },
-      {
-       "kind": "field",
-       "name": "CxlQty",
-       "required": true,
-       "tag": 84
-      },
-      {
-       "kind": "field",
-       "name": "AvgPx",
-       "required": true,
-       "tag": 6
-      },
-      {
-       "kind": "field",
-       "name": "OrdRejReason",
-       "required": false,
-       "tag": 103
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 59,
-   "members": [
+     "tag": 11
+    },
     {
-     "kind": "group",
-     "name": "NoOrders",
-     "required": true,
-     "tag": 73,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ClOrdID",
-       "required": false,
-       "tag": 11
-      },
-      {
-       "kind": "field",
-       "name": "OrderID",
-       "required": false,
-       "tag": 37
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryClOrdID",
-       "required": false,
-       "tag": 526
-      },
-      {
-       "kind": "field",
-       "name": "CumQty",
-       "required": true,
-       "tag": 14
-      },
-      {
-       "kind": "field",
-       "name": "OrdStatus",
-       "required": true,
-       "tag": 39
-      },
-      {
-       "kind": "field",
-       "name": "WorkingIndicator",
-       "required": false,
-       "tag": 636
-      },
-      {
-       "kind": "field",
-       "name": "LeavesQty",
-       "required": true,
-       "tag": 151
-      },
-      {
-       "kind": "field",
-       "name": "CxlQty",
-       "required": true,
-       "tag": 84
-      },
-      {
-       "kind": "field",
-       "name": "AvgPx",
-       "required": true,
-       "tag": 6
-      },
-      {
-       "kind": "field",
-       "name": "OrdRejReason",
-       "required": false,
-       "tag": 103
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 60,
-   "members": [
+     "kind": "field",
+     "name": "OrderID",
+     "required": false,
+     "tag": 37
+    },
     {
-     "kind": "group",
-     "name": "NoOrders",
-     "required": true,
-     "tag": 73,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ClOrdID",
-       "required": true,
-       "tag": 11
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryClOrdID",
-       "required": false,
-       "tag": 526
-      },
-      {
-       "kind": "field",
-       "name": "CumQty",
-       "required": true,
-       "tag": 14
-      },
-      {
-       "kind": "field",
-       "name": "OrdStatus",
-       "required": true,
-       "tag": 39
-      },
-      {
-       "kind": "field",
-       "name": "WorkingIndicator",
-       "required": false,
-       "tag": 636
-      },
-      {
-       "kind": "field",
-       "name": "LeavesQty",
-       "required": true,
-       "tag": 151
-      },
-      {
-       "kind": "field",
-       "name": "CxlQty",
-       "required": true,
-       "tag": 84
-      },
-      {
-       "kind": "field",
-       "name": "AvgPx",
-       "required": true,
-       "tag": 6
-      },
-      {
-       "kind": "field",
-       "name": "OrdRejReason",
-       "required": false,
-       "tag": 103
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 60,
-   "members": [
+     "kind": "field",
+     "name": "SecondaryClOrdID",
+     "required": false,
+     "tag": 526
+    },
     {
-     "kind": "group",
-     "name": "NoOrders",
+     "kind": "field",
+     "name": "CumQty",
      "required": true,
-     "tag": 73,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ClOrdID",
-       "required": true,
-       "tag": 11
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryClOrdID",
-       "required": false,
-       "tag": 526
-      },
-      {
-       "kind": "field",
-       "name": "CumQty",
-       "required": true,
-       "tag": 14
-      },
-      {
-       "kind": "field",
-       "name": "OrdStatus",
-       "required": true,
-       "tag": 39
-      },
-      {
-       "kind": "field",
-       "name": "WorkingIndicator",
-       "required": false,
-       "tag": 636
-      },
-      {
-       "kind": "field",
-       "name": "LeavesQty",
-       "required": true,
-       "tag": 151
-      },
-      {
-       "kind": "field",
-       "name": "CxlQty",
-       "required": true,
-       "tag": 84
-      },
-      {
-       "kind": "field",
-       "name": "AvgPx",
-       "required": true,
-       "tag": 6
-      },
-      {
-       "kind": "field",
-       "name": "OrdRejReason",
-       "required": false,
-       "tag": 103
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      }
-     ]
+     "tag": 14
+    },
+    {
+     "kind": "field",
+     "name": "OrdStatus",
+     "required": true,
+     "tag": 39
+    },
+    {
+     "kind": "field",
+     "name": "WorkingIndicator",
+     "required": false,
+     "tag": 636
+    },
+    {
+     "kind": "field",
+     "name": "LeavesQty",
+     "required": true,
+     "tag": 151
+    },
+    {
+     "kind": "field",
+     "name": "CxlQty",
+     "required": true,
+     "tag": 84
+    },
+    {
+     "kind": "field",
+     "name": "AvgPx",
+     "required": true,
+     "tag": 6
+    },
+    {
+     "kind": "field",
+     "name": "OrdRejReason",
+     "required": false,
+     "tag": 103
+    },
+    {
+     "kind": "field",
+     "name": "Text",
+     "required": false,
+     "tag": 58
+    },
+    {
+     "kind": "field",
+     "name": "EncodedTextLen",
+     "required": false,
+     "tag": 354
+    },
+    {
+     "kind": "field",
+     "name": "EncodedText",
+     "required": false,
+     "tag": 355
     }
    ]
   }
- }
+ ]
 }

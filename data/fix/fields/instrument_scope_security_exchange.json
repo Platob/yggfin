@@ -1,9 +1,0 @@
-{
- "name": "InstrumentScopeSecurityExchange",
- "tag": 1616,
- "versions": {
-  "5.0.SP2": {
-   "type": "EXCHANGE"
-  }
- }
-}

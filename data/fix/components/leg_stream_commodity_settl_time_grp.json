@@ -1,36 +1,34 @@
 {
  "name": "LegStreamCommoditySettlTimeGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 568,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegStreamCommoditySettlTimes",
+   "required": false,
+   "tag": 41683,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegStreamCommoditySettlTimes",
+     "kind": "field",
+     "name": "LegStreamCommoditySettlStart",
      "required": false,
-     "tag": 41683,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegStreamCommoditySettlStart",
-       "required": false,
-       "tag": 41684
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamCommoditySettlEnd",
-       "required": false,
-       "tag": 41685
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamCommoditySettlTimeType",
-       "required": false,
-       "tag": 41935
-      }
-     ]
+     "tag": 41684
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamCommoditySettlEnd",
+     "required": false,
+     "tag": 41685
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamCommoditySettlTimeType",
+     "required": false,
+     "tag": 41935
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "LegAllocSettlCurrencyCodeSource",
- "tag": 2928,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

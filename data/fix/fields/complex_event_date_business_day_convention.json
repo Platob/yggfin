@@ -1,9 +1,0 @@
-{
- "name": "ComplexEventDateBusinessDayConvention",
- "tag": 41025,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

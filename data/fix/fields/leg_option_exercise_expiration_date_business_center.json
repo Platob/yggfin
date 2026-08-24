@@ -1,9 +1,0 @@
-{
- "name": "LegOptionExerciseExpirationDateBusinessCenter",
- "tag": 41516,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

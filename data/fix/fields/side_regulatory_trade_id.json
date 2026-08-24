@@ -1,9 +1,0 @@
-{
- "name": "SideRegulatoryTradeID",
- "tag": 1972,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

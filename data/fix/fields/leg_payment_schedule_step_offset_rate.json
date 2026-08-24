@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentScheduleStepOffsetRate",
- "tag": 40394,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

@@ -34,36 +34,38 @@ NARROWED = {"char": pyarrow.int32(), "currency": pyarrow.int32(), "int": pyarrow
 
 
 def dictionary() -> dict[str, dict[str, Any]]:
-    """Every field of every version, by name, the **newest** definition winning.
+    """Every field record by every spelling it answers to, canonical names first.
 
-    Newest matters and was got wrong once: FIX 4.0 typed `OrderQty` as `int`
-    and `ExecID` as `int`, and both became `Qty` and `String` in 4.2. A lookup
-    that took the oldest definition called every quantity column in this
-    package mistyped. An entry stores its versions newest first, and the
-    transport (`FIXT1.1`) is read last because it only carries session fields.
+    A record already holds the **newest** reading -- which matters and was got
+    wrong once: FIX 4.0 typed `OrderQty` as `int` and `ExecID` as `int`, and
+    both became `Qty` and `String` in 4.2, so a lookup that took the oldest
+    definition called every quantity column in this package mistyped.
 
-    Read straight out of the archive's own documents: a test that went through
+    Read straight out of the archive's own shards: a test that went through
     `FixRegistry` would pass whenever the registry and the declaration were
     wrong together.
     """
     by_name: dict[str, dict[str, Any]] = {}
     with zipfile.ZipFile(DATA) as archive:
-        entries = [
-            json.loads(archive.read(name).decode("utf-8"))
+        records = [
+            record
             for name in sorted(archive.namelist())
             if name.startswith("fields/")
+            for record in json.loads(archive.read(name).decode("utf-8")).values()
         ]
-    for transport in (False, True):
-        for entry in entries:
-            if "tag" not in entry:
+    for aliased in (False, True):
+        for record in records:
+            if "tag" not in record:
                 continue  # A field FIX never numbered; nothing here declares one.
-            for version, variant in entry["versions"].items():
-                if version.startswith("FIXT") is not transport:
-                    continue
-                spelled = variant.get("name") or entry["name"]
-                metadata = {"fix:tag": str(variant.get("tag") or entry["tag"])}
-                if variant.get("type"):
-                    metadata["fix:type"] = variant["type"]
+            metadata = {"fix:tag": str(record["tag"])}
+            if record.get("type"):
+                metadata["fix:type"] = record["type"]
+            spellings = (
+                [alias["name"] for alias in record.get("aliases", ())]
+                if aliased
+                else [record["name"]]
+            )
+            for spelled in spellings:
                 by_name.setdefault(spelled, {"name": spelled, "metadata": metadata})
     return by_name
 

@@ -1,9 +1,0 @@
-{
- "name": "NoLegProvisions",
- "tag": 40448,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

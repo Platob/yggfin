@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingReturnRateValuationFrequencyPeriod",
- "tag": 43026,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

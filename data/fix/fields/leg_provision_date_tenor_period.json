@@ -1,9 +1,0 @@
-{
- "name": "LegProvisionDateTenorPeriod",
- "tag": 40454,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

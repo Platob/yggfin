@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingOptionExerciseFrequencyUnit",
- "tag": 41827,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

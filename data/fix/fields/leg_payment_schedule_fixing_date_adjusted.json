@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentScheduleFixingDateAdjusted",
- "tag": 40404,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

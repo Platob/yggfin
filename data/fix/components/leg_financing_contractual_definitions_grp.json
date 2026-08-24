@@ -1,24 +1,22 @@
 {
  "name": "LegFinancingContractualDefinitionsGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 634,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegContractualDefinitions",
+   "required": false,
+   "tag": 42198,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegContractualDefinitions",
+     "kind": "field",
+     "name": "LegContractualDefinition",
      "required": false,
-     "tag": 42198,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegContractualDefinition",
-       "required": false,
-       "tag": 42199
-      }
-     ]
+     "tag": 42199
     }
    ]
   }
- }
+ ]
 }

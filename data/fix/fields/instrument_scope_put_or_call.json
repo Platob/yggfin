@@ -1,9 +1,0 @@
-{
- "name": "InstrumentScopePutOrCall",
- "tag": 1553,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

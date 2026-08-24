@@ -1,24 +1,22 @@
 {
  "name": "DividendPeriodBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 651,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoDividendPeriodBusinessCenters",
+   "required": false,
+   "tag": 42294,
    "members": [
     {
-     "kind": "group",
-     "name": "NoDividendPeriodBusinessCenters",
+     "kind": "field",
+     "name": "DividendPeriodBusinessCenter",
      "required": false,
-     "tag": 42294,
-     "members": [
-      {
-       "kind": "field",
-       "name": "DividendPeriodBusinessCenter",
-       "required": false,
-       "tag": 42295
-      }
-     ]
+     "tag": 42295
     }
    ]
   }
- }
+ ]
 }

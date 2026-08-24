@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStubEndDateOffsetUnit",
- "tag": 42988,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

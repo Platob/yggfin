@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingComplexEventStartTime",
- "tag": 2057,
- "versions": {
-  "5.0.SP2": {
-   "type": "UTCTIMEONLY"
-  }
- }
-}

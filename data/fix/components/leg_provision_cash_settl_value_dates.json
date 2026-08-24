@@ -1,63 +1,61 @@
 {
  "name": "LegProvisionCashSettlValueDates",
- "versions": {
-  "5.0.SP2": {
-   "order": 38,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegProvisionCashSettlValueTime",
-     "required": false,
-     "tag": 40524
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionCashSettlValueTimeBusinessCenter",
-     "required": false,
-     "tag": 40525
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionCashSettlValueDateBusinessDayConvention",
-     "required": false,
-     "tag": 40526
-    },
-    {
-     "kind": "component",
-     "name": "LegProvisionCashSettlValueDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionCashSettlValueDateRelativeTo",
-     "required": false,
-     "tag": 40528
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionCashSettlValueDateOffsetPeriod",
-     "required": false,
-     "tag": 40529
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionCashSettlValueDateOffsetUnit",
-     "required": false,
-     "tag": 40530
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionCashSettlValueDateOffsetDayType",
-     "required": false,
-     "tag": 40531
-    },
-    {
-     "kind": "field",
-     "name": "LegProvisionCashSettlValueDateAdjusted",
-     "required": false,
-     "tag": 40532
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegProvisionCashSettlValueTime",
+   "required": false,
+   "tag": 40524
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionCashSettlValueTimeBusinessCenter",
+   "required": false,
+   "tag": 40525
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionCashSettlValueDateBusinessDayConvention",
+   "required": false,
+   "tag": 40526
+  },
+  {
+   "kind": "component",
+   "name": "LegProvisionCashSettlValueDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionCashSettlValueDateRelativeTo",
+   "required": false,
+   "tag": 40528
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionCashSettlValueDateOffsetPeriod",
+   "required": false,
+   "tag": 40529
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionCashSettlValueDateOffsetUnit",
+   "required": false,
+   "tag": 40530
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionCashSettlValueDateOffsetDayType",
+   "required": false,
+   "tag": 40531
+  },
+  {
+   "kind": "field",
+   "name": "LegProvisionCashSettlValueDateAdjusted",
+   "required": false,
+   "tag": 40532
   }
- }
+ ]
 }

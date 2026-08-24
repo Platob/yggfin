@@ -1,583 +1,161 @@
 {
  "name": "SettlInstGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 230,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoSettlInst",
+   "required": false,
+   "tag": 778,
    "members": [
     {
-     "kind": "group",
-     "name": "NoSettlInst",
+     "kind": "field",
+     "name": "SettlInstID",
      "required": false,
-     "tag": 778,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SettlInstID",
-       "required": false,
-       "tag": 162
-      },
-      {
-       "kind": "field",
-       "name": "SettlInstTransType",
-       "required": false,
-       "tag": 163
-      },
-      {
-       "kind": "field",
-       "name": "SettlInstRefID",
-       "required": false,
-       "tag": 214
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "Product",
-       "required": false,
-       "tag": 460
-      },
-      {
-       "kind": "field",
-       "name": "SecurityType",
-       "required": false,
-       "tag": 167
-      },
-      {
-       "kind": "field",
-       "name": "CFICode",
-       "required": false,
-       "tag": 461
-      },
-      {
-       "kind": "field",
-       "name": "UPICode",
-       "required": false,
-       "tag": 2891
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrencyCodeSource",
-       "required": false,
-       "tag": 2899
-      },
-      {
-       "kind": "field",
-       "name": "EffectiveTime",
-       "required": false,
-       "tag": 168
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "LastUpdateTime",
-       "required": false,
-       "tag": 779
-      },
-      {
-       "kind": "component",
-       "name": "SettlInstructionsData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PaymentMethod",
-       "required": false,
-       "tag": 492
-      },
-      {
-       "kind": "field",
-       "name": "PaymentRef",
-       "required": false,
-       "tag": 476
-      },
-      {
-       "kind": "field",
-       "name": "CardHolderName",
-       "required": false,
-       "tag": 488
-      },
-      {
-       "kind": "field",
-       "name": "CardNumber",
-       "required": false,
-       "tag": 489
-      },
-      {
-       "kind": "field",
-       "name": "CardStartDate",
-       "required": false,
-       "tag": 503
-      },
-      {
-       "kind": "field",
-       "name": "CardExpDate",
-       "required": false,
-       "tag": 490
-      },
-      {
-       "kind": "field",
-       "name": "CardIssNum",
-       "required": false,
-       "tag": 491
-      },
-      {
-       "kind": "field",
-       "name": "PaymentDate",
-       "required": false,
-       "tag": 504
-      },
-      {
-       "kind": "field",
-       "name": "PaymentRemitterID",
-       "required": false,
-       "tag": 505
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 79,
-   "members": [
+     "tag": 162
+    },
     {
-     "kind": "group",
-     "name": "NoSettlInst",
+     "kind": "field",
+     "name": "SettlInstTransType",
      "required": false,
-     "tag": 778,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SettlInstID",
-       "required": false,
-       "tag": 162
-      },
-      {
-       "kind": "field",
-       "name": "SettlInstTransType",
-       "required": false,
-       "tag": 163
-      },
-      {
-       "kind": "field",
-       "name": "SettlInstRefID",
-       "required": false,
-       "tag": 214
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "Product",
-       "required": false,
-       "tag": 460
-      },
-      {
-       "kind": "field",
-       "name": "SecurityType",
-       "required": false,
-       "tag": 167
-      },
-      {
-       "kind": "field",
-       "name": "CFICode",
-       "required": false,
-       "tag": 461
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "EffectiveTime",
-       "required": false,
-       "tag": 168
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "LastUpdateTime",
-       "required": false,
-       "tag": 779
-      },
-      {
-       "kind": "component",
-       "name": "SettlInstructionsData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PaymentMethod",
-       "required": false,
-       "tag": 492
-      },
-      {
-       "kind": "field",
-       "name": "PaymentRef",
-       "required": false,
-       "tag": 476
-      },
-      {
-       "kind": "field",
-       "name": "CardHolderName",
-       "required": false,
-       "tag": 488
-      },
-      {
-       "kind": "field",
-       "name": "CardNumber",
-       "required": false,
-       "tag": 489
-      },
-      {
-       "kind": "field",
-       "name": "CardStartDate",
-       "required": false,
-       "tag": 503
-      },
-      {
-       "kind": "field",
-       "name": "CardExpDate",
-       "required": false,
-       "tag": 490
-      },
-      {
-       "kind": "field",
-       "name": "CardIssNum",
-       "required": false,
-       "tag": 491
-      },
-      {
-       "kind": "field",
-       "name": "PaymentDate",
-       "required": false,
-       "tag": 504
-      },
-      {
-       "kind": "field",
-       "name": "PaymentRemitterID",
-       "required": false,
-       "tag": 505
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 80,
-   "members": [
+     "tag": 163
+    },
     {
-     "kind": "group",
-     "name": "NoSettlInst",
+     "kind": "field",
+     "name": "SettlInstRefID",
      "required": false,
-     "tag": 778,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SettlInstID",
-       "required": false,
-       "tag": 162
-      },
-      {
-       "kind": "field",
-       "name": "SettlInstTransType",
-       "required": false,
-       "tag": 163
-      },
-      {
-       "kind": "field",
-       "name": "SettlInstRefID",
-       "required": false,
-       "tag": 214
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "Product",
-       "required": false,
-       "tag": 460
-      },
-      {
-       "kind": "field",
-       "name": "SecurityType",
-       "required": false,
-       "tag": 167
-      },
-      {
-       "kind": "field",
-       "name": "CFICode",
-       "required": false,
-       "tag": 461
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "EffectiveTime",
-       "required": false,
-       "tag": 168
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "LastUpdateTime",
-       "required": false,
-       "tag": 779
-      },
-      {
-       "kind": "component",
-       "name": "SettlInstructionsData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PaymentMethod",
-       "required": false,
-       "tag": 492
-      },
-      {
-       "kind": "field",
-       "name": "PaymentRef",
-       "required": false,
-       "tag": 476
-      },
-      {
-       "kind": "field",
-       "name": "CardHolderName",
-       "required": false,
-       "tag": 488
-      },
-      {
-       "kind": "field",
-       "name": "CardNumber",
-       "required": false,
-       "tag": 489
-      },
-      {
-       "kind": "field",
-       "name": "CardStartDate",
-       "required": false,
-       "tag": 503
-      },
-      {
-       "kind": "field",
-       "name": "CardExpDate",
-       "required": false,
-       "tag": 490
-      },
-      {
-       "kind": "field",
-       "name": "CardIssNum",
-       "required": false,
-       "tag": 491
-      },
-      {
-       "kind": "field",
-       "name": "PaymentDate",
-       "required": false,
-       "tag": 504
-      },
-      {
-       "kind": "field",
-       "name": "PaymentRemitterID",
-       "required": false,
-       "tag": 505
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 80,
-   "members": [
+     "tag": 214
+    },
     {
-     "kind": "group",
-     "name": "NoSettlInst",
+     "kind": "component",
+     "name": "Parties",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "Side",
      "required": false,
-     "tag": 778,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SettlInstID",
-       "required": false,
-       "tag": 162
-      },
-      {
-       "kind": "field",
-       "name": "SettlInstTransType",
-       "required": false,
-       "tag": 163
-      },
-      {
-       "kind": "field",
-       "name": "SettlInstRefID",
-       "required": false,
-       "tag": 214
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Side",
-       "required": false,
-       "tag": 54
-      },
-      {
-       "kind": "field",
-       "name": "Product",
-       "required": false,
-       "tag": 460
-      },
-      {
-       "kind": "field",
-       "name": "SecurityType",
-       "required": false,
-       "tag": 167
-      },
-      {
-       "kind": "field",
-       "name": "CFICode",
-       "required": false,
-       "tag": 461
-      },
-      {
-       "kind": "field",
-       "name": "EffectiveTime",
-       "required": false,
-       "tag": 168
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "LastUpdateTime",
-       "required": false,
-       "tag": 779
-      },
-      {
-       "kind": "component",
-       "name": "SettlInstructionsData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PaymentMethod",
-       "required": false,
-       "tag": 492
-      },
-      {
-       "kind": "field",
-       "name": "PaymentRef",
-       "required": false,
-       "tag": 476
-      },
-      {
-       "kind": "field",
-       "name": "CardHolderName",
-       "required": false,
-       "tag": 488
-      },
-      {
-       "kind": "field",
-       "name": "CardNumber",
-       "required": false,
-       "tag": 489
-      },
-      {
-       "kind": "field",
-       "name": "CardStartDate",
-       "required": false,
-       "tag": 503
-      },
-      {
-       "kind": "field",
-       "name": "CardExpDate",
-       "required": false,
-       "tag": 490
-      },
-      {
-       "kind": "field",
-       "name": "CardIssNum",
-       "required": false,
-       "tag": 491
-      },
-      {
-       "kind": "field",
-       "name": "PaymentDate",
-       "required": false,
-       "tag": 504
-      },
-      {
-       "kind": "field",
-       "name": "PaymentRemitterID",
-       "required": false,
-       "tag": 505
-      }
-     ]
+     "tag": 54
+    },
+    {
+     "kind": "field",
+     "name": "Product",
+     "required": false,
+     "tag": 460
+    },
+    {
+     "kind": "field",
+     "name": "SecurityType",
+     "required": false,
+     "tag": 167
+    },
+    {
+     "kind": "field",
+     "name": "CFICode",
+     "required": false,
+     "tag": 461
+    },
+    {
+     "kind": "field",
+     "name": "UPICode",
+     "required": false,
+     "tag": 2891
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrency",
+     "required": false,
+     "tag": 120
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrencyCodeSource",
+     "required": false,
+     "tag": 2899
+    },
+    {
+     "kind": "field",
+     "name": "EffectiveTime",
+     "required": false,
+     "tag": 168
+    },
+    {
+     "kind": "field",
+     "name": "ExpireTime",
+     "required": false,
+     "tag": 126
+    },
+    {
+     "kind": "field",
+     "name": "LastUpdateTime",
+     "required": false,
+     "tag": 779
+    },
+    {
+     "kind": "component",
+     "name": "SettlInstructionsData",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PaymentMethod",
+     "required": false,
+     "tag": 492
+    },
+    {
+     "kind": "field",
+     "name": "PaymentRef",
+     "required": false,
+     "tag": 476
+    },
+    {
+     "kind": "field",
+     "name": "CardHolderName",
+     "required": false,
+     "tag": 488
+    },
+    {
+     "kind": "field",
+     "name": "CardNumber",
+     "required": false,
+     "tag": 489
+    },
+    {
+     "kind": "field",
+     "name": "CardStartDate",
+     "required": false,
+     "tag": 503
+    },
+    {
+     "kind": "field",
+     "name": "CardExpDate",
+     "required": false,
+     "tag": 490
+    },
+    {
+     "kind": "field",
+     "name": "CardIssNum",
+     "required": false,
+     "tag": 491
+    },
+    {
+     "kind": "field",
+     "name": "PaymentDate",
+     "required": false,
+     "tag": 504
+    },
+    {
+     "kind": "field",
+     "name": "PaymentRemitterID",
+     "required": false,
+     "tag": 505
     }
    ]
   }
- }
+ ]
 }

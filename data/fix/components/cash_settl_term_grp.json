@@ -1,148 +1,146 @@
 {
  "name": "CashSettlTermGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 376,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoCashSettlTerms",
+   "required": false,
+   "tag": 40022,
    "members": [
     {
-     "kind": "group",
-     "name": "NoCashSettlTerms",
+     "kind": "field",
+     "name": "CashSettlCurrency",
      "required": false,
-     "tag": 40022,
-     "members": [
-      {
-       "kind": "field",
-       "name": "CashSettlCurrency",
-       "required": false,
-       "tag": 40023
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlValuationFirstBusinessDayOffset",
-       "required": false,
-       "tag": 40024
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlValuationSubsequentBusinessDaysOffset",
-       "required": false,
-       "tag": 40916
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlNumOfValuationDates",
-       "required": false,
-       "tag": 40917
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlValuationTime",
-       "required": false,
-       "tag": 40025
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlBusinessCenter",
-       "required": false,
-       "tag": 40026
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlQuoteMethod",
-       "required": false,
-       "tag": 40027
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlQuoteAmount",
-       "required": false,
-       "tag": 40028
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlQuoteCurrency",
-       "required": false,
-       "tag": 40029
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlMinimumQuoteAmount",
-       "required": false,
-       "tag": 40030
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlMinimumQuoteCurrency",
-       "required": false,
-       "tag": 40031
-      },
-      {
-       "kind": "component",
-       "name": "CashSettlDealerGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlPriceSource",
-       "required": false,
-       "tag": 42216
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlPriceDefault",
-       "required": false,
-       "tag": 42217
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlBusinessDays",
-       "required": false,
-       "tag": 40033
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlAmount",
-       "required": false,
-       "tag": 40034
-      },
-      {
-       "kind": "component",
-       "name": "CashSettlDate",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlRecoveryFactor",
-       "required": false,
-       "tag": 40035
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlFixedTermIndicator",
-       "required": false,
-       "tag": 40036
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlAccruedInterestIndicator",
-       "required": false,
-       "tag": 40037
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlValuationMethod",
-       "required": false,
-       "tag": 40038
-      },
-      {
-       "kind": "field",
-       "name": "CashSettlTermXID",
-       "required": false,
-       "tag": 40039
-      }
-     ]
+     "tag": 40023
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlValuationFirstBusinessDayOffset",
+     "required": false,
+     "tag": 40024
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlValuationSubsequentBusinessDaysOffset",
+     "required": false,
+     "tag": 40916
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlNumOfValuationDates",
+     "required": false,
+     "tag": 40917
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlValuationTime",
+     "required": false,
+     "tag": 40025
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlBusinessCenter",
+     "required": false,
+     "tag": 40026
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlQuoteMethod",
+     "required": false,
+     "tag": 40027
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlQuoteAmount",
+     "required": false,
+     "tag": 40028
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlQuoteCurrency",
+     "required": false,
+     "tag": 40029
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlMinimumQuoteAmount",
+     "required": false,
+     "tag": 40030
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlMinimumQuoteCurrency",
+     "required": false,
+     "tag": 40031
+    },
+    {
+     "kind": "component",
+     "name": "CashSettlDealerGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlPriceSource",
+     "required": false,
+     "tag": 42216
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlPriceDefault",
+     "required": false,
+     "tag": 42217
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlBusinessDays",
+     "required": false,
+     "tag": 40033
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlAmount",
+     "required": false,
+     "tag": 40034
+    },
+    {
+     "kind": "component",
+     "name": "CashSettlDate",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlRecoveryFactor",
+     "required": false,
+     "tag": 40035
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlFixedTermIndicator",
+     "required": false,
+     "tag": 40036
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlAccruedInterestIndicator",
+     "required": false,
+     "tag": 40037
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlValuationMethod",
+     "required": false,
+     "tag": 40038
+    },
+    {
+     "kind": "field",
+     "name": "CashSettlTermXID",
+     "required": false,
+     "tag": 40039
     }
    ]
   }
- }
+ ]
 }

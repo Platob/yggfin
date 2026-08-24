@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamVersion",
- "tag": 43083,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

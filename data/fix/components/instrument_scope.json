@@ -1,153 +1,151 @@
 {
  "name": "InstrumentScope",
- "versions": {
-  "5.0.SP2": {
-   "order": 27,
-   "members": [
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSymbol",
-     "required": false,
-     "tag": 1536
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSymbolSfx",
-     "required": false,
-     "tag": 1537
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSecurityID",
-     "required": false,
-     "tag": 1538
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSecurityIDSource",
-     "required": false,
-     "tag": 1539
-    },
-    {
-     "kind": "component",
-     "name": "InstrumentScopeSecurityAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeProduct",
-     "required": false,
-     "tag": 1543
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeProductComplex",
-     "required": false,
-     "tag": 1544
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSecurityGroup",
-     "required": false,
-     "tag": 1545
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeCFICode",
-     "required": false,
-     "tag": 1546
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeUPICode",
-     "required": false,
-     "tag": 2895
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSecurityType",
-     "required": false,
-     "tag": 1547
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSecuritySubType",
-     "required": false,
-     "tag": 1548
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeMaturityMonthYear",
-     "required": false,
-     "tag": 1549
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeMaturityTime",
-     "required": false,
-     "tag": 1550
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeRestructuringType",
-     "required": false,
-     "tag": 1551
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSeniority",
-     "required": false,
-     "tag": 1552
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopePutOrCall",
-     "required": false,
-     "tag": 1553
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeFlexibleIndicator",
-     "required": false,
-     "tag": 1554
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeCouponRate",
-     "required": false,
-     "tag": 1555
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSecurityExchange",
-     "required": false,
-     "tag": 1616
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSecurityDesc",
-     "required": false,
-     "tag": 1556
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeEncodedSecurityDescLen",
-     "required": false,
-     "tag": 1620
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeEncodedSecurityDesc",
-     "required": false,
-     "tag": 1621
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentScopeSettlType",
-     "required": false,
-     "tag": 1557
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSymbol",
+   "required": false,
+   "tag": 1536
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSymbolSfx",
+   "required": false,
+   "tag": 1537
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSecurityID",
+   "required": false,
+   "tag": 1538
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSecurityIDSource",
+   "required": false,
+   "tag": 1539
+  },
+  {
+   "kind": "component",
+   "name": "InstrumentScopeSecurityAltIDGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeProduct",
+   "required": false,
+   "tag": 1543
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeProductComplex",
+   "required": false,
+   "tag": 1544
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSecurityGroup",
+   "required": false,
+   "tag": 1545
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeCFICode",
+   "required": false,
+   "tag": 1546
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeUPICode",
+   "required": false,
+   "tag": 2895
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSecurityType",
+   "required": false,
+   "tag": 1547
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSecuritySubType",
+   "required": false,
+   "tag": 1548
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeMaturityMonthYear",
+   "required": false,
+   "tag": 1549
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeMaturityTime",
+   "required": false,
+   "tag": 1550
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeRestructuringType",
+   "required": false,
+   "tag": 1551
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSeniority",
+   "required": false,
+   "tag": 1552
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopePutOrCall",
+   "required": false,
+   "tag": 1553
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeFlexibleIndicator",
+   "required": false,
+   "tag": 1554
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeCouponRate",
+   "required": false,
+   "tag": 1555
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSecurityExchange",
+   "required": false,
+   "tag": 1616
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSecurityDesc",
+   "required": false,
+   "tag": 1556
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeEncodedSecurityDescLen",
+   "required": false,
+   "tag": 1620
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeEncodedSecurityDesc",
+   "required": false,
+   "tag": 1621
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentScopeSettlType",
+   "required": false,
+   "tag": 1557
   }
- }
+ ]
 }

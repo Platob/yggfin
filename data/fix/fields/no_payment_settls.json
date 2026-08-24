@@ -1,9 +1,0 @@
-{
- "name": "NoPaymentSettls",
- "tag": 40230,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegPriceQuoteCurrency",
- "tag": 1528,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "ReferenceDataDate",
- "tag": 2747,
- "versions": {
-  "5.0.SP2": {
-   "type": "UTCTIMESTAMP"
-  }
- }
-}

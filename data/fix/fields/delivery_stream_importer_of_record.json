@@ -1,9 +1,0 @@
-{
- "name": "DeliveryStreamImporterOfRecord",
- "tag": 41070,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

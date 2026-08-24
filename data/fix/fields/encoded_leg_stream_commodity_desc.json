@@ -1,9 +1,0 @@
-{
- "name": "EncodedLegStreamCommodityDesc",
- "tag": 41654,
- "versions": {
-  "5.0.SP2": {
-   "type": "DATA"
-  }
- }
-}

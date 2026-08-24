@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamCommodityDataSourceIDType",
- "tag": 41995,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

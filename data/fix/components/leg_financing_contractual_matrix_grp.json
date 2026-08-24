@@ -1,36 +1,34 @@
 {
  "name": "LegFinancingContractualMatrixGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 636,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegContractualMatrices",
+   "required": false,
+   "tag": 42203,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegContractualMatrices",
+     "kind": "field",
+     "name": "LegContractualMatrixSource",
      "required": false,
-     "tag": 42203,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegContractualMatrixSource",
-       "required": false,
-       "tag": 42204
-      },
-      {
-       "kind": "field",
-       "name": "LegContractualMatrixDate",
-       "required": false,
-       "tag": 42205
-      },
-      {
-       "kind": "field",
-       "name": "LegContractualMatrixTerm",
-       "required": false,
-       "tag": 42206
-      }
-     ]
+     "tag": 42204
+    },
+    {
+     "kind": "field",
+     "name": "LegContractualMatrixDate",
+     "required": false,
+     "tag": 42205
+    },
+    {
+     "kind": "field",
+     "name": "LegContractualMatrixTerm",
+     "required": false,
+     "tag": 42206
     }
    ]
   }
- }
+ ]
 }

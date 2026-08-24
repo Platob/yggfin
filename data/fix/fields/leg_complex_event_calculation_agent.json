@@ -1,9 +1,0 @@
-{
- "name": "LegComplexEventCalculationAgent",
- "tag": 2238,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

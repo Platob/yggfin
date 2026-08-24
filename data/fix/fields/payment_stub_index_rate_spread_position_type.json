@@ -1,9 +1,0 @@
-{
- "name": "PaymentStubIndexRateSpreadPositionType",
- "tag": 40884,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegDividendAccrualPaymentDateBusinessDayConvention",
- "tag": 42335,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamDataProvider",
- "tag": 41977,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

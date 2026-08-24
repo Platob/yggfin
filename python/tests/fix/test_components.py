@@ -45,6 +45,46 @@ def _pairs(cell: object) -> list[tuple[object, object]] | None:
     return [(entry["tag"], entry["value"]) for entry in cell]
 
 
+#: The Parties declaration a registry hands the extractor: FIX's own tree, with
+#: the `PtysSubGrp` component the newest versions reference inlined where the
+#: extractor would resolve it. Every test below is handed this, because the
+#: extraction is declaration-driven and there is no other source for one.
+PARTIES_SPEC = SpecComponent(
+    "Parties",
+    (
+        SpecGroup(
+            "NoPartyIDs",
+            False,
+            453,
+            (
+                SpecFieldRef("PartyID", False, 448),
+                SpecFieldRef("PartyIDSource", False, 447),
+                SpecFieldRef("PartyRole", False, 452),
+                SpecGroup(
+                    "NoPartySubIDs",
+                    False,
+                    802,
+                    (
+                        SpecFieldRef("PartySubID", False, 523),
+                        SpecFieldRef("PartySubIDType", False, 803),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)
+
+
+def _parties(**declared: object) -> Parties:
+    """The Parties extractor over FIX's own declaration of it."""
+    return Parties(components=[PARTIES_SPEC], **declared)
+
+
+def _stamps(**declared: object) -> TrdRegTimestamps:
+    """The TrdRegTimestamps extractor over FIX's own declaration of it."""
+    return TrdRegTimestamps(components=[TRD_REG_SPEC], **declared)
+
+
 def test_party_is_the_exact_fix_named_shape() -> None:
     assert Party.into_field().names == ["party_id", "party_id_source", "party_role", "buffer"]
     assert Party.into_field().field("party_id").metadata["fix:tag"] == "448"
@@ -72,7 +112,7 @@ def test_counted_parties_are_lifted_and_every_other_tag_keeps_its_order() -> Non
         ]
     )
 
-    parties, residual = Parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist() == [
         [
@@ -108,7 +148,7 @@ def test_a_resolved_rendered_sequence_needs_no_count_field() -> None:
         ]
     )
 
-    parties, residual = Parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
     assert [party["party_id"] for party in parties.to_pylist()[0]] == ["BUYSIDE", "XPAR"]
     assert [party["party_role"] for party in parties.to_pylist()[0]] == [1, 17]
@@ -118,7 +158,7 @@ def test_a_resolved_rendered_sequence_needs_no_count_field() -> None:
 def test_null_absent_and_explicitly_empty_are_distinct() -> None:
     source = _tags(None, [], [(453, "0"), (55, "TTF")], [(55, "NG")])
 
-    parties, residual = Parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist() == [None, None, [], None]
     assert [_pairs(row) for row in residual.to_pylist()] == [
@@ -132,7 +172,7 @@ def test_null_absent_and_explicitly_empty_are_distinct() -> None:
 def test_a_zero_count_leaves_stray_party_members_residual() -> None:
     source = _tags([(453, "0"), (447, "D"), (55, "TTF")])
 
-    parties, residual = Parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist() == [[]]
     assert _pairs(residual.to_pylist()[0]) == [(447, "D"), (55, "TTF")]
@@ -154,7 +194,7 @@ def test_nested_party_sub_ids_stay_lossless_in_unique_buffer_keys() -> None:
         ]
     )
 
-    parties, residual = Parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist()[0][0]["buffer"] == [
         ("NoPartySubIDs", "2"),
@@ -178,7 +218,7 @@ def test_nested_member_indices_follow_the_group_delimiter() -> None:
         ]
     )
 
-    parties, _ = Parties().into_arrow_arrays(source)
+    parties, _ = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist()[0][0]["buffer"] == [
         ("NoPartySubIDs", "2"),
@@ -200,7 +240,7 @@ def test_duplicate_nested_members_are_occurrence_qualified() -> None:
         ]
     )
 
-    parties, _ = Parties().into_arrow_arrays(source)
+    parties, _ = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist()[0][0]["buffer"][-2:] == [
         ("NoPartySubIDs[0].PartySubIDType", "1"),
@@ -211,7 +251,7 @@ def test_duplicate_nested_members_are_occurrence_qualified() -> None:
 def test_nested_members_before_their_delimiter_stay_residual() -> None:
     source = _tags([(453, "1"), (448, "BUYSIDE"), (802, "2"), (803, "2"), (803, "3")])
 
-    parties, residual = Parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist()[0][0]["buffer"] == [("NoPartySubIDs", "2")]
     assert _pairs(residual.to_pylist()[0]) == [(803, "2"), (803, "3")]
@@ -257,7 +297,7 @@ def test_a_bad_count_refuses_partial_extraction(declared: str) -> None:
         ]
     )
 
-    parties, residual = Parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist() == [None]
     assert residual.to_pylist() == source.to_pylist()
@@ -275,7 +315,7 @@ def test_multiple_parties_blocks_stay_residual_without_owner_context() -> None:
         ]
     )
 
-    parties, residual = Parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist() == [None]
     assert residual.to_pylist() == source.to_pylist()
@@ -284,7 +324,7 @@ def test_multiple_parties_blocks_stay_residual_without_owner_context() -> None:
 def test_an_invalid_role_is_retained_instead_of_becoming_null_data() -> None:
     source = _tags([(453, "1"), (448, "BUYSIDE"), (452, "dealer")])
 
-    parties, residual = Parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist() == [
         [
@@ -300,7 +340,7 @@ def test_an_invalid_role_is_retained_instead_of_becoming_null_data() -> None:
 
 
 def test_a_leading_plus_in_party_role_is_read_as_an_integer() -> None:
-    parties, residual = Parties().into_arrow_arrays(
+    parties, residual = _parties().into_arrow_arrays(
         _tags([(453, "1"), (448, "BUYSIDE"), (452, "+1")])
     )
 
@@ -335,7 +375,7 @@ def test_an_explicit_43_declaration_keeps_partysubid_flat() -> None:
 
 def test_unrelated_transport_components_do_not_disable_parties() -> None:
     unrelated = SpecComponent("StandardHeader", (SpecFieldRef("BeginString", True, 8),))
-    parties, residual = Parties(components=[unrelated]).into_arrow_arrays(
+    parties, residual = Parties(components=[unrelated, PARTIES_SPEC]).into_arrow_arrays(
         _tags([(453, "1"), (448, "BUYSIDE"), (452, "1")])
     )
 
@@ -349,8 +389,8 @@ def test_chunk_boundaries_do_not_change_the_answer() -> None:
     whole = pyarrow.concat_arrays([first, second])
     chunked = pyarrow.chunked_array([first, second], type=KWARGS)
 
-    expected = Parties().into_arrow_arrays(whole)
-    actual = Parties().into_arrow_arrays(chunked)
+    expected = _parties().into_arrow_arrays(whole)
+    actual = _parties().into_arrow_arrays(chunked)
 
     assert actual[0].combine_chunks().to_pylist() == expected[0].to_pylist()
     assert actual[1].combine_chunks().to_pylist() == expected[1].to_pylist()
@@ -364,7 +404,7 @@ def test_a_slice_keeps_group_state_inside_each_message() -> None:
         [(55, "outside")],
     ).slice(1, 2)
 
-    parties, residual = Parties().into_arrow_arrays(source)
+    parties, residual = _parties().into_arrow_arrays(source)
 
     assert [[party["party_id"] for party in row] for row in parties.to_pylist()] == [
         ["A"],
@@ -400,7 +440,7 @@ TRD_REG_SPEC = SpecComponent(
 
 def test_the_declaration_a_group_needs_comes_out_of_its_own_tree() -> None:
     """Nothing here is named `party`: the tags are the component's, not this file's."""
-    extractor = TrdRegTimestamps(components=[TRD_REG_SPEC], fallback=False)
+    extractor = _stamps()
     counts, members, paths, delimiters = extractor._declaration
     assert sorted(counts) == [768], "the tag that counts the entries"
     assert members == {
@@ -426,7 +466,7 @@ def test_another_group_splits_exactly_as_parties_does() -> None:
             (55, "SYM-TEST"),
         ]
     )
-    extractor = TrdRegTimestamps(components=[TRD_REG_SPEC], fallback=False)
+    extractor = _stamps()
     found, rest = extractor.into_arrow_arrays(source)
     entries = found.to_pylist()[0]
     assert len(entries) == 2, "the count said two, and two delimiters opened"
@@ -461,7 +501,7 @@ def test_a_group_whose_entries_open_with_something_else_splits_there() -> None:
             ),
         ),
     )
-    extractor = TrdRegTimestamps(components=[reordered], fallback=False)
+    extractor = TrdRegTimestamps(components=[reordered])
     assert extractor._declaration[3] == {(): {770}}
     source = _tags(
         [(768, "2"), (770, "1"), (769, "20260101-00:00:00"), (770, "2"), (769, "20260101-00:00:01")]
@@ -476,9 +516,7 @@ def test_a_group_whose_entries_open_with_something_else_splits_there() -> None:
 
 
 def test_naming_a_component_the_registry_does_not_have_extracts_nothing() -> None:
-    extractor = Parties(
-        components=[TRD_REG_SPEC], fallback=False, component="NoSuchGroup", group="NoSuch"
-    )
+    extractor = Parties(components=[TRD_REG_SPEC], component="NoSuchGroup", group="NoSuch")
     assert extractor._declaration == (set(), {}, {}, {})
     assert extractor.into_arrow_arrays(_tags([(768, "1"), (769, "x")]))[0].to_pylist() == [None]
 
@@ -514,7 +552,7 @@ def test_counted_regulatory_stamps_are_lifted_like_parties() -> None:
             (10, "000"),
         ]
     )
-    stamps, residual = TrdRegTimestamps().into_arrow_arrays(source)
+    stamps, residual = _stamps().into_arrow_arrays(source)
     assert stamps.type == TRD_REG_TIMESTAMPS
     entries = stamps.to_pylist()[0]
     assert [entry["trd_reg_timestamp_type"] for entry in entries] == [1, 2]
@@ -526,7 +564,7 @@ def test_counted_regulatory_stamps_are_lifted_like_parties() -> None:
 def test_a_malformed_stamp_is_kept_as_text_rather_than_becoming_null() -> None:
     """A null nobody can explain is worse than the value that actually arrived."""
     source = _tags([(768, "1"), (769, "not-a-stamp"), (770, "1")])
-    stamps, residual = TrdRegTimestamps().into_arrow_arrays(source)
+    stamps, residual = _stamps().into_arrow_arrays(source)
     (entry,) = stamps.to_pylist()[0]
     assert entry["trd_reg_timestamp"] is None
     assert entry["trd_reg_timestamp_type"] == 1
@@ -547,8 +585,8 @@ def test_each_extractor_only_takes_its_own_component() -> None:
             (770, "1"),
         ]
     )
-    parties, rest = Parties().into_arrow_arrays(source)
-    stamps, rest = TrdRegTimestamps().into_arrow_arrays(rest)
+    parties, rest = _parties().into_arrow_arrays(source)
+    stamps, rest = _stamps().into_arrow_arrays(rest)
     assert parties.type == PARTIES and stamps.type == TRD_REG_TIMESTAMPS
     assert len(parties.to_pylist()[0]) == 1
     assert len(stamps.to_pylist()[0]) == 1
@@ -557,6 +595,6 @@ def test_each_extractor_only_takes_its_own_component() -> None:
 
 def test_a_group_that_is_not_there_is_null_rather_than_empty() -> None:
     source = _tags([(35, "8"), (55, "AAPL")])
-    stamps, residual = TrdRegTimestamps().into_arrow_arrays(source)
+    stamps, residual = _stamps().into_arrow_arrays(source)
     assert stamps.to_pylist() == [None]
     assert _pairs(residual.to_pylist()[0]) == [(35, "8"), (55, "AAPL")]

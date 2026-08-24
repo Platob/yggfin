@@ -1,24 +1,22 @@
 {
  "name": "UnderlyingPaymentScheduleFixingDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 468,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingPaymentScheduleFixingDateBusinessCenters",
+   "required": false,
+   "tag": 40966,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingPaymentScheduleFixingDateBusinessCenters",
+     "kind": "field",
+     "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
      "required": false,
-     "tag": 40966,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
-       "required": false,
-       "tag": 40690
-      }
-     ]
+     "tag": 40690
     }
    ]
   }
- }
+ ]
 }

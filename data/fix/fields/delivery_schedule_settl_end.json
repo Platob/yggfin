@@ -1,9 +1,0 @@
-{
- "name": "DeliveryScheduleSettlEnd",
- "tag": 41056,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

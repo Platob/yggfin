@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingComplexEventDateRelativeTo",
- "tag": 41740,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

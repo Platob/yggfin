@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamFinalPrincipalExchangeIndicator",
- "tag": 40750,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

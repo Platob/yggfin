@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamCompoundingDatesBusinessCenter",
- "tag": 42420,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

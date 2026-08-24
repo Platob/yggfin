@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamPaymentFrequencyUnit",
- "tag": 40295,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

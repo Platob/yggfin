@@ -1,9 +1,0 @@
-{
- "name": "CustodialLotID",
- "tag": 1752,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamResetDateRelativeTo",
- "tag": 40303,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

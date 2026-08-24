@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPricingDateAdjusted",
- "tag": 41951,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

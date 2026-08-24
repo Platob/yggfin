@@ -1,66 +1,64 @@
 {
  "name": "LegPaymentStreamNonDeliverableSettlTerms",
- "versions": {
-  "5.0.SP2": {
-   "order": 34,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamNonDeliverableRefCurrency",
-     "required": false,
-     "tag": 40359
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessDayConvention",
-     "required": false,
-     "tag": 40360
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamNonDeliverableFixingDatesRelativeTo",
-     "required": false,
-     "tag": 40362
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetPeriod",
-     "required": false,
-     "tag": 40363
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetUnit",
-     "required": false,
-     "tag": 40364
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetDayType",
-     "required": false,
-     "tag": 40365
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStreamNonDeliverableSettlRateSource",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegPaymentStreamNonDeliverableFixingDateGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegSettlRateDisruptionFallbackGrp",
-     "required": false
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamNonDeliverableRefCurrency",
+   "required": false,
+   "tag": 40359
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessDayConvention",
+   "required": false,
+   "tag": 40360
+  },
+  {
+   "kind": "component",
+   "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamNonDeliverableFixingDatesRelativeTo",
+   "required": false,
+   "tag": 40362
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetPeriod",
+   "required": false,
+   "tag": 40363
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetUnit",
+   "required": false,
+   "tag": 40364
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamNonDeliverableFixingDatesOffsetDayType",
+   "required": false,
+   "tag": 40365
+  },
+  {
+   "kind": "component",
+   "name": "LegPaymentStreamNonDeliverableSettlRateSource",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "LegPaymentStreamNonDeliverableFixingDateGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "LegSettlRateDisruptionFallbackGrp",
+   "required": false
   }
- }
+ ]
 }

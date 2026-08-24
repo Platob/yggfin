@@ -1,9 +1,0 @@
-{
- "name": "ProvisionOptionExerciseStartDateRelativeTo",
- "tag": 40130,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

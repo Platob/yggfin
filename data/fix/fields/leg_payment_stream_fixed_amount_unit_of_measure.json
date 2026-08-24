@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamFixedAmountUnitOfMeasure",
- "tag": 41556,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

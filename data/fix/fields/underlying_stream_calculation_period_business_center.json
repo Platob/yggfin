@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
- "tag": 40557,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

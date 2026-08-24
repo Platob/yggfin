@@ -1,24 +1,22 @@
 {
  "name": "UnderlyingOptionExerciseExpirationDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 588,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingOptionExerciseExpirationDateBusinessCenters",
+   "required": false,
+   "tag": 41844,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingOptionExerciseExpirationDateBusinessCenters",
+     "kind": "field",
+     "name": "UnderlyingOptionExerciseExpirationDateBusinessCenter",
      "required": false,
-     "tag": 41844,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingOptionExerciseExpirationDateBusinessCenter",
-       "required": false,
-       "tag": 41845
-      }
-     ]
+     "tag": 41845
     }
    ]
   }
- }
+ ]
 }

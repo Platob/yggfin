@@ -1,24 +1,22 @@
 {
  "name": "ProtectionTermEventNewsSourceGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 456,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoProtectionTermEventNewsSources",
+   "required": false,
+   "tag": 40951,
    "members": [
     {
-     "kind": "group",
-     "name": "NoProtectionTermEventNewsSources",
+     "kind": "field",
+     "name": "ProtectionTermEventNewsSource",
      "required": false,
-     "tag": 40951,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ProtectionTermEventNewsSource",
-       "required": false,
-       "tag": 40189
-      }
-     ]
+     "tag": 40189
     }
    ]
   }
- }
+ ]
 }

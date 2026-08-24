@@ -1,2267 +1,1026 @@
 {
  "name": "Instrument",
- "versions": {
-  "5.0.SP2": {
-   "order": 3,
-   "members": [
-    {
-     "kind": "field",
-     "name": "Symbol",
-     "required": false,
-     "tag": 55
-    },
-    {
-     "kind": "field",
-     "name": "SymbolSfx",
-     "required": false,
-     "tag": 65
-    },
-    {
-     "kind": "field",
-     "name": "SecurityID",
-     "required": false,
-     "tag": 48
-    },
-    {
-     "kind": "field",
-     "name": "SecurityIDSource",
-     "required": false,
-     "tag": 22
-    },
-    {
-     "kind": "component",
-     "name": "SecAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Product",
-     "required": false,
-     "tag": 460
-    },
-    {
-     "kind": "field",
-     "name": "ProductComplex",
-     "required": false,
-     "tag": 1227
-    },
-    {
-     "kind": "field",
-     "name": "SecurityGroup",
-     "required": false,
-     "tag": 1151
-    },
-    {
-     "kind": "field",
-     "name": "CFICode",
-     "required": false,
-     "tag": 461
-    },
-    {
-     "kind": "field",
-     "name": "UPICode",
-     "required": false,
-     "tag": 2891
-    },
-    {
-     "kind": "field",
-     "name": "SecurityType",
-     "required": false,
-     "tag": 167
-    },
-    {
-     "kind": "field",
-     "name": "SecuritySubType",
-     "required": false,
-     "tag": 762
-    },
-    {
-     "kind": "field",
-     "name": "MaturityMonthYear",
-     "required": false,
-     "tag": 200
-    },
-    {
-     "kind": "field",
-     "name": "MaturityDate",
-     "required": false,
-     "tag": 541
-    },
-    {
-     "kind": "field",
-     "name": "MaturityTime",
-     "required": false,
-     "tag": 1079
-    },
-    {
-     "kind": "field",
-     "name": "SettleOnOpenFlag",
-     "required": false,
-     "tag": 966
-    },
-    {
-     "kind": "field",
-     "name": "InstrmtAssignmentMethod",
-     "required": false,
-     "tag": 1049
-    },
-    {
-     "kind": "field",
-     "name": "SecurityStatus",
-     "required": false,
-     "tag": 965
-    },
-    {
-     "kind": "field",
-     "name": "CouponPaymentDate",
-     "required": false,
-     "tag": 224
-    },
-    {
-     "kind": "field",
-     "name": "RestructuringType",
-     "required": false,
-     "tag": 1449
-    },
-    {
-     "kind": "field",
-     "name": "Seniority",
-     "required": false,
-     "tag": 1450
-    },
-    {
-     "kind": "field",
-     "name": "NotionalPercentageOutstanding",
-     "required": false,
-     "tag": 1451
-    },
-    {
-     "kind": "field",
-     "name": "OriginalNotionalPercentageOutstanding",
-     "required": false,
-     "tag": 1452
-    },
-    {
-     "kind": "field",
-     "name": "AttachmentPoint",
-     "required": false,
-     "tag": 1457
-    },
-    {
-     "kind": "field",
-     "name": "DetachmentPoint",
-     "required": false,
-     "tag": 1458
-    },
-    {
-     "kind": "field",
-     "name": "ObligationType",
-     "required": false,
-     "tag": 1739
-    },
-    {
-     "kind": "field",
-     "name": "AssetGroup",
-     "required": false,
-     "tag": 2210
-    },
-    {
-     "kind": "field",
-     "name": "AssetClass",
-     "required": false,
-     "tag": 1938
-    },
-    {
-     "kind": "field",
-     "name": "AssetSubClass",
-     "required": false,
-     "tag": 1939
-    },
-    {
-     "kind": "field",
-     "name": "AssetType",
-     "required": false,
-     "tag": 1940
-    },
-    {
-     "kind": "field",
-     "name": "AssetSubType",
-     "required": false,
-     "tag": 2735
-    },
-    {
-     "kind": "component",
-     "name": "SecondaryAssetGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "AssetAttributeGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "SwapClass",
-     "required": false,
-     "tag": 1941
-    },
-    {
-     "kind": "field",
-     "name": "SwapSubClass",
-     "required": false,
-     "tag": 1575
-    },
-    {
-     "kind": "field",
-     "name": "NthToDefault",
-     "required": false,
-     "tag": 1942
-    },
-    {
-     "kind": "field",
-     "name": "MthToDefault",
-     "required": false,
-     "tag": 1943
-    },
-    {
-     "kind": "field",
-     "name": "SettledEntityMatrixSource",
-     "required": false,
-     "tag": 1944
-    },
-    {
-     "kind": "field",
-     "name": "SettledEntityMatrixPublicationDate",
-     "required": false,
-     "tag": 1945
-    },
-    {
-     "kind": "field",
-     "name": "CouponType",
-     "required": false,
-     "tag": 1946
-    },
-    {
-     "kind": "field",
-     "name": "TotalIssuedAmount",
-     "required": false,
-     "tag": 1947
-    },
-    {
-     "kind": "field",
-     "name": "CouponFrequencyPeriod",
-     "required": false,
-     "tag": 1948
-    },
-    {
-     "kind": "field",
-     "name": "CouponFrequencyUnit",
-     "required": false,
-     "tag": 1949
-    },
-    {
-     "kind": "field",
-     "name": "CouponDayCount",
-     "required": false,
-     "tag": 1950
-    },
-    {
-     "kind": "field",
-     "name": "CouponOtherDayCount",
-     "required": false,
-     "tag": 2879
-    },
-    {
-     "kind": "field",
-     "name": "ConvertibleBondEquityID",
-     "required": false,
-     "tag": 1951
-    },
-    {
-     "kind": "field",
-     "name": "ConvertibleBondEquityIDSource",
-     "required": false,
-     "tag": 1952
-    },
-    {
-     "kind": "field",
-     "name": "ContractPriceRefMonth",
-     "required": false,
-     "tag": 1953
-    },
-    {
-     "kind": "field",
-     "name": "LienSeniority",
-     "required": false,
-     "tag": 1954
-    },
-    {
-     "kind": "field",
-     "name": "LoanFacility",
-     "required": false,
-     "tag": 1955
-    },
-    {
-     "kind": "field",
-     "name": "ReferenceEntityType",
-     "required": false,
-     "tag": 1956
-    },
-    {
-     "kind": "field",
-     "name": "IndexSeries",
-     "required": false,
-     "tag": 1957
-    },
-    {
-     "kind": "field",
-     "name": "IndexAnnexVersion",
-     "required": false,
-     "tag": 1958
-    },
-    {
-     "kind": "field",
-     "name": "IndexAnnexDate",
-     "required": false,
-     "tag": 1959
-    },
-    {
-     "kind": "field",
-     "name": "IndexAnnexSource",
-     "required": false,
-     "tag": 1960
-    },
-    {
-     "kind": "field",
-     "name": "SettlRateIndex",
-     "required": false,
-     "tag": 1577
-    },
-    {
-     "kind": "field",
-     "name": "SettlRateIndexLocation",
-     "required": false,
-     "tag": 1580
-    },
-    {
-     "kind": "field",
-     "name": "OptionExpirationDesc",
-     "required": false,
-     "tag": 1581
-    },
-    {
-     "kind": "field",
-     "name": "EncodedOptionExpirationDescLen",
-     "required": false,
-     "tag": 1678
-    },
-    {
-     "kind": "field",
-     "name": "EncodedOptionExpirationDesc",
-     "required": false,
-     "tag": 1697
-    },
-    {
-     "kind": "field",
-     "name": "IssueDate",
-     "required": false,
-     "tag": 225
-    },
-    {
-     "kind": "field",
-     "name": "RepoCollateralSecurityType",
-     "required": false,
-     "tag": 239
-    },
-    {
-     "kind": "field",
-     "name": "RepurchaseTerm",
-     "required": false,
-     "tag": 226
-    },
-    {
-     "kind": "field",
-     "name": "RepurchaseRate",
-     "required": false,
-     "tag": 227
-    },
-    {
-     "kind": "field",
-     "name": "Factor",
-     "required": false,
-     "tag": 228
-    },
-    {
-     "kind": "field",
-     "name": "CreditRating",
-     "required": false,
-     "tag": 255
-    },
-    {
-     "kind": "field",
-     "name": "InstrRegistry",
-     "required": false,
-     "tag": 543
-    },
-    {
-     "kind": "field",
-     "name": "CountryOfIssue",
-     "required": false,
-     "tag": 470
-    },
-    {
-     "kind": "field",
-     "name": "StateOrProvinceOfIssue",
-     "required": false,
-     "tag": 471
-    },
-    {
-     "kind": "field",
-     "name": "LocaleOfIssue",
-     "required": false,
-     "tag": 472
-    },
-    {
-     "kind": "field",
-     "name": "RedemptionDate",
-     "required": false,
-     "tag": 240
-    },
-    {
-     "kind": "field",
-     "name": "StrikePrice",
-     "required": false,
-     "tag": 202
-    },
-    {
-     "kind": "field",
-     "name": "OrigStrikePrice",
-     "required": false,
-     "tag": 2578
-    },
-    {
-     "kind": "field",
-     "name": "StrikePricePrecision",
-     "required": false,
-     "tag": 2577
-    },
-    {
-     "kind": "field",
-     "name": "StrikeCurrency",
-     "required": false,
-     "tag": 947
-    },
-    {
-     "kind": "field",
-     "name": "StrikeCurrencyCodeSource",
-     "required": false,
-     "tag": 2904
-    },
-    {
-     "kind": "field",
-     "name": "StrikeMultiplier",
-     "required": false,
-     "tag": 967
-    },
-    {
-     "kind": "field",
-     "name": "StrikeValue",
-     "required": false,
-     "tag": 968
-    },
-    {
-     "kind": "field",
-     "name": "StrikeUnitOfMeasure",
-     "required": false,
-     "tag": 1698
-    },
-    {
-     "kind": "field",
-     "name": "StrikeIndex",
-     "required": false,
-     "tag": 1866
-    },
-    {
-     "kind": "field",
-     "name": "StrikeIndexCurvePoint",
-     "required": false,
-     "tag": 2600
-    },
-    {
-     "kind": "field",
-     "name": "StrikeIndexSpread",
-     "required": false,
-     "tag": 2001
-    },
-    {
-     "kind": "field",
-     "name": "StrikeIndexQuote",
-     "required": false,
-     "tag": 2601
-    },
-    {
-     "kind": "field",
-     "name": "StrikePriceDeterminationMethod",
-     "required": false,
-     "tag": 1478
-    },
-    {
-     "kind": "field",
-     "name": "StrikePriceBoundaryMethod",
-     "required": false,
-     "tag": 1479
-    },
-    {
-     "kind": "field",
-     "name": "StrikePriceBoundaryPrecision",
-     "required": false,
-     "tag": 1480
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingPriceDeterminationMethod",
-     "required": false,
-     "tag": 1481
-    },
-    {
-     "kind": "field",
-     "name": "OptAttribute",
-     "required": false,
-     "tag": 206
-    },
-    {
-     "kind": "field",
-     "name": "ContractMultiplier",
-     "required": false,
-     "tag": 231
-    },
-    {
-     "kind": "field",
-     "name": "ContractMultiplierUnit",
-     "required": false,
-     "tag": 1435
-    },
-    {
-     "kind": "field",
-     "name": "TradingUnitPeriodMultiplier",
-     "required": false,
-     "tag": 2353
-    },
-    {
-     "kind": "field",
-     "name": "FlowScheduleType",
-     "required": false,
-     "tag": 1439
-    },
-    {
-     "kind": "field",
-     "name": "MinPriceIncrement",
-     "required": false,
-     "tag": 969
-    },
-    {
-     "kind": "field",
-     "name": "MinPriceIncrementAmount",
-     "required": false,
-     "tag": 1146
-    },
-    {
-     "kind": "field",
-     "name": "UnitOfMeasure",
-     "required": false,
-     "tag": 996
-    },
-    {
-     "kind": "field",
-     "name": "UnitOfMeasureQty",
-     "required": false,
-     "tag": 1147
-    },
-    {
-     "kind": "field",
-     "name": "UnitOfMeasureCurrency",
-     "required": false,
-     "tag": 1716
-    },
-    {
-     "kind": "field",
-     "name": "UnitOfMeasureCurrencyCodeSource",
-     "required": false,
-     "tag": 2905
-    },
-    {
-     "kind": "field",
-     "name": "PriceUnitOfMeasure",
-     "required": false,
-     "tag": 1191
-    },
-    {
-     "kind": "field",
-     "name": "PriceUnitOfMeasureQty",
-     "required": false,
-     "tag": 1192
-    },
-    {
-     "kind": "field",
-     "name": "PriceUnitOfMeasureCurrency",
-     "required": false,
-     "tag": 1717
-    },
-    {
-     "kind": "field",
-     "name": "PriceUnitOfMeasureCurrencyCodeSource",
-     "required": false,
-     "tag": 2906
-    },
-    {
-     "kind": "field",
-     "name": "SettlMethod",
-     "required": false,
-     "tag": 1193
-    },
-    {
-     "kind": "field",
-     "name": "SettlSubMethod",
-     "required": false,
-     "tag": 2579
-    },
-    {
-     "kind": "field",
-     "name": "ExerciseStyle",
-     "required": false,
-     "tag": 1194
-    },
-    {
-     "kind": "field",
-     "name": "OptPayoutType",
-     "required": false,
-     "tag": 1482
-    },
-    {
-     "kind": "field",
-     "name": "OptPayoutAmount",
-     "required": false,
-     "tag": 1195
-    },
-    {
-     "kind": "field",
-     "name": "ReturnTrigger",
-     "required": false,
-     "tag": 2753
-    },
-    {
-     "kind": "field",
-     "name": "PriceQuoteMethod",
-     "required": false,
-     "tag": 1196
-    },
-    {
-     "kind": "field",
-     "name": "ValuationMethod",
-     "required": false,
-     "tag": 1197
-    },
-    {
-     "kind": "field",
-     "name": "ValuationSource",
-     "required": false,
-     "tag": 2002
-    },
-    {
-     "kind": "field",
-     "name": "ValuationReferenceModel",
-     "required": false,
-     "tag": 2140
-    },
-    {
-     "kind": "field",
-     "name": "PriceQuoteCurrency",
-     "required": false,
-     "tag": 1524
-    },
-    {
-     "kind": "field",
-     "name": "PriceQuoteCurrencyCodeSource",
-     "required": false,
-     "tag": 2907
-    },
-    {
-     "kind": "field",
-     "name": "ListMethod",
-     "required": false,
-     "tag": 1198
-    },
-    {
-     "kind": "field",
-     "name": "CapPrice",
-     "required": false,
-     "tag": 1199
-    },
-    {
-     "kind": "field",
-     "name": "FloorPrice",
-     "required": false,
-     "tag": 1200
-    },
-    {
-     "kind": "field",
-     "name": "PutOrCall",
-     "required": false,
-     "tag": 201
-    },
-    {
-     "kind": "field",
-     "name": "InTheMoneyCondition",
-     "required": false,
-     "tag": 2681
-    },
-    {
-     "kind": "field",
-     "name": "ContraryInstructionEligibilityIndicator",
-     "required": false,
-     "tag": 2685
-    },
-    {
-     "kind": "field",
-     "name": "FlexibleIndicator",
-     "required": false,
-     "tag": 1244
-    },
-    {
-     "kind": "field",
-     "name": "FlexProductEligibilityIndicator",
-     "required": false,
-     "tag": 1242
-    },
-    {
-     "kind": "field",
-     "name": "BlockTradeEligibilityIndicator",
-     "required": false,
-     "tag": 2575
-    },
-    {
-     "kind": "field",
-     "name": "LowExercisePriceOptionIndicator",
-     "required": false,
-     "tag": 2574
-    },
-    {
-     "kind": "field",
-     "name": "TimeUnit",
-     "required": false,
-     "tag": 997
-    },
-    {
-     "kind": "field",
-     "name": "CouponRate",
-     "required": false,
-     "tag": 223
-    },
-    {
-     "kind": "field",
-     "name": "SecurityExchange",
-     "required": false,
-     "tag": 207
-    },
-    {
-     "kind": "field",
-     "name": "PositionLimit",
-     "required": false,
-     "tag": 970
-    },
-    {
-     "kind": "field",
-     "name": "NTPositionLimit",
-     "required": false,
-     "tag": 971
-    },
-    {
-     "kind": "field",
-     "name": "Issuer",
-     "required": false,
-     "tag": 106
-    },
-    {
-     "kind": "field",
-     "name": "EncodedIssuerLen",
-     "required": false,
-     "tag": 348
-    },
-    {
-     "kind": "field",
-     "name": "EncodedIssuer",
-     "required": false,
-     "tag": 349
-    },
-    {
-     "kind": "field",
-     "name": "FinancialInstrumentShortName",
-     "required": false,
-     "tag": 2737
-    },
-    {
-     "kind": "field",
-     "name": "FinancialInstrumentFullName",
-     "required": false,
-     "tag": 2714
-    },
-    {
-     "kind": "field",
-     "name": "EncodedFinancialInstrumentFullNameLen",
-     "required": false,
-     "tag": 2715
-    },
-    {
-     "kind": "field",
-     "name": "EncodedFinancialInstrumentFullName",
-     "required": false,
-     "tag": 2716
-    },
-    {
-     "kind": "field",
-     "name": "SecurityDesc",
-     "required": false,
-     "tag": 107
-    },
-    {
-     "kind": "field",
-     "name": "EncodedSecurityDescLen",
-     "required": false,
-     "tag": 350
-    },
-    {
-     "kind": "field",
-     "name": "EncodedSecurityDesc",
-     "required": false,
-     "tag": 351
-    },
-    {
-     "kind": "component",
-     "name": "SecurityXML",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Pool",
-     "required": false,
-     "tag": 691
-    },
-    {
-     "kind": "field",
-     "name": "ContractSettlMonth",
-     "required": false,
-     "tag": 667
-    },
-    {
-     "kind": "field",
-     "name": "CPProgram",
-     "required": false,
-     "tag": 875
-    },
-    {
-     "kind": "field",
-     "name": "CPRegType",
-     "required": false,
-     "tag": 876
-    },
-    {
-     "kind": "component",
-     "name": "EvntGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DatedDate",
-     "required": false,
-     "tag": 873
-    },
-    {
-     "kind": "field",
-     "name": "InterestAccrualDate",
-     "required": false,
-     "tag": 874
-    },
-    {
-     "kind": "component",
-     "name": "InstrumentParties",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ShortSaleRestriction",
-     "required": false,
-     "tag": 1687
-    },
-    {
-     "kind": "component",
-     "name": "ComplexEvents",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "RefTickTableID",
-     "required": false,
-     "tag": 1787
-    },
-    {
-     "kind": "field",
-     "name": "StrategyType",
-     "required": false,
-     "tag": 2141
-    },
-    {
-     "kind": "field",
-     "name": "CommonPricingIndicator",
-     "required": false,
-     "tag": 2142
-    },
-    {
-     "kind": "field",
-     "name": "SettlDisruptionProvision",
-     "required": false,
-     "tag": 2143
-    },
-    {
-     "kind": "field",
-     "name": "DeliveryRouteOrCharter",
-     "required": false,
-     "tag": 2752
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentRoundingDirection",
-     "required": false,
-     "tag": 2144
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentRoundingPrecision",
-     "required": false,
-     "tag": 2145
-    },
-    {
-     "kind": "field",
-     "name": "InstrumentPricePrecision",
-     "required": false,
-     "tag": 2576
-    },
-    {
-     "kind": "field",
-     "name": "SecurityReferenceDataSupplement",
-     "required": false,
-     "tag": 2962
-    },
-    {
-     "kind": "component",
-     "name": "DateAdjustment",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PricingDateTime",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "MarketDisruption",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "OptionExercise",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "StreamGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "ProvisionGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "AdditionalTermGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "ProtectionTermGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "CashSettlTermGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PhysicalSettlTermGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "ExtraordinaryEventGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "ExtraordinaryEventAdjustmentMethod",
-     "required": false,
-     "tag": 2602
-    },
-    {
-     "kind": "field",
-     "name": "ExchangeLookAlike",
-     "required": false,
-     "tag": 2603
-    }
-   ]
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "Symbol",
+   "required": false,
+   "tag": 55
   },
-  "5.0.SP1": {
-   "order": 3,
-   "members": [
-    {
-     "kind": "field",
-     "name": "Symbol",
-     "required": false,
-     "tag": 55
-    },
-    {
-     "kind": "field",
-     "name": "SymbolSfx",
-     "required": false,
-     "tag": 65
-    },
-    {
-     "kind": "field",
-     "name": "SecurityID",
-     "required": false,
-     "tag": 48
-    },
-    {
-     "kind": "field",
-     "name": "SecurityIDSource",
-     "required": false,
-     "tag": 22
-    },
-    {
-     "kind": "component",
-     "name": "SecAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Product",
-     "required": false,
-     "tag": 460
-    },
-    {
-     "kind": "field",
-     "name": "ProductComplex",
-     "required": false,
-     "tag": 1227
-    },
-    {
-     "kind": "field",
-     "name": "SecurityGroup",
-     "required": false,
-     "tag": 1151
-    },
-    {
-     "kind": "field",
-     "name": "CFICode",
-     "required": false,
-     "tag": 461
-    },
-    {
-     "kind": "field",
-     "name": "SecurityType",
-     "required": false,
-     "tag": 167
-    },
-    {
-     "kind": "field",
-     "name": "SecuritySubType",
-     "required": false,
-     "tag": 762
-    },
-    {
-     "kind": "field",
-     "name": "MaturityMonthYear",
-     "required": false,
-     "tag": 200
-    },
-    {
-     "kind": "field",
-     "name": "MaturityDate",
-     "required": false,
-     "tag": 541
-    },
-    {
-     "kind": "field",
-     "name": "MaturityTime",
-     "required": false,
-     "tag": 1079
-    },
-    {
-     "kind": "field",
-     "name": "SettleOnOpenFlag",
-     "required": false,
-     "tag": 966
-    },
-    {
-     "kind": "field",
-     "name": "InstrmtAssignmentMethod",
-     "required": false,
-     "tag": 1049
-    },
-    {
-     "kind": "field",
-     "name": "SecurityStatus",
-     "required": false,
-     "tag": 965
-    },
-    {
-     "kind": "field",
-     "name": "CouponPaymentDate",
-     "required": false,
-     "tag": 224
-    },
-    {
-     "kind": "field",
-     "name": "IssueDate",
-     "required": false,
-     "tag": 225
-    },
-    {
-     "kind": "field",
-     "name": "RepoCollateralSecurityType",
-     "required": false,
-     "tag": 239
-    },
-    {
-     "kind": "field",
-     "name": "RepurchaseTerm",
-     "required": false,
-     "tag": 226
-    },
-    {
-     "kind": "field",
-     "name": "RepurchaseRate",
-     "required": false,
-     "tag": 227
-    },
-    {
-     "kind": "field",
-     "name": "Factor",
-     "required": false,
-     "tag": 228
-    },
-    {
-     "kind": "field",
-     "name": "CreditRating",
-     "required": false,
-     "tag": 255
-    },
-    {
-     "kind": "field",
-     "name": "InstrRegistry",
-     "required": false,
-     "tag": 543
-    },
-    {
-     "kind": "field",
-     "name": "CountryOfIssue",
-     "required": false,
-     "tag": 470
-    },
-    {
-     "kind": "field",
-     "name": "StateOrProvinceOfIssue",
-     "required": false,
-     "tag": 471
-    },
-    {
-     "kind": "field",
-     "name": "LocaleOfIssue",
-     "required": false,
-     "tag": 472
-    },
-    {
-     "kind": "field",
-     "name": "RedemptionDate",
-     "required": false,
-     "tag": 240
-    },
-    {
-     "kind": "field",
-     "name": "StrikePrice",
-     "required": false,
-     "tag": 202
-    },
-    {
-     "kind": "field",
-     "name": "StrikeCurrency",
-     "required": false,
-     "tag": 947
-    },
-    {
-     "kind": "field",
-     "name": "StrikeMultiplier",
-     "required": false,
-     "tag": 967
-    },
-    {
-     "kind": "field",
-     "name": "StrikeValue",
-     "required": false,
-     "tag": 968
-    },
-    {
-     "kind": "field",
-     "name": "OptAttribute",
-     "required": false,
-     "tag": 206
-    },
-    {
-     "kind": "field",
-     "name": "ContractMultiplier",
-     "required": false,
-     "tag": 231
-    },
-    {
-     "kind": "field",
-     "name": "MinPriceIncrement",
-     "required": false,
-     "tag": 969
-    },
-    {
-     "kind": "field",
-     "name": "MinPriceIncrementAmount",
-     "required": false,
-     "tag": 1146
-    },
-    {
-     "kind": "field",
-     "name": "UnitOfMeasure",
-     "required": false,
-     "tag": 996
-    },
-    {
-     "kind": "field",
-     "name": "UnitOfMeasureQty",
-     "required": false,
-     "tag": 1147
-    },
-    {
-     "kind": "field",
-     "name": "PriceUnitOfMeasure",
-     "required": false,
-     "tag": 1191
-    },
-    {
-     "kind": "field",
-     "name": "PriceUnitOfMeasureQty",
-     "required": false,
-     "tag": 1192
-    },
-    {
-     "kind": "field",
-     "name": "SettlMethod",
-     "required": false,
-     "tag": 1193
-    },
-    {
-     "kind": "field",
-     "name": "ExerciseStyle",
-     "required": false,
-     "tag": 1194
-    },
-    {
-     "kind": "field",
-     "name": "OptPayAmount",
-     "required": false,
-     "tag": 1195
-    },
-    {
-     "kind": "field",
-     "name": "PriceQuoteMethod",
-     "required": false,
-     "tag": 1196
-    },
-    {
-     "kind": "field",
-     "name": "FuturesValuationMethod",
-     "required": false,
-     "tag": 1197
-    },
-    {
-     "kind": "field",
-     "name": "ListMethod",
-     "required": false,
-     "tag": 1198
-    },
-    {
-     "kind": "field",
-     "name": "CapPrice",
-     "required": false,
-     "tag": 1199
-    },
-    {
-     "kind": "field",
-     "name": "FloorPrice",
-     "required": false,
-     "tag": 1200
-    },
-    {
-     "kind": "field",
-     "name": "PutOrCall",
-     "required": false,
-     "tag": 201
-    },
-    {
-     "kind": "field",
-     "name": "FlexibleIndicator",
-     "required": false,
-     "tag": 1244
-    },
-    {
-     "kind": "field",
-     "name": "FlexProductEligibilityIndicator",
-     "required": false,
-     "tag": 1242
-    },
-    {
-     "kind": "field",
-     "name": "TimeUnit",
-     "required": false,
-     "tag": 997
-    },
-    {
-     "kind": "field",
-     "name": "CouponRate",
-     "required": false,
-     "tag": 223
-    },
-    {
-     "kind": "field",
-     "name": "SecurityExchange",
-     "required": false,
-     "tag": 207
-    },
-    {
-     "kind": "field",
-     "name": "PositionLimit",
-     "required": false,
-     "tag": 970
-    },
-    {
-     "kind": "field",
-     "name": "NTPositionLimit",
-     "required": false,
-     "tag": 971
-    },
-    {
-     "kind": "field",
-     "name": "Issuer",
-     "required": false,
-     "tag": 106
-    },
-    {
-     "kind": "field",
-     "name": "EncodedIssuerLen",
-     "required": false,
-     "tag": 348
-    },
-    {
-     "kind": "field",
-     "name": "EncodedIssuer",
-     "required": false,
-     "tag": 349
-    },
-    {
-     "kind": "field",
-     "name": "SecurityDesc",
-     "required": false,
-     "tag": 107
-    },
-    {
-     "kind": "field",
-     "name": "EncodedSecurityDescLen",
-     "required": false,
-     "tag": 350
-    },
-    {
-     "kind": "field",
-     "name": "EncodedSecurityDesc",
-     "required": false,
-     "tag": 351
-    },
-    {
-     "kind": "component",
-     "name": "SecurityXML",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Pool",
-     "required": false,
-     "tag": 691
-    },
-    {
-     "kind": "field",
-     "name": "ContractSettlMonth",
-     "required": false,
-     "tag": 667
-    },
-    {
-     "kind": "field",
-     "name": "CPProgram",
-     "required": false,
-     "tag": 875
-    },
-    {
-     "kind": "field",
-     "name": "CPRegType",
-     "required": false,
-     "tag": 876
-    },
-    {
-     "kind": "component",
-     "name": "EvntGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DatedDate",
-     "required": false,
-     "tag": 873
-    },
-    {
-     "kind": "field",
-     "name": "InterestAccrualDate",
-     "required": false,
-     "tag": 874
-    },
-    {
-     "kind": "component",
-     "name": "InstrumentParties",
-     "required": false
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "SymbolSfx",
+   "required": false,
+   "tag": 65
   },
-  "5.0": {
-   "order": 3,
-   "members": [
-    {
-     "kind": "field",
-     "name": "Symbol",
-     "required": false,
-     "tag": 55
-    },
-    {
-     "kind": "field",
-     "name": "SymbolSfx",
-     "required": false,
-     "tag": 65
-    },
-    {
-     "kind": "field",
-     "name": "SecurityID",
-     "required": false,
-     "tag": 48
-    },
-    {
-     "kind": "field",
-     "name": "SecurityIDSource",
-     "required": false,
-     "tag": 22
-    },
-    {
-     "kind": "component",
-     "name": "SecAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Product",
-     "required": false,
-     "tag": 460
-    },
-    {
-     "kind": "field",
-     "name": "CFICode",
-     "required": false,
-     "tag": 461
-    },
-    {
-     "kind": "field",
-     "name": "SecurityType",
-     "required": false,
-     "tag": 167
-    },
-    {
-     "kind": "field",
-     "name": "SecuritySubType",
-     "required": false,
-     "tag": 762
-    },
-    {
-     "kind": "field",
-     "name": "MaturityMonthYear",
-     "required": false,
-     "tag": 200
-    },
-    {
-     "kind": "field",
-     "name": "MaturityDate",
-     "required": false,
-     "tag": 541
-    },
-    {
-     "kind": "field",
-     "name": "MaturityTime",
-     "required": false,
-     "tag": 1079
-    },
-    {
-     "kind": "field",
-     "name": "PutOrCall",
-     "required": false,
-     "tag": 201
-    },
-    {
-     "kind": "field",
-     "name": "SettleOnOpenFlag",
-     "required": false,
-     "tag": 966
-    },
-    {
-     "kind": "field",
-     "name": "InstrmtAssignmentMethod",
-     "required": false,
-     "tag": 1049
-    },
-    {
-     "kind": "field",
-     "name": "SecurityStatus",
-     "required": false,
-     "tag": 965
-    },
-    {
-     "kind": "field",
-     "name": "CouponPaymentDate",
-     "required": false,
-     "tag": 224
-    },
-    {
-     "kind": "field",
-     "name": "IssueDate",
-     "required": false,
-     "tag": 225
-    },
-    {
-     "kind": "field",
-     "name": "RepoCollateralSecurityType",
-     "required": false,
-     "tag": 239
-    },
-    {
-     "kind": "field",
-     "name": "RepurchaseTerm",
-     "required": false,
-     "tag": 226
-    },
-    {
-     "kind": "field",
-     "name": "RepurchaseRate",
-     "required": false,
-     "tag": 227
-    },
-    {
-     "kind": "field",
-     "name": "Factor",
-     "required": false,
-     "tag": 228
-    },
-    {
-     "kind": "field",
-     "name": "CreditRating",
-     "required": false,
-     "tag": 255
-    },
-    {
-     "kind": "field",
-     "name": "InstrRegistry",
-     "required": false,
-     "tag": 543
-    },
-    {
-     "kind": "field",
-     "name": "CountryOfIssue",
-     "required": false,
-     "tag": 470
-    },
-    {
-     "kind": "field",
-     "name": "StateOrProvinceOfIssue",
-     "required": false,
-     "tag": 471
-    },
-    {
-     "kind": "field",
-     "name": "LocaleOfIssue",
-     "required": false,
-     "tag": 472
-    },
-    {
-     "kind": "field",
-     "name": "RedemptionDate",
-     "required": false,
-     "tag": 240
-    },
-    {
-     "kind": "field",
-     "name": "StrikePrice",
-     "required": false,
-     "tag": 202
-    },
-    {
-     "kind": "field",
-     "name": "StrikeCurrency",
-     "required": false,
-     "tag": 947
-    },
-    {
-     "kind": "field",
-     "name": "StrikeMultiplier",
-     "required": false,
-     "tag": 967
-    },
-    {
-     "kind": "field",
-     "name": "StrikeValue",
-     "required": false,
-     "tag": 968
-    },
-    {
-     "kind": "field",
-     "name": "OptAttribute",
-     "required": false,
-     "tag": 206
-    },
-    {
-     "kind": "field",
-     "name": "ContractMultiplier",
-     "required": false,
-     "tag": 231
-    },
-    {
-     "kind": "field",
-     "name": "MinPriceIncrement",
-     "required": false,
-     "tag": 969
-    },
-    {
-     "kind": "field",
-     "name": "UnitofMeasure",
-     "required": false,
-     "tag": 996
-    },
-    {
-     "kind": "field",
-     "name": "TimeUnit",
-     "required": false,
-     "tag": 997
-    },
-    {
-     "kind": "field",
-     "name": "CouponRate",
-     "required": false,
-     "tag": 223
-    },
-    {
-     "kind": "field",
-     "name": "SecurityExchange",
-     "required": false,
-     "tag": 207
-    },
-    {
-     "kind": "field",
-     "name": "PositionLimit",
-     "required": false,
-     "tag": 970
-    },
-    {
-     "kind": "field",
-     "name": "NTPositionLimit",
-     "required": false,
-     "tag": 971
-    },
-    {
-     "kind": "field",
-     "name": "Issuer",
-     "required": false,
-     "tag": 106
-    },
-    {
-     "kind": "field",
-     "name": "EncodedIssuerLen",
-     "required": false,
-     "tag": 348
-    },
-    {
-     "kind": "field",
-     "name": "EncodedIssuer",
-     "required": false,
-     "tag": 349
-    },
-    {
-     "kind": "field",
-     "name": "SecurityDesc",
-     "required": false,
-     "tag": 107
-    },
-    {
-     "kind": "field",
-     "name": "EncodedSecurityDescLen",
-     "required": false,
-     "tag": 350
-    },
-    {
-     "kind": "field",
-     "name": "EncodedSecurityDesc",
-     "required": false,
-     "tag": 351
-    },
-    {
-     "kind": "field",
-     "name": "Pool",
-     "required": false,
-     "tag": 691
-    },
-    {
-     "kind": "field",
-     "name": "ContractSettlMonth",
-     "required": false,
-     "tag": 667
-    },
-    {
-     "kind": "field",
-     "name": "CPProgram",
-     "required": false,
-     "tag": 875
-    },
-    {
-     "kind": "field",
-     "name": "CPRegType",
-     "required": false,
-     "tag": 876
-    },
-    {
-     "kind": "component",
-     "name": "EvntGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DatedDate",
-     "required": false,
-     "tag": 873
-    },
-    {
-     "kind": "field",
-     "name": "InterestAccrualDate",
-     "required": false,
-     "tag": 874
-    },
-    {
-     "kind": "component",
-     "name": "InstrumentParties",
-     "required": false
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "SecurityID",
+   "required": false,
+   "tag": 48
   },
-  "4.4": {
-   "order": 3,
-   "members": [
-    {
-     "kind": "field",
-     "name": "Symbol",
-     "required": false,
-     "tag": 55
-    },
-    {
-     "kind": "field",
-     "name": "SymbolSfx",
-     "required": false,
-     "tag": 65
-    },
-    {
-     "kind": "field",
-     "name": "SecurityID",
-     "required": false,
-     "tag": 48
-    },
-    {
-     "kind": "field",
-     "name": "SecurityIDSource",
-     "required": false,
-     "tag": 22
-    },
-    {
-     "kind": "component",
-     "name": "SecAltIDGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "Product",
-     "required": false,
-     "tag": 460
-    },
-    {
-     "kind": "field",
-     "name": "CFICode",
-     "required": false,
-     "tag": 461
-    },
-    {
-     "kind": "field",
-     "name": "SecurityType",
-     "required": false,
-     "tag": 167
-    },
-    {
-     "kind": "field",
-     "name": "SecuritySubType",
-     "required": false,
-     "tag": 762
-    },
-    {
-     "kind": "field",
-     "name": "MaturityMonthYear",
-     "required": false,
-     "tag": 200
-    },
-    {
-     "kind": "field",
-     "name": "MaturityDate",
-     "required": false,
-     "tag": 541
-    },
-    {
-     "kind": "field",
-     "name": "PutOrCall",
-     "required": false,
-     "tag": 201
-    },
-    {
-     "kind": "field",
-     "name": "CouponPaymentDate",
-     "required": false,
-     "tag": 224
-    },
-    {
-     "kind": "field",
-     "name": "IssueDate",
-     "required": false,
-     "tag": 225
-    },
-    {
-     "kind": "field",
-     "name": "RepoCollateralSecurityType",
-     "required": false,
-     "tag": 239
-    },
-    {
-     "kind": "field",
-     "name": "RepurchaseTerm",
-     "required": false,
-     "tag": 226
-    },
-    {
-     "kind": "field",
-     "name": "RepurchaseRate",
-     "required": false,
-     "tag": 227
-    },
-    {
-     "kind": "field",
-     "name": "Factor",
-     "required": false,
-     "tag": 228
-    },
-    {
-     "kind": "field",
-     "name": "CreditRating",
-     "required": false,
-     "tag": 255
-    },
-    {
-     "kind": "field",
-     "name": "InstrRegistry",
-     "required": false,
-     "tag": 543
-    },
-    {
-     "kind": "field",
-     "name": "CountryOfIssue",
-     "required": false,
-     "tag": 470
-    },
-    {
-     "kind": "field",
-     "name": "StateOrProvinceOfIssue",
-     "required": false,
-     "tag": 471
-    },
-    {
-     "kind": "field",
-     "name": "LocaleOfIssue",
-     "required": false,
-     "tag": 472
-    },
-    {
-     "kind": "field",
-     "name": "RedemptionDate",
-     "required": false,
-     "tag": 240
-    },
-    {
-     "kind": "field",
-     "name": "StrikePrice",
-     "required": false,
-     "tag": 202
-    },
-    {
-     "kind": "field",
-     "name": "StrikeCurrency",
-     "required": false,
-     "tag": 947
-    },
-    {
-     "kind": "field",
-     "name": "OptAttribute",
-     "required": false,
-     "tag": 206
-    },
-    {
-     "kind": "field",
-     "name": "ContractMultiplier",
-     "required": false,
-     "tag": 231
-    },
-    {
-     "kind": "field",
-     "name": "CouponRate",
-     "required": false,
-     "tag": 223
-    },
-    {
-     "kind": "field",
-     "name": "SecurityExchange",
-     "required": false,
-     "tag": 207
-    },
-    {
-     "kind": "field",
-     "name": "Issuer",
-     "required": false,
-     "tag": 106
-    },
-    {
-     "kind": "field",
-     "name": "EncodedIssuerLen",
-     "required": false,
-     "tag": 348
-    },
-    {
-     "kind": "field",
-     "name": "EncodedIssuer",
-     "required": false,
-     "tag": 349
-    },
-    {
-     "kind": "field",
-     "name": "SecurityDesc",
-     "required": false,
-     "tag": 107
-    },
-    {
-     "kind": "field",
-     "name": "EncodedSecurityDescLen",
-     "required": false,
-     "tag": 350
-    },
-    {
-     "kind": "field",
-     "name": "EncodedSecurityDesc",
-     "required": false,
-     "tag": 351
-    },
-    {
-     "kind": "field",
-     "name": "Pool",
-     "required": false,
-     "tag": 691
-    },
-    {
-     "kind": "field",
-     "name": "ContractSettlMonth",
-     "required": false,
-     "tag": 667
-    },
-    {
-     "kind": "field",
-     "name": "CPProgram",
-     "required": false,
-     "tag": 875
-    },
-    {
-     "kind": "field",
-     "name": "CPRegType",
-     "required": false,
-     "tag": 876
-    },
-    {
-     "kind": "component",
-     "name": "EvntGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DatedDate",
-     "required": false,
-     "tag": 873
-    },
-    {
-     "kind": "field",
-     "name": "InterestAccrualDate",
-     "required": false,
-     "tag": 874
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "SecurityIDSource",
+   "required": false,
+   "tag": 22
   },
-  "4.3": {
-   "order": 1,
-   "members": [
-    {
-     "kind": "field",
-     "name": "Symbol",
-     "required": false,
-     "tag": 55
-    },
-    {
-     "kind": "field",
-     "name": "SymbolSfx",
-     "required": false,
-     "tag": 65
-    },
-    {
-     "kind": "field",
-     "name": "SecurityID",
-     "required": false,
-     "tag": 48
-    },
-    {
-     "kind": "field",
-     "name": "SecurityIDSource",
-     "required": false,
-     "tag": 22
-    },
-    {
-     "kind": "group",
-     "name": "NoSecurityAltID",
-     "required": false,
-     "tag": 454,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SecurityAltID",
-       "required": false,
-       "tag": 455
-      },
-      {
-       "kind": "field",
-       "name": "SecurityAltIDSource",
-       "required": false,
-       "tag": 456
-      }
-     ]
-    },
-    {
-     "kind": "field",
-     "name": "Product",
-     "required": false,
-     "tag": 460
-    },
-    {
-     "kind": "field",
-     "name": "CFICode",
-     "required": false,
-     "tag": 461
-    },
-    {
-     "kind": "field",
-     "name": "SecurityType",
-     "required": false,
-     "tag": 167
-    },
-    {
-     "kind": "field",
-     "name": "MaturityMonthYear",
-     "required": false,
-     "tag": 200
-    },
-    {
-     "kind": "field",
-     "name": "MaturityDate",
-     "required": false,
-     "tag": 541
-    },
-    {
-     "kind": "field",
-     "name": "CouponPaymentDate",
-     "required": false,
-     "tag": 224
-    },
-    {
-     "kind": "field",
-     "name": "IssueDate",
-     "required": false,
-     "tag": 225
-    },
-    {
-     "kind": "field",
-     "name": "RepoCollateralSecurityType",
-     "required": false,
-     "tag": 239
-    },
-    {
-     "kind": "field",
-     "name": "RepurchaseTerm",
-     "required": false,
-     "tag": 226
-    },
-    {
-     "kind": "field",
-     "name": "RepurchaseRate",
-     "required": false,
-     "tag": 227
-    },
-    {
-     "kind": "field",
-     "name": "Factor",
-     "required": false,
-     "tag": 228
-    },
-    {
-     "kind": "field",
-     "name": "CreditRating",
-     "required": false,
-     "tag": 255
-    },
-    {
-     "kind": "field",
-     "name": "InstrRegistry",
-     "required": false,
-     "tag": 543
-    },
-    {
-     "kind": "field",
-     "name": "CountryOfIssue",
-     "required": false,
-     "tag": 470
-    },
-    {
-     "kind": "field",
-     "name": "StateOrProvinceOfIssue",
-     "required": false,
-     "tag": 471
-    },
-    {
-     "kind": "field",
-     "name": "LocaleOfIssue",
-     "required": false,
-     "tag": 472
-    },
-    {
-     "kind": "field",
-     "name": "RedemptionDate",
-     "required": false,
-     "tag": 240
-    },
-    {
-     "kind": "field",
-     "name": "StrikePrice",
-     "required": false,
-     "tag": 202
-    },
-    {
-     "kind": "field",
-     "name": "OptAttribute",
-     "required": false,
-     "tag": 206
-    },
-    {
-     "kind": "field",
-     "name": "ContractMultiplier",
-     "required": false,
-     "tag": 231
-    },
-    {
-     "kind": "field",
-     "name": "CouponRate",
-     "required": false,
-     "tag": 223
-    },
-    {
-     "kind": "field",
-     "name": "SecurityExchange",
-     "required": false,
-     "tag": 207
-    },
-    {
-     "kind": "field",
-     "name": "Issuer",
-     "required": false,
-     "tag": 106
-    },
-    {
-     "kind": "field",
-     "name": "EncodedIssuerLen",
-     "required": false,
-     "tag": 348
-    },
-    {
-     "kind": "field",
-     "name": "EncodedIssuer",
-     "required": false,
-     "tag": 349
-    },
-    {
-     "kind": "field",
-     "name": "SecurityDesc",
-     "required": false,
-     "tag": 107
-    },
-    {
-     "kind": "field",
-     "name": "EncodedSecurityDescLen",
-     "required": false,
-     "tag": 350
-    },
-    {
-     "kind": "field",
-     "name": "EncodedSecurityDesc",
-     "required": false,
-     "tag": 351
-    }
-   ]
+  {
+   "kind": "component",
+   "name": "SecAltIDGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "Product",
+   "required": false,
+   "tag": 460
+  },
+  {
+   "kind": "field",
+   "name": "ProductComplex",
+   "required": false,
+   "tag": 1227
+  },
+  {
+   "kind": "field",
+   "name": "SecurityGroup",
+   "required": false,
+   "tag": 1151
+  },
+  {
+   "kind": "field",
+   "name": "CFICode",
+   "required": false,
+   "tag": 461
+  },
+  {
+   "kind": "field",
+   "name": "UPICode",
+   "required": false,
+   "tag": 2891
+  },
+  {
+   "kind": "field",
+   "name": "SecurityType",
+   "required": false,
+   "tag": 167
+  },
+  {
+   "kind": "field",
+   "name": "SecuritySubType",
+   "required": false,
+   "tag": 762
+  },
+  {
+   "kind": "field",
+   "name": "MaturityMonthYear",
+   "required": false,
+   "tag": 200
+  },
+  {
+   "kind": "field",
+   "name": "MaturityDate",
+   "required": false,
+   "tag": 541
+  },
+  {
+   "kind": "field",
+   "name": "MaturityTime",
+   "required": false,
+   "tag": 1079
+  },
+  {
+   "kind": "field",
+   "name": "SettleOnOpenFlag",
+   "required": false,
+   "tag": 966
+  },
+  {
+   "kind": "field",
+   "name": "InstrmtAssignmentMethod",
+   "required": false,
+   "tag": 1049
+  },
+  {
+   "kind": "field",
+   "name": "SecurityStatus",
+   "required": false,
+   "tag": 965
+  },
+  {
+   "kind": "field",
+   "name": "CouponPaymentDate",
+   "required": false,
+   "tag": 224
+  },
+  {
+   "kind": "field",
+   "name": "RestructuringType",
+   "required": false,
+   "tag": 1449
+  },
+  {
+   "kind": "field",
+   "name": "Seniority",
+   "required": false,
+   "tag": 1450
+  },
+  {
+   "kind": "field",
+   "name": "NotionalPercentageOutstanding",
+   "required": false,
+   "tag": 1451
+  },
+  {
+   "kind": "field",
+   "name": "OriginalNotionalPercentageOutstanding",
+   "required": false,
+   "tag": 1452
+  },
+  {
+   "kind": "field",
+   "name": "AttachmentPoint",
+   "required": false,
+   "tag": 1457
+  },
+  {
+   "kind": "field",
+   "name": "DetachmentPoint",
+   "required": false,
+   "tag": 1458
+  },
+  {
+   "kind": "field",
+   "name": "ObligationType",
+   "required": false,
+   "tag": 1739
+  },
+  {
+   "kind": "field",
+   "name": "AssetGroup",
+   "required": false,
+   "tag": 2210
+  },
+  {
+   "kind": "field",
+   "name": "AssetClass",
+   "required": false,
+   "tag": 1938
+  },
+  {
+   "kind": "field",
+   "name": "AssetSubClass",
+   "required": false,
+   "tag": 1939
+  },
+  {
+   "kind": "field",
+   "name": "AssetType",
+   "required": false,
+   "tag": 1940
+  },
+  {
+   "kind": "field",
+   "name": "AssetSubType",
+   "required": false,
+   "tag": 2735
+  },
+  {
+   "kind": "component",
+   "name": "SecondaryAssetGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "AssetAttributeGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "SwapClass",
+   "required": false,
+   "tag": 1941
+  },
+  {
+   "kind": "field",
+   "name": "SwapSubClass",
+   "required": false,
+   "tag": 1575
+  },
+  {
+   "kind": "field",
+   "name": "NthToDefault",
+   "required": false,
+   "tag": 1942
+  },
+  {
+   "kind": "field",
+   "name": "MthToDefault",
+   "required": false,
+   "tag": 1943
+  },
+  {
+   "kind": "field",
+   "name": "SettledEntityMatrixSource",
+   "required": false,
+   "tag": 1944
+  },
+  {
+   "kind": "field",
+   "name": "SettledEntityMatrixPublicationDate",
+   "required": false,
+   "tag": 1945
+  },
+  {
+   "kind": "field",
+   "name": "CouponType",
+   "required": false,
+   "tag": 1946
+  },
+  {
+   "kind": "field",
+   "name": "TotalIssuedAmount",
+   "required": false,
+   "tag": 1947
+  },
+  {
+   "kind": "field",
+   "name": "CouponFrequencyPeriod",
+   "required": false,
+   "tag": 1948
+  },
+  {
+   "kind": "field",
+   "name": "CouponFrequencyUnit",
+   "required": false,
+   "tag": 1949
+  },
+  {
+   "kind": "field",
+   "name": "CouponDayCount",
+   "required": false,
+   "tag": 1950
+  },
+  {
+   "kind": "field",
+   "name": "CouponOtherDayCount",
+   "required": false,
+   "tag": 2879
+  },
+  {
+   "kind": "field",
+   "name": "ConvertibleBondEquityID",
+   "required": false,
+   "tag": 1951
+  },
+  {
+   "kind": "field",
+   "name": "ConvertibleBondEquityIDSource",
+   "required": false,
+   "tag": 1952
+  },
+  {
+   "kind": "field",
+   "name": "ContractPriceRefMonth",
+   "required": false,
+   "tag": 1953
+  },
+  {
+   "kind": "field",
+   "name": "LienSeniority",
+   "required": false,
+   "tag": 1954
+  },
+  {
+   "kind": "field",
+   "name": "LoanFacility",
+   "required": false,
+   "tag": 1955
+  },
+  {
+   "kind": "field",
+   "name": "ReferenceEntityType",
+   "required": false,
+   "tag": 1956
+  },
+  {
+   "kind": "field",
+   "name": "IndexSeries",
+   "required": false,
+   "tag": 1957
+  },
+  {
+   "kind": "field",
+   "name": "IndexAnnexVersion",
+   "required": false,
+   "tag": 1958
+  },
+  {
+   "kind": "field",
+   "name": "IndexAnnexDate",
+   "required": false,
+   "tag": 1959
+  },
+  {
+   "kind": "field",
+   "name": "IndexAnnexSource",
+   "required": false,
+   "tag": 1960
+  },
+  {
+   "kind": "field",
+   "name": "SettlRateIndex",
+   "required": false,
+   "tag": 1577
+  },
+  {
+   "kind": "field",
+   "name": "SettlRateIndexLocation",
+   "required": false,
+   "tag": 1580
+  },
+  {
+   "kind": "field",
+   "name": "OptionExpirationDesc",
+   "required": false,
+   "tag": 1581
+  },
+  {
+   "kind": "field",
+   "name": "EncodedOptionExpirationDescLen",
+   "required": false,
+   "tag": 1678
+  },
+  {
+   "kind": "field",
+   "name": "EncodedOptionExpirationDesc",
+   "required": false,
+   "tag": 1697
+  },
+  {
+   "kind": "field",
+   "name": "IssueDate",
+   "required": false,
+   "tag": 225
+  },
+  {
+   "kind": "field",
+   "name": "RepoCollateralSecurityType",
+   "required": false,
+   "tag": 239
+  },
+  {
+   "kind": "field",
+   "name": "RepurchaseTerm",
+   "required": false,
+   "tag": 226
+  },
+  {
+   "kind": "field",
+   "name": "RepurchaseRate",
+   "required": false,
+   "tag": 227
+  },
+  {
+   "kind": "field",
+   "name": "Factor",
+   "required": false,
+   "tag": 228
+  },
+  {
+   "kind": "field",
+   "name": "CreditRating",
+   "required": false,
+   "tag": 255
+  },
+  {
+   "kind": "field",
+   "name": "InstrRegistry",
+   "required": false,
+   "tag": 543
+  },
+  {
+   "kind": "field",
+   "name": "CountryOfIssue",
+   "required": false,
+   "tag": 470
+  },
+  {
+   "kind": "field",
+   "name": "StateOrProvinceOfIssue",
+   "required": false,
+   "tag": 471
+  },
+  {
+   "kind": "field",
+   "name": "LocaleOfIssue",
+   "required": false,
+   "tag": 472
+  },
+  {
+   "kind": "field",
+   "name": "RedemptionDate",
+   "required": false,
+   "tag": 240
+  },
+  {
+   "kind": "field",
+   "name": "StrikePrice",
+   "required": false,
+   "tag": 202
+  },
+  {
+   "kind": "field",
+   "name": "OrigStrikePrice",
+   "required": false,
+   "tag": 2578
+  },
+  {
+   "kind": "field",
+   "name": "StrikePricePrecision",
+   "required": false,
+   "tag": 2577
+  },
+  {
+   "kind": "field",
+   "name": "StrikeCurrency",
+   "required": false,
+   "tag": 947
+  },
+  {
+   "kind": "field",
+   "name": "StrikeCurrencyCodeSource",
+   "required": false,
+   "tag": 2904
+  },
+  {
+   "kind": "field",
+   "name": "StrikeMultiplier",
+   "required": false,
+   "tag": 967
+  },
+  {
+   "kind": "field",
+   "name": "StrikeValue",
+   "required": false,
+   "tag": 968
+  },
+  {
+   "kind": "field",
+   "name": "StrikeUnitOfMeasure",
+   "required": false,
+   "tag": 1698
+  },
+  {
+   "kind": "field",
+   "name": "StrikeIndex",
+   "required": false,
+   "tag": 1866
+  },
+  {
+   "kind": "field",
+   "name": "StrikeIndexCurvePoint",
+   "required": false,
+   "tag": 2600
+  },
+  {
+   "kind": "field",
+   "name": "StrikeIndexSpread",
+   "required": false,
+   "tag": 2001
+  },
+  {
+   "kind": "field",
+   "name": "StrikeIndexQuote",
+   "required": false,
+   "tag": 2601
+  },
+  {
+   "kind": "field",
+   "name": "StrikePriceDeterminationMethod",
+   "required": false,
+   "tag": 1478
+  },
+  {
+   "kind": "field",
+   "name": "StrikePriceBoundaryMethod",
+   "required": false,
+   "tag": 1479
+  },
+  {
+   "kind": "field",
+   "name": "StrikePriceBoundaryPrecision",
+   "required": false,
+   "tag": 1480
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingPriceDeterminationMethod",
+   "required": false,
+   "tag": 1481
+  },
+  {
+   "kind": "field",
+   "name": "OptAttribute",
+   "required": false,
+   "tag": 206
+  },
+  {
+   "kind": "field",
+   "name": "ContractMultiplier",
+   "required": false,
+   "tag": 231
+  },
+  {
+   "kind": "field",
+   "name": "ContractMultiplierUnit",
+   "required": false,
+   "tag": 1435
+  },
+  {
+   "kind": "field",
+   "name": "TradingUnitPeriodMultiplier",
+   "required": false,
+   "tag": 2353
+  },
+  {
+   "kind": "field",
+   "name": "FlowScheduleType",
+   "required": false,
+   "tag": 1439
+  },
+  {
+   "kind": "field",
+   "name": "MinPriceIncrement",
+   "required": false,
+   "tag": 969
+  },
+  {
+   "kind": "field",
+   "name": "MinPriceIncrementAmount",
+   "required": false,
+   "tag": 1146
+  },
+  {
+   "kind": "field",
+   "name": "UnitOfMeasure",
+   "required": false,
+   "tag": 996
+  },
+  {
+   "kind": "field",
+   "name": "UnitOfMeasureQty",
+   "required": false,
+   "tag": 1147
+  },
+  {
+   "kind": "field",
+   "name": "UnitOfMeasureCurrency",
+   "required": false,
+   "tag": 1716
+  },
+  {
+   "kind": "field",
+   "name": "UnitOfMeasureCurrencyCodeSource",
+   "required": false,
+   "tag": 2905
+  },
+  {
+   "kind": "field",
+   "name": "PriceUnitOfMeasure",
+   "required": false,
+   "tag": 1191
+  },
+  {
+   "kind": "field",
+   "name": "PriceUnitOfMeasureQty",
+   "required": false,
+   "tag": 1192
+  },
+  {
+   "kind": "field",
+   "name": "PriceUnitOfMeasureCurrency",
+   "required": false,
+   "tag": 1717
+  },
+  {
+   "kind": "field",
+   "name": "PriceUnitOfMeasureCurrencyCodeSource",
+   "required": false,
+   "tag": 2906
+  },
+  {
+   "kind": "field",
+   "name": "SettlMethod",
+   "required": false,
+   "tag": 1193
+  },
+  {
+   "kind": "field",
+   "name": "SettlSubMethod",
+   "required": false,
+   "tag": 2579
+  },
+  {
+   "kind": "field",
+   "name": "ExerciseStyle",
+   "required": false,
+   "tag": 1194
+  },
+  {
+   "kind": "field",
+   "name": "OptPayoutType",
+   "required": false,
+   "tag": 1482
+  },
+  {
+   "kind": "field",
+   "name": "OptPayoutAmount",
+   "required": false,
+   "tag": 1195
+  },
+  {
+   "kind": "field",
+   "name": "ReturnTrigger",
+   "required": false,
+   "tag": 2753
+  },
+  {
+   "kind": "field",
+   "name": "PriceQuoteMethod",
+   "required": false,
+   "tag": 1196
+  },
+  {
+   "kind": "field",
+   "name": "ValuationMethod",
+   "required": false,
+   "tag": 1197
+  },
+  {
+   "kind": "field",
+   "name": "ValuationSource",
+   "required": false,
+   "tag": 2002
+  },
+  {
+   "kind": "field",
+   "name": "ValuationReferenceModel",
+   "required": false,
+   "tag": 2140
+  },
+  {
+   "kind": "field",
+   "name": "PriceQuoteCurrency",
+   "required": false,
+   "tag": 1524
+  },
+  {
+   "kind": "field",
+   "name": "PriceQuoteCurrencyCodeSource",
+   "required": false,
+   "tag": 2907
+  },
+  {
+   "kind": "field",
+   "name": "ListMethod",
+   "required": false,
+   "tag": 1198
+  },
+  {
+   "kind": "field",
+   "name": "CapPrice",
+   "required": false,
+   "tag": 1199
+  },
+  {
+   "kind": "field",
+   "name": "FloorPrice",
+   "required": false,
+   "tag": 1200
+  },
+  {
+   "kind": "field",
+   "name": "PutOrCall",
+   "required": false,
+   "tag": 201
+  },
+  {
+   "kind": "field",
+   "name": "InTheMoneyCondition",
+   "required": false,
+   "tag": 2681
+  },
+  {
+   "kind": "field",
+   "name": "ContraryInstructionEligibilityIndicator",
+   "required": false,
+   "tag": 2685
+  },
+  {
+   "kind": "field",
+   "name": "FlexibleIndicator",
+   "required": false,
+   "tag": 1244
+  },
+  {
+   "kind": "field",
+   "name": "FlexProductEligibilityIndicator",
+   "required": false,
+   "tag": 1242
+  },
+  {
+   "kind": "field",
+   "name": "BlockTradeEligibilityIndicator",
+   "required": false,
+   "tag": 2575
+  },
+  {
+   "kind": "field",
+   "name": "LowExercisePriceOptionIndicator",
+   "required": false,
+   "tag": 2574
+  },
+  {
+   "kind": "field",
+   "name": "TimeUnit",
+   "required": false,
+   "tag": 997
+  },
+  {
+   "kind": "field",
+   "name": "CouponRate",
+   "required": false,
+   "tag": 223
+  },
+  {
+   "kind": "field",
+   "name": "SecurityExchange",
+   "required": false,
+   "tag": 207
+  },
+  {
+   "kind": "field",
+   "name": "PositionLimit",
+   "required": false,
+   "tag": 970
+  },
+  {
+   "kind": "field",
+   "name": "NTPositionLimit",
+   "required": false,
+   "tag": 971
+  },
+  {
+   "kind": "field",
+   "name": "Issuer",
+   "required": false,
+   "tag": 106
+  },
+  {
+   "kind": "field",
+   "name": "EncodedIssuerLen",
+   "required": false,
+   "tag": 348
+  },
+  {
+   "kind": "field",
+   "name": "EncodedIssuer",
+   "required": false,
+   "tag": 349
+  },
+  {
+   "kind": "field",
+   "name": "FinancialInstrumentShortName",
+   "required": false,
+   "tag": 2737
+  },
+  {
+   "kind": "field",
+   "name": "FinancialInstrumentFullName",
+   "required": false,
+   "tag": 2714
+  },
+  {
+   "kind": "field",
+   "name": "EncodedFinancialInstrumentFullNameLen",
+   "required": false,
+   "tag": 2715
+  },
+  {
+   "kind": "field",
+   "name": "EncodedFinancialInstrumentFullName",
+   "required": false,
+   "tag": 2716
+  },
+  {
+   "kind": "field",
+   "name": "SecurityDesc",
+   "required": false,
+   "tag": 107
+  },
+  {
+   "kind": "field",
+   "name": "EncodedSecurityDescLen",
+   "required": false,
+   "tag": 350
+  },
+  {
+   "kind": "field",
+   "name": "EncodedSecurityDesc",
+   "required": false,
+   "tag": 351
+  },
+  {
+   "kind": "component",
+   "name": "SecurityXML",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "Pool",
+   "required": false,
+   "tag": 691
+  },
+  {
+   "kind": "field",
+   "name": "ContractSettlMonth",
+   "required": false,
+   "tag": 667
+  },
+  {
+   "kind": "field",
+   "name": "CPProgram",
+   "required": false,
+   "tag": 875
+  },
+  {
+   "kind": "field",
+   "name": "CPRegType",
+   "required": false,
+   "tag": 876
+  },
+  {
+   "kind": "component",
+   "name": "EvntGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "DatedDate",
+   "required": false,
+   "tag": 873
+  },
+  {
+   "kind": "field",
+   "name": "InterestAccrualDate",
+   "required": false,
+   "tag": 874
+  },
+  {
+   "kind": "component",
+   "name": "InstrumentParties",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "ShortSaleRestriction",
+   "required": false,
+   "tag": 1687
+  },
+  {
+   "kind": "component",
+   "name": "ComplexEvents",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "RefTickTableID",
+   "required": false,
+   "tag": 1787
+  },
+  {
+   "kind": "field",
+   "name": "StrategyType",
+   "required": false,
+   "tag": 2141
+  },
+  {
+   "kind": "field",
+   "name": "CommonPricingIndicator",
+   "required": false,
+   "tag": 2142
+  },
+  {
+   "kind": "field",
+   "name": "SettlDisruptionProvision",
+   "required": false,
+   "tag": 2143
+  },
+  {
+   "kind": "field",
+   "name": "DeliveryRouteOrCharter",
+   "required": false,
+   "tag": 2752
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentRoundingDirection",
+   "required": false,
+   "tag": 2144
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentRoundingPrecision",
+   "required": false,
+   "tag": 2145
+  },
+  {
+   "kind": "field",
+   "name": "InstrumentPricePrecision",
+   "required": false,
+   "tag": 2576
+  },
+  {
+   "kind": "field",
+   "name": "SecurityReferenceDataSupplement",
+   "required": false,
+   "tag": 2962
+  },
+  {
+   "kind": "component",
+   "name": "DateAdjustment",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "PricingDateTime",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "MarketDisruption",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "OptionExercise",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "StreamGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "ProvisionGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "AdditionalTermGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "ProtectionTermGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "CashSettlTermGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "PhysicalSettlTermGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "ExtraordinaryEventGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "ExtraordinaryEventAdjustmentMethod",
+   "required": false,
+   "tag": 2602
+  },
+  {
+   "kind": "field",
+   "name": "ExchangeLookAlike",
+   "required": false,
+   "tag": 2603
   }
- }
+ ]
 }

@@ -1,28 +1,26 @@
 {
  "name": "StrmAsgnReqGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 307,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoAsgnReqs",
+   "required": false,
+   "tag": 1499,
    "members": [
     {
-     "kind": "group",
-     "name": "NoAsgnReqs",
-     "required": false,
-     "tag": 1499,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "StrmAsgnReqInstrmtGrp",
-       "required": false
-      }
-     ]
+     "kind": "component",
+     "name": "Parties",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "StrmAsgnReqInstrmtGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

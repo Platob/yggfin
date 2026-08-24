@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProtectionTermNotional",
- "tag": 42069,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

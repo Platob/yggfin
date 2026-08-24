@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamResetFrequencyPeriod",
- "tag": 40306,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionCashSettlPaymentDateOffsetUnit",
- "tag": 42095,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

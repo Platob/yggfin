@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingOptionExerciseDates",
- "tag": 41841,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

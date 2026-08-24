@@ -1,41 +1,39 @@
 {
  "name": "LegSettlRateDisruptionFallbackGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 391,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegSettlRateFallbacks",
+   "required": false,
+   "tag": 40902,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegSettlRateFallbacks",
+     "kind": "field",
+     "name": "LegSettlRatePostponementMaximumDays",
      "required": false,
-     "tag": 40902,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegSettlRatePostponementMaximumDays",
-       "required": false,
-       "tag": 40903
-      },
-      {
-       "kind": "component",
-       "name": "LegSettlRateFallbackRateSource",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlRatePostponementSurvey",
-       "required": false,
-       "tag": 40905
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlRatePostponementCalculationAgent",
-       "required": false,
-       "tag": 40906
-      }
-     ]
+     "tag": 40903
+    },
+    {
+     "kind": "component",
+     "name": "LegSettlRateFallbackRateSource",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlRatePostponementSurvey",
+     "required": false,
+     "tag": 40905
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlRatePostponementCalculationAgent",
+     "required": false,
+     "tag": 40906
     }
    ]
   }
- }
+ ]
 }

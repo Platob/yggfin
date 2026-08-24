@@ -1,43 +1,23 @@
 {
  "name": "ExecInstRules",
- "versions": {
-  "5.0.SP2": {
-   "order": 278,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoExecInstRules",
+   "required": false,
+   "tag": 1232,
    "members": [
     {
-     "kind": "group",
-     "name": "NoExecInstRules",
+     "kind": "field",
+     "name": "ExecInstValue",
      "required": false,
-     "tag": 1232,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ExecInstValue",
-       "required": false,
-       "tag": 1308
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 133,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoExecInstRules",
-     "required": false,
-     "tag": 1232,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ExecInstValue",
-       "required": false,
-       "tag": 1308
-      }
-     ]
+     "tag": 1308
     }
    ]
   }
- }
+ ]
 }

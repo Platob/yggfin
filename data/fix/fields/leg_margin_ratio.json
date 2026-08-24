@@ -1,9 +1,0 @@
-{
- "name": "LegMarginRatio",
- "tag": 2508,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

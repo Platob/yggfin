@@ -1,27 +1,25 @@
 {
  "name": "UnderlyingDateAdjustment",
- "versions": {
-  "5.0.SP2": {
-   "order": 70,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingBusinessDayConvention",
-     "required": false,
-     "tag": 40964
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingDateRollConvention",
-     "required": false,
-     "tag": 40965
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingBusinessDayConvention",
+   "required": false,
+   "tag": 40964
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingDateRollConvention",
+   "required": false,
+   "tag": 40965
   }
- }
+ ]
 }

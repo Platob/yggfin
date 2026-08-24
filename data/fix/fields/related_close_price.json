@@ -1,9 +1,0 @@
-{
- "name": "RelatedClosePrice",
- "tag": 2589,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICE"
-  }
- }
-}

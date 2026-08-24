@@ -1,22 +1,20 @@
 {
  "name": "LegPaymentStreamFormulaImage",
- "versions": {
-  "5.0.SP2": {
-   "order": 126,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFormulaImageLength",
-     "required": false,
-     "tag": 42451
-    },
-    {
-     "kind": "field",
-     "name": "LegPaymentStreamFormulaImage",
-     "required": false,
-     "tag": 42452
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFormulaImageLength",
+   "required": false,
+   "tag": 42451
+  },
+  {
+   "kind": "field",
+   "name": "LegPaymentStreamFormulaImage",
+   "required": false,
+   "tag": 42452
   }
- }
+ ]
 }

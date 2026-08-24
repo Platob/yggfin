@@ -1,30 +1,28 @@
 {
  "name": "ReturnRateValuationDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 685,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoReturnRateValuationDates",
+   "required": false,
+   "tag": 42772,
    "members": [
     {
-     "kind": "group",
-     "name": "NoReturnRateValuationDates",
+     "kind": "field",
+     "name": "ReturnRateValuationDate",
      "required": false,
-     "tag": 42772,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationDate",
-       "required": false,
-       "tag": 42773
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationDateType",
-       "required": false,
-       "tag": 42774
-      }
-     ]
+     "tag": 42773
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationDateType",
+     "required": false,
+     "tag": 42774
     }
    ]
   }
- }
+ ]
 }

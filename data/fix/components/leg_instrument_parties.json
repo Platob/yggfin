@@ -1,47 +1,45 @@
 {
  "name": "LegInstrumentParties",
- "versions": {
-  "5.0.SP2": {
-   "order": 541,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegInstrumentParties",
+   "required": false,
+   "tag": 2254,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegInstrumentParties",
+     "kind": "field",
+     "name": "LegInstrumentPartyID",
      "required": false,
-     "tag": 2254,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegInstrumentPartyID",
-       "required": false,
-       "tag": 2255
-      },
-      {
-       "kind": "field",
-       "name": "LegInstrumentPartyIDSource",
-       "required": false,
-       "tag": 2256
-      },
-      {
-       "kind": "field",
-       "name": "LegInstrumentPartyRole",
-       "required": false,
-       "tag": 2257
-      },
-      {
-       "kind": "field",
-       "name": "LegInstrumentPartyRoleQualifier",
-       "required": false,
-       "tag": 2379
-      },
-      {
-       "kind": "component",
-       "name": "LegInstrumentPtysSubGrp",
-       "required": false
-      }
-     ]
+     "tag": 2255
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrumentPartyIDSource",
+     "required": false,
+     "tag": 2256
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrumentPartyRole",
+     "required": false,
+     "tag": 2257
+    },
+    {
+     "kind": "field",
+     "name": "LegInstrumentPartyRoleQualifier",
+     "required": false,
+     "tag": 2379
+    },
+    {
+     "kind": "component",
+     "name": "LegInstrumentPtysSubGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

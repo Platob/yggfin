@@ -1,287 +1,81 @@
 {
  "name": "QuotReqLegsGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 219,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegs",
+   "required": false,
+   "tag": 555,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegs",
-     "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegOrderQty",
-       "required": false,
-       "tag": 685
-      },
-      {
-       "kind": "field",
-       "name": "LegQty",
-       "required": false,
-       "tag": 687
-      },
-      {
-       "kind": "field",
-       "name": "LegMidPx",
-       "required": false,
-       "tag": 2346
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlDate",
-       "required": false,
-       "tag": 588
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegRefID",
-       "required": false,
-       "tag": 654
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 68,
-   "members": [
+     "kind": "component",
+     "name": "InstrumentLeg",
+     "required": false
+    },
     {
-     "kind": "group",
-     "name": "NoLegs",
+     "kind": "field",
+     "name": "LegOrderQty",
      "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegQty",
-       "required": false,
-       "tag": 687
-      },
-      {
-       "kind": "field",
-       "name": "LegOrderQty",
-       "required": false,
-       "tag": 685
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlDate",
-       "required": false,
-       "tag": 588
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegRefID",
-       "required": false,
-       "tag": 654
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 69,
-   "members": [
+     "tag": 685
+    },
     {
-     "kind": "group",
-     "name": "NoLegs",
+     "kind": "field",
+     "name": "LegQty",
      "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegOptionRatio",
-       "required": false,
-       "tag": 1017
-      },
-      {
-       "kind": "field",
-       "name": "LegPrice",
-       "required": false,
-       "tag": 566
-      },
-      {
-       "kind": "field",
-       "name": "LegQty",
-       "required": false,
-       "tag": 687
-      },
-      {
-       "kind": "field",
-       "name": "LegOrderQty",
-       "required": false,
-       "tag": 685
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlDate",
-       "required": false,
-       "tag": 588
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegRefID",
-       "required": false,
-       "tag": 654
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 69,
-   "members": [
+     "tag": 687
+    },
     {
-     "kind": "group",
-     "name": "NoLegs",
+     "kind": "field",
+     "name": "LegMidPx",
      "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegQty",
-       "required": false,
-       "tag": 687
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlDate",
-       "required": false,
-       "tag": 588
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "NestedParties",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegBenchmarkCurveData",
-       "required": false
-      }
-     ]
+     "tag": 2346
+    },
+    {
+     "kind": "field",
+     "name": "LegSwapType",
+     "required": false,
+     "tag": 690
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlType",
+     "required": false,
+     "tag": 587
+    },
+    {
+     "kind": "field",
+     "name": "LegSettlDate",
+     "required": false,
+     "tag": 588
+    },
+    {
+     "kind": "component",
+     "name": "LegStipulations",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "NestedParties",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegBenchmarkCurveData",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegRefID",
+     "required": false,
+     "tag": 654
     }
    ]
   }
- }
+ ]
 }

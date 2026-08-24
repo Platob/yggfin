@@ -1,55 +1,53 @@
 {
  "name": "UnderlyingMarketDisruption",
- "versions": {
-  "5.0.SP2": {
-   "order": 100,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingMarketDisruptionProvision",
-     "required": false,
-     "tag": 41859
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingMarketDisruptionEventGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingMarketDisruptionFallbackProvision",
-     "required": false,
-     "tag": 41860
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingMarketDisruptionFallbackGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingMarketDisruptionFallbackReferencePriceGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingMarketDisruptionMaximumDays",
-     "required": false,
-     "tag": 41861
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingMarketDisruptionMaterialityPercentage",
-     "required": false,
-     "tag": 41862
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingMarketDisruptionMinimumFuturesContracts",
-     "required": false,
-     "tag": 41863
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingMarketDisruptionProvision",
+   "required": false,
+   "tag": 41859
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingMarketDisruptionEventGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingMarketDisruptionFallbackProvision",
+   "required": false,
+   "tag": 41860
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingMarketDisruptionFallbackGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingMarketDisruptionFallbackReferencePriceGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingMarketDisruptionMaximumDays",
+   "required": false,
+   "tag": 41861
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingMarketDisruptionMaterialityPercentage",
+   "required": false,
+   "tag": 41862
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingMarketDisruptionMinimumFuturesContracts",
+   "required": false,
+   "tag": 41863
   }
- }
+ ]
 }

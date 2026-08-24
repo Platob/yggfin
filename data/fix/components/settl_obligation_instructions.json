@@ -1,229 +1,122 @@
 {
  "name": "SettlObligationInstructions",
- "versions": {
-  "5.0.SP2": {
-   "order": 269,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoSettlOblig",
+   "required": false,
+   "tag": 1165,
    "members": [
     {
-     "kind": "group",
-     "name": "NoSettlOblig",
+     "kind": "field",
+     "name": "NetGrossInd",
      "required": false,
-     "tag": 1165,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NetGrossInd",
-       "required": false,
-       "tag": 430
-      },
-      {
-       "kind": "field",
-       "name": "SettlObligID",
-       "required": false,
-       "tag": 1161
-      },
-      {
-       "kind": "field",
-       "name": "SettlObligTransType",
-       "required": false,
-       "tag": 1162
-      },
-      {
-       "kind": "field",
-       "name": "SettlObligRefID",
-       "required": false,
-       "tag": 1163
-      },
-      {
-       "kind": "field",
-       "name": "CcyAmt",
-       "required": false,
-       "tag": 1157
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrAmt",
-       "required": false,
-       "tag": 119
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "field",
-       "name": "CurrencyCodeSource",
-       "required": false,
-       "tag": 2897
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrencyCodeSource",
-       "required": false,
-       "tag": 2899
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrFxRate",
-       "required": false,
-       "tag": 155
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "EffectiveTime",
-       "required": false,
-       "tag": 168
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "LastUpdateTime",
-       "required": false,
-       "tag": 779
-      },
-      {
-       "kind": "component",
-       "name": "SettlDetails",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 121,
-   "members": [
+     "tag": 430
+    },
     {
-     "kind": "group",
-     "name": "NoSettlOblig",
+     "kind": "field",
+     "name": "SettlObligID",
      "required": false,
-     "tag": 1165,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NetGrossInd",
-       "required": false,
-       "tag": 430
-      },
-      {
-       "kind": "field",
-       "name": "SettlObligID",
-       "required": false,
-       "tag": 1161
-      },
-      {
-       "kind": "field",
-       "name": "SettlObligTransType",
-       "required": false,
-       "tag": 1162
-      },
-      {
-       "kind": "field",
-       "name": "SettlObligRefID",
-       "required": false,
-       "tag": 1163
-      },
-      {
-       "kind": "field",
-       "name": "CcyAmt",
-       "required": false,
-       "tag": 1157
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrAmt",
-       "required": false,
-       "tag": 119
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrency",
-       "required": false,
-       "tag": 120
-      },
-      {
-       "kind": "field",
-       "name": "SettlCurrFxRate",
-       "required": false,
-       "tag": 155
-      },
-      {
-       "kind": "field",
-       "name": "SettlDate",
-       "required": false,
-       "tag": 64
-      },
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "Parties",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "EffectiveTime",
-       "required": false,
-       "tag": 168
-      },
-      {
-       "kind": "field",
-       "name": "ExpireTime",
-       "required": false,
-       "tag": 126
-      },
-      {
-       "kind": "field",
-       "name": "LastUpdateTime",
-       "required": false,
-       "tag": 779
-      },
-      {
-       "kind": "component",
-       "name": "SettlDetails",
-       "required": false
-      }
-     ]
+     "tag": 1161
+    },
+    {
+     "kind": "field",
+     "name": "SettlObligTransType",
+     "required": false,
+     "tag": 1162
+    },
+    {
+     "kind": "field",
+     "name": "SettlObligRefID",
+     "required": false,
+     "tag": 1163
+    },
+    {
+     "kind": "field",
+     "name": "CcyAmt",
+     "required": false,
+     "tag": 1157
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrAmt",
+     "required": false,
+     "tag": 119
+    },
+    {
+     "kind": "field",
+     "name": "Currency",
+     "required": false,
+     "tag": 15
+    },
+    {
+     "kind": "field",
+     "name": "CurrencyCodeSource",
+     "required": false,
+     "tag": 2897
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrency",
+     "required": false,
+     "tag": 120
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrencyCodeSource",
+     "required": false,
+     "tag": 2899
+    },
+    {
+     "kind": "field",
+     "name": "SettlCurrFxRate",
+     "required": false,
+     "tag": 155
+    },
+    {
+     "kind": "field",
+     "name": "SettlDate",
+     "required": false,
+     "tag": 64
+    },
+    {
+     "kind": "component",
+     "name": "Instrument",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "Parties",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "EffectiveTime",
+     "required": false,
+     "tag": 168
+    },
+    {
+     "kind": "field",
+     "name": "ExpireTime",
+     "required": false,
+     "tag": 126
+    },
+    {
+     "kind": "field",
+     "name": "LastUpdateTime",
+     "required": false,
+     "tag": 779
+    },
+    {
+     "kind": "component",
+     "name": "SettlDetails",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

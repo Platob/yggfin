@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingAutomaticExerciseIndicator",
- "tag": 41813,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

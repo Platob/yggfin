@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamPaymentRollConvention",
- "tag": 40585,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

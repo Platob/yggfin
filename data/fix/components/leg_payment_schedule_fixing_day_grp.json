@@ -1,30 +1,28 @@
 {
  "name": "LegPaymentScheduleFixingDayGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 550,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegPaymentScheduleFixingDays",
+   "required": false,
+   "tag": 41530,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegPaymentScheduleFixingDays",
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDayOfWeek",
      "required": false,
-     "tag": 41530,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDayOfWeek",
-       "required": false,
-       "tag": 41531
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentScheduleFixingDayNumber",
-       "required": false,
-       "tag": 41532
-      }
-     ]
+     "tag": 41531
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentScheduleFixingDayNumber",
+     "required": false,
+     "tag": 41532
     }
    ]
   }
- }
+ ]
 }

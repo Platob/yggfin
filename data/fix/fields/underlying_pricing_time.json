@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPricingTime",
- "tag": 41952,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTTIME"
-  }
- }
-}

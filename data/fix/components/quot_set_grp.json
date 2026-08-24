@@ -1,193 +1,53 @@
 {
  "name": "QuotSetGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 222,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoQuoteSets",
+   "required": false,
+   "tag": 296,
    "members": [
     {
-     "kind": "group",
-     "name": "NoQuoteSets",
+     "kind": "field",
+     "name": "QuoteSetID",
+     "required": true,
+     "tag": 302
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingInstrument",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "QuoteSetValidUntilTime",
      "required": false,
-     "tag": 296,
-     "members": [
-      {
-       "kind": "field",
-       "name": "QuoteSetID",
-       "required": true,
-       "tag": 302
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingInstrument",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QuoteSetValidUntilTime",
-       "required": false,
-       "tag": 367
-      },
-      {
-       "kind": "field",
-       "name": "TotNoQuoteEntries",
-       "required": true,
-       "tag": 304
-      },
-      {
-       "kind": "field",
-       "name": "LastFragment",
-       "required": false,
-       "tag": 893
-      },
-      {
-       "kind": "component",
-       "name": "QuotEntryGrp",
-       "required": true
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 71,
-   "members": [
+     "tag": 367
+    },
     {
-     "kind": "group",
-     "name": "NoQuoteSets",
+     "kind": "field",
+     "name": "TotNoQuoteEntries",
      "required": true,
-     "tag": 296,
-     "members": [
-      {
-       "kind": "field",
-       "name": "QuoteSetID",
-       "required": true,
-       "tag": 302
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingInstrument",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QuoteSetValidUntilTime",
-       "required": false,
-       "tag": 367
-      },
-      {
-       "kind": "field",
-       "name": "TotNoQuoteEntries",
-       "required": true,
-       "tag": 304
-      },
-      {
-       "kind": "field",
-       "name": "LastFragment",
-       "required": false,
-       "tag": 893
-      },
-      {
-       "kind": "component",
-       "name": "QuotEntryGrp",
-       "required": true
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 72,
-   "members": [
+     "tag": 304
+    },
     {
-     "kind": "group",
-     "name": "NoQuoteSets",
-     "required": true,
-     "tag": 296,
-     "members": [
-      {
-       "kind": "field",
-       "name": "QuoteSetID",
-       "required": true,
-       "tag": 302
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingInstrument",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QuoteSetValidUntilTime",
-       "required": false,
-       "tag": 367
-      },
-      {
-       "kind": "field",
-       "name": "TotNoQuoteEntries",
-       "required": true,
-       "tag": 304
-      },
-      {
-       "kind": "field",
-       "name": "LastFragment",
-       "required": false,
-       "tag": 893
-      },
-      {
-       "kind": "component",
-       "name": "QuotEntryGrp",
-       "required": true
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 72,
-   "members": [
+     "kind": "field",
+     "name": "LastFragment",
+     "required": false,
+     "tag": 893
+    },
     {
-     "kind": "group",
-     "name": "NoQuoteSets",
-     "required": true,
-     "tag": 296,
-     "members": [
-      {
-       "kind": "field",
-       "name": "QuoteSetID",
-       "required": true,
-       "tag": 302
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingInstrument",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "QuoteSetValidUntilTime",
-       "required": false,
-       "tag": 367
-      },
-      {
-       "kind": "field",
-       "name": "TotNoQuoteEntries",
-       "required": true,
-       "tag": 304
-      },
-      {
-       "kind": "field",
-       "name": "LastFragment",
-       "required": false,
-       "tag": 893
-      },
-      {
-       "kind": "component",
-       "name": "QuotEntryGrp",
-       "required": true
-      }
-     ]
+     "kind": "component",
+     "name": "QuotEntryGrp",
+     "required": true
     }
    ]
   }
- }
+ ]
 }

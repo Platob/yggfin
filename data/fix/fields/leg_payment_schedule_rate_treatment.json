@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentScheduleRateTreatment",
- "tag": 40387,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

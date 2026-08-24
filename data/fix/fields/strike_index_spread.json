@@ -1,9 +1,0 @@
-{
- "name": "StrikeIndexSpread",
- "tag": 2001,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICEOFFSET"
-  }
- }
-}

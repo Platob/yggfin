@@ -1,9 +1,0 @@
-{
- "name": "PaymentStubStartDateOffsetUnit",
- "tag": 42702,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

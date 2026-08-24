@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentScheduleFixedAmount",
- "tag": 40678,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

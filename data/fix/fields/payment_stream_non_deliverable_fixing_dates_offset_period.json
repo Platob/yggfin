@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamNonDeliverableFixingDatesOffsetPeriod",
- "tag": 40821,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,154 +1,152 @@
 {
  "name": "LegReturnRateDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 665,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegReturnRateDates",
+   "required": false,
+   "tag": 42508,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegReturnRateDates",
+     "kind": "field",
+     "name": "LegReturnRateDateMode",
      "required": false,
-     "tag": 42508,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegReturnRateDateMode",
-       "required": false,
-       "tag": 42509
-      },
-      {
-       "kind": "component",
-       "name": "LegReturnRateValuationDateGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationDateRelativeTo",
-       "required": false,
-       "tag": 42510
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationDateOffsetPeriod",
-       "required": false,
-       "tag": 42511
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationDateOffsetUnit",
-       "required": false,
-       "tag": 42512
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationDateOffsetDayType",
-       "required": false,
-       "tag": 42513
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationStartDateUnadjusted",
-       "required": false,
-       "tag": 42514
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationStartDateRelativeTo",
-       "required": false,
-       "tag": 42515
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationStartDateOffsetPeriod",
-       "required": false,
-       "tag": 42516
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationStartDateOffsetUnit",
-       "required": false,
-       "tag": 42517
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationStartDateOffsetDayType",
-       "required": false,
-       "tag": 42518
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationStartDateAdjusted",
-       "required": false,
-       "tag": 42519
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationEndDateUnadjusted",
-       "required": false,
-       "tag": 42520
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationEndDateRelativeTo",
-       "required": false,
-       "tag": 42521
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationEndDateOffsetPeriod",
-       "required": false,
-       "tag": 42522
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationEndDateOffsetUnit",
-       "required": false,
-       "tag": 42523
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationEndDateOffsetDayType",
-       "required": false,
-       "tag": 42524
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationEndDateAdjusted",
-       "required": false,
-       "tag": 42525
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationFrequencyPeriod",
-       "required": false,
-       "tag": 42526
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationFrequencyUnit",
-       "required": false,
-       "tag": 42527
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationFrequencyRollConvention",
-       "required": false,
-       "tag": 42528
-      },
-      {
-       "kind": "field",
-       "name": "LegReturnRateValuationDateBusinessDayConvention",
-       "required": false,
-       "tag": 42529
-      },
-      {
-       "kind": "component",
-       "name": "LegReturnRateValuationDateBusinessCenterGrp",
-       "required": false
-      }
-     ]
+     "tag": 42509
+    },
+    {
+     "kind": "component",
+     "name": "LegReturnRateValuationDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationDateRelativeTo",
+     "required": false,
+     "tag": 42510
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationDateOffsetPeriod",
+     "required": false,
+     "tag": 42511
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationDateOffsetUnit",
+     "required": false,
+     "tag": 42512
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationDateOffsetDayType",
+     "required": false,
+     "tag": 42513
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationStartDateUnadjusted",
+     "required": false,
+     "tag": 42514
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationStartDateRelativeTo",
+     "required": false,
+     "tag": 42515
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationStartDateOffsetPeriod",
+     "required": false,
+     "tag": 42516
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationStartDateOffsetUnit",
+     "required": false,
+     "tag": 42517
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationStartDateOffsetDayType",
+     "required": false,
+     "tag": 42518
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationStartDateAdjusted",
+     "required": false,
+     "tag": 42519
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationEndDateUnadjusted",
+     "required": false,
+     "tag": 42520
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationEndDateRelativeTo",
+     "required": false,
+     "tag": 42521
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationEndDateOffsetPeriod",
+     "required": false,
+     "tag": 42522
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationEndDateOffsetUnit",
+     "required": false,
+     "tag": 42523
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationEndDateOffsetDayType",
+     "required": false,
+     "tag": 42524
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationEndDateAdjusted",
+     "required": false,
+     "tag": 42525
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationFrequencyPeriod",
+     "required": false,
+     "tag": 42526
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationFrequencyUnit",
+     "required": false,
+     "tag": 42527
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationFrequencyRollConvention",
+     "required": false,
+     "tag": 42528
+    },
+    {
+     "kind": "field",
+     "name": "LegReturnRateValuationDateBusinessDayConvention",
+     "required": false,
+     "tag": 42529
+    },
+    {
+     "kind": "component",
+     "name": "LegReturnRateValuationDateBusinessCenterGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

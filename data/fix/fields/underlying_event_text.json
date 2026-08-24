@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingEventText",
- "tag": 2071,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

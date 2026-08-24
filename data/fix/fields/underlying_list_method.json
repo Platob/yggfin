@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingListMethod",
- "tag": 2032,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

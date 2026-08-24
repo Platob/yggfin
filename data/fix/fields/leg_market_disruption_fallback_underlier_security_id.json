@@ -1,9 +1,0 @@
-{
- "name": "LegMarketDisruptionFallbackUnderlierSecurityID",
- "tag": 41473,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

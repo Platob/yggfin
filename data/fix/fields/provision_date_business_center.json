@@ -1,9 +1,0 @@
-{
- "name": "ProvisionDateBusinessCenter",
- "tag": 40094,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

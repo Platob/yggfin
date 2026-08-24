@@ -1,186 +1,48 @@
 {
  "name": "YieldData",
- "versions": {
-  "5.0.SP2": {
-   "order": 12,
-   "members": [
-    {
-     "kind": "field",
-     "name": "YieldType",
-     "required": false,
-     "tag": 235
-    },
-    {
-     "kind": "field",
-     "name": "Yield",
-     "required": false,
-     "tag": 236
-    },
-    {
-     "kind": "field",
-     "name": "YieldCalcDate",
-     "required": false,
-     "tag": 701
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionDate",
-     "required": false,
-     "tag": 696
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionPrice",
-     "required": false,
-     "tag": 697
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionPriceType",
-     "required": false,
-     "tag": 698
-    }
-   ]
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "YieldType",
+   "required": false,
+   "tag": 235
   },
-  "5.0.SP1": {
-   "order": 20,
-   "members": [
-    {
-     "kind": "field",
-     "name": "YieldType",
-     "required": false,
-     "tag": 235
-    },
-    {
-     "kind": "field",
-     "name": "Yield",
-     "required": false,
-     "tag": 236
-    },
-    {
-     "kind": "field",
-     "name": "YieldCalcDate",
-     "required": false,
-     "tag": 701
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionDate",
-     "required": false,
-     "tag": 696
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionPrice",
-     "required": false,
-     "tag": 697
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionPriceType",
-     "required": false,
-     "tag": 698
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "Yield",
+   "required": false,
+   "tag": 236
   },
-  "5.0": {
-   "order": 20,
-   "members": [
-    {
-     "kind": "field",
-     "name": "YieldType",
-     "required": false,
-     "tag": 235
-    },
-    {
-     "kind": "field",
-     "name": "Yield",
-     "required": false,
-     "tag": 236
-    },
-    {
-     "kind": "field",
-     "name": "YieldCalcDate",
-     "required": false,
-     "tag": 701
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionDate",
-     "required": false,
-     "tag": 696
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionPrice",
-     "required": false,
-     "tag": 697
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionPriceType",
-     "required": false,
-     "tag": 698
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "YieldCalcDate",
+   "required": false,
+   "tag": 701
   },
-  "4.4": {
-   "order": 20,
-   "members": [
-    {
-     "kind": "field",
-     "name": "YieldType",
-     "required": false,
-     "tag": 235
-    },
-    {
-     "kind": "field",
-     "name": "Yield",
-     "required": false,
-     "tag": 236
-    },
-    {
-     "kind": "field",
-     "name": "YieldCalcDate",
-     "required": false,
-     "tag": 701
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionDate",
-     "required": false,
-     "tag": 696
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionPrice",
-     "required": false,
-     "tag": 697
-    },
-    {
-     "kind": "field",
-     "name": "YieldRedemptionPriceType",
-     "required": false,
-     "tag": 698
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "YieldRedemptionDate",
+   "required": false,
+   "tag": 696
   },
-  "4.3": {
-   "order": 9,
-   "members": [
-    {
-     "kind": "field",
-     "name": "YieldType",
-     "required": false,
-     "tag": 235
-    },
-    {
-     "kind": "field",
-     "name": "Yield",
-     "required": false,
-     "tag": 236
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "YieldRedemptionPrice",
+   "required": false,
+   "tag": 697
+  },
+  {
+   "kind": "field",
+   "name": "YieldRedemptionPriceType",
+   "required": false,
+   "tag": 698
   }
- }
+ ]
 }

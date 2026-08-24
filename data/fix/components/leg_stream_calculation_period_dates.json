@@ -1,115 +1,113 @@
 {
  "name": "LegStreamCalculationPeriodDates",
- "versions": {
-  "5.0.SP2": {
-   "order": 42,
-   "members": [
-    {
-     "kind": "field",
-     "name": "LegStreamCalculationPeriodDatesXID",
-     "required": false,
-     "tag": 41641
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCalculationPeriodDatesXIDRef",
-     "required": false,
-     "tag": 41642
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCalculationPeriodBusinessDayConvention",
-     "required": false,
-     "tag": 40265
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamCalculationPeriodBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamCalculationPeriodDateGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamFirstPeriodStartDateUnadjusted",
-     "required": false,
-     "tag": 40267
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamFirstPeriodStartDateBusinessDayConvention",
-     "required": false,
-     "tag": 40268
-    },
-    {
-     "kind": "component",
-     "name": "LegStreamFirstPeriodStartDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamFirstPeriodStartDateAdjusted",
-     "required": false,
-     "tag": 40270
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamFirstRegularPeriodStartDateUnadjusted",
-     "required": false,
-     "tag": 40271
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamFirstCompoundingPeriodEndDateUnadjusted",
-     "required": false,
-     "tag": 40272
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamLastRegularPeriodEndDateUnadjusted",
-     "required": false,
-     "tag": 40273
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCalculationFrequencyPeriod",
-     "required": false,
-     "tag": 40274
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCalculationFrequencyUnit",
-     "required": false,
-     "tag": 40275
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCalculationRollConvention",
-     "required": false,
-     "tag": 40276
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCalculationBalanceOfFirstPeriod",
-     "required": false,
-     "tag": 41643
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCalculationCorrectionPeriod",
-     "required": false,
-     "tag": 41644
-    },
-    {
-     "kind": "field",
-     "name": "LegStreamCalculationCorrectionUnit",
-     "required": false,
-     "tag": 41645
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "LegStreamCalculationPeriodDatesXID",
+   "required": false,
+   "tag": 41641
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCalculationPeriodDatesXIDRef",
+   "required": false,
+   "tag": 41642
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCalculationPeriodBusinessDayConvention",
+   "required": false,
+   "tag": 40265
+  },
+  {
+   "kind": "component",
+   "name": "LegStreamCalculationPeriodBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "LegStreamCalculationPeriodDateGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamFirstPeriodStartDateUnadjusted",
+   "required": false,
+   "tag": 40267
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamFirstPeriodStartDateBusinessDayConvention",
+   "required": false,
+   "tag": 40268
+  },
+  {
+   "kind": "component",
+   "name": "LegStreamFirstPeriodStartDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamFirstPeriodStartDateAdjusted",
+   "required": false,
+   "tag": 40270
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamFirstRegularPeriodStartDateUnadjusted",
+   "required": false,
+   "tag": 40271
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamFirstCompoundingPeriodEndDateUnadjusted",
+   "required": false,
+   "tag": 40272
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamLastRegularPeriodEndDateUnadjusted",
+   "required": false,
+   "tag": 40273
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCalculationFrequencyPeriod",
+   "required": false,
+   "tag": 40274
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCalculationFrequencyUnit",
+   "required": false,
+   "tag": 40275
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCalculationRollConvention",
+   "required": false,
+   "tag": 40276
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCalculationBalanceOfFirstPeriod",
+   "required": false,
+   "tag": 41643
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCalculationCorrectionPeriod",
+   "required": false,
+   "tag": 41644
+  },
+  {
+   "kind": "field",
+   "name": "LegStreamCalculationCorrectionUnit",
+   "required": false,
+   "tag": 41645
   }
- }
+ ]
 }

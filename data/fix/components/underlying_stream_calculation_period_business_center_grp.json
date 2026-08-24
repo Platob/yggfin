@@ -1,24 +1,22 @@
 {
  "name": "UnderlyingStreamCalculationPeriodBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 475,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingStreamCalculationPeriodBusinessCenters",
+   "required": false,
+   "tag": 40973,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingStreamCalculationPeriodBusinessCenters",
+     "kind": "field",
+     "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
      "required": false,
-     "tag": 40973,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
-       "required": false,
-       "tag": 40557
-      }
-     ]
+     "tag": 40557
     }
    ]
   }
- }
+ ]
 }

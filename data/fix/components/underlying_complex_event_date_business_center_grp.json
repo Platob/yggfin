@@ -1,24 +1,22 @@
 {
  "name": "UnderlyingComplexEventDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 577,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingComplexEventDateBusinessCenters",
+   "required": false,
+   "tag": 41737,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingComplexEventDateBusinessCenters",
+     "kind": "field",
+     "name": "UnderlyingComplexEventDateBusinessCenter",
      "required": false,
-     "tag": 41737,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventDateBusinessCenter",
-       "required": false,
-       "tag": 41738
-      }
-     ]
+     "tag": 41738
     }
    ]
   }
- }
+ ]
 }

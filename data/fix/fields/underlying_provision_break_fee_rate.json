@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionBreakFeeRate",
- "tag": 43003,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

@@ -1,59 +1,57 @@
 {
  "name": "MDStatisticRptGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 633,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoMDStatistics",
+   "required": false,
+   "tag": 2474,
    "members": [
     {
-     "kind": "group",
-     "name": "NoMDStatistics",
+     "kind": "component",
+     "name": "MDStatisticParameters",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "MDStatisticID",
      "required": false,
-     "tag": 2474,
-     "members": [
-      {
-       "kind": "component",
-       "name": "MDStatisticParameters",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "MDStatisticID",
-       "required": false,
-       "tag": 2475
-      },
-      {
-       "kind": "field",
-       "name": "MDStatisticTime",
-       "required": false,
-       "tag": 2476
-      },
-      {
-       "kind": "field",
-       "name": "MDStatisticStatus",
-       "required": false,
-       "tag": 2477
-      },
-      {
-       "kind": "field",
-       "name": "MDStatisticValue",
-       "required": false,
-       "tag": 2478
-      },
-      {
-       "kind": "field",
-       "name": "MDStatisticValueType",
-       "required": false,
-       "tag": 2479
-      },
-      {
-       "kind": "field",
-       "name": "MDStatisticValueUnit",
-       "required": false,
-       "tag": 2480
-      }
-     ]
+     "tag": 2475
+    },
+    {
+     "kind": "field",
+     "name": "MDStatisticTime",
+     "required": false,
+     "tag": 2476
+    },
+    {
+     "kind": "field",
+     "name": "MDStatisticStatus",
+     "required": false,
+     "tag": 2477
+    },
+    {
+     "kind": "field",
+     "name": "MDStatisticValue",
+     "required": false,
+     "tag": 2478
+    },
+    {
+     "kind": "field",
+     "name": "MDStatisticValueType",
+     "required": false,
+     "tag": 2479
+    },
+    {
+     "kind": "field",
+     "name": "MDStatisticValueUnit",
+     "required": false,
+     "tag": 2480
     }
    ]
   }
- }
+ ]
 }

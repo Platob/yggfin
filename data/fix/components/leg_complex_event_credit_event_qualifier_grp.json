@@ -1,24 +1,22 @@
 {
  "name": "LegComplexEventCreditEventQualifierGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 525,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegComplexEventCreditEventQualifiers",
+   "required": false,
+   "tag": 41374,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegComplexEventCreditEventQualifiers",
+     "kind": "field",
+     "name": "LegComplexEventCreditEventQualifier",
      "required": false,
-     "tag": 41374,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegComplexEventCreditEventQualifier",
-       "required": false,
-       "tag": 41375
-      }
-     ]
+     "tag": 41375
     }
    ]
   }
- }
+ ]
 }

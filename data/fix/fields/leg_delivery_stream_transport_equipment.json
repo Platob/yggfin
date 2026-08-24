@@ -1,9 +1,0 @@
-{
- "name": "LegDeliveryStreamTransportEquipment",
- "tag": 41450,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamRateSpread",
- "tag": 40336,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICEOFFSET"
-  }
- }
-}

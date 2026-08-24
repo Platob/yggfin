@@ -1,65 +1,63 @@
 {
  "name": "UnderlyingComplexEventCreditEventGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 572,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingComplexEventCreditEvents",
+   "required": false,
+   "tag": 41716,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingComplexEventCreditEvents",
+     "kind": "field",
+     "name": "UnderlyingComplexEventCreditEventType",
      "required": false,
-     "tag": 41716,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventCreditEventType",
-       "required": false,
-       "tag": 41717
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventCreditEventValue",
-       "required": false,
-       "tag": 41718
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventCreditEventCurrency",
-       "required": false,
-       "tag": 41719
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventCreditEventPeriod",
-       "required": false,
-       "tag": 41720
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventCreditEventUnit",
-       "required": false,
-       "tag": 41721
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventCreditEventDayType",
-       "required": false,
-       "tag": 41722
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingComplexEventCreditEventRateSource",
-       "required": false,
-       "tag": 41723
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingComplexEventCreditEventQualifierGrp",
-       "required": false
-      }
-     ]
+     "tag": 41717
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingComplexEventCreditEventValue",
+     "required": false,
+     "tag": 41718
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingComplexEventCreditEventCurrency",
+     "required": false,
+     "tag": 41719
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingComplexEventCreditEventPeriod",
+     "required": false,
+     "tag": 41720
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingComplexEventCreditEventUnit",
+     "required": false,
+     "tag": 41721
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingComplexEventCreditEventDayType",
+     "required": false,
+     "tag": 41722
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingComplexEventCreditEventRateSource",
+     "required": false,
+     "tag": 41723
+    },
+    {
+     "kind": "component",
+     "name": "UnderlyingComplexEventCreditEventQualifierGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

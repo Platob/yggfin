@@ -1,54 +1,52 @@
 {
  "name": "RelatedOrderGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 724,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoOrders",
+   "required": false,
+   "tag": 73,
    "members": [
     {
-     "kind": "group",
-     "name": "NoOrders",
+     "kind": "field",
+     "name": "RelatedOrderID",
      "required": false,
-     "tag": 73,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RelatedOrderID",
-       "required": false,
-       "tag": 2887
-      },
-      {
-       "kind": "field",
-       "name": "RelatedOrderIDSource",
-       "required": false,
-       "tag": 2888
-      },
-      {
-       "kind": "field",
-       "name": "RelatedOrderTime",
-       "required": false,
-       "tag": 2836
-      },
-      {
-       "kind": "field",
-       "name": "RelatedOrderQty",
-       "required": false,
-       "tag": 2889
-      },
-      {
-       "kind": "field",
-       "name": "OrderRelationship",
-       "required": false,
-       "tag": 2890
-      },
-      {
-       "kind": "field",
-       "name": "OrderOriginationFirmID",
-       "required": false,
-       "tag": 2835
-      }
-     ]
+     "tag": 2887
+    },
+    {
+     "kind": "field",
+     "name": "RelatedOrderIDSource",
+     "required": false,
+     "tag": 2888
+    },
+    {
+     "kind": "field",
+     "name": "RelatedOrderTime",
+     "required": false,
+     "tag": 2836
+    },
+    {
+     "kind": "field",
+     "name": "RelatedOrderQty",
+     "required": false,
+     "tag": 2889
+    },
+    {
+     "kind": "field",
+     "name": "OrderRelationship",
+     "required": false,
+     "tag": 2890
+    },
+    {
+     "kind": "field",
+     "name": "OrderOriginationFirmID",
+     "required": false,
+     "tag": 2835
     }
    ]
   }
- }
+ ]
 }

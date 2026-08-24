@@ -1,30 +1,28 @@
 {
  "name": "SecurityClassificationGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 339,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoSecurityClassifications",
+   "required": false,
+   "tag": 1582,
    "members": [
     {
-     "kind": "group",
-     "name": "NoSecurityClassifications",
+     "kind": "field",
+     "name": "SecurityClassificationReason",
      "required": false,
-     "tag": 1582,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SecurityClassificationReason",
-       "required": false,
-       "tag": 1583
-      },
-      {
-       "kind": "field",
-       "name": "SecurityClassificationValue",
-       "required": false,
-       "tag": 1584
-      }
-     ]
+     "tag": 1583
+    },
+    {
+     "kind": "field",
+     "name": "SecurityClassificationValue",
+     "required": false,
+     "tag": 1584
     }
    ]
   }
- }
+ ]
 }

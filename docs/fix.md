@@ -45,48 +45,97 @@ The registry supplies:
 - description, valid values, and component/message usage;
 - explicit-version and inferred-version lookup through cached indexes.
 
-### One file per identity
+### One record per identity, sharded by tag
 
-A store holds one document per field or component *identity*, not one per FIX
-version:
+A field's reading is cross-version by nature -- one tag, one meaning, and a set
+of versions that declare it -- so a store holds one *record* per identity and
+not one per version:
 
-```text
-versions.json           the version list, each version's session layer,
-                        and which versions have had their spec read
-fields/party_role.json  one field, and every version's reading of it
-components/parties.json one component, and every version's member tree
+```json
+{"54": {"name": "Side", "tag": 54, "type": "char",
+        "versions": ["4.0", "4.1", "4.2", "4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"],
+        "values": {"1": "Buy"}, "value_names": {"1": "BUY"},
+        "translations": {"buy": "1", "1": "1"}}}
 ```
 
-JSON, and measured: the dictionary is seven thousand documents and every
-process importing this package parses a projection of it, where pure-Python
-YAML costs 25 seconds to read against a tenth of one for JSON. A store
-somebody wrote in YAML still reads, and converts itself the first time
-anything rewrites it.
+Records live in tag-range shards of five hundred, named by the shard index:
+
+```text
+versions.json         the version list, each version's session layer,
+                      and which versions have had their spec read
+fields/000000.json    tags 0-499
+fields/000080.json    tags 40000-40499, the 5.0.SP2 extension pack
+fields/named.json     the fields FIX never numbered
+components/parties.json  one component's member tree
+```
+
+The document holding a tag is `tag // 500` -- arithmetic, so there is no index,
+no lookup table and no scan, and `registry.lookup(54)` deserializes one shard
+rather than the dictionary. The tag space is sparse (nothing between 2999 and
+40000), and an empty shard is simply absent: fourteen shards answer for six
+thousand fields.
+
+JSON, and measured: every process importing this package parses a projection of
+the dictionary, where pure-Python YAML costs 25 seconds to read against a tenth
+of one for JSON. A store somebody wrote in YAML still reads, and converts
+itself the first time anything rewrites it.
 
 A field's identity is its **tag**, never its name. Tag 64 is `FutSettDate`
-through 4.3 and `SettlDate` after, so `fields/settl_date.json` is one file
-saying in passing that four older versions spelled it differently -- rather
-than two half-histories nobody diffs. Each version's variant states only what
-it does not share with the identity.
+through 4.3 and `SettlDate` after, so one record is tag 64 named `SettlDate`
+with `FutSettDate` recorded as an alias carrying the version that spelled it --
+rather than two half-histories nobody diffs.
 
 A field FIX never numbered -- a bridge's rendered `ISINCODE`, a vendor's
-`TECH.CLIENTID` -- is the same document with `kind: namespace`, no tag, and a
-`*` variant that holds whichever version the session negotiated. One naming
-`fix:column` is lifted into that column of the parsed log.
+`TECH.CLIENTID` -- is the same record with `kind: namespace`, no tag, and `*`
+for its versions, and lives in `fields/named.json` because there is no tag to
+shard it on. One naming `fix:column` is lifted into that column of the parsed
+log.
 
-Stores written one file per version keep working: which layout a store is in
-is read off what it holds, and `rekep fix registry migrate` is how one
-changes, checked field by field against what it used to answer.
+### The collapse, and what it costs
+
+Where two versions disagree, the newest one wins. `FIXT1.1` is excluded from
+that walk for an application field: it is the session transport, and letting it
+win would give a session-layer reading to fields it merely carries. Enumerated
+values are the *union* across versions with the newest winning per key, so a
+value that only ever existed in 4.2 still parses -- and `values` and
+`value_names` do not always agree on which keys they list, which the union
+handles without inventing an entry in the other map.
+
+Every reading a collapse drops is written to `data/fix-conflicts.json`: the
+field, its tag, the part, the readings it saw with their versions and which one
+it kept. 152 fields where two versions give one enumerated value different
+meanings is a list somebody can read; a silent drop is not. The counts are
+pinned in `rekep.fix.publish.CONFLICT_BASELINE` and a rebuild that grows past
+them fails.
+
+### Translations
+
+`translations` maps a value spelled as text to the value it names, so
+`TrdRegTimestampType=OrderSubmissionTime` resolves to `10`. It is built from
+both `values` and `value_names`, normalized by casefold and then by dropping
+every character outside `[a-z0-9]` -- which is what makes
+`ORDER_SUBMISSION_TIME` and `Order Submission Time` one key, where plain
+lowercasing leaves two. Each raw value maps to itself, so a caller has one
+lookup path and not two.
+
+Two values that normalize alike emit neither key: an ambiguous translation that
+silently picks one is worse than none, and the lookup falls through to the raw
+value. The dropped keys are counted with the conflict report. A hand-written
+entry in a record survives a rebuild -- the generated map is the default, not
+the whole map.
+
+```python
+registry.resolve("TrdRegTimestampType").translate("Order Submission Time")  # '10'
+```
 
 ### Resolving a name
 
-`registry.resolve(name)` walks three tiers, in order, and stops at the first
-that answers:
+`registry.resolve(name)` walks two tiers, in order, and stops at the first that
+answers:
 
 1. an identity's canonical name;
-2. a name some version spells for it;
-3. a declared alias -- a rendered or namespaced spelling, a legacy name, a near
-   miss confirmed against a capture.
+2. a declared alias -- a rendered or namespaced spelling, the name an older
+   version gave the tag, a near miss confirmed against a capture.
 
 Matching folds **case and nothing else**. A separator is part of a name, so
 `party_role` is a spelling of its own rather than a second way of writing
@@ -99,7 +148,9 @@ A later tier never takes a name from an earlier one. Two identities claiming
 one name inside a tier, an alias an earlier tier already answers for, two
 identities claiming one **tag**, and two claiming one canonical name are all
 defects `registry.check()` reports and every write refuses -- with the
-conflicting names in the message.
+conflicting names in the message. An older version's spelling that another
+identity already claims as its canonical name cannot become an alias, and stays
+in the conflict report as the dropped reading it is.
 
 ### Editing and refreshing
 
@@ -127,6 +178,35 @@ stored value as each default, shows the whole entry back, and is written only
 after a yes -- through the same `FixRegistry` verbs, never a second
 implementation of them.
 
+### Bootstrapping the default store
+
+A registry resolves where its dictionary comes from **once, at construction**,
+and never on a miss -- a parse that meets its first bridge line must not answer
+it by starting a seven-thousand-page scrape in the middle of a batch.
+
+| what it finds | what it does |
+| --- | --- |
+| a store at `cache_dir` | serves it, silently |
+| no store, `offline=False` | announces, fetches both sources, installs, announces again |
+| no store, the fetch failed | serves the packaged projection and says the registry is reduced |
+| no store, `offline=True` | serves the packaged projection, naming the bootstrap command |
+
+Only the *default* store (`~/.config/fix`) is bootstrapped. A `cache_dir`
+somebody named is that store, cold or not: it is about to be written, or it is
+a projection that is complete for what it projects.
+
+Both channels carry the lines. `warnings.warn` is the record -- filterable, and
+shown once, which is why it is not the only one -- and `announce` is the
+foreground writer a person waiting on a multi-minute fetch reads; it defaults to
+`stderr`, and the CLI and the notebooks pass their own. The start line says
+what was not found and where it looked, what is being fetched from `BASE_URL`
+and `QUICKFIX_URL`, roughly how many pages and how long, where it installs, and
+how to skip it. The finish line says what was written and how long it took.
+
+```bash
+rekep fix registry bootstrap --store data/fix --report data/fix-conflicts.json
+```
+
 `FixRegistry(cache_ttl=seconds)` regenerates a store older than the TTL from
 the QuickFIX spec before serving it. The default, `0`, never refetches. A
 refetch that fails is reported and the local copy served anyway: a dictionary
@@ -151,10 +231,18 @@ declarations, whole. A component says where a repeating group starts and ends,
 so a projection that selected its members alongside the fields would end the
 group somewhere else, and one that dropped them extracts no group at all.
 
-`components()` answers `[]` twice over: for a version whose spec declares none
--- nothing before 4.3 has a component -- and for a store written before any
-were kept. `components_available()` is what tells them apart, and the second
-case warns rather than quietly extracting nothing.
+`components()` answers `[]` for a version whose spec declares none -- nothing
+before 4.3 has a component -- and `None` for a store that was never asked;
+`components_available()` is what tells them apart. It hands back the components
+a version declares **and** the ones their trees reference: a record keeps the
+newest member tree, so 4.3's `Parties` is now the tree that reaches
+`PartySubID` through `PtysSubGrp` rather than naming it directly, and a reader
+without `PtysSubGrp` would split the group somewhere else.
+
+A component record that defines a message carries its `msg_type` (`"D"`,
+`"8"`); a reusable block omits the key rather than writing it null. The
+published dictionary's components come from the spec's `<components>`, so
+none of them carries one today.
 
 Rebuild the projection after refreshing the dictionary:
 
@@ -237,8 +325,10 @@ class TrdRegTimestamps(ComponentGroup):
 The parsed log carries two of them, `parties` and `trd_reg_timestamps`.
 `FixCodec.into_components()` maps each column to its extractor and applies them
 in order against what the last one left, so a member lifted into one
-component's entries cannot also be lifted into another's. `into_fallback()` is
-the standard tags each reads when a store predates component declarations.
+component's entries cannot also be lifted into another's. There are no fallback
+tags: a regenerated dictionary always carries the declarations of the versions
+that have them, so a version without one extracts nothing rather than a group
+the standard never gave it.
 
 The delimiter leads the projection because it is what opens an entry. Every
 member is lifted only where its value is one the column's type can hold, and

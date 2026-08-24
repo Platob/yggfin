@@ -1,9 +1,0 @@
-{
- "name": "LegAdditionalTermBondDayCount",
- "tag": 41334,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

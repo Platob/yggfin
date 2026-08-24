@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProtectionTermBuyerNotifies",
- "tag": 42072,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

@@ -1,189 +1,187 @@
 {
  "name": "LegStreamGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 392,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegStreams",
+   "required": false,
+   "tag": 40241,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegStreams",
+     "kind": "field",
+     "name": "LegStreamType",
      "required": false,
-     "tag": 40241,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegStreamType",
-       "required": false,
-       "tag": 40242
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamXID",
-       "required": false,
-       "tag": 41700
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamDesc",
-       "required": false,
-       "tag": 40243
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamVersion",
-       "required": false,
-       "tag": 42583
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamVersionEffectiveDate",
-       "required": false,
-       "tag": 42584
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamPaySide",
-       "required": false,
-       "tag": 40244
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamReceiveSide",
-       "required": false,
-       "tag": 40245
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamNotionalXIDRef",
-       "required": false,
-       "tag": 41702
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamNotional",
-       "required": false,
-       "tag": 40246
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamCurrency",
-       "required": false,
-       "tag": 40247
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamNotionalDeterminationMethod",
-       "required": false,
-       "tag": 42585
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamNotionalAdjustments",
-       "required": false,
-       "tag": 42586
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamNotionalFrequencyPeriod",
-       "required": false,
-       "tag": 41703
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamNotionalFrequencyUnit",
-       "required": false,
-       "tag": 41704
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamNotionalCommodityFrequency",
-       "required": false,
-       "tag": 41705
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamNotionalUnitOfMeasure",
-       "required": false,
-       "tag": 41706
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamTotalNotional",
-       "required": false,
-       "tag": 41707
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamTotalNotionalUnitOfMeasure",
-       "required": false,
-       "tag": 41708
-      },
-      {
-       "kind": "component",
-       "name": "LegStreamCommodity",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegStreamEffectiveDate",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegStreamTerminationDate",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegStreamCalculationPeriodDates",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegPaymentStream",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegPaymentScheduleGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegPaymentStubGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegDeliveryStream",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegDeliveryScheduleGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegStreamText",
-       "required": false,
-       "tag": 40248
-      },
-      {
-       "kind": "field",
-       "name": "EncodedLegStreamTextLen",
-       "required": false,
-       "tag": 40978
-      },
-      {
-       "kind": "field",
-       "name": "EncodedLegStreamText",
-       "required": false,
-       "tag": 40979
-      }
-     ]
+     "tag": 40242
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamXID",
+     "required": false,
+     "tag": 41700
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamDesc",
+     "required": false,
+     "tag": 40243
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamVersion",
+     "required": false,
+     "tag": 42583
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamVersionEffectiveDate",
+     "required": false,
+     "tag": 42584
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamPaySide",
+     "required": false,
+     "tag": 40244
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamReceiveSide",
+     "required": false,
+     "tag": 40245
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamNotionalXIDRef",
+     "required": false,
+     "tag": 41702
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamNotional",
+     "required": false,
+     "tag": 40246
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamCurrency",
+     "required": false,
+     "tag": 40247
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamNotionalDeterminationMethod",
+     "required": false,
+     "tag": 42585
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamNotionalAdjustments",
+     "required": false,
+     "tag": 42586
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamNotionalFrequencyPeriod",
+     "required": false,
+     "tag": 41703
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamNotionalFrequencyUnit",
+     "required": false,
+     "tag": 41704
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamNotionalCommodityFrequency",
+     "required": false,
+     "tag": 41705
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamNotionalUnitOfMeasure",
+     "required": false,
+     "tag": 41706
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamTotalNotional",
+     "required": false,
+     "tag": 41707
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamTotalNotionalUnitOfMeasure",
+     "required": false,
+     "tag": 41708
+    },
+    {
+     "kind": "component",
+     "name": "LegStreamCommodity",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegStreamEffectiveDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegStreamTerminationDate",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegStreamCalculationPeriodDates",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStream",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentScheduleGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegPaymentStubGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegDeliveryStream",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegDeliveryScheduleGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "LegStreamText",
+     "required": false,
+     "tag": 40248
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegStreamTextLen",
+     "required": false,
+     "tag": 40978
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegStreamText",
+     "required": false,
+     "tag": 40979
     }
    ]
   }
- }
+ ]
 }

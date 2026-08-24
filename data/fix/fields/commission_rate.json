@@ -1,9 +1,0 @@
-{
- "name": "CommissionRate",
- "tag": 2646,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

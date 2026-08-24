@@ -1,9 +1,0 @@
-{
- "name": "LegDeliveryScheduleSettlTimeType",
- "tag": 41428,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

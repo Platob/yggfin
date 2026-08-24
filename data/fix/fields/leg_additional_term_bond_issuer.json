@@ -1,9 +1,0 @@
-{
- "name": "LegAdditionalTermBondIssuer",
- "tag": 41323,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

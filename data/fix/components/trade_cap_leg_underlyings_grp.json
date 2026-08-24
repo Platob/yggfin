@@ -1,41 +1,22 @@
 {
  "name": "TradeCapLegUnderlyingsGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 291,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoOfLegUnderlyings",
+   "required": false,
+   "tag": 1342,
    "members": [
     {
-     "kind": "group",
-     "name": "NoOfLegUnderlyings",
-     "required": false,
-     "tag": 1342,
-     "members": [
-      {
-       "kind": "component",
-       "name": "UnderlyingLegInstrument",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 152,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoOfLegUnderlyings",
-     "required": false,
-     "tag": 1342,
-     "members": [
-      {
-       "kind": "component",
-       "name": "UnderlyingLegInstrument",
-       "required": false
-      }
-     ]
+     "kind": "component",
+     "name": "UnderlyingLegInstrument",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStubFixedAmount",
- "tag": 40712,
- "versions": {
-  "5.0.SP2": {
-   "type": "AMT"
-  }
- }
-}

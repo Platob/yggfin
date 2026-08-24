@@ -1,9 +1,0 @@
-{
- "name": "LegStreamNotionalFrequencyPeriod",
- "tag": 41703,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

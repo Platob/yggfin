@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingDeliveryStreamCycles",
- "tag": 41804,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

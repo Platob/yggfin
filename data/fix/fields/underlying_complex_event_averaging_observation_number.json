@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingComplexEventAveragingObservationNumber",
- "tag": 41714,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

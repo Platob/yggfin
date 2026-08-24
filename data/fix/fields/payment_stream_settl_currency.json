@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamSettlCurrency",
- "tag": 40741,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

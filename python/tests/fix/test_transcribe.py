@@ -217,19 +217,30 @@ def test_a_value_its_field_enumerates_is_transcribed(codec: FixCodec) -> None:
         entry["tag"]: entry["trans"] for entry in codec.into_kwargs(pairs, "4.4").to_pylist()[0]
     }
     assert found[54] == "Buy"
-    assert found[35] == "New Order Single <D>"
+    assert found[35] == "NewOrderSingle <D>", "the newest version's spelling of the value"
     assert found[55] is None, "Symbol enumerates nothing, so there is nothing to say"
 
 
-def test_a_value_is_transcribed_under_the_version_that_was_read(codec: FixCodec) -> None:
-    """A code a version does not define transcribes to nothing rather than to a guess."""
+def test_a_value_is_transcribed_from_the_whole_enumeration(codec: FixCodec) -> None:
+    """A field's values are cross-version, so a code reads under any version it has.
+
+    Which is the point of one record per identity: a value that only ever
+    existed in 4.2 still parses off a 4.2 line, and a value 5.0 added still
+    parses off a line a bridge stamped 4.0 -- rather than reading as nothing
+    because the version in the header happened not to list it.
+    """
     pairs = parse_arrow_array(pyarrow.array(["54=6|"]))
-    read = [entry["trans"] for entry in codec.into_kwargs(pairs, "4.4").to_pylist()[0]]
-    assert read == ["Sell short exempt"]
+    assert [entry["trans"] for entry in codec.into_kwargs(pairs, "4.4").to_pylist()[0]] == [
+        "Sell short exempt"
+    ]
     older = parse_arrow_array(pyarrow.array(["54=A|"]))
-    assert [entry["trans"] for entry in codec.into_kwargs(older, "4.0").to_pylist()[0]] == [None], (
-        "a code the version does not define reads as nothing rather than as a guess"
-    )
+    assert [entry["trans"] for entry in codec.into_kwargs(older, "4.0").to_pylist()[0]] == [
+        "Cross short exempt"
+    ]
+    unknown = parse_arrow_array(pyarrow.array(["54=ZZ|"]))
+    assert [entry["trans"] for entry in codec.into_kwargs(unknown, "4.0").to_pylist()[0]] == [
+        None
+    ], "and a code no version defines still reads as nothing rather than as a guess"
 
 
 def test_a_key_is_split_into_its_name_and_where_it_stood(codec: FixCodec) -> None:
@@ -1170,28 +1181,20 @@ def test_a_version_that_declares_no_parties_component_extracts_nothing_quietly(
         assert packaged.parties_of("4.2")._member_names == {}
 
 
-def test_a_registry_that_never_stored_components_says_so_and_keeps_the_legacy_tags(
-    tmp_path: Path,
-) -> None:
-    """The failure mode that shipped, made loud.
+def test_a_version_whose_store_declares_no_component_extracts_nothing(tmp_path: Path) -> None:
+    """No fallback tags: the declaration decides, and nothing else does.
 
-    A store written before component declarations were kept cannot tell a
-    reader that 4.4 has a Parties component -- so it must not answer as though
-    4.4 has none. It warns once and extracts through the legacy tags, which is
-    less than the declaration gives and far more than nothing.
+    A regenerated dictionary always carries the component declarations of the
+    versions that have them, so a version without one is a version FIX gave
+    none -- and guessing the tags there would extract a group the standard
+    never had.
     """
-    stale = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
-    stale._store_fields("4.4", [fix_field("PartyID", 448, "String", version="4.4")])
-    codec = FixCodec(registry=stale)
-    with pytest.warns(RuntimeWarning, match="no component declarations for '4.4'"):
-        extractor = codec.parties_of("4.4")
-    assert extractor.fallback
-    assert set(extractor._member_names) == {448, 447, 452, 802, 523, 803}
-    # Every structured component says so for itself: one warning names one
-    # extraction, so a reader knows which of them fell back.
-    with pytest.warns(RuntimeWarning, match="TrdRegTimestamps extraction falls back"):
-        parties = _party_rows(codec, PARTIES_WIRE, "4.4")
-    assert [party["party_id"] for party in parties] == ["PARTY-TEST-A", "PARTY-TEST-B"]
+    bare = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    bare._store_fields("4.4", [fix_field("PartyID", 448, "String", version="4.4")])
+    codec = FixCodec(registry=bare)
+    extractor = codec.parties_of("4.4")
+    assert extractor._member_names == {}
+    assert _party_rows(codec, PARTIES_WIRE, "4.4") is None
 
 
 # -- the two namespaces a bridge writes --------------------------------------

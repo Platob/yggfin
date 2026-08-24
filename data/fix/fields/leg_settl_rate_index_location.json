@@ -1,9 +1,0 @@
-{
- "name": "LegSettlRateIndexLocation",
- "tag": 2177,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

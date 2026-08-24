@@ -1,29 +1,27 @@
 {
  "name": "PartyDetailsUpdateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 332,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPartyUpdates",
+   "required": false,
+   "tag": 1676,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPartyUpdates",
+     "kind": "field",
+     "name": "ListUpdateAction",
      "required": false,
-     "tag": 1676,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ListUpdateAction",
-       "required": false,
-       "tag": 1324
-      },
-      {
-       "kind": "component",
-       "name": "PartyDetailGrp",
-       "required": false
-      }
-     ]
+     "tag": 1324
+    },
+    {
+     "kind": "component",
+     "name": "PartyDetailGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

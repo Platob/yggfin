@@ -1,9 +1,0 @@
-{
- "name": "PaymentStubStartDateRelativeTo",
- "tag": 42700,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,24 +1,22 @@
 {
  "name": "TargetMarketSegmentGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 351,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoTargetMarketSegments",
+   "required": false,
+   "tag": 1789,
    "members": [
     {
-     "kind": "group",
-     "name": "NoTargetMarketSegments",
+     "kind": "field",
+     "name": "TargetMarketSegmentID",
      "required": false,
-     "tag": 1789,
-     "members": [
-      {
-       "kind": "field",
-       "name": "TargetMarketSegmentID",
-       "required": false,
-       "tag": 1790
-      }
-     ]
+     "tag": 1790
     }
    ]
   }
- }
+ ]
 }

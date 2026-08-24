@@ -1,30 +1,28 @@
 {
  "name": "LegComplexEventAveragingObservationGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 523,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegComplexEventAveragingObservations",
+   "required": false,
+   "tag": 41363,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegComplexEventAveragingObservations",
+     "kind": "field",
+     "name": "LegComplexEventAveragingObservationNumber",
      "required": false,
-     "tag": 41363,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegComplexEventAveragingObservationNumber",
-       "required": false,
-       "tag": 41364
-      },
-      {
-       "kind": "field",
-       "name": "LegComplexEventAveragingWeight",
-       "required": false,
-       "tag": 41365
-      }
-     ]
+     "tag": 41364
+    },
+    {
+     "kind": "field",
+     "name": "LegComplexEventAveragingWeight",
+     "required": false,
+     "tag": 41365
     }
    ]
   }
- }
+ ]
 }

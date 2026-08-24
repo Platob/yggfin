@@ -1,9 +1,0 @@
-{
- "name": "DeliveryStreamDeliveryContingency",
- "tag": 41064,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,24 +1,22 @@
 {
  "name": "LegProvisionDateBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 443,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegProvisionDateBusinessCenters",
+   "required": false,
+   "tag": 40939,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegProvisionDateBusinessCenters",
+     "kind": "field",
+     "name": "LegProvisionDateBusinessCenter",
      "required": false,
-     "tag": 40939,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegProvisionDateBusinessCenter",
-       "required": false,
-       "tag": 40452
-      }
-     ]
+     "tag": 40452
     }
    ]
   }
- }
+ ]
 }

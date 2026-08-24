@@ -1,9 +1,0 @@
-{
- "name": "LegProvisionDateUnadjusted",
- "tag": 40450,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

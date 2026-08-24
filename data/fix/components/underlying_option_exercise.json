@@ -1,96 +1,94 @@
 {
  "name": "UnderlyingOptionExercise",
- "versions": {
-  "5.0.SP2": {
-   "order": 97,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingExerciseDesc",
-     "required": false,
-     "tag": 41810
-    },
-    {
-     "kind": "field",
-     "name": "EncodedUnderlyingExerciseDescLen",
-     "required": false,
-     "tag": 41811
-    },
-    {
-     "kind": "field",
-     "name": "EncodedUnderlyingExerciseDesc",
-     "required": false,
-     "tag": 41812
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAutomaticExerciseIndicator",
-     "required": false,
-     "tag": 41813
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingAutomaticExerciseThresholdRate",
-     "required": false,
-     "tag": 41814
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingExerciseConfirmationMethod",
-     "required": false,
-     "tag": 41815
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingManualNoticeBusinessCenter",
-     "required": false,
-     "tag": 41816
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingFallbackExerciseIndicator",
-     "required": false,
-     "tag": 41817
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingLimitedRightToConfirmIndicator",
-     "required": false,
-     "tag": 41818
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingExerciseSplitTicketIndicator",
-     "required": false,
-     "tag": 41819
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingSettlMethodElectingPartySide",
-     "required": false,
-     "tag": 42887
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingSettlMethodElectionDate",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingOptionExerciseDates",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingOptionExerciseExpiration",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingOptionExerciseMakeWholeProvision",
-     "required": false
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingExerciseDesc",
+   "required": false,
+   "tag": 41810
+  },
+  {
+   "kind": "field",
+   "name": "EncodedUnderlyingExerciseDescLen",
+   "required": false,
+   "tag": 41811
+  },
+  {
+   "kind": "field",
+   "name": "EncodedUnderlyingExerciseDesc",
+   "required": false,
+   "tag": 41812
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingAutomaticExerciseIndicator",
+   "required": false,
+   "tag": 41813
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingAutomaticExerciseThresholdRate",
+   "required": false,
+   "tag": 41814
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingExerciseConfirmationMethod",
+   "required": false,
+   "tag": 41815
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingManualNoticeBusinessCenter",
+   "required": false,
+   "tag": 41816
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingFallbackExerciseIndicator",
+   "required": false,
+   "tag": 41817
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingLimitedRightToConfirmIndicator",
+   "required": false,
+   "tag": 41818
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingExerciseSplitTicketIndicator",
+   "required": false,
+   "tag": 41819
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingSettlMethodElectingPartySide",
+   "required": false,
+   "tag": 42887
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingSettlMethodElectionDate",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingOptionExerciseDates",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingOptionExerciseExpiration",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingOptionExerciseMakeWholeProvision",
+   "required": false
   }
- }
+ ]
 }

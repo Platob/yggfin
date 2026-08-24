@@ -1,30 +1,28 @@
 {
  "name": "UnderlyingProtectionTermObligationGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 616,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingProtectionTermObligations",
+   "required": false,
+   "tag": 42087,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingProtectionTermObligations",
+     "kind": "field",
+     "name": "UnderlyingProtectionTermObligationType",
      "required": false,
-     "tag": 42087,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingProtectionTermObligationType",
-       "required": false,
-       "tag": 42088
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingProtectionTermObligationValue",
-       "required": false,
-       "tag": 42089
-      }
-     ]
+     "tag": 42088
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingProtectionTermObligationValue",
+     "required": false,
+     "tag": 42089
     }
    ]
   }
- }
+ ]
 }

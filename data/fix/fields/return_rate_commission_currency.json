@@ -1,9 +1,0 @@
-{
- "name": "ReturnRateCommissionCurrency",
- "tag": 42739,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

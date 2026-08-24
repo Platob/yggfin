@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamMarketRate",
- "tag": 40280,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

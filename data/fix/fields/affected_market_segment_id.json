@@ -1,9 +1,0 @@
-{
- "name": "AffectedMarketSegmentID",
- "tag": 1792,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

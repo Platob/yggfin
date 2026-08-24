@@ -1,105 +1,31 @@
 {
  "name": "NstdPtysSubGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 249,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoNestedPartySubIDs",
+   "required": false,
+   "tag": 804,
    "members": [
     {
-     "kind": "group",
-     "name": "NoNestedPartySubIDs",
+     "kind": "field",
+     "name": "NestedPartySubID",
      "required": false,
-     "tag": 804,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedPartySubID",
-       "required": false,
-       "tag": 545
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartySubIDType",
-       "required": false,
-       "tag": 805
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 98,
-   "members": [
+     "tag": 545
+    },
     {
-     "kind": "group",
-     "name": "NoNestedPartySubIDs",
+     "kind": "field",
+     "name": "NestedPartySubIDType",
      "required": false,
-     "tag": 804,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedPartySubID",
-       "required": false,
-       "tag": 545
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartySubIDType",
-       "required": false,
-       "tag": 805
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 100,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoNestedPartySubIDs",
-     "required": false,
-     "tag": 804,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedPartySubID",
-       "required": false,
-       "tag": 545
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartySubIDType",
-       "required": false,
-       "tag": 805
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 100,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoNestedPartySubIDs",
-     "required": false,
-     "tag": 804,
-     "members": [
-      {
-       "kind": "field",
-       "name": "NestedPartySubID",
-       "required": false,
-       "tag": 545
-      },
-      {
-       "kind": "field",
-       "name": "NestedPartySubIDType",
-       "required": false,
-       "tag": 805
-      }
-     ]
+     "tag": 805
     }
    ]
   }
- }
+ ]
 }

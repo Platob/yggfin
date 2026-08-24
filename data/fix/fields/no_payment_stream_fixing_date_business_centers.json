@@ -1,9 +1,0 @@
-{
- "name": "NoPaymentStreamFixingDateBusinessCenters",
- "tag": 40950,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

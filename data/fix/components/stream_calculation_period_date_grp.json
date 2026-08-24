@@ -1,30 +1,28 @@
 {
  "name": "StreamCalculationPeriodDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 510,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoStreamCalculationPeriodDates",
+   "required": false,
+   "tag": 41241,
    "members": [
     {
-     "kind": "group",
-     "name": "NoStreamCalculationPeriodDates",
+     "kind": "field",
+     "name": "StreamCalculationPeriodDate",
      "required": false,
-     "tag": 41241,
-     "members": [
-      {
-       "kind": "field",
-       "name": "StreamCalculationPeriodDate",
-       "required": false,
-       "tag": 41242
-      },
-      {
-       "kind": "field",
-       "name": "StreamCalculationPeriodDateType",
-       "required": false,
-       "tag": 41243
-      }
-     ]
+     "tag": 41242
+    },
+    {
+     "kind": "field",
+     "name": "StreamCalculationPeriodDateType",
+     "required": false,
+     "tag": 41243
     }
    ]
   }
- }
+ ]
 }

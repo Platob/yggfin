@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingSettlMethodElectionDateBusinessCenters",
- "tag": 43074,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

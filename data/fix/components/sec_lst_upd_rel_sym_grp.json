@@ -1,315 +1,115 @@
 {
  "name": "SecLstUpdRelSymGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 254,
+ "versions": [
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRelatedSym",
+   "required": false,
+   "tag": 146,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
+     "kind": "field",
+     "name": "ListUpdateAction",
      "required": false,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ListUpdateAction",
-       "required": false,
-       "tag": 1324
-      },
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "InstrumentExtension",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "FinancingDetails",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SecurityTradingRules",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "StrikeRules",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UndInstrmtGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "field",
-       "name": "CurrencyCodeSource",
-       "required": false,
-       "tag": 2897
-      },
-      {
-       "kind": "component",
-       "name": "Stipulations",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SecLstUpdRelSymsLegGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "RelatedInstrumentGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SpreadOrBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "YieldData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "RelSymTransactTime",
-       "required": false,
-       "tag": 1504
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 103,
-   "members": [
+     "tag": 1324
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
-     "required": false,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ListUpdateAction",
-       "required": false,
-       "tag": 1324
-      },
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "InstrumentExtension",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "FinancingDetails",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SecurityTradingRules",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "StrikeRules",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UndInstrmtGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "component",
-       "name": "Stipulations",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SecLstUpdRelSymsLegGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SpreadOrBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "YieldData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 105,
-   "members": [
+     "kind": "component",
+     "name": "Instrument",
+     "required": false
+    },
     {
-     "kind": "group",
-     "name": "NoRelatedSym",
+     "kind": "component",
+     "name": "InstrumentExtension",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "FinancingDetails",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "SecurityTradingRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "StrikeRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "UndInstrmtGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "Currency",
      "required": false,
-     "tag": 146,
-     "members": [
-      {
-       "kind": "component",
-       "name": "Instrument",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "InstrumentExtension",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "FinancingDetails",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "UnderlyingInstrument",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "Currency",
-       "required": false,
-       "tag": 15
-      },
-      {
-       "kind": "component",
-       "name": "Stipulations",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SecLstUpdRelSymsLegGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "SpreadOrBenchmarkCurveData",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "YieldData",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "RoundLot",
-       "required": false,
-       "tag": 561
-      },
-      {
-       "kind": "field",
-       "name": "MinTradeVol",
-       "required": false,
-       "tag": 562
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionID",
-       "required": false,
-       "tag": 336
-      },
-      {
-       "kind": "field",
-       "name": "TradingSessionSubID",
-       "required": false,
-       "tag": 625
-      },
-      {
-       "kind": "field",
-       "name": "ExpirationCycle",
-       "required": false,
-       "tag": 827
-      },
-      {
-       "kind": "field",
-       "name": "Text",
-       "required": false,
-       "tag": 58
-      },
-      {
-       "kind": "field",
-       "name": "EncodedTextLen",
-       "required": false,
-       "tag": 354
-      },
-      {
-       "kind": "field",
-       "name": "EncodedText",
-       "required": false,
-       "tag": 355
-      }
-     ]
+     "tag": 15
+    },
+    {
+     "kind": "field",
+     "name": "CurrencyCodeSource",
+     "required": false,
+     "tag": 2897
+    },
+    {
+     "kind": "component",
+     "name": "Stipulations",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "SecLstUpdRelSymsLegGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "RelatedInstrumentGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "SpreadOrBenchmarkCurveData",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "YieldData",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "RelSymTransactTime",
+     "required": false,
+     "tag": 1504
+    },
+    {
+     "kind": "field",
+     "name": "Text",
+     "required": false,
+     "tag": 58
+    },
+    {
+     "kind": "field",
+     "name": "EncodedTextLen",
+     "required": false,
+     "tag": 354
+    },
+    {
+     "kind": "field",
+     "name": "EncodedText",
+     "required": false,
+     "tag": 355
     }
    ]
   }
- }
+ ]
 }

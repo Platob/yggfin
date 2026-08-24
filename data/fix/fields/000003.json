@@ -1,0 +1,6804 @@
+{
+ "1500": {
+  "name": "MDStreamID",
+  "tag": 1500,
+  "type": "String",
+  "description": "The identifier or name of the price stream.",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "used_in": [
+   "MarketDataSnapshotFullRefresh"
+  ],
+  "components": [
+   "InstrmtMDReqGrp",
+   "MDIncGrp",
+   "StrmAsgnReqInstrmtGrp",
+   "StrmAsgnRptInstrmtGrp"
+  ]
+ },
+ "1501": {
+  "name": "StreamAsgnRptID",
+  "tag": 1501,
+  "type": "String",
+  "description": "Unique identifier of the stream assignment report provided by the respondent.",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "used_in": [
+   "StreamAssignmentReport",
+   "StreamAssignmentReportACK"
+  ]
+ },
+ "1502": {
+  "name": "StreamAsgnRejReason",
+  "tag": 1502,
+  "type": "int",
+  "description": "Reason code for stream assignment request reject.",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "values": {
+   "0": "Unknown client",
+   "1": "Exceeds maximum size",
+   "2": "Unknown or Invalid currency pair",
+   "3": "No available stream",
+   "99": "Other"
+  },
+  "value_names": {
+   "0": "UNKNOWN_CLIENT",
+   "1": "EXCEEDS_MAXIMUM_SIZE",
+   "2": "UNKNOWN_OR_INVALID_CURRENCY_PAIR",
+   "3": "NO_AVAILABLE_STREAM",
+   "99": "OTHER"
+  },
+  "translations": {
+   "unknownclient": "0",
+   "exceedsmaximumsize": "1",
+   "unknownorinvalidcurrencypair": "2",
+   "noavailablestream": "3",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "99": "99"
+  },
+  "used_in": [
+   "StreamAssignmentReportACK"
+  ],
+  "components": [
+   "StrmAsgnRptInstrmtGrp"
+  ]
+ },
+ "1503": {
+  "name": "StreamAsgnAckType",
+  "tag": 1503,
+  "type": "int",
+  "description": "Type of acknowledgement.",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "values": {
+   "0": "Assignment Accepted",
+   "1": "Assignment Rejected"
+  },
+  "value_names": {
+   "0": "ASSIGNMENT_ACCEPTED",
+   "1": "ASSIGNMENT_REJECTED"
+  },
+  "translations": {
+   "assignmentaccepted": "0",
+   "assignmentrejected": "1",
+   "0": "0",
+   "1": "1"
+  },
+  "used_in": [
+   "StreamAssignmentReportACK"
+  ]
+ },
+ "1504": {
+  "name": "RelSymTransactTime",
+  "tag": 1504,
+  "type": "UTCTimestamp",
+  "description": "See TransactTime <60>",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "components": [
+   "RelSymDerivSecGrp",
+   "RelSymDerivSecUpdGrp",
+   "SecListGrp",
+   "SecLstUpdRelSymGrp"
+  ]
+ },
+ "1505": {
+  "name": "PartyDetailsListRequestID",
+  "tag": 1505,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1506": {
+  "name": "SideTradeID",
+  "tag": 1506,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1507": {
+  "name": "SideOrigTradeID",
+  "tag": 1507,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1508": {
+  "name": "NoRequestedPartyRoles",
+  "tag": 1508,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1509": {
+  "name": "RequestedPartyRole",
+  "tag": 1509,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1510": {
+  "name": "PartyDetailsListReportID",
+  "tag": 1510,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1511": {
+  "name": "RequestResult",
+  "tag": 1511,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "VALID_REQUEST",
+   "1": "INVALID_OR_UNSUPPORTED_REQUEST",
+   "2": "NO_DATA_FOUND",
+   "3": "NOT_AUTHORIZED",
+   "4": "DATA_TEMPORARILY_UNAVAILABLE",
+   "5": "REQUEST_FOR_DATA_NOT_SUPPORTED",
+   "99": "OTHER"
+  },
+  "translations": {
+   "validrequest": "0",
+   "invalidorunsupportedrequest": "1",
+   "nodatafound": "2",
+   "notauthorized": "3",
+   "datatemporarilyunavailable": "4",
+   "requestfordatanotsupported": "5",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "99": "99"
+  }
+ },
+ "1512": {
+  "name": "TotNoParties",
+  "tag": 1512,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1513": {
+  "name": "DocumentationText",
+  "tag": 1513,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1514": {
+  "name": "NoPartyRelationships",
+  "tag": 1514,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1515": {
+  "name": "PartyRelationship",
+  "tag": 1515,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "IS_ALSO",
+   "1": "CLEARS_FOR",
+   "2": "CLEARS_THROUGH",
+   "3": "TRADES_FOR",
+   "4": "TRADES_THROUGH",
+   "5": "SPONSORS",
+   "6": "SPONSORED_THROUGH",
+   "7": "PROVIDES_GUARANTEE_FOR",
+   "8": "IS_GUARANTEED_BY",
+   "9": "MEMBER_OF",
+   "10": "HAS_MEMBERS",
+   "11": "PROVIDES_MARKETPLACE_FOR",
+   "12": "PARTICIPANT_OF_MARKETPLACE",
+   "13": "CARRIES_POSITIONS_FOR",
+   "14": "POSTS_TRADES_TO",
+   "15": "ENTERS_TRADES_FOR",
+   "16": "ENTERS_TRADES_THROUGH",
+   "17": "PROVIDES_QUOTES_TO",
+   "18": "REQUESTS_QUOTES_FROM",
+   "19": "INVESTS_FOR",
+   "20": "INVESTS_THROUGH",
+   "21": "BROKERS_TRADES_FOR",
+   "22": "BROKERS_TRADES_THROUGH",
+   "23": "PROVIDES_TRADING_SERVICES_FOR",
+   "24": "USES_TRADING_SERVICES_OF",
+   "25": "APPROVES_OF",
+   "26": "APPROVED_BY",
+   "27": "PARENT_FIRM_FOR",
+   "28": "SUBSIDIARY_OF",
+   "29": "REGULATORY_OWNER_OF",
+   "30": "OWNED_BY_REGULATORY",
+   "31": "CONTROLS",
+   "32": "IS_CONTROLLED_BY",
+   "33": "LEGAL_OWNER_OF",
+   "34": "OWNED_BY_LEGAL",
+   "35": "BENEFICIAL_OWNER_OF",
+   "36": "OWNED_BY_BENEFICIAL",
+   "37": "SETTLES_FOR",
+   "38": "SETTLES_THROUGH"
+  },
+  "translations": {
+   "isalso": "0",
+   "clearsfor": "1",
+   "clearsthrough": "2",
+   "tradesfor": "3",
+   "tradesthrough": "4",
+   "sponsors": "5",
+   "sponsoredthrough": "6",
+   "providesguaranteefor": "7",
+   "isguaranteedby": "8",
+   "memberof": "9",
+   "hasmembers": "10",
+   "providesmarketplacefor": "11",
+   "participantofmarketplace": "12",
+   "carriespositionsfor": "13",
+   "poststradesto": "14",
+   "enterstradesfor": "15",
+   "enterstradesthrough": "16",
+   "providesquotesto": "17",
+   "requestsquotesfrom": "18",
+   "investsfor": "19",
+   "investsthrough": "20",
+   "brokerstradesfor": "21",
+   "brokerstradesthrough": "22",
+   "providestradingservicesfor": "23",
+   "usestradingservicesof": "24",
+   "approvesof": "25",
+   "approvedby": "26",
+   "parentfirmfor": "27",
+   "subsidiaryof": "28",
+   "regulatoryownerof": "29",
+   "ownedbyregulatory": "30",
+   "controls": "31",
+   "iscontrolledby": "32",
+   "legalownerof": "33",
+   "ownedbylegal": "34",
+   "beneficialownerof": "35",
+   "ownedbybeneficial": "36",
+   "settlesfor": "37",
+   "settlesthrough": "38",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "17": "17",
+   "18": "18",
+   "19": "19",
+   "20": "20",
+   "21": "21",
+   "22": "22",
+   "23": "23",
+   "24": "24",
+   "25": "25",
+   "26": "26",
+   "27": "27",
+   "28": "28",
+   "29": "29",
+   "30": "30",
+   "31": "31",
+   "32": "32",
+   "33": "33",
+   "34": "34",
+   "35": "35",
+   "36": "36",
+   "37": "37",
+   "38": "38"
+  }
+ },
+ "1516": {
+  "name": "NoPartyDetailAltID",
+  "tag": 1516,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1517": {
+  "name": "PartyDetailAltID",
+  "tag": 1517,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1518": {
+  "name": "PartyDetailAltIDSource",
+  "tag": 1518,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1519": {
+  "name": "NoPartyDetailAltSubIDs",
+  "tag": 1519,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1520": {
+  "name": "PartyDetailAltSubID",
+  "tag": 1520,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1521": {
+  "name": "PartyDetailAltSubIDType",
+  "tag": 1521,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1522": {
+  "name": "DifferentialPrice",
+  "tag": 1522,
+  "type": "PRICEOFFSET",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1523": {
+  "name": "TrdAckStatus",
+  "tag": 1523,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ACCEPTED",
+   "1": "REJECTED",
+   "2": "RECEIVED"
+  },
+  "translations": {
+   "accepted": "0",
+   "rejected": "1",
+   "received": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1524": {
+  "name": "PriceQuoteCurrency",
+  "tag": 1524,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1525": {
+  "name": "EncodedDocumentationTextLen",
+  "tag": 1525,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1526": {
+  "name": "UnderlyingPriceQuoteCurrency",
+  "tag": 1526,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1527": {
+  "name": "EncodedDocumentationText",
+  "tag": 1527,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1528": {
+  "name": "LegPriceQuoteCurrency",
+  "tag": 1528,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1529": {
+  "name": "NoRiskLimitTypes",
+  "tag": 1529,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1530": {
+  "name": "RiskLimitType",
+  "tag": 1530,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "CREDIT_LIMIT",
+   "1": "GROSS_LIMIT",
+   "2": "NET_LIMIT",
+   "3": "EXPOSURE",
+   "4": "LONG_LIMIT",
+   "5": "SHORT_LIMIT",
+   "6": "CASH_MARGIN",
+   "7": "ADDITIONAL_MARGIN",
+   "8": "TOTAL_MARGIN",
+   "9": "LIMIT_CONSUMED",
+   "10": "CLIP_SIZE",
+   "11": "MAX_NOTIONAL_ORDER_SIZE",
+   "12": "DV01_PV01_LIMIT",
+   "13": "CS01_LIMIT",
+   "14": "VOLUME_LIMIT_PER_TIME_PERIOD",
+   "15": "VOL_FILLED_PCT_ORD_VOL_TM_PERIOD",
+   "16": "NOTL_FILLED_PCT_NOTL_TM_PERIOD",
+   "17": "TRANSACTION_EXECUTION_LIMIT_PER_TIME_PERIOD"
+  },
+  "translations": {
+   "creditlimit": "0",
+   "grosslimit": "1",
+   "netlimit": "2",
+   "exposure": "3",
+   "longlimit": "4",
+   "shortlimit": "5",
+   "cashmargin": "6",
+   "additionalmargin": "7",
+   "totalmargin": "8",
+   "limitconsumed": "9",
+   "clipsize": "10",
+   "maxnotionalordersize": "11",
+   "dv01pv01limit": "12",
+   "cs01limit": "13",
+   "volumelimitpertimeperiod": "14",
+   "volfilledpctordvoltmperiod": "15",
+   "notlfilledpctnotltmperiod": "16",
+   "transactionexecutionlimitpertimeperiod": "17",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "17": "17"
+  }
+ },
+ "1531": {
+  "name": "RiskLimitAmount",
+  "tag": 1531,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1532": {
+  "name": "RiskLimitCurrency",
+  "tag": 1532,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1533": {
+  "name": "RiskLimitPlatform",
+  "tag": 1533,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1534": {
+  "name": "NoRiskInstrumentScopes",
+  "tag": 1534,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1535": {
+  "name": "InstrumentScopeOperator",
+  "tag": 1535,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "INCLUDE",
+   "2": "EXCLUDE"
+  },
+  "translations": {
+   "include": "1",
+   "exclude": "2",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1536": {
+  "name": "InstrumentScopeSymbol",
+  "tag": 1536,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1537": {
+  "name": "InstrumentScopeSymbolSfx",
+  "tag": 1537,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1538": {
+  "name": "InstrumentScopeSecurityID",
+  "tag": 1538,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1539": {
+  "name": "InstrumentScopeSecurityIDSource",
+  "tag": 1539,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1540": {
+  "name": "NoInstrumentScopeSecurityAltID",
+  "tag": 1540,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1541": {
+  "name": "InstrumentScopeSecurityAltID",
+  "tag": 1541,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1542": {
+  "name": "InstrumentScopeSecurityAltIDSource",
+  "tag": 1542,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1543": {
+  "name": "InstrumentScopeProduct",
+  "tag": 1543,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1544": {
+  "name": "InstrumentScopeProductComplex",
+  "tag": 1544,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1545": {
+  "name": "InstrumentScopeSecurityGroup",
+  "tag": 1545,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1546": {
+  "name": "InstrumentScopeCFICode",
+  "tag": 1546,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1547": {
+  "name": "InstrumentScopeSecurityType",
+  "tag": 1547,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1548": {
+  "name": "InstrumentScopeSecuritySubType",
+  "tag": 1548,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1549": {
+  "name": "InstrumentScopeMaturityMonthYear",
+  "tag": 1549,
+  "type": "MONTHYEAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1550": {
+  "name": "InstrumentScopeMaturityTime",
+  "tag": 1550,
+  "type": "TZTIMEONLY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1551": {
+  "name": "InstrumentScopeRestructuringType",
+  "tag": 1551,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1552": {
+  "name": "InstrumentScopeSeniority",
+  "tag": 1552,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1553": {
+  "name": "InstrumentScopePutOrCall",
+  "tag": 1553,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1554": {
+  "name": "InstrumentScopeFlexibleIndicator",
+  "tag": 1554,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1555": {
+  "name": "InstrumentScopeCouponRate",
+  "tag": 1555,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1556": {
+  "name": "InstrumentScopeSecurityDesc",
+  "tag": 1556,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1557": {
+  "name": "InstrumentScopeSettlType",
+  "tag": 1557,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1558": {
+  "name": "RiskInstrumentMultiplier",
+  "tag": 1558,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1559": {
+  "name": "NoRiskWarningLevels",
+  "tag": 1559,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1560": {
+  "name": "RiskWarningLevelPercent",
+  "tag": 1560,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1561": {
+  "name": "RiskWarningLevelName",
+  "tag": 1561,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1562": {
+  "name": "NoRelatedPartyDetailID",
+  "tag": 1562,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1563": {
+  "name": "RelatedPartyDetailID",
+  "tag": 1563,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1564": {
+  "name": "RelatedPartyDetailIDSource",
+  "tag": 1564,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1565": {
+  "name": "RelatedPartyDetailRole",
+  "tag": 1565,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1566": {
+  "name": "NoRelatedPartyDetailSubIDs",
+  "tag": 1566,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1567": {
+  "name": "RelatedPartyDetailSubID",
+  "tag": 1567,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1568": {
+  "name": "RelatedPartyDetailSubIDType",
+  "tag": 1568,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1569": {
+  "name": "NoRelatedPartyDetailAltID",
+  "tag": 1569,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1570": {
+  "name": "RelatedPartyDetailAltID",
+  "tag": 1570,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1571": {
+  "name": "RelatedPartyDetailAltIDSource",
+  "tag": 1571,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1572": {
+  "name": "NoRelatedPartyDetailAltSubIDs",
+  "tag": 1572,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1573": {
+  "name": "RelatedPartyDetailAltSubID",
+  "tag": 1573,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1574": {
+  "name": "RelatedPartyDetailAltSubIDType",
+  "tag": 1574,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1575": {
+  "name": "SwapSubClass",
+  "tag": 1575,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "AMTZ": "AMORTIZING",
+   "COMP": "COMPOUNDING",
+   "CNST": "CONSTANT_NOTIONAL_SCHEDULE",
+   "ACRT": "ACCRETING_NOTIONAL_SCHEDULE",
+   "CUST": "CUSTOM_NOTIONAL_SCHEDULE"
+  },
+  "translations": {
+   "amortizing": "AMTZ",
+   "compounding": "COMP",
+   "constantnotionalschedule": "CNST",
+   "accretingnotionalschedule": "ACRT",
+   "customnotionalschedule": "CUST",
+   "amtz": "AMTZ",
+   "comp": "COMP",
+   "cnst": "CNST",
+   "acrt": "ACRT",
+   "cust": "CUST"
+  }
+ },
+ "1576": {
+  "name": "DerivativePriceQuoteCurrency",
+  "tag": 1576,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1577": {
+  "name": "SettlRateIndex",
+  "tag": 1577,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1578": {
+  "name": "EncodedEventTextLen",
+  "tag": 1578,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1579": {
+  "name": "EncodedEventText",
+  "tag": 1579,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1580": {
+  "name": "SettlRateIndexLocation",
+  "tag": 1580,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1581": {
+  "name": "OptionExpirationDesc",
+  "tag": 1581,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1582": {
+  "name": "NoSecurityClassifications",
+  "tag": 1582,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1583": {
+  "name": "SecurityClassificationReason",
+  "tag": 1583,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "FEE",
+   "1": "CREDIT_CONTROLS",
+   "2": "MARGIN",
+   "3": "ENTITLEMENT_OR_ELIGIBILITY",
+   "4": "MARKET_DATA",
+   "5": "ACCOUNT_SELECTION",
+   "6": "DELIVERY_PROCESS",
+   "7": "SECTOR"
+  },
+  "translations": {
+   "fee": "0",
+   "creditcontrols": "1",
+   "margin": "2",
+   "entitlementoreligibility": "3",
+   "marketdata": "4",
+   "accountselection": "5",
+   "deliveryprocess": "6",
+   "sector": "7",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7"
+  }
+ },
+ "1584": {
+  "name": "SecurityClassificationValue",
+  "tag": 1584,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1585": {
+  "name": "PosAmtReason",
+  "tag": 1585,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "OPTIONS_SETTLEMENT",
+   "1": "PENDING_EROSION_ADJUSTMENT",
+   "2": "FINAL_EROSION_ADJUSTMENT",
+   "3": "TEAR_UP_COUPON_AMOUNT",
+   "4": "PRICE_ALIGNMENT_INTEREST",
+   "5": "DELIVERY_INVOICE_CHARGES",
+   "6": "DELIVERY_STORAGE_CHARGES"
+  },
+  "translations": {
+   "optionssettlement": "0",
+   "pendingerosionadjustment": "1",
+   "finalerosionadjustment": "2",
+   "tearupcouponamount": "3",
+   "pricealignmentinterest": "4",
+   "deliveryinvoicecharges": "5",
+   "deliverystoragecharges": "6",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6"
+  }
+ },
+ "1586": {
+  "name": "NoLegPosAmt",
+  "tag": 1586,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1587": {
+  "name": "LegPosAmt",
+  "tag": 1587,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1588": {
+  "name": "LegPosAmtType",
+  "tag": 1588,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1589": {
+  "name": "LegPosCurrency",
+  "tag": 1589,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1590": {
+  "name": "LegPosAmtReason",
+  "tag": 1590,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1591": {
+  "name": "LegQtyType",
+  "tag": 1591,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1592": {
+  "name": "DiscountFactor",
+  "tag": 1592,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1593": {
+  "name": "ParentAllocID",
+  "tag": 1593,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1594": {
+  "name": "LegSecurityGroup",
+  "tag": 1594,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1595": {
+  "name": "PositionContingentPrice",
+  "tag": 1595,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1596": {
+  "name": "ClearingTradePrice",
+  "tag": 1596,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1597": {
+  "name": "SideClearingTradePrice",
+  "tag": 1597,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1598": {
+  "name": "SideClearingTradePriceType",
+  "tag": 1598,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "TRADE_CLEARING_AT_EXECUTION_PRICE",
+   "1": "TRADE_CLEARING_AT_ALTERNATE_CLEARING_PRICE"
+  },
+  "translations": {
+   "tradeclearingatexecutionprice": "0",
+   "tradeclearingatalternateclearingprice": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1599": {
+  "name": "SidePriceDifferential",
+  "tag": 1599,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1600": {
+  "name": "FIXEngineName",
+  "tag": 1600,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1601": {
+  "name": "FIXEngineVersion",
+  "tag": 1601,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1602": {
+  "name": "FIXEngineVendor",
+  "tag": 1602,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1603": {
+  "name": "ApplicationSystemName",
+  "tag": 1603,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1604": {
+  "name": "ApplicationSystemVersion",
+  "tag": 1604,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1605": {
+  "name": "ApplicationSystemVendor",
+  "tag": 1605,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1606": {
+  "name": "NumOfSimpleInstruments",
+  "tag": 1606,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1607": {
+  "name": "SecurityRejectReason",
+  "tag": 1607,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "INVALID_INSTRUMENT_REQUESTED",
+   "2": "INSTRUMENT_ALREADY_EXISTS",
+   "3": "REQUEST_TYPE_NOT_SUPPORTED",
+   "4": "SYSTEM_UNAVAILABLE_FOR_INSTRUMENT_CREATION",
+   "5": "INELIGIBLE_INSTRUMENT_GROUP",
+   "6": "INSTRUMENT_ID_UNAVAILABLE",
+   "7": "INVALID_OR_MISSING_DATA_ON_OPTION_LEG",
+   "8": "INVALID_OR_MISSING_DATA_ON_FUTURE_LEG",
+   "10": "INVALID_OR_MISSING_DATA_ON_FX_LEG",
+   "11": "INVALID_LEG_PRICE_SPECIFIED",
+   "12": "INVALID_INSTRUMENT_STRUCTURE_SPECIFIED"
+  },
+  "translations": {
+   "invalidinstrumentrequested": "1",
+   "instrumentalreadyexists": "2",
+   "requesttypenotsupported": "3",
+   "systemunavailableforinstrumentcreation": "4",
+   "ineligibleinstrumentgroup": "5",
+   "instrumentidunavailable": "6",
+   "invalidormissingdataonoptionleg": "7",
+   "invalidormissingdataonfutureleg": "8",
+   "invalidormissingdataonfxleg": "10",
+   "invalidlegpricespecified": "11",
+   "invalidinstrumentstructurespecified": "12",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "10": "10",
+   "11": "11",
+   "12": "12"
+  }
+ },
+ "1608": {
+  "name": "InitialDisplayQty",
+  "tag": 1608,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1609": {
+  "name": "ThrottleStatus",
+  "tag": 1609,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "THROTTLE_LIMIT_NOT_EXCEEDED_NOT_QUEUED",
+   "1": "QUEUED_DUE_TO_THROTTLE_LIMIT_EXCEEDED"
+  },
+  "translations": {
+   "throttlelimitnotexceedednotqueued": "0",
+   "queuedduetothrottlelimitexceeded": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1610": {
+  "name": "NoThrottles",
+  "tag": 1610,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1611": {
+  "name": "ThrottleAction",
+  "tag": 1611,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "QUEUE_INBOUND",
+   "1": "QUEUE_OUTBOUND",
+   "2": "REJECT",
+   "3": "DISCONNECT",
+   "4": "WARNING"
+  },
+  "translations": {
+   "queueinbound": "0",
+   "queueoutbound": "1",
+   "reject": "2",
+   "disconnect": "3",
+   "warning": "4",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4"
+  }
+ },
+ "1612": {
+  "name": "ThrottleType",
+  "tag": 1612,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "INBOUND_RATE",
+   "1": "OUTSTANDING_REQUESTS"
+  },
+  "translations": {
+   "inboundrate": "0",
+   "outstandingrequests": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1613": {
+  "name": "ThrottleNoMsgs",
+  "tag": 1613,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1614": {
+  "name": "ThrottleTimeInterval",
+  "tag": 1614,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1615": {
+  "name": "ThrottleTimeUnit",
+  "tag": 1615,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1616": {
+  "name": "InstrumentScopeSecurityExchange",
+  "tag": 1616,
+  "type": "EXCHANGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1617": {
+  "name": "StreamAsgnType",
+  "tag": 1617,
+  "type": "int",
+  "description": "The type of assignment being affected in the Stream Assignment Report.",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "values": {
+   "1": "Assignment",
+   "2": "Rejected",
+   "3": "Terminate/Unassign"
+  },
+  "value_names": {
+   "1": "ASSIGNMENT",
+   "2": "REJECTED",
+   "3": "TERMINATE"
+  },
+  "translations": {
+   "assignment": "1",
+   "rejected": "2",
+   "terminateunassign": "3",
+   "terminate": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  },
+  "components": [
+   "StrmAsgnRptInstrmtGrp"
+  ]
+ },
+ "1618": {
+  "name": "NoThrottleMsgType",
+  "tag": 1618,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1619": {
+  "name": "ThrottleMsgType",
+  "tag": 1619,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1620": {
+  "name": "InstrumentScopeEncodedSecurityDescLen",
+  "tag": 1620,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1621": {
+  "name": "InstrumentScopeEncodedSecurityDesc",
+  "tag": 1621,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1622": {
+  "name": "FillYieldType",
+  "tag": 1622,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1623": {
+  "name": "FillYield",
+  "tag": 1623,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1624": {
+  "name": "NoMatchInst",
+  "tag": 1624,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1625": {
+  "name": "MatchInst",
+  "tag": 1625,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "MATCH",
+   "2": "DO_NOT_MATCH"
+  },
+  "translations": {
+   "match": "1",
+   "donotmatch": "2",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1626": {
+  "name": "MatchAttribTagID",
+  "tag": 1626,
+  "type": "TAGNUM",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1627": {
+  "name": "MatchAttribValue",
+  "tag": 1627,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1628": {
+  "name": "TriggerScope",
+  "tag": 1628,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "THIS_ORDER",
+   "1": "OTHER_ORDER",
+   "2": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY",
+   "3": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_AND_PRICE",
+   "4": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_AND_SIDE",
+   "5": "ALL_OTHER_ORDERS_FOR_GIVEN_SECURITY_PRICE_AND_SIDE"
+  },
+  "translations": {
+   "thisorder": "0",
+   "otherorder": "1",
+   "allotherordersforgivensecurity": "2",
+   "allotherordersforgivensecurityandprice": "3",
+   "allotherordersforgivensecurityandside": "4",
+   "allotherordersforgivensecuritypriceandside": "5",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5"
+  }
+ },
+ "1629": {
+  "name": "ExposureDuration",
+  "tag": 1629,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1630": {
+  "name": "NoLimitAmts",
+  "tag": 1630,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1631": {
+  "name": "LimitAmtType",
+  "tag": 1631,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "CREDIT_LIMIT",
+   "1": "GROSS_POSITION_LIMIT",
+   "2": "NET_POSITION_LIMIT",
+   "3": "RISK_EXPOSURE_LIMIT",
+   "4": "LONG_POSITION_LIMIT",
+   "5": "SHORT_POSITION_LIMIT"
+  },
+  "translations": {
+   "creditlimit": "0",
+   "grosspositionlimit": "1",
+   "netpositionlimit": "2",
+   "riskexposurelimit": "3",
+   "longpositionlimit": "4",
+   "shortpositionlimit": "5",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5"
+  }
+ },
+ "1632": {
+  "name": "LastLimitAmt",
+  "tag": 1632,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1633": {
+  "name": "LimitAmtRemaining",
+  "tag": 1633,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1634": {
+  "name": "LimitAmtCurrency",
+  "tag": 1634,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1635": {
+  "name": "MarginReqmtInqID",
+  "tag": 1635,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1636": {
+  "name": "NoMarginReqmtInqQualifier",
+  "tag": 1636,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1637": {
+  "name": "MarginReqmtInqQualifier",
+  "tag": 1637,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "SUMMARY",
+   "1": "DETAIL",
+   "2": "EXCESS_DEFICIT",
+   "3": "NET_POSITION"
+  },
+  "translations": {
+   "summary": "0",
+   "detail": "1",
+   "excessdeficit": "2",
+   "netposition": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1638": {
+  "name": "MarginReqmtRptType",
+  "tag": 1638,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "SUMMARY",
+   "1": "DETAIL",
+   "2": "EXCESS_DEFICIT"
+  },
+  "translations": {
+   "summary": "0",
+   "detail": "1",
+   "excessdeficit": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1639": {
+  "name": "MarginClass",
+  "tag": 1639,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1640": {
+  "name": "MarginReqmtInqStatus",
+  "tag": 1640,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1641": {
+  "name": "MarginReqmtInqResult",
+  "tag": 1641,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "SUCCESSFUL",
+   "1": "INVALID_OR_UNKNOWN_INSTRUMENT",
+   "2": "INVALID_OR_UNKNOWN_MARGIN_CLASS",
+   "3": "INVALID_PARTIES",
+   "4": "INVALID_TRANSPORT_TYPE_REQ",
+   "5": "INVALID_DESTINATION_REQ",
+   "6": "NO_MARGIN_REQ_FOUND",
+   "7": "MARGIN_REQ_INQUIRY_QUALIFIER_NOT_SUPPORTED",
+   "8": "UNAUTHORIZED_FOR_MARGIN_REQ_INQUIRY",
+   "99": "OTHER"
+  },
+  "translations": {
+   "successful": "0",
+   "invalidorunknowninstrument": "1",
+   "invalidorunknownmarginclass": "2",
+   "invalidparties": "3",
+   "invalidtransporttypereq": "4",
+   "invaliddestinationreq": "5",
+   "nomarginreqfound": "6",
+   "marginreqinquiryqualifiernotsupported": "7",
+   "unauthorizedformarginreqinquiry": "8",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "99": "99"
+  }
+ },
+ "1642": {
+  "name": "MarginReqmtRptID",
+  "tag": 1642,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1643": {
+  "name": "NoMarginAmt",
+  "tag": 1643,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1644": {
+  "name": "MarginAmtType",
+  "tag": 1644,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "ADDITIONAL_MARGIN",
+   "2": "ADJUSTED_MARGIN",
+   "3": "UNADJUSTED_MARGIN",
+   "4": "BINARY_ADD_ON_AMOUNT",
+   "5": "CASH_BALANCE_AMOUNT",
+   "6": "CONCENTRATION_MARGIN",
+   "7": "CORE_MARGIN",
+   "8": "DELIVERY_MARGIN",
+   "9": "DISCRETIONARY_MARGIN",
+   "10": "FUTURES_SPREAD_MARGIN",
+   "11": "INITIAL_MARGIN",
+   "12": "LIQUIDATING_MARGIN",
+   "13": "MARGIN_CALL_AMOUNT",
+   "14": "MARGIN_DEFICIT_AMOUNT",
+   "15": "MARGIN_EXCESS_AMOUNT",
+   "16": "OPTION_PREMIUM_AMOUNT",
+   "17": "PREMIUM_MARGIN",
+   "18": "RESERVE_MARGIN",
+   "19": "SECURITY_COLLATERAL_AMOUNT",
+   "20": "STRESS_TEST_ADD_ON_AMOUNT",
+   "21": "SUPER_MARGIN",
+   "22": "TOTAL_MARGIN",
+   "23": "VARIATION_MARGIN",
+   "24": "SECONDARY_VARIATION_MARGIN",
+   "25": "ROLLED_UP_MARGIN_DEFICIT",
+   "26": "SPREAD_RESPONSE_MARGIN",
+   "27": "SYSTEMIC_RISK_MARGIN",
+   "28": "CURVE_RISK_MARGIN",
+   "29": "INDEX_SPREAD_RISK_MARGIN",
+   "30": "SECTOR_RISK_MARGIN",
+   "31": "JUMP_TO_DEFAULT_RISK_MARGIN",
+   "32": "BASIS_RISK_MARGIN",
+   "33": "INTEREST_RATE_RISK_MARGIN",
+   "34": "JUMP_TO_HEALTH_RISK_MARGIN",
+   "35": "OTHER_RISK_MARGIN"
+  },
+  "translations": {
+   "additionalmargin": "1",
+   "adjustedmargin": "2",
+   "unadjustedmargin": "3",
+   "binaryaddonamount": "4",
+   "cashbalanceamount": "5",
+   "concentrationmargin": "6",
+   "coremargin": "7",
+   "deliverymargin": "8",
+   "discretionarymargin": "9",
+   "futuresspreadmargin": "10",
+   "initialmargin": "11",
+   "liquidatingmargin": "12",
+   "margincallamount": "13",
+   "margindeficitamount": "14",
+   "marginexcessamount": "15",
+   "optionpremiumamount": "16",
+   "premiummargin": "17",
+   "reservemargin": "18",
+   "securitycollateralamount": "19",
+   "stresstestaddonamount": "20",
+   "supermargin": "21",
+   "totalmargin": "22",
+   "variationmargin": "23",
+   "secondaryvariationmargin": "24",
+   "rolledupmargindeficit": "25",
+   "spreadresponsemargin": "26",
+   "systemicriskmargin": "27",
+   "curveriskmargin": "28",
+   "indexspreadriskmargin": "29",
+   "sectorriskmargin": "30",
+   "jumptodefaultriskmargin": "31",
+   "basisriskmargin": "32",
+   "interestrateriskmargin": "33",
+   "jumptohealthriskmargin": "34",
+   "otherriskmargin": "35",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "17": "17",
+   "18": "18",
+   "19": "19",
+   "20": "20",
+   "21": "21",
+   "22": "22",
+   "23": "23",
+   "24": "24",
+   "25": "25",
+   "26": "26",
+   "27": "27",
+   "28": "28",
+   "29": "29",
+   "30": "30",
+   "31": "31",
+   "32": "32",
+   "33": "33",
+   "34": "34",
+   "35": "35"
+  }
+ },
+ "1645": {
+  "name": "MarginAmt",
+  "tag": 1645,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1646": {
+  "name": "MarginAmtCcy",
+  "tag": 1646,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1647": {
+  "name": "NoRelatedInstruments",
+  "tag": 1647,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1648": {
+  "name": "RelatedInstrumentType",
+  "tag": 1648,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "HEDGES_FOR_INSTRUMENT",
+   "2": "UNDERLIER",
+   "3": "EQUITY_EQUIVALENT",
+   "4": "NEAREST_EXCHANGE_TRADED_CONTRACT",
+   "5": "RETAIL_EQUIVALENT",
+   "6": "LEG"
+  },
+  "translations": {
+   "hedgesforinstrument": "1",
+   "underlier": "2",
+   "equityequivalent": "3",
+   "nearestexchangetradedcontract": "4",
+   "retailequivalent": "5",
+   "leg": "6",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6"
+  }
+ },
+ "1649": {
+  "name": "RelatedSymbol",
+  "tag": 1649,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1650": {
+  "name": "RelatedSecurityID",
+  "tag": 1650,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1651": {
+  "name": "RelatedSecurityIDSource",
+  "tag": 1651,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1652": {
+  "name": "RelatedSecurityType",
+  "tag": 1652,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1653": {
+  "name": "RelatedMaturityMonthYear",
+  "tag": 1653,
+  "type": "MONTHYEAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1654": {
+  "name": "CoveredQty",
+  "tag": 1654,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1655": {
+  "name": "MarketMakerActivity",
+  "tag": 1655,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_PARTICIPATION",
+   "1": "BUY_PARTICIPATION",
+   "2": "SELL_PARTICIPATION",
+   "3": "BOTH_BUY_AND_SELL_PARTICIPATION"
+  },
+  "translations": {
+   "noparticipation": "0",
+   "buyparticipation": "1",
+   "sellparticipation": "2",
+   "bothbuyandsellparticipation": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1656": {
+  "name": "NoInstrumentScopes",
+  "tag": 1656,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1657": {
+  "name": "NoRequestingPartyIDs",
+  "tag": 1657,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1658": {
+  "name": "RequestingPartyID",
+  "tag": 1658,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1659": {
+  "name": "RequestingPartyIDSource",
+  "tag": 1659,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1660": {
+  "name": "RequestingPartyRole",
+  "tag": 1660,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1661": {
+  "name": "NoRequestingPartySubIDs",
+  "tag": 1661,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1662": {
+  "name": "RequestingPartySubID",
+  "tag": 1662,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1663": {
+  "name": "RequestingPartySubIDType",
+  "tag": 1663,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1664": {
+  "name": "EncodedRejectTextLen",
+  "tag": 1664,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1665": {
+  "name": "EncodedRejectText",
+  "tag": 1665,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1666": {
+  "name": "RiskLimitRequestID",
+  "tag": 1666,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1667": {
+  "name": "RiskLimitReportID",
+  "tag": 1667,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1668": {
+  "name": "NoRequestedRiskLimitType",
+  "tag": 1668,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1669": {
+  "name": "NoRiskLimits",
+  "tag": 1669,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1670": {
+  "name": "RiskLimitID",
+  "tag": 1670,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1671": {
+  "name": "NoPartyDetails",
+  "tag": 1671,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1672": {
+  "name": "PartyDetailStatus",
+  "tag": 1672,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ACTIVE",
+   "1": "SUSPENDED",
+   "2": "HALTED"
+  },
+  "translations": {
+   "active": "0",
+   "suspended": "1",
+   "halted": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1673": {
+  "name": "MatchInstMarketID",
+  "tag": 1673,
+  "type": "EXCHANGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1674": {
+  "name": "PartyDetailRoleQualifier",
+  "tag": 1674,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "23": "FIRM_OR_LEGAL_ENTITY",
+   "18": "CURRENT",
+   "19": "NEW",
+   "24": "NATURAL_PERSON",
+   "0": "AGENCY",
+   "1": "PRINCIPAL",
+   "2": "RISKLESS_PRINCIPAL",
+   "30": "EXCHANGE_ORDER_SUBMITTER",
+   "9": "PRIMARY_TRD_REPOSITORY",
+   "10": "ORIG_TRD_REPOSITORY",
+   "11": "ADDTNL_INTL_TRD_REPOSITORY",
+   "12": "ADDTNL_DOMESTIC_TRD_REPOSITORY",
+   "25": "REGULAR_TRADER",
+   "26": "HEAD_TRADER",
+   "27": "SUPERVISOR",
+   "22": "ALGORITHM",
+   "13": "RELATED_EXCHANGE",
+   "14": "OPTIONS_EXCHANGE",
+   "15": "SPECIFIED_EXCHANGE",
+   "16": "CONSTITUENT_EXCHANGE",
+   "7": "BANK",
+   "8": "HUB",
+   "28": "TRI_PARTY",
+   "29": "LENDER",
+   "3": "GENERAL_CLEARING_MEMBER",
+   "4": "INDIVIDUAL_CLEARING_MEMBER",
+   "5": "PREFERRED_MARKET_MAKER",
+   "6": "DIRECTED_MARKET_MAKER",
+   "20": "DESIGNATED_SPONSOR",
+   "21": "SPECIALIST",
+   "17": "EXEMPT_FROM_TRADE_REPORTING"
+  },
+  "translations": {
+   "firmorlegalentity": "23",
+   "current": "18",
+   "new": "19",
+   "naturalperson": "24",
+   "agency": "0",
+   "principal": "1",
+   "risklessprincipal": "2",
+   "exchangeordersubmitter": "30",
+   "primarytrdrepository": "9",
+   "origtrdrepository": "10",
+   "addtnlintltrdrepository": "11",
+   "addtnldomestictrdrepository": "12",
+   "regulartrader": "25",
+   "headtrader": "26",
+   "supervisor": "27",
+   "algorithm": "22",
+   "relatedexchange": "13",
+   "optionsexchange": "14",
+   "specifiedexchange": "15",
+   "constituentexchange": "16",
+   "bank": "7",
+   "hub": "8",
+   "triparty": "28",
+   "lender": "29",
+   "generalclearingmember": "3",
+   "individualclearingmember": "4",
+   "preferredmarketmaker": "5",
+   "directedmarketmaker": "6",
+   "designatedsponsor": "20",
+   "specialist": "21",
+   "exemptfromtradereporting": "17",
+   "23": "23",
+   "18": "18",
+   "19": "19",
+   "24": "24",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "30": "30",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "25": "25",
+   "26": "26",
+   "27": "27",
+   "22": "22",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "7": "7",
+   "8": "8",
+   "28": "28",
+   "29": "29",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "20": "20",
+   "21": "21",
+   "17": "17"
+  }
+ },
+ "1675": {
+  "name": "RelatedPartyDetailRoleQualifier",
+  "tag": 1675,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1676": {
+  "name": "NoPartyUpdates",
+  "tag": 1676,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1677": {
+  "name": "NoPartyRiskLimits",
+  "tag": 1677,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1678": {
+  "name": "EncodedOptionExpirationDescLen",
+  "tag": 1678,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1679": {
+  "name": "SecurityMassTradingStatus",
+  "tag": 1679,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1680": {
+  "name": "SecurityMassTradingEvent",
+  "tag": 1680,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1681": {
+  "name": "MassHaltReason",
+  "tag": 1681,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1682": {
+  "name": "MDSecurityTradingStatus",
+  "tag": 1682,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1683": {
+  "name": "MDSubFeedType",
+  "tag": 1683,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1684": {
+  "name": "MDHaltReason",
+  "tag": 1684,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1685": {
+  "name": "ThrottleInst",
+  "tag": 1685,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "REJECT_IF_THROTTLE_LIMIT_EXCEEDED",
+   "1": "QUEUE_IF_THROTTLE_LIMIT_EXCEEDED"
+  },
+  "translations": {
+   "rejectifthrottlelimitexceeded": "0",
+   "queueifthrottlelimitexceeded": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1686": {
+  "name": "ThrottleCountIndicator",
+  "tag": 1686,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "OUTSTANDING_REQUESTS_UNCHANGED",
+   "1": "OUTSTANDING_REQUESTS_DECREASED"
+  },
+  "translations": {
+   "outstandingrequestsunchanged": "0",
+   "outstandingrequestsdecreased": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1687": {
+  "name": "ShortSaleRestriction",
+  "tag": 1687,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_RESTRICTIONS",
+   "1": "SECURITY_NOT_SHORTABLE",
+   "2": "SECURITY_NOT_SHORTABLE_AT_OR_BELOW_BEST_BID",
+   "3": "SECURITY_NOT_SHORTABLE_WITHOUT_PRE_BORROW"
+  },
+  "translations": {
+   "norestrictions": "0",
+   "securitynotshortable": "1",
+   "securitynotshortableatorbelowbestbid": "2",
+   "securitynotshortablewithoutpreborrow": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1688": {
+  "name": "ShortSaleExemptionReason",
+  "tag": 1688,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "EXEMPTION_REASON_UNKNOWN",
+   "1": "INCOMING_SSE",
+   "2": "ABOVE_NATIONAL_BEST_BID",
+   "3": "DELAYED_DELIVERY",
+   "4": "ODD_LOT",
+   "5": "DOMESTIC_ARBITRAGE",
+   "6": "INTERNATIONAL_ARBITRAGE",
+   "7": "UNDERWRITER_OR_SYNDICATE_DISTRIBUTION",
+   "8": "RISKLESS_PRINCIPAL",
+   "9": "VWAP"
+  },
+  "translations": {
+   "exemptionreasonunknown": "0",
+   "incomingsse": "1",
+   "abovenationalbestbid": "2",
+   "delayeddelivery": "3",
+   "oddlot": "4",
+   "domesticarbitrage": "5",
+   "internationalarbitrage": "6",
+   "underwriterorsyndicatedistribution": "7",
+   "risklessprincipal": "8",
+   "vwap": "9",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9"
+  }
+ },
+ "1689": {
+  "name": "LegShortSaleExemptionReason",
+  "tag": 1689,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1690": {
+  "name": "SideShortSaleExemptionReason",
+  "tag": 1690,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1691": {
+  "name": "PartyDetailID",
+  "tag": 1691,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1692": {
+  "name": "PartyDetailIDSource",
+  "tag": 1692,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1693": {
+  "name": "PartyDetailRole",
+  "tag": 1693,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1694": {
+  "name": "NoPartyDetailSubIDs",
+  "tag": 1694,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1695": {
+  "name": "PartyDetailSubID",
+  "tag": 1695,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1696": {
+  "name": "PartyDetailSubIDType",
+  "tag": 1696,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1697": {
+  "name": "EncodedOptionExpirationDesc",
+  "tag": 1697,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1698": {
+  "name": "StrikeUnitOfMeasure",
+  "tag": 1698,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1699": {
+  "name": "AccountSummaryReportID",
+  "tag": 1699,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1700": {
+  "name": "NoSettlementAmounts",
+  "tag": 1700,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1701": {
+  "name": "SettlementAmount",
+  "tag": 1701,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1702": {
+  "name": "SettlementAmountCurrency",
+  "tag": 1702,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1703": {
+  "name": "NoCollateralAmounts",
+  "tag": 1703,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1704": {
+  "name": "CurrentCollateralAmount",
+  "tag": 1704,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1705": {
+  "name": "CollateralCurrency",
+  "tag": 1705,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1706": {
+  "name": "CollateralType",
+  "tag": 1706,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1707": {
+  "name": "NoPayCollects",
+  "tag": 1707,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1708": {
+  "name": "PayCollectType",
+  "tag": 1708,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1709": {
+  "name": "PayCollectCurrency",
+  "tag": 1709,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1710": {
+  "name": "PayAmount",
+  "tag": 1710,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1711": {
+  "name": "CollectAmount",
+  "tag": 1711,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1712": {
+  "name": "PayCollectMarketSegmentID",
+  "tag": 1712,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1713": {
+  "name": "PayCollectMarketID",
+  "tag": 1713,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1714": {
+  "name": "MarginAmountMarketSegmentID",
+  "tag": 1714,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1715": {
+  "name": "MarginAmountMarketID",
+  "tag": 1715,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1716": {
+  "name": "UnitOfMeasureCurrency",
+  "tag": 1716,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1717": {
+  "name": "PriceUnitOfMeasureCurrency",
+  "tag": 1717,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1718": {
+  "name": "UnderlyingUnitOfMeasureCurrency",
+  "tag": 1718,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1719": {
+  "name": "UnderlyingPriceUnitOfMeasureCurrency",
+  "tag": 1719,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1720": {
+  "name": "LegUnitOfMeasureCurrency",
+  "tag": 1720,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1721": {
+  "name": "LegPriceUnitOfMeasureCurrency",
+  "tag": 1721,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1722": {
+  "name": "DerivativeUnitOfMeasureCurrency",
+  "tag": 1722,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1723": {
+  "name": "DerivativePriceUnitOfMeasureCurrency",
+  "tag": 1723,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1724": {
+  "name": "OrderOrigination",
+  "tag": 1724,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "ORDER_RECEIVED_FROM_CUSTOMER",
+   "2": "ORDER_RECEIVED_FROM_WITHIN_FIRM",
+   "3": "ORDER_RECEIVED_FROM_ANOTHER_BROKER_DEALER",
+   "4": "ORDER_RECEIVED_FROM_CUSTOMER_OR_WITH_FIRM",
+   "5": "ORDER_RECEIVED_FROM_DIRECT_ACCESS_CUSTOMER",
+   "6": "ORDER_RECEIVED_FROM_FOREIGN_DEALER_EQUIVALENT",
+   "7": "ORDER_RECEIVED_FROM_EXECUTION_ONLY_SERVICE"
+  },
+  "translations": {
+   "orderreceivedfromcustomer": "1",
+   "orderreceivedfromwithinfirm": "2",
+   "orderreceivedfromanotherbrokerdealer": "3",
+   "orderreceivedfromcustomerorwithfirm": "4",
+   "orderreceivedfromdirectaccesscustomer": "5",
+   "orderreceivedfromforeigndealerequivalent": "6",
+   "orderreceivedfromexecutiononlyservice": "7",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7"
+  }
+ },
+ "1725": {
+  "name": "OriginatingDeptID",
+  "tag": 1725,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1726": {
+  "name": "ReceivingDeptID",
+  "tag": 1726,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1727": {
+  "name": "InformationBarrierID",
+  "tag": 1727,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1728": {
+  "name": "FirmGroupID",
+  "tag": 1728,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1729": {
+  "name": "FirmMnemonic",
+  "tag": 1729,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1730": {
+  "name": "AllocGroupID",
+  "tag": 1730,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1731": {
+  "name": "AvgPxGroupID",
+  "tag": 1731,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1732": {
+  "name": "FirmAllocText",
+  "tag": 1732,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1733": {
+  "name": "EncodedFirmAllocTextLen",
+  "tag": 1733,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1734": {
+  "name": "EncodedFirmAllocText",
+  "tag": 1734,
+  "type": "DATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1735": {
+  "name": "AllocationRollupInstruction",
+  "tag": 1735,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ROLLUP",
+   "1": "DO_NOT_ROLL_UP"
+  },
+  "translations": {
+   "rollup": "0",
+   "donotrollup": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1736": {
+  "name": "AllocGroupQuantity",
+  "tag": 1736,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1737": {
+  "name": "AllocGroupRemainingQuantity",
+  "tag": 1737,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1738": {
+  "name": "AllocReversalStatus",
+  "tag": 1738,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "COMPLETED",
+   "1": "REFUSED",
+   "2": "CANCELLED"
+  },
+  "translations": {
+   "completed": "0",
+   "refused": "1",
+   "cancelled": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1739": {
+  "name": "ObligationType",
+  "tag": 1739,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "BOND",
+   "1": "CONVERT_BOND",
+   "2": "MORTGAGE",
+   "3": "LOAN"
+  },
+  "translations": {
+   "bond": "0",
+   "convertbond": "1",
+   "mortgage": "2",
+   "loan": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1740": {
+  "name": "TradePriceNegotiationMethod",
+  "tag": 1740,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "PERCENT_PAR",
+   "1": "DEAL_SPREAD",
+   "2": "UPFRONT_PNTS",
+   "3": "UPFRONT_AMT",
+   "4": "PAR_UPFRONT_AMT",
+   "5": "SPREAD_UPFRONT_AMT",
+   "6": "UPFRONT_PNTS_AMT"
+  },
+  "translations": {
+   "percentpar": "0",
+   "dealspread": "1",
+   "upfrontpnts": "2",
+   "upfrontamt": "3",
+   "parupfrontamt": "4",
+   "spreadupfrontamt": "5",
+   "upfrontpntsamt": "6",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6"
+  }
+ },
+ "1741": {
+  "name": "UpfrontPriceType",
+  "tag": 1741,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "PERCENTAGE",
+   "3": "FIXED_AMOUNT"
+  },
+  "translations": {
+   "percentage": "1",
+   "fixedamount": "3",
+   "1": "1",
+   "3": "3"
+  }
+ },
+ "1742": {
+  "name": "UpfrontPrice",
+  "tag": 1742,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1743": {
+  "name": "LastUpfrontPrice",
+  "tag": 1743,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1744": {
+  "name": "ApplLevelRecoveryIndicator",
+  "tag": 1744,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_APPL_RECOVERY_NEEDED",
+   "1": "APPL_RECOVERY_NEEDED"
+  },
+  "translations": {
+   "noapplrecoveryneeded": "0",
+   "applrecoveryneeded": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1745": {
+  "name": "BidMDEntryID",
+  "tag": 1745,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1746": {
+  "name": "OfferMDEntryID",
+  "tag": 1746,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1747": {
+  "name": "BidQuoteID",
+  "tag": 1747,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1748": {
+  "name": "OfferQuoteID",
+  "tag": 1748,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1749": {
+  "name": "TotalBidSize",
+  "tag": 1749,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1750": {
+  "name": "TotalOfferSize",
+  "tag": 1750,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1751": {
+  "name": "SecondaryQuoteID",
+  "tag": 1751,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1752": {
+  "name": "CustodialLotID",
+  "tag": 1752,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1753": {
+  "name": "VersusPurchaseDate",
+  "tag": 1753,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1754": {
+  "name": "VersusPurchasePrice",
+  "tag": 1754,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1755": {
+  "name": "CurrentCostBasis",
+  "tag": 1755,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1756": {
+  "name": "LegCustodialLotID",
+  "tag": 1756,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1757": {
+  "name": "LegVersusPurchaseDate",
+  "tag": 1757,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1758": {
+  "name": "LegVersusPurchasePrice",
+  "tag": 1758,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1759": {
+  "name": "LegCurrentCostBasis",
+  "tag": 1759,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1760": {
+  "name": "RiskLimitRequestType",
+  "tag": 1760,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "DEFINITIONS",
+   "2": "UTILIZATION",
+   "3": "DEFINITIONS_AND_UTILIZATIONS"
+  },
+  "translations": {
+   "definitions": "1",
+   "utilization": "2",
+   "definitionsandutilizations": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1761": {
+  "name": "RiskLimitRequestResult",
+  "tag": 1761,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "SUCCESSFUL",
+   "1": "INVALID_PARTY",
+   "2": "INVALID_RELATED_PARTY",
+   "3": "INVALID_RISK_LIMIT_TYPE",
+   "4": "INVALID_RISK_LIMIT_ID",
+   "5": "INVALID_RISK_LIMIT_AMOUNT",
+   "6": "INVALID_RISK_WARNING_LEVEL_ACTION",
+   "7": "INVALID_RISK_INSTRUMENT_SCOPE",
+   "8": "RISK_LIMIT_ACTIONS_NOT_SUPPORTED",
+   "9": "WARNING_LEVELS_NOT_SUPPORTED",
+   "10": "WARNING_LEVEL_ACTIONS_NOT_SUPPORTED",
+   "11": "RISK_INSTRUMENT_SCOPE_NOT_SUPPORTED",
+   "12": "RISK_LIMIT_NOT_APPROVED_FOR_PARTY",
+   "13": "RISK_LIMIT_ALREADY_DEFINED_FOR_PARTY",
+   "14": "INSTRUMENT_NOT_APPROVED_FOR_PARTY",
+   "98": "NOT_AUTHORIZED",
+   "99": "OTHER"
+  },
+  "translations": {
+   "successful": "0",
+   "invalidparty": "1",
+   "invalidrelatedparty": "2",
+   "invalidrisklimittype": "3",
+   "invalidrisklimitid": "4",
+   "invalidrisklimitamount": "5",
+   "invalidriskwarninglevelaction": "6",
+   "invalidriskinstrumentscope": "7",
+   "risklimitactionsnotsupported": "8",
+   "warninglevelsnotsupported": "9",
+   "warninglevelactionsnotsupported": "10",
+   "riskinstrumentscopenotsupported": "11",
+   "risklimitnotapprovedforparty": "12",
+   "risklimitalreadydefinedforparty": "13",
+   "instrumentnotapprovedforparty": "14",
+   "notauthorized": "98",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "98": "98",
+   "99": "99"
+  }
+ },
+ "1762": {
+  "name": "RiskLimitRequestStatus",
+  "tag": 1762,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1763": {
+  "name": "RiskLimitStatus",
+  "tag": 1763,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1764": {
+  "name": "RiskLimitResult",
+  "tag": 1764,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1765": {
+  "name": "RiskLimitUtilizationPercent",
+  "tag": 1765,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1766": {
+  "name": "RiskLimitUtilizationAmount",
+  "tag": 1766,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1767": {
+  "name": "RiskLimitAction",
+  "tag": 1767,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "QUEUE_INBOUND",
+   "1": "QUEUE_OUTBOUND",
+   "2": "REJECT",
+   "3": "DISCONNECT",
+   "4": "WARNING",
+   "5": "PING_CREDIT_CHECK_WITH_REVALIDATION",
+   "6": "PING_CREDIT_CHECK_NO_REVALIDATION",
+   "7": "PUSH_CREDIT_CHECK_WITH_REVALIDATION",
+   "8": "PUSH_CREDIT_CHECK_NO_REVALIDATION",
+   "9": "SUSPEND",
+   "10": "HALT_TRADING"
+  },
+  "translations": {
+   "queueinbound": "0",
+   "queueoutbound": "1",
+   "reject": "2",
+   "disconnect": "3",
+   "warning": "4",
+   "pingcreditcheckwithrevalidation": "5",
+   "pingcreditchecknorevalidation": "6",
+   "pushcreditcheckwithrevalidation": "7",
+   "pushcreditchecknorevalidation": "8",
+   "suspend": "9",
+   "halttrading": "10",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10"
+  }
+ },
+ "1768": {
+  "name": "RiskWarningLevelAmount",
+  "tag": 1768,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1769": {
+  "name": "RiskWarningLevelAction",
+  "tag": 1769,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1770": {
+  "name": "EntitlementRequestID",
+  "tag": 1770,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1771": {
+  "name": "EntitlementReportID",
+  "tag": 1771,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1772": {
+  "name": "NoPartyEntitlements",
+  "tag": 1772,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1773": {
+  "name": "NoEntitlements",
+  "tag": 1773,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1774": {
+  "name": "EntitlementIndicator",
+  "tag": 1774,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1775": {
+  "name": "EntitlementType",
+  "tag": 1775,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "TRADE",
+   "1": "MAKE_MARKETS",
+   "2": "HOLD_POSITIONS",
+   "3": "PERFORM_GIVE_UPS",
+   "4": "SUBMIT_IO_IS",
+   "5": "SUBSCRIBE_MARKET_DATA",
+   "6": "SHORT_WITH_PRE_BORROW",
+   "7": "SUBMIT_QUOTE_REQUESTS",
+   "8": "RESPOND_TO_QUOTE_REQUESTS"
+  },
+  "translations": {
+   "trade": "0",
+   "makemarkets": "1",
+   "holdpositions": "2",
+   "performgiveups": "3",
+   "submitiois": "4",
+   "subscribemarketdata": "5",
+   "shortwithpreborrow": "6",
+   "submitquoterequests": "7",
+   "respondtoquoterequests": "8",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8"
+  }
+ },
+ "1776": {
+  "name": "EntitlementID",
+  "tag": 1776,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1777": {
+  "name": "NoEntitlementAttrib",
+  "tag": 1777,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1778": {
+  "name": "EntitlementAttribType",
+  "tag": 1778,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1779": {
+  "name": "EntitlementAttribDatatype",
+  "tag": 1779,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "29": "TENOR",
+   "32": "PATTERN",
+   "33": "RESERVED100_PLUS",
+   "34": "RESERVED1000_PLUS",
+   "35": "RESERVED4000_PLUS",
+   "14": "STRING",
+   "15": "MULTIPLE_CHAR_VALUE",
+   "16": "CURRENCY",
+   "17": "EXCHANGE",
+   "18": "MONTH_YEAR",
+   "19": "UTC_TIMESTAMP",
+   "20": "UTC_TIME_ONLY",
+   "21": "LOCAL_MKT_DATE",
+   "22": "UTC_DATE_ONLY",
+   "23": "DATA",
+   "24": "MULTIPLE_STRING_VALUE",
+   "25": "COUNTRY",
+   "26": "LANGUAGE",
+   "27": "TZ_TIME_ONLY",
+   "28": "TZ_TIMESTAMP",
+   "31": "XML_DATA",
+   "12": "CHAR",
+   "13": "BOOLEAN",
+   "6": "FLOAT",
+   "7": "QTY",
+   "8": "PRICE",
+   "9": "PRICE_OFFSET",
+   "10": "AMT",
+   "11": "PERCENTAGE",
+   "1": "INT",
+   "2": "LENGTH",
+   "3": "NUM_IN_GROUP",
+   "4": "SEQ_NUM",
+   "5": "TAG_NUM",
+   "30": "DAY_OF_MONTH"
+  },
+  "translations": {
+   "tenor": "29",
+   "pattern": "32",
+   "reserved100plus": "33",
+   "reserved1000plus": "34",
+   "reserved4000plus": "35",
+   "string": "14",
+   "multiplecharvalue": "15",
+   "currency": "16",
+   "exchange": "17",
+   "monthyear": "18",
+   "utctimestamp": "19",
+   "utctimeonly": "20",
+   "localmktdate": "21",
+   "utcdateonly": "22",
+   "data": "23",
+   "multiplestringvalue": "24",
+   "country": "25",
+   "language": "26",
+   "tztimeonly": "27",
+   "tztimestamp": "28",
+   "xmldata": "31",
+   "char": "12",
+   "boolean": "13",
+   "float": "6",
+   "qty": "7",
+   "price": "8",
+   "priceoffset": "9",
+   "amt": "10",
+   "percentage": "11",
+   "int": "1",
+   "length": "2",
+   "numingroup": "3",
+   "seqnum": "4",
+   "tagnum": "5",
+   "dayofmonth": "30",
+   "29": "29",
+   "32": "32",
+   "33": "33",
+   "34": "34",
+   "35": "35",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "17": "17",
+   "18": "18",
+   "19": "19",
+   "20": "20",
+   "21": "21",
+   "22": "22",
+   "23": "23",
+   "24": "24",
+   "25": "25",
+   "26": "26",
+   "27": "27",
+   "28": "28",
+   "31": "31",
+   "12": "12",
+   "13": "13",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "30": "30"
+  }
+ },
+ "1780": {
+  "name": "EntitlementAttribValue",
+  "tag": 1780,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1781": {
+  "name": "EntitlementAttribCurrency",
+  "tag": 1781,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1782": {
+  "name": "EntitlementStartDate",
+  "tag": 1782,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1783": {
+  "name": "EntitlementEndDate",
+  "tag": 1783,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1784": {
+  "name": "EntitlementPlatform",
+  "tag": 1784,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1785": {
+  "name": "TradSesControl",
+  "tag": 1785,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "AUTOMATIC",
+   "1": "MANUAL"
+  },
+  "translations": {
+   "automatic": "0",
+   "manual": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1786": {
+  "name": "TradeVolType",
+  "tag": 1786,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NUMBER_OF_UNITS",
+   "1": "NUMBER_OF_ROUND_LOTS"
+  },
+  "translations": {
+   "numberofunits": "0",
+   "numberofroundlots": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1787": {
+  "name": "RefTickTableID",
+  "tag": 1787,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1788": {
+  "name": "LegID",
+  "tag": 1788,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1789": {
+  "name": "NoTargetMarketSegments",
+  "tag": 1789,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1790": {
+  "name": "TargetMarketSegmentID",
+  "tag": 1790,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1791": {
+  "name": "NoAffectedMarketSegments",
+  "tag": 1791,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1792": {
+  "name": "AffectedMarketSegmentID",
+  "tag": 1792,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1793": {
+  "name": "NoNotAffectedMarketSegments",
+  "tag": 1793,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1794": {
+  "name": "NotAffectedMarketSegmentID",
+  "tag": 1794,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1795": {
+  "name": "NoOrderEvents",
+  "tag": 1795,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1796": {
+  "name": "OrderEventType",
+  "tag": 1796,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "ADDED",
+   "2": "MODIFIED",
+   "3": "DELETED",
+   "4": "PARTIALLY_FILLED",
+   "5": "FILLED",
+   "6": "SUSPENDED",
+   "7": "RELEASED",
+   "8": "RESTATED",
+   "9": "LOCKED",
+   "10": "TRIGGERED",
+   "11": "ACTIVATED"
+  },
+  "translations": {
+   "added": "1",
+   "modified": "2",
+   "deleted": "3",
+   "partiallyfilled": "4",
+   "filled": "5",
+   "suspended": "6",
+   "released": "7",
+   "restated": "8",
+   "locked": "9",
+   "triggered": "10",
+   "activated": "11",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11"
+  }
+ },
+ "1797": {
+  "name": "OrderEventExecID",
+  "tag": 1797,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1798": {
+  "name": "OrderEventReason",
+  "tag": 1798,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "ADD_ORDER_REQUEST",
+   "2": "MODIFY_ORDER_REQUEST",
+   "3": "DELETE_ORDER_REQUEST",
+   "4": "ORDER_ENTERED_OOB",
+   "5": "ORDER_MODIFIED_OOB",
+   "6": "ORDER_DELETED_OOB",
+   "7": "ORDER_ACTIVATED_OR_TRIGGERED",
+   "8": "ORDER_EXPIRED",
+   "9": "RESERVE_ORDER_REFRESHED",
+   "10": "AWAY_MARKET_BETTER",
+   "11": "CORPORATE_ACTION",
+   "12": "START_OF_DAY",
+   "13": "END_OF_DAY"
+  },
+  "translations": {
+   "addorderrequest": "1",
+   "modifyorderrequest": "2",
+   "deleteorderrequest": "3",
+   "orderenteredoob": "4",
+   "ordermodifiedoob": "5",
+   "orderdeletedoob": "6",
+   "orderactivatedortriggered": "7",
+   "orderexpired": "8",
+   "reserveorderrefreshed": "9",
+   "awaymarketbetter": "10",
+   "corporateaction": "11",
+   "startofday": "12",
+   "endofday": "13",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13"
+  }
+ },
+ "1799": {
+  "name": "OrderEventPx",
+  "tag": 1799,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1800": {
+  "name": "OrderEventQty",
+  "tag": 1800,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1801": {
+  "name": "OrderEventLiquidityIndicator",
+  "tag": 1801,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1802": {
+  "name": "OrderEventText",
+  "tag": 1802,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1803": {
+  "name": "AuctionType",
+  "tag": 1803,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NONE",
+   "1": "BLOCK_ORDER_AUCTION",
+   "2": "DIRECTED_ORDER_AUCTION",
+   "3": "EXPOSURE_ORDER_AUCTION",
+   "4": "FLASH_ORDER_AUCTION",
+   "5": "FACILITATION_ORDER_AUCTION",
+   "6": "SOLICITATION_ORDER_AUCTION",
+   "7": "PRICE_IMPROVEMENT_MECHANISM",
+   "8": "DIRECTED_ORDER_PRICE_IMPROVEMENT_MECHANISM"
+  },
+  "translations": {
+   "none": "0",
+   "blockorderauction": "1",
+   "directedorderauction": "2",
+   "exposureorderauction": "3",
+   "flashorderauction": "4",
+   "facilitationorderauction": "5",
+   "solicitationorderauction": "6",
+   "priceimprovementmechanism": "7",
+   "directedorderpriceimprovementmechanism": "8",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8"
+  }
+ },
+ "1804": {
+  "name": "AuctionAllocationPct",
+  "tag": 1804,
+  "type": "PERCENTAGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1805": {
+  "name": "AuctionInstruction",
+  "tag": 1805,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "AUTOMATED_AUCTION_PERMITTED",
+   "1": "AUTOMATED_AUCTION_NOT_PERMITTED"
+  },
+  "translations": {
+   "automatedauctionpermitted": "0",
+   "automatedauctionnotpermitted": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1806": {
+  "name": "RefClOrdID",
+  "tag": 1806,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1807": {
+  "name": "LockType",
+  "tag": 1807,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NOT_LOCKED",
+   "1": "AWAY_MARKET_NETTER",
+   "2": "THREE_TICK_LOCKED",
+   "3": "LOCKED_BY_MARKET_MAKER",
+   "4": "DIRECTED_ORDER_LOCK",
+   "5": "MULTILEG_LOCK",
+   "6": "MARKET_ORDER_LOCK",
+   "7": "PRE_ASSIGNMENT_LOCK"
+  },
+  "translations": {
+   "notlocked": "0",
+   "awaymarketnetter": "1",
+   "threeticklocked": "2",
+   "lockedbymarketmaker": "3",
+   "directedorderlock": "4",
+   "multileglock": "5",
+   "marketorderlock": "6",
+   "preassignmentlock": "7",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7"
+  }
+ },
+ "1808": {
+  "name": "LockedQty",
+  "tag": 1808,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1809": {
+  "name": "SecondaryLockedQty",
+  "tag": 1809,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1810": {
+  "name": "ReleaseInstruction",
+  "tag": 1810,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "ISO",
+   "2": "NO_AWAY_MARKET_BETTER_CHECK"
+  },
+  "translations": {
+   "iso": "1",
+   "noawaymarketbettercheck": "2",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1811": {
+  "name": "ReleaseQty",
+  "tag": 1811,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1812": {
+  "name": "NoDisclosureInstructions",
+  "tag": 1812,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1813": {
+  "name": "DisclosureType",
+  "tag": 1813,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "VOLUME",
+   "2": "PRICE",
+   "3": "SIDE",
+   "4": "AON",
+   "5": "GENERAL",
+   "6": "CLEARING_ACCOUNT",
+   "7": "CMTA_ACCOUNT"
+  },
+  "translations": {
+   "volume": "1",
+   "price": "2",
+   "side": "3",
+   "aon": "4",
+   "general": "5",
+   "clearingaccount": "6",
+   "cmtaaccount": "7",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7"
+  }
+ },
+ "1814": {
+  "name": "DisclosureInstruction",
+  "tag": 1814,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO",
+   "1": "YES",
+   "2": "USE_DEFAULT_SETTING"
+  },
+  "translations": {
+   "no": "0",
+   "yes": "1",
+   "usedefaultsetting": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1815": {
+  "name": "TradingCapacity",
+  "tag": 1815,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "CUSTOMER",
+   "2": "CUSTOMER_PROFESSIONAL",
+   "3": "BROKER_DEALER",
+   "4": "CUSTOMER_BROKER_DEALER",
+   "5": "PRINCIPAL",
+   "6": "MARKET_MAKER",
+   "7": "AWAY_MARKET_MAKER",
+   "8": "SYSTEMATIC_INTERNALISER"
+  },
+  "translations": {
+   "customer": "1",
+   "customerprofessional": "2",
+   "brokerdealer": "3",
+   "customerbrokerdealer": "4",
+   "principal": "5",
+   "marketmaker": "6",
+   "awaymarketmaker": "7",
+   "systematicinternaliser": "8",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8"
+  }
+ },
+ "1816": {
+  "name": "ClearingAccountType",
+  "tag": 1816,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "CUSTOMER",
+   "2": "FIRM",
+   "3": "MARKET_MAKER"
+  },
+  "translations": {
+   "customer": "1",
+   "firm": "2",
+   "marketmaker": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1817": {
+  "name": "LegClearingAccountType",
+  "tag": 1817,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1818": {
+  "name": "TargetPartyRoleQualifier",
+  "tag": 1818,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1819": {
+  "name": "RelatedHighPrice",
+  "tag": 1819,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1820": {
+  "name": "RelatedLowPrice",
+  "tag": 1820,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1821": {
+  "name": "RelatedPriceSource",
+  "tag": 1821,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "NB_BID",
+   "2": "NB_OFFER"
+  },
+  "translations": {
+   "nbbid": "1",
+   "nboffer": "2",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1822": {
+  "name": "MinQtyMethod",
+  "tag": 1822,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "ONCE",
+   "2": "MULTIPLE"
+  },
+  "translations": {
+   "once": "1",
+   "multiple": "2",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1823": {
+  "name": "Triggered",
+  "tag": 1823,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NOT_TRIGGERED",
+   "1": "TRIGGERED",
+   "2": "STOP_ORDER_TRIGGERED",
+   "3": "OCO_ORDER_TRIGGERED",
+   "4": "OTO_ORDER_TRIGGERED",
+   "5": "OUO_ORDER_TRIGGERED"
+  },
+  "translations": {
+   "nottriggered": "0",
+   "triggered": "1",
+   "stopordertriggered": "2",
+   "ocoordertriggered": "3",
+   "otoordertriggered": "4",
+   "ouoordertriggered": "5",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5"
+  }
+ },
+ "1824": {
+  "name": "AffectedOrigClOrdID",
+  "tag": 1824,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1825": {
+  "name": "NotAffSecondaryOrderID",
+  "tag": 1825,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1826": {
+  "name": "EventTimePeriod",
+  "tag": 1826,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1827": {
+  "name": "EventTimeUnit",
+  "tag": 1827,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "H": "HOUR",
+   "Min": "MINUTE",
+   "S": "SECOND",
+   "D": "DAY",
+   "Wk": "WEEK",
+   "Mo": "MONTH",
+   "Yr": "YEAR"
+  },
+  "translations": {
+   "hour": "H",
+   "minute": "Min",
+   "second": "S",
+   "day": "D",
+   "week": "Wk",
+   "month": "Mo",
+   "year": "Yr",
+   "h": "H",
+   "min": "Min",
+   "s": "S",
+   "d": "D",
+   "wk": "Wk",
+   "mo": "Mo",
+   "yr": "Yr"
+  }
+ },
+ "1828": {
+  "name": "LastQtyVariance",
+  "tag": 1828,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1829": {
+  "name": "NoCrossLegs",
+  "tag": 1829,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1830": {
+  "name": "SettlPriceIncrement",
+  "tag": 1830,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1831": {
+  "name": "SettlPriceSecondaryIncrement",
+  "tag": 1831,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1832": {
+  "name": "ClearedIndicator",
+  "tag": 1832,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NOT_CLEARED",
+   "1": "CLEARED",
+   "2": "SUBMITTED",
+   "3": "REJECTED"
+  },
+  "translations": {
+   "notcleared": "0",
+   "cleared": "1",
+   "submitted": "2",
+   "rejected": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1833": {
+  "name": "ContractRefPosType",
+  "tag": 1833,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "TWO_COMPONENT_INTERCOMMODITY_SPREAD",
+   "1": "INDEX_OR_BASKET",
+   "2": "TWO_COMPONENT_LOCATION_BASIS",
+   "99": "OTHER"
+  },
+  "translations": {
+   "twocomponentintercommodityspread": "0",
+   "indexorbasket": "1",
+   "twocomponentlocationbasis": "2",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "99": "99"
+  }
+ },
+ "1834": {
+  "name": "PositionCapacity",
+  "tag": 1834,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "PRINCIPAL",
+   "1": "AGENT",
+   "2": "CUSTOMER",
+   "3": "COUNTERPARTY"
+  },
+  "translations": {
+   "principal": "0",
+   "agent": "1",
+   "customer": "2",
+   "counterparty": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1835": {
+  "name": "PosQtyUnitOfMeasureCurrency",
+  "tag": 1835,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1836": {
+  "name": "PosQtyUnitOfMeasure",
+  "tag": 1836,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1837": {
+  "name": "UnderlyingContractPriceRefMonth",
+  "tag": 1837,
+  "type": "MONTHYEAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1838": {
+  "name": "NoTradePriceConditions",
+  "tag": 1838,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1839": {
+  "name": "TradePriceCondition",
+  "tag": 1839,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "SPECIAL_CUM_DIVIDEND",
+   "1": "SPECIAL_CUM_RIGHTS",
+   "2": "SPECIAL_EX_DIVIDEND",
+   "3": "SPECIAL_EX_RIGHTS",
+   "4": "SPECIAL_CUM_COUPON",
+   "5": "SPECIAL_CUM_CAPITAL_REPAYMENTS",
+   "6": "SPECIAL_EX_COUPON",
+   "7": "SPECIAL_EX_CAPITAL_REPAYMENTS",
+   "8": "CASH_SETTLEMENT",
+   "9": "SPECIAL_CUM_BONUS",
+   "10": "SPECIAL_PRICE",
+   "11": "SPECIAL_EX_BONUS",
+   "12": "GUARANTEED_DELIVERY",
+   "13": "SPECIAL_DIVIDEND",
+   "14": "PRICE_IMPROVEMENT",
+   "15": "NON_PRICE_FORMING_TRADE",
+   "16": "TRADE_EXEMPTED_FROM_TRADING_OBLIGATION",
+   "17": "PRICE_PENDING",
+   "18": "PRICE_NOT_APPLICABLE"
+  },
+  "translations": {
+   "specialcumdividend": "0",
+   "specialcumrights": "1",
+   "specialexdividend": "2",
+   "specialexrights": "3",
+   "specialcumcoupon": "4",
+   "specialcumcapitalrepayments": "5",
+   "specialexcoupon": "6",
+   "specialexcapitalrepayments": "7",
+   "cashsettlement": "8",
+   "specialcumbonus": "9",
+   "specialprice": "10",
+   "specialexbonus": "11",
+   "guaranteeddelivery": "12",
+   "specialdividend": "13",
+   "priceimprovement": "14",
+   "nonpriceformingtrade": "15",
+   "tradeexemptedfromtradingobligation": "16",
+   "pricepending": "17",
+   "pricenotapplicable": "18",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "17": "17",
+   "18": "18"
+  }
+ },
+ "1840": {
+  "name": "TradeAllocStatus",
+  "tag": 1840,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "PENDING_CLEAR",
+   "1": "CLAIMED",
+   "2": "CLEARED",
+   "3": "REJECTED"
+  },
+  "translations": {
+   "pendingclear": "0",
+   "claimed": "1",
+   "cleared": "2",
+   "rejected": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1841": {
+  "name": "NoTradeQtys",
+  "tag": 1841,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1842": {
+  "name": "TradeQtyType",
+  "tag": 1842,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "CLEARED_QUANTITY",
+   "1": "LONG_SIDE_CLAIMED_QUANTITY",
+   "2": "SHORT_SIDE_CLAIMED_QUANTITY",
+   "3": "LONG_SIDE_REJECTED_QUANTITY",
+   "4": "SHORT_SIDE_REJECTED_QUANTITY",
+   "5": "PENDING_QUANTITY",
+   "6": "TRANSACTION_QUANTITY",
+   "7": "REMAINING_QUANTITY",
+   "8": "PREVIOUS_REMAINING_QUANTITY"
+  },
+  "translations": {
+   "clearedquantity": "0",
+   "longsideclaimedquantity": "1",
+   "shortsideclaimedquantity": "2",
+   "longsiderejectedquantity": "3",
+   "shortsiderejectedquantity": "4",
+   "pendingquantity": "5",
+   "transactionquantity": "6",
+   "remainingquantity": "7",
+   "previousremainingquantity": "8",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8"
+  }
+ },
+ "1843": {
+  "name": "TradeQty",
+  "tag": 1843,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1844": {
+  "name": "NoTradeAllocAmts",
+  "tag": 1844,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1845": {
+  "name": "TradeAllocAmtType",
+  "tag": 1845,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1846": {
+  "name": "TradeAllocAmt",
+  "tag": 1846,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1847": {
+  "name": "TradeAllocCurrency",
+  "tag": 1847,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1848": {
+  "name": "TradeAllocGroupInstruction",
+  "tag": 1848,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ADD",
+   "1": "DO_NOT_ADD"
+  },
+  "translations": {
+   "add": "0",
+   "donotadd": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1849": {
+  "name": "OffsetInstruction",
+  "tag": 1849,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "OFFSET",
+   "1": "ONSET"
+  },
+  "translations": {
+   "offset": "0",
+   "onset": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1850": {
+  "name": "TradeAllocAmtReason",
+  "tag": 1850,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1851": {
+  "name": "StrategyLinkID",
+  "tag": 1851,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1852": {
+  "name": "SideAvgPx",
+  "tag": 1852,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1853": {
+  "name": "SideAvgPxIndicator",
+  "tag": 1853,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_AVG_PRICING",
+   "1": "TRADE_IS_PART_AVG_PRICE_GRP",
+   "2": "LAST_TRADE_IS_PART_AVG_PRICE_GRP"
+  },
+  "translations": {
+   "noavgpricing": "0",
+   "tradeispartavgpricegrp": "1",
+   "lasttradeispartavgpricegrp": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1854": {
+  "name": "SideAvgPxGroupID",
+  "tag": 1854,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1855": {
+  "name": "NoRelatedTrades",
+  "tag": 1855,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1856": {
+  "name": "RelatedTradeID",
+  "tag": 1856,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1857": {
+  "name": "RelatedTradeIDSource",
+  "tag": 1857,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NON_FIX_SOURCE",
+   "1": "TRADE_ID",
+   "2": "SECONDARY_TRADE_ID",
+   "3": "TRADE_REPORT_ID",
+   "4": "FIRM_TRADE_ID",
+   "5": "SECONDARY_FIRM_TRADE_ID",
+   "6": "REGULATORY_TRADE_ID"
+  },
+  "translations": {
+   "nonfixsource": "0",
+   "tradeid": "1",
+   "secondarytradeid": "2",
+   "tradereportid": "3",
+   "firmtradeid": "4",
+   "secondaryfirmtradeid": "5",
+   "regulatorytradeid": "6",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6"
+  }
+ },
+ "1858": {
+  "name": "RelatedTradeDate",
+  "tag": 1858,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1859": {
+  "name": "RelatedTradeMarketID",
+  "tag": 1859,
+  "type": "EXCHANGE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1860": {
+  "name": "RelatedTradeQuantity",
+  "tag": 1860,
+  "type": "QTY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1861": {
+  "name": "NoRelatedPositions",
+  "tag": 1861,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1862": {
+  "name": "RelatedPositionID",
+  "tag": 1862,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1863": {
+  "name": "RelatedPositionIDSource",
+  "tag": 1863,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "POS_MAINT_RPT_ID",
+   "2": "TRANSFER_ID",
+   "3": "POSITION_ENTITY_ID"
+  },
+  "translations": {
+   "posmaintrptid": "1",
+   "transferid": "2",
+   "positionentityid": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1864": {
+  "name": "RelatedPositionDate",
+  "tag": 1864,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1865": {
+  "name": "QuoteAckStatus",
+  "tag": 1865,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "RECEIVED_NOT_YET_PROCESSED",
+   "1": "ACCEPTED",
+   "2": "REJECTED"
+  },
+  "translations": {
+   "receivednotyetprocessed": "0",
+   "accepted": "1",
+   "rejected": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1866": {
+  "name": "StrikeIndex",
+  "tag": 1866,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1867": {
+  "name": "OfferID",
+  "tag": 1867,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1868": {
+  "name": "NoValueChecks",
+  "tag": 1868,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1869": {
+  "name": "ValueCheckType",
+  "tag": 1869,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "PRICE_CHECK",
+   "2": "NOTIONAL_VALUE_CHECK",
+   "3": "QUANTITY_CHECK"
+  },
+  "translations": {
+   "pricecheck": "1",
+   "notionalvaluecheck": "2",
+   "quantitycheck": "3",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1870": {
+  "name": "ValueCheckAction",
+  "tag": 1870,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "DO_NOT_CHECK",
+   "1": "CHECK",
+   "2": "BEST_EFFORT"
+  },
+  "translations": {
+   "donotcheck": "0",
+   "check": "1",
+   "besteffort": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1871": {
+  "name": "LegSecurityXMLLen",
+  "tag": 1871,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1872": {
+  "name": "LegSecurityXML",
+  "tag": 1872,
+  "type": "XMLDATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1873": {
+  "name": "LegSecurityXMLSchema",
+  "tag": 1873,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1874": {
+  "name": "UnderlyingSecurityXMLLen",
+  "tag": 1874,
+  "type": "LENGTH",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1875": {
+  "name": "UnderlyingSecurityXML",
+  "tag": 1875,
+  "type": "XMLDATA",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1876": {
+  "name": "UnderlyingSecurityXMLSchema",
+  "tag": 1876,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1877": {
+  "name": "PartyDetailRequestResult",
+  "tag": 1877,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "SUCCESSFUL",
+   "1": "INVALID_PARTY",
+   "2": "INVALID_RELATED_PARTY",
+   "3": "INVALID_PARTY_STATUS",
+   "98": "NOT_AUTHORIZED",
+   "99": "OTHER"
+  },
+  "translations": {
+   "successful": "0",
+   "invalidparty": "1",
+   "invalidrelatedparty": "2",
+   "invalidpartystatus": "3",
+   "notauthorized": "98",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "98": "98",
+   "99": "99"
+  }
+ },
+ "1878": {
+  "name": "PartyDetailRequestStatus",
+  "tag": 1878,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ACCEPTED",
+   "1": "ACCEPTED_WITH_CHANGES",
+   "2": "REJECTED",
+   "3": "ACCEPTANCE_PENDING"
+  },
+  "translations": {
+   "accepted": "0",
+   "acceptedwithchanges": "1",
+   "rejected": "2",
+   "acceptancepending": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1879": {
+  "name": "PartyDetailDefinitionStatus",
+  "tag": 1879,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ACCEPTED",
+   "1": "ACCEPTED_WITH_CHANGES",
+   "2": "REJECTED"
+  },
+  "translations": {
+   "accepted": "0",
+   "acceptedwithchanges": "1",
+   "rejected": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1880": {
+  "name": "PartyDetailDefinitionResult",
+  "tag": 1880,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1881": {
+  "name": "EntitlementRequestResult",
+  "tag": 1881,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "SUCCESSFUL",
+   "1": "INVALID_PARTY",
+   "2": "INVALID_RELATED_PARTY",
+   "3": "INVALID_ENTITLEMENT_TYPE",
+   "4": "INVALID_ENTITLEMENT_ID",
+   "5": "INVALID_ENTITLEMENT_ATTRIBUTE",
+   "6": "INVALID_INSTRUMENT_SCOPE",
+   "7": "INVALID_MARKET_SEGMENT_SCOPE",
+   "8": "INVALID_START_DATE",
+   "9": "INVALID_END_DATE",
+   "10": "INSTRUMENT_SCOPE_NOT_SUPPORTED",
+   "11": "MARKET_SEGMENT_SCOPE_NOT_SUPPORTED",
+   "12": "ENTITLEMENT_NOT_APPROVED_FOR_PARTY",
+   "13": "ENTITLEMENT_ALREADY_DEFINED_FOR_PARTY",
+   "14": "INSTRUMENT_NOT_APPROVED_FOR_PARTY",
+   "98": "NOT_AUTHORIZED",
+   "99": "OTHER"
+  },
+  "translations": {
+   "successful": "0",
+   "invalidparty": "1",
+   "invalidrelatedparty": "2",
+   "invalidentitlementtype": "3",
+   "invalidentitlementid": "4",
+   "invalidentitlementattribute": "5",
+   "invalidinstrumentscope": "6",
+   "invalidmarketsegmentscope": "7",
+   "invalidstartdate": "8",
+   "invalidenddate": "9",
+   "instrumentscopenotsupported": "10",
+   "marketsegmentscopenotsupported": "11",
+   "entitlementnotapprovedforparty": "12",
+   "entitlementalreadydefinedforparty": "13",
+   "instrumentnotapprovedforparty": "14",
+   "notauthorized": "98",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "98": "98",
+   "99": "99"
+  }
+ },
+ "1882": {
+  "name": "EntitlementRequestStatus",
+  "tag": 1882,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1883": {
+  "name": "EntitlementStatus",
+  "tag": 1883,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ACCEPTED",
+   "1": "ACCEPTED_WITH_CHANGES",
+   "2": "REJECTED",
+   "3": "PENDING",
+   "4": "REQUESTED",
+   "5": "DEFERRED"
+  },
+  "translations": {
+   "accepted": "0",
+   "acceptedwithchanges": "1",
+   "rejected": "2",
+   "pending": "3",
+   "requested": "4",
+   "deferred": "5",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5"
+  }
+ },
+ "1884": {
+  "name": "EntitlementResult",
+  "tag": 1884,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1885": {
+  "name": "EntitlementRefID",
+  "tag": 1885,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1886": {
+  "name": "SettlPriceUnitOfMeasure",
+  "tag": 1886,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1887": {
+  "name": "SettlPriceUnitOfMeasureCurrency",
+  "tag": 1887,
+  "type": "CURRENCY",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1888": {
+  "name": "TradeMatchTimestamp",
+  "tag": 1888,
+  "type": "UTCTIMESTAMP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1889": {
+  "name": "NoInstrmtMatchSides",
+  "tag": 1889,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1890": {
+  "name": "NoTrdMatchSides",
+  "tag": 1890,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1891": {
+  "name": "TrdMatchSubID",
+  "tag": 1891,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1892": {
+  "name": "NoLegExecs",
+  "tag": 1892,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1893": {
+  "name": "LegExecID",
+  "tag": 1893,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1894": {
+  "name": "LegTradeID",
+  "tag": 1894,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1895": {
+  "name": "LegTradeReportID",
+  "tag": 1895,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1896": {
+  "name": "TradeMatchAckStatus",
+  "tag": 1896,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "RECEIVED_NOT_PROCESSED",
+   "1": "ACCEPTED",
+   "2": "REJECTED"
+  },
+  "translations": {
+   "receivednotprocessed": "0",
+   "accepted": "1",
+   "rejected": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1897": {
+  "name": "TradeMatchRejectReason",
+  "tag": 1897,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "SUCCESSFUL",
+   "1": "INVALID_PARTY_INFORMATION",
+   "2": "UNKNOWN_INSTRUMENT",
+   "3": "UNAUTHORIZED",
+   "4": "INVALID_TRADE_TYPE",
+   "99": "OTHER"
+  },
+  "translations": {
+   "successful": "0",
+   "invalidpartyinformation": "1",
+   "unknowninstrument": "2",
+   "unauthorized": "3",
+   "invalidtradetype": "4",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "99": "99"
+  }
+ },
+ "1898": {
+  "name": "SideMarketSegmentID",
+  "tag": 1898,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1899": {
+  "name": "SideVenueType",
+  "tag": 1899,
+  "type": "CHAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1900": {
+  "name": "SideExecRefID",
+  "tag": 1900,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1901": {
+  "name": "LegExecRefID",
+  "tag": 1901,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1902": {
+  "name": "HaircutIndicator",
+  "tag": 1902,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1903": {
+  "name": "RegulatoryTradeID",
+  "tag": 1903,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1904": {
+  "name": "RegulatoryTradeIDEvent",
+  "tag": 1904,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "INITIAL_BLOCK_TRADE",
+   "1": "ALLOCATION",
+   "2": "CLEARING",
+   "3": "COMPRESSION",
+   "4": "NOVATION",
+   "5": "TERMINATION",
+   "6": "POST_TRD_VAL"
+  },
+  "translations": {
+   "initialblocktrade": "0",
+   "allocation": "1",
+   "clearing": "2",
+   "compression": "3",
+   "novation": "4",
+   "termination": "5",
+   "posttrdval": "6",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6"
+  }
+ },
+ "1905": {
+  "name": "RegulatoryTradeIDSource",
+  "tag": 1905,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "UNIQUE_TRANSACTION_IDENTIFIER"
+  },
+  "translations": {
+   "uniquetransactionidentifier": "1",
+   "1": "1"
+  }
+ },
+ "1906": {
+  "name": "RegulatoryTradeIDType",
+  "tag": 1906,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "CURRENT",
+   "1": "PREVIOUS",
+   "2": "BLOCK",
+   "3": "RELATED",
+   "4": "CLEARED_BLOCK_TRADE",
+   "5": "TRADING_VENUE_TRANSACTION_IDENTIFIER"
+  },
+  "translations": {
+   "current": "0",
+   "previous": "1",
+   "block": "2",
+   "related": "3",
+   "clearedblocktrade": "4",
+   "tradingvenuetransactionidentifier": "5",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5"
+  }
+ },
+ "1907": {
+  "name": "NoRegulatoryTradeIDs",
+  "tag": 1907,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1908": {
+  "name": "NoAllocRegulatoryTradeIDs",
+  "tag": 1908,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1909": {
+  "name": "AllocRegulatoryTradeID",
+  "tag": 1909,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1910": {
+  "name": "AllocRegulatoryTradeIDSource",
+  "tag": 1910,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1911": {
+  "name": "AllocRegulatoryTradeIDEvent",
+  "tag": 1911,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1912": {
+  "name": "AllocRegulatoryTradeIDType",
+  "tag": 1912,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1913": {
+  "name": "NumOfCompetitors",
+  "tag": 1913,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1914": {
+  "name": "ResponseTime",
+  "tag": 1914,
+  "type": "UTCTIMESTAMP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1915": {
+  "name": "QuoteDisplayTime",
+  "tag": 1915,
+  "type": "UTCTIMESTAMP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1916": {
+  "name": "ExposureDurationUnit",
+  "tag": 1916,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1917": {
+  "name": "CoverPrice",
+  "tag": 1917,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1918": {
+  "name": "NoClearingAccountTypes",
+  "tag": 1918,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1919": {
+  "name": "NoPriceMovements",
+  "tag": 1919,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1920": {
+  "name": "NoPriceMovementValues",
+  "tag": 1920,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1921": {
+  "name": "PriceMovementValue",
+  "tag": 1921,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1922": {
+  "name": "PriceMovementPoint",
+  "tag": 1922,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1923": {
+  "name": "PriceMovementType",
+  "tag": 1923,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "AMOUNT",
+   "1": "PERCENTAGE"
+  },
+  "translations": {
+   "amount": "0",
+   "percentage": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1924": {
+  "name": "ClearingIntention",
+  "tag": 1924,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "DO_NOT_INTEND_TO_CLEAR",
+   "1": "INTEND_TO_CLEAR"
+  },
+  "translations": {
+   "donotintendtoclear": "0",
+   "intendtoclear": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1925": {
+  "name": "TradeClearingInstruction",
+  "tag": 1925,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1926": {
+  "name": "BackloadedTradeIndicator",
+  "tag": 1926,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1927": {
+  "name": "ConfirmationMethod",
+  "tag": 1927,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NON_ELECTRONIC",
+   "1": "ELECTRONIC",
+   "2": "UNCONFIRMED"
+  },
+  "translations": {
+   "nonelectronic": "0",
+   "electronic": "1",
+   "unconfirmed": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1928": {
+  "name": "MandatoryClearingIndicator",
+  "tag": 1928,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1929": {
+  "name": "MixedSwapIndicator",
+  "tag": 1929,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1930": {
+  "name": "OffMarketPriceIndicator",
+  "tag": 1930,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1931": {
+  "name": "VerificationMethod",
+  "tag": 1931,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NON_ELECTRONIC",
+   "1": "ELECTRONIC"
+  },
+  "translations": {
+   "nonelectronic": "0",
+   "electronic": "1",
+   "0": "0",
+   "1": "1"
+  }
+ },
+ "1932": {
+  "name": "ClearingRequirementException",
+  "tag": 1932,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NO_EXCEPTION",
+   "1": "EXCEPTION",
+   "2": "END_USER_EXCEPTION",
+   "3": "INTER_AFFILIATE_EXCEPTION",
+   "4": "TREASURY_AFFILIATE_EXCEPTION",
+   "5": "COOPERATIVE_EXCEPTION"
+  },
+  "translations": {
+   "noexception": "0",
+   "exception": "1",
+   "enduserexception": "2",
+   "interaffiliateexception": "3",
+   "treasuryaffiliateexception": "4",
+   "cooperativeexception": "5",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5"
+  }
+ },
+ "1933": {
+  "name": "IRSDirection",
+  "tag": 1933,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "PAY": "PAY",
+   "RCV": "RCV",
+   "NA": "NA"
+  },
+  "translations": {
+   "pay": "PAY",
+   "rcv": "RCV",
+   "na": "NA"
+  }
+ },
+ "1934": {
+  "name": "RegulatoryReportType",
+  "tag": 1934,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "RT",
+   "1": "PET",
+   "2": "SNAPSHOT",
+   "3": "CONFIRMATION",
+   "4": "RTPET",
+   "5": "PET_CONFIRMATION",
+   "6": "RTPET_CONFIRMATION",
+   "7": "POST_TRADE",
+   "8": "VERIFICATION",
+   "9": "PST_TRD_EVNT",
+   "10": "PST_TRD_EVNT_RT_REPORTABLE",
+   "11": "LMTF",
+   "12": "DATF",
+   "13": "VOLO",
+   "14": "FWAF",
+   "15": "IDAF",
+   "16": "VOLW",
+   "17": "FULF",
+   "18": "FULA",
+   "19": "FULV",
+   "20": "FULJ",
+   "21": "COAF",
+   "22": "ORDER",
+   "23": "CHILD_ORDER",
+   "24": "ORDER_ROUTE",
+   "25": "TRADE",
+   "26": "QUOTE",
+   "27": "SUPPLEMENT",
+   "28": "NEW_TRANSACTION",
+   "29": "TRANSACTION_CORRECTION",
+   "30": "TRANSACTION_MODIFICATION",
+   "31": "COLLATERAL_UPDATE",
+   "32": "MARGIN_UPDATE",
+   "33": "TRANSACTION_REPORTED_IN_ERROR",
+   "34": "TERMINATION_EARLY_TERMINATION"
+  },
+  "translations": {
+   "rt": "0",
+   "pet": "1",
+   "snapshot": "2",
+   "confirmation": "3",
+   "rtpet": "4",
+   "petconfirmation": "5",
+   "rtpetconfirmation": "6",
+   "posttrade": "7",
+   "verification": "8",
+   "psttrdevnt": "9",
+   "psttrdevntrtreportable": "10",
+   "lmtf": "11",
+   "datf": "12",
+   "volo": "13",
+   "fwaf": "14",
+   "idaf": "15",
+   "volw": "16",
+   "fulf": "17",
+   "fula": "18",
+   "fulv": "19",
+   "fulj": "20",
+   "coaf": "21",
+   "order": "22",
+   "childorder": "23",
+   "orderroute": "24",
+   "trade": "25",
+   "quote": "26",
+   "supplement": "27",
+   "newtransaction": "28",
+   "transactioncorrection": "29",
+   "transactionmodification": "30",
+   "collateralupdate": "31",
+   "marginupdate": "32",
+   "transactionreportedinerror": "33",
+   "terminationearlytermination": "34",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "17": "17",
+   "18": "18",
+   "19": "19",
+   "20": "20",
+   "21": "21",
+   "22": "22",
+   "23": "23",
+   "24": "24",
+   "25": "25",
+   "26": "26",
+   "27": "27",
+   "28": "28",
+   "29": "29",
+   "30": "30",
+   "31": "31",
+   "32": "32",
+   "33": "33",
+   "34": "34"
+  }
+ },
+ "1935": {
+  "name": "VoluntaryRegulatoryReport",
+  "tag": 1935,
+  "type": "BOOLEAN",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1936": {
+  "name": "TradeCollateralization",
+  "tag": 1936,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "UNCOLLATERALIZED",
+   "1": "PARTIALLY_COLLATERALIZED",
+   "2": "ONE_WAY_COLLATERALLIZATION",
+   "3": "FULLY_COLLATERALIZED",
+   "4": "NET_EXPOSURE"
+  },
+  "translations": {
+   "uncollateralized": "0",
+   "partiallycollateralized": "1",
+   "onewaycollaterallization": "2",
+   "fullycollateralized": "3",
+   "netexposure": "4",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4"
+  }
+ },
+ "1937": {
+  "name": "TradeContinuation",
+  "tag": 1937,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "NOVATION",
+   "1": "PARTIAL_NOVATION",
+   "2": "TRADE_UNWIND",
+   "3": "PARTIAL_TRADE_UNWIND",
+   "4": "EXERCISE",
+   "5": "NETTING",
+   "6": "FULL_NETTING",
+   "7": "PARTIAL_NETTING",
+   "8": "AMENDMENT",
+   "9": "INCREASE",
+   "10": "CREDIT_EVENT",
+   "11": "STRATEGIC_RESTRUCTURING",
+   "12": "SUCCESSION_EVENT_REORGANIZATION",
+   "13": "SUCCESSION_EVENT_RENAMING",
+   "14": "PORTING",
+   "15": "WITHDRAWL",
+   "16": "VOID",
+   "17": "ACCOUNT_TRANSFER",
+   "18": "GIVE_UP",
+   "19": "TAKE_UP",
+   "20": "AVERAGE_PRICING",
+   "21": "REVERSAL",
+   "22": "ALLOC_TRD_POSTING",
+   "23": "CASCADE",
+   "24": "DELIVERY",
+   "25": "OPTION_ASGN",
+   "26": "EXPIRATION",
+   "27": "MATURITY",
+   "28": "EQUAL_POS_ADJ",
+   "29": "UNEQUAL_POS_ADJ",
+   "30": "CORRECTION",
+   "31": "EARLY_TERMINATION",
+   "32": "RERATE",
+   "99": "OTHER"
+  },
+  "translations": {
+   "novation": "0",
+   "partialnovation": "1",
+   "tradeunwind": "2",
+   "partialtradeunwind": "3",
+   "exercise": "4",
+   "netting": "5",
+   "fullnetting": "6",
+   "partialnetting": "7",
+   "amendment": "8",
+   "increase": "9",
+   "creditevent": "10",
+   "strategicrestructuring": "11",
+   "successioneventreorganization": "12",
+   "successioneventrenaming": "13",
+   "porting": "14",
+   "withdrawl": "15",
+   "void": "16",
+   "accounttransfer": "17",
+   "giveup": "18",
+   "takeup": "19",
+   "averagepricing": "20",
+   "reversal": "21",
+   "alloctrdposting": "22",
+   "cascade": "23",
+   "delivery": "24",
+   "optionasgn": "25",
+   "expiration": "26",
+   "maturity": "27",
+   "equalposadj": "28",
+   "unequalposadj": "29",
+   "correction": "30",
+   "earlytermination": "31",
+   "rerate": "32",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "17": "17",
+   "18": "18",
+   "19": "19",
+   "20": "20",
+   "21": "21",
+   "22": "22",
+   "23": "23",
+   "24": "24",
+   "25": "25",
+   "26": "26",
+   "27": "27",
+   "28": "28",
+   "29": "29",
+   "30": "30",
+   "31": "31",
+   "32": "32",
+   "99": "99"
+  }
+ },
+ "1938": {
+  "name": "AssetClass",
+  "tag": 1938,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "INTEREST_RATE",
+   "2": "CURRENCY",
+   "3": "CREDIT",
+   "4": "EQUITY",
+   "5": "COMMODITY",
+   "6": "OTHER",
+   "7": "CASH",
+   "8": "DEBT",
+   "9": "FUND",
+   "10": "LOAN_FACILITY",
+   "11": "INDEX"
+  },
+  "translations": {
+   "interestrate": "1",
+   "currency": "2",
+   "credit": "3",
+   "equity": "4",
+   "commodity": "5",
+   "other": "6",
+   "cash": "7",
+   "debt": "8",
+   "fund": "9",
+   "loanfacility": "10",
+   "index": "11",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11"
+  }
+ },
+ "1939": {
+  "name": "AssetSubClass",
+  "tag": 1939,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "13": "METALS",
+   "14": "BULLION",
+   "15": "ENERGY",
+   "16": "COMMODITY_INDEX",
+   "17": "AGRICULTURAL",
+   "18": "ENVIRONMENTAL",
+   "19": "FREIGHT",
+   "41": "FERTILIZER",
+   "42": "INDUSTRIAL_PRODUCT",
+   "43": "INFLATION",
+   "44": "PAPER",
+   "45": "POLYPROPYLENE",
+   "46": "OFFICIAL_ECONOMIC_STATISTICS",
+   "4": "SINGLE_NAME",
+   "5": "CREDIT_INDEX",
+   "6": "INDEX_TRANCHE",
+   "7": "CREDIT_BASKET",
+   "3": "BASKET",
+   "38": "FX_CROSS_RATES",
+   "39": "FX_EMERGING_MARKETS",
+   "40": "FX_MAJORS",
+   "20": "GOVERNMENT",
+   "21": "AGENCY",
+   "22": "CORPORATE",
+   "23": "FINANCING",
+   "24": "MONEY_MARKET",
+   "25": "MORTGAGE",
+   "26": "MUNICIPAL",
+   "9": "COMMON",
+   "10": "PREFERRED",
+   "11": "EQUITY_INDEX",
+   "12": "EQUITY_BASKET",
+   "34": "DIVIDEND_INDEX",
+   "35": "STOCK_DIVIDEND",
+   "36": "EXCHANGE_TRADED_FUND",
+   "37": "VOLATILITY_INDEX",
+   "27": "MUTUAL_FUND",
+   "28": "COLLECTIVE_INVESTMENT_VEHICLE",
+   "29": "INVESTMENT_PROGRAM",
+   "30": "SPECIALIZED_ACCOUNT_PROGRAM",
+   "1": "SINGLE_CURRENCY",
+   "2": "CROSS_CURRENCY",
+   "31": "TERM_LOAN",
+   "32": "BRIDGE_LOAN",
+   "33": "LETTER_OF_CREDIT",
+   "8": "EXOTIC",
+   "47": "OTHER_C10",
+   "48": "OTHER"
+  },
+  "translations": {
+   "metals": "13",
+   "bullion": "14",
+   "energy": "15",
+   "commodityindex": "16",
+   "agricultural": "17",
+   "environmental": "18",
+   "freight": "19",
+   "fertilizer": "41",
+   "industrialproduct": "42",
+   "inflation": "43",
+   "paper": "44",
+   "polypropylene": "45",
+   "officialeconomicstatistics": "46",
+   "singlename": "4",
+   "creditindex": "5",
+   "indextranche": "6",
+   "creditbasket": "7",
+   "basket": "3",
+   "fxcrossrates": "38",
+   "fxemergingmarkets": "39",
+   "fxmajors": "40",
+   "government": "20",
+   "agency": "21",
+   "corporate": "22",
+   "financing": "23",
+   "moneymarket": "24",
+   "mortgage": "25",
+   "municipal": "26",
+   "common": "9",
+   "preferred": "10",
+   "equityindex": "11",
+   "equitybasket": "12",
+   "dividendindex": "34",
+   "stockdividend": "35",
+   "exchangetradedfund": "36",
+   "volatilityindex": "37",
+   "mutualfund": "27",
+   "collectiveinvestmentvehicle": "28",
+   "investmentprogram": "29",
+   "specializedaccountprogram": "30",
+   "singlecurrency": "1",
+   "crosscurrency": "2",
+   "termloan": "31",
+   "bridgeloan": "32",
+   "letterofcredit": "33",
+   "exotic": "8",
+   "otherc10": "47",
+   "other": "48",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "17": "17",
+   "18": "18",
+   "19": "19",
+   "41": "41",
+   "42": "42",
+   "43": "43",
+   "44": "44",
+   "45": "45",
+   "46": "46",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "3": "3",
+   "38": "38",
+   "39": "39",
+   "40": "40",
+   "20": "20",
+   "21": "21",
+   "22": "22",
+   "23": "23",
+   "24": "24",
+   "25": "25",
+   "26": "26",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "34": "34",
+   "35": "35",
+   "36": "36",
+   "37": "37",
+   "27": "27",
+   "28": "28",
+   "29": "29",
+   "30": "30",
+   "1": "1",
+   "2": "2",
+   "31": "31",
+   "32": "32",
+   "33": "33",
+   "8": "8",
+   "47": "47",
+   "48": "48"
+  }
+ },
+ "1940": {
+  "name": "AssetType",
+  "tag": 1940,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1941": {
+  "name": "SwapClass",
+  "tag": 1941,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "BS": "BASIS_SWAP",
+   "IX": "INDEX_SWAP",
+   "BB": "BROAD_BASED_SECURITY_SWAP",
+   "SK": "BASKET_SWAP"
+  },
+  "translations": {
+   "basisswap": "BS",
+   "indexswap": "IX",
+   "broadbasedsecurityswap": "BB",
+   "basketswap": "SK",
+   "bs": "BS",
+   "ix": "IX",
+   "bb": "BB",
+   "sk": "SK"
+  }
+ },
+ "1942": {
+  "name": "NthToDefault",
+  "tag": 1942,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1943": {
+  "name": "MthToDefault",
+  "tag": 1943,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1944": {
+  "name": "SettledEntityMatrixSource",
+  "tag": 1944,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1945": {
+  "name": "SettledEntityMatrixPublicationDate",
+  "tag": 1945,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1946": {
+  "name": "CouponType",
+  "tag": 1946,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ZERO",
+   "1": "FIXED_RATE",
+   "2": "FLOATING_RATE",
+   "3": "STRUCTURED"
+  },
+  "translations": {
+   "zero": "0",
+   "fixedrate": "1",
+   "floatingrate": "2",
+   "structured": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1947": {
+  "name": "TotalIssuedAmount",
+  "tag": 1947,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1948": {
+  "name": "CouponFrequencyPeriod",
+  "tag": 1948,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1949": {
+  "name": "CouponFrequencyUnit",
+  "tag": 1949,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "D": "DAY",
+   "Wk": "WEEK",
+   "Mo": "MONTH",
+   "Yr": "YEAR",
+   "H": "HOUR",
+   "Min": "MINUTE",
+   "S": "SECOND",
+   "T": "TERM"
+  },
+  "translations": {
+   "day": "D",
+   "week": "Wk",
+   "month": "Mo",
+   "year": "Yr",
+   "hour": "H",
+   "minute": "Min",
+   "second": "S",
+   "term": "T",
+   "d": "D",
+   "wk": "Wk",
+   "mo": "Mo",
+   "yr": "Yr",
+   "h": "H",
+   "min": "Min",
+   "s": "S",
+   "t": "T"
+  }
+ },
+ "1950": {
+  "name": "CouponDayCount",
+  "tag": 1950,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "ONE_ONE",
+   "1": "THIRTY_THREE_SIXTY_US",
+   "2": "THIRTY_THREE_SIXTY_SIA",
+   "3": "THIRTY_THREE_SIXTY_M",
+   "4": "THIRTY_E_THREE_SIXTY",
+   "5": "THIRTY_E_THREE_SIXTY_ISDA",
+   "6": "ACT_THREE_SIXTY",
+   "7": "ACT_THREE_SIXTY_FIVE_FIXED",
+   "8": "ACT_ACT_AFB",
+   "9": "ACT_ACT_ICMA",
+   "10": "ACT_ACT_ISMA_ULTIMO",
+   "11": "ACT_ACT_ISDA",
+   "12": "BUS_TWO_FIFTY_TWO",
+   "13": "THIRTY_E_PLUS_THREE_SIXTY",
+   "14": "ACT_THREE_SIXTY_FIVE_L",
+   "15": "NL_THREE_SIXTY_FIVE",
+   "16": "NL_THREE_SIXTY",
+   "17": "ACT364",
+   "18": "THIRTY_THREE_SIXTY_FIVE",
+   "19": "THIRTY_ACTUAL",
+   "20": "THIRTY_THREE_SIXTY_ICMA",
+   "21": "THIRTY_E_TWO_THREE_SIXTY",
+   "22": "THIRTY_E_THREE_THREE_SIXTY",
+   "99": "OTHER"
+  },
+  "translations": {
+   "oneone": "0",
+   "thirtythreesixtyus": "1",
+   "thirtythreesixtysia": "2",
+   "thirtythreesixtym": "3",
+   "thirtyethreesixty": "4",
+   "thirtyethreesixtyisda": "5",
+   "actthreesixty": "6",
+   "actthreesixtyfivefixed": "7",
+   "actactafb": "8",
+   "actacticma": "9",
+   "actactismaultimo": "10",
+   "actactisda": "11",
+   "bustwofiftytwo": "12",
+   "thirtyeplusthreesixty": "13",
+   "actthreesixtyfivel": "14",
+   "nlthreesixtyfive": "15",
+   "nlthreesixty": "16",
+   "act364": "17",
+   "thirtythreesixtyfive": "18",
+   "thirtyactual": "19",
+   "thirtythreesixtyicma": "20",
+   "thirtyetwothreesixty": "21",
+   "thirtyethreethreesixty": "22",
+   "other": "99",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10",
+   "11": "11",
+   "12": "12",
+   "13": "13",
+   "14": "14",
+   "15": "15",
+   "16": "16",
+   "17": "17",
+   "18": "18",
+   "19": "19",
+   "20": "20",
+   "21": "21",
+   "22": "22",
+   "99": "99"
+  }
+ },
+ "1951": {
+  "name": "ConvertibleBondEquityID",
+  "tag": 1951,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1952": {
+  "name": "ConvertibleBondEquityIDSource",
+  "tag": 1952,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1953": {
+  "name": "ContractPriceRefMonth",
+  "tag": 1953,
+  "type": "MONTHYEAR",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1954": {
+  "name": "LienSeniority",
+  "tag": 1954,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "UNKNOWN",
+   "1": "FIRST_LIEN",
+   "2": "SECOND_LIEN",
+   "3": "THIRD_LIEN"
+  },
+  "translations": {
+   "unknown": "0",
+   "firstlien": "1",
+   "secondlien": "2",
+   "thirdlien": "3",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3"
+  }
+ },
+ "1955": {
+  "name": "LoanFacility",
+  "tag": 1955,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "BRIDGE_LOAN",
+   "1": "LETTER_OF_CREDIT",
+   "2": "REVOLVING_LOAN",
+   "3": "SWINGLINE_FUNDING",
+   "4": "TERM_LOAN",
+   "5": "TRADE_CLAIM"
+  },
+  "translations": {
+   "bridgeloan": "0",
+   "letterofcredit": "1",
+   "revolvingloan": "2",
+   "swinglinefunding": "3",
+   "termloan": "4",
+   "tradeclaim": "5",
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5"
+  }
+ },
+ "1956": {
+  "name": "ReferenceEntityType",
+  "tag": 1956,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "1": "ASIAN",
+   "2": "AUSTRALIAN_NEW_ZEALAND",
+   "3": "EUROPEAN_EMERGING_MARKETS",
+   "4": "JAPANESE",
+   "5": "NORTH_AMERICAN_HIGH_YIELD",
+   "6": "NORTH_AMERICAN_INSURANCE",
+   "7": "NORTH_AMERICAN_INVESTMENT_GRADE",
+   "8": "SINGAPOREAN",
+   "9": "WESTERN_EUROPEAN",
+   "10": "WESTERN_EUROPEAN_INSURANCE"
+  },
+  "translations": {
+   "asian": "1",
+   "australiannewzealand": "2",
+   "europeanemergingmarkets": "3",
+   "japanese": "4",
+   "northamericanhighyield": "5",
+   "northamericaninsurance": "6",
+   "northamericaninvestmentgrade": "7",
+   "singaporean": "8",
+   "westerneuropean": "9",
+   "westerneuropeaninsurance": "10",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4",
+   "5": "5",
+   "6": "6",
+   "7": "7",
+   "8": "8",
+   "9": "9",
+   "10": "10"
+  }
+ },
+ "1957": {
+  "name": "IndexSeries",
+  "tag": 1957,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1958": {
+  "name": "IndexAnnexVersion",
+  "tag": 1958,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1959": {
+  "name": "IndexAnnexDate",
+  "tag": 1959,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1960": {
+  "name": "IndexAnnexSource",
+  "tag": 1960,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1961": {
+  "name": "AgreementVersion",
+  "tag": 1961,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1962": {
+  "name": "MasterConfirmationDesc",
+  "tag": 1962,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1963": {
+  "name": "MasterConfirmationDate",
+  "tag": 1963,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1964": {
+  "name": "MasterConfirmationAnnexDesc",
+  "tag": 1964,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1965": {
+  "name": "MasterConfirmationAnnexDate",
+  "tag": 1965,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1966": {
+  "name": "BrokerConfirmationDesc",
+  "tag": 1966,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1967": {
+  "name": "CreditSupportAgreementDesc",
+  "tag": 1967,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1968": {
+  "name": "CreditSupportAgreementDate",
+  "tag": 1968,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1969": {
+  "name": "CreditSupportAgreementID",
+  "tag": 1969,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1970": {
+  "name": "GoverningLaw",
+  "tag": 1970,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1971": {
+  "name": "NoSideRegulatoryTradeIDs",
+  "tag": 1971,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1972": {
+  "name": "SideRegulatoryTradeID",
+  "tag": 1972,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1973": {
+  "name": "SideRegulatoryTradeIDSource",
+  "tag": 1973,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1974": {
+  "name": "SideRegulatoryTradeIDEvent",
+  "tag": 1974,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1975": {
+  "name": "SideRegulatoryTradeIDType",
+  "tag": 1975,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1976": {
+  "name": "NoSecondaryAssetClasses",
+  "tag": 1976,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1977": {
+  "name": "SecondaryAssetClass",
+  "tag": 1977,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1978": {
+  "name": "SecondaryAssetSubClass",
+  "tag": 1978,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1979": {
+  "name": "SecondaryAssetType",
+  "tag": 1979,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1980": {
+  "name": "BlockTrdAllocIndicator",
+  "tag": 1980,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ],
+  "value_names": {
+   "0": "BLOCK_TO_BE_ALLOCATED",
+   "1": "BLOCK_NOT_TO_BE_ALLOCATED",
+   "2": "ALLOCATED_TRADE"
+  },
+  "translations": {
+   "blocktobeallocated": "0",
+   "blocknottobeallocated": "1",
+   "allocatedtrade": "2",
+   "0": "0",
+   "1": "1",
+   "2": "2"
+  }
+ },
+ "1981": {
+  "name": "NoUnderlyingEvents",
+  "tag": 1981,
+  "type": "NUMINGROUP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1982": {
+  "name": "UnderlyingEventType",
+  "tag": 1982,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1983": {
+  "name": "UnderlyingEventDate",
+  "tag": 1983,
+  "type": "LOCALMKTDATE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1984": {
+  "name": "UnderlyingEventTime",
+  "tag": 1984,
+  "type": "UTCTIMESTAMP",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1985": {
+  "name": "UnderlyingEventTimeUnit",
+  "tag": 1985,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1986": {
+  "name": "UnderlyingEventTimePeriod",
+  "tag": 1986,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1987": {
+  "name": "UnderlyingEventPx",
+  "tag": 1987,
+  "type": "PRICE",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1988": {
+  "name": "UnderlyingConstituentWeight",
+  "tag": 1988,
+  "type": "FLOAT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1989": {
+  "name": "UnderlyingCouponType",
+  "tag": 1989,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1990": {
+  "name": "UnderlyingTotalIssuedAmount",
+  "tag": 1990,
+  "type": "AMT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1991": {
+  "name": "UnderlyingCouponFrequencyPeriod",
+  "tag": 1991,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1992": {
+  "name": "UnderlyingCouponFrequencyUnit",
+  "tag": 1992,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1993": {
+  "name": "UnderlyingCouponDayCount",
+  "tag": 1993,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1994": {
+  "name": "UnderlyingObligationID",
+  "tag": 1994,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1995": {
+  "name": "UnderlyingObligationIDSource",
+  "tag": 1995,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1996": {
+  "name": "UnderlyingEquityID",
+  "tag": 1996,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1997": {
+  "name": "UnderlyingEquityIDSource",
+  "tag": 1997,
+  "type": "STRING",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1998": {
+  "name": "UnderlyingLienSeniority",
+  "tag": 1998,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "1999": {
+  "name": "UnderlyingLoanFacility",
+  "tag": 1999,
+  "type": "INT",
+  "versions": [
+   "5.0.SP2"
+  ]
+ }
+}

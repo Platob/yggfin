@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPositionLimit",
- "tag": 2037,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

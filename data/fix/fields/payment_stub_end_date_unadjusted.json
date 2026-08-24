@@ -1,9 +1,0 @@
-{
- "name": "PaymentStubEndDateUnadjusted",
- "tag": 42689,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

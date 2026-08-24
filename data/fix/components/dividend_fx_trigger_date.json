@@ -1,57 +1,55 @@
 {
  "name": "DividendFXTriggerDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 115,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DividendFXTriggerDateRelativeTo",
-     "required": false,
-     "tag": 42265
-    },
-    {
-     "kind": "field",
-     "name": "DividendFXTriggerDateOffsetPeriod",
-     "required": false,
-     "tag": 42266
-    },
-    {
-     "kind": "field",
-     "name": "DividendFXTriggerDateOffsetUnit",
-     "required": false,
-     "tag": 42267
-    },
-    {
-     "kind": "field",
-     "name": "DividendFXTriggerDateOffsetDayType",
-     "required": false,
-     "tag": 42268
-    },
-    {
-     "kind": "field",
-     "name": "DividendFXTriggerDateUnadjusted",
-     "required": false,
-     "tag": 42269
-    },
-    {
-     "kind": "field",
-     "name": "DividendFXTriggerDateBusinessDayConvention",
-     "required": false,
-     "tag": 42270
-    },
-    {
-     "kind": "component",
-     "name": "DividendFXTriggerDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "DividendFXTriggerDateAdjusted",
-     "required": false,
-     "tag": 42271
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "DividendFXTriggerDateRelativeTo",
+   "required": false,
+   "tag": 42265
+  },
+  {
+   "kind": "field",
+   "name": "DividendFXTriggerDateOffsetPeriod",
+   "required": false,
+   "tag": 42266
+  },
+  {
+   "kind": "field",
+   "name": "DividendFXTriggerDateOffsetUnit",
+   "required": false,
+   "tag": 42267
+  },
+  {
+   "kind": "field",
+   "name": "DividendFXTriggerDateOffsetDayType",
+   "required": false,
+   "tag": 42268
+  },
+  {
+   "kind": "field",
+   "name": "DividendFXTriggerDateUnadjusted",
+   "required": false,
+   "tag": 42269
+  },
+  {
+   "kind": "field",
+   "name": "DividendFXTriggerDateBusinessDayConvention",
+   "required": false,
+   "tag": 42270
+  },
+  {
+   "kind": "component",
+   "name": "DividendFXTriggerDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "DividendFXTriggerDateAdjusted",
+   "required": false,
+   "tag": 42271
   }
- }
+ ]
 }

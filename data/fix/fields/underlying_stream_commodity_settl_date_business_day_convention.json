@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamCommoditySettlDateBusinessDayConvention",
- "tag": 41982,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

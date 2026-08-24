@@ -1,9 +1,0 @@
-{
- "name": "NoQuoteAttributes",
- "tag": 2706,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

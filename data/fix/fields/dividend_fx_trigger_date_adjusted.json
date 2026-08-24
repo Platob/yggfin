@@ -1,9 +1,0 @@
-{
- "name": "DividendFXTriggerDateAdjusted",
- "tag": 42271,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

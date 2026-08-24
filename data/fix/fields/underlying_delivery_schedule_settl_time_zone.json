@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDeliveryScheduleSettlTimeZone",
- "tag": 41767,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "DividendPeriodValuationDateAdjusted",
- "tag": 42286,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

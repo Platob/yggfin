@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamInitialRate",
- "tag": 40803,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

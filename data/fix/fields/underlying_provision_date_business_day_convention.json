@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionDateBusinessDayConvention",
- "tag": 42152,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

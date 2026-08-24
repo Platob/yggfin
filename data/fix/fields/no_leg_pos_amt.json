@@ -1,9 +1,0 @@
-{
- "name": "NoLegPosAmt",
- "tag": 1586,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

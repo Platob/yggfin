@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingCashSettlQuoteMethod",
- "tag": 42048,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

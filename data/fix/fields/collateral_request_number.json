@@ -1,9 +1,0 @@
-{
- "name": "CollateralRequestNumber",
- "tag": 2518,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

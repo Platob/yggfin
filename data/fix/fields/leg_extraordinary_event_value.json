@@ -1,9 +1,0 @@
-{
- "name": "LegExtraordinaryEventValue",
- "tag": 42390,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

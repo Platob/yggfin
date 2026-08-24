@@ -1,9 +1,0 @@
-{
- "name": "EncodedUnderlyingAdditionalTermBondIssuer",
- "tag": 42026,
- "versions": {
-  "5.0.SP2": {
-   "type": "DATA"
-  }
- }
-}

@@ -1,115 +1,113 @@
 {
  "name": "StreamCalculationPeriodDates",
- "versions": {
-  "5.0.SP2": {
-   "order": 56,
-   "members": [
-    {
-     "kind": "field",
-     "name": "StreamCalculationPeriodDatesXID",
-     "required": false,
-     "tag": 41244
-    },
-    {
-     "kind": "field",
-     "name": "StreamCalculationPeriodDatesXIDRef",
-     "required": false,
-     "tag": 41245
-    },
-    {
-     "kind": "field",
-     "name": "StreamCalculationPeriodBusinessDayConvention",
-     "required": false,
-     "tag": 40073
-    },
-    {
-     "kind": "component",
-     "name": "StreamCalculationPeriodBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "StreamCalculationPeriodDateGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "StreamFirstPeriodStartDateUnadjusted",
-     "required": false,
-     "tag": 40075
-    },
-    {
-     "kind": "field",
-     "name": "StreamFirstPeriodStartDateBusinessDayConvention",
-     "required": false,
-     "tag": 40076
-    },
-    {
-     "kind": "component",
-     "name": "StreamFirstPeriodStartDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "StreamFirstPeriodStartDateAdjusted",
-     "required": false,
-     "tag": 40078
-    },
-    {
-     "kind": "field",
-     "name": "StreamFirstRegularPeriodStartDateUnadjusted",
-     "required": false,
-     "tag": 40079
-    },
-    {
-     "kind": "field",
-     "name": "StreamFirstCompoundingPeriodEndDateUnadjusted",
-     "required": false,
-     "tag": 40080
-    },
-    {
-     "kind": "field",
-     "name": "StreamLastRegularPeriodEndDateUnadjusted",
-     "required": false,
-     "tag": 40081
-    },
-    {
-     "kind": "field",
-     "name": "StreamCalculationFrequencyPeriod",
-     "required": false,
-     "tag": 40082
-    },
-    {
-     "kind": "field",
-     "name": "StreamCalculationFrequencyUnit",
-     "required": false,
-     "tag": 40083
-    },
-    {
-     "kind": "field",
-     "name": "StreamCalculationRollConvention",
-     "required": false,
-     "tag": 40084
-    },
-    {
-     "kind": "field",
-     "name": "StreamCalculationBalanceOfFirstPeriod",
-     "required": false,
-     "tag": 41246
-    },
-    {
-     "kind": "field",
-     "name": "StreamCalculationCorrectionPeriod",
-     "required": false,
-     "tag": 41247
-    },
-    {
-     "kind": "field",
-     "name": "StreamCalculationCorrectionUnit",
-     "required": false,
-     "tag": 41248
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "StreamCalculationPeriodDatesXID",
+   "required": false,
+   "tag": 41244
+  },
+  {
+   "kind": "field",
+   "name": "StreamCalculationPeriodDatesXIDRef",
+   "required": false,
+   "tag": 41245
+  },
+  {
+   "kind": "field",
+   "name": "StreamCalculationPeriodBusinessDayConvention",
+   "required": false,
+   "tag": 40073
+  },
+  {
+   "kind": "component",
+   "name": "StreamCalculationPeriodBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "StreamCalculationPeriodDateGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "StreamFirstPeriodStartDateUnadjusted",
+   "required": false,
+   "tag": 40075
+  },
+  {
+   "kind": "field",
+   "name": "StreamFirstPeriodStartDateBusinessDayConvention",
+   "required": false,
+   "tag": 40076
+  },
+  {
+   "kind": "component",
+   "name": "StreamFirstPeriodStartDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "StreamFirstPeriodStartDateAdjusted",
+   "required": false,
+   "tag": 40078
+  },
+  {
+   "kind": "field",
+   "name": "StreamFirstRegularPeriodStartDateUnadjusted",
+   "required": false,
+   "tag": 40079
+  },
+  {
+   "kind": "field",
+   "name": "StreamFirstCompoundingPeriodEndDateUnadjusted",
+   "required": false,
+   "tag": 40080
+  },
+  {
+   "kind": "field",
+   "name": "StreamLastRegularPeriodEndDateUnadjusted",
+   "required": false,
+   "tag": 40081
+  },
+  {
+   "kind": "field",
+   "name": "StreamCalculationFrequencyPeriod",
+   "required": false,
+   "tag": 40082
+  },
+  {
+   "kind": "field",
+   "name": "StreamCalculationFrequencyUnit",
+   "required": false,
+   "tag": 40083
+  },
+  {
+   "kind": "field",
+   "name": "StreamCalculationRollConvention",
+   "required": false,
+   "tag": 40084
+  },
+  {
+   "kind": "field",
+   "name": "StreamCalculationBalanceOfFirstPeriod",
+   "required": false,
+   "tag": 41246
+  },
+  {
+   "kind": "field",
+   "name": "StreamCalculationCorrectionPeriod",
+   "required": false,
+   "tag": 41247
+  },
+  {
+   "kind": "field",
+   "name": "StreamCalculationCorrectionUnit",
+   "required": false,
+   "tag": 41248
   }
- }
+ ]
 }

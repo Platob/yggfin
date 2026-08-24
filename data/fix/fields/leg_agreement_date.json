@@ -1,9 +1,0 @@
-{
- "name": "LegAgreementDate",
- "tag": 2496,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

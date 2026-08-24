@@ -1,9 +1,0 @@
-{
- "name": "LegSettlMethodElectingPartySide",
- "tag": 42391,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

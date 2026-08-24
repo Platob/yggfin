@@ -1,207 +1,205 @@
 {
  "name": "PaymentStream",
- "versions": {
-  "5.0.SP2": {
-   "order": 45,
-   "members": [
-    {
-     "kind": "field",
-     "name": "PaymentStreamType",
-     "required": false,
-     "tag": 40738
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamMarketRate",
-     "required": false,
-     "tag": 40739
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamDelayIndicator",
-     "required": false,
-     "tag": 40740
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCashSettlIndicator",
-     "required": false,
-     "tag": 42600
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamSettlCurrency",
-     "required": false,
-     "tag": 40741
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamDayCount",
-     "required": false,
-     "tag": 40742
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamOtherDayCount",
-     "required": false,
-     "tag": 43106
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamAccrualDays",
-     "required": false,
-     "tag": 40743
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamDiscountType",
-     "required": false,
-     "tag": 40744
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamDiscountRate",
-     "required": false,
-     "tag": 40745
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamDiscountRateDayCount",
-     "required": false,
-     "tag": 40746
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingMethod",
-     "required": false,
-     "tag": 40747
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingXIDRef",
-     "required": false,
-     "tag": 42601
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingSpread",
-     "required": false,
-     "tag": 42602
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamInterpolationMethod",
-     "required": false,
-     "tag": 42603
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamInterpolationPeriod",
-     "required": false,
-     "tag": 42604
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamInitialPrincipalExchangeIndicator",
-     "required": false,
-     "tag": 40748
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamInterimPrincipalExchangeIndicator",
-     "required": false,
-     "tag": 40749
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamFinalPrincipalExchangeIndicator",
-     "required": false,
-     "tag": 40750
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamFlatRateIndicator",
-     "required": false,
-     "tag": 41180
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamFlatRateAmount",
-     "required": false,
-     "tag": 41181
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamFlatRateCurrency",
-     "required": false,
-     "tag": 41182
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamMaximumPaymentAmount",
-     "required": false,
-     "tag": 41183
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamMaximumPaymentCurrency",
-     "required": false,
-     "tag": 41184
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamMaximumTransactionAmount",
-     "required": false,
-     "tag": 41185
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamMaximumTransactionCurrency",
-     "required": false,
-     "tag": 41186
-    },
-    {
-     "kind": "component",
-     "name": "PaymentStreamPaymentDates",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PaymentStreamResetDates",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PaymentStreamFixedRate",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PaymentStreamFloatingRate",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "PaymentStreamCompoundingFixedRate",
-     "required": false,
-     "tag": 42605
-    },
-    {
-     "kind": "component",
-     "name": "PaymentStreamCompoundingFloatingRate",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PaymentStreamCompoundingDates",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "PaymentStreamNonDeliverableSettlTerms",
-     "required": false
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "PaymentStreamType",
+   "required": false,
+   "tag": 40738
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamMarketRate",
+   "required": false,
+   "tag": 40739
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamDelayIndicator",
+   "required": false,
+   "tag": 40740
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCashSettlIndicator",
+   "required": false,
+   "tag": 42600
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamSettlCurrency",
+   "required": false,
+   "tag": 40741
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamDayCount",
+   "required": false,
+   "tag": 40742
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamOtherDayCount",
+   "required": false,
+   "tag": 43106
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamAccrualDays",
+   "required": false,
+   "tag": 40743
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamDiscountType",
+   "required": false,
+   "tag": 40744
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamDiscountRate",
+   "required": false,
+   "tag": 40745
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamDiscountRateDayCount",
+   "required": false,
+   "tag": 40746
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingMethod",
+   "required": false,
+   "tag": 40747
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingXIDRef",
+   "required": false,
+   "tag": 42601
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingSpread",
+   "required": false,
+   "tag": 42602
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamInterpolationMethod",
+   "required": false,
+   "tag": 42603
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamInterpolationPeriod",
+   "required": false,
+   "tag": 42604
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamInitialPrincipalExchangeIndicator",
+   "required": false,
+   "tag": 40748
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamInterimPrincipalExchangeIndicator",
+   "required": false,
+   "tag": 40749
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamFinalPrincipalExchangeIndicator",
+   "required": false,
+   "tag": 40750
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamFlatRateIndicator",
+   "required": false,
+   "tag": 41180
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamFlatRateAmount",
+   "required": false,
+   "tag": 41181
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamFlatRateCurrency",
+   "required": false,
+   "tag": 41182
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamMaximumPaymentAmount",
+   "required": false,
+   "tag": 41183
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamMaximumPaymentCurrency",
+   "required": false,
+   "tag": 41184
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamMaximumTransactionAmount",
+   "required": false,
+   "tag": 41185
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamMaximumTransactionCurrency",
+   "required": false,
+   "tag": 41186
+  },
+  {
+   "kind": "component",
+   "name": "PaymentStreamPaymentDates",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "PaymentStreamResetDates",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "PaymentStreamFixedRate",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "PaymentStreamFloatingRate",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "PaymentStreamCompoundingFixedRate",
+   "required": false,
+   "tag": 42605
+  },
+  {
+   "kind": "component",
+   "name": "PaymentStreamCompoundingFloatingRate",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "PaymentStreamCompoundingDates",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "PaymentStreamNonDeliverableSettlTerms",
+   "required": false
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "LegDeliveryStreamDeliveryContingentPartySide",
- "tag": 41436,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamInitialFixingDateAdjusted",
- "tag": 40315,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

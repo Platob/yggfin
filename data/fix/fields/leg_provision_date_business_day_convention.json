@@ -1,9 +1,0 @@
-{
- "name": "LegProvisionDateBusinessDayConvention",
- "tag": 40451,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

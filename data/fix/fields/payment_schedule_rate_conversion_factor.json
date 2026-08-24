@@ -1,9 +1,0 @@
-{
- "name": "PaymentScheduleRateConversionFactor",
- "tag": 41168,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

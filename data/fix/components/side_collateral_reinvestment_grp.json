@@ -1,42 +1,40 @@
 {
  "name": "SideCollateralReinvestmentGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 723,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoSideCollateralReinvestments",
+   "required": false,
+   "tag": 2864,
    "members": [
     {
-     "kind": "group",
-     "name": "NoSideCollateralReinvestments",
+     "kind": "field",
+     "name": "SideCollateralReinvestmentType",
      "required": false,
-     "tag": 2864,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SideCollateralReinvestmentType",
-       "required": false,
-       "tag": 2867
-      },
-      {
-       "kind": "field",
-       "name": "SideCollateralReinvestmentAmount",
-       "required": false,
-       "tag": 2865
-      },
-      {
-       "kind": "field",
-       "name": "SideCollateralReinvestmentCurrency",
-       "required": false,
-       "tag": 2866
-      },
-      {
-       "kind": "field",
-       "name": "SideCollateralReinvestmentCurrencyCodeSource",
-       "required": false,
-       "tag": 2932
-      }
-     ]
+     "tag": 2867
+    },
+    {
+     "kind": "field",
+     "name": "SideCollateralReinvestmentAmount",
+     "required": false,
+     "tag": 2865
+    },
+    {
+     "kind": "field",
+     "name": "SideCollateralReinvestmentCurrency",
+     "required": false,
+     "tag": 2866
+    },
+    {
+     "kind": "field",
+     "name": "SideCollateralReinvestmentCurrencyCodeSource",
+     "required": false,
+     "tag": 2932
     }
    ]
   }
- }
+ ]
 }

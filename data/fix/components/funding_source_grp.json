@@ -1,42 +1,40 @@
 {
  "name": "FundingSourceGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 721,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoFundingSources",
+   "required": false,
+   "tag": 2849,
    "members": [
     {
-     "kind": "group",
-     "name": "NoFundingSources",
+     "kind": "field",
+     "name": "FundingSource",
      "required": false,
-     "tag": 2849,
-     "members": [
-      {
-       "kind": "field",
-       "name": "FundingSource",
-       "required": false,
-       "tag": 2846
-      },
-      {
-       "kind": "field",
-       "name": "FundingSourceMarketValue",
-       "required": false,
-       "tag": 2848
-      },
-      {
-       "kind": "field",
-       "name": "FundingSourceCurrency",
-       "required": false,
-       "tag": 2847
-      },
-      {
-       "kind": "field",
-       "name": "FundingSourceCurrencyCodeSource",
-       "required": false,
-       "tag": 2954
-      }
-     ]
+     "tag": 2846
+    },
+    {
+     "kind": "field",
+     "name": "FundingSourceMarketValue",
+     "required": false,
+     "tag": 2848
+    },
+    {
+     "kind": "field",
+     "name": "FundingSourceCurrency",
+     "required": false,
+     "tag": 2847
+    },
+    {
+     "kind": "field",
+     "name": "FundingSourceCurrencyCodeSource",
+     "required": false,
+     "tag": 2954
     }
    ]
   }
- }
+ ]
 }

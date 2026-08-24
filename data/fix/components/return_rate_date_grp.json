@@ -1,154 +1,152 @@
 {
  "name": "ReturnRateDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 679,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoReturnRateDates",
+   "required": false,
+   "tag": 42709,
    "members": [
     {
-     "kind": "group",
-     "name": "NoReturnRateDates",
+     "kind": "field",
+     "name": "ReturnRateDateMode",
      "required": false,
-     "tag": 42709,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ReturnRateDateMode",
-       "required": false,
-       "tag": 42710
-      },
-      {
-       "kind": "component",
-       "name": "ReturnRateValuationDateGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationDateRelativeTo",
-       "required": false,
-       "tag": 42711
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationDateOffsetPeriod",
-       "required": false,
-       "tag": 42712
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationDateOffsetUnit",
-       "required": false,
-       "tag": 42713
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationDateOffsetDayType",
-       "required": false,
-       "tag": 42714
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationStartDateUnadjusted",
-       "required": false,
-       "tag": 42715
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationStartDateRelativeTo",
-       "required": false,
-       "tag": 42716
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationStartDateOffsetPeriod",
-       "required": false,
-       "tag": 42717
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationStartDateOffsetUnit",
-       "required": false,
-       "tag": 42718
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationStartDateOffsetDayType",
-       "required": false,
-       "tag": 42719
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationStartDateAdjusted",
-       "required": false,
-       "tag": 42720
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationEndDateUnadjusted",
-       "required": false,
-       "tag": 42721
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationEndDateRelativeTo",
-       "required": false,
-       "tag": 42722
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationEndDateOffsetPeriod",
-       "required": false,
-       "tag": 42723
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationEndDateOffsetUnit",
-       "required": false,
-       "tag": 42724
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationEndDateOffsetDayType",
-       "required": false,
-       "tag": 42725
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationEndDateAdjusted",
-       "required": false,
-       "tag": 42726
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationFrequencyPeriod",
-       "required": false,
-       "tag": 42727
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationFrequencyUnit",
-       "required": false,
-       "tag": 42728
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationFrequencyRollConvention",
-       "required": false,
-       "tag": 42729
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateValuationDateBusinessDayConvention",
-       "required": false,
-       "tag": 42730
-      },
-      {
-       "kind": "component",
-       "name": "ReturnRateValuationDateBusinessCenterGrp",
-       "required": false
-      }
-     ]
+     "tag": 42710
+    },
+    {
+     "kind": "component",
+     "name": "ReturnRateValuationDateGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationDateRelativeTo",
+     "required": false,
+     "tag": 42711
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationDateOffsetPeriod",
+     "required": false,
+     "tag": 42712
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationDateOffsetUnit",
+     "required": false,
+     "tag": 42713
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationDateOffsetDayType",
+     "required": false,
+     "tag": 42714
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationStartDateUnadjusted",
+     "required": false,
+     "tag": 42715
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationStartDateRelativeTo",
+     "required": false,
+     "tag": 42716
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationStartDateOffsetPeriod",
+     "required": false,
+     "tag": 42717
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationStartDateOffsetUnit",
+     "required": false,
+     "tag": 42718
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationStartDateOffsetDayType",
+     "required": false,
+     "tag": 42719
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationStartDateAdjusted",
+     "required": false,
+     "tag": 42720
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationEndDateUnadjusted",
+     "required": false,
+     "tag": 42721
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationEndDateRelativeTo",
+     "required": false,
+     "tag": 42722
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationEndDateOffsetPeriod",
+     "required": false,
+     "tag": 42723
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationEndDateOffsetUnit",
+     "required": false,
+     "tag": 42724
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationEndDateOffsetDayType",
+     "required": false,
+     "tag": 42725
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationEndDateAdjusted",
+     "required": false,
+     "tag": 42726
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationFrequencyPeriod",
+     "required": false,
+     "tag": 42727
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationFrequencyUnit",
+     "required": false,
+     "tag": 42728
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationFrequencyRollConvention",
+     "required": false,
+     "tag": 42729
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateValuationDateBusinessDayConvention",
+     "required": false,
+     "tag": 42730
+    },
+    {
+     "kind": "component",
+     "name": "ReturnRateValuationDateBusinessCenterGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

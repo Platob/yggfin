@@ -1,9 +1,0 @@
-{
- "name": "CashSettlRecoveryFactor",
- "tag": 40035,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

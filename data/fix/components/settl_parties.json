@@ -1,155 +1,48 @@
 {
  "name": "SettlParties",
- "versions": {
-  "5.0.SP2": {
-   "order": 169,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoSettlPartyIDs",
+   "required": false,
+   "tag": 781,
    "members": [
     {
-     "kind": "group",
-     "name": "NoSettlPartyIDs",
+     "kind": "field",
+     "name": "SettlPartyID",
      "required": false,
-     "tag": 781,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SettlPartyID",
-       "required": false,
-       "tag": 782
-      },
-      {
-       "kind": "field",
-       "name": "SettlPartyIDSource",
-       "required": false,
-       "tag": 783
-      },
-      {
-       "kind": "field",
-       "name": "SettlPartyRole",
-       "required": false,
-       "tag": 784
-      },
-      {
-       "kind": "field",
-       "name": "SettlPartyRoleQualifier",
-       "required": false,
-       "tag": 2389
-      },
-      {
-       "kind": "component",
-       "name": "SettlPtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 15,
-   "members": [
+     "tag": 782
+    },
     {
-     "kind": "group",
-     "name": "NoSettlPartyIDs",
+     "kind": "field",
+     "name": "SettlPartyIDSource",
      "required": false,
-     "tag": 781,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SettlPartyID",
-       "required": false,
-       "tag": 782
-      },
-      {
-       "kind": "field",
-       "name": "SettlPartyIDSource",
-       "required": false,
-       "tag": 783
-      },
-      {
-       "kind": "field",
-       "name": "SettlPartyRole",
-       "required": false,
-       "tag": 784
-      },
-      {
-       "kind": "component",
-       "name": "SettlPtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 15,
-   "members": [
+     "tag": 783
+    },
     {
-     "kind": "group",
-     "name": "NoSettlPartyIDs",
+     "kind": "field",
+     "name": "SettlPartyRole",
      "required": false,
-     "tag": 781,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SettlPartyID",
-       "required": false,
-       "tag": 782
-      },
-      {
-       "kind": "field",
-       "name": "SettlPartyIDSource",
-       "required": false,
-       "tag": 783
-      },
-      {
-       "kind": "field",
-       "name": "SettlPartyRole",
-       "required": false,
-       "tag": 784
-      },
-      {
-       "kind": "component",
-       "name": "SettlPtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 15,
-   "members": [
+     "tag": 784
+    },
     {
-     "kind": "group",
-     "name": "NoSettlPartyIDs",
+     "kind": "field",
+     "name": "SettlPartyRoleQualifier",
      "required": false,
-     "tag": 781,
-     "members": [
-      {
-       "kind": "field",
-       "name": "SettlPartyID",
-       "required": false,
-       "tag": 782
-      },
-      {
-       "kind": "field",
-       "name": "SettlPartyIDSource",
-       "required": false,
-       "tag": 783
-      },
-      {
-       "kind": "field",
-       "name": "SettlPartyRole",
-       "required": false,
-       "tag": 784
-      },
-      {
-       "kind": "component",
-       "name": "SettlPtysSubGrp",
-       "required": false
-      }
-     ]
+     "tag": 2389
+    },
+    {
+     "kind": "component",
+     "name": "SettlPtysSubGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

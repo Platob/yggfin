@@ -1,24 +1,22 @@
 {
  "name": "UnderlyingProtectionTermEventQualifierGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 615,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingProtectionTermEventQualifiers",
+   "required": false,
+   "tag": 42085,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingProtectionTermEventQualifiers",
+     "kind": "field",
+     "name": "UnderlyingProtectionTermEventQualifier",
      "required": false,
-     "tag": 42085,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingProtectionTermEventQualifier",
-       "required": false,
-       "tag": 42086
-      }
-     ]
+     "tag": 42086
     }
    ]
   }
- }
+ ]
 }

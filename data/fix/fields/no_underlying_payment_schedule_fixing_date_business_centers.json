@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingPaymentScheduleFixingDateBusinessCenters",
- "tag": 40966,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

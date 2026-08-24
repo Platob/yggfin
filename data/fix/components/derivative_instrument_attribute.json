@@ -1,55 +1,29 @@
 {
  "name": "DerivativeInstrumentAttribute",
- "versions": {
-  "5.0.SP2": {
-   "order": 285,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoDerivativeInstrAttrib",
+   "required": false,
+   "tag": 1311,
    "members": [
     {
-     "kind": "group",
-     "name": "NoDerivativeInstrAttrib",
+     "kind": "field",
+     "name": "DerivativeInstrAttribType",
      "required": false,
-     "tag": 1311,
-     "members": [
-      {
-       "kind": "field",
-       "name": "DerivativeInstrAttribType",
-       "required": false,
-       "tag": 1313
-      },
-      {
-       "kind": "field",
-       "name": "DerivativeInstrAttribValue",
-       "required": false,
-       "tag": 1314
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 142,
-   "members": [
+     "tag": 1313
+    },
     {
-     "kind": "group",
-     "name": "NoDerivativeInstrAttrib",
+     "kind": "field",
+     "name": "DerivativeInstrAttribValue",
      "required": false,
-     "tag": 1311,
-     "members": [
-      {
-       "kind": "field",
-       "name": "DerivativeInstrAttribType",
-       "required": false,
-       "tag": 1313
-      },
-      {
-       "kind": "field",
-       "name": "DerivativeInstrAttribValue",
-       "required": false,
-       "tag": 1314
-      }
-     ]
+     "tag": 1314
     }
    ]
   }
- }
+ ]
 }

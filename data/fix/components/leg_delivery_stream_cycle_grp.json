@@ -1,36 +1,34 @@
 {
  "name": "LegDeliveryStreamCycleGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 539,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegDeliveryStreamCycles",
+   "required": false,
+   "tag": 41456,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegDeliveryStreamCycles",
+     "kind": "field",
+     "name": "LegDeliveryStreamCycleDesc",
      "required": false,
-     "tag": 41456,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegDeliveryStreamCycleDesc",
-       "required": false,
-       "tag": 41457
-      },
-      {
-       "kind": "field",
-       "name": "EncodedLegDeliveryStreamCycleDescLen",
-       "required": false,
-       "tag": 41458
-      },
-      {
-       "kind": "field",
-       "name": "EncodedLegDeliveryStreamCycleDesc",
-       "required": false,
-       "tag": 41459
-      }
-     ]
+     "tag": 41457
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegDeliveryStreamCycleDescLen",
+     "required": false,
+     "tag": 41458
+    },
+    {
+     "kind": "field",
+     "name": "EncodedLegDeliveryStreamCycleDesc",
+     "required": false,
+     "tag": 41459
     }
    ]
   }
- }
+ ]
 }

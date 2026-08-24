@@ -1,9 +1,0 @@
-{
- "name": "NoPartyUpdates",
- "tag": 1676,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

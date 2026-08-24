@@ -1,9 +1,0 @@
-{
- "name": "LegProvisionDateTenorUnit",
- "tag": 40455,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

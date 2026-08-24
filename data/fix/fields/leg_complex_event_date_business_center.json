@@ -1,9 +1,0 @@
-{
- "name": "LegComplexEventDateBusinessCenter",
- "tag": 41388,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

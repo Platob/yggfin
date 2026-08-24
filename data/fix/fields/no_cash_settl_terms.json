@@ -1,9 +1,0 @@
-{
- "name": "NoCashSettlTerms",
- "tag": 40022,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

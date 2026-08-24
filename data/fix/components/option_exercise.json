@@ -1,96 +1,94 @@
 {
  "name": "OptionExercise",
- "versions": {
-  "5.0.SP2": {
-   "order": 82,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ExerciseDesc",
-     "required": false,
-     "tag": 41106
-    },
-    {
-     "kind": "field",
-     "name": "EncodedExerciseDescLen",
-     "required": false,
-     "tag": 41107
-    },
-    {
-     "kind": "field",
-     "name": "EncodedExerciseDesc",
-     "required": false,
-     "tag": 41108
-    },
-    {
-     "kind": "field",
-     "name": "AutomaticExerciseIndicator",
-     "required": false,
-     "tag": 41109
-    },
-    {
-     "kind": "field",
-     "name": "AutomaticExerciseThresholdRate",
-     "required": false,
-     "tag": 41110
-    },
-    {
-     "kind": "field",
-     "name": "ExerciseConfirmationMethod",
-     "required": false,
-     "tag": 41111
-    },
-    {
-     "kind": "field",
-     "name": "ManualNoticeBusinessCenter",
-     "required": false,
-     "tag": 41112
-    },
-    {
-     "kind": "field",
-     "name": "FallbackExerciseIndicator",
-     "required": false,
-     "tag": 41113
-    },
-    {
-     "kind": "field",
-     "name": "LimitedRightToConfirmIndicator",
-     "required": false,
-     "tag": 41114
-    },
-    {
-     "kind": "field",
-     "name": "ExerciseSplitTicketIndicator",
-     "required": false,
-     "tag": 41115
-    },
-    {
-     "kind": "field",
-     "name": "SettlMethodElectingPartySide",
-     "required": false,
-     "tag": 42590
-    },
-    {
-     "kind": "component",
-     "name": "SettlMethodElectionDate",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "OptionExerciseDates",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "OptionExerciseExpiration",
-     "required": false
-    },
-    {
-     "kind": "component",
-     "name": "OptionExerciseMakeWholeProvision",
-     "required": false
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "ExerciseDesc",
+   "required": false,
+   "tag": 41106
+  },
+  {
+   "kind": "field",
+   "name": "EncodedExerciseDescLen",
+   "required": false,
+   "tag": 41107
+  },
+  {
+   "kind": "field",
+   "name": "EncodedExerciseDesc",
+   "required": false,
+   "tag": 41108
+  },
+  {
+   "kind": "field",
+   "name": "AutomaticExerciseIndicator",
+   "required": false,
+   "tag": 41109
+  },
+  {
+   "kind": "field",
+   "name": "AutomaticExerciseThresholdRate",
+   "required": false,
+   "tag": 41110
+  },
+  {
+   "kind": "field",
+   "name": "ExerciseConfirmationMethod",
+   "required": false,
+   "tag": 41111
+  },
+  {
+   "kind": "field",
+   "name": "ManualNoticeBusinessCenter",
+   "required": false,
+   "tag": 41112
+  },
+  {
+   "kind": "field",
+   "name": "FallbackExerciseIndicator",
+   "required": false,
+   "tag": 41113
+  },
+  {
+   "kind": "field",
+   "name": "LimitedRightToConfirmIndicator",
+   "required": false,
+   "tag": 41114
+  },
+  {
+   "kind": "field",
+   "name": "ExerciseSplitTicketIndicator",
+   "required": false,
+   "tag": 41115
+  },
+  {
+   "kind": "field",
+   "name": "SettlMethodElectingPartySide",
+   "required": false,
+   "tag": 42590
+  },
+  {
+   "kind": "component",
+   "name": "SettlMethodElectionDate",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "OptionExerciseDates",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "OptionExerciseExpiration",
+   "required": false
+  },
+  {
+   "kind": "component",
+   "name": "OptionExerciseMakeWholeProvision",
+   "required": false
   }
- }
+ ]
 }

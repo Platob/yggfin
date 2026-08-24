@@ -1,51 +1,27 @@
 {
  "name": "DerivativeSecurityXML",
- "versions": {
-  "5.0.SP2": {
-   "order": 23,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityXMLLen",
-     "required": false,
-     "tag": 1282
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityXML",
-     "required": false,
-     "tag": 1283
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityXMLSchema",
-     "required": false,
-     "tag": 1284
-    }
-   ]
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "DerivativeSecurityXMLLen",
+   "required": false,
+   "tag": 1282
   },
-  "5.0.SP1": {
-   "order": 149,
-   "members": [
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityXMLLen",
-     "required": false,
-     "tag": 1282
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityXML",
-     "required": false,
-     "tag": 1283
-    },
-    {
-     "kind": "field",
-     "name": "DerivativeSecurityXMLSchema",
-     "required": false,
-     "tag": 1284
-    }
-   ]
+  {
+   "kind": "field",
+   "name": "DerivativeSecurityXML",
+   "required": false,
+   "tag": 1283
+  },
+  {
+   "kind": "field",
+   "name": "DerivativeSecurityXMLSchema",
+   "required": false,
+   "tag": 1284
   }
- }
+ ]
 }

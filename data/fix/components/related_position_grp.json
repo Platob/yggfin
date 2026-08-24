@@ -1,36 +1,34 @@
 {
  "name": "RelatedPositionGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 362,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRelatedPositions",
+   "required": false,
+   "tag": 1861,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRelatedPositions",
+     "kind": "field",
+     "name": "RelatedPositionID",
      "required": false,
-     "tag": 1861,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RelatedPositionID",
-       "required": false,
-       "tag": 1862
-      },
-      {
-       "kind": "field",
-       "name": "RelatedPositionIDSource",
-       "required": false,
-       "tag": 1863
-      },
-      {
-       "kind": "field",
-       "name": "RelatedPositionDate",
-       "required": false,
-       "tag": 1864
-      }
-     ]
+     "tag": 1862
+    },
+    {
+     "kind": "field",
+     "name": "RelatedPositionIDSource",
+     "required": false,
+     "tag": 1863
+    },
+    {
+     "kind": "field",
+     "name": "RelatedPositionDate",
+     "required": false,
+     "tag": 1864
     }
    ]
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamResetDateBusinessDayConvention",
- "tag": 40304,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProtectionTermEventRateSource",
- "tag": 42084,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

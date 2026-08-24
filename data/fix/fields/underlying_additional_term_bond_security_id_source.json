@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingAdditionalTermBondSecurityIDSource",
- "tag": 41701,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

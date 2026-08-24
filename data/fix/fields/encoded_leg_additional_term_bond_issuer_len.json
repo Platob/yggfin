@@ -1,9 +1,0 @@
-{
- "name": "EncodedLegAdditionalTermBondIssuerLen",
- "tag": 41324,
- "versions": {
-  "5.0.SP2": {
-   "type": "LENGTH"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "LegStreamCommodityDataSourceIDType",
- "tag": 41679,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

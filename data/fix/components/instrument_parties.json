@@ -1,119 +1,47 @@
 {
  "name": "InstrumentParties",
- "versions": {
-  "5.0.SP2": {
-   "order": 258,
+ "versions": [
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoInstrumentParties",
+   "required": false,
+   "tag": 1018,
    "members": [
     {
-     "kind": "group",
-     "name": "NoInstrumentParties",
+     "kind": "field",
+     "name": "InstrumentPartyID",
      "required": false,
-     "tag": 1018,
-     "members": [
-      {
-       "kind": "field",
-       "name": "InstrumentPartyID",
-       "required": false,
-       "tag": 1019
-      },
-      {
-       "kind": "field",
-       "name": "InstrumentPartyIDSource",
-       "required": false,
-       "tag": 1050
-      },
-      {
-       "kind": "field",
-       "name": "InstrumentPartyRole",
-       "required": false,
-       "tag": 1051
-      },
-      {
-       "kind": "field",
-       "name": "InstrumentPartyRoleQualifier",
-       "required": false,
-       "tag": 2378
-      },
-      {
-       "kind": "component",
-       "name": "InstrumentPtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 107,
-   "members": [
+     "tag": 1019
+    },
     {
-     "kind": "group",
-     "name": "NoInstrumentParties",
+     "kind": "field",
+     "name": "InstrumentPartyIDSource",
      "required": false,
-     "tag": 1018,
-     "members": [
-      {
-       "kind": "field",
-       "name": "InstrumentPartyID",
-       "required": false,
-       "tag": 1019
-      },
-      {
-       "kind": "field",
-       "name": "InstrumentPartyIDSource",
-       "required": false,
-       "tag": 1050
-      },
-      {
-       "kind": "field",
-       "name": "InstrumentPartyRole",
-       "required": false,
-       "tag": 1051
-      },
-      {
-       "kind": "component",
-       "name": "InstrumentPtysSubGrp",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 109,
-   "members": [
+     "tag": 1050
+    },
     {
-     "kind": "group",
-     "name": "NoInstrumentParties",
+     "kind": "field",
+     "name": "InstrumentPartyRole",
      "required": false,
-     "tag": 1018,
-     "members": [
-      {
-       "kind": "field",
-       "name": "InstrumentPartyID",
-       "required": false,
-       "tag": 1019
-      },
-      {
-       "kind": "field",
-       "name": "InstrumentPartyIDSource",
-       "required": false,
-       "tag": 1050
-      },
-      {
-       "kind": "field",
-       "name": "InstrumentPartyRole",
-       "required": false,
-       "tag": 1051
-      },
-      {
-       "kind": "component",
-       "name": "InstrumentPtysSubGrp",
-       "required": false
-      }
-     ]
+     "tag": 1051
+    },
+    {
+     "kind": "field",
+     "name": "InstrumentPartyRoleQualifier",
+     "required": false,
+     "tag": 2378
+    },
+    {
+     "kind": "component",
+     "name": "InstrumentPtysSubGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

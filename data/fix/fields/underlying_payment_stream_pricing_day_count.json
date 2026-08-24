@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamPricingDayCount",
- "tag": 41932,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

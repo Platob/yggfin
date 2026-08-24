@@ -14,8 +14,10 @@ from rekep.console import Console
 from rekep.fields import Field, StructField
 from rekep.fix.classify import KeyReport, apply_report, classify, count_files, report_document
 from rekep.fix.entries import ANY_VERSION, NAMESPACE, STANDARD, Alias, ComponentEntry, FieldEntry
-from rekep.fix.registry import FixRegistry
+from rekep.fix.publish import beyond_baseline
+from rekep.fix.registry import BOOTSTRAP_DURATION, BOOTSTRAP_PAGES, FixRegistry
 from rekep.fix.shell import shell
+from rekep.fix.store import field_document
 
 #: Where everything a person reads goes. `stderr`, so a dump piped into a file
 #: is the document and nothing else -- the styling never lands in the payload.
@@ -152,7 +154,7 @@ def add_field(arguments: argparse.Namespace) -> int:
     """Register one field identity the store does not have yet."""
     registry = _registry(arguments)
     entry = registry.add_field(_field_entry(arguments))
-    CONSOLE.ok(f"added {entry.name} {CONSOLE.glyph('arrow')} fields/{entry.slug}")
+    CONSOLE.ok(f"added {entry.name} {CONSOLE.glyph('arrow')} {field_document(entry)}")
     return 0
 
 
@@ -164,7 +166,7 @@ def update_field(arguments: argparse.Namespace) -> int:
     if held is not None:
         fresh = dataclasses.replace(fresh, aliases=held.aliases or fresh.aliases)
     entry = registry.update_field(fresh)
-    CONSOLE.ok(f"updated {entry.name} {CONSOLE.glyph('arrow')} fields/{entry.slug}")
+    CONSOLE.ok(f"updated {entry.name} {CONSOLE.glyph('arrow')} {field_document(entry)}")
     return 0
 
 
@@ -236,30 +238,40 @@ def check_registry(arguments: argparse.Namespace) -> int:
     return 1 if problems else 0
 
 
-def migrate_registry(arguments: argparse.Namespace) -> int:
-    """Rewrite a store one file per identity, refusing a migration that loses one."""
-    with CONSOLE.spinner(f"migrating {arguments.store}"):
-        migrated = _registry(arguments).migrate(arguments.target)
-    CONSOLE.ok(f"{arguments.store} {CONSOLE.glyph('arrow')} {arguments.target}")
-    CONSOLE.note(
-        f"{len(migrated.field_entries())} fields, {len(migrated.component_entries())} components"
-    )
-    return 0
+def bootstrap_registry(arguments: argparse.Namespace) -> int:
+    """Fetch the whole dictionary into a store, once, and say what it cost."""
+    registry = FixRegistry(cache_dir=arguments.store, announce=CONSOLE.note)
+    if registry.installed:
+        # Naming the default store means construction already paid for it.
+        report = registry.conflicts
+    else:
+        CONSOLE.note(
+            f"fetching {BOOTSTRAP_PAGES} pages into {arguments.store}; {BOOTSTRAP_DURATION}"
+        )
+        with CONSOLE.spinner(f"scraping into {arguments.store}"):
+            report = registry.rebuild()
+    counts = report.counts()
+    CONSOLE.ok(f"{arguments.store} holds {len(registry.field_entries())} fields")
+    CONSOLE.note(f"collapses: {', '.join(f'{part} {count}' for part, count in counts.items())}")
+    if arguments.report:
+        pathlib.Path(arguments.report).write_text(json.dumps(report.into_dict(), indent=1) + "\n")
+        CONSOLE.ok(f"{CONSOLE.glyph('arrow')} {arguments.report}")
+    grown = beyond_baseline(report)
+    for line in grown:
+        CONSOLE.fail(line)
+    return 1 if grown else 0
 
 
 def _field_entry(arguments: argparse.Namespace) -> FieldEntry:
     """One field identity out of the flags that describe it."""
-    variant: dict[str, Any] = {}
-    if arguments.type:
-        variant["type"] = arguments.type
-    if arguments.description:
-        variant["description"] = arguments.description
     return FieldEntry(
         name=arguments.name,
         tag=arguments.tag,
         kind=STANDARD if arguments.tag else NAMESPACE,
         aliases=tuple(Alias(name=alias) for alias in arguments.alias),
-        variants={version: dict(variant) for version in (arguments.version or [ANY_VERSION])},
+        versions=tuple(arguments.version or [ANY_VERSION]),
+        type=arguments.type or "",
+        description=arguments.description or "",
         column=arguments.column or "",
     )
 
@@ -453,8 +465,9 @@ def _parser() -> argparse.ArgumentParser:
 
     verb("check", "report everything inconsistent about a store", check_registry)
 
-    verb("migrate", "rewrite a store one file per identity", migrate_registry).add_argument(
-        "--target", required=True, help="where to write the migrated store"
+    booting = verb("bootstrap", "fetch the whole dictionary into a store, once", bootstrap_registry)
+    booting.add_argument(
+        "--report", default=None, help="where to write the collapse report as JSON"
     )
     return parser
 

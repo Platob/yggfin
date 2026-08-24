@@ -1,24 +1,22 @@
 {
  "name": "PaymentStreamPricingBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 504,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPaymentStreamPricingBusinessCenters",
+   "required": false,
+   "tag": 41192,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPaymentStreamPricingBusinessCenters",
+     "kind": "field",
+     "name": "PaymentStreamPricingBusinessCenter",
      "required": false,
-     "tag": 41192,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PaymentStreamPricingBusinessCenter",
-       "required": false,
-       "tag": 41193
-      }
-     ]
+     "tag": 41193
     }
    ]
   }
- }
+ ]
 }

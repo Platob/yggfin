@@ -1,24 +1,22 @@
 {
  "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 451,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPaymentStreamNonDeliverableFixingDatesBusinessCenters",
+   "required": false,
+   "tag": 40946,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPaymentStreamNonDeliverableFixingDatesBusinessCenters",
+     "kind": "field",
+     "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenter",
      "required": false,
-     "tag": 40946,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenter",
-       "required": false,
-       "tag": 40819
-      }
-     ]
+     "tag": 40819
     }
    ]
   }
- }
+ ]
 }

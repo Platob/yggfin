@@ -1,35 +1,33 @@
 {
  "name": "RiskInstrumentScopeGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 329,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoRiskInstrumentScopes",
+   "required": false,
+   "tag": 1534,
    "members": [
     {
-     "kind": "group",
-     "name": "NoRiskInstrumentScopes",
+     "kind": "field",
+     "name": "InstrumentScopeOperator",
      "required": false,
-     "tag": 1534,
-     "members": [
-      {
-       "kind": "field",
-       "name": "InstrumentScopeOperator",
-       "required": false,
-       "tag": 1535
-      },
-      {
-       "kind": "component",
-       "name": "InstrumentScope",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "RiskInstrumentMultiplier",
-       "required": false,
-       "tag": 1558
-      }
-     ]
+     "tag": 1535
+    },
+    {
+     "kind": "component",
+     "name": "InstrumentScope",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "RiskInstrumentMultiplier",
+     "required": false,
+     "tag": 1558
     }
    ]
   }
- }
+ ]
 }

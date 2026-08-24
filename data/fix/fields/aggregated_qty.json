@@ -1,9 +1,0 @@
-{
- "name": "AggregatedQty",
- "tag": 2789,
- "versions": {
-  "5.0.SP2": {
-   "type": "QTY"
-  }
- }
-}

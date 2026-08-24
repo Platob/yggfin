@@ -1,9 +1,0 @@
-{
- "name": "NoFundingSources",
- "tag": 2849,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

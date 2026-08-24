@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingOptionExerciseStartDateOffsetUnit",
- "tag": 41831,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

@@ -1,28 +1,26 @@
 {
  "name": "ThrottleResponse",
- "versions": {
-  "5.0.SP2": {
-   "order": 28,
-   "members": [
-    {
-     "kind": "field",
-     "name": "ThrottleInst",
-     "required": false,
-     "tag": 1685
-    },
-    {
-     "kind": "field",
-     "name": "ThrottleStatus",
-     "required": false,
-     "tag": 1609
-    },
-    {
-     "kind": "field",
-     "name": "ThrottleCountIndicator",
-     "required": false,
-     "tag": 1686
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "ThrottleInst",
+   "required": false,
+   "tag": 1685
+  },
+  {
+   "kind": "field",
+   "name": "ThrottleStatus",
+   "required": false,
+   "tag": 1609
+  },
+  {
+   "kind": "field",
+   "name": "ThrottleCountIndicator",
+   "required": false,
+   "tag": 1686
   }
- }
+ ]
 }

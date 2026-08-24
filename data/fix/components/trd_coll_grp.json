@@ -1,105 +1,31 @@
 {
  "name": "TrdCollGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 235,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoTrades",
+   "required": false,
+   "tag": 897,
    "members": [
     {
-     "kind": "group",
-     "name": "NoTrades",
+     "kind": "field",
+     "name": "TradeReportID",
      "required": false,
-     "tag": 897,
-     "members": [
-      {
-       "kind": "field",
-       "name": "TradeReportID",
-       "required": false,
-       "tag": 571
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryTradeReportID",
-       "required": false,
-       "tag": 818
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 84,
-   "members": [
+     "tag": 571
+    },
     {
-     "kind": "group",
-     "name": "NoTrades",
+     "kind": "field",
+     "name": "SecondaryTradeReportID",
      "required": false,
-     "tag": 897,
-     "members": [
-      {
-       "kind": "field",
-       "name": "TradeReportID",
-       "required": false,
-       "tag": 571
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryTradeReportID",
-       "required": false,
-       "tag": 818
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 85,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoTrades",
-     "required": false,
-     "tag": 897,
-     "members": [
-      {
-       "kind": "field",
-       "name": "TradeReportID",
-       "required": false,
-       "tag": 571
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryTradeReportID",
-       "required": false,
-       "tag": 818
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 85,
-   "members": [
-    {
-     "kind": "group",
-     "name": "NoTrades",
-     "required": false,
-     "tag": 897,
-     "members": [
-      {
-       "kind": "field",
-       "name": "TradeReportID",
-       "required": false,
-       "tag": 571
-      },
-      {
-       "kind": "field",
-       "name": "SecondaryTradeReportID",
-       "required": false,
-       "tag": 818
-      }
-     ]
+     "tag": 818
     }
    ]
   }
- }
+ ]
 }

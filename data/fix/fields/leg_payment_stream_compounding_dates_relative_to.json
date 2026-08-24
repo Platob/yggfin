@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamCompoundingDatesRelativeTo",
- "tag": 42409,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

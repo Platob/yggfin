@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamFormulaImageLength",
- "tag": 42652,
- "versions": {
-  "5.0.SP2": {
-   "type": "LENGTH"
-  }
- }
-}

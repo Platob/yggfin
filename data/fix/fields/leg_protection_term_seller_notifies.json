@@ -1,9 +1,0 @@
-{
- "name": "LegProtectionTermSellerNotifies",
- "tag": 41620,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

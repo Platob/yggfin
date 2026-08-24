@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProtectionTermEventDayType",
- "tag": 42083,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

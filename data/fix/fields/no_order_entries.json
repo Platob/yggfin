@@ -1,9 +1,0 @@
-{
- "name": "NoOrderEntries",
- "tag": 2428,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

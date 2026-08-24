@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingOptionExerciseDate",
- "tag": 41842,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

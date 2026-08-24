@@ -1,101 +1,99 @@
 {
  "name": "DeliveryScheduleGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 491,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoDeliverySchedules",
+   "required": false,
+   "tag": 41037,
    "members": [
     {
-     "kind": "group",
-     "name": "NoDeliverySchedules",
+     "kind": "field",
+     "name": "DeliveryScheduleType",
      "required": false,
-     "tag": 41037,
-     "members": [
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleType",
-       "required": false,
-       "tag": 41038
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleXID",
-       "required": false,
-       "tag": 41039
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleNotional",
-       "required": false,
-       "tag": 41040
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleNotionalUnitOfMeasure",
-       "required": false,
-       "tag": 41041
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleNotionalCommodityFrequency",
-       "required": false,
-       "tag": 41042
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleNegativeTolerance",
-       "required": false,
-       "tag": 41043
-      },
-      {
-       "kind": "field",
-       "name": "DeliverySchedulePositiveTolerance",
-       "required": false,
-       "tag": 41044
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleToleranceUnitOfMeasure",
-       "required": false,
-       "tag": 41045
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleToleranceType",
-       "required": false,
-       "tag": 41046
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleSettlCountry",
-       "required": false,
-       "tag": 41047
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleSettlTimeZone",
-       "required": false,
-       "tag": 41048
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleSettlFlowType",
-       "required": false,
-       "tag": 41049
-      },
-      {
-       "kind": "field",
-       "name": "DeliveryScheduleSettlHolidaysProcessingInstruction",
-       "required": false,
-       "tag": 41050
-      },
-      {
-       "kind": "component",
-       "name": "DeliveryScheduleSettlDayGrp",
-       "required": false
-      }
-     ]
+     "tag": 41038
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleXID",
+     "required": false,
+     "tag": 41039
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleNotional",
+     "required": false,
+     "tag": 41040
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleNotionalUnitOfMeasure",
+     "required": false,
+     "tag": 41041
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleNotionalCommodityFrequency",
+     "required": false,
+     "tag": 41042
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleNegativeTolerance",
+     "required": false,
+     "tag": 41043
+    },
+    {
+     "kind": "field",
+     "name": "DeliverySchedulePositiveTolerance",
+     "required": false,
+     "tag": 41044
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleToleranceUnitOfMeasure",
+     "required": false,
+     "tag": 41045
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleToleranceType",
+     "required": false,
+     "tag": 41046
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleSettlCountry",
+     "required": false,
+     "tag": 41047
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleSettlTimeZone",
+     "required": false,
+     "tag": 41048
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleSettlFlowType",
+     "required": false,
+     "tag": 41049
+    },
+    {
+     "kind": "field",
+     "name": "DeliveryScheduleSettlHolidaysProcessingInstruction",
+     "required": false,
+     "tag": 41050
+    },
+    {
+     "kind": "component",
+     "name": "DeliveryScheduleSettlDayGrp",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

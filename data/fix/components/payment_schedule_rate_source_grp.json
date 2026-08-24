@@ -1,36 +1,34 @@
 {
  "name": "PaymentScheduleRateSourceGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 395,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPaymentScheduleRateSources",
+   "required": false,
+   "tag": 40868,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPaymentScheduleRateSources",
+     "kind": "field",
+     "name": "PaymentScheduleRateSource",
      "required": false,
-     "tag": 40868,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PaymentScheduleRateSource",
-       "required": false,
-       "tag": 40869
-      },
-      {
-       "kind": "field",
-       "name": "PaymentScheduleRateSourceType",
-       "required": false,
-       "tag": 40870
-      },
-      {
-       "kind": "field",
-       "name": "PaymentScheduleReferencePage",
-       "required": false,
-       "tag": 40871
-      }
-     ]
+     "tag": 40869
+    },
+    {
+     "kind": "field",
+     "name": "PaymentScheduleRateSourceType",
+     "required": false,
+     "tag": 40870
+    },
+    {
+     "kind": "field",
+     "name": "PaymentScheduleReferencePage",
+     "required": false,
+     "tag": 40871
     }
    ]
   }
- }
+ ]
 }

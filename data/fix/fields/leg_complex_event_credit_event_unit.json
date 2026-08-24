@@ -1,9 +1,0 @@
-{
- "name": "LegComplexEventCreditEventUnit",
- "tag": 41371,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

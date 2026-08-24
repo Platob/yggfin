@@ -1,9 +1,0 @@
-{
- "name": "NoProvisionCashSettlPaymentDateBusinessCenters",
- "tag": 40952,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

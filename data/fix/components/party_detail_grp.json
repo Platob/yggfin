@@ -1,63 +1,61 @@
 {
  "name": "PartyDetailGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 318,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPartyDetails",
+   "required": false,
+   "tag": 1671,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPartyDetails",
+     "kind": "field",
+     "name": "PartyDetailID",
      "required": false,
-     "tag": 1671,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PartyDetailID",
-       "required": false,
-       "tag": 1691
-      },
-      {
-       "kind": "field",
-       "name": "PartyDetailIDSource",
-       "required": false,
-       "tag": 1692
-      },
-      {
-       "kind": "field",
-       "name": "PartyDetailRole",
-       "required": false,
-       "tag": 1693
-      },
-      {
-       "kind": "field",
-       "name": "PartyDetailRoleQualifier",
-       "required": false,
-       "tag": 1674
-      },
-      {
-       "kind": "component",
-       "name": "PartyDetailSubGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "PartyDetailAltIDGrp",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "RelatedPartyDetailGrp",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "PartyDetailStatus",
-       "required": false,
-       "tag": 1672
-      }
-     ]
+     "tag": 1691
+    },
+    {
+     "kind": "field",
+     "name": "PartyDetailIDSource",
+     "required": false,
+     "tag": 1692
+    },
+    {
+     "kind": "field",
+     "name": "PartyDetailRole",
+     "required": false,
+     "tag": 1693
+    },
+    {
+     "kind": "field",
+     "name": "PartyDetailRoleQualifier",
+     "required": false,
+     "tag": 1674
+    },
+    {
+     "kind": "component",
+     "name": "PartyDetailSubGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "PartyDetailAltIDGrp",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "RelatedPartyDetailGrp",
+     "required": false
+    },
+    {
+     "kind": "field",
+     "name": "PartyDetailStatus",
+     "required": false,
+     "tag": 1672
     }
    ]
   }
- }
+ ]
 }

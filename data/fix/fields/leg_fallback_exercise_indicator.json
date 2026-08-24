@@ -1,9 +1,0 @@
-{
- "name": "LegFallbackExerciseIndicator",
- "tag": 41488,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

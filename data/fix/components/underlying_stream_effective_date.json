@@ -1,57 +1,55 @@
 {
  "name": "UnderlyingStreamEffectiveDate",
- "versions": {
-  "5.0.SP2": {
-   "order": 66,
-   "members": [
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamEffectiveDateUnadjusted",
-     "required": false,
-     "tag": 40057
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamEffectiveDateBusinessDayConvention",
-     "required": false,
-     "tag": 40058
-    },
-    {
-     "kind": "component",
-     "name": "UnderlyingStreamEffectiveDateBusinessCenterGrp",
-     "required": false
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamEffectiveDateRelativeTo",
-     "required": false,
-     "tag": 40060
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamEffectiveDateOffsetPeriod",
-     "required": false,
-     "tag": 40061
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamEffectiveDateOffsetUnit",
-     "required": false,
-     "tag": 40062
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamEffectiveDateOffsetDayType",
-     "required": false,
-     "tag": 40063
-    },
-    {
-     "kind": "field",
-     "name": "UnderlyingStreamEffectiveDateAdjusted",
-     "required": false,
-     "tag": 40064
-    }
-   ]
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamEffectiveDateUnadjusted",
+   "required": false,
+   "tag": 40057
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamEffectiveDateBusinessDayConvention",
+   "required": false,
+   "tag": 40058
+  },
+  {
+   "kind": "component",
+   "name": "UnderlyingStreamEffectiveDateBusinessCenterGrp",
+   "required": false
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamEffectiveDateRelativeTo",
+   "required": false,
+   "tag": 40060
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamEffectiveDateOffsetPeriod",
+   "required": false,
+   "tag": 40061
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamEffectiveDateOffsetUnit",
+   "required": false,
+   "tag": 40062
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamEffectiveDateOffsetDayType",
+   "required": false,
+   "tag": 40063
+  },
+  {
+   "kind": "field",
+   "name": "UnderlyingStreamEffectiveDateAdjusted",
+   "required": false,
+   "tag": 40064
   }
- }
+ ]
 }

@@ -1,9 +1,0 @@
-{
- "name": "LegProvisionPartyRoleQualifier",
- "tag": 2380,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

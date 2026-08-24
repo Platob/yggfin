@@ -1,9 +1,0 @@
-{
- "name": "AdditionalTermBondCouponFrequencyUnit",
- "tag": 40017,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

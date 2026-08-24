@@ -1,9 +1,0 @@
-{
- "name": "LegMasterConfirmationDesc",
- "tag": 2511,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

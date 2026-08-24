@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingStreamFirstRegularPeriodStartDateUnadjusted",
- "tag": 40562,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

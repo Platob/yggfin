@@ -1,9 +1,0 @@
-{
- "name": "LegMarketDisruptionMaximumDays",
- "tag": 41464,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

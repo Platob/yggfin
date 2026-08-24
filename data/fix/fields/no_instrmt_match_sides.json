@@ -1,9 +1,0 @@
-{
- "name": "NoInstrmtMatchSides",
- "tag": 1889,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

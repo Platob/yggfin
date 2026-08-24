@@ -156,9 +156,8 @@ fields:
     fix:type: SeqNum
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"SeqNum"}'
     fix:name: MsgSeqNum
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: kwargs
   type: list
   nullable: true
@@ -202,9 +201,8 @@ fields:
         fix:type: String
         fix:version: 5.0.SP2
         fix:components: '["Parties","PartyDetail"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
         fix:name: PartyID
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: party_id_source
       type: string
       nullable: true
@@ -231,9 +229,8 @@ fields:
           guidelines document"}'
         fix:value_names: '{"5":"CHINESE_INVESTOR_ID","8":"US_EMPLOYER_OR_TAX_ID_NUMBER","A":"AUSTRALIAN_TAX_FILE_NUMBER","9":"AUSTRALIAN_BUSINESS_NUMBER","E":"ISO_COUNTRY_CODE","B":"BIC","7":"US_SOCIAL_SECURITY_NUMBER","D":"PROPRIETARY","F":"SETTLEMENT_ENTITY_LOCATION","1":"KOREAN_INVESTOR_ID","2":"TAIWANESE_FOREIGN_INVESTOR_ID","3":"TAIWANESE_TRADING_ACCT","4":"MALAYSIAN_CENTRAL_DEPOSITORY","6":"UK_NATIONAL_INSURANCE_OR_PENSION_NUMBER","C":"GENERAL_IDENTIFIER","G":"MIC","H":"CSD_PARTICIPANT","I":"ISITC_ACRONYM","J":"TAX_ID","K":"AUSTRALIAN_COMPANY_NUMBER","L":"AUSTRALIAN_REGISTERED_BODY_NUMBER","M":"CFTC_REPORTING_FIRM_IDENTIFIER","N":"LEGAL_ENTITY_IDENTIFIER","O":"INTERIM_IDENTIFIER","P":"SHORT_CODE_IDENTIFIER","Q":"NATIONAL_ID_NATURAL_PERSON","R":"INDIA_PERMANENT_ACCOUNT_NUMBER","S":"FDID","T":"SPSAID","U":"MASTER_SPSAID"}'
         fix:components: '["Parties","PartyDetail"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char"}'
         fix:name: PartyIDSource
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: party_role
       type: int64
       nullable: true
@@ -279,9 +276,8 @@ fields:
           Settling Counterparty","85":"Unacceptable Settling Counterparty"}'
         fix:value_names: '{"15":"CORRESPONDANT_CLEARING_FIRM","3":"CLIENT_ID","20":"UNDERLYING_CONTRA_FIRM","19":"SPONSORING_FIRM","18":"CONTRA_CLEARING_FIRM","17":"CONTRA_FIRM","16":"EXECUTING_SYSTEM","7":"ENTERING_FIRM","1":"EXECUTING_FIRM","2":"BROKER_OF_CREDIT","5":"INVESTOR_ID","6":"INTRODUCING_FIRM","14":"GIVEUP_CLEARING_FIRM_DEPR","8":"LOCATE","9":"FUND_MANAGER_CLIENT_ID","10":"SETTLEMENT_LOCATION","11":"ORDER_ORIGINATION_TRADER","12":"EXECUTING_TRADER","13":"ORDER_ORIGINATION_FIRM","4":"CLEARING_FIRM","21":"CLEARING_ORGANIZATION","22":"EXCHANGE","24":"CUSTOMER_ACCOUNT","25":"CORRESPONDENT_CLEARING_ORGANIZATION","26":"CORRESPONDENT_BROKER","27":"BUYER","28":"CUSTODIAN","29":"INTERMEDIARY","30":"AGENT","31":"SUB_CUSTODIAN","32":"BENEFICIARY","33":"INTERESTED_PARTY","34":"REGULATORY_BODY","35":"LIQUIDITY_PROVIDER","36":"ENTERING_TRADER","37":"CONTRA_TRADER","38":"POSITION_ACCOUNT","39":"CONTRA_INVESTOR_ID","40":"TRANSFER_TO_FIRM","41":"CONTRA_POSITION_ACCOUNT","42":"CONTRA_EXCHANGE","43":"INTERNAL_CARRY_ACCOUNT","44":"ORDER_ENTRY_OPERATOR_ID","45":"SECONDARY_ACCOUNT_NUMBER","46":"FOREIGN_FIRM","47":"THIRD_PARTY_ALLOCATION_FIRM","48":"CLAIMING_ACCOUNT","49":"ASSET_MANAGER","50":"PLEDGOR_ACCOUNT","51":"PLEDGEE_ACCOUNT","52":"LARGE_TRADER_REPORTABLE_ACCOUNT","53":"TRADER_MNEMONIC","54":"SENDER_LOCATION","55":"SESSION_ID","56":"ACCEPTABLE_COUNTERPARTY","57":"UNACCEPTABLE_COUNTERPARTY","58":"ENTERING_UNIT","59":"EXECUTING_UNIT","60":"INTRODUCING_BROKER","61":"QUOTE_ORIGINATOR","62":"REPORT_ORIGINATOR","63":"SYSTEMATIC_INTERNALISER","64":"MULTILATERAL_TRADING_FACILITY","65":"REGULATED_MARKET","66":"MARKET_MAKER","67":"INVESTMENT_FIRM","68":"HOST_COMPETENT_AUTHORITY","69":"HOME_COMPETENT_AUTHORITY","70":"COMPETENT_AUTHORITY_LIQUIDITY","71":"COMPETENT_AUTHORITY_TRANSACTION_VENUE","72":"REPORTING_INTERMEDIARY","73":"EXECUTION_VENUE","74":"MARKET_DATA_ENTRY_ORIGINATOR","75":"LOCATION_ID","76":"DESK_ID","77":"MARKET_DATA_MARKET","78":"ALLOCATION_ENTITY","79":"PRIME_BROKER","80":"STEP_OUT_FIRM","81":"BROKER_CLEARING_ID","82":"CENTRAL_REGISTRATION_DEPOSITORY","83":"CLEARING_ACCOUNT","84":"ACCEPTABLE_SETTLING_COUNTERPARTY","85":"UNACCEPTABLE_SETTLING_COUNTERPARTY","86":"CLS_MEMBER_BANK","87":"IN_CONCERT_GROUP","88":"IN_CONCERT_CONTROLLING_ENTITY","89":"LARGE_POSITIONS_REPORTING_ACCOUNT","90":"SETTLEMENT_FIRM","91":"SETTLEMENT_ACCOUNT","92":"REPORTING_MARKET_CENTER","93":"RELATED_REPORTING_MARKET_CENTER","94":"AWAY_MARKET","95":"GIVEUP_TRADING_FIRM","96":"TAKEUP_TRADING_FIRM","97":"GIVEUP_CLEARING_FIRM","98":"TAKEUP_CLEARING_FIRM","99":"ORIGINATING_MARKET","100":"MARGIN_ACCOUNT","101":"COLLATERAL_ASSET_ACCOUNT","102":"DATA_REPOSITORY","103":"CALCULATION_AGENT","104":"EXERCISE_NOTICE_SENDER","105":"EXERCISE_NOTICE_RECEIVER","106":"RATE_REFERENCE_BANK","107":"CORRESPONDENT","109":"BENEFICIARY_BANK","110":"BORROWER","111":"PRIMARY_OBLIGATOR","112":"GUARANTOR","113":"EXCLUDED_REFERENCE_ENTITY","114":"DETERMINING_PARTY","115":"HEDGING_PARTY","116":"REPORTING_ENTITY","117":"SALES_PERSON","118":"OPERATOR","119":"CSD","120":"ICSD","121":"TRADING_SUB_ACCOUNT","122":"INVESTMENT_DECISION_MAKER","123":"PUBLISHING_INTERMEDIARY","124":"CSD_PARTICIPANT","125":"ISSUER","126":"CONTRA_CUSTOMER_ACCOUNT","127":"CONTRA_INVESTMENT_DECISION_MAKER"}'
         fix:components: '["Parties","PartyDetail"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-        fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int"}'
         fix:name: PartyRole
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
     - name: buffer
       type: map
       nullable: true
@@ -310,9 +306,8 @@ fields:
         fix:type: UTCTimestamp
         fix:version: 5.0.SP2
         fix:components: '["TrdRegTimestamps"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
-        fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp"}'
         fix:name: TrdRegTimestamp
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
     - name: trd_reg_timestamp_type
       type: int64
       nullable: true
@@ -327,9 +322,8 @@ fields:
           Receipt","5":"Broker Execution","6":"Desk Receipt","7":"Submission to Clearing"}'
         fix:value_names: '{"1":"EXECUTION_TIME","2":"TIME_IN","3":"TIME_OUT","4":"BROKER_RECEIPT","5":"BROKER_EXECUTION","6":"DESK_RECEIPT","7":"SUBMISSION_TO_CLEARING","8":"TIME_PRIORITY","9":"ORDERBOOK_ENTRY_TIME","10":"ORDER_SUBMISSION_TIME","11":"PUBLICLY_REPORTED","12":"PUBLIC_REPORT_UPDATED","13":"NON_PUBLICLY_REPORTED","14":"NON_PUBLIC_REPORT_UPDATED","15":"SUBMITTED_FOR_CONFIRMATION","16":"UPDATED_FOR_CONFIRMATION","17":"CONFIRMED","18":"UPDATED_FOR_CLEARING","19":"CLEARED","20":"ALLOCATIONS_SUBMITTED","21":"ALLOCATIONS_UPDATED","22":"ALLOCATIONS_COMPLETED","23":"SUBMITTED_TO_REPOSITORY","24":"POST_TRD_CONTNTN_EVNT","25":"POST_TRADE_VALUATION","26":"PREVIOUS_TIME_PRIORITY","27":"IDENTIFIER_ASSIGNED","28":"PREVIOUS_IDENTIFIER_ASSIGNED","29":"ORDER_CANCELLATION_TIME","30":"ORDER_MODIFICATION_TIME","31":"ORDER_ROUTING_TIME","32":"TRADE_CANCELLATION_TIME","33":"TRADE_MODIFICATION_TIME","34":"REFERENCE_TIME_FOR_NBBO"}'
         fix:components: '["TrdRegTimestamps"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
-        fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int"}'
         fix:name: TrdRegTimestampType
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
     - name: trd_reg_timestamp_origin
       type: string
       nullable: true
@@ -340,9 +334,8 @@ fields:
         fix:type: String
         fix:version: 5.0.SP2
         fix:components: '["TrdRegTimestamps"]'
-        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
-        fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String"}'
         fix:name: TrdRegTimestampOrigin
+        fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
     - name: buffer
       type: map
       nullable: true
@@ -369,9 +362,8 @@ fields:
     fix:version: 5.0.SP2
     fix:value_names: '{"FIX.4.2":"FIX42","FIX.4.4":"FIX44","FIXT.1.1":"FIXT11"}'
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: BeginString
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: body_length
   type: int64
   nullable: true
@@ -382,9 +374,8 @@ fields:
     fix:type: Length
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"int","4.1":"int","4.0":"int","FIXT1.1":"Length"}'
     fix:name: BodyLength
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: msg_type
   type: string
   nullable: true
@@ -439,9 +430,8 @@ fields:
       <y>","z":"DerivativeSecurityListRequest <z>"}'
     fix:value_names: '{"0":"HEARTBEAT","1":"TEST_REQUEST","2":"RESEND_REQUEST","3":"REJECT","4":"SEQUENCE_RESET","5":"LOGOUT","6":"IOI","7":"ADVERTISEMENT","8":"EXECUTION_REPORT","9":"ORDER_CANCEL_REJECT","A":"LOGON","B":"NEWS","C":"EMAIL","D":"NEW_ORDER_SINGLE","E":"NEW_ORDER_LIST","F":"ORDER_CANCEL_REQUEST","G":"ORDER_CANCEL_REPLACE_REQUEST","H":"ORDER_STATUS_REQUEST","J":"ALLOCATION_INSTRUCTION","K":"LIST_CANCEL_REQUEST","L":"LIST_EXECUTE","M":"LIST_STATUS_REQUEST","N":"LIST_STATUS","P":"ALLOCATION_INSTRUCTION_ACK","Q":"DONT_KNOW_TRADE","R":"QUOTE_REQUEST","S":"QUOTE","T":"SETTLEMENT_INSTRUCTIONS","V":"MARKET_DATA_REQUEST","W":"MARKET_DATA_SNAPSHOT_FULL_REFRESH","X":"MARKET_DATA_INCREMENTAL_REFRESH","Y":"MARKET_DATA_REQUEST_REJECT","Z":"QUOTE_CANCEL","a":"QUOTE_STATUS_REQUEST","b":"MASS_QUOTE_ACK","c":"SECURITY_DEFINITION_REQUEST","d":"SECURITY_DEFINITION","e":"SECURITY_STATUS_REQUEST","f":"SECURITY_STATUS","g":"TRADING_SESSION_STATUS_REQUEST","h":"TRADING_SESSION_STATUS","i":"MASS_QUOTE","j":"BUSINESS_MESSAGE_REJECT","k":"BID_REQUEST","l":"BID_RESPONSE","m":"LIST_STRIKE_PRICE","AA":"DERIVATIVE_SECURITY_LIST","AB":"NEW_ORDER_MULTILEG","AC":"MULTILEG_ORDER_CANCEL_REPLACE","AD":"TRADE_CAPTURE_REPORT_REQUEST","AE":"TRADE_CAPTURE_REPORT","AF":"ORDER_MASS_STATUS_REQUEST","AG":"QUOTE_REQUEST_REJECT","AH":"RFQ_REQUEST","AI":"QUOTE_STATUS_REPORT","n":"XM_LNON_FIX","o":"REGISTRATION_INSTRUCTIONS","p":"REGISTRATION_INSTRUCTIONS_RESPONSE","q":"ORDER_MASS_CANCEL_REQUEST","r":"ORDER_MASS_CANCEL_REPORT","s":"NEW_ORDER_CROSS","t":"CROSS_ORDER_CANCEL_REPLACE_REQUEST","u":"CROSS_ORDER_CANCEL_REQUEST","v":"SECURITY_TYPE_REQUEST","w":"SECURITY_TYPES","x":"SECURITY_LIST_REQUEST","y":"SECURITY_LIST","z":"DERIVATIVE_SECURITY_LIST_REQUEST","AJ":"QUOTE_RESPONSE","AK":"CONFIRMATION","AL":"POSITION_MAINTENANCE_REQUEST","AM":"POSITION_MAINTENANCE_REPORT","AN":"REQUEST_FOR_POSITIONS","AO":"REQUEST_FOR_POSITIONS_ACK","AP":"POSITION_REPORT","AQ":"TRADE_CAPTURE_REPORT_REQUEST_ACK","AR":"TRADE_CAPTURE_REPORT_ACK","AS":"ALLOCATION_REPORT","AT":"ALLOCATION_REPORT_ACK","AU":"CONFIRMATION_ACK","AV":"SETTLEMENT_INSTRUCTION_REQUEST","AW":"ASSIGNMENT_REPORT","AX":"COLLATERAL_REQUEST","AY":"COLLATERAL_ASSIGNMENT","AZ":"COLLATERAL_RESPONSE","BA":"COLLATERAL_REPORT","BB":"COLLATERAL_INQUIRY","BC":"NETWORK_COUNTERPARTY_SYSTEM_STATUS_REQUEST","BD":"NETWORK_COUNTERPARTY_SYSTEM_STATUS_RESPONSE","BE":"USER_REQUEST","BF":"USER_RESPONSE","BG":"COLLATERAL_INQUIRY_ACK","BH":"CONFIRMATION_REQUEST","BI":"TRADING_SESSION_LIST_REQUEST","BJ":"TRADING_SESSION_LIST","BK":"SECURITY_LIST_UPDATE_REPORT","BL":"ADJUSTED_POSITION_REPORT","BM":"ALLOCATION_INSTRUCTION_ALERT","BN":"EXECUTION_ACK","BO":"CONTRARY_INTENTION_REPORT","BP":"SECURITY_DEFINITION_UPDATE_REPORT","BQ":"SETTLEMENT_OBLIGATION_REPORT","BR":"DERIVATIVE_SECURITY_LIST_UPDATE_REPORT","BS":"TRADING_SESSION_LIST_UPDATE_REPORT","BT":"MARKET_DEFINITION_REQUEST","BU":"MARKET_DEFINITION","BV":"MARKET_DEFINITION_UPDATE_REPORT","BW":"APPLICATION_MESSAGE_REQUEST","BX":"APPLICATION_MESSAGE_REQUEST_ACK","BY":"APPLICATION_MESSAGE_REPORT","BZ":"ORDER_MASS_ACTION_REPORT","CA":"ORDER_MASS_ACTION_REQUEST","CB":"USER_NOTIFICATION","CC":"STREAM_ASSIGNMENT_REQUEST","CD":"STREAM_ASSIGNMENT_REPORT","CE":"STREAM_ASSIGNMENT_REPORT_ACK","CF":"PARTY_DETAILS_LIST_REQUEST","CG":"PARTY_DETAILS_LIST_REPORT","CH":"MARGIN_REQUIREMENT_INQUIRY","CI":"MARGIN_REQUIREMENT_INQUIRY_ACK","CJ":"MARGIN_REQUIREMENT_REPORT","CK":"PARTY_DETAILS_LIST_UPDATE_REPORT","CL":"PARTY_RISK_LIMITS_REQUEST","CM":"PARTY_RISK_LIMITS_REPORT","CN":"SECURITY_MASS_STATUS_REQUEST","CO":"SECURITY_MASS_STATUS","CQ":"ACCOUNT_SUMMARY_REPORT","CR":"PARTY_RISK_LIMITS_UPDATE_REPORT","CS":"PARTY_RISK_LIMITS_DEFINITION_REQUEST","CT":"PARTY_RISK_LIMITS_DEFINITION_REQUEST_ACK","CU":"PARTY_ENTITLEMENTS_REQUEST","CV":"PARTY_ENTITLEMENTS_REPORT","CW":"QUOTE_ACK","CX":"PARTY_DETAILS_DEFINITION_REQUEST","CY":"PARTY_DETAILS_DEFINITION_REQUEST_ACK","CZ":"PARTY_ENTITLEMENTS_UPDATE_REPORT","DA":"PARTY_ENTITLEMENTS_DEFINITION_REQUEST","DB":"PARTY_ENTITLEMENTS_DEFINITION_REQUEST_ACK","DC":"TRADE_MATCH_REPORT","DD":"TRADE_MATCH_REPORT_ACK","DE":"PARTY_RISK_LIMITS_REPORT_ACK","DF":"PARTY_RISK_LIMIT_CHECK_REQUEST","DG":"PARTY_RISK_LIMIT_CHECK_REQUEST_ACK","DH":"PARTY_ACTION_REQUEST","DI":"PARTY_ACTION_REPORT","DJ":"MASS_ORDER","DK":"MASS_ORDER_ACK","DL":"POSITION_TRANSFER_INSTRUCTION","DM":"POSITION_TRANSFER_INSTRUCTION_ACK","DN":"POSITION_TRANSFER_REPORT","DO":"MARKET_DATA_STATISTICS_REQUEST","DP":"MARKET_DATA_STATISTICS_REPORT","DQ":"COLLATERAL_REPORT_ACK","DR":"MARKET_DATA_REPORT","DS":"CROSS_REQUEST","DT":"CROSS_REQUEST_ACK","DU":"ALLOCATION_INSTRUCTION_ALERT_REQUEST","DV":"ALLOCATION_INSTRUCTION_ALERT_REQUEST_ACK","DW":"TRADE_AGGREGATION_REQUEST","DX":"TRADE_AGGREGATION_REPORT","EA":"PAY_MANAGEMENT_REPORT","EB":"PAY_MANAGEMENT_REPORT_ACK","DY":"PAY_MANAGEMENT_REQUEST","DZ":"PAY_MANAGEMENT_REQUEST_ACK"}'
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: MsgType
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: check_sum
   type: string
   nullable: true
@@ -454,9 +444,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardTrailer"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: CheckSum
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: sender_comp_id
   type: string
   nullable: true
@@ -466,9 +455,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: SenderCompID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: sender_sub_id
   type: string
   nullable: true
@@ -479,9 +467,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: SenderSubID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: sender_location_id
   type: string
   nullable: true
@@ -492,9 +479,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
     fix:name: SenderLocationID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
 - name: target_comp_id
   type: string
   nullable: true
@@ -504,9 +490,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: TargetCompID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: target_sub_id
   type: string
   nullable: true
@@ -518,9 +503,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: TargetSubID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: target_location_id
   type: string
   nullable: true
@@ -531,9 +515,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
     fix:name: TargetLocationID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
 - name: on_behalf_of_comp_id
   type: string
   nullable: true
@@ -545,9 +528,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: OnBehalfOfCompID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: on_behalf_of_sub_id
   type: string
   nullable: true
@@ -558,9 +540,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: OnBehalfOfSubID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: on_behalf_of_location_id
   type: string
   nullable: true
@@ -572,9 +553,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
     fix:name: OnBehalfOfLocationID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
 - name: deliver_to_comp_id
   type: string
   nullable: true
@@ -587,9 +567,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: DeliverToCompID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: deliver_to_sub_id
   type: string
   nullable: true
@@ -600,9 +579,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: DeliverToSubID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: deliver_to_location_id
   type: string
   nullable: true
@@ -614,9 +592,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","FIXT1.1":"String"}'
     fix:name: DeliverToLocationID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","FIXT1.1"]'
 - name: last_msg_seq_num_processed
   type: int64
   nullable: true
@@ -628,9 +605,8 @@ fields:
     fix:type: SeqNum
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"SeqNum","5.0.SP1":"SeqNum","5.0":"SeqNum","4.4":"SeqNum","4.3":"SeqNum","4.2":"int","FIXT1.1":"SeqNum"}'
     fix:name: LastMsgSeqNumProcessed
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
 - name: poss_dup_flag
   type: bool
   nullable: true
@@ -642,9 +618,8 @@ fields:
     fix:values: '{"N":"Original transmission","Y":"Possible duplicate"}'
     fix:value_names: '{"N":"NO","Y":"YES"}'
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"Boolean","5.0.SP1":"Boolean","5.0":"Boolean","4.4":"Boolean","4.3":"Boolean","4.2":"Boolean","4.1":"char","4.0":"char","FIXT1.1":"Boolean"}'
     fix:name: PossDupFlag
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: poss_resend
   type: bool
   nullable: true
@@ -657,9 +632,8 @@ fields:
     fix:values: '{"N":"Original Transmission","Y":"Possible Resend"}'
     fix:value_names: '{"N":"NO","Y":"YES"}'
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"Boolean","5.0.SP1":"Boolean","5.0":"Boolean","4.4":"Boolean","4.3":"Boolean","4.2":"Boolean","4.1":"char","4.0":"char","FIXT1.1":"Boolean"}'
     fix:name: PossResend
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: sending_time
   type: timestamp[us, tz=UTC]
   nullable: true
@@ -670,9 +644,8 @@ fields:
     fix:type: UTCTimestamp
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time","FIXT1.1":"UTCTimestamp"}'
     fix:name: SendingTime
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: orig_sending_time
   type: timestamp[us, tz=UTC]
   nullable: true
@@ -684,9 +657,8 @@ fields:
     fix:type: UTCTimestamp
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time","FIXT1.1":"UTCTimestamp"}'
     fix:name: OrigSendingTime
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: on_behalf_of_sending_time
   type: timestamp[us, tz=UTC]
   nullable: true
@@ -702,10 +674,9 @@ fields:
     fix:type: UTCTimestamp
     fix:version: 5.0.SP2
     fix:note: no longer used
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp"}'
-    fix:names: '{"5.0.SP2":"OnBehalfOfSendingTime","5.0.SP1":"OnBehalfOfSendingTime","5.0":"OnBehalfOfSendingTime","4.4":"OnBehalfOfSendingTime","4.3":"OnBehalfOfSendingTime(Deprecated)","4.2":"OnBehalfOfSendingTime"}'
     fix:name: OnBehalfOfSendingTime
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:aliases: '[{"name":"OnBehalfOfSendingTime(Deprecated)","source":"4.3","occurrences":0}]'
 - name: appl_ver_id
   type: string
   nullable: true
@@ -718,9 +689,8 @@ fields:
     fix:values: '{"0":"FIX27","1":"FIX30","2":"FIX40","3":"FIX41","4":"FIX42","5":"FIX43","6":"FIX44","7":"FIX50","8":"FIX50SP1","9":"FIX50SP2"}'
     fix:value_names: '{"0":"FIX27","1":"FIX30","2":"FIX40","3":"FIX41","4":"FIX42","5":"FIX43","6":"FIX44","7":"FIX50","8":"FIX50_SP1","9":"FIX50_SP2","10":"FIX_LATEST"}'
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","FIXT1.1":"String"}'
     fix:name: ApplVerID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]'
 - name: cstm_appl_ver_id
   type: string
   nullable: true
@@ -731,9 +701,8 @@ fields:
     fix:type: String
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","FIXT1.1":"String"}'
     fix:name: CstmApplVerID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","FIXT1.1"]'
 - name: appl_ext_id
   type: int64
   nullable: true
@@ -743,9 +712,8 @@ fields:
     fix:type: int
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","FIXT1.1":"int"}'
     fix:name: ApplExtID
+    fix:versions: '["5.0.SP2","5.0.SP1","FIXT1.1"]'
 - name: message_encoding
   type: string
   nullable: true
@@ -755,11 +723,10 @@ fields:
     fix:tag: '347'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","FIXT1.1":"String"}'
     fix:value_names: '{"EUC-JP":"EUCJP","ISO-2022-JP":"ISO2022_JP","Shift_JIS":"SHIFT_JIS","UTF-8":"UTF8"}'
+    fix:components: '["StandardHeader"]'
     fix:name: MessageEncoding
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
 - name: xml_data_len
   type: int64
   nullable: true
@@ -769,9 +736,8 @@ fields:
     fix:type: Length
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"Length","FIXT1.1":"Length"}'
     fix:name: XmlDataLen
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
 - name: xml_data
   type: binary
   nullable: true
@@ -782,9 +748,8 @@ fields:
     fix:type: data
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"data","5.0.SP1":"data","5.0":"data","4.4":"data","4.3":"data","4.2":"data","FIXT1.1":"data"}'
     fix:name: XmlData
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","FIXT1.1"]'
 - name: secure_data_len
   type: int64
   nullable: true
@@ -794,9 +759,8 @@ fields:
     fix:type: Length
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"Length","4.1":"Length","4.0":"Length","FIXT1.1":"Length"}'
     fix:name: SecureDataLen
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: secure_data
   type: binary
   nullable: true
@@ -806,9 +770,8 @@ fields:
     fix:type: data
     fix:version: 5.0.SP2
     fix:components: '["StandardHeader"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"data","5.0.SP1":"data","5.0":"data","4.4":"data","4.3":"data","4.2":"data","4.1":"data","4.0":"data","FIXT1.1":"data"}'
     fix:name: SecureData
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: signature_length
   type: int64
   nullable: true
@@ -818,9 +781,8 @@ fields:
     fix:type: Length
     fix:version: 5.0.SP2
     fix:components: '["StandardTrailer"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"Length","5.0.SP1":"Length","5.0":"Length","4.4":"Length","4.3":"Length","4.2":"Length","4.1":"Length","4.0":"Length","FIXT1.1":"Length"}'
     fix:name: SignatureLength
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: signature
   type: binary
   nullable: true
@@ -830,9 +792,8 @@ fields:
     fix:type: data
     fix:version: 5.0.SP2
     fix:components: '["StandardTrailer"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"data","5.0.SP1":"data","5.0":"data","4.4":"data","4.3":"data","4.2":"data","4.1":"data","4.0":"data","FIXT1.1":"data"}'
     fix:name: Signature
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: symbol
   type: string
   nullable: true
@@ -844,9 +805,6 @@ fields:
     fix:tag: '55'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","Security Definition Request","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -854,7 +812,9 @@ fields:
       Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
       Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
       Data - Incremental Refresh","Quote Cancel"]'
+    fix:components: '["Instrument"]'
     fix:name: Symbol
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: security_id
   type: string
   nullable: true
@@ -864,9 +824,6 @@ fields:
     fix:tag: '48'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -874,7 +831,9 @@ fields:
       Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
       Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
       Data - Incremental Refresh","Quote Cancel"]'
+    fix:components: '["Instrument"]'
     fix:name: SecurityID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: security_id_source
   type: string
   nullable: true
@@ -892,11 +851,6 @@ fields:
       Reporting Authority","K":"ISDA/FpML Product URL (URL in SecurityID)","L":"Letter
       of Credit","M":"Marketplace-assigned Identifier"}'
     fix:value_names: '{"1":"CUSIP","2":"SEDOL","3":"QUIK","4":"ISIN_NUMBER","5":"RIC_CODE","6":"ISO_CURRENCY_CODE","7":"ISO_COUNTRY_CODE","8":"EXCHANGE_SYMBOL","9":"CONSOLIDATED_TAPE_ASSOCIATION","E":"SICOVAM","F":"BELGIAN","D":"VALOREN","C":"DUTCH","B":"WERTPAPIER","A":"BLOOMBERG_SYMBOL","G":"COMMON","H":"CLEARING_HOUSE","I":"ISDA_FP_ML_SPECIFICATION","J":"OPTION_PRICE_REPORTING_AUTHORITY","K":"ISDA_FP_MLURL","L":"LETTER_OF_CREDIT","M":"MARKETPLACE_ASSIGNED_IDENTIFIER","N":"MARKIT_RED_ENTITY_CLIP","P":"MARKIT_RED_PAIR_CLIP","Q":"CFTC_COMMODITY_CODE","R":"ISDA_COMMODITY_REFERENCE_PRICE","S":"FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER","T":"LEGAL_ENTITY_IDENTIFIER","U":"SYNTHETIC","V":"FIDESSA_INSTRUMENT_MNEMONIC","W":"INDEX_NAME","X":"UNIFORM_SYMBOL","Y":"DIGITAL_TOKEN_IDENTIFIER"}'
-    fix:components: '["Instrument"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
-    fix:names: '{"5.0.SP2":"SecurityIDSource","5.0.SP1":"SecurityIDSource","5.0":"SecurityIDSource","4.4":"SecurityIDSource","4.3":"IDSource
-      prior to FIX 4.3)","4.2":"IDSource","4.1":"IDSource","4.0":"IDSource"}'
     fix:used_in: '["Indication of Interest","Advertisement","Execution Report","Quote
       Status Request","Quote Acknowledgement","News","Security Definition Request","Email","Security
       Definition","New Order - Single","Security Status Request","New Order - List","Security
@@ -904,7 +858,11 @@ fields:
       Request","Mass Quote","Allocation","List Strike Price","Don''t Know Trade","Quote
       Request","Quote","Market Data Request","Market Data - Snapshot/Full Refresh","Market
       Data - Incremental Refresh","Quote Cancel"]'
+    fix:components: '["Instrument"]'
     fix:name: SecurityIDSource
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:aliases: '[{"name":"IDSource","source":"4.0","occurrences":0},{"name":"IDSource
+      prior to FIX 4.3)","source":"4.3","occurrences":0}]'
 - name: security_type
   type: string
   nullable: true
@@ -973,9 +931,8 @@ fields:
       Strike Price","Don''t Know Trade","Quote Request","Quote","Market Data Request","Market
       Data - Snapshot/Full Refresh","Market Data - Incremental Refresh","Quote Cancel"]'
     fix:components: '["Instrument","SecTypesGrp","SettlInstGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char"}'
     fix:name: SecurityType
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
 - name: cfi_code
   type: string
   nullable: true
@@ -994,9 +951,8 @@ fields:
     fix:used_in: '["SettlementInstructionRequest","Settlement Instruction Request","Settlement
       Instructions","Security Types"]'
     fix:components: '["Instrument","SecTypesGrp","SettlInstGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String"}'
     fix:name: CFICode
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
 - name: security_exchange
   type: string
   nullable: true
@@ -1014,9 +970,8 @@ fields:
       Data Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental
       Refresh","Quote Cancel"]'
     fix:components: '["Instrument","TrdSessLstGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-    fix:types: '{"5.0.SP2":"Exchange","5.0.SP1":"Exchange","5.0":"Exchange","4.4":"Exchange","4.3":"Exchange","4.2":"Exchange","4.1":"char"}'
     fix:name: SecurityExchange
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
 - name: currency
   type: string
   nullable: true
@@ -1044,9 +999,8 @@ fields:
       Cancel/Replace Request","New Order - Single","New Order - List","Allocation","New
       Order - Cross","Indication of Interest"]'
     fix:components: '["InstrmtMDReqGrp","InstrmtStrkPxGrp","ListOrdGrp","MDFullGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","RelSymDerivSecGrp","RelSymDerivSecUpdGrp","SecListGrp","SecLstUpdRelSymGrp","SettlObligationInstructions","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Currency","5.0.SP1":"Currency","5.0":"Currency","4.4":"Currency","4.3":"Currency","4.2":"Currency","4.1":"char","4.0":"char"}'
     fix:name: Currency
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: account
   type: string
   nullable: true
@@ -1070,9 +1024,8 @@ fields:
       Request","Quote Cancel","New Order - Multileg","Multileg Order Cancel/Replace
       Request","New Order - Single","New Order - List","New Order - Cross"]'
     fix:components: '["BidCompReqGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","SideCrossOrdModGrp","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: Account
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: cl_ord_id
   type: string
   nullable: true
@@ -1099,9 +1052,8 @@ fields:
       Request","New Order - Multileg","Multileg Order Cancel/Replace Request","New
       Order - Single","New Order - List","Allocation","New Order - Cross"]'
     fix:components: '["InstrmtStrkPxGrp","ListOrdGrp","OrdAllocGrp","OrdListStatGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: ClOrdID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: orig_cl_ord_id
   type: string
   nullable: true
@@ -1117,9 +1069,8 @@ fields:
       Request","Order Cancel/Replace Request","Order Mass Cancel Report","Cross Order
       Cancel/Replace Request","Cross Order Cancel Request"]'
     fix:components: '["AffectedOrdGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: OrigClOrdID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: order_id
   type: string
   nullable: true
@@ -1141,9 +1092,8 @@ fields:
       Order Cancel Request","Market Data - Snapshot/Full Refresh","Market Data - Incremental
       Refresh","Multileg Order Cancel/Replace Request","Allocation"]'
     fix:components: '["MDFullGrp","MDIncGrp","OrdAllocGrp","OrdListStatGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: OrderID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: exec_id
   type: string
   nullable: true
@@ -1163,9 +1113,8 @@ fields:
       Response","Collateral Report","Collateral Inquiry","Collateral Inquiry Ack","Allocation
       Instruction","Don''t Know Trade","Allocation"]'
     fix:components: '["ExecAllocGrp","ExecCollGrp","ExecsGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"int"}'
     fix:name: ExecID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: side
   type: string
   nullable: true
@@ -1197,9 +1146,8 @@ fields:
       Order - Cross","Indication of Interest","Quote Status Request","Security Definition
       Request","Security Definition"]'
     fix:components: '["BidCompReqGrp","BidCompRspGrp","InstrmtStrkPxGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","SettlInstGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","TrdCapRptAckSideGrp","TrdCapRptSideGrp","UndInstrmtStrkPxGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
     fix:name: Side
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: ord_type
   type: string
   nullable: true
@@ -1230,9 +1178,8 @@ fields:
       Request","New Order - Multileg","Multileg Order Cancel/Replace Request","New
       Order - Single","New Order - List","New Order - Cross","Order - List"]'
     fix:components: '["ListOrdGrp","MDFullGrp","MDIncGrp","OrdTypeRules","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","TradeReportOrderDetail","TrdCapRptAckSideGrp","TrdCapRptSideGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
     fix:name: OrdType
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: time_in_force
   type: string
   nullable: true
@@ -1254,9 +1201,8 @@ fields:
       Order - Multileg","Multileg Order Cancel/Replace Request","New Order - Single","New
       Order - List","New Order - Cross"]'
     fix:components: '["ListOrdGrp","MDFullGrp","MDIncGrp","TimeInForceRules","TradeReportOrderDetail"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
     fix:name: TimeInForce
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: ord_status
   type: string
   nullable: true
@@ -1274,9 +1220,8 @@ fields:
     fix:used_in: '["ExecutionReport","OrderCancelReject","TradeCaptureReport","TradeCaptureReportAck","Execution
       Report","Order Cancel Reject","Trade Capture Report","List Status"]'
     fix:components: '["OrdListStatGrp","TradeReportOrderDetail"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char","4.0":"char"}'
     fix:name: OrdStatus
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: exec_type
   type: string
   nullable: true
@@ -1299,9 +1244,8 @@ fields:
     fix:used_in: '["ExecutionReport","TradeCaptureReport","TradeCaptureReportAck","TradeCaptureReportRequest","Execution
       Report","Trade Capture Report Request","Trade Capture Report","Trade Capture
       Report Ack"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-    fix:types: '{"5.0.SP2":"char","5.0.SP1":"char","5.0":"char","4.4":"char","4.3":"char","4.2":"char","4.1":"char"}'
     fix:name: ExecType
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
 - name: order_qty
   type: double
   nullable: true
@@ -1312,14 +1256,13 @@ fields:
     fix:tag: '38'
     fix:type: Qty
     fix:version: 5.0.SP2
-    fix:components: '["OrdAllocGrp","OrderQtyData"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
     fix:used_in: '["Confirmation","Allocation Report","Confirmation Request","Allocation
       Instruction","Quote Request Reject","Quote Request","Execution Report","New
       Order - Single","New Order - List","Order Cancel Request","Order Cancel/Replace
       Request","Don''t Know Trade"]'
+    fix:components: '["OrdAllocGrp","OrderQtyData"]'
     fix:name: OrderQty
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: price
   type: double
   nullable: true
@@ -1338,9 +1281,8 @@ fields:
       Request","New Order - Single","New Order - List","New Order - Cross","Indication
       of Interest"]'
     fix:components: '["BidCompRspGrp","InstrmtStrkPxGrp","ListOrdGrp","QuotReqGrp","QuotReqRjctGrp","TradeReportOrderDetail","UndInstrmtStrkPxGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
     fix:name: Price
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: vwap
   type: double
   nullable: true
@@ -1356,9 +1298,8 @@ fields:
       Report","Trade Capture Report","Allocation Report","Allocation Instruction","List
       Status","Allocation"]'
     fix:components: '["OrdListStatGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
     fix:name: AvgPx
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: cum_qty
   type: double
   nullable: true
@@ -1371,9 +1312,8 @@ fields:
     fix:used_in: '["ExecutionReport","ExecutionAcknowledgement","Execution Report","List
       Status"]'
     fix:components: '["OrdListStatGrp","TradeReportOrderDetail"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
     fix:name: CumQty
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: leaves_qty
   type: double
   nullable: true
@@ -1387,9 +1327,8 @@ fields:
     fix:version: 5.0.SP2
     fix:used_in: '["ExecutionReport","Execution Report","List Status"]'
     fix:components: '["OrdListStatGrp","TradeReportOrderDetail"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int"}'
     fix:name: LeavesQty
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1"]'
 - name: last_px
   type: double
   nullable: true
@@ -1402,9 +1341,8 @@ fields:
       Report","Trade Capture Report","Allocation Report","Security Status","Allocation
       Instruction","Don''t Know Trade","Allocation"]'
     fix:components: '["ExecAllocGrp","MDFullGrp","MDIncGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
     fix:name: LastPx
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: last_qty
   type: double
   nullable: true
@@ -1418,11 +1356,10 @@ fields:
       Report","Trade Capture Report","Allocation Report","Allocation Instruction","Don''t
       Know Trade","Allocation"]'
     fix:components: '["ExecAllocGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
-    fix:names: '{"5.0.SP2":"LastQty","5.0.SP1":"LastQty","5.0":"LastQty","4.4":"LastQty","4.3":"LastShares
-      prior to FIX 4.3)","4.2":"LastShares","4.1":"LastShares","4.0":"LastShares"}'
     fix:name: LastQty
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
+    fix:aliases: '[{"name":"LastShares","source":"4.0","occurrences":0},{"name":"LastShares
+      prior to FIX 4.3)","source":"4.3","occurrences":0}]'
 - name: transact_time
   type: timestamp[us, tz=UTC]
   nullable: true
@@ -1448,9 +1385,8 @@ fields:
       Request","New Order - Single","New Order - List","Allocation","Allocation ACK","New
       Order - Cross","Indication of Interest"]'
     fix:components: '["ListOrdGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp","QuotReqRjctGrp","SecTypesGrp","TrdCapDtGrp","TrdSessLstGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time"}'
     fix:name: TransactTime
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: text
   type: string
   nullable: true
@@ -1484,9 +1420,8 @@ fields:
       Order - List","Allocation","Allocation ACK","New Order - Cross","Indication
       of Interest","Quote Acknowledgement"]'
     fix:components: '["BidCompRspGrp","InstrmtStrkPxGrp","LinesOfTextGrp","ListOrdGrp","MDFullGrp","MDIncGrp","OrdListStatGrp","RelSymDerivSecGrp","RelSymDerivSecUpdGrp","SecListGrp","SecLstUpdRelSymGrp","SideCrossOrdCxlGrp","SideCrossOrdModGrp","StrmAsgnRptInstrmtGrp","TrdCapRptSideGrp","TrdSessLstGrp","UndInstrmtStrkPxGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char","FIXT1.1":"String"}'
     fix:name: Text
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0","FIXT1.1"]'
 - name: quote_id
   type: string
   nullable: true
@@ -1502,9 +1437,8 @@ fields:
       Cancel","New Order - Multileg","Multileg Order Cancel/Replace Request","New
       Order - Single","New Order - List","New Order - Cross","Quote Acknowledgement"]'
     fix:components: '["ListOrdGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: QuoteID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: quote_req_id
   type: string
   nullable: true
@@ -1516,9 +1450,8 @@ fields:
     fix:used_in: '["QuoteRequestReject","QuoteStatusReport","MassQuoteAcknowledgement","MassQuote","QuoteRequest","Quote","QuoteCancel","Quote
       Request Reject","Quote Status Report","Mass Quote Acknowledgement","Mass Quote","Quote
       Request","Quote Cancel","Quote Acknowledgement"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String","4.1":"char","4.0":"char"}'
     fix:name: QuoteReqID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: quote_type
   type: int64
   nullable: true
@@ -1542,9 +1475,8 @@ fields:
       Request Reject","RFQ Request","Quote Status Report","Quote Response","Mass Quote
       Acknowledgement","Mass Quote","Quote Request"]'
     fix:components: '["InstrmtMDReqGrp","QuotReqGrp","QuotReqRjctGrp","RFQReqGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
-    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int"}'
     fix:name: QuoteType
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3"]'
 - name: quote_status
   type: int64
   nullable: true
@@ -1564,11 +1496,9 @@ fields:
     fix:value_names: '{"0":"ACCEPTED","1":"CANCEL_FOR_SYMBOL","2":"CANCELED_FOR_SECURITY_TYPE","3":"CANCELED_FOR_UNDERLYING","4":"CANCELED_ALL","5":"REJECTED","6":"REMOVED_FROM_MARKET","10":"PENDING","9":"QUOTE_NOT_FOUND","8":"QUERY","7":"EXPIRED","11":"PASS","12":"LOCKED_MARKET_WARNING","13":"CROSS_MARKET_WARNING","14":"CANCELED_DUE_TO_LOCK_MARKET","15":"CANCELED_DUE_TO_CROSS_MARKET","16":"ACTIVE","17":"CANCELED","18":"UNSOLICITED_QUOTE_REPLENISHMENT","19":"PENDING_END_TRADE","20":"TOO_LATE_TO_END","21":"TRADED","22":"TRADED_AND_REMOVED","23":"CONTRACT_TERMINATES"}'
     fix:used_in: '["QuoteStatusReport","MassQuoteAcknowledgement","Quote Status Report","Mass
       Quote Acknowledgement","Quote Acknowledgement"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
-    fix:names: '{"5.0.SP2":"QuoteStatus","5.0.SP1":"QuoteStatus","5.0":"QuoteStatus","4.4":"QuoteStatus","4.3":"QuoteAckStatus
-      prior to FIX 4.3)","4.2":"QuoteAckStatus"}'
     fix:name: QuoteStatus
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
+    fix:aliases: '[{"name":"QuoteAckStatus prior to FIX 4.3)","source":"4.3","occurrences":0}]'
 - name: quote_reject_reason
   type: int64
   nullable: true
@@ -1586,9 +1516,8 @@ fields:
     fix:value_names: '{"1":"UNKNOWN_SYMBOL","2":"EXCHANGE","3":"QUOTE_REQUEST_EXCEEDS_LIMIT","4":"TOO_LATE_TO_ENTER","5":"UNKNOWN_QUOTE","6":"DUPLICATE_QUOTE","7":"INVALID_BID","8":"INVALID_PRICE","9":"NOT_AUTHORIZED_TO_QUOTE_SECURITY","99":"OTHER","10":"PRICE_EXCEEDS_CURRENT_PRICE_BAND","11":"QUOTE_LOCKED","12":"INVALID_OR_UNKNOWN_SECURITY_ISSUER","13":"INVALID_OR_UNKNOWN_ISSUER_OF_UNDERLYING_SECURITY","14":"NOTIONAL_VALUE_EXCEEDS_THRESHOLD","15":"PRICE_EXCEEDS_CURRENT_PRICE_BAND_DEPR","16":"REFERENCE_PRICE_NOT_AVAILABLE","17":"INSUFFICIENT_CREDIT_LIMIT","18":"EXCEEDED_CLIP_SIZE_LIMIT","19":"EXCEEDED_MAX_NOTIONAL_ORDER_AMT","20":"EXCEEDED_DV01_PV01_LIMIT","21":"EXCEEDED_CS01_LIMIT"}'
     fix:used_in: '["MassQuoteAcknowledgement","QuoteStatusReport","Mass Quote Acknowledgement","Quote
       Acknowledgement"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
     fix:name: QuoteRejectReason
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
 - name: quote_resp_type
   type: int64
   nullable: true
@@ -1601,9 +1530,8 @@ fields:
       Away","6":"Pass","7":"End Trade","8":"Timed Out"}'
     fix:value_names: '{"1":"HIT","2":"COUNTER","3":"EXPIRED","4":"COVER","5":"DONE_AWAY","6":"PASS","7":"END_TRADE","8":"TIMED_OUT","9":"TIED","10":"TIED_COVER","11":"ACCEPT","12":"TERMINATE_CONTRACT"}'
     fix:used_in: '["QuoteResponse","Quote Response"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
-    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int"}'
     fix:name: QuoteRespType
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4"]'
 - name: quote_cancel_type
   type: int64
   nullable: true
@@ -1619,9 +1547,8 @@ fields:
     fix:value_names: '{"1":"CANCEL_FOR_ONE_OR_MORE_SECURITIES","2":"CANCEL_FOR_SECURITY_TYPE","3":"CANCEL_FOR_UNDERLYING_SECURITY","4":"CANCEL_ALL_QUOTES","5":"CANCEL_SPECIFIED_SINGLE_QUOTE","6":"CANCEL_BY_TYPE_OF_QUOTE","7":"CANCEL_FOR_SECURITY_ISSUER","8":"CANCEL_FOR_ISSUER_OF_UNDERLYING_SECURITY"}'
     fix:used_in: '["QuoteStatusReport","MassQuoteAcknowledgement","QuoteCancel","Quote
       Cancel"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"int","5.0.SP1":"int","5.0":"int","4.4":"int","4.3":"int","4.2":"int"}'
     fix:name: QuoteCancelType
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
 - name: bid_px
   type: double
   nullable: true
@@ -1633,9 +1560,8 @@ fields:
     fix:used_in: '["QuoteStatusReport","QuoteResponse","Quote","Quote Status Report","Quote
       Response","Mass Quote Acknowledgement","Mass Quote"]'
     fix:components: '["QuotEntryAckGrp","QuotEntryGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
     fix:name: BidPx
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: offer_px
   type: double
   nullable: true
@@ -1647,9 +1573,8 @@ fields:
     fix:used_in: '["QuoteStatusReport","QuoteResponse","Quote","Quote Status Report","Quote
       Response","Mass Quote Acknowledgement","Mass Quote"]'
     fix:components: '["QuotEntryAckGrp","QuotEntryGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Price","5.0.SP1":"Price","5.0":"Price","4.4":"Price","4.3":"Price","4.2":"Price","4.1":"float","4.0":"float"}'
     fix:name: OfferPx
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: bid_size
   type: double
   nullable: true
@@ -1661,9 +1586,8 @@ fields:
     fix:used_in: '["QuoteStatusReport","QuoteResponse","Quote","Quote Status Report","Quote
       Response","Mass Quote Acknowledgement","Mass Quote"]'
     fix:components: '["QuotEntryAckGrp","QuotEntryGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
     fix:name: BidSize
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: offer_size
   type: double
   nullable: true
@@ -1675,9 +1599,8 @@ fields:
     fix:used_in: '["QuoteStatusReport","QuoteResponse","Quote","Quote Status Report","Quote
       Response","Mass Quote Acknowledgement","Mass Quote"]'
     fix:components: '["QuotEntryAckGrp","QuotEntryGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty","4.1":"int","4.0":"int"}'
     fix:name: OfferSize
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: def_bid_size
   type: double
   nullable: true
@@ -1687,9 +1610,8 @@ fields:
     fix:type: Qty
     fix:version: 5.0.SP2
     fix:used_in: '["MassQuote","Mass Quote"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty"}'
     fix:name: DefBidSize
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
 - name: def_offer_size
   type: double
   nullable: true
@@ -1699,9 +1621,8 @@ fields:
     fix:type: Qty
     fix:version: 5.0.SP2
     fix:used_in: '["MassQuote","Mass Quote"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"Qty","5.0.SP1":"Qty","5.0":"Qty","4.4":"Qty","4.3":"Qty","4.2":"Qty"}'
     fix:name: DefOfferSize
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
 - name: valid_until_time
   type: timestamp[us, tz=UTC]
   nullable: true
@@ -1715,9 +1636,8 @@ fields:
       Report","Quote Response","Mass Quote Acknowledgement","Mass Quote","Quote Request","Indications
       of Interest","Indication of Interest"]'
     fix:components: '["QuotEntryAckGrp","QuotEntryGrp","QuotReqGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
-    fix:types: '{"5.0.SP2":"UTCTimestamp","5.0.SP1":"UTCTimestamp","5.0":"UTCTimestamp","4.4":"UTCTimestamp","4.3":"UTCTimestamp","4.2":"UTCTimestamp","4.1":"time","4.0":"time"}'
     fix:name: ValidUntilTime
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2","4.1","4.0"]'
 - name: no_quote_sets
   type: int64
   nullable: true
@@ -1726,11 +1646,10 @@ fields:
     fix:tag: '296'
     fix:type: NumInGroup
     fix:version: 5.0.SP2
-    fix:components: '["QuotSetAckGrp","QuotSetGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"NumInGroup","5.0.SP1":"NumInGroup","5.0":"NumInGroup","4.4":"NumInGroup","4.3":"NumInGroup","4.2":"int"}'
     fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Quote Acknowledgement"]'
+    fix:components: '["QuotSetAckGrp","QuotSetGrp"]'
     fix:name: NoQuoteSets
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
 - name: no_quote_entries
   type: int64
   nullable: true
@@ -1739,12 +1658,11 @@ fields:
     fix:tag: '295'
     fix:type: NumInGroup
     fix:version: 5.0.SP2
-    fix:components: '["QuotCxlEntriesGrp","QuotEntryAckGrp","QuotEntryGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"NumInGroup","5.0.SP1":"NumInGroup","5.0":"NumInGroup","4.4":"NumInGroup","4.3":"NumInGroup","4.2":"int"}'
     fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Quote Cancel","Quote
       Acknowledgement"]'
+    fix:components: '["QuotCxlEntriesGrp","QuotEntryAckGrp","QuotEntryGrp"]'
     fix:name: NoQuoteEntries
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
 - name: quote_set_id
   type: string
   nullable: true
@@ -1753,11 +1671,10 @@ fields:
     fix:tag: '302'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:components: '["QuotSetAckGrp","QuotSetGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String"}'
     fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Quote Acknowledgement"]'
+    fix:components: '["QuotSetAckGrp","QuotSetGrp"]'
     fix:name: QuoteSetID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
 - name: quote_entry_id
   type: string
   nullable: true
@@ -1767,9 +1684,8 @@ fields:
     fix:tag: '299'
     fix:type: String
     fix:version: 5.0.SP2
-    fix:components: '["MDFullGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp"]'
-    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'
-    fix:types: '{"5.0.SP2":"String","5.0.SP1":"String","5.0":"String","4.4":"String","4.3":"String","4.2":"String"}'
     fix:used_in: '["Mass Quote Acknowledgement","Mass Quote","Market Data - Snapshot/Full
       Refresh","Market Data - Incremental Refresh","Quote Acknowledgement"]'
+    fix:components: '["MDFullGrp","MDIncGrp","QuotEntryAckGrp","QuotEntryGrp"]'
     fix:name: QuoteEntryID
+    fix:versions: '["5.0.SP2","5.0.SP1","5.0","4.4","4.3","4.2"]'

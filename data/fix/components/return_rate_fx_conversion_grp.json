@@ -1,36 +1,34 @@
 {
  "name": "ReturnRateFXConversionGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 680,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoReturnRateFXConversions",
+   "required": false,
+   "tag": 42731,
    "members": [
     {
-     "kind": "group",
-     "name": "NoReturnRateFXConversions",
+     "kind": "field",
+     "name": "ReturnRateFXCurrencySymbol",
      "required": false,
-     "tag": 42731,
-     "members": [
-      {
-       "kind": "field",
-       "name": "ReturnRateFXCurrencySymbol",
-       "required": false,
-       "tag": 42732
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateFXRate",
-       "required": false,
-       "tag": 42733
-      },
-      {
-       "kind": "field",
-       "name": "ReturnRateFXRateCalc",
-       "required": false,
-       "tag": 42734
-      }
-     ]
+     "tag": 42732
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateFXRate",
+     "required": false,
+     "tag": 42733
+    },
+    {
+     "kind": "field",
+     "name": "ReturnRateFXRateCalc",
+     "required": false,
+     "tag": 42734
     }
    ]
   }
- }
+ ]
 }

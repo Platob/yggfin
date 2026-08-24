@@ -1,30 +1,28 @@
 {
  "name": "LegPaymentStreamPricingDayGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 554,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegPaymentStreamPricingDays",
+   "required": false,
+   "tag": 41596,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegPaymentStreamPricingDays",
+     "kind": "field",
+     "name": "LegPaymentStreamPricingDayOfWeek",
      "required": false,
-     "tag": 41596,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegPaymentStreamPricingDayOfWeek",
-       "required": false,
-       "tag": 41597
-      },
-      {
-       "kind": "field",
-       "name": "LegPaymentStreamPricingDayNumber",
-       "required": false,
-       "tag": 41598
-      }
-     ]
+     "tag": 41597
+    },
+    {
+     "kind": "field",
+     "name": "LegPaymentStreamPricingDayNumber",
+     "required": false,
+     "tag": 41598
     }
    ]
   }
- }
+ ]
 }

@@ -1,54 +1,52 @@
 {
  "name": "AllocRegulatoryTradeIDGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 375,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoAllocRegulatoryTradeIDs",
+   "required": false,
+   "tag": 1908,
    "members": [
     {
-     "kind": "group",
-     "name": "NoAllocRegulatoryTradeIDs",
+     "kind": "field",
+     "name": "AllocRegulatoryTradeID",
      "required": false,
-     "tag": 1908,
-     "members": [
-      {
-       "kind": "field",
-       "name": "AllocRegulatoryTradeID",
-       "required": false,
-       "tag": 1909
-      },
-      {
-       "kind": "field",
-       "name": "AllocRegulatoryTradeIDSource",
-       "required": false,
-       "tag": 1910
-      },
-      {
-       "kind": "field",
-       "name": "AllocRegulatoryTradeIDEvent",
-       "required": false,
-       "tag": 1911
-      },
-      {
-       "kind": "field",
-       "name": "AllocRegulatoryTradeIDType",
-       "required": false,
-       "tag": 1912
-      },
-      {
-       "kind": "field",
-       "name": "AllocRegulatoryLegRefID",
-       "required": false,
-       "tag": 2406
-      },
-      {
-       "kind": "field",
-       "name": "AllocRegulatoryTradeIDScope",
-       "required": false,
-       "tag": 2399
-      }
-     ]
+     "tag": 1909
+    },
+    {
+     "kind": "field",
+     "name": "AllocRegulatoryTradeIDSource",
+     "required": false,
+     "tag": 1910
+    },
+    {
+     "kind": "field",
+     "name": "AllocRegulatoryTradeIDEvent",
+     "required": false,
+     "tag": 1911
+    },
+    {
+     "kind": "field",
+     "name": "AllocRegulatoryTradeIDType",
+     "required": false,
+     "tag": 1912
+    },
+    {
+     "kind": "field",
+     "name": "AllocRegulatoryLegRefID",
+     "required": false,
+     "tag": 2406
+    },
+    {
+     "kind": "field",
+     "name": "AllocRegulatoryTradeIDScope",
+     "required": false,
+     "tag": 2399
     }
    ]
   }
- }
+ ]
 }

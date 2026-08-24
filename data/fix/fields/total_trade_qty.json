@@ -1,9 +1,0 @@
-{
- "name": "TotalTradeQty",
- "tag": 2367,
- "versions": {
-  "5.0.SP2": {
-   "type": "QTY"
-  }
- }
-}

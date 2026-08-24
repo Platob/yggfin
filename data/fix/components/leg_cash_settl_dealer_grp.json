@@ -1,24 +1,22 @@
 {
  "name": "LegCashSettlDealerGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 521,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegCashSettlDealers",
+   "required": false,
+   "tag": 41342,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegCashSettlDealers",
+     "kind": "field",
+     "name": "LegCashSettlDealer",
      "required": false,
-     "tag": 41342,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegCashSettlDealer",
-       "required": false,
-       "tag": 41343
-      }
-     ]
+     "tag": 41343
     }
    ]
   }
- }
+ ]
 }

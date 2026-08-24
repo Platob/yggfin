@@ -154,16 +154,23 @@ _MEMBER_KINDS: dict[str, type[SpecMember]] = {
 
 @dataclasses.dataclass(frozen=True)
 class SpecComponent(Convertible):
-    """One reusable FIX component, with its members in wire order."""
+    """One reusable FIX component, with its members in wire order.
+
+    `msg_type` is the message type a declaration defines where it defines one
+    -- `"D"`, `"8"` -- and empty for a reusable block, which is what every
+    `<components>` entry is.
+    """
 
     name: str
     members: tuple[SpecMember, ...] = ()
+    msg_type: str = ""
 
     def into_dict(self) -> dict[str, Any]:
-        return {
-            "name": self.name,
-            "members": [member.into_dict() for member in self.members],
-        }
+        declared: dict[str, Any] = {"name": self.name}
+        if self.msg_type:
+            declared["msg_type"] = self.msg_type
+        declared["members"] = [member.into_dict() for member in self.members]
+        return declared
 
     @classmethod
     def from_dict(cls, mapping: Mapping[str, Any]) -> SpecComponent:
@@ -173,6 +180,7 @@ class SpecComponent(Convertible):
         return cls(
             name=_stored_name(mapping),
             members=tuple(SpecMember.from_dict(member) for member in members),
+            msg_type=str(mapping.get("msg_type") or ""),
         )
 
 
@@ -215,7 +223,11 @@ def parse_spec(document: str) -> dict[int, SpecField]:
 
 
 def parse_components(document: str) -> dict[str, SpecComponent]:
-    """Reusable components in one QuickFIX document, preserving their tree."""
+    """Reusable components in one QuickFIX document, preserving their tree.
+
+    A declaration that names a message type carries it; `<components>` entries
+    never do, so the published dictionary's components all leave it empty.
+    """
     root = _root(document)
     if root is None:
         return {}
@@ -225,7 +237,11 @@ def parse_components(document: str) -> dict[str, SpecComponent]:
         name = _element_name(element, "component")
         if name in found:
             raise ValueError(f"FIX component {name!r} is declared twice")
-        found[name] = SpecComponent(name, _component_members(element, tags, (name,)))
+        found[name] = SpecComponent(
+            name,
+            _component_members(element, tags, (name,)),
+            str(element.get("msgtype") or ""),
+        )
     _check_component_refs(found)
     return found
 

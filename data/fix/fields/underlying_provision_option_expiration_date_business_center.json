@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingProvisionOptionExpirationDateBusinessCenter",
- "tag": 42187,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

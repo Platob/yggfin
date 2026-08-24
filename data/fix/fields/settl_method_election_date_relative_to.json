@@ -1,9 +1,0 @@
-{
- "name": "SettlMethodElectionDateRelativeTo",
- "tag": 42779,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

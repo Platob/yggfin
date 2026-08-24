@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentScheduleFixingTime",
- "tag": 40695,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTTIME"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamVegaNotionalAmount",
- "tag": 42977,
- "versions": {
-  "5.0.SP2": {
-   "type": "FLOAT"
-  }
- }
-}

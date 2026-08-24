@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingDatedDate",
- "tag": 2041,
- "versions": {
-  "5.0.SP2": {
-   "type": "LOCALMKTDATE"
-  }
- }
-}

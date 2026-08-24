@@ -1,9 +1,0 @@
-{
- "name": "DividendInitialRate",
- "tag": 42231,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

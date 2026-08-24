@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPool",
- "tag": 2039,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

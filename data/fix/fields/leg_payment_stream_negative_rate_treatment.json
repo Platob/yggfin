@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentStreamNegativeRateTreatment",
- "tag": 40349,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "NoBusinessCenters",
- "tag": 40278,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

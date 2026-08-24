@@ -1,9 +1,0 @@
-{
- "name": "ComplexEventXIDRef",
- "tag": 2139,
- "versions": {
-  "5.0.SP2": {
-   "type": "XIDREF"
-  }
- }
-}

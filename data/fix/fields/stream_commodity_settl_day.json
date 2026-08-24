@@ -1,9 +1,0 @@
-{
- "name": "StreamCommoditySettlDay",
- "tag": 41284,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

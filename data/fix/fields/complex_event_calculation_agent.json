@@ -1,9 +1,0 @@
-{
- "name": "ComplexEventCalculationAgent",
- "tag": 2129,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

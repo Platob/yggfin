@@ -1,9 +1,0 @@
-{
- "name": "LegPaymentScheduleStepRate",
- "tag": 40393,
- "versions": {
-  "5.0.SP2": {
-   "type": "PERCENTAGE"
-  }
- }
-}

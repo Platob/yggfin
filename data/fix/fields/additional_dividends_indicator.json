@@ -1,9 +1,0 @@
-{
- "name": "AdditionalDividendsIndicator",
- "tag": 42263,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingComplexEventFixingTimeBusinessCenter",
- "tag": 41747,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

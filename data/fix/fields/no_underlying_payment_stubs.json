@@ -1,9 +1,0 @@
-{
- "name": "NoUnderlyingPaymentStubs",
- "tag": 40708,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPaymentStreamUnderlierRefID",
- "tag": 42962,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

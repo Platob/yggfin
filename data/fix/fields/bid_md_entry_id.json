@@ -1,9 +1,0 @@
-{
- "name": "BidMDEntryID",
- "tag": 1745,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

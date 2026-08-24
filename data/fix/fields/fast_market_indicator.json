@@ -1,9 +1,0 @@
-{
- "name": "FastMarketIndicator",
- "tag": 2447,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

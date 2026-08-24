@@ -1,75 +1,39 @@
 {
  "name": "MarketSegmentGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 282,
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoMarketSegments",
+   "required": false,
+   "tag": 1310,
    "members": [
     {
-     "kind": "group",
-     "name": "NoMarketSegments",
+     "kind": "field",
+     "name": "MarketID",
      "required": false,
-     "tag": 1310,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MarketID",
-       "required": false,
-       "tag": 1301
-      },
-      {
-       "kind": "field",
-       "name": "MarketSegmentID",
-       "required": false,
-       "tag": 1300
-      },
-      {
-       "kind": "component",
-       "name": "SecurityTradingRules",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "StrikeRules",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 139,
-   "members": [
+     "tag": 1301
+    },
     {
-     "kind": "group",
-     "name": "NoMarketSegments",
+     "kind": "field",
+     "name": "MarketSegmentID",
      "required": false,
-     "tag": 1310,
-     "members": [
-      {
-       "kind": "field",
-       "name": "MarketID",
-       "required": false,
-       "tag": 1301
-      },
-      {
-       "kind": "field",
-       "name": "MarketSegmentID",
-       "required": false,
-       "tag": 1300
-      },
-      {
-       "kind": "component",
-       "name": "SecurityTradingRules",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "StrikeRules",
-       "required": false
-      }
-     ]
+     "tag": 1300
+    },
+    {
+     "kind": "component",
+     "name": "SecurityTradingRules",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "StrikeRules",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

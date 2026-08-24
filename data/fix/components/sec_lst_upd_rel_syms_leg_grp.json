@@ -1,125 +1,45 @@
 {
  "name": "SecLstUpdRelSymsLegGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 255,
+ "versions": [
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegs",
+   "required": false,
+   "tag": 555,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegs",
-     "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegBenchmarkCurveData",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 104,
-   "members": [
+     "kind": "component",
+     "name": "InstrumentLeg",
+     "required": false
+    },
     {
-     "kind": "group",
-     "name": "NoLegs",
+     "kind": "field",
+     "name": "LegSwapType",
      "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegBenchmarkCurveData",
-       "required": false
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 106,
-   "members": [
+     "tag": 690
+    },
     {
-     "kind": "group",
-     "name": "NoLegs",
+     "kind": "field",
+     "name": "LegSettlType",
      "required": false,
-     "tag": 555,
-     "members": [
-      {
-       "kind": "component",
-       "name": "InstrumentLeg",
-       "required": false
-      },
-      {
-       "kind": "field",
-       "name": "LegSwapType",
-       "required": false,
-       "tag": 690
-      },
-      {
-       "kind": "field",
-       "name": "LegSettlType",
-       "required": false,
-       "tag": 587
-      },
-      {
-       "kind": "component",
-       "name": "LegStipulations",
-       "required": false
-      },
-      {
-       "kind": "component",
-       "name": "LegBenchmarkCurveData",
-       "required": false
-      }
-     ]
+     "tag": 587
+    },
+    {
+     "kind": "component",
+     "name": "LegStipulations",
+     "required": false
+    },
+    {
+     "kind": "component",
+     "name": "LegBenchmarkCurveData",
+     "required": false
     }
    ]
   }
- }
+ ]
 }

@@ -1,153 +1,43 @@
 {
  "name": "CompIDReqGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 183,
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoCompIDs",
+   "required": false,
+   "tag": 936,
    "members": [
     {
-     "kind": "group",
-     "name": "NoCompIDs",
+     "kind": "field",
+     "name": "RefCompID",
      "required": false,
-     "tag": 936,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RefCompID",
-       "required": false,
-       "tag": 930
-      },
-      {
-       "kind": "field",
-       "name": "RefSubID",
-       "required": false,
-       "tag": 931
-      },
-      {
-       "kind": "field",
-       "name": "LocationID",
-       "required": false,
-       "tag": 283
-      },
-      {
-       "kind": "field",
-       "name": "DeskID",
-       "required": false,
-       "tag": 284
-      }
-     ]
-    }
-   ]
-  },
-  "5.0.SP1": {
-   "order": 32,
-   "members": [
+     "tag": 930
+    },
     {
-     "kind": "group",
-     "name": "NoCompIDs",
+     "kind": "field",
+     "name": "RefSubID",
      "required": false,
-     "tag": 936,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RefCompID",
-       "required": false,
-       "tag": 930
-      },
-      {
-       "kind": "field",
-       "name": "RefSubID",
-       "required": false,
-       "tag": 931
-      },
-      {
-       "kind": "field",
-       "name": "LocationID",
-       "required": false,
-       "tag": 283
-      },
-      {
-       "kind": "field",
-       "name": "DeskID",
-       "required": false,
-       "tag": 284
-      }
-     ]
-    }
-   ]
-  },
-  "5.0": {
-   "order": 32,
-   "members": [
+     "tag": 931
+    },
     {
-     "kind": "group",
-     "name": "NoCompIDs",
+     "kind": "field",
+     "name": "LocationID",
      "required": false,
-     "tag": 936,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RefCompID",
-       "required": false,
-       "tag": 930
-      },
-      {
-       "kind": "field",
-       "name": "RefSubID",
-       "required": false,
-       "tag": 931
-      },
-      {
-       "kind": "field",
-       "name": "LocationID",
-       "required": false,
-       "tag": 283
-      },
-      {
-       "kind": "field",
-       "name": "DeskID",
-       "required": false,
-       "tag": 284
-      }
-     ]
-    }
-   ]
-  },
-  "4.4": {
-   "order": 32,
-   "members": [
+     "tag": 283
+    },
     {
-     "kind": "group",
-     "name": "NoCompIDs",
+     "kind": "field",
+     "name": "DeskID",
      "required": false,
-     "tag": 936,
-     "members": [
-      {
-       "kind": "field",
-       "name": "RefCompID",
-       "required": false,
-       "tag": 930
-      },
-      {
-       "kind": "field",
-       "name": "RefSubID",
-       "required": false,
-       "tag": 931
-      },
-      {
-       "kind": "field",
-       "name": "LocationID",
-       "required": false,
-       "tag": 283
-      },
-      {
-       "kind": "field",
-       "name": "DeskID",
-       "required": false,
-       "tag": 284
-      }
-     ]
+     "tag": 284
     }
    ]
   }
- }
+ ]
 }

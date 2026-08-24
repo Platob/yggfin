@@ -1,30 +1,28 @@
 {
  "name": "PhysicalSettlDeliverableObligationGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 402,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoPhysicalSettlDeliverableObligations",
+   "required": false,
+   "tag": 40209,
    "members": [
     {
-     "kind": "group",
-     "name": "NoPhysicalSettlDeliverableObligations",
+     "kind": "field",
+     "name": "PhysicalSettlDeliverableObligationType",
      "required": false,
-     "tag": 40209,
-     "members": [
-      {
-       "kind": "field",
-       "name": "PhysicalSettlDeliverableObligationType",
-       "required": false,
-       "tag": 40210
-      },
-      {
-       "kind": "field",
-       "name": "PhysicalSettlDeliverableObligationValue",
-       "required": false,
-       "tag": 40211
-      }
-     ]
+     "tag": 40210
+    },
+    {
+     "kind": "field",
+     "name": "PhysicalSettlDeliverableObligationValue",
+     "required": false,
+     "tag": 40211
     }
    ]
   }
- }
+ ]
 }

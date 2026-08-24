@@ -232,9 +232,17 @@ def test_the_versionless_bridge_group_stays_raw_in_wire_order(table: pyarrow.Tab
 
 
 @pytest.mark.parametrize("reverse", [False, True])
-def test_mixed_fix_versions_use_their_own_party_declarations(
+def test_mixed_fix_versions_read_parties_through_one_declaration(
     tmp_path: Path, codec: FixCodec, reverse: bool
 ) -> None:
+    """One component, one member tree: a 4.3 sub-ID is read where 5.0.SP2 puts it.
+
+    4.3 named `PartySubID <523>` directly under `NoPartyIDs` and every version
+    after it moved the member into `PtysSubGrp`. The registry keeps the newest
+    tree, so a 4.3 message's sub-ID is still lifted -- under the group the
+    newest declaration puts it in, which is what `data/fix-conflicts.json`
+    records the collapse of.
+    """
     messages = [
         "8=FIX.4.3|35=D|453=1|448=P43|523=SUB43|10=001|",
         "8=FIX.5.0SP2|35=D|453=1|448=P50|2376=7|802=1|523=SUB50|803=1|10=002|",
@@ -245,7 +253,7 @@ def test_mixed_fix_versions_use_their_own_party_declarations(
     parsed = _lines(tmp_path / f"mixed-{reverse}.txt", codec, "FixSession", messages)
     by_id = {row[0]["party_id"]: row[0]["buffer"] for row in parsed.column("parties").to_pylist()}
 
-    assert by_id["P43"] == [("PartySubID", "SUB43")]
+    assert by_id["P43"] == [("NoPartySubIDs[0].PartySubID", "SUB43")]
     assert by_id["P50"] == [
         ("PartyRoleQualifier", "7"),
         ("NoPartySubIDs", "1"),

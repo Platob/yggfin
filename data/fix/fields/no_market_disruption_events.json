@@ -1,9 +1,0 @@
-{
- "name": "NoMarketDisruptionEvents",
- "tag": 41092,
- "versions": {
-  "5.0.SP2": {
-   "type": "NUMINGROUP"
-  }
- }
-}

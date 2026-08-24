@@ -88,8 +88,6 @@ class ComponentGroup:
 
     components: Mapping[str, SpecComponent] | Sequence[SpecComponent] | None = None
     names: Mapping[str, int] | None = None
-    #: Retain the standalone extractor's legacy FIX tags when no registry is supplied.
-    fallback: bool = True
 
     #: Which component to read, and which repeating group inside it.
     component: str = ""
@@ -119,18 +117,6 @@ class ComponentGroup:
         arrived rather than becoming a null nobody can explain.
         """
         raise NotImplementedError
-
-    @classmethod
-    @cache
-    def into_fallback(cls) -> tuple[frozenset[int], Mapping[int, str], Mapping[int, tuple]]:
-        """`(count tags, {tag: member}, {tag: path})` when no declaration is had.
-
-        What a store written before component declarations were kept leaves
-        behind: without this the extractor answers nothing at all, silently,
-        for every version the wire named. Standard tags only, because a
-        fallback that guessed would be worse than one that is absent.
-        """
-        return frozenset(), {}, {}
 
     def __post_init__(self) -> None:
         """Hold stable declaration and name snapshots for repeated batches."""
@@ -402,46 +388,21 @@ class ComponentGroup:
         dict[int, tuple[str, ...]],
         dict[tuple[str, ...], set[int]],
     ]:
-        """Count tags, member names, and their component paths."""
+        """Count tags, member names, and their component paths.
+
+        The declaration decides all four, and nothing else does: a registry
+        always carries its component declarations, so a version whose tree is
+        absent from `components` extracts nothing rather than falling back on
+        tags this class guessed.
+        """
         wanted = self.component.lower()
         grouped = self.group.lower()
         by_name = {component.name.lower(): component for component in self.components}
-        explicit = wanted in by_name
-        legacy = not explicit and self.fallback
-        fallback_counts, fallback_members, fallback_paths = self.into_fallback()
-        counts = set() if not legacy else set(fallback_counts)
-        members = {} if not legacy else dict(fallback_members)
-        paths = {} if not legacy else dict(fallback_paths)
+        counts: set[int] = set()
+        members: dict[int, str] = {}
+        paths: dict[int, tuple[str, ...]] = {}
         group_delimiters: dict[tuple[str, ...], set[int]] = {}
         name_tags = {str(name).lower(): int(tag) for name, tag in self.names.items()}
-
-        if legacy:
-            for tag, name in tuple(members.items()):
-                mapped = name_tags.get(name.lower())
-                if mapped is not None:
-                    members.setdefault(mapped, name)
-                    paths.setdefault(mapped, paths.get(tag, ()))
-            mapped_count = name_tags.get(grouped)
-            if mapped_count is not None:
-                counts.add(mapped_count)
-            # The delimiter is the projection's first member, here as it is in
-            # a declared tree; a nested group opens at the first member
-            # declared under its own path.
-            opener = self.into_projection()[0][1]
-            group_delimiters[()] = {
-                tag for tag, name in members.items() if name == opener and not paths.get(tag)
-            }
-            for path in {found for found in fallback_paths.values() if found}:
-                first = next(
-                    (tag for tag, found in paths.items() if found == path),
-                    None,
-                )
-                if first is not None:
-                    group_delimiters[path] = {
-                        tag
-                        for tag, name in members.items()
-                        if paths.get(tag) == path and name == members[first]
-                    }
 
         def member_tags(member: SpecMember) -> tuple[int, ...]:
             found: list[int] = []
@@ -609,23 +570,6 @@ class Parties(ComponentGroup):
             ("party_role", "PartyRole"),
         )
 
-    @classmethod
-    @cache
-    def into_fallback(cls) -> tuple[frozenset[int], Mapping[int, str], Mapping[int, tuple]]:
-        """Parties as every FIX version numbers it, sub-IDs included."""
-        return (
-            frozenset({453}),
-            {
-                448: "PartyID",
-                447: "PartyIDSource",
-                452: "PartyRole",
-                802: "NoPartySubIDs",
-                523: "PartySubID",
-                803: "PartySubIDType",
-            },
-            {523: ("NoPartySubIDs",), 803: ("NoPartySubIDs",)},
-        )
-
 
 @dataclasses.dataclass(eq=False)
 class TrdRegTimestamps(ComponentGroup):
@@ -655,20 +599,6 @@ class TrdRegTimestamps(ComponentGroup):
             ("trd_reg_timestamp", "TrdRegTimestamp"),
             ("trd_reg_timestamp_type", "TrdRegTimestampType"),
             ("trd_reg_timestamp_origin", "TrdRegTimestampOrigin"),
-        )
-
-    @classmethod
-    @cache
-    def into_fallback(cls) -> tuple[frozenset[int], Mapping[int, str], Mapping[int, tuple]]:
-        """The three tags every version that has this component numbers alike."""
-        return (
-            frozenset({768}),
-            {
-                769: "TrdRegTimestamp",
-                770: "TrdRegTimestampType",
-                771: "TrdRegTimestampOrigin",
-            },
-            {},
         )
 
 

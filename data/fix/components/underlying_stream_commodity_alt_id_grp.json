@@ -1,30 +1,28 @@
 {
  "name": "UnderlyingStreamCommodityAltIDGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 601,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoUnderlyingStreamCommodityAltIDs",
+   "required": false,
+   "tag": 41990,
    "members": [
     {
-     "kind": "group",
-     "name": "NoUnderlyingStreamCommodityAltIDs",
+     "kind": "field",
+     "name": "UnderlyingStreamCommodityAltID",
      "required": false,
-     "tag": 41990,
-     "members": [
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamCommodityAltID",
-       "required": false,
-       "tag": 41991
-      },
-      {
-       "kind": "field",
-       "name": "UnderlyingStreamCommodityAltIDSource",
-       "required": false,
-       "tag": 41992
-      }
-     ]
+     "tag": 41991
+    },
+    {
+     "kind": "field",
+     "name": "UnderlyingStreamCommodityAltIDSource",
+     "required": false,
+     "tag": 41992
     }
    ]
   }
- }
+ ]
 }

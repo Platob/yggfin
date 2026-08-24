@@ -1,9 +1,0 @@
-{
- "name": "PaymentStreamCompoundingRateSpread",
- "tag": 42632,
- "versions": {
-  "5.0.SP2": {
-   "type": "PRICEOFFSET"
-  }
- }
-}

@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPhysicalSettlCurrency",
- "tag": 42061,
- "versions": {
-  "5.0.SP2": {
-   "type": "CURRENCY"
-  }
- }
-}

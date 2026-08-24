@@ -1,9 +1,0 @@
-{
- "name": "DividendFXTriggerDateRelativeTo",
- "tag": 42265,
- "versions": {
-  "5.0.SP2": {
-   "type": "INT"
-  }
- }
-}

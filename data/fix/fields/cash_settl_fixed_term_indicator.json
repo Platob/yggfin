@@ -1,9 +1,0 @@
-{
- "name": "CashSettlFixedTermIndicator",
- "tag": 40036,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

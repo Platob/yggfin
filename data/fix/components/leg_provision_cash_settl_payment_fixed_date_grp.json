@@ -1,30 +1,28 @@
 {
  "name": "LegProvisionCashSettlPaymentFixedDateGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 385,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegProvisionCashSettlPaymentDates",
+   "required": false,
+   "tag": 40473,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegProvisionCashSettlPaymentDates",
+     "kind": "field",
+     "name": "LegProvisionCashSettlPaymentDate",
      "required": false,
-     "tag": 40473,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegProvisionCashSettlPaymentDate",
-       "required": false,
-       "tag": 40474
-      },
-      {
-       "kind": "field",
-       "name": "LegProvisionCashSettlPaymentDateType",
-       "required": false,
-       "tag": 40475
-      }
-     ]
+     "tag": 40474
+    },
+    {
+     "kind": "field",
+     "name": "LegProvisionCashSettlPaymentDateType",
+     "required": false,
+     "tag": 40475
     }
    ]
   }
- }
+ ]
 }

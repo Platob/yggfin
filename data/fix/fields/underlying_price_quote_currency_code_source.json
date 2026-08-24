@@ -1,9 +1,0 @@
-{
- "name": "UnderlyingPriceQuoteCurrencyCodeSource",
- "tag": 2920,
- "versions": {
-  "5.0.SP2": {
-   "type": "STRING"
-  }
- }
-}

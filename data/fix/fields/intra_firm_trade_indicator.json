@@ -1,9 +1,0 @@
-{
- "name": "IntraFirmTradeIndicator",
- "tag": 2373,
- "versions": {
-  "5.0.SP2": {
-   "type": "BOOLEAN"
-  }
- }
-}

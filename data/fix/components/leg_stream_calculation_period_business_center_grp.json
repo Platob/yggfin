@@ -1,24 +1,22 @@
 {
  "name": "LegStreamCalculationPeriodBusinessCenterGrp",
- "versions": {
-  "5.0.SP2": {
-   "order": 444,
+ "versions": [
+  "5.0.SP2"
+ ],
+ "members": [
+  {
+   "kind": "group",
+   "name": "NoLegStreamCalculationPeriodBusinessCenters",
+   "required": false,
+   "tag": 40940,
    "members": [
     {
-     "kind": "group",
-     "name": "NoLegStreamCalculationPeriodBusinessCenters",
+     "kind": "field",
+     "name": "LegStreamCalculationPeriodBusinessCenter",
      "required": false,
-     "tag": 40940,
-     "members": [
-      {
-       "kind": "field",
-       "name": "LegStreamCalculationPeriodBusinessCenter",
-       "required": false,
-       "tag": 40266
-      }
-     ]
+     "tag": 40266
     }
    ]
   }
- }
+ ]
 }
