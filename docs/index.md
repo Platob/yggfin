@@ -1,7 +1,7 @@
 # rekep
 
 `rekep` turns ordered text logs into Arrow records and writes five Iceberg
-products: logs, instruments, books, orders, and executions.
+products: FIX messages, instruments, books, orders, and executions.
 
 ![Arrow-centred workflow](assets/arrow-hub.svg)
 
@@ -10,7 +10,7 @@ products: logs, instruments, books, orders, and executions.
 ```text
 TextFile(s)
     |
-parse_logs -----------------> log tables
+parse_fix ------------------> fixmessage tables
     |\
     | `---------------------> flatten_instruments -> instrument
     v
@@ -29,7 +29,7 @@ it does not own deployment-specific jobs.
 - [Design](design.md): boundaries and maintenance rules.
 - [Types](types.md): `@scalar`, fields, and recursive casts.
 - [Contracts](contracts.md): the five portable schemas.
-- [Logs](logs.md): streamed text parsing and routing.
+- [FixMessage](fixmessage.md): streamed text parsing and routing.
 - [FIX](fix.md): registry-driven transcription.
 - [Market](market.md): events, instruments, books, and audit rows.
 - [Iceberg](iceberg.md): streaming reads, writes, and maintenance.
@@ -47,10 +47,10 @@ pip install "rekep[all]"       # all package extras
 ```
 
 ```python
-from rekep import Log, TextFiles
+from rekep import FixMessage, TextFiles
 
 source = TextFiles.from_folder("logs", pattern="*.log*")
-reader = source.read_arrow_reader(schema=Log.into_field())
+reader = source.read_arrow_reader(schema=FixMessage.into_field())
 ```
 
 Every scalable API returns an Arrow reader. Table helpers are explicit choices
@@ -59,8 +59,8 @@ for data known to fit in memory.
 ## Command line
 
 ```bash
-rekep fields dump --pyclass rekep.text.log:Log --target log.yaml
-rekep fields load --target log.yaml
+rekep fields dump --pyclass rekep.text.fixmessage:FixMessage --target fixmessage.yaml
+rekep fields load --target fixmessage.yaml
 rekep fix shell --store data/fix
 ```
 

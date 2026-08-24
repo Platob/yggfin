@@ -33,7 +33,7 @@ declared and supplies `BBB` as the price currency when that is absent.
 
 A new market log symbol creates a synthetic minimal instrument; later facts
 enrich that symbol's lifecycle. Changed versions and hourly snapshots first
-travel as normalized rows in `logs.market`, then the flattening notebook
+travel as normalized rows in `fixmessage.market`, then the flattening notebook
 projects them unchanged into the Instrument table.
 
 There is no separate reference model or contract.
@@ -58,7 +58,7 @@ Missing or non-finite price/quantity cannot mutate the book.
 
 ## Books
 
-`BookIterator` consumes sorted `Log` records, translates their already-parsed
+`BookIterator` consumes sorted `FixMessage` records, translates their already-parsed
 FIX fields, indexes normalized Instrument rows by event type, restores prior
 Book snapshots, and emits only `Book` rows. It is deliberately single-threaded
 because order state is sequential.

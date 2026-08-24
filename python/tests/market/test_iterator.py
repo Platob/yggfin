@@ -23,7 +23,7 @@ from rekep.market import (
 from rekep.market.book import _resting, _Side
 from rekep.market.event import DAY, HOUR
 from rekep.market.identity import NIL
-from rekep.text import Log
+from rekep.text import FixMessage
 
 #: An instant on an hour boundary, so a snapshot's `unix` is legible.
 BASE = (1_787_000_000_000_000_000 // HOUR) * HOUR
@@ -87,7 +87,7 @@ def test_instrument_versioning_is_owned_outside_the_book_fold() -> None:
 
 
 def test_sorted_logs_feed_instruments_and_books_without_a_task_adapter() -> None:
-    log = Log(
+    log = FixMessage(
         unix=BASE,
         msg_type="D",
         symbol="BTC-USD",
@@ -99,8 +99,8 @@ def test_sorted_logs_feed_instruments_and_books_without_a_task_adapter() -> None
         begin_string="FIX.4.4",
     )
 
-    (instrument,) = Instrument.from_logs([log], snapshot_every=0)
-    (book,) = BookIterator(logs=[instrument.into_log(), log], snapshot_every=0)
+    (instrument,) = Instrument.from_fixmessages([log], snapshot_every=0)
+    (book,) = BookIterator(logs=[instrument.into_fixmessage(), log], snapshot_every=0)
 
     assert instrument.symbol == book.code == "BTC-USD"
     assert book.instrument_xhash == instrument.xhash
@@ -113,7 +113,7 @@ def test_log_symbol_uses_the_best_available_instrument_spelling() -> None:
         "security_id": pyarrow.array(["ignored", "US0378331005", None]),
         "isincode": pyarrow.array([None, "ignored", "FR0000120271"]),
     }
-    assert Log.symbol_arrow(columns, 3).to_pylist() == [
+    assert FixMessage.symbol_arrow(columns, 3).to_pylist() == [
         "AAPL",
         "US0378331005",
         "FR0000120271",

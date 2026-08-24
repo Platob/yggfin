@@ -304,7 +304,7 @@ def detect_entry_separator(text: str, separator: str) -> str | None:
 
 
 @dataclasses.dataclass
-class FixMessage(Convertible):
+class FixPairs(Convertible):
     """One FIX message: its fields in wire order, tags and values as text.
 
     Order and repetition are the message -- a repeating group *is* tags
@@ -332,7 +332,7 @@ class FixMessage(Convertible):
         *,
         named: bool | None = None,
         entry_separator: str | None = None,
-    ) -> FixMessage:
+    ) -> FixPairs:
         """Parse one log line, however it spells its separators and its keys."""
         if isinstance(text, bytes):
             text = text.decode("utf-8", "replace")
@@ -367,7 +367,7 @@ class FixMessage(Convertible):
         cls,
         pairs: Iterable[tuple[Any, Any]],
         names: Mapping[str, int | str] | None = None,
-    ) -> FixMessage:
+    ) -> FixPairs:
         """A message out of `(key, value)` pairs, where a key is a tag *or* a name."""
         folded = _folded(names)
         built: list[tuple[str, str]] = []

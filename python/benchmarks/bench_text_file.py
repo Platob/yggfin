@@ -23,7 +23,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 from rekep.fix import (  # noqa: E402
     SOH,
     FixCodec,
-    FixMessage,
+    FixPairs,
     FixRegistry,
     Rules,
     parse_arrow_array,
@@ -578,11 +578,11 @@ def _pairs_stage(columns: dict[str, pyarrow.Array], repeat: int) -> None:
     print(f"    {header[0]:>9} {header[1]:>26} {header[2]:>12} {header[3]:>12} {header[4]:>10}")
     for name, column in columns.items():
         reference = [
-            FixMessage.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()
+            FixPairs.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()
         ]
         pairs = sum(len(one) for one in reference)
         candidates: list[tuple[str, object]] = [
-            ("FixMessage.from_text", lambda c=column: _scalar_pairs(c)),
+            ("FixPairs.from_text", lambda c=column: _scalar_pairs(c)),
             ("parse_arrow_array", lambda c=column: parse_arrow_array(c, CAPTURE_SEPARATOR)),
             ("numpy over the buffers", lambda c=column: _numpy_pairs(c)),
             ("polars", lambda c=column: _polars_pairs(c)),
@@ -608,7 +608,7 @@ class _NotApplicable(Exception):
 
 
 def _scalar_pairs(column: pyarrow.Array) -> list[list[tuple[str, str]]]:
-    return [FixMessage.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()]
+    return [FixPairs.from_text(line, CAPTURE_SEPARATOR).pairs for line in column.to_pylist()]
 
 
 def _numpy_pairs(column: pyarrow.Array) -> pyarrow.MapArray:

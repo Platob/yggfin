@@ -1,9 +1,9 @@
-name: Log
+name: FixMessage
 type: struct
 description: One parsed line of a trading log.
 metadata:
-  namespace: rekep.text.log
-  version: '1'
+  namespace: rekep.text.fixmessage
+  version: '2'
 fields:
 - name: unix
   type: int64
@@ -144,7 +144,7 @@ fields:
   type: string
   description: Payload with the header and level stripped, continuation lines folded
     in.
-- name: protocol
+- name: protocol_code
   type: string
   description: Which protocol the line carries; OTHER is a line that carries none.
 - name: msg_seq_num

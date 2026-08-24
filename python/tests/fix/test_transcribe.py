@@ -336,7 +336,7 @@ def test_no_version_keeps_every_field_raw(codec: FixCodec) -> None:
     """Nothing resolves and nothing lifts, but the fields are all still there."""
     parsed = parse_arrow_array(pyarrow.array(["#55=TTF|#ISINCODE=XX0000084733|"]), "|", named=True)
 
-    kwargs, columns = codec.into_log_columns(parsed)
+    kwargs, columns = codec.into_fixmessage_columns(parsed)
 
     assert _kwargs(kwargs) == [(55, "55", "TTF"), (0, "ISINCODE", "XX0000084733")]
     assert not any(entry["trans"] for entry in kwargs.to_pylist()[0]), (
@@ -1220,7 +1220,7 @@ def test_a_fact_written_twice_is_still_lifted_when_both_readings_agree(
             "#ORDERQTY=100",
         ]
     )
-    tags, columns = packaged.into_log_columns(
+    tags, columns = packaged.into_fixmessage_columns(
         packaged.into_pairs(pyarrow.array([line]), "UL"), "4.4"
     )
     lifted = {name: column.to_pylist()[0] for name, column in columns.items()}
@@ -1235,7 +1235,7 @@ def test_two_readings_that_disagree_are_still_left_where_they_were(
 ) -> None:
     """Two values under one key is a group or a rewrite, and picking is a guess."""
     line = "toBridge #BEGINSTRING=FIX.4.4|#SIDE=1|SIDE=2"
-    tags, columns = packaged.into_log_columns(
+    tags, columns = packaged.into_fixmessage_columns(
         packaged.into_pairs(pyarrow.array([line]), "UL"), "4.4"
     )
     assert columns["side"].to_pylist() == [None]
@@ -1249,7 +1249,7 @@ def test_a_repeated_group_member_is_untouched_by_any_of_this(
     message = SOH.join(
         ["8=FIX.4.4", "35=8", "295=2", "299=Q-TEST-1", "132=1.0", "299=Q-TEST-2", "132=2.0"]
     )
-    tags, columns = packaged.into_log_columns(
+    tags, columns = packaged.into_fixmessage_columns(
         packaged.into_pairs(pyarrow.array([message + SOH]), "FIX"), "4.4"
     )
     assert columns["quote_entry_id"].to_pylist() == [None]
@@ -1341,7 +1341,7 @@ def test_a_payload_field_lands_in_the_column_its_name_earns(packaged: FixCodec) 
         )
         + SOH
     )
-    tags, columns = packaged.into_log_columns(
+    tags, columns = packaged.into_fixmessage_columns(
         packaged.into_pairs(pyarrow.array([message]), "FIX"), "4.4"
     )
     assert columns["cl_ord_id"].to_pylist() == ["ORD-TEST-01"]

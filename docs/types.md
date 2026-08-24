@@ -54,11 +54,11 @@ The one-line member literal becomes the column description. State units,
 source, derivation, or null meaning; omit anything already obvious from the
 name and type.
 
-Hot row shapes use `@scalar(slots=True)`. `Event`, `MarketEvent`, `Log`,
+Hot row shapes use `@scalar(slots=True)`. `Event`, `MarketEvent`, `FixMessage`,
 `Instrument`, `Leg`, `Order`, `Execution`, `Book`, and `Level` therefore have
 no per-instance `__dict__`; transient private slots remain excluded from Arrow
 and document conversion. Shallow instance storage fell from 3,376 to 904 bytes
-for `Log`, from 1,632 to 360 bytes for `Instrument`, and from 1,632 to 424 bytes
+for `FixMessage`, from 1,632 to 360 bytes for `Instrument`, and from 1,632 to 424 bytes
 for `Order` and `Execution` on the measured Python 3.12 runtime.
 
 ## Reading an instant

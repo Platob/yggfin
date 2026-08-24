@@ -27,8 +27,8 @@ NO_PROTOCOL = "OTHER"
 #: Parsed-log target categories. Market rows share one table; known operational
 #: traffic stays separate from lines whose transport is not recognised.
 MARKET_CATEGORY = "market"
-MISC_CATEGORY = "misc_logs"
-UNKNOWN_CATEGORY = "unknown_logs"
+MISC_CATEGORY = "misc"
+UNKNOWN_CATEGORY = "unknown"
 
 
 @scalar
@@ -93,7 +93,7 @@ UL = Rule(protocol="UL", pattern=BRIDGE, codec="ul")
 UL_WIRE = Rule(protocol="UL", pattern=BRIDGE_WIRE, codec="ul")
 
 #: Operational lines whose vocabulary is understood but which carry no market
-#: message. Keeping these known lines out of `unknown_logs` makes that table a
+#: message. Keeping these known lines out of `unknown` makes that table a
 #: useful signal that a genuinely new log format arrived.
 MISC = Rule(
     protocol="MISC",

@@ -7,8 +7,8 @@ on [Benchmarks](benchmarks.md).
 
 ![End-to-end execution architecture](assets/workflow-run.svg)
 
-Only `logs.market` continues into market readers. `logs.misc_logs` and
-`logs.unknown_logs` remain complete terminal Iceberg tables.
+Only `fixmessage.market` continues into market readers. `fixmessage.misc` and
+`fixmessage.unknown` remain complete terminal Iceberg tables.
 
 ## Run context
 
@@ -47,7 +47,7 @@ remains auditable and carries its reason.
 
 | Notebook | First result | Cold wall time | Replay writes |
 | --- | --- | ---: | ---: |
-| `parse_logs` | 13 raw read; 13 raw + 16 Instrument rows written | 4.706 s | 0 |
+| `parse_fix` | 13 raw read; 13 raw + 16 Instrument rows written | 4.706 s | 0 |
 | `flatten_instruments` | 16 versions, 16 written | 1.182 s | 0 |
 | `parse_market` | 17 books, 17 written | 2.396 s | 0 |
 | `flatten_orders` | 21 projected, 15 written | 1.539 s | 0 |
@@ -60,21 +60,21 @@ one hour, then ceil the end hour and add 15 minutes. The Iceberg predicates
 remain half-open and the output filter restores the exact requested interval.
 
 The replay took 4.520 s. It preserved every row count and sorted hash set;
-every notebook wrote zero. `parse_logs` reported 29 skips: 13 raw rows and 16
+every notebook wrote zero. `parse_fix` reported 29 skips: 13 raw rows and 16
 deterministically reconstructed Instrument lifecycle rows.
 
 | Iceberg table | Rows | Iceberg snapshots |
 | --- | ---: | ---: |
-| `logs.market` | 27 | 7 |
-| `logs.misc_logs` | 1 | 1 |
-| `logs.unknown_logs` | 1 | 1 |
+| `fixmessage.market` | 27 | 7 |
+| `fixmessage.misc` | 1 | 1 |
+| `fixmessage.unknown` | 1 | 1 |
 | `market.instruments` | 16 | 4 |
 | `market.books` | 17 | 5 |
 | `market.orders` | 15 | 4 |
 | `market.executions` | 3 | 1 |
 
 Routing conserved all input: 11 FIX market rows, one `MISC` heartbeat, and one
-`OTHER` row. `parse_logs` added 16 normalized Instrument versions to the same
+`OTHER` row. `parse_fix` added 16 normalized Instrument versions to the same
 market table, including hourly snapshots; only this table continued.
 
 | Contract | State counts | Errors |
@@ -100,10 +100,10 @@ the short 1.5 s test bound; the normal workflow default is one day.
 | misc, `10:30:00.800Z` | `MISC` | `HealthMonitor` | heartbeat retained verbatim |
 | unknown, `10:30:00.900Z` | `OTHER` | `ExperimentalAdapter` | opaque payload retained verbatim |
 
-The raw Security Definition remains lossless. `parse_logs` infers 4.4 from its
+The raw Security Definition remains lossless. `parse_fix` infers 4.4 from its
 `BeginString`, prepares that registry once, versions the Instrument, and stores
 the normalized result beside the raw line. `flatten_instruments` then performs
-only the exact `Log` to `Instrument` projection.
+only the exact `FixMessage` to `Instrument` projection.
 
 ### Instruments
 
@@ -151,7 +151,7 @@ and orders.
 
 | Contract | Fields | Primary key | Partitions | Nested payloads |
 | --- | ---: | --- | --- | --- |
-| `Log` | 105 | `unix, hash` | `unix_hour` | `kwargs`, `parties`, `trd_reg_timestamps`, `codes` |
+| `FixMessage` | 105 | `unix, hash` | `unix_hour` | `kwargs`, `parties`, `trd_reg_timestamps`, `codes` |
 | `Instrument` | 36 | `unix, hash` | `unix_hour` | `alt_ids`, `legs`, `codes` |
 | `Book` | 53 | `unix, hash` | `unix_hour` | levels, deltas, executions, live snapshot orders, `codes` |
 | `Order` | 40 | `unix, hash` | `unix_hour` | standard event lineage, `codes` and metadata |

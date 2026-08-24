@@ -21,7 +21,7 @@
   <text class="small" x="120" y="318">local | S3 | MinIO</text>
 
   <rect class="task" x="270" y="260" width="190" height="82"/>
-  <text class="label" x="365" y="292">parse_logs.ipynb</text>
+  <text class="label" x="365" y="292">parse_fix.ipynb</text>
   <text class="small" x="365" y="318">typed, lossless routing</text>
 
   <rect class="table" x="520" y="55" width="190" height="82"/>
@@ -34,7 +34,7 @@
 
   <rect class="task" x="520" y="315" width="190" height="82"/>
   <text class="label" x="615" y="347">parse_market.ipynb</text>
-  <text class="small" x="615" y="373">sorted Log -&gt; Book</text>
+  <text class="small" x="615" y="373">sorted FixMessage -&gt; Book</text>
 
   <rect class="table" x="770" y="185" width="175" height="82"/>
   <text class="label" x="857" y="217">instrument</text>

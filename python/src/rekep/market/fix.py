@@ -25,7 +25,7 @@ from rekep.enums import (
 from rekep.fields import StructField
 from rekep.fix import infer_version_from_pairs
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
-from rekep.fix.message import FixMessage
+from rekep.fix.message import FixPairs
 from rekep.fix.quickfix import (
     SpecComponent,
     SpecComponentRef,
@@ -440,7 +440,7 @@ class FixEvents(Convertible):
         """Conversions inferred for a FIX event translator."""
         return types.MappingProxyType({**super().into_redirects(), str: "text"})
 
-    message: FixMessage = dataclasses.field(default_factory=FixMessage)
+    message: FixPairs = dataclasses.field(default_factory=FixPairs)
     """The message being read."""
 
     venue: str | None = None
@@ -463,7 +463,7 @@ class FixEvents(Convertible):
     @classmethod
     def from_text(cls, text: str | bytes, **carried: Any) -> FixEvents:
         """Events out of one log line, however it spells its separator."""
-        return cls(message=FixMessage.from_text(text), **carried)
+        return cls(message=FixPairs.from_text(text), **carried)
 
     @classmethod
     def from_pairs(
@@ -476,7 +476,7 @@ class FixEvents(Convertible):
         # With no explicit mapping, keep names until the instance can infer the
         # message version and apply its registry. Resolving newest-first here
         # would silently use the wrong tag for an older/custom version.
-        return cls(message=FixMessage.from_pairs(pairs, names), **carried)
+        return cls(message=FixPairs.from_pairs(pairs, names), **carried)
 
     # -- reading ------------------------------------------------------------
 
@@ -540,7 +540,7 @@ class FixEvents(Convertible):
             # resolution. A wire message is already all tags, which is most of
             # a feed, and running the pass over it re-resolved eighteen keys
             # to themselves -- 29% of the conversion, for nothing.
-            pairs = FixMessage.from_pairs(pairs, self.tags).pairs
+            pairs = FixPairs.from_pairs(pairs, self.tags).pairs
         found: dict[str, Any] = {}
         for key, value in pairs:
             found.setdefault(key, value)
@@ -670,7 +670,7 @@ class FixEvents(Convertible):
     def _inside(self, entry: list[tuple[str, str]]) -> FixEvents:
         """A repeating-group entry completed by its message header."""
         inside = FixEvents(
-            message=FixMessage(pairs=entry),
+            message=FixPairs(pairs=entry),
             venue=self.venue,
             mic=self.mic,
             runix=self.runix,
@@ -1041,7 +1041,7 @@ class FixEvents(Convertible):
         found = []
         for entry in self._group_entries(name):
             resolved: dict[str, str] = {}
-            for key, value in FixMessage.from_pairs(entry, self.tags).pairs:
+            for key, value in FixPairs.from_pairs(entry, self.tags).pairs:
                 resolved.setdefault(self._names_by_tag.get(key, key), value)
             found.append(resolved)
         return found
@@ -1157,9 +1157,7 @@ class FixEvents(Convertible):
         audited = frozenset(self.tag_of(field) for field in RAW_METADATA_FIELDS)
         return {
             key: (
-                value
-                if isinstance(value, str)
-                else FixMessage.from_pairs([(key, value)]).pairs[0][1]
+                value if isinstance(value, str) else FixPairs.from_pairs([(key, value)]).pairs[0][1]
             )
             for key, value in self.by_tag.items()
             if key not in claimed or key in audited

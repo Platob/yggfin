@@ -1,4 +1,4 @@
-"""FIX fields promoted from parsed pairs to typed log columns."""
+"""FIX fields promoted from parsed pairs to typed FixMessage columns."""
 
 from __future__ import annotations
 
@@ -210,13 +210,13 @@ def _declaration(member: Field) -> Field:
 _REGISTRY = FixRegistry.from_builtin()
 _ORDER = _SESSION_FIELDS + _COMMON_FIELDS + _QUOTE_FIELDS + _PARTY_FIELDS + _STAMP_GROUP_FIELDS
 _FIELDS = tuple(_REGISTRY.scalar(name) for name in _ORDER)
-LOG_FIELDS: Mapping[int, Field] = MappingProxyType(
+FIXMESSAGE_FIELDS: Mapping[int, Field] = MappingProxyType(
     {int(member.fix["tag"]): member for member in _FIELDS}
 )
-if len(LOG_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry invariant
+if len(FIXMESSAGE_FIELDS) != len(_FIELDS):  # pragma: no cover - packaged registry invariant
     raise ValueError("the bundled FIX fields do not have unique tags")
 DECLARATIONS: Mapping[int, Field] = MappingProxyType(
-    {tag: _declaration(member) for tag, member in LOG_FIELDS.items()}
+    {tag: _declaration(member) for tag, member in FIXMESSAGE_FIELDS.items()}
 )
 
 _TAGS_BY_NAME = {member.name: int(member.fix["tag"]) for member in _FIELDS}
@@ -328,6 +328,6 @@ def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
 NAMESPACE_FIELDS: Mapping[str, Field] = namespace_columns(_REGISTRY)
 NAMED: Mapping[str, Field] = named_columns(_REGISTRY)
 
-#: The one the parsed log declares by name, kept as a name so `Log.isincode`
+#: The one the parsed log declares by name, kept as a name so `FixMessage.isincode`
 #: can annotate itself with it.
 ISIN_CODE: Field = NAMESPACE_FIELDS["ISINCODE"]

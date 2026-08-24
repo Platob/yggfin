@@ -26,7 +26,7 @@ from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.transcribe import FixCodec
 from rekep.market.event import CODES_TYPE, HOUR
 from rekep.market.identity import HASH, hash_bytes
-from rekep.text.log import Log, LogRules, MessageCodec
+from rekep.text.fixmessage import FixMessage, FixMessageRules, MessageCodec
 from rekep.urls import Url
 
 #: Matches the fixed header every log row opens with, leaving the free-form
@@ -103,9 +103,9 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     @classmethod
     @cache
-    def into_row(cls) -> type[Log]:
+    def into_row(cls) -> type[FixMessage]:
         """Class whose declaration defines parsed rows."""
-        return Log
+        return FixMessage
 
     @classmethod
     @cache
@@ -122,9 +122,9 @@ class TextFile(Dataset, io.BufferedIOBase):
     row: StructField | None = None
 
     #: What decides each line's `etype`, tried in order, `UNKNOWN` when nothing
-    #: matches. The default reads a FIX trading log; an empty `LogRules(rules=[])`
+    #: matches. The default reads a FIX trading log; an empty `FixMessageRules(rules=[])`
     #: skips the matching entirely and leaves every line `UNKNOWN`.
-    rules: LogRules = dataclass_field(default_factory=LogRules)
+    rules: FixMessageRules = dataclass_field(default_factory=FixMessageRules)
 
     #: What turns a message into the columns a row carries: which category it
     #: is, its pairs, and the tags behind them. `FixCodec` reads a FIX-carrying
@@ -378,10 +378,10 @@ class TextFile(Dataset, io.BufferedIOBase):
     def _batch(
         self, rows: list[tuple], hashes: list[int], rownums: list[int]
     ) -> pyarrow.RecordBatch:
-        """One batch of parsed lines, as the `Event` columns a `Log` is.
+        """One batch of parsed lines, as the `Event` columns a `FixMessage` is.
 
         Assembled **by name** and then ordered by the schema, rather than as a
-        positional list: a column added to `Log` then fails here by its own
+        positional list: a column added to `FixMessage` then fails here by its own
         name instead of silently shifting every column after it into the wrong
         one. The dict costs twenty-odd entries per batch against sixty-five
         thousand rows.
@@ -487,8 +487,10 @@ class TextFile(Dataset, io.BufferedIOBase):
             versions = compute.fill_null(self.codec.versions_of_pairs(pairs), "")
             for version, read, inner in _grouped(versions, pairs):
                 rows = where if len(inner) == len(where) else compute.take(where, inner)
-                parts.append((self.codec.into_log_columns(read, version.as_py() or None), rows))
-        return {"protocol": protocols, **_scattered_columns(parts)}
+                parts.append(
+                    (self.codec.into_fixmessage_columns(read, version.as_py() or None), rows)
+                )
+        return {"protocol_code": protocols, **_scattered_columns(parts)}
 
     def _iter_lines(self, read_byte_size: int) -> Iterator[bytes]:
         """Cut newline-delimited lines out of fixed-size reads.

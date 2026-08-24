@@ -23,7 +23,7 @@ from rekep.fix.columns import _ORDER
 from rekep.fix.entries import ANY_VERSION, RECORD_KEYS
 from rekep.fix.publish import (
     CONFLICT_BASELINE,
-    LOG_FIELDS,
+    FIXMESSAGE_FIELDS,
     MARKET_FIELDS,
     NAMESPACE_FIELDS,
     PROJECTED,
@@ -375,9 +375,9 @@ def test_the_builtin_projection_answers_every_key_the_package_looks_up(
     silence as a name nobody has ever seen, and reads as one downstream.
     """
     assert not missing_from(registry, PROJECTED), "the dictionary answers for every key"
-    assert set(LOG_FIELDS) == set(_ORDER)
+    assert set(FIXMESSAGE_FIELDS) == set(_ORDER)
     assert set(PROJECTED) >= set(CARRIED_FIELDS)
-    assert set(MARKET_FIELDS).isdisjoint(LOG_FIELDS), "each name declared once"
+    assert set(MARKET_FIELDS).isdisjoint(FIXMESSAGE_FIELDS), "each name declared once"
     builtin = FixRegistry.from_builtin()
     assert not missing_from(builtin, PROJECTED)
     assert not missing_from(builtin, tuple(market_tags())), "every tag translation reads"

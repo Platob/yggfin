@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 #: What a `*unix` column holds, said once. Whole nanoseconds since the epoch,
 #: as an integer rather than a timestamp type -- which is the same choice
-#: `Log` makes, for the same reason: a width or a zone that a downstream is
+#: `FixMessage` makes, for the same reason: a width or a zone that a downstream is
 #: picky about is a conversion per row, and an integer survives every one of
 #: them unchanged.
 UNIX: dict[str, str] = {"unit": "nanosecond", "epoch": "1970-01-01"}

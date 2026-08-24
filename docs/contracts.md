@@ -4,7 +4,7 @@
 
 | Contract | Rows |
 | --- | --- |
-| `log.yaml` | Parsed source lines, including typed FIX fields. |
+| `fixmessage.yaml` | Parsed source lines, including typed FIX fields. |
 | `instrument.yaml` | Versioned and hourly instrument state. |
 | `book.yaml` | Book deltas, executions, and recovery state. |
 | `order.yaml` | Flattened auditable order events. |
@@ -13,7 +13,7 @@
 ```python
 from rekep import Field
 
-log = Field.from_yaml("schemas/rekep/log.yaml")
+log = Field.from_yaml("schemas/rekep/fixmessage.yaml")
 reader = log.cast_arrow(reader)
 ```
 
@@ -46,7 +46,7 @@ Producers cast before writing; consumers load the same contract and may use
 
 ```bash
 cd python
-uv run python -c "from rekep import Log; Log.into_field().into_yaml('../schemas/rekep/log.yaml')"
+uv run python -c "from rekep import FixMessage; FixMessage.into_field().into_yaml('../schemas/rekep/fixmessage.yaml')"
 uv run pytest tests/test_schemas.py
 ```
 

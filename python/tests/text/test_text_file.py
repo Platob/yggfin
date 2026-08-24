@@ -7,7 +7,7 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, Log
+from rekep import Dataset, Field, FixMessage
 from rekep.fix import FixCodec, FixRegistry
 from rekep.fix.columns import COLUMNS, COMMON, FLAT, KWARGS, QUOTE, SESSION, STAMPS
 from rekep.market import MIC, Event
@@ -308,7 +308,7 @@ LINE_COLUMNS = [
     "thread_name",
     "plugin_code",
     "message",
-    "protocol",
+    "protocol_code",
     "msg_seq_num",
     "kwargs",
     "parties",
@@ -399,7 +399,7 @@ EXPECTED_LOG_COLUMNS = 105
 
 def test_schema(plain: Path) -> None:
     schema = TextFile(url=plain.as_uri()).schema
-    assert schema.names == Log.into_field().into_arrow_schema().names
+    assert schema.names == FixMessage.into_field().into_arrow_schema().names
     assert len(schema.names) == EXPECTED_LOG_COLUMNS
     assert schema.names[:3] == ["unix", "unix_hour", "etype"], "the envelope leads"
     assert len(LINE_COLUMNS) == EXPECTED_LINE_COLUMNS
@@ -409,11 +409,11 @@ def test_schema(plain: Path) -> None:
     assert schema.field("hash").type == pyarrow.int64()
     assert schema.field("etype").type == pyarrow.int32()
     assert schema.field("message").type == pyarrow.string()
-    assert schema.field("protocol").type == pyarrow.string()
+    assert schema.field("protocol_code").type == pyarrow.string()
 
 
 def test_the_flat_columns_are_the_ones_the_column_layer_names() -> None:
-    """`rekep.fix.columns` names the tags and the column each lands in, `Log`
+    """`rekep.fix.columns` names the tags and the column each lands in, `FixMessage`
     declares the type, and the list pinned above is derived from neither -- so a
     field added on one side only is either a tag lifted out of `kwargs` into a
     column nothing declares, or a column no message can ever fill.
@@ -561,7 +561,7 @@ def test_generic_codes_follow_the_parsed_identifier_fallbacks(
     ], "`OrigClOrdID <41>` before `ClOrdID <11>`: a lifecycle survives its amendments"
     assert table.column("security_id").to_pylist()[4] == "SEC-1"
     assert table.column("xhash").to_pylist()[:5] == [
-        Log.hash_of(value) for value in ("VENUE", "ORIGINAL", "EXEC", "TTF", "SEC-1")
+        FixMessage.hash_of(value) for value in ("VENUE", "ORIGINAL", "EXEC", "TTF", "SEC-1")
     ]
     assert table.column("parties")[0].as_py() == [
         {
@@ -600,7 +600,7 @@ def test_a_lifted_field_arrives_decoded_and_not_as_the_text_the_wire_carried(
 ) -> None:
     """`43=Y` is a boolean and `44=41.25` is a number, so a reader filters on
     the value rather than on the spelling the wire happened to use. Which type
-    each decodes to is `Log`'s declaration, pinned against the published
+    each decodes to is `FixMessage`'s declaration, pinned against the published
     dictionary in `tests/text/test_log.py`.
     """
     table = TextFile.from_path(wire, codec=codec).read_arrow_table()
@@ -1122,7 +1122,7 @@ def test_static_values_land_at_the_end_in_insertion_order(plain: Path) -> None:
     log = TextFile.from_path(plain, static_values={"bridge": "bridge-1", "shard": 7})
     table = log.read_arrow_table()
     assert table.schema.names[-2:] == ["bridge", "shard"]
-    assert table.schema.names[:-2] == Log.into_field().into_arrow_schema().names
+    assert table.schema.names[:-2] == FixMessage.into_field().into_arrow_schema().names
     assert table.column("bridge").to_pylist() == ["bridge-1"] * table.num_rows
     assert table.column("shard").to_pylist() == [7] * table.num_rows
 
@@ -1130,12 +1130,12 @@ def test_static_values_land_at_the_end_in_insertion_order(plain: Path) -> None:
 def test_nothing_names_the_source_but_the_caller(plain: Path) -> None:
     """No column is hardcoded: a capture says what it is, or says nothing."""
     assert TextFile.from_path(plain).read_arrow_table().schema.names == (
-        Log.into_field().into_arrow_schema().names
+        FixMessage.into_field().into_arrow_schema().names
     )
 
 
 def test_a_static_value_infers_its_arrow_type(plain: Path) -> None:
-    # Not `text`, which `Log` declares for `Text <58>`: a static column of that
+    # Not `text`, which `FixMessage` declares for `Text <58>`: a static column of that
     # name is a second column of that name, and the schema then answers neither.
     log = TextFile.from_path(
         plain, static_values={"label": "a", "count": 2, "ratio": 0.5, "flag": True}
@@ -1204,7 +1204,7 @@ def test_a_text_file_is_a_dataset(plain: Path) -> None:
     log = TextFile.from_path(plain)
     assert isinstance(log, Dataset)
     assert log.exists
-    assert log.into_struct_field() is Log.into_field()
+    assert log.into_struct_field() is FixMessage.into_field()
     assert log.read_arrow_table().num_rows == EXPECTED_RECORDS
 
 
@@ -1214,7 +1214,7 @@ def test_a_missing_file_does_not_exist_yet(tmp_path: Path) -> None:
 
 def test_reading_casts_only_when_asked(plain: Path) -> None:
     log = TextFile.from_path(plain)
-    assert log.read_arrow_reader().schema.equals(Log.into_field().into_arrow_schema())
+    assert log.read_arrow_reader().schema.equals(FixMessage.into_field().into_arrow_schema())
     narrow = pyarrow.schema([("message", pyarrow.large_string())])
     assert log.read_arrow_reader(narrow).schema.field("message").type == pyarrow.large_string()
 

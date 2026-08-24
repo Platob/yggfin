@@ -10,7 +10,7 @@ import datetime
 
 import pytest
 
-from rekep.fix import FixMessage, FixRegistry, fix_field
+from rekep.fix import FixPairs, FixRegistry, fix_field
 from rekep.market import (
     MIC,
     AssetKind,
@@ -676,14 +676,14 @@ def test_a_fragment_with_no_msgtype_is_read_from_the_fields_it_has() -> None:
     """A decoder that only works on complete headers is no use on a log."""
     (order,) = list(
         FixEvents(
-            message=FixMessage.from_pairs([("11", "CL-1"), ("54", "1")]),
+            message=FixPairs.from_pairs([("11", "CL-1"), ("54", "1")]),
             fix_version="4.4",
         )
     )
     assert isinstance(order, Order)
     reported = list(
         FixEvents(
-            message=FixMessage.from_pairs([("17", "EX-1"), ("150", "F")]),
+            message=FixPairs.from_pairs([("17", "EX-1"), ("150", "F")]),
             fix_version="4.4",
         )
     )
@@ -693,7 +693,7 @@ def test_a_fragment_with_no_msgtype_is_read_from_the_fields_it_has() -> None:
 
 
 def test_a_fragment_with_no_version_remains_raw() -> None:
-    reader = FixEvents(message=FixMessage.from_pairs([("11", "CL-1"), ("54", "1")]))
+    reader = FixEvents(message=FixPairs.from_pairs([("11", "CL-1"), ("54", "1")]))
     assert reader.version is None
     assert list(reader) == []
     assert list(reader.into_instruments()) == []

@@ -3,7 +3,7 @@ notebook: flatten_instruments.ipynb
 parameters:
   # Iceberg sources and targets are catalog table identifiers; their S3 file
   # locations come from the catalog warehouse below.
-  source: logs.market
+  source: fixmessage.market
   target: market.instruments
   start: null
   end: null

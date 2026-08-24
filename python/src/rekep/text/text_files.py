@@ -20,7 +20,7 @@ from rekep.dataset import Dataset
 from rekep.fields import StructField
 from rekep.filesystems import resolve
 from rekep.fix.transcribe import FixCodec
-from rekep.text.log import LogRules, MessageCodec
+from rekep.text.fixmessage import FixMessageRules, MessageCodec
 from rekep.text.text_file import (
     DEFAULT_BATCH_ROW_SIZE,
     DEFAULT_READ_BYTE_SIZE,
@@ -109,7 +109,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: What decides each line's `etype`, handed to every file the set opens --
     #: a folder of one capture is one log format, so the rules belong to the
     #: set and not to each file in it.
-    rules: LogRules = dataclass_field(default_factory=LogRules)
+    rules: FixMessageRules = dataclass_field(default_factory=FixMessageRules)
 
     #: What turns a message into the columns a row carries, for the same reason
     #: and in the same way: one capture is one set of message formats, so the

@@ -1,5 +1,5 @@
-name: parse_logs
-notebook: parse_logs.ipynb
+name: parse_fix
+notebook: parse_fix.ipynb
 parameters:
   project_root: .
   # Raw input may be an S3 prefix, for example: s3://example-bucket/capture
@@ -29,7 +29,7 @@ parameters:
     type: sql
     uri: sqlite:///data/catalog.db
     warehouse: file://data/warehouse
-  target_pattern: "logs.{category}"
+  target_pattern: "fixmessage.{category}"
   instrument_source: market.instruments
   instrument_snapshot_every: 3600000000000
   static_values:

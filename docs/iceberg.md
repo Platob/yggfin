@@ -15,7 +15,7 @@ logs = IcebergDataset(
         "uri": "sqlite:///catalog.db",
         "warehouse": "file:///warehouse",
     },
-    field=Log.into_field(),
+    field=FixMessage.into_field(),
 )
 ```
 
@@ -49,7 +49,7 @@ commit size. Schema additions are nullable and additive.
 
 The current market-contract cutover is not an additive Iceberg evolution:
 renamed Book payloads, typed `linked_events`, required collections, removed
-event fields, and the Log sequence rename need an explicit table migration or
+event fields, and the FixMessage sequence rename need an explicit table migration or
 recreation. Dataset writes do not guess missing lineage or keep retired columns
 alive.
 

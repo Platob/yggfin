@@ -16,7 +16,7 @@ Set `REKEP_NOTEBOOK_OUTPUT` to an existing worker-visible directory when
 interval as `start` and `end`; Arrow and Iceberg carry data between notebooks.
 
 ```text
-parse_logs -+-> flatten_instruments
+parse_fix -+-> flatten_instruments
             `-> parse_market -+-> flatten_orders
                               `-> flatten_executions
 ```

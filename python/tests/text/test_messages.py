@@ -133,13 +133,13 @@ def table(codec: FixCodec) -> pyarrow.Table:
 
 def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) -> None:
     assert table.num_rows == EXPECTED_RECORDS
-    assert table.column("protocol").to_pylist() == EXPECTED_PROTOCOLS
+    assert table.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS
 
 
 def test_the_column_and_the_line_agree_on_every_row(table: pyarrow.Table) -> None:
     """Scalar and vectorised, row for row, on the capture itself."""
     scalar = [Rules.into_default().categorise(one) for one in table.column("message").to_pylist()]
-    assert [rule.protocol for rule in scalar] == table.column("protocol").to_pylist()
+    assert [rule.protocol for rule in scalar] == table.column("protocol_code").to_pylist()
 
 
 # -- what a line carries -----------------------------------------------------
@@ -516,7 +516,7 @@ def test_the_capture_reparses_to_the_same_instants(
     with TextFile.from_path(copy, codec=codec) as again:
         written = again.read_arrow_table()
     assert written.column("unix").to_pylist() == table.column("unix").to_pylist()
-    assert written.column("protocol").to_pylist() == EXPECTED_PROTOCOLS
+    assert written.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS
     # Named rather than left to a `KeyError` from the loop below: a column the
     # flat layer declares and the shape does not is a missing column, and it
     # should fail as one.
@@ -539,7 +539,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     own = FixCodec(registry=codec.registry, rules=Rules.from_yaml(path))
     with TextFile.from_path(SAMPLE, codec=own) as log:
         table = log.read_arrow_table()
-    found = table.column("protocol").to_pylist()
+    found = table.column("protocol_code").to_pylist()
     assert found[BRIDGE] == "BRIDGE", "the plugin decides now, not the message"
     assert found[PIPED] == NO_PROTOCOL, "and the wire messages are nobody's protocol"
     assert found[REJECTED] == "BRIDGE", "including the bridge's own prose line"
@@ -552,7 +552,7 @@ def test_a_file_that_declares_no_rules_parses_as_it_always_did(codec: FixCodec) 
     quiet = FixCodec(registry=codec.registry, rules=Rules(rules=[]))
     with TextFile.from_path(SAMPLE, codec=quiet) as log:
         table = log.read_arrow_table()
-    assert table.column("protocol").to_pylist() == [NO_PROTOCOL] * EXPECTED_RECORDS
+    assert table.column("protocol_code").to_pylist() == [NO_PROTOCOL] * EXPECTED_RECORDS
     assert table.column("kwargs").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("parties").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("symbol").to_pylist() == [None] * EXPECTED_RECORDS
@@ -675,7 +675,7 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
     files = TextFiles.from_folder(tmp_path, codec=codec, static_values={"bridge": "bridge-1"})
     table = files.read_arrow_table()
     assert table.num_rows == EXPECTED_RECORDS * 2
-    assert table.column("protocol").to_pylist() == EXPECTED_PROTOCOLS * 2
+    assert table.column("protocol_code").to_pylist() == EXPECTED_PROTOCOLS * 2
     assert _named(table.column("kwargs")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert _named(table.column("kwargs")[EXPECTED_RECORDS + BRIDGE]) == BRIDGE_RAW_PAIRS
     _assert_no_semantic_columns(table, BRIDGE)

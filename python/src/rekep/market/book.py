@@ -30,7 +30,7 @@ from rekep.market.instrument import Instrument
 from rekep.market.orders import Execution, Order, _quantity_transition
 
 if TYPE_CHECKING:
-    from rekep.text.log import Log
+    from rekep.text.fixmessage import FixMessage
 
 _ARROW_DISPATCH = MappingProxyType(
     {
@@ -230,7 +230,7 @@ class Book(MarketEvent):
         return self
 
     @classmethod
-    def from_logs(cls, logs: Iterable[Log], **declared: Any) -> Iterator[Self]:
+    def from_fixmessages(cls, logs: Iterable[FixMessage], **declared: Any) -> Iterator[Self]:
         """Fold an already sorted parsed-log stream into books."""
         return iter(BookIterator(logs=logs, **declared))
 
@@ -1194,7 +1194,7 @@ class _Folding:
 class BookIterator:
     """Fold one sorted parsed-log stream into books."""
 
-    logs: Iterable[Log] = ()
+    logs: Iterable[FixMessage] = ()
     """Parsed logs sorted by event time, `msg_seq_num`, and hash; read once."""
 
     snapshot_every: int = HOUR

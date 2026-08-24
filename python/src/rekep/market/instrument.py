@@ -229,11 +229,11 @@ class Instrument(Event):
         """Hash the complete explicitly framed instrument state."""
         return (self.xhash, self.version, self.unix, *_instrument_parts(self))
 
-    def into_log(self, **declared: Any) -> Any:
-        """Carry this version as a normalized row in the market Log stream."""
-        from rekep.text.log import Log
+    def into_fixmessage(self, **declared: Any) -> Any:
+        """Carry this version as a normalized row in the market FixMessage stream."""
+        from rekep.text.fixmessage import FixMessage
 
-        return Log.from_instrument(self, **declared)
+        return FixMessage.from_instrument(self, **declared)
 
     @classmethod
     def from_observations(
@@ -253,7 +253,7 @@ class Instrument(Event):
         )
 
     @classmethod
-    def from_logs(
+    def from_fixmessages(
         cls,
         logs: Iterable[Any],
         *,

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 880" role="img" aria-labelledby="title desc">
   <title id="title">Arrow schema and persisted-table lineage</title>
-  <desc id="desc">Repository schema declarations produce Arrow contracts. One Log contract is stored in three Iceberg tables, but only logs.market continues. Normalized Instrument Log rows independently project to the Instrument table. BookIterator consumes those rows inline from logs.market while folding the same sorted Log stream into Books. Book order and execution lists flatten into their own tables.</desc>
+  <desc id="desc">Repository schema declarations produce Arrow contracts. One FixMessage contract is stored in three Iceberg tables, but only fixmessage.market continues. Normalized Instrument FixMessage rows independently project to the Instrument table. BookIterator consumes those rows inline from fixmessage.market while folding the same sorted FixMessage stream into Books. Book order and execution lists flatten into their own tables.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <path d="M0,0 L0,6 L9,3 z" fill="#315f96"/>
@@ -42,15 +42,15 @@
   <path class="inherit" d="M1050 75 H1135"/>
 
   <rect class="contract" x="45" y="245" width="355" height="240" rx="15"/>
-  <text class="label" x="223" y="278">Log contract</text>
+  <text class="label" x="223" y="278">FixMessage contract</text>
   <text class="small" x="223" y="304">symbol | code | codes | parsed FIX fields</text>
   <text class="small" x="223" y="326">raw lines + normalized Instrument versions</text>
   <rect class="chip-live" x="78" y="350" width="290" height="36" rx="9"/>
-  <text class="tiny" x="223" y="373">logs.market → continues through Arrow</text>
+  <text class="tiny" x="223" y="373">fixmessage.market → continues through Arrow</text>
   <rect class="chip-stop" x="78" y="399" width="290" height="32" rx="9"/>
-  <text class="tiny" x="223" y="420">logs.misc_logs → retained terminal table</text>
+  <text class="tiny" x="223" y="420">fixmessage.misc → retained terminal table</text>
   <rect class="chip-stop" x="78" y="442" width="290" height="32" rx="9"/>
-  <text class="tiny" x="223" y="463">logs.unknown_logs → retained terminal table</text>
+  <text class="tiny" x="223" y="463">fixmessage.unknown → retained terminal table</text>
 
   <rect class="market" x="525" y="175" width="345" height="175" rx="15"/>
   <text class="label" x="698" y="208">Instrument contract</text>

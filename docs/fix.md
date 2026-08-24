@@ -4,9 +4,9 @@
 unknown source data.
 
 ```python
-from rekep.fix import FixMessage, FixRegistry
+from rekep.fix import FixPairs, FixRegistry
 
-message = FixMessage.from_text("8=FIX.4.4|35=D|11=C1|55=IBM|10=001")
+message = FixPairs.from_text("8=FIX.4.4|35=D|11=C1|55=IBM|10=001")
 message.msg_type  # 'D'
 message.get(55)  # 'IBM'
 message.pairs  # ordered entries
@@ -372,7 +372,7 @@ picking between them would be a guess.
 
 ## Parsed-log projection
 
-Common fields are promoted once into `Log`. Residual `kwargs` keeps everything
+Common fields are promoted once into `FixMessage`. Residual `kwargs` keeps everything
 not promoted -- resolved or not, in wire order, with the tag, the name, the
 container or namespace it sat in, and what its value means. A later market
 conversion rebuilds a `FixEvents` view from those typed columns and that one

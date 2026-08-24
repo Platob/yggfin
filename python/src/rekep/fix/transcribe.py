@@ -490,7 +490,7 @@ class FixCodec(Convertible):
             self._meanings[version] = _meanings(self.registry, version)
         return self._meanings[version]
 
-    def into_log_columns(
+    def into_fixmessage_columns(
         self, pairs: Any, version: str | None = None
     ) -> tuple[Any, dict[str, Any]]:
         """One parsed pair column as the fields a log keeps and the columns it lifts."""

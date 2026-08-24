@@ -23,7 +23,7 @@ from rekep.market.event import Event
 from rekep.market.identity import NIL
 
 _EVENT_CODE = pyarrow.int32()
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
 _INSTRUMENT_PLUGIN = "rekep.instrument"
 _INSTRUMENT_PROTOCOL = "REKEP"
 _INSTRUMENT_KIND = "rekep.kind"
@@ -31,7 +31,7 @@ _INSTRUMENT_XHASH = "rekep.xhash"
 
 
 @scalar(slots=True)
-class Log(Event):
+class FixMessage(Event):
     """One parsed line of a trading log."""
 
     @classmethod
@@ -106,7 +106,7 @@ class Log(Event):
     message: str = ""
     """Payload with the header and level stripped, continuation lines folded in."""
 
-    protocol: str = NO_PROTOCOL
+    protocol_code: str = NO_PROTOCOL
     """Which protocol the line carries; OTHER is a line that carries none."""
 
     msg_seq_num: Annotated[int | None, DECLARATIONS[34]] = None
@@ -403,7 +403,7 @@ class Log(Event):
     """`QuoteEntryID <299>`: stable quote-entry identifier."""
 
     @classmethod
-    def from_instrument(cls, instrument: Any, **declared: Any) -> Log:
+    def from_instrument(cls, instrument: Any, **declared: Any) -> FixMessage:
         """Carry one normalized instrument version in the parsed-log stream."""
         from rekep.market.instrument import Instrument
 
@@ -419,7 +419,7 @@ class Log(Event):
                 "thread_name": "",
                 "plugin_code": cls.into_instrument_plugin(),
                 "message": "",
-                "protocol": cls.into_instrument_protocol(),
+                "protocol_code": cls.into_instrument_protocol(),
                 "msg_type": "d",
                 "symbol": known.symbol or None,
                 "security_id": known.security_id,
@@ -617,7 +617,7 @@ class Log(Event):
         )
 
     def _instrument_version(self, instrument: Any) -> Any:
-        """Put decoded facts back on the lifecycle envelope this Log carries."""
+        """Put decoded facts back on the lifecycle envelope this FixMessage carries."""
         return dataclasses.replace(
             instrument,
             unix=self.unix,
@@ -673,7 +673,7 @@ class MessageCodec(Protocol):
         """One resolved version per parsed row, so a mixed batch can be split."""
         ...
 
-    def into_log_columns(
+    def into_fixmessage_columns(
         self, pairs: Any, version: str | None = None
     ) -> tuple[Any, dict[str, Any]]:
         """`(kwargs, {column: array})`: what a log keeps, and what it lifts.
@@ -686,7 +686,7 @@ class MessageCodec(Protocol):
 
 
 @dataclasses.dataclass
-class LogRule(Convertible):
+class FixMessageRule(Convertible):
     """One pattern, and the kind of event a line matching it is."""
 
     pattern: str = ""
@@ -712,32 +712,32 @@ class LogRule(Convertible):
 #: prints. Ordered most specific first, because the first match wins and a
 #: single line can name more than one of them -- an execution report quoting
 #: the order it fills says `ExecutionReport` *and* `NewOrderSingle`.
-DEFAULT_RULES: tuple[LogRule, ...] = (
-    LogRule(
+DEFAULT_RULES: tuple[FixMessageRule, ...] = (
+    FixMessageRule(
         r"35=8(\D|$)",
         EventType.EXECUTION,
         "a fill, or a report of one",
         [r"ExecutionReport"],
     ),
-    LogRule(
+    FixMessageRule(
         r"35=[DFG](\D|$)",
         EventType.ORDER,
         "an order, or an amendment to one",
         [r"NewOrderSingle", r"OrderCancel(Request|Replace)"],
     ),
-    LogRule(
+    FixMessageRule(
         r"35=X(\D|$)",
         EventType.BOOK,
         "an incremental book update",
         [r"MarketDataIncrementalRefresh"],
     ),
-    LogRule(
+    FixMessageRule(
         r"35=W(\D|$)",
         EventType.BOOK,
         "a full book snapshot",
         [r"MarketDataSnapshot"],
     ),
-    LogRule(
+    FixMessageRule(
         r"35=(?:AG|AH|AI|AJ|[RSZabi])(?:[^A-Za-z0-9]|$)",
         EventType.QUOTE,
         "a quote lifecycle message",
@@ -746,7 +746,7 @@ DEFAULT_RULES: tuple[LogRule, ...] = (
             r"StatusReport|Response|Cancel|Request)?|RFQRequest)\b"
         ],
     ),
-    LogRule(
+    FixMessageRule(
         r"35=d(\D|$)",
         EventType.INSTRUMENT,
         "reference data",
@@ -755,17 +755,17 @@ DEFAULT_RULES: tuple[LogRule, ...] = (
 )
 
 
-def _default_log_rules() -> list[LogRule]:
+def _default_log_rules() -> list[FixMessageRule]:
     """Fresh default rules, including their mutable pattern lists."""
     return [dataclasses.replace(rule, patterns=list(rule.patterns)) for rule in DEFAULT_RULES]
 
 
 @dataclasses.dataclass
-class LogRules(Convertible):
+class FixMessageRules(Convertible):
     """Which `EventType` each line of a log is, by the first pattern that matches."""
 
     #: Rules in the order they are tried. The default reads a FIX trading log.
-    rules: list[LogRule] = dataclasses.field(default_factory=_default_log_rules)
+    rules: list[FixMessageRule] = dataclasses.field(default_factory=_default_log_rules)
 
     def etype_arrow(self, messages: Any) -> pyarrow.Array:
         """One `etype` per message: the first rule that matches, else `UNKNOWN`."""
@@ -781,7 +781,7 @@ class LogRules(Convertible):
         return found.cast(_EVENT_CODE, safe=False)
 
 
-def _log_rule_hit(rule: LogRule, text: Any) -> Any:
+def _log_rule_hit(rule: FixMessageRule, text: Any) -> Any:
     """One log rule's any-pattern mask."""
     compute = pyarrow.compute
     mask = None
@@ -812,7 +812,7 @@ def _first_text(columns: Mapping[str, Any], names: Sequence[str], rows: int) -> 
 
 
 def _instrument_pairs(instrument: Any) -> list[tuple[str, str]] | None:
-    """Registry-shaped fields not already promoted on a normalized Log."""
+    """Registry-shaped fields not already promoted on a normalized FixMessage."""
     values = (
         (_INSTRUMENT_KIND, int(instrument.kind)),
         ("ContractMultiplier", instrument.multiplier),
@@ -915,7 +915,7 @@ def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | Non
 def _stored_entry(entry: Any) -> dict[str, Any]:
     """One stored field, filled out from however the caller spelled it.
 
-    A `(key, value)` pair is accepted as itself, so a caller writing a `Log` by
+    A `(key, value)` pair is accepted as itself, so a caller writing a `FixMessage` by
     hand need not spell the whole struct out: a numeric key is the tag it
     already is, and a name gives up whatever stood in front of it to `comp` or
     `namespace` the same way `FixCodec.transcribe` splits a parsed one.
@@ -967,7 +967,7 @@ def _stored_pairs(entries: Sequence[Any] | None) -> Iterator[tuple[Any, Any]]:
     columns, read off `tag` instead of off which column an entry sat in.
 
     A plain `(key, value)` tuple is accepted as itself, so a caller writing a
-    `Log` by hand need not spell the whole struct out.
+    `FixMessage` by hand need not spell the whole struct out.
     """
     for entry in entries or ():
         if not isinstance(entry, Mapping):

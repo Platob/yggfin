@@ -22,7 +22,7 @@ import pyarrow.compute
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 
-from rekep.fix import FixMessage, parse_arrow_array  # noqa: E402
+from rekep.fix import FixPairs, parse_arrow_array  # noqa: E402
 from rekep.market import (  # noqa: E402
     MIC,
     Book,
@@ -273,7 +273,7 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
     assert instrument is not None
     # The registry leg is deliberately FIX.4.4; protocol reads never infer a
     # version when neither BeginString nor FIXT application-version tags exist.
-    log = instrument.into_log(begin_string="FIX.4.4")
+    log = instrument.into_fixmessage(begin_string="FIX.4.4")
 
     def through_registry() -> list[Instrument]:
         built = []
@@ -290,7 +290,7 @@ def bench_instrument_logs(rows: int, repeat: int) -> None:
     assert generic[0].into_dict() == instrument.into_dict()
     assert decoded[0].into_dict() == instrument.into_dict()
 
-    print(f"\nInstrument <-> normalized Log -- {sample:,} rows")
+    print(f"\nInstrument <-> normalized FixMessage -- {sample:,} rows")
     report("generic FIX/registry reconstruction", registry, sample)
     report("direct normalized-row decode", normalized, sample, against=registry)
 
@@ -446,7 +446,7 @@ def bench_fix_parser(rows: int, repeat: int) -> None:
     print(f"\nFIX batch parser -- {rows:,} messages of each shape")
     for label, line in FEED.items():
         column = pyarrow.array([line] * rows)
-        expected = FixMessage.from_text(line).pairs
+        expected = FixPairs.from_text(line).pairs
         assert parse_arrow_array(column.slice(0, 2)).to_pylist() == [expected, expected]
         seconds, parsed = timed(lambda column=column: len(parse_arrow_array(column)), repeat)
         assert parsed == rows
@@ -866,7 +866,7 @@ def bench_ceiling(rows: int, repeat: int) -> None:
     print(f"\nThe ceiling on compiling it -- {rows:,} refreshes")
     line = FEED["MarketData <X>, 5 entries"]
     lines = [line] * rows
-    parsed = [FixMessage.from_text(line) for line in lines]
+    parsed = [FixPairs.from_text(line) for line in lines]
 
     def whole() -> int:
         return sum(1 for one in lines for _ in FixEvents.from_text(one))
@@ -896,21 +896,21 @@ def bench_ceiling(rows: int, repeat: int) -> None:
 
 
 def log_stream(rows: int) -> list[object]:
-    """One instrument's feed as the parsed log rows `Book.from_logs` reads.
+    """One instrument's feed as the parsed log rows `Book.from_fixmessages` reads.
 
-    Built as `Log` rows carrying wire tags rather than through a text file, so
+    Built as `FixMessage` rows carrying wire tags rather than through a text file, so
     what is measured is the two halves of the generator -- translating a parsed
     row back into market events, and folding those into books -- and not the
     tokenizer in front of them, which `bench_fix_parser` prices on its own.
     """
-    from rekep import Log
+    from rekep import FixMessage
 
     base = 1_786_665_901_000_000_000
     # The order and the fill, and not the market-data shape beside them: its
     # entries carry their own `MDEntryTime <273>`, which is what orders them
     # and not the message clock this walks forward.
     shapes = [
-        FixMessage.from_text(line).pairs
+        FixPairs.from_text(line).pairs
         for label, line in FEED.items()
         if not label.startswith("MarketData")
     ]
@@ -919,9 +919,9 @@ def log_stream(rows: int) -> list[object]:
         stamp = _fix_stamp(base + index * 1_000_000)
         renamed = {"52": stamp, "60": stamp, "11": f"CL-{index}", "17": f"EX-{index}"}
         built.append(
-            Log(
+            FixMessage(
                 unix=base + index * 1_000_000,
-                protocol="FIX",
+                protocol_code="FIX",
                 kwargs=[
                     (tag, renamed.get(tag, value)) for tag, value in shapes[index % len(shapes)]
                 ],
@@ -940,7 +940,7 @@ def bench_from_logs(rows: int, repeat: int) -> None:
     """The whole generator: parsed log rows in, books out."""
     from rekep.market import BookIterator
 
-    print(f"\nBook.from_logs -- {rows:,} parsed rows, one instrument")
+    print(f"\nBook.from_fixmessages -- {rows:,} parsed rows, one instrument")
     logs = log_stream(rows)
 
     def translate() -> int:

@@ -493,7 +493,7 @@ def _batches(reader: Any) -> Iterator[pyarrow.RecordBatch]:
 
 
 def _columns(batch: pyarrow.RecordBatch) -> tuple[Any, Any]:
-    """The message column and the plugin column, by the names a `Log` uses."""
+    """The message column and the plugin column, by the names a `FixMessage` uses."""
     names = batch.schema.names
     if "message" not in names:
         raise ValueError(f"a batch of log lines needs a 'message' column; got {names}")

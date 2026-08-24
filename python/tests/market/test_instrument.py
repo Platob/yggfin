@@ -13,7 +13,7 @@ import rekep.market.instrument as instrument_module
 from rekep.fix import FixRegistry
 from rekep.market import AssetKind, Currency, Instrument, Leg, OptionKind, Side
 from rekep.market.identity import NIL, hash_of
-from rekep.text import Log
+from rekep.text import FixMessage
 
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
 
@@ -104,7 +104,7 @@ def test_explicit_pair_classification_and_currency_are_preserved() -> None:
 def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    log = Log(
+    log = FixMessage(
         unix=1,
         begin_string="FIX.4.4",
         msg_type="d",
@@ -112,9 +112,9 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
         kwargs=[(969, "0.01"), (561, "100"), (107, "FAKE-DESC")],
     )
     table = pyarrow.Table.from_pylist(
-        [log.into_dict()], schema=Log.into_field().into_arrow_schema()
+        [log.into_dict()], schema=FixMessage.into_field().into_arrow_schema()
     )
-    log = Log.from_dict(table.to_pylist()[0])
+    log = FixMessage.from_dict(table.to_pylist()[0])
     assert [(entry["tag"], entry["value"]) for entry in log.kwargs] == [
         (969, "0.01"),
         (561, "100"),
@@ -122,15 +122,15 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
     ], "an Arrow round trip keeps every stored field, in wire order"
     registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
     transcription = {}
-    into_instruments = Log.into_instruments
+    into_instruments = FixMessage.into_instruments
 
-    def captured(self: Log, **declared: object):
+    def captured(self: FixMessage, **declared: object):
         transcription.update(declared)
         return into_instruments(self, **declared)
 
-    monkeypatch.setattr(Log, "into_instruments", captured)
+    monkeypatch.setattr(FixMessage, "into_instruments", captured)
 
-    (instrument,) = Instrument.from_logs(
+    (instrument,) = Instrument.from_fixmessages(
         [log],
         registry=registry,
         snapshot_every=0,
@@ -174,16 +174,16 @@ def test_instrument_log_interop_preserves_the_full_version_through_arrow(
     ).with_previous(None)
     assert instrument is not None
 
-    log = instrument.into_log()
+    log = instrument.into_fixmessage()
     table = pyarrow.Table.from_pylist(
-        [log.into_dict()], schema=Log.into_field().into_arrow_schema()
+        [log.into_dict()], schema=FixMessage.into_field().into_arrow_schema()
     )
-    stored = Log.from_dict(table.to_pylist()[0])
+    stored = FixMessage.from_dict(table.to_pylist()[0])
 
     def unexpected_fix_decode(*_args: object, **_kwargs: object) -> None:
         raise AssertionError("normalized rows must not rebuild FIX state")
 
-    monkeypatch.setattr(Log, "into_fix_events", unexpected_fix_decode)
+    monkeypatch.setattr(FixMessage, "into_fix_events", unexpected_fix_decode)
     restored = stored.into_instrument()
 
     assert restored is not None
