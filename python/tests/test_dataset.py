@@ -16,7 +16,7 @@ from rekep.dataset import _needs_compatible_polars_arrow, _polars_table, arrow_c
 class Quote(Convertible):
     """One quote."""
 
-    symbol: str
+    symbol: Annotated[str, Field.primary_key()]
     """Instrument."""
 
     day: datetime.date
@@ -55,14 +55,26 @@ class MemoryDataset(Dataset):
         )
         return reader if schema is None else self.target_field(schema).cast_arrow_reader(reader)
 
-    def write_arrow_reader(
+    def overwrite_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
+        merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
     ) -> None:
-        self.merge_columns(merge_by)  # refuses an impossible merge before writing anything
+        if not self.merge_columns(merge_by):
+            raise ValueError(f"merge_by={merge_by!r} names nothing to match on")
+        # The commits are kept as they arrive rather than actually replaced:
+        # what the tests below pin is the streaming, chunking and casting the
+        # contract owes every store, not how one store finds a matching row.
+        self._append_arrow_reader(source, schema, commit_row_size)
+
+    def _append_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        commit_row_size: int | None = None,
+    ) -> None:
         self.get_or_create()  # a write appends, and appending to nothing is a create
         reader = self.target_field(schema).cast_arrow_reader(source)
         self.commits.extend(arrow_chunks(reader, commit_row_size))
@@ -128,13 +140,23 @@ def test_merge_by_a_list_means_those_columns(dataset: MemoryDataset) -> None:
 
 
 @pytest.mark.parametrize("merge_by", [None, False, []])
-def test_a_falsy_merge_by_means_append(dataset: MemoryDataset, merge_by: object) -> None:
+def test_a_falsy_merge_by_names_nothing_to_match_on(
+    dataset: MemoryDataset, merge_by: object
+) -> None:
+    """Which the append family reads as "insert every row", and an overwrite refuses."""
     assert dataset.merge_columns(merge_by) == []
+    with pytest.raises(ValueError, match="names nothing to match on"):
+        dataset.overwrite_arrow(rows(1), merge_by=merge_by)
 
 
-def test_merging_on_a_key_nothing_declares_is_refused(dataset: MemoryDataset) -> None:
+def test_merging_on_a_key_nothing_declares_is_refused() -> None:
+    @scalar
+    class Loose(Convertible):
+        symbol: str
+        """Instrument, and nothing says it identifies one."""
+
     with pytest.raises(ValueError, match="no member declares one"):
-        dataset.merge_columns(True)
+        MemoryDataset(field=Loose.into_field()).merge_columns(True)
 
 
 # -- reading and writing ----------------------------------------------------
@@ -143,7 +165,7 @@ def test_merging_on_a_key_nothing_declares_is_refused(dataset: MemoryDataset) ->
 def test_a_write_casts_onto_the_datasets_shape(dataset: MemoryDataset) -> None:
     """The incoming stream is nearly right: wrong order, one column missing."""
     batch = batch_of(day=[datetime.date(2026, 8, 14)], symbol=["A"], noise=[1])
-    dataset.write_arrow_reader(iter([batch]))
+    dataset.overwrite_arrow_reader(iter([batch]))
     stored = dataset.commits[0]
     assert stored.schema.equals(Quote.into_field().into_arrow_schema())
     assert stored.column("size").to_pylist() == [None]
@@ -151,33 +173,33 @@ def test_a_write_casts_onto_the_datasets_shape(dataset: MemoryDataset) -> None:
 
 def test_a_write_can_be_cast_onto_another_shape(dataset: MemoryDataset) -> None:
     narrow = Field.from_arrow_schema(pyarrow.schema([("symbol", pyarrow.string())]))
-    dataset.write_arrow_reader(iter([rows(2)]), schema=narrow)
+    dataset.overwrite_arrow_reader(iter([rows(2)]), schema=narrow)
     assert dataset.commits[0].column_names == ["symbol"]
 
 
 def test_commit_row_size_bounds_what_one_commit_carries(dataset: MemoryDataset) -> None:
-    dataset.write_arrow_reader(iter([rows(1) for _ in range(5)]), commit_row_size=2)
+    dataset.overwrite_arrow_reader(iter([rows(1) for _ in range(5)]), commit_row_size=2)
     assert [commit.num_rows for commit in dataset.commits] == [2, 2, 1]
 
 
 def test_no_commit_row_size_writes_the_stream_as_one(dataset: MemoryDataset) -> None:
-    dataset.write_arrow_reader(iter([rows(1) for _ in range(5)]))
+    dataset.overwrite_arrow_reader(iter([rows(1) for _ in range(5)]))
     assert [commit.num_rows for commit in dataset.commits] == [5]
 
 
 def test_an_empty_stream_commits_nothing(dataset: MemoryDataset) -> None:
-    dataset.write_arrow_reader(iter(()))
+    dataset.overwrite_arrow_reader(iter(()))
     assert dataset.commits == []
 
 
 def test_a_table_goes_in_and_comes_back(dataset: MemoryDataset) -> None:
     table = pyarrow.Table.from_batches([rows(3)])
-    dataset.write_arrow_table(table)
+    dataset.overwrite_arrow_table(table)
     assert dataset.read_arrow_table().num_rows == 3
 
 
 def test_a_read_casts_only_when_asked(dataset: MemoryDataset) -> None:
-    dataset.write_arrow_table(pyarrow.Table.from_batches([rows(1)]))
+    dataset.overwrite_arrow_table(pyarrow.Table.from_batches([rows(1)]))
     assert dataset.read_arrow_reader().schema.equals(Quote.into_field().into_arrow_schema())
     narrow = pyarrow.schema([("symbol", pyarrow.large_string())])
     assert dataset.read_arrow_reader(narrow).schema.field("symbol").type == pyarrow.large_string()
@@ -187,7 +209,7 @@ def test_polars_batches_stream_from_the_arrow_reader(
     dataset: MemoryDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     polars = pytest.importorskip("polars")
-    dataset.write_arrow_reader(iter([rows(1), rows(1)]), commit_row_size=1)
+    dataset.overwrite_arrow_reader(iter([rows(1), rows(1)]), commit_row_size=1)
     monkeypatch.setattr(
         MemoryDataset,
         "read_arrow_table",
@@ -200,7 +222,7 @@ def test_polars_batches_stream_from_the_arrow_reader(
 
 def test_read_polars_is_the_explicit_in_memory_form(dataset: MemoryDataset) -> None:
     pytest.importorskip("polars")
-    dataset.write_arrow_table(pyarrow.Table.from_batches([rows(3)]))
+    dataset.overwrite_arrow_table(pyarrow.Table.from_batches([rows(3)]))
     frame = dataset.read_polars()
     assert frame.shape == (3, 3)
     assert frame["size"].to_list() == [0, 1, 2]
@@ -215,7 +237,7 @@ def test_a_polars_frame_is_cast_onto_the_datasets_shape(dataset: MemoryDataset) 
             "symbol": ["A"],
         }
     )
-    dataset.write_polars(source)
+    dataset.overwrite_polars(source)
     stored = dataset.commits[0]
     assert stored.schema.equals(Quote.into_field().into_arrow_schema())
     assert stored.to_pydict() == {
@@ -239,9 +261,9 @@ def test_a_lazy_polars_frame_stays_streamed(
     monkeypatch.setattr(
         polars.LazyFrame,
         "collect",
-        lambda *_args, **_kwargs: pytest.fail("write_polars materialised the LazyFrame"),
+        lambda *_args, **_kwargs: pytest.fail("overwrite_polars materialised the LazyFrame"),
     )
-    dataset.write_polars(source, batch_row_size=2, commit_row_size=2)
+    dataset.overwrite_polars(source, batch_row_size=2, commit_row_size=2)
     assert [commit.num_rows for commit in dataset.commits] == [2, 2, 1]
     assert dataset.read_arrow_table().column("size").to_pylist() == list(range(5))
 
@@ -301,7 +323,7 @@ def test_polars_compatibility_follows_nested_arrow_types(
 def test_polars_cannot_fill_a_missing_required_column(dataset: MemoryDataset) -> None:
     polars = pytest.importorskip("polars")
     with pytest.raises(ValueError, match="symbol"):
-        dataset.write_polars(polars.DataFrame({"day": [datetime.date(2026, 8, 14)]}))
+        dataset.overwrite_polars(polars.DataFrame({"day": [datetime.date(2026, 8, 14)]}))
     assert dataset.commits == []
 
 
@@ -340,14 +362,14 @@ def test_append_without_merge_by_is_a_plain_write(keyed: MemoryDataset) -> None:
 
 
 def test_append_merge_by_skips_stored_keys_and_never_rewrites(keyed: MemoryDataset) -> None:
-    keyed.write_arrow(keyed_batch(["A", "B"], [1, 2]))
+    keyed.overwrite_arrow(keyed_batch(["A", "B"], [1, 2]))
     assert keyed.append_arrow(keyed_batch(["B", "C"], [20, 3]), merge_by=True) == 1
     assert stored_rows(keyed) == {"A": 1, "B": 2, "C": 3}, "B keeps its stored value"
 
 
 def test_append_polars_skips_a_stored_key(keyed: MemoryDataset) -> None:
     polars = pytest.importorskip("polars")
-    keyed.write_arrow(keyed_batch(["A"], [1]))
+    keyed.overwrite_arrow(keyed_batch(["A"], [1]))
     assert (
         keyed.append_polars(polars.DataFrame({"symbol": ["A", "B"], "size": [9, 2]}), merge_by=True)
         == 1
@@ -416,7 +438,7 @@ def test_chunks_take_the_schema_from_a_reader() -> None:
 
 def test_a_write_creates_what_is_not_there(dataset: MemoryDataset) -> None:
     assert not dataset.exists
-    dataset.write_arrow(rows(1))
+    dataset.overwrite_arrow(rows(1))
     assert dataset.exists, "a write appends, and appending to nothing is a create"
 
 
@@ -444,25 +466,25 @@ def test_get_or_create_is_idempotent(dataset: MemoryDataset) -> None:
 # -- generic redirects ------------------------------------------------------
 
 
-def test_write_arrow_picks_the_method_by_what_it_is(dataset: MemoryDataset) -> None:
+def test_overwrite_arrow_picks_the_method_by_what_it_is(dataset: MemoryDataset) -> None:
     batch = rows(1)
-    dataset.write_arrow(batch)
-    dataset.write_arrow(pyarrow.Table.from_batches([batch]))
-    dataset.write_arrow(iter([batch]))
-    dataset.write_arrow([batch])
+    dataset.overwrite_arrow(batch)
+    dataset.overwrite_arrow(pyarrow.Table.from_batches([batch]))
+    dataset.overwrite_arrow(iter([batch]))
+    dataset.overwrite_arrow([batch])
     assert [commit.num_rows for commit in dataset.commits] == [1, 1, 1, 1]
 
 
 def test_read_arrow_picks_the_method_by_the_type_asked_for(dataset: MemoryDataset) -> None:
-    dataset.write_arrow(rows(2))
+    dataset.overwrite_arrow(rows(2))
     assert isinstance(dataset.read_arrow(), pyarrow.Table)
     assert isinstance(dataset.read_arrow(pyarrow.Table), pyarrow.Table)
     assert isinstance(dataset.read_arrow(pyarrow.RecordBatchReader), pyarrow.RecordBatchReader)
 
 
-def test_a_write_of_something_unwritable_is_refused(dataset: MemoryDataset) -> None:
+def test_an_overwrite_of_something_unwritable_is_refused(dataset: MemoryDataset) -> None:
     with pytest.raises(TypeError, match="cannot infer"):
-        dataset.write_arrow("not arrow data")
+        dataset.overwrite_arrow("not arrow data")
 
 
 # -- reading one out of a document -------------------------------------------

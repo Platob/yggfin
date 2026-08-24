@@ -97,8 +97,10 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 
 - Primary APIs use `RecordBatchReader`; table helpers explicitly require data
   to fit in memory.
-- Writes append and create missing tables. `merge_by=True` uses declared keys;
-  append skips stored keys while write upserts.
+- `overwrite_*` replaces the rows whose keys match and inserts the rest;
+  `append_*` inserts, skipping stored keys when `merge_by` names them. Both
+  create a missing table. `merge_by=True` means the declared primary key, and
+  an overwrite has no keyless mode.
 - Accumulate `commit_row_size`; an input batch is not a storage commit.
 - Push filters, projections, limits, and ordering to the storage engine.
 - File sets open one naturally sorted path at a time and combine short batches.

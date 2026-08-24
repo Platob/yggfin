@@ -179,7 +179,7 @@ def test_a_written_batch_reparses_to_the_same_instants(tmp_path: Path) -> None:
         rows = log.read_arrow_table()
     copy = tmp_path / "copy.txt"
     out = TextFile.from_path(copy)
-    out.write_arrow(rows)
+    out.append_arrow(rows)
     with TextFile.from_path(copy) as again:
         written = again.read_arrow_table()
     assert written.column("unix").to_pylist() == rows.column("unix").to_pylist()
@@ -963,9 +963,9 @@ def test_a_write_is_visible_to_the_next_read_of_the_same_object(tmp_path: Path) 
     grown = tmp_path / "out.txt"
     rows = TextFile.from_path(source).read_arrow_table()
     writer = TextFile.from_path(grown)
-    writer.write_arrow(rows)
+    writer.append_arrow(rows)
     assert writer.read_arrow_table().num_rows == 1
-    writer.write_arrow(rows)
+    writer.append_arrow(rows)
     assert writer.read_arrow_table().num_rows == 2
 
 
@@ -978,7 +978,7 @@ def test_a_write_renders_the_zone_it_read(tmp_path: Path, plain: Path, zone: str
     """
     rows = TextFile.from_url(plain.as_uri(), timezone=zone).read_arrow_table()
     written = tmp_path / "written.txt"
-    TextFile.from_url(written.as_uri(), timezone=zone).write_arrow(rows)
+    TextFile.from_url(written.as_uri(), timezone=zone).append_arrow(rows)
     back = TextFile.from_url(written.as_uri(), timezone=zone).read_arrow_table()
     # Not `hash`: it is the digest of the *raw* line, and a rendered line is
     # the header regex read backwards, not the bytes that were parsed -- the
@@ -1269,7 +1269,7 @@ def test_static_columns_are_not_written_back_into_a_line(plain: Path, tmp_path: 
     """A line is what the header says; a constant column is not in it."""
     rows = TextFile.from_path(plain, static_values={"bridge": "bridge-1"}).read_arrow_table()
     out = TextFile.from_path(tmp_path / "copy.txt")
-    out.write_arrow(rows)
+    out.append_arrow(rows)
     assert out.read_arrow_table().num_rows == rows.num_rows
 
 
@@ -1299,7 +1299,7 @@ def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> N
     """The renderer is the header regex read backwards; the proof is a round trip."""
     source = TextFile.from_path(plain).read_arrow_table()
     written = TextFile.from_path(tmp_path / "written.txt")
-    written.write_arrow(source)
+    written.append_arrow(source)
 
     again = TextFile.from_path(tmp_path / "written.txt").read_arrow_table()
     assert again.num_rows == source.num_rows
@@ -1311,22 +1311,22 @@ def test_a_write_creates_the_file(tmp_path: Path) -> None:
     target = tmp_path / "fresh.txt"
     log = TextFile.from_path(target)
     assert not log.exists
-    log.write_arrow(TextFile.from_path(SAMPLE).read_arrow_table())
+    log.append_arrow(TextFile.from_path(SAMPLE).read_arrow_table())
     assert log.exists and target.stat().st_size > 0
 
 
 def test_writes_append_rather_than_replace(plain: Path, tmp_path: Path) -> None:
     rows = TextFile.from_path(plain).read_arrow_table()
     target = TextFile.from_path(tmp_path / "appended.txt")
-    target.write_arrow(rows)
-    target.write_arrow(rows)
+    target.append_arrow(rows)
+    target.append_arrow(rows)
     assert target.read_arrow_table().num_rows == 2 * rows.num_rows
 
 
 def test_commit_row_size_writes_in_chunks(plain: Path, tmp_path: Path) -> None:
     rows = TextFile.from_path(plain).read_arrow_table()
     target = TextFile.from_path(tmp_path / "chunked.txt")
-    target.write_arrow_reader(rows.to_reader(max_chunksize=5), commit_row_size=5)
+    target.append_arrow_reader(rows.to_reader(max_chunksize=5), commit_row_size=5)
     assert target.read_arrow_table().num_rows == rows.num_rows
 
 
@@ -1341,7 +1341,7 @@ def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
         }
     )
     target = TextFile.from_path(tmp_path / "cast.txt")
-    target.write_arrow(batch)
+    target.append_arrow(batch)
     parsed = target.read_arrow_table()
     assert parsed.column("message").to_pylist() == ["hello"]
     assert parsed.column("plugin_code").to_pylist() == ["d"]
@@ -1350,12 +1350,12 @@ def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
 def test_a_text_file_cannot_merge(tmp_path: Path) -> None:
     log = TextFile.from_path(tmp_path / "merge.txt")
     with pytest.raises(ValueError, match="cannot merge"):
-        log.write_arrow(TextFile.from_path(SAMPLE).read_arrow_table(), merge_by=True)
+        log.append_arrow(TextFile.from_path(SAMPLE).read_arrow_table(), merge_by=True)
 
 
 def test_an_empty_write_leaves_an_empty_file(tmp_path: Path) -> None:
     log = TextFile.from_path(tmp_path / "empty.txt")
-    log.write_arrow_reader(iter(()))
+    log.append_arrow_reader(iter(()))
     assert log.exists
     assert log.read_arrow_table().num_rows == 0
 

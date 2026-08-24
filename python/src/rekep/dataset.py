@@ -40,7 +40,7 @@ _READS = MappingProxyType(
         pyarrow.RecordBatchReader: "arrow_reader",
     }
 )
-_WRITES = MappingProxyType(
+_OVERWRITES = MappingProxyType(
     {
         pyarrow.RecordBatch: "arrow_batch",
         pyarrow.Table: "arrow_table",
@@ -227,74 +227,97 @@ class Dataset(Convertible, abc.ABC):
     # -- writing ------------------------------------------------------------
 
     @abc.abstractmethod
-    def write_arrow_reader(
+    def overwrite_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
+        merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
     ) -> None:
-        """Write a stream into this dataset, creating it if it is not there.
+        """Replaces the rows whose keys match and inserts the rest.
 
-        `schema` is the shape to cast onto on the way in, defaulting to this
-        dataset's own. `merge_by` is True to merge on the primary key, a list
-        of column names to merge on those, and falsy to append. `commit_row_size`
-        bounds how many rows one commit carries -- None writes the whole stream
-        as one.
+        Creates the dataset if it is not there. `schema` is the shape to cast
+        onto on the way in, defaulting to this dataset's own. `merge_by` is
+        True to match on the primary key or a list of column names to match on
+        those; there is no keyless overwrite, because replacing rows means
+        knowing which rows -- `append_arrow_*` is the blind insert.
+        `commit_row_size` bounds how many rows one commit carries -- None
+        writes the whole stream as one.
         """
 
-    def write_arrow(self, source: Any, *args: Any, **kwargs: Any) -> None:
-        """Write, picking the method by what is handed over.
+    def overwrite_arrow(self, source: Any, *args: Any, **kwargs: Any) -> None:
+        """Replaces the rows whose keys match and inserts the rest, whatever the shape.
 
         A batch, a table, a reader or a plain iterator of batches each have
-        their own `write_arrow_*`; this redirects to the one that fits rather
-        than making every call site branch.
+        their own `overwrite_arrow_*`; this redirects to the one that fits
+        rather than making every call site branch.
         """
-        return getattr(self, f"write_{self.redirect_of(source, _WRITES)}")(source, *args, **kwargs)
+        return getattr(self, f"overwrite_{self.redirect_of(source, _OVERWRITES)}")(
+            source, *args, **kwargs
+        )
 
-    def write_arrow_batch(
+    def overwrite_arrow_batch(
         self,
         batch: pyarrow.RecordBatch,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
+        merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> None:
-        """`write_arrow_reader` for one batch."""
-        self.write_arrow_reader(iter([batch]), schema, merge_by, commit_row_size, **kwargs)
+        """Replaces the rows whose keys match and inserts the rest, for one batch."""
+        self.overwrite_arrow_reader(iter([batch]), schema, merge_by, commit_row_size, **kwargs)
 
-    def write_arrow_table(
+    def overwrite_arrow_table(
         self,
         table: pyarrow.Table,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
+        merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> None:
-        """`write_arrow_reader` for a table already in memory.
+        """Replaces the rows whose keys match and inserts the rest, from memory.
 
         Whatever else an implementation takes -- a branch, snapshot properties
-        -- goes straight through, so the generic `write_arrow` can hand any
+        -- goes straight through, so the generic `overwrite_arrow` can hand any
         shape to any dataset without knowing what it supports.
         """
-        self.write_arrow_reader(table.to_reader(), schema, merge_by, commit_row_size, **kwargs)
+        self.overwrite_arrow_reader(table.to_reader(), schema, merge_by, commit_row_size, **kwargs)
 
-    def write_polars(
+    def overwrite_polars(
         self,
         source: Any,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
+        merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
         *,
         batch_row_size: int = POLARS_BATCH_ROW_SIZE,
         **kwargs: Any,
     ) -> None:
-        """Write a Polars frame through bounded, schema-checked Arrow batches."""
+        """Replaces the rows whose keys match and inserts the rest, from a Polars frame.
+
+        Streamed through bounded, schema-checked Arrow batches.
+        """
         target = self.target_field(schema)
         reader = _polars_reader(source, target, batch_row_size)
-        self.write_arrow_reader(reader, target, merge_by, commit_row_size, **kwargs)
+        self.overwrite_arrow_reader(reader, target, merge_by, commit_row_size, **kwargs)
 
     # -- appending -----------------------------------------------------------
+
+    @abc.abstractmethod
+    def _append_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        commit_row_size: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Add every row, matching nothing against what is stored.
+
+        What the `append_arrow_*` family writes through once it has decided
+        which rows are new. Not public: a caller who wants rows added says so
+        with `append_arrow_*`, and one who wants rows replaced says so with
+        `overwrite_arrow_*`.
+        """
 
     def append_arrow_reader(
         self,
@@ -315,7 +338,7 @@ class Dataset(Convertible, abc.ABC):
                     inserted += batch.num_rows
                     yield batch
 
-            self.write_arrow_reader(counted(), schema, None, commit_row_size, **kwargs)
+            self._append_arrow_reader(counted(), schema, commit_row_size, **kwargs)
             return inserted
         target = self.target_field(schema)
         key_field = _key_field(target, join)
@@ -334,14 +357,16 @@ class Dataset(Convertible, abc.ABC):
                 fresh = anti_join(fresh, seen, join)
             if fresh.num_rows == 0:
                 continue
-            self.write_arrow_table(fresh, target, None, None, **kwargs)
+            self._append_arrow_reader(fresh.to_reader(), target, None, **kwargs)
             inserted += fresh.num_rows
             seen = pyarrow.concat_tables([seen, fresh.select(list(join))])
         return inserted
 
     def append_arrow(self, source: Any, *args: Any, **kwargs: Any) -> int:
         """Append the inferred Arrow shape and return rows inserted."""
-        return getattr(self, f"append_{self.redirect_of(source, _WRITES)}")(source, *args, **kwargs)
+        return getattr(self, f"append_{self.redirect_of(source, _OVERWRITES)}")(
+            source, *args, **kwargs
+        )
 
     def append_arrow_batch(
         self,

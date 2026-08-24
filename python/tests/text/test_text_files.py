@@ -607,7 +607,7 @@ def test_writing_a_set_is_refused(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
     batch = files.into_arrow_table().to_batches()[0]
     with pytest.raises(NotImplementedError, match="TextFile"):
-        files.write_arrow(batch)
+        files.overwrite_arrow(batch)
 
 
 def test_creating_a_set_adopts_the_shape_and_touches_nothing(tmp_path: Path) -> None:

@@ -45,8 +45,14 @@ nor a declared shape there is nothing to answer with, and the read raises.
 ## Write
 
 ```python
+logs.overwrite_arrow_reader(reader, merge_by=True, commit_row_size=250_000)
 logs.append_arrow_reader(reader, merge_by=True, commit_row_size=250_000)
 ```
+
+`overwrite_*` replaces the rows whose keys match and inserts the rest, and has
+no keyless mode: replacing rows means knowing which rows. `append_*` inserts,
+skipping the keys already stored when `merge_by` names them and inserting
+everything when it does not.
 
 Appending to a missing table creates it. `merge_by=True` skips keys already
 stored; write/upsert replaces them. Input batches accumulate to the requested

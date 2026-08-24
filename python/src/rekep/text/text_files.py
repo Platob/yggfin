@@ -252,16 +252,20 @@ class TextFiles(Dataset, io.BufferedIOBase):
         anti-join against them, which here means parsing the whole capture
         before failing on the write it cannot do.
         """
-        self.write_arrow_reader(source, *args, **kwargs)
+        self._refuse()
 
-    def write_arrow_reader(
+    def _append_arrow_reader(self, source: Any, *args: Any, **kwargs: Any) -> None:
+        """Refused, for the reason a write is."""
+        self._refuse()
+
+    def overwrite_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
+        merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
     ) -> None:
-        """Refused: a set of files has no one file to append to.
+        """Refused: a set of files has no one file to write into.
 
         Reading many logs as one stream is well defined; writing back into
         them is not -- the rows would have to be cut across files by a rule
@@ -269,6 +273,10 @@ class TextFiles(Dataset, io.BufferedIOBase):
         was captured. Write one file with `TextFile`, or a store that owns its
         own files (`IcebergDataset`).
         """
+        self._refuse()
+
+    def _refuse(self) -> None:
+        """The one refusal every write here raises."""
         raise NotImplementedError(
             f"{type(self).__name__} reads a set of logs and cannot write one: nothing here says "
             "which file a row belongs in; write a file with TextFile, or a dataset that owns its "

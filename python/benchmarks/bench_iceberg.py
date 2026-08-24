@@ -175,10 +175,10 @@ def write_case(
         target = dataset(root, partitioned=partitioned, properties=properties or {})
         target.plan_merges = plan_merges
         if preload is not None:  # something for a merge to match against
-            target.write_arrow(preload, commit_row_size=0)
+            target.append_arrow(preload, commit_row_size=0)
         merge_by = True if mode.startswith("merge") else None
         seconds, _ = timed(
-            lambda: target.write_arrow(
+            lambda: target.overwrite_arrow(
                 batches(table, batch_row_size),
                 merge_by=merge_by,
                 commit_row_size=commit_row_size,
@@ -332,7 +332,7 @@ def _store_quotes(table: pyarrow.Table) -> tuple[dict[str, int], pyarrow.Table]:
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-polars-"))
     try:
         target = catalog(root).dataset("bench.quotes", field=Quote.into_field()).create_with()
-        target.write_arrow_table(table, commit_row_size=0)
+        target.append_arrow_table(table, commit_row_size=0)
         plan = target.scan_plan("day = '2026-08-14'")
         report = {
             "rows": target.records or 0,
@@ -414,7 +414,7 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         generate(path, rows, days)
         table = parsed(path)
         target = dataset(root, partitioned=True, properties=OPTIMISED)
-        target.write_arrow(batches(table, 65_536), commit_row_size=rows // max(days, 1))
+        target.append_arrow(batches(table, 65_536), commit_row_size=rows // max(days, 1))
         day = datetime.date(2026, 8, 14)
         # A partition the data actually has, read from the data rather than
         # spelled out: `unix_hour` is whatever hour the generator's first line fell
@@ -569,31 +569,31 @@ def sweep_fs(rows: int, days: int) -> None:
                 target = fresh(tmp, f"a{cached}", cached)
                 counts.clear()
                 seconds, _ = timed(
-                    lambda: target.write_arrow(batches(table, 16_384), commit_row_size=chunk)
+                    lambda: target.append_arrow(batches(table, 16_384), commit_row_size=chunk)
                 )
                 report("append stream", seconds)
 
                 target = fresh(tmp, f"m{cached}", cached)
                 counts.clear()
                 seconds, _ = timed(
-                    lambda: target.write_arrow(
+                    lambda: target.overwrite_arrow(
                         batches(table, 16_384), merge_by=True, commit_row_size=chunk
                     )
                 )
                 report("merge, all new", seconds)
 
                 target = fresh(tmp, f"h{cached}", cached)
-                target.write_arrow(half, commit_row_size=0)
+                target.append_arrow(half, commit_row_size=0)
                 counts.clear()
                 seconds, _ = timed(
-                    lambda: target.write_arrow(
+                    lambda: target.overwrite_arrow(
                         batches(table, 16_384), merge_by=True, commit_row_size=chunk
                     )
                 )
                 report("merge, half stored", seconds)
 
                 target = fresh(tmp, f"i{cached}", cached)
-                target.write_arrow(table, commit_row_size=0)
+                target.append_arrow(table, commit_row_size=0)
                 counts.clear()
                 seconds, _ = timed(
                     lambda: target.append_arrow(
@@ -603,7 +603,7 @@ def sweep_fs(rows: int, days: int) -> None:
                 report("insert-only, full replay", seconds)
 
                 target = fresh(tmp, f"r{cached}", cached)
-                target.write_arrow(batches(table, 16_384), commit_row_size=chunk)
+                target.append_arrow(batches(table, 16_384), commit_row_size=chunk)
                 counts.clear()
                 seconds, _ = timed(target.read_arrow_table)
                 report("read everything", seconds)
@@ -672,7 +672,7 @@ def sweep_maintain(rows: int, days: int) -> None:
         # Small batches on purpose: a commit closes at the first batch boundary
         # at or beyond its size, so a big batch makes the commit size inert and
         # the table comes out in two files instead of the many this measures.
-        target.write_arrow(batches(table, 2_048), commit_row_size=max(table.num_rows // 24, 1))
+        target.append_arrow(batches(table, 2_048), commit_row_size=max(table.num_rows // 24, 1))
         target.read_arrow_table()  # warm the page cache, so this measures memory
         planned = target.scan_plan()["files"]
         opened: list[str] = []
@@ -717,11 +717,11 @@ def sweep_maintain(rows: int, days: int) -> None:
             )
 
         quiet = dataset(tmp / "quiet", partitioned=True, properties=OPTIMISED)
-        quiet.write_arrow(table.slice(0, 2_000), commit_row_size=0)
+        quiet.append_arrow(table.slice(0, 2_000), commit_row_size=0)
         maintenance("maybe_optimize, quiet table", quiet.maybe_optimize)
 
         frayed = dataset(tmp / "frayed", partitioned=True, properties=OPTIMISED)
-        frayed.write_arrow(batches(table, 2_048), commit_row_size=max(table.num_rows // 24, 1))
+        frayed.append_arrow(batches(table, 2_048), commit_row_size=max(table.num_rows // 24, 1))
         maintenance("maybe_optimize, frayed", frayed.maybe_optimize)
         maintenance("maybe_optimize, settled", frayed.maybe_optimize)
 
@@ -737,7 +737,7 @@ def sweep_maintain(rows: int, days: int) -> None:
             ("transform (bucket)", lambda root: daily(root)),
         ):
             target = built(tmp / f"settle-{label[:8]}")
-            target.write_arrow(batches(table, 2_048), commit_row_size=max(rows // 12, 1))
+            target.append_arrow(batches(table, 2_048), commit_row_size=max(rows // 12, 1))
             runs = [target.compact(min_files=2) for _ in range(3)]
             print(
                 f"{label:>30} {runs[0]:>8,} {runs[1]:>8,} {runs[2]:>8,} "
@@ -788,7 +788,7 @@ def sweep_update(rows: int, days: int) -> None:
         )
         for label, shape, stored, join, column in cases:
             target = catalog(root / label[:8]).dataset("bench.updated", field=shape).create_with()
-            target.write_arrow(stored, commit_row_size=max(stored.num_rows // max(days, 1), 1))
+            target.append_arrow(stored, commit_row_size=max(stored.num_rows // max(days, 1), 1))
             print(f"\n== updating {label}: {stored.num_rows:,} rows ==")
             header(("rows updated", "seconds", "rows/s", "terms", "files"), (14, 9, 11, 8, 7))
             index = stored.schema.get_field_index(column)
@@ -857,7 +857,7 @@ def sweep_backfill(rows: int, days: int) -> None:
             for band in range(20)
         ]
         for commit in commits:
-            target.write_arrow(commit, commit_row_size=0)
+            target.append_arrow(commit, commit_row_size=0)
         stored = target.refresh().data_files().num_rows
         print(f"\n== backfill: {stored} files of {per:,} rows, keys clustered per file ==")
         header(("case", "planned", "skipped", "seconds", "inserted"), (30, 8, 8, 9, 9))

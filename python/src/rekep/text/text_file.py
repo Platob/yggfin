@@ -296,19 +296,53 @@ class TextFile(Dataset, io.BufferedIOBase):
             return reader
         return target.cast_arrow_reader(reader)
 
-    def write_arrow_reader(
+    def overwrite_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        merge_by: bool | Sequence[str] = True,
+        commit_row_size: int | None = None,
+    ) -> None:
+        """Refused: a log is appended to, and has no key to replace a line by.
+
+        An overwrite replaces the rows whose keys match, which needs stored
+        rows addressable by key -- a text file is a sequence of lines. Use
+        `append_arrow_*`, or a store that owns its own files
+        (`IcebergDataset`).
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} cannot overwrite: a log is a sequence of lines with no "
+            "key to replace one by; use append_arrow_* to add lines"
+        )
+
+    def append_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
         schema: Any = None,
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
-    ) -> None:
-        """Append a stream to the file, one write per chunk, as text."""
+        **kwargs: Any,
+    ) -> int:
+        """Add lines to the file, and refuse to skip the ones it already holds.
+
+        The generic insert-only append reads the stored keys to anti-join
+        against them, which here means parsing the whole capture on every
+        write -- and a log has no key by which a line is the same line.
+        """
         if merge_by:
             raise ValueError(
                 f"{type(self).__name__} appends lines and cannot merge on {merge_by!r}; "
-                "write to a dataset that can, or drop merge_by"
+                "append to a dataset that can, or drop merge_by"
             )
+        return super().append_arrow_reader(source, schema, merge_by, commit_row_size, **kwargs)
+
+    def _append_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        schema: Any = None,
+        commit_row_size: int | None = None,
+    ) -> None:
+        """Add every row to the file, one write per chunk, as text."""
         self.get_or_create()
         # With no schema named, the rendered columns are the only shape a write
         # has to satisfy: casting onto the whole row first would demand the

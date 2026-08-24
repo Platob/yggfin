@@ -520,7 +520,7 @@ def test_the_capture_reparses_to_the_same_instants(
 ) -> None:
     """Written back out and read again under the same codec, column for column."""
     copy = tmp_path / "copy.txt"
-    TextFile.from_path(copy).write_arrow(table)
+    TextFile.from_path(copy).append_arrow(table)
     with TextFile.from_path(copy, codec=codec) as again:
         written = again.read_arrow_table()
     assert written.column("unix").to_pylist() == table.column("unix").to_pylist()
