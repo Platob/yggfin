@@ -93,3 +93,7 @@ registry, the catalog, batch and commit sizes, and an optional `[start, end)`
 interval. That interval is read against the recording clock, because that is
 what the message stage partitioned on: `unix` moves when a transaction time
 resolves, so filtering on it here would drop rows the interval owns.
+
+A dictionary change or a new [field declaration](../configuring.md#what-a-fields-values-mean)
+is a re-run of this stage alone: nothing re-tokenises a line that was already
+split.

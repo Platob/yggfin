@@ -120,6 +120,8 @@ mean going back to the capture -- which is the thing this stage exists to
 avoid. It is named `text.messages` rather than `fixmessage.messages`
 deliberately: nothing in it has been read as FIX yet.
 
-The adjacent `parse_messages.yml` selects the capture, the rules, the offline
-FIX registry, the catalog, batch and commit sizes, and an optional
-`[start, end)` interval.
+The adjacent `parse_messages.yml` selects the capture, the offline FIX
+registry, the catalog, batch and commit sizes, and an optional `[start, end)`
+interval. What the capture itself looks like -- its header, which lines carry
+a message, how a field's values read, what counts as absent -- is declared
+there too: see [Configuring a parse](../configuring.md).

@@ -42,11 +42,14 @@ across machines; the scripts assert their outputs before timing them.
 | --- | ---: | ---: |
 | Text log, plain | 50,000 rows | 52,607 rows/s |
 | Text log, gzip | 50,000 rows | 102,483 rows/s |
-| Mixed capture, message layer on | 50,000 rows | 27,744 rows/s |
-| Mixed capture, no rules at all | 50,000 rows | 103,949 rows/s |
+| Mixed capture, message layer on | 50,000 rows | 38,307 rows/s |
+| Mixed capture, no rules at all | 50,000 rows | 81,097 rows/s |
+| Line to header columns | 50,000 lines | 798,965 lines/s |
 | Wire parse, vectorised | 10,000 rows | 230,364–511,920 rows/s |
 | Rendered parse, vectorised | 10,000 rows | 120,751–214,143 rows/s |
 | Key column to tags, named keys | 112,500 keys, 6,071 names | 51.3M keys/s |
+| `parse_messages`, whole capture | 50,000 rows | 67,397 rows/s |
+| `parse_fix`, over stored rows | 50,000 rows | 161,682 rows/s |
 | Recursive Arrow reshape | 50,000 rows | 315.7M rows/s |
 | Wire line to market events | 100 messages of each shape | 8,179 / 5,525 / 2,281 rows/s |
 | Normalized Instrument FixMessage decode | 500 rows | 389.7 µs/row |
@@ -63,11 +66,22 @@ The complete text parser clears the 50k rows/s first-layer target. Exact
 half-stored Iceberg upserts remain the clearest scale-up target; append and
 monotonic insert should be preferred when their semantics fit.
 
-A key column resolves through its **distinct** spellings, not its rows: the
-head is cast first, so a column of wire tags takes the whole-column cast and a
-column of names never pays for one that was going to raise. `_tag_numbers` is
-now the fastest of the four implementations `bench_text_file.py` races it
-against, ahead of a bare `pyarrow.compute.index_in` over the same keys.
+A key column is read through its **distinct** spellings, not its rows. A
+message keys its fields out of a bounded vocabulary, so a batch of a hundred
+thousand entries carries a few dozen spellings, and every scan of them --
+`FixCodec.structure`, `TagIndex.resolve_with_match`, `_tag_numbers` -- runs
+over the column's dictionary and is taken back across the entries. On a
+captured batch that is 10x for the structuration of a wire message, 18x for a
+bridge one, and 25x for resolving a bridge one's names. `_tag_numbers` is now
+the fastest of the four implementations `bench_text_file.py` races it against,
+ahead of a bare `pyarrow.compute.index_in` over the same keys.
+
+The one row-at-a-time loop the parser has left -- the per-line header match --
+is raced there too, and wins: 798,965 lines/s against 419,462 for one RE2 pass
+with the continuations numbered by a cumulative sum and joined by a group-by.
+RE2 walks an alternation of three timestamp shapes over every byte of the
+capture where the loop stops at the first character of a line that is not a
+header.
 
 Everything a translation needs from a dictionary -- a name's wire tag, the tags
 the shapes already store, the ones kept for audit -- is resolved once per
