@@ -34,7 +34,7 @@ from rekep.fix.components import (
     SideTrdRegTimestamps,
     TrdRegTimestamps,
 )
-from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.fields import FieldRule, FieldRules, cast_arrow_fix
 from rekep.fix.message import (
     _MEMBER_NAME_VECTOR,
     BRIDGE_SEPARATOR_VECTOR,
@@ -294,6 +294,10 @@ class TagIndex:
         return compute.or_(plain, known)
 
 
+#: What `field_rules` answers for a codec no job declared anything for.
+_NO_RULES: Mapping[int, FieldRule] = MappingProxyType({})
+
+
 @dataclasses.dataclass(eq=False)
 class FixCodec(Convertible):
     """A log line read as FIX: which protocol it is, its pairs, and its tags."""
@@ -313,6 +317,13 @@ class FixCodec(Convertible):
     #: Values that mean the field is absent, dropped from the pairs before
     #: anything else looks at them. Empty keeps every pair.
     null_values: frozenset[str] = NULL_VALUES
+
+    #: How named fields read, where a job says something the dictionary does
+    #: not: a vendor tag that carries an instant, a date a feed writes as text,
+    #: a value spelling only this estate uses. One declaration reaches every
+    #: reading of that field, because every one of them resolves through
+    #: `tag_field` and casts through `cast_arrow_fix`.
+    fields: FieldRules = dataclasses.field(default_factory=FieldRules)
 
     # -- the seam -----------------------------------------------------------
 
@@ -737,10 +748,31 @@ class FixCodec(Convertible):
         return self._canonicals[version]
 
     def _translations(self, version: str | None) -> tuple[Any, Any]:
-        """`(tag and folded spelling, the value it names)` for one version."""
+        """`(tag and folded spelling, the value it names)` for one version.
+
+        The job's own declared spellings lead the dictionary's, so a rule wins
+        a collision: `index_in` takes the first occurrence of a value.
+        """
         if version not in self._translated_values:
-            self._translated_values[version] = _translations(self.registry, version)
+            spelled, resolved = _translations(self.registry, version)
+            declared = self._declared_translations(version)
+            if declared:
+                spelled = pyarrow.concat_arrays(
+                    [pyarrow.array([one for one, _ in declared], pyarrow.string()), spelled]
+                )
+                resolved = pyarrow.concat_arrays(
+                    [pyarrow.array([one for _, one in declared], pyarrow.string()), resolved]
+                )
+            self._translated_values[version] = (spelled, resolved)
         return self._translated_values[version]
+
+    def _declared_translations(self, version: str | None) -> list[tuple[str, str]]:
+        """`(tag and folded spelling, value)` for every rule that translates one."""
+        return [
+            (f"{tag}\x00{spelling.strip().lower()}", str(value))
+            for tag, rule in self.field_rules(version).items()
+            for spelling, value in rule.values.items()
+        ]
 
     def into_fixmessage_columns(
         self, pairs: Any, version: str | None = None
@@ -946,13 +978,17 @@ class FixCodec(Convertible):
         return self._indexes[version]
 
     def tag_field(self, tag: int, version: str | None = None) -> Field | None:
-        """The dictionary's own declaration of one tag, or None when it has none."""
-        if version is None:
-            return None
-        try:
-            return self.registry.field(tag, version)
-        except (KeyError, OSError, ValueError):
-            return None
+        """One tag's declaration: the job's own where it has one, else the dictionary's."""
+        declared = None
+        if version is not None:
+            try:
+                declared = self.registry.field(tag, version)
+            except (KeyError, OSError, ValueError):
+                declared = None
+        rule = self.field_rules(version).get(tag)
+        if rule is None:
+            return declared
+        return rule.applied(declared, declared.name if declared else str(tag))
 
     def flat_fields(self, version: str | None = None) -> dict[int, Field]:
         """Promoted registry fields, with contract fallbacks only for a cold registry."""
@@ -960,7 +996,13 @@ class FixCodec(Convertible):
             if version is None:
                 self._flat_fields[version] = {}
             elif not self.registry.fields_available(version):
-                self._flat_fields[version] = {tag: FLAT_DEFAULTS[tag] for tag in FLAT_COLUMNS}
+                rules = self.field_rules(version)
+                self._flat_fields[version] = {
+                    tag: rule.applied(FLAT_DEFAULTS[tag], FLAT_COLUMNS[tag])
+                    if (rule := rules.get(tag)) is not None
+                    else FLAT_DEFAULTS[tag]
+                    for tag in FLAT_COLUMNS
+                }
             else:
                 self._flat_fields[version] = {
                     tag: field
@@ -980,9 +1022,20 @@ class FixCodec(Convertible):
         """
         if self._named is None:
             try:
-                self._named = named_columns(self.registry)
+                built = named_columns(self.registry)
             except (OSError, ValueError):
-                self._named = NAMESPACE_COLUMNS
+                built = NAMESPACE_COLUMNS
+            named = self._named_rules
+            self._named = (
+                built
+                if not named
+                else {
+                    spelling: rule.applied(field, field.name)
+                    if (rule := named.get(spelling.lower())) is not None
+                    else field
+                    for spelling, field in built.items()
+                }
+            )
         return self._named
 
     def parties_of(self, version: str | None = None) -> Parties:
@@ -1029,6 +1082,43 @@ class FixCodec(Convertible):
 
     @cached_property
     def _flat_fields(self) -> dict[str | None, dict[int, Field]]:
+        return {}
+
+    # -- what a job declares ---------------------------------------------------
+
+    def field_rules(self, version: str | None = None) -> Mapping[int, FieldRule]:
+        """The declared readings this version numbers, by tag.
+
+        Resolved through the same `TagIndex` a key resolves through, so a rule
+        may name its field however the log does -- `60`, `TransactTime`, or a
+        rendered key -- and mean the same field either way. Built once per
+        version: a rule set is a handful of entries and a batch is thousands.
+        """
+        if not self.fields:
+            return _NO_RULES
+        if version not in self._field_rules:
+            self._field_rules[version] = self._resolved_rules(version)
+        return self._field_rules[version]
+
+    def _resolved_rules(self, version: str | None) -> dict[int, FieldRule]:
+        index = self.index_of(version)
+        found: dict[int, FieldRule] = {}
+        for rule in self.fields:
+            tag = rule.tag
+            if tag is None:
+                tag, hit, _, _ = index.resolve_key(rule.field)
+                if not hit or tag is None:
+                    continue
+            found.setdefault(int(tag), rule)
+        return found
+
+    @cached_property
+    def _named_rules(self) -> Mapping[str, FieldRule]:
+        """Declared readings by folded spelling, for the fields FIX never numbered."""
+        return {rule.folded: rule for rule in self.fields if rule.tag is None}
+
+    @cached_property
+    def _field_rules(self) -> dict[str | None, dict[int, FieldRule]]:
         return {}
 
     @cached_property
@@ -1448,9 +1538,20 @@ def _columns_of(entries: Any, keep: Any) -> tuple[Any, ...]:
 
 
 def _cast(column: Any, field: Field, arrow_type: pyarrow.DataType) -> Any:
-    """One lifted column at the width its log column stores."""
+    """One lifted column at the width its log column stores.
+
+    Both steps go through `cast_arrow_fix` where the first left text, because
+    that is the one reading of FIX text that answers null instead of raising:
+    a declared reading of `20260821-10:00:00` as a string still has to land in
+    a timestamp column, and a raw cast of it would take the batch with it.
+    """
     read = cast_arrow_fix(column, field.arrow_type)
-    return read if read.type.equals(arrow_type) else read.cast(arrow_type, safe=False)
+    if read.type.equals(arrow_type):
+        return read
+    kinds = pyarrow.types
+    if kinds.is_string(read.type) or kinds.is_large_string(read.type):
+        return cast_arrow_fix(read, arrow_type)
+    return read.cast(arrow_type, safe=False)
 
 
 def _tags_of(fields: Mapping[int, Field]) -> pyarrow.Array:

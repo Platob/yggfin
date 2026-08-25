@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import datetime
 import functools
 import json
@@ -12,7 +13,9 @@ from typing import Any
 import pyarrow
 import pyarrow.compute
 
-from rekep.fields import Field
+from rekep.convert import Convertible
+from rekep.fields import Field, scalar
+from rekep.fields.field import arrow_type_for
 from rekep.times import EPOCH_ORDINAL as _EPOCH_ORDINAL
 
 #: FIX datatype -> Arrow type, keyed lowercase because the spellings drift
@@ -131,6 +134,84 @@ def fix_field(
     if values:
         fix["values"] = json.dumps(dict(values), separators=(",", ":"))
     return built
+
+
+@scalar
+class FieldRule(Convertible):
+    """How one field's values read, whatever a dictionary says about it.
+
+    A job declares these; nothing here is compiled in. One rule reaches every
+    reading of the field it names, because every one of them goes through
+    `FixCodec.tag_field` and `cast_arrow_fix`.
+    """
+
+    field: str = ""
+    """The field: a tag (`60`), a canonical name, or a rendered key."""
+
+    type: str = ""
+    """Arrow type its column stores, as Arrow spells one -- `date32[day]`,
+    `timestamp[us, tz=UTC]`. A FIX datatype (`UTCTimestamp`) is accepted and
+    means what it projects to. Empty leaves the dictionary's type alone."""
+
+    values: dict[str, str] = dataclasses.field(default_factory=dict)
+    """`{what a feed writes: what it means}`, folded like the dictionary's own."""
+
+    def __post_init__(self) -> None:
+        if not self.field:
+            raise ValueError("a field rule names no field")
+        if self.type and self.arrow_type is None:
+            raise ValueError(f"{self.type!r} is neither an Arrow type nor a FIX datatype")
+
+    @functools.cached_property
+    def arrow_type(self) -> pyarrow.DataType | None:
+        """`type` as Arrow holds it; None where the rule only translates values.
+
+        Arrow's own spelling first, because that is what a contract and a
+        dumped schema write and so what a reader of one will reach for.
+        """
+        if not self.type:
+            return None
+        try:
+            return arrow_type_for(self.type)
+        except (KeyError, ValueError):
+            pass
+        found = FIX_SCALARS.get(self.type.strip().lower())
+        return found
+
+    @functools.cached_property
+    def folded(self) -> str:
+        """`field` as a spelling is matched: case and nothing else."""
+        return self.field.strip().lower()
+
+    @property
+    def tag(self) -> int | None:
+        """The tag `field` spells outright, or None where it spells a name."""
+        text = self.field.strip()
+        return int(text) if text.isascii() and text.isdigit() else None
+
+    def applied(self, declared: Field | None, name: str) -> Field | None:
+        """`declared` read this rule's way, or a field of its own where none is."""
+        arrow_type = self.arrow_type
+        if arrow_type is None:
+            return declared
+        if declared is None:
+            return Field(name=name, arrow_type=arrow_type, nullable=True)
+        if declared.arrow_type.equals(arrow_type):
+            return declared
+        return dataclasses.replace(declared, arrow_type=arrow_type)
+
+
+@scalar
+class FieldRules(Convertible):
+    """The field readings a job declares, resolved against its own dictionary."""
+
+    rules: list[FieldRule] = dataclasses.field(default_factory=list)
+
+    def __bool__(self) -> bool:
+        return bool(self.rules)
+
+    def __iter__(self) -> Any:
+        return iter(self.rules)
 
 
 def cast_arrow_bool(array: Any) -> Any:

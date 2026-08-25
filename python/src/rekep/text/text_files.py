@@ -26,6 +26,7 @@ from rekep.text.text_file import (
     DEFAULT_READ_BYTE_SIZE,
     HEADER_PATTERN,
     TextFile,
+    compiled_header,
     parsed_field_of,
     static_columns_of,
 )
@@ -92,7 +93,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: the store decides.
     reverse: bool = False
 
-    header_pattern: re.Pattern[bytes] = HEADER_PATTERN
+    #: What a line's fixed header is; a job may hand over the source of one.
+    header_pattern: re.Pattern[bytes] | str | bytes = HEADER_PATTERN
 
     #: Shape reads land on. None is what the parser fills.
     row: StructField | None = None
@@ -123,6 +125,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
 
     def __post_init__(self) -> None:
         """Resolve one filesystem for every root, and rewrite the roots as paths on it."""
+        self.header_pattern = compiled_header(self.header_pattern)
         self.roots = tuple(self.roots)
         if self.filesystem is not None or not self.roots:
             return

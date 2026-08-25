@@ -112,6 +112,17 @@ DEFAULT_READ_BYTE_SIZE = 1 << 22
 _RENDERED = ("unix", "thread_name", "plugin_code", "message")
 
 
+def compiled_header(source: re.Pattern[bytes] | str | bytes) -> re.Pattern[bytes]:
+    """A header pattern however a job spelled it: compiled, or already compiled.
+
+    Bytes, because a line is classified before it is decoded -- a `str` source
+    is a document's spelling of the same pattern and is encoded here.
+    """
+    if isinstance(source, re.Pattern):
+        return source
+    return re.compile(source.encode() if isinstance(source, str) else source, re.DOTALL)
+
+
 @dataclass(eq=False)
 class TextFile(Dataset, io.BufferedIOBase):
     """A text log addressed by URI: a dataset, and a readable binary stream."""
@@ -144,7 +155,13 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     url: str
     filesystem: pyarrow.fs.FileSystem | None = None
-    header_pattern: re.Pattern[bytes] = HEADER_PATTERN
+
+    #: What a line's fixed header is, as `HEADER_PATTERN` documents one. A job
+    #: configures its own by handing over the pattern source: a `str` or
+    #: `bytes` is compiled here, so a log whose header this package has never
+    #: seen is a document change and not a code change. It must name the same
+    #: groups -- `timestamp`, `thread_name`, `plugin_code`, `message`.
+    header_pattern: re.Pattern[bytes] | str | bytes = HEADER_PATTERN
 
     #: Shape reads and writes land on. None is `into_row()`'s own -- what the parser
     #: fills -- and anything else is cast onto on the way out and in.
@@ -190,7 +207,8 @@ class TextFile(Dataset, io.BufferedIOBase):
     static_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Resolve the filesystem, and rewrite `url` as a path on it."""
+        """Compile a configured header, resolve the filesystem, rewrite `url` on it."""
+        self.header_pattern = compiled_header(self.header_pattern)
         if self.filesystem is None:
             self.filesystem, self.url = resolve(self.url)
 

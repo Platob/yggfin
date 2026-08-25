@@ -41,6 +41,8 @@ from rekep.fix.entries import (
 )
 from rekep.fix.fields import (
     FIX_SCALARS,
+    FieldRule,
+    FieldRules,
     arrow_type_of,
     cast_arrow_bool,
     cast_arrow_fix,
@@ -120,6 +122,8 @@ __all__ = [
     "FLAT",
     "FieldAccess",
     "FieldEntry",
+    "FieldRule",
+    "FieldRules",
     "FixCodec",
     "FixPairs",
     "FixRegistry",
