@@ -22,7 +22,7 @@ from rekep.enums import MIC
 from rekep.fields import Field, StructField
 from rekep.fields.arrays import groups_of, scattered
 from rekep.filesystems import resolve
-from rekep.fix.access import first_arrow_tags
+from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_fix
 from rekep.fix.transcribe import FixCodec
 from rekep.market.event import CODES_TYPE, hour_arrow
@@ -955,7 +955,11 @@ def _mic_arrow(columns: Mapping[str, Any], messages: Any, rows: int) -> Any:
     compute = pyarrow.compute
     missing = pyarrow.nulls(rows, pyarrow.string())
     stored = columns.get("kwargs")
-    tags = first_arrow_tags(stored, (30, 100, 275, 1301), rows) if stored is not None else {}
+    tags = (
+        FieldAccess.first_arrow_tags(stored, (30, 100, 275, 1301), rows)
+        if stored is not None
+        else {}
+    )
     explicit = [
         tags.get(30, missing),
         columns.get("security_exchange", missing),

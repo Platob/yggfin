@@ -525,17 +525,27 @@ class FixMessage(Event):
         """Every value of `field` on this row, in stored order."""
         return _row_access().readings(self._field_entries(), field)
 
-    def _field_entries(self) -> Iterator[Any]:
-        """What the accessor scans: lifted columns in schema order, then `kwargs`."""
-        for name, tag in type(self).into_tagged_columns():
-            value = getattr(self, name, None)
-            if value is not None:
-                yield Entry(tag=int(tag), name=name, value=value)
-        for name, spelled in type(self).into_named_columns():
-            value = getattr(self, name, None)
-            if value is not None:
-                yield Entry(name=spelled, value=value)
-        yield from self.kwargs or ()
+    def _field_entries(self) -> list[Entry]:
+        """What the accessor scans: lifted columns in schema order, then `kwargs`.
+
+        A list of ready `Entry` views, so a caller reading several dozen
+        fields off one row builds them once: `entries_of` passes a ready entry
+        straight through, and rebuilding the row per ask was the whole cost of
+        decoding a normalized instrument (benchmarks/bench_market.py).
+        """
+        own = type(self)
+        entries = [
+            Entry(tag=int(tag), name=name, value=value)
+            for name, tag in own.into_tagged_columns()
+            if (value := getattr(self, name, None)) is not None
+        ]
+        entries += [
+            Entry(name=spelled, value=value)
+            for name, spelled in own.into_named_columns()
+            if (value := getattr(self, name, None)) is not None
+        ]
+        entries += [Entry.from_stored(stored) for stored in self.kwargs or ()]
+        return entries
 
     @classmethod
     @functools.cache
@@ -831,8 +841,13 @@ class FixMessage(Event):
         from rekep.enums import AssetKind, IdSource, OptionKind, Side
         from rekep.market.instrument import Instrument, Leg
 
+        # One reading of the row for every field below, rather than one per
+        # field: the accessor rescans what it is handed, and this decodes
+        # around thirty of them.
+        entries, access = self._field_entries(), _row_access()
+
         def read(spelling: str) -> str | None:
-            return self.get(spelling).raw
+            return access.reading(entries, spelling).raw
 
         alternatives: dict[str, str] = {}
         for index in range(max(_pair_int(read("NoSecurityAltID")), 0)):

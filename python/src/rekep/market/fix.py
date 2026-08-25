@@ -335,47 +335,100 @@ _EXPOSURE_UNIT_NS = types.MappingProxyType(
 )
 
 
-@functools.cache
-def _standard_market_tags() -> Mapping[str, int]:
-    """Tags selected by canonical name from the packaged registry."""
-    registry = FixRegistry.from_builtin()
-    found = {name: int(registry.scalar(name).fix["tag"]) for name in CARRIED_FIELDS}
-    for shape in (MarketEvent, Order, Execution, Instrument):
-        _declared_tags(shape.into_field(), found)
-    return types.MappingProxyType(found)
+#: What a probe of a message's fields returns for a key it does not carry --
+#: distinct from a key it carries as null, which is a value.
+_ABSENT = object()
 
 
-@functools.cache
+@dataclasses.dataclass(frozen=True)
+class MarketTags:
+    """One FIX dictionary as the market layer reads it: names as wire tags.
+
+    Nothing here is a fact about a message, so every set is resolved once per
+    `(registry, version)` and shared by every message that reads through it.
+    Rebuilding them a message at a time -- a hundred and sixty names for the
+    claimed set alone -- was a third of a conversion (benchmarks/bench_market.py).
+    """
+
+    access: FieldAccess
+    version: str | None = None
+
+    @classmethod
+    @functools.lru_cache(maxsize=64)
+    def of(cls, registry: FixRegistry | None = None, version: str | None = None) -> MarketTags:
+        """One shared reading per `(registry, version)`, memos and all."""
+        return cls(FieldAccess.of(registry or FixRegistry.from_builtin(), version), version)
+
+    @classmethod
+    @functools.cache
+    def standard(cls) -> Mapping[str, int]:
+        """Tags selected by canonical name from the packaged registry."""
+        registry = FixRegistry.from_builtin()
+        found = {name: int(registry.scalar(name).fix["tag"]) for name in CARRIED_FIELDS}
+        for shape in (MarketEvent, Order, Execution, Instrument):
+            cls._declared(shape.into_field(), found)
+        return types.MappingProxyType(found)
+
+    @staticmethod
+    def _declared(struct: StructField, into: dict[str, int]) -> None:
+        """Every `fix:` tag under `struct`, nested members included."""
+        for member in struct.fields:
+            tag = member.fix.get("tag")
+            name = member.fix.get("name")
+            if tag and name:
+                into.setdefault(str(name), int(tag))
+            if member.fields:
+                MarketTags._declared(member, into)
+
+    @functools.cached_property
+    def tags(self) -> Mapping[str, int]:
+        """Market field names to tags, overridden by the selected version."""
+        standard = self.standard()
+        if self.version is None:
+            return standard
+        try:
+            configured = self.access.registry.tags(self.version)
+        except (AttributeError, KeyError, OSError, ValueError):
+            return standard
+        found = dict(standard)
+        for name in tuple(found):
+            if tag := configured.get(name.lower()):
+                found[name] = tag
+        for name, tag in configured.items():
+            found.setdefault(name, tag)
+        return types.MappingProxyType(found)
+
+    @functools.cached_property
+    def names_by_tag(self) -> Mapping[str, str]:
+        """Back from the selected wire tag to the standard name that earned it."""
+        tag_text = self.access.tag_text
+        return types.MappingProxyType(
+            {tag: name for name in self.standard() if (tag := tag_text(name)) != name}
+        )
+
+    @functools.cached_property
+    def claimed(self) -> frozenset[str]:
+        """Every tag a shape already stores, plus the two framing fields.
+
+        What `FixEvents.extras` drops: a field with a column of its own is not
+        metadata, and a length or a checksum is not data at all.
+        """
+        tag_text = self.access.tag_text
+        return frozenset(tag_text(name) for name in self.standard()) | frozenset(
+            tag_text(name) for name in FRAMING_FIELDS
+        )
+
+    @functools.cached_property
+    def audited(self) -> frozenset[str]:
+        """Tags standardised many-to-one, kept beside the code they became."""
+        return frozenset(self.access.tag_text(name) for name in RAW_METADATA_FIELDS)
+
+
 def market_tags(
     registry: FixRegistry | None = None, version: str | None = None
 ) -> Mapping[str, int]:
     """Market field names to tags, overridden by a selected registry version."""
-    standard = _standard_market_tags()
-    if version is None:
-        return standard
-    registry = registry or FixRegistry.from_builtin()
-    try:
-        configured = registry.tags(version)
-    except (KeyError, OSError, ValueError):
-        return standard
-    found = dict(standard)
-    for name in tuple(found):
-        if tag := configured.get(name.lower()):
-            found[name] = tag
-    for name, tag in configured.items():
-        found.setdefault(name, tag)
-    return types.MappingProxyType(found)
-
-
-def _declared_tags(struct: StructField, into: dict[str, int]) -> None:
-    """Every `fix:` tag under `struct`, nested members included."""
-    for member in struct.fields:
-        tag = member.fix.get("tag")
-        name = member.fix.get("name")
-        if tag and name:
-            into.setdefault(str(name), int(tag))
-        if member.fields:
-            _declared_tags(member, into)
+    return MarketTags.of(registry, version).tags
 
 
 @dataclasses.dataclass
@@ -439,37 +492,21 @@ class FixEvents(Convertible):
             return None
 
     @functools.cached_property
+    def dictionary(self) -> MarketTags:
+        """The dictionary reading this message resolves through."""
+        return MarketTags.of(self.registry, self.version)
+
+    @functools.cached_property
     def tags(self) -> Mapping[str, int]:
         """The field-name index selected for this message."""
         if self.version is None:
             return types.MappingProxyType({})
-        return market_tags(self.registry, self.version)
+        return self.dictionary.tags
 
     @functools.cached_property
     def access(self) -> FieldAccess:
         """The one field accessor (fix/access.py), scoped to this message's dictionary."""
-        return FieldAccess.of(self.registry or FixRegistry.from_builtin(), self.version)
-
-    @functools.cached_property
-    def _names_by_tag(self) -> Mapping[str, str]:
-        return types.MappingProxyType(
-            {
-                self.tag_of(name): name
-                for name in _standard_market_tags()
-                if self.tag_of(name) != name
-            }
-        )
-
-    def tag_of(self, field: int | str) -> str:
-        """A canonical field name or numeric tag as the selected wire tag.
-
-        Resolution is the accessor's; this only spells the answer the way a
-        wire message keys it.
-        """
-        text = field if type(field) is str else str(field)
-        if text.isascii() and text.isdigit():
-            return text
-        return self.access.tag_text(text)
+        return self.dictionary.access
 
     @functools.cached_property
     def by_tag(self) -> dict[str, Any]:
@@ -505,12 +542,17 @@ class FixEvents(Convertible):
         return found
 
     def get(self, field: int | str) -> Any:
-        """The message's first value for one canonical name or numeric tag."""
-        wanted = self.tag_of(field)
-        found = self.by_tag.get(wanted)
-        if found is not None or wanted in self.by_tag:
+        """The message's first value for one canonical name or numeric tag.
+
+        One probe of the tag index and, only where that says the message does
+        not carry the key at all, one of the folded index -- a sentinel rather
+        than a second `in`, because a field stored null is carried and a
+        translation asks for twice as many fields as a message holds.
+        """
+        found = self.by_tag.get(self.access.tag_text(field), _ABSENT)
+        if found is not _ABSENT:
             return found
-        return self.by_folded_tag.get(translation_key(str(field)))
+        return self.by_folded_tag.get(translation_key(field if type(field) is str else str(field)))
 
     def state_of(self, field: str, default: State = State.UNKNOWN) -> State:
         """Standard state for one field-specific FIX code."""
@@ -640,14 +682,14 @@ class FixEvents(Convertible):
         """MassQuote entries flattened through their enclosing quote set."""
         sets = _group_segments(
             self.message.pairs,
-            self.tag_of("NoQuoteSets"),
+            self.access.tag_text("NoQuoteSets"),
             self._quote_group_delimiters[0],
         )
         if sets:
             for quote_set in sets:
                 prefix, entries = _group_segments(
                     quote_set,
-                    self.tag_of("NoQuoteEntries"),
+                    self.access.tag_text("NoQuoteEntries"),
                     self._quote_group_delimiters[1],
                     with_prefix=True,
                 )
@@ -664,7 +706,7 @@ class FixEvents(Convertible):
     @functools.cached_property
     def _quote_group_delimiters(self) -> tuple[str, str]:
         """Outer and inner delimiters from the selected FIX declaration."""
-        fallback = (self.tag_of("QuoteSetID"), self.tag_of("QuoteEntryID"))
+        fallback = (self.access.tag_text("QuoteSetID"), self.access.tag_text("QuoteEntryID"))
         registry = self.registry
         if registry is None:
             return fallback
@@ -687,7 +729,7 @@ class FixEvents(Convertible):
             outer_name = _first_declared_name(outer.members, by_name) if outer else None
             inner_name = _first_declared_name(inner.members, by_name) if inner else None
             if outer_name and inner_name:
-                return self.tag_of(outer_name), self.tag_of(inner_name)
+                return self.access.tag_text(outer_name), self.access.tag_text(inner_name)
         return fallback
 
     def _quotes(self, kind: str) -> Iterator[Order]:
@@ -980,7 +1022,7 @@ class FixEvents(Convertible):
 
     def _group_entries(self, name: str) -> list[list[tuple[str, str]]]:
         """One repeating group under its configured count tag or rendered name."""
-        return self.message.group(self.tag_of(name)) or self.message.indexed_group(name)
+        return self.message.group(self.access.tag_text(name)) or self.message.indexed_group(name)
 
     def _group(self, name: str) -> list[dict[str, str]]:
         """One repeating group's entries, each as first-value-by-tag."""
@@ -988,7 +1030,7 @@ class FixEvents(Convertible):
         for entry in self._group_entries(name):
             resolved: dict[str, str] = {}
             for key, value in self.access.tagged_pairs(entry):
-                resolved.setdefault(self._names_by_tag.get(key, key), value)
+                resolved.setdefault(self.dictionary.names_by_tag.get(key, key), value)
             found.append(resolved)
         return found
 
@@ -1133,10 +1175,7 @@ class FixEvents(Convertible):
     @functools.cached_property
     def extras(self) -> dict[str, str]:
         """Every field the shapes have no column for, under the key it arrived as."""
-        claimed = frozenset(self.tag_of(name) for name in _standard_market_tags()) | frozenset(
-            self.tag_of(field) for field in FRAMING_FIELDS
-        )
-        audited = frozenset(self.tag_of(field) for field in RAW_METADATA_FIELDS)
+        claimed, audited = self.dictionary.claimed, self.dictionary.audited
         return {
             key: (
                 value if isinstance(value, str) else FixPairs.from_pairs([(key, value)]).pairs[0][1]

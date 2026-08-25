@@ -6,7 +6,7 @@ import pyarrow
 import pytest
 
 from rekep.fix import FixPairs, FixRegistry
-from rekep.fix.access import Entry, FieldAccess, entries_of
+from rekep.fix.access import Entry, FieldAccess
 from rekep.fix.transcribe import FixCodec
 
 #: The four ways a caller has a field in hand, for one field that is all four:
@@ -242,9 +242,9 @@ def test_a_parsed_row_reads_its_columns_and_its_pairs_through_one_call() -> None
 
 def test_entries_read_pairs_stored_structs_and_ready_entries_alike() -> None:
     """One `Entry` view over the three shapes a row is held in."""
-    pair = next(entries_of([("NoPartyIDs[0].PartyID", "A")]))
+    pair = next(FieldAccess.entries_of([("NoPartyIDs[0].PartyID", "A")]))
     stored = next(
-        entries_of(
+        FieldAccess.entries_of(
             [
                 {
                     "tag": 448,
@@ -269,4 +269,4 @@ def test_entries_read_pairs_stored_structs_and_ready_entries_alike() -> None:
         "A",
     )
     ready = Entry(tag=54, name="Side", value="1")
-    assert next(entries_of([ready])) is ready
+    assert next(FieldAccess.entries_of([ready])) is ready

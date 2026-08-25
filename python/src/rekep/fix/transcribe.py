@@ -598,7 +598,7 @@ class FixCodec(Convertible):
         # At the call, because `fix.access` reads this module's own `TagIndex`:
         # the accessor is built on the transcription, so the transcription
         # reaches back into it here rather than at import.
-        from rekep.fix.access import first_named
+        from rekep.fix.access import FieldAccess
 
         compute = pyarrow.compute
         protocols = self.categorise(messages, plugins)
@@ -616,7 +616,7 @@ class FixCodec(Convertible):
             "kwargs": kwargs,
             "protocol_version": version,
             "protocol_version_source": source,
-            "msg_type": first_named(kwargs, 35, "MsgType", rows),
+            "msg_type": FieldAccess.first_named(kwargs, 35, "MsgType", rows),
         }
 
     def versions_of_kwargs(self, kwargs: Any) -> tuple[Any, Any]:
@@ -627,15 +627,15 @@ class FixCodec(Convertible):
         stage exists to stop paying twice. Reads only `registry.versions` --
         the version list -- and no field, component or enumerated value.
         """
-        from rekep.fix.access import first_named
+        from rekep.fix.access import FieldAccess
 
         rows = len(kwargs)
         if not rows:
             empty = pyarrow.array([], pyarrow.string())
             return empty, empty
-        begins = first_named(kwargs, 8, "BeginString", rows)
-        application = first_named(kwargs, 1128, "ApplVerID", rows)
-        default = first_named(kwargs, 1137, "DefaultApplVerID", rows)
+        begins = FieldAccess.first_named(kwargs, 8, "BeginString", rows)
+        application = FieldAccess.first_named(kwargs, 1128, "ApplVerID", rows)
+        default = FieldAccess.first_named(kwargs, 1137, "DefaultApplVerID", rows)
         spellings = self._spellings
         versions: list[str | None] = []
         sources: list[str] = []
@@ -1072,34 +1072,53 @@ def version_spellings(registry: FixRegistry) -> Mapping[str, str]:
         return {}
 
 
+#: The three fields that say which version a message speaks, under every
+#: spelling one of them arrives as. A constant because it was a dict literal
+#: rebuilt once per key of every message.
+_VERSION_EVIDENCE: Mapping[str, str] = MappingProxyType(
+    {
+        "8": "begin",
+        "beginstring": "begin",
+        "1128": "application",
+        "applverid": "application",
+        "1137": "default",
+        "defaultapplverid": "default",
+    }
+)
+
+#: Where the header stops: CheckSum <10> ends the message, so nothing after it
+#: is evidence of anything.
+_CHECKSUM_KEYS = frozenset({"10", "checksum"})
+
+
 def infer_version_from_pairs(
     pairs: Iterable[tuple[Any, Any]], registry: FixRegistry | None = None
 ) -> tuple[str | None, str]:
     """Infer one FIX application version from tags 8, 1128 and 1137."""
     evidence: dict[str, str] = {}
     for key, value in pairs:
-        text = str(key)
-        member = re.search(_MEMBER_NAME_VECTOR, text, re.ASCII)
-        name = member.group("name").lower() if member is not None else text.lower()
-        if name in {"10", "checksum"}:
+        text = key if type(key) is str else str(key)
+        # A key already spelled in digits *is* its own tail, which is every
+        # key of a wire message: the tail pattern only earns its call on a
+        # rendered, dotted or indexed one.
+        if text.isdigit():
+            name = text
+        else:
+            member = _MEMBER_NAME_SCALAR.search(text)
+            name = member["name"].lower() if member is not None else text.lower()
+        if name in _CHECKSUM_KEYS:
             break
-        selected = {
-            "8": "begin",
-            "beginstring": "begin",
-            "1128": "application",
-            "applverid": "application",
-            "1137": "default",
-            "defaultapplverid": "default",
-        }.get(name)
-        rendered = str(value).strip() if value is not None else ""
-        if selected is not None and rendered:
+        selected = _VERSION_EVIDENCE.get(name)
+        if selected is None or value is None:
+            continue
+        rendered = str(value).strip()
+        if rendered:
             evidence.setdefault(selected, rendered)
-    selected_registry = registry or FixRegistry.from_builtin()
     return _version_from_evidence(
         evidence.get("begin"),
         evidence.get("application"),
         evidence.get("default"),
-        version_spellings(selected_registry),
+        version_spellings(registry or FixRegistry.from_builtin()),
     )
 
 
